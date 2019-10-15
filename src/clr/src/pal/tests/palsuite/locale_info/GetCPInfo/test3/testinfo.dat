@@ -1,0 +1,8 @@
+Version = 1.0
+Section = Locale Information
+Function = GetCPInfo
+Name = Test #3 for GetCPInfo
+TYPE = DEFAULT
+EXE1 = test3
+Description
+=Tests that GetCPInfo passes for all valid code pages

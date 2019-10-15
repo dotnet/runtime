@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <NoLogo>True</NoLogo>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnsafeBlockCopy.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <_SkipTestAssemblies Include="$(SkipTestAssemblies)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+      <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\</TestAssemblyDir>
+      <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
+      <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
+  </PropertyGroup>
+  <Target Name="FindTestDirectories">
+    <ItemGroup>
+      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
+      <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
+    </ItemGroup>
+    
+    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
+            Condition="'@(AllTestAssemblies)' == ''" />
+    
+    <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
+    <Message Text= "TestAssemblies= @(TestAssemblies)"/>
+    <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
+  </Target>
+
+   <Target Name="RunTests"
+          DependsOnTargets="FindTestDirectories"
+          Condition="'$(SkipTests)' != 'True'">
+
+
+    <PropertyGroup>
+      <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
+      <!-- Run one assembly at a time to avoid excessive parallelism leading to test timeouts -->
+      <ParallelRun Condition="'$(ParallelRun)'==''">collections</ParallelRun>
+    </PropertyGroup>
+    <ItemGroup>
+      <IncludeTraitsItems Include="$(IncludeTraits)" />
+      <ExcludeTraitsItems Include="$(ExcludeTraits)" />
+    </ItemGroup>
+
+    <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
+    <PropertyGroup>
+      <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
+
+      <XunitArgs>-parallel $(ParallelRun)</XunitArgs>
+      <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
+      <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
+      <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
+      <XunitArgs>$(XunitArgs) @(ExcludeTraitsItems->'-notrait %(Identity)', ' ')</XunitArgs>
+
+      <!-- Color output doesn't work well when capturing the output in the CI system -->
+      <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
+
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+    </PropertyGroup>
+
+    <!-- Work around cmd command length limit by using relative paths
+         from working directory instead of full paths (see
+         https://github.com/Microsoft/msbuild/issues/2530) -->
+    <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
+      <_TestAssembliesRelative Include="@(TestAssemblies -> Replace('$(BaseOutputPathWithConfig)', '.\'))" />
+      <TestAssemblies Remove="@(TestAssemblies)" />
+      <TestAssemblies Include="@(_TestAssembliesRelative)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
+    </PropertyGroup>
+
+    <Error Condition="$(XunitCommandLine.Length) > 8191 and '$(RunningOnUnix)' != 'true'" Text="Xunit command line is too long." />
+    <Exec Command="$(XunitCommandLine)"
+          WorkingDirectory="$(BaseOutputPathWithConfig)"/>
+
+  </Target>
+
+</Project>

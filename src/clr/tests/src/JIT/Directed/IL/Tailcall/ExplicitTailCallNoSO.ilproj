@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ExplicitTailCallNoSO.il" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_TC_QuickJit=1
+set COMPlus_TC_QuickJitForLoops=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_TC_QuickJit=1
+export COMPlus_TC_QuickJitForLoops=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

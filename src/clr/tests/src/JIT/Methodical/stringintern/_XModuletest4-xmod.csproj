@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test4.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="teststr.csproj" />
+    <ProjectReference Include="testgenstr.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _wtoi
+Name = Test _wtoi on valid and invalid ints in a variety of formats
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the _wtoi function.
+= Check to ensure that the different ints are handled properly.
+= Exponents and decimals should be treated as invalid characters,
+= causing the conversion to quit. Whitespace before the int is valid.
+= Check would-be octal/hex digits to ensure they're treated no 
+= differently than other strings.

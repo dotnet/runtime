@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <!-- The .NET Core product branding version -->
+    <ProductVersion>5.0.0</ProductVersion>
+    <!-- File version numbers -->
+    <MajorVersion>5</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <!-- Always use shipping version instead of dummy versions -->
+    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
+    <PreReleaseVersionLabel>alpha1</PreReleaseVersionLabel>
+    <!-- Opt-in/out repo features -->
+    <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
+    <UsingToolXliff>false</UsingToolXliff>
+    <!-- Package versions -->
+    <!-- arcade -->
+    <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19463.3</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19278.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksVersion>
+    <!-- corefx -->
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha1.19508.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha1.19508.1</MicrosoftNETCorePlatformsVersion>
+    <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
+    <!-- core-setup -->
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha1.19510.2</MicrosoftNETCoreAppVersion>
+    <!-- dotnet-optimization -->
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationIBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20190716.1</optimizationPGOCoreCLRVersion>
+    <!-- ilasm -->
+    <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19413.7</MicrosoftNETCoreILAsmPackageVersion>
+  </PropertyGroup>
+  <!--Package names-->
+  <PropertyGroup>
+    <MicrosoftDotNetXUnitConsoleRunnerPackage>Microsoft.DotNet.XUnitConsoleRunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
+    <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
+    <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
+    <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
+    <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
+    <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
+  </PropertyGroup>
+</Project>

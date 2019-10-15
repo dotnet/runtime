@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = strchr
+Name = Test #1 for strchr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test this on a character which is in a string, and ensure the pointer
+= points to that character.  Then check the string for the null character,
+= which the return pointer should point to.  Then search for a character not
+= in the string and check that the return value is NULL.

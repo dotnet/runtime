@@ -1,0 +1,50 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 12 * * *"
+  displayName: Mon through Sun at 4:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/checkout-job.yml
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platforms:
+    # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    # TODO: re-enable Windows_NT_arm when https://github.com/dotnet/corefx/issues/38863 is resolved
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: jitstressregs
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platforms:
+    # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    # TODO: re-enable Windows_NT_arm when https://github.com/dotnet/corefx/issues/38863 is resolved
+    - Windows_NT_x64
+    - Windows_NT_x86
+    helixQueueGroup: corefx
+    jobParameters:
+      testGroup: jitstressregs
+      corefxTests: true
+      displayNameArgs: CoreFX

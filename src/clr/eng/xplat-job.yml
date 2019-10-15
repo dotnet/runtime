@@ -1,0 +1,181 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  crossrootfsDir: ''
+  stagedBuild: false
+
+  # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/common/templates/job/job.yml
+  parameters:
+
+    name: ${{ parameters.name }}
+    displayName: ${{ parameters.displayName }}
+
+    condition: ${{ parameters.condition }}
+    dependsOn:
+      - ${{ if ne(parameters.stagedBuild, true) }}:
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - 'checkout_windows'
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - 'checkout_unix'
+      - ${{ if ne(parameters.dependsOn, '') }}:
+        - ${{ parameters.dependsOn }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    continueOnError: ${{ parameters.continueOnError }}
+
+    # Send telemetry for all builds
+    enableTelemetry: true
+    helixRepo: 'dotnet/coreclr'
+    helixType: ${{ parameters.helixType }}
+
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    enablePublishUsingPipelines: true
+
+    pool:
+
+      # Public Linux Build Pool
+      ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        name:  NetCorePublic-Pool
+        queue: BuildPool.Ubuntu.1604.Amd64.Open
+
+      # Official Build Linux Pool
+      ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: NetCoreInternal-Pool
+        queue: BuildPool.Ubuntu.1604.Amd64
+
+      # FreeBSD builds only in the internal project
+      ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: dnceng-freebsd-internal
+
+      # Public OSX Build Pool
+      ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: Hosted Mac Internal
+
+      # Official Build OSX Pool
+      ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
+        name: Hosted MacOS
+
+      # Official Build Windows Pool
+      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: NetCoreInternal-Pool
+        queue: BuildPool.Windows.10.Amd64.VS2017
+
+      # Public Windows Build Pool
+      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        name: NetCorePublic-Pool
+        queue: BuildPool.Windows.10.Amd64.VS2017.Open
+
+    workspace:
+      clean: all
+
+    ${{ if ne(parameters.container, '') }}:
+      ${{ if eq(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
+      ${{ if ne(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
+
+    ${{ if eq(parameters.osGroup, 'Linux') }}:
+      agentOs: Ubuntu
+    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      agentOs: FreeBSD
+    ${{ if eq(parameters.osGroup, 'OSX') }}:
+      agentOs: MacOS
+    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      agentOs: Windows_NT
+
+    # Setting this results in the arcade job template including a step
+    # that gathers asset manifests and publishes them to pipeline
+    # storage. Only relevant for build jobs.
+    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
+    variables:
+    - name: buildConfig
+      value: ${{ parameters.buildConfig }}
+
+    - ${{ if eq(parameters.buildConfig, 'checked') }}:
+      - name: buildConfigUpper
+        value: 'Checked'
+
+    - ${{ if eq(parameters.buildConfig, 'debug') }}:
+      - name: buildConfigUpper
+        value: 'Debug'
+
+    - ${{ if eq(parameters.buildConfig, 'release') }}:
+      - name: buildConfigUpper
+        value: 'Release'
+
+    - name: _BuildConfig
+      value: $(buildConfigUpper)
+
+    - name: archType
+      value: ${{ parameters.archType }}
+
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: official/dotnet/coreclr/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: pr/dotnet/coreclr/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: ci/dotnet/coreclr/$(Build.SourceBranch)
+
+    - ${{ if ne(parameters.crossrootfsDir, '') }}:
+      - name: crossArg
+        value: 'cross'
+      - name: crossPackagesArg
+        value: '-__DoCrossArchBuild=1'
+      # This is only required for cross builds.
+      - name: ROOTFS_DIR
+        value: ${{ parameters.crossrootfsDir }}
+    - ${{ if eq(parameters.crossrootfsDir, '') }}:
+      - name: crossArg
+        value: ''
+      - name: crossPackagesArg
+        value: ''
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps:
+    - checkout: none
+      clean: true
+
+    # Download the GIT repository
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        displayName: 'GIT repository'
+        downloadFolder: $(Build.SourcesDirectory)/download/
+        cleanUnpackFolder: false
+        unpackFolder: $(Build.SourcesDirectory)
+        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_windows.zip
+          artifactName: repo_windows
+        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          artifactFileName: repo_unix.tar.gz
+          artifactName: repo_unix
+
+    - ${{ parameters.steps }}

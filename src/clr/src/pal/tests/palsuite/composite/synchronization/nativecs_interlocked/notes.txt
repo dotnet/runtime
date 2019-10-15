@@ -1,0 +1,15 @@
+gcc -O2 -finline-functions -D_DEBUG -g -DFULL_CSIMPL -o ./obj/sun4u/critsecttest.o -c critsecttest.cpp
+gcc -O2 -finline-functions -D_DEBUG -g -c -o ./obj/sun4u/cs.o cs.cpp
+gcc -x assembler-with-cpp -c -Wa,-Av9 -o ./obj/sun4u/sparcinterloc.o sparcinterloc.s
+gcc -lpthread -lrt -O2 -finline-functions -D_DEBUG -g -o ./obj/sun4u/critsecttest ./obj/sun4u/critsecttest.o ./obj/sun4u/cs.o ./obj/sun4u/sparcinterloc.o
+gcc -O2 -finline-functions -D_DEBUG -g -DCXNG_CSIMPL -o ./obj/sun4u/cxngtest.o -c critsecttest.cpp
+gcc -O2 -finline-functions -D_DEBUG -g -c -o ./obj/sun4u/cxng_critsect.o cxng_critsect.cpp
+gcc -lpthread -lrt -O2 -finline-functions -D_DEBUG -g -o ./obj/sun4u/cxngtest ./obj/sun4u/cxngtest.o ./obj/sun4u/cxng_critsect.o ./obj/sun4u/sparcinterloc.o
+gcc -O2 -finline-functions -D_DEBUG -g -DMTX_CSIMPL -o ./obj/sun4u/mtxtest.o -c critsecttest.cpp
+gcc -O2 -finline-functions -D_DEBUG -g -c -o ./obj/sun4u/mtx_critsect.o mtx_critsect.cpp
+gcc -lpthread -lrt -O2 -finline-functions -D_DEBUG -g -o ./obj/sun4u/mtxtest ./obj/sun4u/mtxtest.o ./obj/sun4u/mtx_critsect.o ./obj/sun4u/sparcinterloc.o
+gcc -O2 -finline-functions -D_DEBUG -g -DRECMTX_CSIMPL -o ./obj/sun4u/recmtxtest.o -c critsecttest.cpp
+gcc -O2 -finline-functions -D_DEBUG -g -c -o ./obj/sun4u/recmtx_critsect.o recmtx_critsect.cpp
+gcc -lpthread -lrt -O2 -finline-functions -D_DEBUG -g -o ./obj/sun4u/recmtxtest ./obj/sun4u/recmtxtest.o ./obj/sun4u/recmtx_critsect.o ./obj/sun4u/sparcinterloc.o
+gcc -O2 -finline-functions -D_DEBUG -g -DINLRECMTX_CSIMPL -o ./obj/sun4u/inlrecmtxtest.o -c critsecttest.cpp
+gcc -lpthread -lrt -O2 -finline-functions -D_DEBUG -g -o ./obj/sun4u/inlrecmtxtest ./obj/sun4u/inlrecmtxtest.o ./obj/sun4u/sparcinterloc.o

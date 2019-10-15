@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CrossGenTest>false</CrossGenTest>
+    <!-- This test takes a long time to complete -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- https://github.com/dotnet/coreclr/issues/24633 -->
+    <JitOptimizationSensitive Condition="'$(Platform)' == 'arm'">true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="superpmicollect.cs" />
+  </ItemGroup>
+  <!-- TestProjects file contains the relative paths to the test projects that are used by superpmicollect test. -->
+  <PropertyGroup>
+    <_TestProjectsFileName>TestProjects.txt</_TestProjectsFileName>
+  </PropertyGroup>
+  <!-- In order to avoid hard-coding of those paths in C# file we embed the file as an assembly resource. -->
+  <ItemGroup>
+    <EmbeddedResource Include="$(_TestProjectsFileName)">
+      <LogicalName>TestProjects</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <!-- This target builds the executables and test running scripts for the TestProjects to output directory of the current project. -->
+  <Target Name="_BuildTestProjects" AfterTargets="Build">
+    <ReadLinesFromFile File="$(_TestProjectsFileName)">
+      <Output TaskParameter="Lines" ItemName="_TestProjectsToBuild" />
+    </ReadLinesFromFile>
+    <MSBuild Projects="@(_TestProjectsToBuild)" Properties="OutputPath=$(OutputPath)" />
+  </Target>
+</Project>

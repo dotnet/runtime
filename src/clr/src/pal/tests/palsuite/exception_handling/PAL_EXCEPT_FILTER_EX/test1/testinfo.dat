@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = exception_handling
+Function = PAL_EXCEPT_FILTER_EX
+Name = Test for PAL_EXCEPT_FILTER_EX
+Type = DEFAULT 
+EXE1 = pal_except_filter_ex
+LANG = cpp
+Description
+= Tests the PAL implementation of the PAL_EXCEPT_FILTER_EX. 
+= There are two try blocks in this test. The first forces an
+= exception error to force hitting the first filter. The second
+= doesn't to make sure we don't hit the filter. A value is also
+= passed into the filter program and it is validated to make sure
+= it was passed correctly.

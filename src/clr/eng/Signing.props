@@ -1,0 +1,28 @@
+<Project>
+  <Import Project="..\dir.common.props"/>
+  
+  <ItemGroup>
+    <ItemsToSign Include="$(BinDir)*.dll" />
+    <ItemsToSign Include="$(BinDir)*.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildArch)' == 'x86'">
+    <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
+    <ItemsToSign Condition="'$(BuildType)'=='Release'" Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
+  </ItemGroup>
+
+  <!-- sign the cross targeted files as well -->
+  <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
+    <ItemsToSign Include="$(BinDir)$(CrossTargetComponentFolder)/*.dll" />
+    <ItemsToSign Include="$(BinDir)$(CrossTargetComponentFolder)/*.exe" />
+  </ItemGroup>
+
+  <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
+    <Error Condition="'@(ItemsToSign)' == ''" Text="List of files to sign is empty" />
+    <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity)" />
+  </Target>
+</Project>

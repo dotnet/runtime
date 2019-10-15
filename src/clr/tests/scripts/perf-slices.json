@@ -1,0 +1,88 @@
+{
+    "slices" : [
+        {
+            "folders" : [
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Benchstones",
+                    "extraFlags" : ""
+                }
+            ]
+        },
+        {
+            "folders" : [
+                {
+                    "directory" : "JIT/Performance/CodeQuality/BenchmarksGame",
+                    "extraFlags" : ""
+                }
+            ]
+        },
+        {
+            "folders" : [
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Bytemark",
+                    "extraFlags" : ""
+                }
+            ]
+        },
+        {
+            "folders" : [
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Span",
+                    "extraFlags" : ""
+                }
+            ]
+        },
+        {
+            "folders" : [
+                {
+                    "directory" : "performance/perflab",
+                    "extraFlags" : "-library"
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Burgers",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Devirtualization",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/FractalPerf",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Inlining",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Layout",
+                    "extraFlags" : ""
+                }
+            ]
+        },
+        {
+            "folders" : [
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Linq",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Roslyn",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/SciMark",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/Serialization",
+                    "extraFlags" : ""
+                },
+                {
+                    "directory" : "JIT/Performance/CodeQuality/V8",
+                    "extraFlags" : ""
+                }
+            ]
+        }
+    ]
+}

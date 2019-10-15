@@ -1,0 +1,10 @@
+CoreMangLib/system/span/SlowTailCallArgs/SlowTailCallArgs.sh
+GC/API/GC/GetAllocatedBytesForCurrentThread/GetAllocatedBytesForCurrentThread.sh
+GC/API/WeakReference/Finalize2/Finalize2.sh # https://github.com/dotnet/coreclr/issues/19085 -- GCStress=0xC JitStress=1 or JitStress=2
+GC/Features/Finalizer/finalizeother/finalizearray/finalizearray.sh # https://github.com/dotnet/coreclr/issues/19248
+GC/Features/Finalizer/finalizeother/finalizearraysleep/finalizearraysleep.sh # https://github.com/dotnet/coreclr/issues/19248
+GC/Scenarios/LeakWheel/leakwheel/leakwheel.sh
+JIT/Methodical/fp/exgen/10w250d_cs_ro/10w250d_cs_ro.sh # https://github.com/dotnet/coreclr/issues/18986
+JIT/Methodical/fp/exgen/10w5d_cs_ro/10w5d_cs_ro.sh # https://github.com/dotnet/coreclr/issues/18986
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b65423/b65423/b65423.sh # https://github.com/dotnet/coreclr/issues/18441
+Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh # https://github.com/dotnet/coreclr/issues/19086 -- GCStress=0xC ZapDisable

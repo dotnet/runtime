@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Functions.cs" />
+    <Compile Include="MathTests.cs" />
+    <Compile Include="Double\AbsDouble.cs" />
+    <Compile Include="Double\AcosDouble.cs" />
+    <Compile Include="Double\AsinDouble.cs" />
+    <Compile Include="Double\AtanDouble.cs" />
+    <Compile Include="Double\Atan2Double.cs" />
+    <Compile Include="Double\CeilingDouble.cs" />
+    <Compile Include="Double\CosDouble.cs" />
+    <Compile Include="Double\CoshDouble.cs" />
+    <Compile Include="Double\ExpDouble.cs" />
+    <Compile Include="Double\FloorDouble.cs" />
+    <Compile Include="Double\LogDouble.cs" />
+    <Compile Include="Double\Log10Double.cs" />
+    <Compile Include="Double\PowDouble.cs" />
+    <Compile Include="Double\RoundDouble.cs" />
+    <Compile Include="Double\SinDouble.cs" />
+    <Compile Include="Double\SinhDouble.cs" />
+    <Compile Include="Double\SqrtDouble.cs" />
+    <Compile Include="Double\TanDouble.cs" />
+    <Compile Include="Double\TanhDouble.cs" />
+    <Compile Include="Single\AbsSingle.cs" />
+    <Compile Include="Single\AcosSingle.cs" />
+    <Compile Include="Single\AsinSingle.cs" />
+    <Compile Include="Single\AtanSingle.cs" />
+    <Compile Include="Single\Atan2Single.cs" />
+    <Compile Include="Single\CeilingSingle.cs" />
+    <Compile Include="Single\CosSingle.cs" />
+    <Compile Include="Single\CoshSingle.cs" />
+    <Compile Include="Single\ExpSingle.cs" />
+    <Compile Include="Single\FloorSingle.cs" />
+    <Compile Include="Single\LogSingle.cs" />
+    <Compile Include="Single\Log10Single.cs" />
+    <Compile Include="Single\PowSingle.cs" />
+    <Compile Include="Single\RoundSingle.cs" />
+    <Compile Include="Single\SinSingle.cs" />
+    <Compile Include="Single\SinhSingle.cs" />
+    <Compile Include="Single\SqrtSingle.cs" />
+    <Compile Include="Single\TanSingle.cs" />
+    <Compile Include="Single\TanhSingle.cs" />
+  </ItemGroup>
+</Project>

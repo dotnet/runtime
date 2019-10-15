@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyA.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyC.csproj" />
+    <ProjectReference Include="AssemblyContracts.csproj" />
+  </ItemGroup>
+</Project>

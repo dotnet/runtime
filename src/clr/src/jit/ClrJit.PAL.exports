@@ -1,0 +1,5 @@
+getJit
+jitStartup
+DllMain
+PAL_RegisterModule
+PAL_UnregisterModule

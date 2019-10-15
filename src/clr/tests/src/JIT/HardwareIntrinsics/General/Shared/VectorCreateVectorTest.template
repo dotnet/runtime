@@ -1,0 +1,119 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}Vector{BaseType}()
+        {
+            var test = new VectorCreate__{Method}Vector{BaseType}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorCreate__{Method}Vector{BaseType}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            {BaseType} lowerValue = {NextValueOp};
+            {OpVectorType}<{BaseType}> lower = {OpVectorType}.Create(lowerValue);
+
+            {BaseType} upperValue = {NextValueOp};
+            {OpVectorType}<{BaseType}> upper = {OpVectorType}.Create(upperValue);
+
+            {VectorType}<{BaseType}> result = {Isa}.{Method}(lower, upper);
+
+            ValidateResult(result, lowerValue, upperValue);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            {BaseType} lowerValue = {NextValueOp};
+            {OpVectorType}<{BaseType}> lower = {OpVectorType}.Create(lowerValue);
+
+            {BaseType} upperValue = {NextValueOp};
+            {OpVectorType}<{BaseType}> upper = {OpVectorType}.Create(upperValue);
+
+            object result = typeof({Isa})
+                                .GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({OpVectorType}<{BaseType}>), typeof({OpVectorType}<{BaseType}>) })
+                                .Invoke(null, new object[] { lower, upper });
+
+            ValidateResult(({VectorType}<{BaseType}>)(result), lowerValue, upperValue);
+        }
+
+        private void ValidateResult({VectorType}<{BaseType}> result, {BaseType} expectedLowerValue, {BaseType} expectedUpperValue, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+            ValidateResult(resultElements, expectedLowerValue, expectedUpperValue, method);
+        }
+
+        private void ValidateResult({BaseType}[] resultElements, {BaseType} expectedLowerValue, {BaseType} expectedUpperValue, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < ElementCount / 2; i++)
+            {
+                if (resultElements[i] != expectedLowerValue)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            for (var i = ElementCount / 2; i < ElementCount; i++)
+            {
+                if (resultElements[i] != expectedUpperValue)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{Isa}.{Method}({BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   lower: {expectedLowerValue}");
+                TestLibrary.TestFramework.LogInformation($"   upper: {expectedUpperValue}");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

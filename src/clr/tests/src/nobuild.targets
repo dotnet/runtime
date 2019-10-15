@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="Compile" />
+  <Target Name="CoreCompile" />
+  <Target Name="Build" />
+
+</Project>

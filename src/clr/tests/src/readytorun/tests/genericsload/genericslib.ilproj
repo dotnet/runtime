@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="genericslib.il" />
+  </ItemGroup>
+</Project>

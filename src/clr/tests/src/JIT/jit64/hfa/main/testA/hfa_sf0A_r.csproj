@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="hfa_testA.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\dll\common.csproj" />
+    <ProjectReference Include="..\dll\hfa_simple_f32_common.csproj" />
+    <ProjectReference Include="..\dll\hfa_simple_f32_managed.csproj" />
+    <ProjectReference Include="..\dll\CMakelists.txt" />
+  </ItemGroup>
+</Project>

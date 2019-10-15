@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = CompareFileTime
+Name = Positive Test for CompareFileTime
+TYPE = DEFAULT
+EXE1 = comparefiletime
+Description 
+= Test the CompareFileTime function.
+= Defines a large and small file time, and compares them in all fashions
+= to ensure proper return values.

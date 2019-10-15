@@ -1,0 +1,33 @@
+.NET Core uses third-party libraries or other resources that may be
+distributed under licenses different than the .NET Core software.
+
+In the event that we accidentally failed to list a required notice, please
+bring it to our attention. Post an issue or email us:
+
+           dotnet@microsoft.com
+
+The attached notices are provided for information only.
+
+License notice for SciMark C#
+-----------------------------
+
+https://github.com/dosvidos/SciMark
+
+<license>
+This is a port of the SciMark2a Java Benchmark to C# by
+Chris Re (cmr28@cornell.edu) and Werner Vogels (vogels@cs.cornell.edu)
+
+For details on the original authors see http://math.nist.gov/scimark2
+
+This software is likely to burn your processor, bitflip your memory chips
+anihilate your screen and corrupt all your disks, so you it at your
+own risk.
+</license>
+
+License notice for SciMark 2.0
+------------------------------
+
+http://math.nist.gov/scimark2/credits.html
+
+As this software was developed as part of work done by the United States Government, it is not subject to copyright, and is in the public domain. 
+We would, however, appreciate acknowledgements if this work is found useful. Note that according to GNU.org public domain is compatible with GPL.

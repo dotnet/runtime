@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Extract.Int64.1.cs" />
+    <Compile Include="Extract.UInt64.1.cs" />
+    <Compile Include="Extract.Int64.129.cs" />
+    <Compile Include="Extract.UInt64.129.cs" />
+    <Compile Include="Insert.Int64.1.cs" />
+    <Compile Include="Insert.UInt64.1.cs" />
+    <Compile Include="Insert.Int64.129.cs" />
+    <Compile Include="Insert.UInt64.129.cs" />
+    <Compile Include="Program.Sse41.X64.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+  </ItemGroup>
+</Project>

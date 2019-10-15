@@ -1,0 +1,21 @@
+; Unix hosting API
+coreclr_create_delegate
+coreclr_execute_assembly
+coreclr_initialize
+coreclr_shutdown
+coreclr_shutdown_2
+
+; il{d}asm
+MetaDataGetDispenser
+GetMetaDataInternalInterface
+GetMetaDataInternalInterfaceFromPublic
+GetMetaDataPublicInterfaceFromInternal
+
+; PAL module registration
+PAL_RegisterModule
+PAL_UnregisterModule
+
+; Functions exported by the coreclr
+CoreDllMain
+DllMain
+GetCLRRuntimeHost

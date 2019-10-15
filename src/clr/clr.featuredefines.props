@@ -1,0 +1,74 @@
+<Project>
+    <PropertyGroup>
+        <FeatureCollectibleALC>true</FeatureCollectibleALC>
+        <FeatureEventTrace>true</FeatureEventTrace>
+        <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
+        <FeatureICastable>true</FeatureICastable>
+        <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
+        <FeatureManagedEtw>true</FeatureManagedEtw>
+        <FeaturePerfTracing>true</FeaturePerfTracing>
+        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+        <FeatureBasicFreeze>true</FeatureBasicFreeze>
+        <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
+        <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
+        <FeaturePal>true</FeaturePal>
+        <FeatureXplatEventSource>true</FeatureXplatEventSource>
+
+        <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
+        <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
+        <FeatureStubsAsIL>true</FeatureStubsAsIL>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+        <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
+        <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
+        <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
+        <FeatureCominterop>true</FeatureCominterop>
+        <FeatureClassicCominterop>true</FeatureClassicCominterop>
+        <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
+        <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
+        <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+        <FeatureAppX>true</FeatureAppX>
+        <FeatureWin32Registry>true</FeatureWin32Registry>
+        <FeatureProfAttach>true</FeatureProfAttach>
+    </PropertyGroup>
+
+    <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
+    <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
+        <FeatureUtf8String>true</FeatureUtf8String>
+        <!-- FeatureXXX>true</FeatureXXX -->
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
+        <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCollectibleALC)' == 'true'">$(DefineConstants);FEATURE_COLLECTIBLE_ALC</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
+        <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
+        <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
+        <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
+        <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
+        <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
+        <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
+        <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
+        <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
+        <DefineConstants Condition="'$(FeatureBasicFreeze)' == 'true'">$(DefineConstants);FEATURE_BASICFREEZE</DefineConstants>
+        <DefineConstants Condition="'$(FeatureUtf8String)' == 'true'">$(DefineConstants);FEATURE_UTF8STRING</DefineConstants>
+
+        <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
+
+        <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
+        <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);PLATFORM_WINDOWS</DefineConstants>
+        <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);PLATFORM_OSX</DefineConstants>
+    </PropertyGroup>
+</Project>

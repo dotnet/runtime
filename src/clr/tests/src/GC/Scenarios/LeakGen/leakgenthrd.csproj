@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- The test leaves secondary threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="leakgenthrd.cs" />
+  </ItemGroup>
+</Project>

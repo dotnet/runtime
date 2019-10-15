@@ -1,0 +1,13 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = SetCurrentDirectoryA
+Name = Negative test for SetCurrentDirectoryA (test 3)
+Type = DEFAULT
+EXE1 = setcurrentdirectorya
+Description
+= Try calling SetCurrentDirectoryA with an invalid path,
+= with a valid filename and with NULL

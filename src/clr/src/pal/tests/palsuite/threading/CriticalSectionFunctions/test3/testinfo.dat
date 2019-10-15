@@ -1,0 +1,29 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CriticalSectionFunctions
+Name = Positive Test for TryEnterCriticalSection
+TYPE = DEFAULT
+EXE1 = test3
+Description 
+= Create two threads to exercise TryEnterCriticalSection
+= and EnterCriticalSection.  TryEnterCriticalSection acquires 
+= and holds a CRITICAL_SECTION object.  Another call to 
+= TryEnterCriticalSection is made from a different thread, at 
+= this time, to establish a call to TryEnterCriticalSection
+= will return immediatly and to establish 
+= TryEnterCriticalSection returns the proper value when it
+= attempts to lock a CRITICAL_SECTION that is already owned 
+= by another thread.  The CRITICAL_SECTION object is then 
+= released and held by a call to EnterCriticalSection.  A new 
+= thread is invoked and attempts to acquire the held 
+= CRITICAL_SECTION with a call to TryEnterCriticalSection.  
+= TryEnterCriticalSection returns immediatly and returns
+= with the value that states the CRITICAL_SECTION object is 
+= held by another thread.  This establishes 
+= TryEnterCriticalSection behaves the same way with 
+= CriticalSections locked by TryEnterCriticalSection and 
+= EnterCriticalSection.

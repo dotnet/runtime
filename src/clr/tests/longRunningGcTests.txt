@@ -1,0 +1,11 @@
+GC/Features/BackgroundGC/concurrentspin2/concurrentspin2.sh
+GC/Features/LOHCompaction/lohcompactapi2/lohcompactapi2.sh
+GC/Features/LOHCompaction/lohcompactscenariorepro/lohcompactscenariorepro.sh
+GC/Features/LOHCompaction/lohcompact_stress/lohcompact_stress.sh
+GC/Features/PartialCompaction/eco1/eco1.sh
+GC/Features/PartialCompaction/partialcompactiontest/partialcompactiontest.sh
+GC/Features/PartialCompaction/partialcompactionwloh/partialcompactionwloh.sh
+GC/Features/SustainedLowLatency/sustainedlowlatency_race_reverse/sustainedlowlatency_race_reverse.sh
+GC/Features/SustainedLowLatency/sustainedlowlatency_race/sustainedlowlatency_race.sh
+GC/Regressions/v2.0-beta2/462651/462651/462651.sh
+GC/Coverage/delete_next_card_table/delete_next_card_table.sh

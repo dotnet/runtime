@@ -1,0 +1,29 @@
+; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+; See the LICENSE file in the project root for more information.
+
+LIBRARY         mscordbi
+
+EXPORTS
+    // COM-instantiation - for CorPublish
+    DllGetClassObjectInternal private
+    
+    // In-proc (Whidbey-style) creation path from the shim - CDIFV and it's replacement
+    CreateCordbObject private
+
+    // Out-of-proc creation path from the shim - ICLRDebugging
+    OpenVirtualProcessImpl
+    OpenVirtualProcessImpl2
+
+    // DEPRECATED - use OpenVirtualProcessImpl
+    OpenVirtualProcess private 
+    OpenVirtualProcess2
+
+    CoreCLRCreateCordbObject private
+    CoreCLRCreateCordbObjectEx private
+
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+    DllGetClassObject private
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
+
+

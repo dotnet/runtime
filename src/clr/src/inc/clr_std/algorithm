@@ -1,0 +1,119 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+//
+// clr_std/algorithm
+//
+// Copy of some key Standard Template Library functionality
+
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+#ifdef USE_STL
+#include <algorithm>
+#else
+#ifndef __clr_std_algorithm_h__
+#define __clr_std_algorithm_h__
+
+namespace std
+{
+    template<class iter, class CompareFunc>
+    iter find_if ( iter first, iter last, CompareFunc comp )
+    {
+        for ( ; first!=last ; first++ ) 
+            if ( comp(*first) ) 
+                break;
+        return first;
+    }
+
+    template<class iter, class T>
+    iter find(iter first, iter last, const T& val)
+    {
+        for (;first != last; first++)
+        {
+            if (*first == val)
+                break;
+        }
+        return first;
+    }
+
+    template <class iter, class comp>
+    iter qsort_partition( iter first, iter last, iter pivot, comp compare )
+    {
+        iter lastMinusOne = last - 1;
+        swap(pivot, lastMinusOne);
+
+        // Pivot is at end
+        pivot = last - 1;
+
+        iter partitionLoc = first;
+
+        for (iter partitionWalk = first; partitionWalk != pivot; ++partitionWalk)
+        {
+            if (compare(*partitionWalk, *pivot))
+            {
+                swap(*partitionWalk, *partitionLoc);
+                partitionLoc++;
+            }
+        }
+        swap(*pivot, *partitionLoc);
+
+        return partitionLoc;
+    }
+
+    template <class iter, class comp>
+    void sort_worker ( iter first, iter last, comp compare )
+    {
+        typename iter::difference_type RangeSize = last - first;
+
+        // When down to a list of size 1, be done
+        if (RangeSize < 2)
+            return;
+
+        // Pick pivot
+
+        // Use simple pick middle algorithm
+        iter pivotLoc = first + (RangeSize / 2);
+
+        // Partition
+        pivotLoc = qsort_partition(first, last, pivotLoc, compare);
+
+        // Sort first array
+        sort_worker(first, pivotLoc, compare);
+
+        // Sort second array
+        sort_worker(pivotLoc + 1, last, compare);
+    }
+
+    template <class iter, class comp>
+    void sort ( iter first, iter last, comp compare )
+    {
+        sort_worker(first, last, compare);
+        if (first != last)
+        {
+            for (iter i = first; i < (last - 1); i++)
+            {
+                // Assert that the sort function works.
+                assert(!compare(*(i+1), *i));
+            }
+        }
+    }
+
+    template<class InIter, class OutIter, class Fn1>
+    OutIter transform( InIter first, InIter last, OutIter dest, Fn1 func )
+    {
+        for ( ; first!=last ; ++first, ++dest )
+            *dest = func(*first);
+        return dest;
+    }
+
+} // namespace std
+
+#endif /* __clr_std_algorithm_h__ */
+
+#endif // !USE_STL
+
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp

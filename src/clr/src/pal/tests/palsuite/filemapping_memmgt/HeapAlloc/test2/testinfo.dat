@@ -1,0 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = HeapAlloc
+Name = Positive test for HeapAlloc API
+TYPE = DEFAULT
+EXE1 = heapalloc
+Description
+=Test the HeapAlloc with HEAP_ZERO_MEMORY control flag

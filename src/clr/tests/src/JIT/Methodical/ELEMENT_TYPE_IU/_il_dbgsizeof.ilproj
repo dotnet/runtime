@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Condition="'$(BuildArch)' ==   'x64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(BuildArch)' == 'arm64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(BuildArch)' ==   'x86'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(BuildArch)' ==   'arm'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(BuildArch)' ==   'armel'" Include="sizeof-i386.il" />
+  </ItemGroup>
+</Project>

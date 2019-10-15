@@ -1,0 +1,24 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CreateMutexW / ReleaseMutex
+Name = Basic validity Tests for CreateMutexW / ReleaseMutex
+TYPE = DEFAULT
+EXE1 = createmutexw
+Description 
+= This test case tests the following things
+=    - Creation of named Mutexes
+=    - Creating multiple handles to a single named Mutex
+=    - Ensuring that these handles work interchangeably
+=    - Setting bInitialOwnerFlag to TRUE will cause the
+=      initial call to a Wait function on the same Mutex
+=      to actually wait.
+=    - Waiting on a Mutex that a thread already owns should
+=      not block.
+=    - Create Named mutex with empty string ("")
+=    - Create Named mutex with string of MAX_PATH length
+=    - Calling RelaseMutex with invalid Mutex handles and
+=      valid but unowned Mutexes.

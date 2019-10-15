@@ -1,0 +1,72 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+//
+// Verifies that we're able to call virtual interface methods non-virtually.
+// Corresponds to the C# "base(IFoo).Frob()" syntax.
+//
+
+.assembly extern System.Runtime { }
+
+.assembly nonvirtualcall { }
+
+.class interface private abstract auto ansi IFoo
+{
+  .method public hidebysig newslot virtual instance int32 Frob() cil managed
+  {
+    ldc.i4 99
+    ret
+  }
+}
+
+.class interface private abstract auto ansi IBar
+       implements IFoo
+{
+  .method public hidebysig newslot virtual final instance int32 Frob() cil managed
+  {
+    .override IFoo::Frob
+    ldarg.0
+    call instance int32 class IFoo::Frob()
+    ldc.i4.1
+    add
+    ret
+  }
+}
+
+.class private auto ansi beforefieldinit Fooer
+       extends [System.Runtime]System.Object
+       implements IBar
+{
+  .method public hidebysig specialname rtspecialname 
+          instance void .ctor() cil managed
+  {
+    ldarg.0
+    call instance void [System.Runtime]System.Object::.ctor()
+    ret
+  }
+}
+
+.method public hidebysig static int32 RunTest() cil managed
+{
+  newobj instance void Fooer::.ctor()
+  callvirt instance int32 IFoo::Frob()
+  ret
+}
+
+.method public hidebysig static int32 Main() cil managed
+{
+  .entrypoint
+
+  ldstr "DefaultImplementationsOfInterfaces"
+  call bool [System.Runtime]System.Runtime.CompilerServices.RuntimeFeature::IsSupported(string)
+
+  // If default interfaces are not supported, consider the test successful.
+  brtrue DoRunTest
+  ldc.i4 100
+  ret
+
+DoRunTest:
+  call int32 RunTest()
+  ret
+}

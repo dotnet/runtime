@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _mbsinc
+Name = Positive Test for _mbsinc
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Ensure that this function moves the string pointer ahead one character.
+= First do a basic test to check that the pointer gets moved ahead the one
+= character. Then try with an array of bytes and a NULL array.  Each of 
+= these should still work by returning a pointer to thePointer+1.

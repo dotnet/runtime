@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = GetCurrentThread
+Name = Test for GetCurrentThread
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test to ensure proper operation of the GetCurrentThread()
+= API. The test launches a thread in suspended mode, and sets
+= its priority to a non-default value using the handle returned
+= by CreateThread(). The new thread calls GetCurrentThred() to
+= retrieve a handle to itself, and calls GetThreadPriority()
+= to verify that its priority matches what it was set to on
+= the main execution thread.

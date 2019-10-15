@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = HeapReAlloc
+Name = Positive test for HeapReAlloc to reallocate into a smaller space
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Allocate some memory. Then reallocate that memory into less
+= space than the origional amount.  Ensure the
+= return values are correct, and also that data placed in the allocated
+= memory carries over to the reallocated block.

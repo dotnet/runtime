@@ -1,0 +1,129 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  corefxTests: false
+  readyToRun: false
+  stagedBuild: false
+
+  # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    name: ${{ parameters.name }}
+    helixType: ${{ parameters.helixType }}
+    container: ${{ parameters.container }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+  
+    # arcade-specific parameters
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}
+    dependsOn: ${{ parameters.dependsOn }}
+    displayName: ${{ parameters.displayName }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+  
+    variables:
+    - ${{ if ne(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+
+    - ${{ if eq(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+
+    - name: binTestsPath
+      value: $(Build.SourcesDirectory)/bin/tests
+
+    - name: testRootFolderPath
+      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
+
+    - name: nativeRootFolderPath
+      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
+
+    - ${{ if and(eq(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_r2r_corefx_$(testArtifactRootName)
+    - ${{ if and(eq(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_corefx_$(testArtifactRootName)
+    - ${{ if and(ne(parameters.corefxTests, true), eq(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_r2r_$(testArtifactRootName)
+    - ${{ if and(ne(parameters.corefxTests, true), ne(parameters.readyToRun, true)) }}:
+      - name: testArtifactName
+        value: Tests_$(testArtifactRootName)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: testNativeRootFolderPath
+      value: $(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)
+
+    - name: testBuildRootFolderPath
+      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: microsoftNetSdkIlFolderPath
+      value: $(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il
+      
+    - name: microsoftNetSdkIlArtifactName
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.tar.gz'
+      - name: archiveType
+        value: tar
+      - name: tarCompression
+        value: gz
+
+    - name: priorityArg
+      value: ''
+
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps: ${{ parameters.steps }}

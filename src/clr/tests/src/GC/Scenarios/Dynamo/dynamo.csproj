@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments>1000 40 191919</CLRTestExecutionArguments>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="dynamo.cs" />
+    <Compile Include="basenode.cs" />
+    <Compile Include="dynamonode.cs" />
+    <Compile Include="randomnode.cs" />
+    <Compile Include="staticnode.cs" />
+  </ItemGroup>
+</Project>

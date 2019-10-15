@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _mbsninc
+Name = Positive Test for _mbsninc
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Ensure that this functions increases a string pointer by n characters.
+= Use a for loop, and increase the pointer by a different number of characters
+= on each iteration, ensure that it is indeed pointing to the correct location
+= each time.  The second test checks to see if you attempt to increase the 
+= pointer past the end of the string, the pointer should just point at the 
+= last character.

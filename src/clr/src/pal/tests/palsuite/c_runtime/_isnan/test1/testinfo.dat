@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _isnan
+Name = Test #1 for _isnan
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test _isnan with a number of trivial values, to ensure they indicated that
+= they are numbers.  Then try with Positive/Negative Infinite, which should
+= also be numbers.  Finally set the least and most significant bits of 
+= the fraction to positive and negative, at which point it should return
+= the true value.

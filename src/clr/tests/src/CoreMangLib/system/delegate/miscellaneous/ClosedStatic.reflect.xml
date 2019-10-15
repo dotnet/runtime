@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="ClosedStatic">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>

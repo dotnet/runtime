@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Threading
+Function = DuplicateHandle
+Name = Test for DuplicateHandle (CreatePipe)
+TYPE = DEFAULT
+EXE1 = test6
+Description
+= Tests the PAL implementation of the DuplicateHandle function,
+= with CreatePipe. This test will create a pipe, then duplicate
+= the write handle, write to the handle, and use the read to
+= verify.

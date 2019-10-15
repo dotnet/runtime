@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="reflectOnField">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>

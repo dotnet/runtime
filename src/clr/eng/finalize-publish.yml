@@ -1,0 +1,62 @@
+parameters:
+  # Optional: dependencies of the job
+  dependsOn: ''
+
+  artifactsDir: $(Build.StagingDirectory)/artifacts
+
+  gitHubUser: dotnet-build-bot
+  gitHubEmail: dotnet-build-bot@microsoft.com
+  gitHubAuthToken: $(AccessToken-dotnet-build-bot-public-repo)
+
+  versionsRepoOwner: dotnet
+  versionsRepo: versions
+
+jobs:
+  - template: /eng/common/templates/job/publish-build-assets.yml
+    parameters:
+      configuration: Release
+      pool:
+        name: NetCoreInternal-Pool
+        queue: BuildPool.Windows.10.Amd64.VS2017
+      dependsOn: ${{ parameters.dependsOn }}
+      publishUsingPipelines: true
+  # Update dotnet/versions
+  - job: Finalize_Publish_Versions
+    displayName: Finalize Publish Versions
+    dependsOn:
+    - Asset_Registry_Publish
+    pool:
+      name: Hosted VS2017
+    variables:
+      - group: DotNet-Versions-Publish
+    steps:
+    # Download nuget packages
+    - task: DownloadBuildArtifacts@0
+      displayName: Download nuget package artifacts
+      inputs:
+        buildType: current
+        artifactName: PackageArtifacts
+        downloadPath: ${{ parameters.artifactsDir }}/nuget
+
+    - powershell: |
+        $prefix = "refs/heads/"
+        $branch = "$(Build.SourceBranch)"
+        $branchName = $branch
+        if ($branchName.StartsWith($prefix))
+        {
+          $branchName = $branchName.Substring($prefix.Length)
+        }
+        Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+        Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+        ls -R ${{ parameters.artifactsDir }}/nuget/*.nupkg
+        & $(Build.SourcesDirectory)/eng/common/build.ps1 -restore -build -ci `
+        -projects "$(Build.SourcesDirectory)/eng/updateversions.proj" `
+        /p:GitHubUser="${{ parameters.gitHubUser }}" `
+        /p:GitHubEmail="${{ parameters.gitHubEmail }}" `
+        /p:GitHubAuthToken="${{ parameters.gitHubAuthToken }}" `
+        /p:VersionsRepoOwner="${{ parameters.versionsRepoOwner }}" `
+        /p:VersionsRepo="${{ parameters.versionsRepo }}" `
+        /p:VersionsRepoPath="build-info/dotnet/coreclr/$branchName" `
+        /p:ShippedNuGetPackageGlobPath="${{ parameters.artifactsDir }}/nuget/*.nupkg"
+
+      displayName: Update dotnet/versions

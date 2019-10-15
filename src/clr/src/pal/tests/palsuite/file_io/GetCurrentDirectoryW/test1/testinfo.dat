@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = GetCurrentDirectoryW
+Name = Test for GetCurrentDirectoryW (test 1)
+Type = DEFAULT 
+EXE1 = getcurrentdirectoryw
+Description
+= Compute the current directory and compare with the results 
+= from GetCurrentDirectoryW
+

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultipleSumAbsoluteDifferences.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+  </ItemGroup>
+</Project>

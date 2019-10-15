@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Test6_ImplementingClass.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Test6_forwarder.ilproj" />
+    <ProjectReference Include="Test6_supplier.ilproj" />
+    <ProjectReference Include="Test6_FriendPriInterface.ilproj" />
+  </ItemGroup>
+</Project>

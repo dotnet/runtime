@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+
+<assemblyIdentity
+  type="win32"
+  name="CoreShim.X"
+  version="1.0.0.0" />
+
+<file name="CoreShim.dll">
+  <!-- NumericTesting -->
+  <comClass
+    clsid="{53169A33-E85D-4E3C-B668-24E438D0929B}"
+    threadingModel="Both" />
+  <!-- ArrayTesting -->
+  <comClass
+    clsid="{B99ABE6A-DFF6-440F-BFB6-55179B8FE18E}"
+    threadingModel="Both" />
+  <!-- StringTesting -->
+  <comClass
+    clsid="{C73C83E8-51A2-47F8-9B5C-4284458E47A6}"
+    threadingModel="Both" />
+  <!-- ErrorMarshalTesting -->
+  <comClass
+    clsid="{71CF5C45-106C-4B32-B418-43A463C6041F}"
+    threadingModel="Both" />
+  <!-- ColorTesting -->
+  <comClass
+    clsid="{C222F472-DA5A-4FC6-9321-92F4F7053A65}"
+    threadingModel="Both" />
+</file>
+
+</assembly>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Test.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Foo.ilproj" />
+    <ProjectReference Include="Bar.ilproj" />
+  </ItemGroup>
+</Project>

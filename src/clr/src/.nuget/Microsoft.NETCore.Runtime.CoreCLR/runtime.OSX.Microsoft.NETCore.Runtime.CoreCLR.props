@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <NativeBinary Include="$(BinDir)libcoreclr.dylib" />
+    <NativeBinary Include="$(BinDir)libdbgshim.dylib" />
+    <NativeBinary Include="$(BinDir)libmscordaccore.dylib" />
+    <NativeBinary Include="$(BinDir)libmscordbi.dylib" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
+    <NativeBinary Include="$(BinDir)System.Globalization.Native.dylib" />
+    <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
+  </ItemGroup>
+</Project>

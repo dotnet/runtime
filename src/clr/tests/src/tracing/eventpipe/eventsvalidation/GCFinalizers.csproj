@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GCFinalizers.cs" />
+    <ProjectReference Include="../common/common.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,119 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BlendVariable.Byte.cs" />
+    <Compile Include="BlendVariable.Double.cs" />
+    <Compile Include="BlendVariable.SByte.cs" />
+    <Compile Include="BlendVariable.Single.cs" />
+    <Compile Include="BlendVariable.Int16.cs" />
+    <Compile Include="BlendVariable.UInt16.cs" />
+    <Compile Include="BlendVariable.Int32.cs" />
+    <Compile Include="BlendVariable.UInt32.cs" />
+    <Compile Include="BlendVariable.Int64.cs" />
+    <Compile Include="BlendVariable.UInt64.cs" />
+    <Compile Include="Ceiling.Double.cs" />
+    <Compile Include="Ceiling.Single.cs" />
+    <Compile Include="CeilingScalar.Double.cs" />
+    <Compile Include="CeilingScalar.Single.cs" />
+    <Compile Include="CompareEqual.Int64.cs" />
+    <Compile Include="CompareEqual.UInt64.cs" />
+    <Compile Include="Floor.Double.cs" />
+    <Compile Include="Floor.Single.cs" />
+    <Compile Include="FloorScalar.Double.cs" />
+    <Compile Include="FloorScalar.Single.cs" />
+    <Compile Include="Max.Int32.cs" />
+    <Compile Include="Max.SByte.cs" />
+    <Compile Include="Max.UInt16.cs" />
+    <Compile Include="Max.UInt32.cs" />
+    <Compile Include="Min.Int32.cs" />
+    <Compile Include="Min.SByte.cs" />
+    <Compile Include="Min.UInt16.cs" />
+    <Compile Include="Min.UInt32.cs" />
+    <Compile Include="MultiplyLow.Int32.cs" />
+    <Compile Include="MultiplyLow.UInt32.cs" />
+    <Compile Include="PackUnsignedSaturate.UInt16.cs" />
+    <Compile Include="RoundCurrentDirection.Double.cs" />
+    <Compile Include="RoundCurrentDirection.Single.cs" />
+    <Compile Include="RoundCurrentDirectionScalar.Double.cs" />
+    <Compile Include="RoundCurrentDirectionScalar.Single.cs" />
+    <Compile Include="RoundToNearestInteger.Double.cs" />
+    <Compile Include="RoundToNearestInteger.Single.cs" />
+    <Compile Include="RoundToNearestIntegerScalar.Double.cs" />
+    <Compile Include="RoundToNearestIntegerScalar.Single.cs" />
+    <Compile Include="RoundToNegativeInfinity.Double.cs" />
+    <Compile Include="RoundToNegativeInfinity.Single.cs" />
+    <Compile Include="RoundToNegativeInfinityScalar.Double.cs" />
+    <Compile Include="RoundToNegativeInfinityScalar.Single.cs" />
+    <Compile Include="RoundToPositiveInfinity.Double.cs" />
+    <Compile Include="RoundToPositiveInfinity.Single.cs" />
+    <Compile Include="RoundToPositiveInfinityScalar.Double.cs" />
+    <Compile Include="RoundToPositiveInfinityScalar.Single.cs" />
+    <Compile Include="RoundToZero.Double.cs" />
+    <Compile Include="RoundToZero.Single.cs" />
+    <Compile Include="RoundToZeroScalar.Double.cs" />
+    <Compile Include="RoundToZeroScalar.Single.cs" />
+    <Compile Include="TestC.Byte.cs" />
+    <Compile Include="TestC.Int16.cs" />
+    <Compile Include="TestC.Int32.cs" />
+    <Compile Include="TestC.Int64.cs" />
+    <Compile Include="TestC.SByte.cs" />
+    <Compile Include="TestC.UInt16.cs" />
+    <Compile Include="TestC.UInt32.cs" />
+    <Compile Include="TestC.UInt64.cs" />
+    <Compile Include="TestNotZAndNotC.Byte.cs" />
+    <Compile Include="TestNotZAndNotC.Int16.cs" />
+    <Compile Include="TestNotZAndNotC.Int32.cs" />
+    <Compile Include="TestNotZAndNotC.Int64.cs" />
+    <Compile Include="TestNotZAndNotC.SByte.cs" />
+    <Compile Include="TestNotZAndNotC.UInt16.cs" />
+    <Compile Include="TestNotZAndNotC.UInt32.cs" />
+    <Compile Include="TestNotZAndNotC.UInt64.cs" />
+    <Compile Include="TestZ.Byte.cs" />
+    <Compile Include="TestZ.Int16.cs" />
+    <Compile Include="TestZ.Int32.cs" />
+    <Compile Include="TestZ.Int64.cs" />
+    <Compile Include="TestZ.SByte.cs" />
+    <Compile Include="TestZ.UInt16.cs" />
+    <Compile Include="TestZ.UInt32.cs" />
+    <Compile Include="TestZ.UInt64.cs" />
+    <Compile Include="Extract.Byte.1.cs" />
+    <Compile Include="Extract.Int32.1.cs" />
+    <Compile Include="Extract.UInt32.1.cs" />
+    <Compile Include="Extract.Single.1.cs" />
+    <Compile Include="Extract.Byte.129.cs" />
+    <Compile Include="Extract.Int32.129.cs" />
+    <Compile Include="Extract.UInt32.129.cs" />
+    <Compile Include="Extract.Single.129.cs" />
+    <Compile Include="Insert.Single.0.cs" />
+    <Compile Include="Insert.Byte.1.cs" />
+    <Compile Include="Insert.SByte.1.cs" />
+    <Compile Include="Insert.Int32.1.cs" />
+    <Compile Include="Insert.UInt32.1.cs" />
+    <Compile Include="Insert.Single.1.cs" />
+    <Compile Include="Insert.Single.2.cs" />
+    <Compile Include="Insert.Single.4.cs" />
+    <Compile Include="Insert.Single.8.cs" />
+    <Compile Include="Insert.Single.16.cs" />
+    <Compile Include="Insert.Single.32.cs" />
+    <Compile Include="Insert.Single.48.cs" />
+    <Compile Include="Insert.Single.64.cs" />
+    <Compile Include="Insert.Single.128.cs" />
+    <Compile Include="Insert.Byte.129.cs" />
+    <Compile Include="Insert.SByte.129.cs" />
+    <Compile Include="Insert.Int32.129.cs" />
+    <Compile Include="Insert.UInt32.129.cs" />
+    <Compile Include="Insert.Single.129.cs" />
+    <Compile Include="Insert.Single.192.cs" />
+    <Compile Include="Program.Sse41.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+  </ItemGroup>
+</Project>

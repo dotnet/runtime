@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _stricmp
+Name = Positive Test for _stricmp
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Do a lower case compare.  Check two strings, only different because they
+= have different capitalization, and they should return 0. Try two strings
+= which will return less than 0 (one is smaller than the other).  Also try
+= the opposite, to get a return value greater than 0.

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <NoLogo>True</NoLogo>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ConcatTest.cs" />
+  </ItemGroup>
+</Project>

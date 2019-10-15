@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>ReadyToRun.SuperIlc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platform>AnyCPU</Platform>
+    <OutputPath>$(BinDir)\ReadyToRun.SuperIlc</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build">
+      <Version>16.0.461</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Build.Framework">
+      <Version>16.0.461</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>2.0.38</Version>
+    </PackageReference>
+    <PackageReference Include="System.CommandLine.Experimental">
+      <Version>0.2.0-alpha.19174.3</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>1.6.0</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

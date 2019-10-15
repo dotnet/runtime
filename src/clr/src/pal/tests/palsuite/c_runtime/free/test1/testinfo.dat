@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = free
+Name = Positive Test for free
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Repeatedly allocates and frees a chunk of memory, to verify that free
+= is really returning memory to the heap
+

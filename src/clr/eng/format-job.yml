@@ -1,0 +1,43 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  crossrootfsDir: ''
+  timeoutInMinutes: ''
+  stagedBuild: false
+
+### Format job
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    helixType: 'format'
+    steps:
+    - task: DotNetCoreInstaller@0
+      inputs:
+        packageType: 'sdk'
+        version: '2.1.402'
+    - task: PythonScript@0
+      displayName: Run tests/scripts/format.py
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: $(Build.SourcesDirectory)/tests/scripts/format.py
+        arguments: '-c $(Build.SourcesDirectory) -o $(osGroup) -a $(archType)'
+    - task: PublishBuildArtifacts@1
+      displayName: Publish format.patch
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/format.patch'
+        ArtifactName: format.$(osGroup).$(archType).patch
+      continueOnError: true
+      condition: failed()

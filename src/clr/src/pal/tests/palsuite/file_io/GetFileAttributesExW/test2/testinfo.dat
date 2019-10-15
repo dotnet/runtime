@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = GetFileAttributesExW
+Name = Test for GetFileAttributesExW
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Tests the PAL implementation of the GetFileAttributesExW function.
+= First get a file's attributes, modify the file, re-get its attributes
+= and compare the two sets of attributes  

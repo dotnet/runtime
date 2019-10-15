@@ -1,0 +1,100 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/*---------------------------------------------------------------*/
+/*                                                               */
+/* The following section actually creates the version structure. */
+/* They are ignored if we are not being invoked by RC.           */
+/*                                                               */
+/* ntverp.H must be included before including this file          */
+/*                                                               */
+/* If VER_LEGALCOPYRIGHT_STR is not defined, it will be          */
+/* constructed using VER_LEGALCOPYRIGHT_YEARS, so at least one   */
+/* these macros must be defined before including this file.      */
+/*                                                               */
+/* VER_FILETYPE, VER_FILESUBTYPE, VER_FILEDESCRIPTION_STR, and   */
+/* VER_INTERNALNAME_STR must be defined before including this    */
+/* file.                                                         */
+/*                                                               */
+/* If VER_FILEVERSION is not defined, VER_PRODUCTVERSION will be */
+/* used instead.  If VER_FILEVERSION_STR is not defined,         */
+/* VER_PRODUCTVERSION_STR will be used instead.                  */
+/*                                                               */
+/* If VER_ORIGINALFILENAME_STR is not defined, it is set to      */
+/* the value in VER_INTERNALNAME_STR.                            */
+/*                                                               */
+/* If INTL is defined, then this is assumed to be an             */
+/* an international build; two string blocks will be created,    */
+/* (since all version resources must have English), and the      */
+/* second one can be localized                                   */
+/*                                                               */
+/*---------------------------------------------------------------*/
+
+#ifdef _WIN32
+#include <_version.h>
+#endif //_WIN32
+
+#ifdef RC_INVOKED
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VER_FILEVERSION
+PRODUCTVERSION VER_PRODUCTVERSION
+FILEFLAGSMASK  VER_FILEFLAGSMASK
+FILEFLAGS      VER_FILEFLAGS
+FILEOS         VER_FILEOS
+FILETYPE       VER_FILETYPE
+FILESUBTYPE    VER_FILESUBTYPE
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK VER_VERSION_UNICODE_LANG
+        BEGIN
+            VALUE "CompanyName",     VER_COMPANYNAME_STR
+            VALUE "FileDescription", VER_FILEDESCRIPTION_STR EXPORT_TAG
+            VALUE "FileVersion",     VER_FILEVERSION_STR BUILD_MACHINE_TAG_PADDED
+            VALUE "InternalName",    VER_INTERNALNAME_STR
+            VALUE "LegalCopyright",  VER_LEGALCOPYRIGHT_STR
+            VALUE "OriginalFilename",VER_ORIGINALFILENAME_STR
+            VALUE "ProductName",     VER_PRODUCTNAME_STR
+            VALUE "ProductVersion",  VER_FILEVERSION_STR
+#ifdef VER_OLESELFREGISTER
+            VALUE "OleSelfRegister", "\0"
+#endif
+            VALUE "Comments",        VER_COMMENTS_STR
+#ifdef VER_EXTRA_VALUES
+            VER_EXTRA_VALUES
+#endif
+
+        END
+
+
+#ifdef VER_ANSICP	/* Some apps are hard coded to look for ANSI CP. */
+	BLOCK VER_VERSION_ANSI_LANG
+        BEGIN
+            VALUE "CompanyName",     VER_COMPANYNAME_STR
+            VALUE "FileDescription", VER_FILEDESCRIPTION_STR EXPORT_TAG
+            VALUE "FileVersion",     VER_FILEVERSION_STR
+            VALUE "InternalName",    VER_INTERNALNAME_STR
+            VALUE "LegalCopyright",  VER_LEGALCOPYRIGHT_STR
+            VALUE "OriginalFilename",VER_ORIGINALFILENAME_STR
+            VALUE "ProductName",     VER_PRODUCTNAME_STR
+            VALUE "ProductVersion",  VER_FILEVERSION_STR
+#ifdef VER_OLESELFREGISTER
+            VALUE "OleSelfRegister", "\0"
+#endif
+            VALUE "Comments",        VER_COMMENTS_STR
+#ifdef VER_EXTRA_VALUES
+            VER_EXTRA_VALUES
+#endif
+        END
+#endif
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", VER_VERSION_TRANSLATION
+    END
+END
+
+#endif

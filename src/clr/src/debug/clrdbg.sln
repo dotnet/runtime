@@ -1,0 +1,69 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Rascal (2010 Version)
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mscordacwks", "..\mscordacwks.vcxproj", "{C5716445-C233-4491-85A4-31B75731DD95}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mscordbi", "..\mscordbi.vcxproj", "{95A6AE03-EC45-4450-93DB-9B21890F79E7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilCode", "..\Utilcode\UtilCode.vcxproj", "{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://vstfdevdiv:8080/
+		SccProjectUniqueName0 = ..\\mscordbi.vcxproj
+		SccProjectName0 = ../
+		SccAuxPath0 = http://vstfdevdiv:8080
+		SccLocalPath0 = ..
+		SccProvider0 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName1 = ..\\Utilcode\\UtilCode.vcxproj
+		SccProjectName1 = ../Utilcode
+		SccAuxPath1 = http://vstfdevdiv:8080
+		SccLocalPath1 = ..\\Utilcode
+		SccProvider1 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		_x86chk|Any Platform = _x86chk|Any Platform
+		_x86dbg|Any Platform = _x86dbg|Any Platform
+		_x86ret|Any Platform = _x86ret|Any Platform
+		amd64chk|Any Platform = amd64chk|Any Platform
+		amd64dbg|Any Platform = amd64dbg|Any Platform
+		amd64ret|Any Platform = amd64ret|Any Platform
+		x86corechk|Any Platform = x86corechk|Any Platform
+		x86coredbg|Any Platform = x86coredbg|Any Platform
+		x86coreret|Any Platform = x86coreret|Any Platform
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5716445-C233-4491-85A4-31B75731DD95}._x86chk|Any Platform.ActiveCfg = x86chk|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}._x86dbg|Any Platform.ActiveCfg = x86dbg|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}._x86ret|Any Platform.ActiveCfg = x86ret|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.amd64chk|Any Platform.ActiveCfg = amd64chk|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.amd64dbg|Any Platform.ActiveCfg = amd64dbg|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.amd64ret|Any Platform.ActiveCfg = amd64ret|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.x86corechk|Any Platform.ActiveCfg = x86corechk|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.x86coredbg|Any Platform.ActiveCfg = x86coredbg|Win32
+		{C5716445-C233-4491-85A4-31B75731DD95}.x86coreret|Any Platform.ActiveCfg = x86coreret|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}._x86chk|Any Platform.ActiveCfg = x86chk|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}._x86dbg|Any Platform.ActiveCfg = x86dbg|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}._x86ret|Any Platform.ActiveCfg = x86ret|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.amd64chk|Any Platform.ActiveCfg = amd64chk|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.amd64dbg|Any Platform.ActiveCfg = amd64dbg|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.amd64ret|Any Platform.ActiveCfg = amd64ret|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.x86corechk|Any Platform.ActiveCfg = x86corechk|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.x86coredbg|Any Platform.ActiveCfg = x86coredbg|Win32
+		{95A6AE03-EC45-4450-93DB-9B21890F79E7}.x86coreret|Any Platform.ActiveCfg = x86coreret|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}._x86chk|Any Platform.ActiveCfg = x86chk|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}._x86dbg|Any Platform.ActiveCfg = x86dbg|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}._x86ret|Any Platform.ActiveCfg = x86ret|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.amd64chk|Any Platform.ActiveCfg = amd64chk|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.amd64dbg|Any Platform.ActiveCfg = amd64dbg|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.amd64ret|Any Platform.ActiveCfg = amd64ret|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.x86corechk|Any Platform.ActiveCfg = x86corechk|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.x86coredbg|Any Platform.ActiveCfg = x86coredbg|Win32
+		{82B95BDA-224E-49B4-8BB7-03E7B9EEFF3B}.x86coreret|Any Platform.ActiveCfg = x86coreret|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

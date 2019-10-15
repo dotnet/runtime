@@ -1,0 +1,270 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  timeoutInMinutes: ''
+  signBinaries: false
+  publishToBlobFeed: false
+  stagedBuild: false
+
+### Product build
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    helixType: 'build/product/'
+    enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
+
+    # Compute job name from template parameters
+    name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+
+    gatherAssetManifests: true
+    variables:
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+    - name: stripSymbolsArg
+      value: ''
+    # Strip symbols only on the release build
+    - ${{ if eq(parameters.buildConfig, 'Release') }}:
+      - name: stripSymbolsArg
+        value: '-stripsymbols'
+    - name: portableBuildArg
+      value: ''
+    # Ensure that we produce os-specific packages for the following distros:
+    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_rhel6')) }}:
+      - name: portableBuildArg
+        value: '-portablebuild=false'
+    - name: clangArg
+      value: ''
+    # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
+    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      - name: clangArg
+        value: '-clang6.0'
+    - ${{ if eq(parameters.archType, 'arm64') }}:
+      - name: clangArg
+        value: '-clang5.0'
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      # Variables used to publish packages to blob feed
+      - name: dotnetfeedUrl
+        value: https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
+      - name: dotnetfeedPAT
+        value: $(dotnetfeed-storage-access-key-1)
+      # Variables used by arcade to gather asset manifests
+      - name: _DotNetPublishToBlobFeed
+        value: true
+    - name: officialBuildIdArg
+      value: ''
+    - name: ibcOptimizeArg
+      value: ''
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '-officialbuildid=$(Build.BuildNumber)'
+      # IBCMerge is currently Windows-only and x86/x64-only
+      - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'x86'))) }}:
+        - name: ibcOptimizeArg
+          value: '-ibcoptimize'
+    - name: enforcePgoArg
+      value: ''
+    # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
+      - name: enforcePgoArg
+        value: '-enforcepgo'
+
+    - name: artifactRootName
+      value: $(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(artifactRootName)'
+
+    - name: testNativeRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(artifactRootName)'
+
+    - name: testBuildRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: binTestsPath
+      value: '$(Build.SourcesDirectory)/bin/tests'
+
+    - name: archiveExtension
+      value: '.tar.gz'
+    - name: archiveType
+      value: tar
+    - name: tarCompression
+      value: gz
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+
+    - name: priorityArg
+      value: ''
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
+
+    steps:
+
+    # Install native dependencies
+    # Linux builds use docker images with dependencies preinstalled,
+    # and FreeBSD builds use a build agent with dependencies
+    # preinstalled, so we only need this step for OSX and Windows.
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Necessary to install python
+      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
+    # Install internal tools on official builds
+    # Since our internal tools are behind an authenticated feed,
+    # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
+    # We can't do this from within the build, so we need to do this as a separate step.
+    - ${{ if and(and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')), eq(parameters.osGroup, 'Windows_NT')) }}:
+        - task: DotNetCoreInstaller@0
+          inputs:
+            packageType: 'sdk'
+            version: '2.1.503'
+        - task: DotNetCoreCLI@2
+          displayName: Restore internal tools
+          inputs:
+            command: restore
+            feedsToUse: config
+            projects: '$(Build.SourcesDirectory)/eng/common/internal/Tools.csproj'
+            nugetConfigPath: 'eng/internal/NuGet.config'
+            restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+            verbosityRestore: 'normal'
+            externalFeedCredentials: 'dotnet-core-internal-tooling'
+
+    # Build
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+        displayName: Build product
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+        displayName: Build product
+
+    # Build native test components
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build-test.sh skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+        displayName: Build native test components
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build-test.cmd skipmanaged $(buildConfig) $(archType) $(priorityArg)
+        displayName: Build native test components
+
+    # Sign on Windows
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
+      - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
+        displayName: Sign Binaries
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Signing Logs
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/'
+          PublishLocation: Container
+          ArtifactName: ${{ format('SignLogs_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        continueOnError: true
+        condition: always()
+
+    # Publish product output directory for consumption by tests.
+    - task: PublishBuildArtifacts@1
+      displayName: Publish product build
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(_BuildConfig)
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Publish test native components for consumption by test execution.
+    - template: /eng/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(testNativeRootFolderPath)
+        includeRootFolder: false
+        archiveFile: $(Build.StagingDirectory)/$(testNativeArtifactName)$(archiveExtension)
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        artifactName: $(testNativeArtifactName)
+        displayName: 'native test components'
+
+    # Publish test build root for consumption by test execution.
+    - template: /eng/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(testBuildRootFolderPath)
+        includeRootFolder: false
+        archiveFile: $(Build.StagingDirectory)/$(testBuildArtifactName)$(archiveExtension)
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        artifactName: $(testBuildArtifactName)
+        displayName: 'test build tree'
+
+    # Get key vault secrets for publishing
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: AzureKeyVault@1
+        inputs:
+          azureSubscription: 'DotNet-Engineering-Services_KeyVault'
+          KeyVaultName: EngKeyVault
+          SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
+
+    # Build packages
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
+        displayName: Build packages
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
+        displayName: Build packages
+
+    # Publish official build
+    - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/bin/Logs/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
+            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+              # Arcade uses this SDK instead of trying to restore one.
+              DotNetCoreSdkDir: /usr/local/dotnet
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        # TODO: pass publish feed url and access token in from the internal pipeline
+        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\bin\Logs\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
+
+    # Publish Logs
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
+        artifactName: ${{ format('BuildLogs_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      continueOnError: true
+      condition: always()

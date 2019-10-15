@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- Set JitStreess variables, Linux requires them to be properly capitalized. -->
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_JitStressModeNames=STRESS_NULL_OBJECT_CHECK, STRESS_MAKE_CSE
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_JitStressModeNames=STRESS_NULL_OBJECT_CHECK, STRESS_MAKE_CSE
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

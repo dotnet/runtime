@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="hfa_testC.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\dll\common.csproj" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_interop_cpp.csproj" />
+    <ProjectReference Include="..\dll\CMakelists.txt" />
+  </ItemGroup>
+</Project>

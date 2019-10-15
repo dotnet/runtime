@@ -1,0 +1,16 @@
+Microsoft.Win32.SystemEvents.Tests   # https://github.com/dotnet/corefx/issues/29166
+System.Console.Tests
+System.Data.SqlClient.Tests          # https://github.com/dotnet/coreclr/issues/16001
+System.Diagnostics.Process.Tests     # https://github.com/dotnet/coreclr/issues/16001
+System.Diagnostics.PerformanceCounter.Tests # https://github.com/dotnet/corefx/issues/29377
+System.Drawing.Common.Tests          # https://github.com/dotnet/coreclr/issues/16001
+System.Globalization.Calendars.Tests # https://github.com/dotnet/coreclr/issues/22719
+System.IO.FileSystem.Tests           # https://github.com/dotnet/coreclr/issues/16001
+System.IO.Ports.Tests                # https://github.com/dotnet/coreclr/issues/16001
+System.Linq.Expressions.Tests        # https://github.com/dotnet/coreclr/issues/24413
+System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
+System.Net.HttpListener.Tests        # https://github.com/dotnet/coreclr/issues/17584
+System.Net.Sockets.Tests             # flaky test
+System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/22379
+System.Security.Cryptography.X509Certificates.Tests # https://github.com/dotnet/coreclr/issues/23473
+System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only

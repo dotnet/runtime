@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_Thread_DeadThreadCountThresholdForGCTrigger=8
+set COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_Thread_DeadThreadCountThresholdForGCTrigger=8
+export COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

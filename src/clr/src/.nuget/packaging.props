@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <PropertyGroup>
+    <PackageDescriptionFile>$(MSBuildThisFileDirectory)/descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+
+    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/microsoft.netcore.platforms/$(MicrosoftNETCorePlatformsVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
+
+    <ProjectUrl>https://dot.net</ProjectUrl>
+
+    <!-- Defined in Packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <MinOSForArch>win7</MinOSForArch>
+    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
+    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
+
+    <!-- Define packaging attributes for cross target components -->
+    <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
+    <HasCrossTargetComponents Condition="'$(TargetsLinux)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm') and '$(__DoCrossArchBuild)' == '1'">true</HasCrossTargetComponents>
+
+    <!-- Created package output locations must be kept in sync with eng/build-job.yml -->
+    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
+    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
+    <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
+
+    <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
+    <SkipIndexCheck>true</SkipIndexCheck>
+
+    <VersionTxtFile Condition="'$(VersionTxtFile)' == ''">$(ArtifactsObjDir)version.txt</VersionTxtFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <PackageIndex Include="$(PackageIndexFile)" />
+
+    <!-- Add version file to packages -->
+    <File Include="$(VersionTxtFile)"
+          Condition="Exists('$(VersionTxtFile)')">
+          <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+  </ItemGroup>
+</Project>

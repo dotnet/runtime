@@ -1,0 +1,9 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- The Type Equivalence feature is unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+  </PropertyGroup>
+
+</Project>

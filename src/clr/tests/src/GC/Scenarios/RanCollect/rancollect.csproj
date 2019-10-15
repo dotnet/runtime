@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestExecutionArguments>7 40 4 77</CLRTestExecutionArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="rancollect.cs" />
+  </ItemGroup>
+</Project>

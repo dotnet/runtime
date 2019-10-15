@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Condition="'$(BuildArch)' == 'x86'" Include="arglist.il" />
+    <Compile Condition="'$(BuildArch)' == 'x64'" Include="arglist64.il" />
+    <Compile Condition="'$(BuildArch)' == 'arm'" Include="arglistARM.il" />
+    <Compile Condition="'$(BuildArch)' == 'arm64'" Include="arglist64.il" />
+    <Compile Condition="'$(BuildArch)' == 'armel'" Include="arglistARM.il" />
+  </ItemGroup>
+</Project>

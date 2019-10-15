@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="doubLink.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExecutionArguments>"hello"</CLRTestExecutionArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="compareexchangetstring.cs" />
+  </ItemGroup>
+</Project>

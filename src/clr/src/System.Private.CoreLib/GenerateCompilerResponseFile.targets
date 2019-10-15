@@ -1,0 +1,26 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <CompileDependsOn>GenerateCompilerResponseFile;$(CompileDependsOn)</CompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GenerateCompilerResponseFile">
+    <PropertyGroup>
+      <GeneratedCompilerResponseFile>$(IntermediateOutputPath)/moduleName.$(AssemblyName).rsp</GeneratedCompilerResponseFile>
+    </PropertyGroup>
+
+    <Message Text="Generating module name response file: $(GeneratedCompilerResponseFile)" />
+
+    <!-- We need to set the runtimemetadataversion -->
+    <WriteLinesToFile File="$(GeneratedCompilerResponseFile)"
+                      Lines="/runtimemetadataversion:v4.0.30319"
+                      Overwrite="true" />
+
+    <ItemGroup>
+      <Clean Include="$(GeneratedCompilerResponseFile)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CompilerResponseFile>$(GeneratedCompilerResponseFile);$(CompilerResponseFile)</CompilerResponseFile>
+    </PropertyGroup>
+  </Target>
+</Project>

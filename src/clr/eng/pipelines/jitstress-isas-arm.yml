@@ -1,0 +1,38 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 19 * * 6"
+  displayName: Sat at 11:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/checkout-job.yml
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: jitstress-isas-arm
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm64
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: jitstress-isas-arm

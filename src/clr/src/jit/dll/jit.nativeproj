@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+
+  <!-- Import the CLR's settings -->
+
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+
+  <PropertyGroup Label="Globals">
+    <SccProjectName>SAK</SccProjectName>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+
+  <PropertyGroup>
+
+    <!-- Set the output -->
+
+    <OutputName>clrjit</OutputName>
+    <TargetType Condition="'$(FeatureMergeJitAndEngine)'=='true'">LIBRARY</TargetType>
+    <TargetType Condition="'$(FeatureMergeJitAndEngine)'!='true'">DYNLINK</TargetType>
+    <FileToMarkForSigning>$(BinariesDirectory)\clrjit.dll</FileToMarkForSigning>
+    <StaticLinkJit>false</StaticLinkJit>
+    <BuildCoreBinaries>true</BuildCoreBinaries>
+    <BuildSysBinaries>true</BuildSysBinaries>
+
+    <DllEntryPoint>_DllMainCRTStartup</DllEntryPoint>
+    <LinkSubsystem>windows</LinkSubsystem>
+    <LibCLib Condition="'$(StaticLinkJit)'!='true'">$(ClrCrtLib)</LibCLib>
+    <LinkUseDefaultLib>false</LinkUseDefaultLib>
+
+    <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
+
+    <ClDefines Condition="'$(BuildArchitecture)' == 'amd64'">$(ClDefines);FEATURE_SIMD</ClDefines>
+
+    <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>
+    <Win32DllLibs>$(Win32DllLibs);$(ClrLibPath)\utilcode.lib</Win32DllLibs>
+
+    <!-- Profile-guided optimization -->
+
+    <PogoOptimize Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm')">false</PogoOptimize>
+    <PogoInstrument Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoInstrument>
+    <PogoUpdate Condition="('$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm') and ('$(_BuildType)' == 'ret') and ('$(BuildProjectName)' == '')">true</PogoUpdate>
+    <Win32DllLibs Condition="'$(PogoInstrument)' == 'true' and '$(BuildArchitecture)' == 'amd64'">$(Win32DllLibs);$(CrtLibPath)\pgort.lib</Win32DllLibs>
+    <Win32DllLibs Condition="'$(PogoInstrument)' == 'true' and '$(BuildArchitecture)' == 'arm'">$(Win32DllLibs);$(CrtLibPath)\pgort.lib;$(SdkLibPath)\ntdll.lib</Win32DllLibs>
+    <OptimizationDataRelativeDir>$(_BuildArch)\CLR\Base</OptimizationDataRelativeDir>
+
+    <!-- Do we want to build with msvcdis disassembly capability? This should be enabled for DEBUG, disabled otherwise.
+         However, it can be useful for debugging purposes, such as generating assembly diffs between CHK and RET JITs,
+         to enable it temporarily in non-DEBUG builds, by forcing the EnableLateDisasm property to 'true'.
+    -->
+    <EnableLateDisasm Condition="'$(DebugBuild)' == 'true' and '$(BuildArchitecture)' != 'arm' and '$(BuildProjectName)' != 'CoreSys'">true</EnableLateDisasm>
+    <!--
+    <EnableLateDisasm Condition="'$(BuildArchitecture)' != 'arm' and '$(BuildProjectName)' != 'CoreSys'">true</EnableLateDisasm>
+    -->
+    <ClDefines Condition="'$(EnableLateDisasm)' == 'true'">$(ClDefines);LATE_DISASM=1</ClDefines>
+    <LinkDelayLoad Condition="'$(EnableLateDisasm)' == 'true'">$(LinkDelayLoad);msvcdis$(VC_NONCRT_ProdVerX).dll</LinkDelayLoad>
+    <UseDelayimpLib Condition="'$(EnableLateDisasm)' == 'true' and '$(FeatureMergeJitAndEngine)'!='true'">true</UseDelayimpLib>
+
+    <!-- Disable merge of text and rdata for DevDiv:696146-->
+    <LinkMergeRData Condition="'$(BuildArchitecture)'=='i386'">false</LinkMergeRData>
+  </PropertyGroup>
+
+  <!-- Leaf Project Items -->
+
+  <ItemGroup>
+    <ProjectReference Include="$(ClrSrcDirectory)utilcode\dyncrt\dyncrt.nativeproj" />
+    <TargetLib Include="$(SdkLibPath)\mscoree.lib" />
+    <TargetLib Condition="'$(BuildArchitecture)'!='i386'" Include="$(ClrLibPath)\gcinfo.lib">
+      <ProjectReference>$(ClrSrcDirectory)gcinfo\lib\gcinfo.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(UseDelayimpLib)' == 'true'" Include="$(ClrLibPath)\delayimp.lib">
+      <ProjectReference>$(ClrSrcDirectory)delayimp\delayimp.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(DebugBuild)' == 'true'" Include="$(ClrLibPath)\gcdump.lib">
+      <ProjectReference>$(ClrSrcDirectory)gcdump\lib\gcdump.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(DebugBuild)' == 'true'" Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Condition="'$(EnableLateDisasm)' == 'true'" Include="$(VCToolsLibPath)\msvcdis.lib" />
+    <RCResourceFile Include="..\native.rc" />
+  </ItemGroup>
+
+  <Import Project="..\jit.settings.targets" />
+
+</Project>

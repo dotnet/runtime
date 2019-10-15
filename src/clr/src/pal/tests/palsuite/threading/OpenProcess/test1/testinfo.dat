@@ -1,0 +1,19 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = OpenProcess
+Name = Test for OpenProcess
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = childprocess
+Description 
+= Test to ensure proper operation of the OpenProcess API.
+= The test launches a trivial child process, then opens
+= a handle to it using OpenProcess. It uses that handle
+= to wait for the child process to terminate, and then
+= checks the exit code of the child process in order to
+= verify that it was in fact a handle to the correct
+= process.

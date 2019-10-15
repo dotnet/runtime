@@ -1,0 +1,242 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace JIT.HardwareIntrinsics.X86
+{
+    public static partial class Program
+    {
+        private static void {Method}{RetBaseType}()
+        {
+            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using Unsafe.ReadUnaligned
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a static member works
+                test.RunClsVarScenario();
+
+                // Validates passing a local works, using Unsafe.ReadUnaligned
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class ScalarBinaryOpTest__{Method}{RetBaseType}
+    {
+        private struct TestStruct
+        {
+            public {Op1BaseType} _fld1;
+            public {Op2BaseType} _fld2;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                testStruct._fld1 = {NextValueOp1};
+                testStruct._fld2 = {NextValueOp2};
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(ScalarBinaryOpTest__{Method}{RetBaseType} testClass)
+            {
+                var result = {Isa}.{Method}(_fld1, _fld2);
+                testClass.ValidateResult(_fld1, _fld2, result);
+            }
+        }
+
+        private static {Op1BaseType} _data1;
+        private static {Op2BaseType} _data2;
+
+        private static {Op1BaseType} _clsVar1;
+        private static {Op2BaseType} _clsVar2;
+
+        private {Op1BaseType} _fld1;
+        private {Op2BaseType} _fld2;
+
+        static ScalarBinaryOpTest__{Method}{RetBaseType}()
+        {
+            _clsVar1 = {NextValueOp1};
+            _clsVar2 = {NextValueOp2};
+        }
+
+        public ScalarBinaryOpTest__{Method}{RetBaseType}()
+        {
+            Succeeded = true;
+
+            _fld1 = {NextValueOp1};
+            _fld2 = {NextValueOp2};
+
+            _data1 = {NextValueOp1};
+            _data2 = {NextValueOp2};
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
+                Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+            );
+
+            ValidateResult(_data1, _data2, result);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}), typeof({Op2BaseType}) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
+                                        Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+                                     });
+
+            ValidateResult(_data1, _data2, ({RetBaseType})result);
+        }
+
+        public void RunClsVarScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
+            var result = {Isa}.{Method}(
+                _clsVar1,
+                _clsVar2
+            );
+
+            ValidateResult(_clsVar1, _clsVar2, result);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var data1 = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1));
+            var data2 = Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2));
+            var result = {Isa}.{Method}(data1, data2);
+
+            ValidateResult(data1, data2, result);
+        }
+
+        public void RunClassLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
+            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
+            var result = {Isa}.{Method}(test._fld1, test._fld2);
+
+            ValidateResult(test._fld1, test._fld2, result);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld1, _fld2);
+            ValidateResult(_fld1, _fld2, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, test._fld2);
+
+            ValidateResult(test._fld1, test._fld2, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult({Op1BaseType} left, {Op2BaseType} right, {RetBaseType} result, [CallerMemberName] string method = "")
+        {
+            var isUnexpectedResult = false;
+
+            {ValidateResult}
+
+            if (isUnexpectedResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    left: {left}");
+                TestLibrary.TestFramework.LogInformation($"   right: {right}");
+                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

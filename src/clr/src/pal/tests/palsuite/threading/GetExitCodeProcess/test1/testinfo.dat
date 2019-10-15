@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = GetExitCodeProcess
+Name = Test for GetExitCodeProcess
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = childprocess
+Description 
+= Test to ensure proper operation of the GetExitCodeProcess
+= API. This test launches a simple child process that exits
+= with a known value, and checks that the correct value is
+= returned by the function.

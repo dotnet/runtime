@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = GetSystemTimeAsFileTime
+Name = Positive Test for GetSystemTimeAsFileTime
+TYPE = DEFAULT
+EXE1 = getsystemtimeasfiletime
+Description 
+= Test the GetSystemTimeAsFileTime function.
+= Take two times, three seconds apart, and ensure that the time is 
+= increasing, and that it has increased at least 3 seconds.

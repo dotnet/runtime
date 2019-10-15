@@ -1,0 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = SetCurrentDirectoryA
+Name = Positive test for SetCurrentDirectoryA (test 2)
+Type = DEFAULT
+EXE1 = setcurrentdirectorya
+Description
+= Set the current directory with ../ and verify the results.

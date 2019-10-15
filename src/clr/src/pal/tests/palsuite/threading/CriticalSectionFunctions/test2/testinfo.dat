@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CriticalSectionFunctions
+Name = Positive test to ensure CRITICAL_SECTION objects can be nested
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test that we are able to nest critical section calls.  
+= The initial thread makes a call to EnterCriticalSection once, 
+= blocking on a CRITICAL_SECTION object and creates a new thread.  
+= The newly created thread blocks on the same CRITICAL_SECTION object.
+= The first thread now makes a call to LeaveCriticalSection.
+= Test to see that the new thread doesn't get unblocked.
+

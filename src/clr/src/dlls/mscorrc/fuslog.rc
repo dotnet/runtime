@@ -1,0 +1,59 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+#include "fusres.h"
+
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    ID_FUSLOG_MANIFEST_FAILURE_NO_FILE               L"WRN: Probed manifest path %s. No such file."
+    ID_FUSLOG_MANIFEST_FAILURE_PARSE_ERROR           L"WRN: Probed manifest path %s. Ignored. Syntax error or URI encountered."
+    ID_FUSLOG_MANIFEST_FAILURE_UNKNOWN_ERROR         L"WRN: Probed manifest path %s. Ignored. Unknown error occurred."
+    ID_FUSLOG_MANIFEST_FAILURE_EMPTY_DEFAULT         L"WRN: Using empty default manifest."
+
+    ID_FUSLOG_MANIFEST_STATUS_STATE_CONFIGURED       L"LOG: Using configured manifest from %s."
+    ID_FUSLOG_MANIFEST_STATUS_STATE_INHERITED        L"LOG: Using inherited manifest from %s."
+
+    ID_FUSLOG_ASSEMBLY_STATUS_BOUND_TO_ID            L"LOG: Bound to assembly %s."
+    ID_FUSLOG_ASSEMBLY_STATUS_BOUND_TO_LOCATION      L"LOG: Assembly is picked up from %s."
+    ID_FUSLOG_ASSEMBLY_STATUS_BOUND_GAC              L"LOG: Assembly is picked up from GAC."
+    ID_FUSLOG_ASSEMBLY_STATUS_BOUND_HAS              L"LOG: Assembly is picked up from HAS."
+    ID_FUSLOG_ASSEMBLY_STATUS_BOUND_BYTE_ARRAY       L"LOG: Assembly is picked up from byte array."
+
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_BEGIN           L"=== Pre-bind state information ==="
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_BY_NAME         L"LOG: By-name Bind. Display name = %s"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_BY_NAME_PARTIAL L"WRN: Unsupported partial name Bind. Display name = %s"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_WHERE_REF       L"LOG: Where-ref bind. Codebase = %s"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_CALLER          L"Calling assembly : %s"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_CALLER_UNKNOWN  L"Calling assembly : unknown"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_USER            L"LOG: User = %s"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_USER_UNKNOWN    L"LOG: User = unknown"
+    ID_FUSLOG_BINDING_PRE_BIND_STATE_END             L"==="
+
+    ID_FUSLOG_BINDING_LOCKED_UNLOCKED                L"LOG: Display name not listed in manifest. This is a dynamic bind."
+    ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_EXE_CONTEXT    L"LOG: Execution context locked by already bound assembly. Display name = %s"
+    ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_INS_CONTEXT    L"LOG: Inspection context locked by already bound assembly. Display name = %s"
+    ID_FUSLOG_BINDING_LOCKED_MT_EXE_LOCKED_ENTRY     L"LOG: Execution context locked by manifest. Display name = %s via locked entry."
+    ID_FUSLOG_BINDING_LOCKED_MT_EXE_LOCALI_ENTRY     L"LOG: Execution context locked by manifest. Display name = %s via localizable entry."
+    ID_FUSLOG_BINDING_LOCKED_MT_EXE_CBASE_ENTRY      L"LOG: Execution context locked by manifest. Display name = %s and Codebase = %s."
+    ID_FUSLOG_BINDING_LOCKED_MT_INS_LOCKED_ENTRY     L"LOG: Inspection context locked by manifest. Display name = %s via locked entry."
+    ID_FUSLOG_BINDING_LOCKED_MT_INS_LOCALI_ENTRY     L"LOG: Inspection context locked by manifest. Display name = %s via localizable entry."
+    ID_FUSLOG_BINDING_LOCKED_MT_INS_CBASE_ENTRY      L"LOG: Inspection context locked by manifest. Display name = %s and Codebase = %s."
+    ID_FUSLOG_BINDING_BEHAVIOR_STATIC                L"LOG: Probing GAC for highest service version."
+    ID_FUSLOG_BINDING_BEHAVIOR_ORDER_INDEPENDENT     L"LOG: Probing GAC for order-independent assembly version."
+    ID_FUSLOG_BINDING_BEHAVIOR_BEST_MATCH            L"LOG: Probing GAC for best-matching assembly version."
+
+    ID_FUSLOG_BINDING_LOG_WHERE_REF_NAME             L"LOG: Display name in codebase = "
+    ID_FUSLOG_BINDING_LOG_NATIVE_ACTIVATION          L"LOG: Mixed-mode assembly bind via native activation. No servicing is possible."
+    ID_FUSLOG_BINDING_LOG_INSPECTION_ONLY_BIND       L"LOG: Inspection-only bind."
+    ID_FUSLOG_BINDING_LOG_RETARGETED                 L"LOG: Retarget: %s retargeted to %s"
+    ID_FUSLOG_BINDING_LOG_ERRONOUS_MANIFEST_ENTRY    L"LOG: Erronous manifest entry. Declared as %s but found %s"
+    ID_FUSLOG_BINDING_LOG_PATH_ATTEMPT               L"LOG: Attempting path %s"
+
+    ID_FUSLOG_BINDING_HEADER_BEGIN                   L"*** Assembly Binder Log Entry  %s ***"
+    ID_FUSLOG_BINDING_HEADER_BIND_RESULT             L"Bind result: hr = %s"
+    ID_FUSLOG_BINDING_HEADER_BIND_RESULT_SUCCESS     L"The operation was successful."
+    ID_FUSLOG_BINDING_HEADER_BIND_RESULT_ERROR       L"The operation failed."
+    ID_FUSLOG_BINDING_HEADER_END                     L"--- A detailed log follows."
+END
+

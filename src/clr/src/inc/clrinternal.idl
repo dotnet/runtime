@@ -1,0 +1,296 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/**************************************************************************************
+ **                                                                                  **
+ ** clrinternal.idl - interface definitions for internal usage.                      **
+ **                                                                                  **
+ **************************************************************************************/
+
+//
+// Interface descriptions
+//
+import "unknwn.idl";
+
+// import mscoree.idl for BucketParameters definition
+import "mscoree.idl";
+
+
+
+cpp_quote("#if 0")
+
+typedef struct _OSVERSIONINFOA {
+    DWORD dwOSVersionInfoSize;
+    DWORD dwMajorVersion;
+    DWORD dwMinorVersion;
+    DWORD dwBuildNumber;
+    DWORD dwPlatformId;
+    CHAR   szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+} OSVERSIONINFOA, *POSVERSIONINFOA, *LPOSVERSIONINFOA;
+
+typedef struct _OSVERSIONINFOW {
+    DWORD dwOSVersionInfoSize;
+    DWORD dwMajorVersion;
+    DWORD dwMinorVersion;
+    DWORD dwBuildNumber;
+    DWORD dwPlatformId;
+    WCHAR  szCSDVersion[ 128 ];     // Maintenance string for PSS usage
+} OSVERSIONINFOW, *POSVERSIONINFOW, *LPOSVERSIONINFOW, RTL_OSVERSIONINFOW, *PRTL_OSVERSIONINFOW;
+#ifdef UNICODE
+typedef OSVERSIONINFOW OSVERSIONINFO;
+typedef POSVERSIONINFOW POSVERSIONINFO;
+typedef LPOSVERSIONINFOW LPOSVERSIONINFO;
+#else
+typedef OSVERSIONINFOA OSVERSIONINFO;
+typedef POSVERSIONINFOA POSVERSIONINFO;
+typedef LPOSVERSIONINFOA LPOSVERSIONINFO;
+#endif // UNICODE
+
+cpp_quote("#endif")
+
+// IID IExecutionEngine :     uuid(7AF02DAC-2A33-494b-A09F-25E00A93C6F8)
+cpp_quote("EXTERN_GUID(IID_IExecutionEngine, 0x7AF02DAC, 0x2A33, 0x494b, 0xA0, 0x9F, 0x25, 0xE0, 0x0A, 0x93, 0xC6, 0xF8);")
+
+// IID IEEMemoryManager :     uuid{17713B61-B59F-4e13-BAAF-91623DC8ADC0}
+cpp_quote("EXTERN_GUID(IID_IEEMemoryManager, 0x17713b61, 0xb59f, 0x4e13, 0xba, 0xaf, 0x91, 0x62, 0x3d, 0xc8, 0xad, 0xc0);")
+
+// This ID is embedded in the CLRDEBUGINFO resource so that the shim can differentiate dlls which happen to be named
+// clr.dll from official Microsoft clr.dll implementations. This is not intended to authenticate a CLR in a strong
+// security sense but short of deliberate 3rd party spoofing it should provide a good identity.
+//
+// Using a different ID allows us to completely hide different CLR SKUs from each other. The recommendation is to keep
+// the ID contant between different versions of the same SKU and use mscordbi's logic to determine whether a given
+// version is compatible. This allows debuggers to give different errors for 'future version of the CLR I don't
+// support' vs. 'No CLR is loaded at all.' 
+// 
+// This guid first appears in version 4.0 of CLR on x86 and amd64 - earlier versions had no resource
+// GUID CLR_ID_V4_DESKTOP :   uuid{267F3989-D786-4b9a-9AF6-D19E42D557EC}
+cpp_quote("EXTERN_GUID(CLR_ID_V4_DESKTOP, 0x267f3989, 0xd786, 0x4b9a, 0x9a, 0xf6, 0xd1, 0x9e, 0x42, 0xd5, 0x57, 0xec);")
+
+// This guid has been set aside for CoreCLR usage - at present CoreCLR doesn't use it though
+// GUID CLR_ID_CORECLR :   uuid{8CB8E075-0A91-408E-9228-D66E00A3BFF6}
+cpp_quote("EXTERN_GUID(CLR_ID_CORECLR, 0x8CB8E075, 0x0A91, 0x408E, 0x92, 0x28, 0xD6, 0x6E, 0x00, 0xA3, 0xBF, 0xF6 );")
+
+// This guid first appears in the CoreCLR port to Windows Phone 8 - note that it is seperate from the CoreCLR id because it will
+// potentially have a different verioning lineage than CoreCLR
+// GUID CLR_ID_PHONE_CLR :   uuid{E7237E9C-31C0-488C-AD48-324D3E7ED92A}
+cpp_quote("EXTERN_GUID(CLR_ID_PHONE_CLR, 0xE7237E9C, 0x31C0, 0x488C, 0xAD, 0x48, 0x32, 0x4D, 0x3E, 0x7E, 0xD9, 0x2A);")
+
+// This guid first appears 8/19/14 as CoreCLR evolves to OneCore, ProjectK, and versions of Phone after PhoneBlue
+// The new guid intentionally creates a breaking change so we can simplify the file naming on mscordaccore.dll and mscordbi.dll
+// in xplat hosting scenarios. Old versions of dbgshim.dll will not be able to support this.
+// GUID CLR_ID_ONECORE_CLR :    uuid{B1EE760D-6C4A-4533-BA41-6F4F661FABAF}
+cpp_quote("EXTERN_GUID(CLR_ID_ONECORE_CLR, 0xb1ee760d, 0x6c4a, 0x4533, 0xba, 0x41, 0x6f, 0x4f, 0x66, 0x1f, 0xab, 0xaf);")
+
+
+// IID_IPrivateManagedExceptionReporting :     uuid{AD76A023-332D-4298-8001-07AA9350DCA4}
+cpp_quote("EXTERN_GUID(IID_IPrivateManagedExceptionReporting, 0xad76a023, 0x332d, 0x4298, 0x80, 0x01, 0x07, 0xaa, 0x93, 0x50, 0xdc, 0xa4);")
+
+
+//*****************************************************************************
+// Interface for exposing services from the EE to other DLLs of the CLR.
+//*****************************************************************************
+typedef void * CRITSEC_COOKIE;
+typedef void * EVENT_COOKIE;
+typedef void * SEMAPHORE_COOKIE;
+typedef void * MUTEX_COOKIE;
+
+typedef enum {
+    CRST_DEFAULT          = 0x0,
+    CRST_REENTRANCY       = 0x1,  // allow same thread to take lock multiple times.
+    CRST_UNSAFE_SAMELEVEL = 0x2,  // AVOID THIS! Can take other locks @ same level in
+                                  //             any order.
+    CRST_UNSAFE_COOPGC    = 0x4,  // AVOID THIS! Lock must be taken in cooperative mode.
+    CRST_UNSAFE_ANYMODE   = 0x8,  // AVOID THIS! Lock can be taken in either GC mode.
+    CRST_DEBUGGER_THREAD  = 0x10, // This lock can be taken on the debugger's helper thread.
+    CRST_HOST_BREAKABLE   = 0x20, // This lock is held while running managed code.  It can be terminated by a host.
+    // CRST_UNUSED        = 0x40,
+    CRST_TAKEN_DURING_SHUTDOWN = 0x80, // This lock is taken during the shutdown sequence in EEShutdown(helper)
+    CRST_GC_NOTRIGGER_WHEN_TAKEN = 0x100, 
+        // User of this lock cannot trigger GC, while it is locked.
+        // Note that Enter on this lock can trigger GC if called from COOPERATIVE mode.
+        // It is useful for locks which can be taken on GC or debugger threads.
+    CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD = 0x200,
+        // Some rare locks should be taken only in ForbidSuspend region (i.e. profiler cannot walk the stack), 
+        // this option will assert it in debug mode.
+} CrstFlags;
+
+// Callback function for cleaning up TLS
+typedef VOID (__stdcall *PTLS_CALLBACK_FUNCTION)(PVOID);
+
+
+[
+    uuid(7AF02DAC-2A33-494b-A09F-25E00A93C6F8),
+    helpstring("CLR Coordination Interface"),
+    pointer_default(unique),
+    local
+]
+interface IExecutionEngine : IUnknown
+{
+    // Thread Local Storage is based on logical threads.  The underlying
+    // implementation could be threads, fibers, or something more exotic.
+    // Slot numbers are predefined.  This is not a general extensibility
+    // mechanism.
+
+    // Associate a callback function for releasing TLS on thread/fiber death.
+    // This can be NULL.
+    void TLS_AssociateCallback([in] DWORD slot, [in] PTLS_CALLBACK_FUNCTION callback);
+
+    // Get the TLS block for fast Get/Set operations
+    PVOID* TLS_GetDataBlock();
+
+    // Get the value at a slot
+    PVOID TLS_GetValue([in] DWORD slot);
+
+    // Get the value at a slot, return FALSE if TLS info block doesn't exist
+    BOOL TLS_CheckValue([in] DWORD slot, [out] PVOID * pValue);
+
+    // Set the value at a slot
+    void TLS_SetValue([in] DWORD slot, [in] PVOID pData);
+
+    // Free TLS memory block and make callback
+    void TLS_ThreadDetaching();
+
+    // Critical Sections are sometimes exposed to the host and therefore need to be
+    // reflected from all CLR DLLs to the EE.
+    //
+    // In addition, we always monitor interactions between the lock & the GC, based
+    // on the GC mode in which the lock is acquired and we restrict what operations
+    // are permitted while holding the lock based on this.
+    //
+    // Finally, we we rank all our locks to prevent deadlock across all the DLLs of
+    // the CLR.  This is the level argument to CreateLock.
+    //
+    // All usage of these locks must be exception-safe.  To achieve this, we suggest
+    // using Holders (see holder.h & crst.h).  In fact, within the EE code cannot
+    // hold locks except by using exception-safe holders.
+
+    CRITSEC_COOKIE CreateLock([in] LPCSTR szTag, [in] LPCSTR level, [in] CrstFlags flags);
+
+    void DestroyLock([in] CRITSEC_COOKIE lock);
+
+    void AcquireLock([in] CRITSEC_COOKIE lock);
+
+    void ReleaseLock([in] CRITSEC_COOKIE lock);
+
+    EVENT_COOKIE CreateAutoEvent([in] BOOL bInitialState);
+    EVENT_COOKIE CreateManualEvent([in] BOOL bInitialState);
+    void CloseEvent([in] EVENT_COOKIE event);
+    BOOL ClrSetEvent([in] EVENT_COOKIE event);
+    BOOL ClrResetEvent([in] EVENT_COOKIE event);
+    DWORD WaitForEvent([in] EVENT_COOKIE event, [in] DWORD dwMilliseconds, [in] BOOL bAlertable);
+    DWORD WaitForSingleObject([in] HANDLE handle, [in] DWORD dwMilliseconds);
+
+    // OS header file defines CreateSemaphore.
+    SEMAPHORE_COOKIE ClrCreateSemaphore([in] DWORD dwInitial, [in] DWORD dwMax);
+    void ClrCloseSemaphore([in] SEMAPHORE_COOKIE semaphore);
+    DWORD ClrWaitForSemaphore([in] SEMAPHORE_COOKIE semaphore, [in] DWORD dwMilliseconds, [in] BOOL bAlertable);
+    BOOL ClrReleaseSemaphore([in] SEMAPHORE_COOKIE semaphore, [in] LONG lReleaseCount, [in] LONG *lpPreviousCount);
+
+    MUTEX_COOKIE ClrCreateMutex([in]LPSECURITY_ATTRIBUTES lpMutexAttributes, [in]BOOL bInitialOwner, [in]LPCTSTR lpName);
+    DWORD ClrWaitForMutex([in] MUTEX_COOKIE mutex, [in] DWORD dwMilliseconds, [in] BOOL bAlertable);
+    BOOL ClrReleaseMutex([in] MUTEX_COOKIE mutex);
+    void ClrCloseMutex([in] MUTEX_COOKIE mutex);
+
+    DWORD ClrSleepEx([in] DWORD dwMilliseconds, [in] BOOL bAlertable);
+
+    BOOL ClrAllocationDisallowed();
+
+    void GetLastThrownObjectExceptionFromThread([out] void **ppvException);
+
+};  // interface IExecutionEngine
+
+
+//*****************************************************************************
+// Interface for exposing memory services from the EE to other DLLs of the CLR.
+//*****************************************************************************
+
+cpp_quote("#if !defined(_WINNT_) && !defined(_NTMMAPI_)")
+typedef void* PMEMORY_BASIC_INFORMATION;
+cpp_quote("#endif")
+
+
+[
+    uuid(17713B61-B59F-4e13-BAAF-91623DC8ADC0),
+    helpstring("CLR Memory Manager Interface"),
+    pointer_default(unique),
+    local
+]
+interface IEEMemoryManager : IUnknown
+{
+    LPVOID ClrVirtualAlloc(
+        [in] LPVOID lpAddress,        // region to reserve or commit
+        [in] SIZE_T dwSize,           // size of region
+        [in] DWORD flAllocationType,  // type of allocation
+        [in] DWORD flProtect          // type of access protection
+    );
+
+    BOOL ClrVirtualFree(
+        [in] LPVOID lpAddress,   // address of region
+        [in] SIZE_T dwSize,      // size of region
+        [in] DWORD dwFreeType    // operation type
+    );
+
+    SIZE_T ClrVirtualQuery(
+        [in] const void* lpAddress,                    // address of region
+        [in] PMEMORY_BASIC_INFORMATION lpBuffer,  // information buffer
+        [in] SIZE_T dwLength                      // size of buffer
+    );
+
+    BOOL ClrVirtualProtect(
+        [in] LPVOID lpAddress,       // region of committed pages
+        [in] SIZE_T dwSize,          // size of the region
+        [in] DWORD flNewProtect,     // desired access protection
+        [in] DWORD* lpflOldProtect   // old protection
+    );
+
+    HANDLE ClrGetProcessHeap();
+
+    HANDLE ClrHeapCreate(
+        [in] DWORD flOptions,       // heap allocation attributes
+        [in] SIZE_T dwInitialSize,  // initial heap size
+        [in] SIZE_T dwMaximumSize   // maximum heap size
+    );
+
+    BOOL ClrHeapDestroy(
+        [in] HANDLE hHeap   // handle to heap
+    );
+
+    LPVOID ClrHeapAlloc(
+        [in] HANDLE hHeap,   // handle to private heap block
+        [in] DWORD dwFlags,  // heap allocation control
+        [in] SIZE_T dwBytes  // number of bytes to allocate
+    );
+
+    BOOL ClrHeapFree(
+        [in] HANDLE hHeap,  // handle to heap
+        [in] DWORD dwFlags, // heap free options
+        [in] LPVOID lpMem   // pointer to memory
+    );
+
+    BOOL ClrHeapValidate(
+        [in] HANDLE hHeap,  // handle to heap
+        [in] DWORD dwFlags, // heap access options
+        [in] const void* lpMem   // optional pointer to memory block
+    );
+
+    HANDLE ClrGetProcessExecutableHeap();
+
+};  // interface IEEMemoryManager
+
+//********************************************************************************************
+// Interface for exposing GetBucketParametersForCurrentException to Watson testing harness.
+//********************************************************************************************
+[
+    uuid(AD76A023-332D-4298-8001-07AA9350DCA4),
+    helpstring("Private Managed Exception Reporting Interface"),
+    pointer_default(unique),
+    local
+]
+interface IPrivateManagedExceptionReporting : IUnknown
+{
+    HRESULT GetBucketParametersForCurrentException([out]BucketParameters *pParams);
+}
+
+

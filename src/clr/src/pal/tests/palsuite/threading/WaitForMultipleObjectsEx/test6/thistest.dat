@@ -1,0 +1,2 @@
+
+PAL,threading,palsuite\threading\waitformultipleobjectsex\test6,Test6forWaitForMultipleObjectsEx=test6.c child6.c,<SUPPORTEXE>

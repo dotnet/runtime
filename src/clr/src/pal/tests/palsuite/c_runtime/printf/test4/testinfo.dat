@@ -1,0 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = printf
+Name = Positive Test for printf
+TYPE = DEFAULT
+EXE1 = test4
+Description
+= Tests printf with pointers

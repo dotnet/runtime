@@ -1,0 +1,313 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/*****************************************************************************
+ **                                                                         **
+ ** clrdata.idl - Common Language Runtime data access interfaces for         **
+ **              clients needing to access runtime state from outside       **
+ **              runtime, such as out-of-process debuggers.                 **
+ **                                                                         **
+ ** The access interface defines two different types of code running:       **
+ ** The host is the user of the access interface.                           **
+ ** The target is the target of the access.                                 **
+ **                                                                         **
+ ** The host and target can be have different instruction sets,             **
+ ** pointer sizes, runtime versions and so on.                              **
+ **                                                                         **
+ *****************************************************************************/
+
+import "unknwn.idl";
+
+/* ------------------------------------------------------------------------- *
+ * Forward declarations.
+ * ------------------------------------------------------------------------- */
+
+interface ICLRDataEnumMemoryRegions;
+interface ICLRDataEnumMemoryRegionsCallback;
+interface ICLRDataEnumMemoryRegionsCallback2;
+interface ICLRDataTarget;
+interface ICLRDataTarget2;
+interface ICLRMetadataLocator;
+
+/*
+ * Addresses in the access interface are always the largest possible.
+ * If the target uses a smaller address size then addresses are converted
+ * up by sign extension.
+ */
+typedef ULONG64 CLRDATA_ADDRESS;
+
+/* ------------------------------------------------------------------------- *
+ * Creation function.
+ * Can create ICLRDataEnumMemoryRegions.
+ * ------------------------------------------------------------------------- */
+
+#pragma midl_echo("STDAPI CLRDataCreateInstance(REFIID iid, ICLRDataTarget* target, void** iface);")
+#pragma midl_echo("typedef HRESULT (STDAPICALLTYPE* PFN_CLRDataCreateInstance)(REFIID iid, ICLRDataTarget* target, void** iface);")
+
+/*
+ * Interface for providing access to a particular target process. The
+ * data access services will call functions on this interface to
+ * access memory and other data in the target process.
+ *
+ * The API client must implement this interface as appropriate for the
+ * particular target (for example, a live process or a memory dump).
+ *
+ */
+[
+    object,
+    local,
+    uuid(3E11CCEE-D08B-43e5-AF01-32717A64DA03),
+    pointer_default(unique)
+]
+interface ICLRDataTarget : IUnknown
+{
+    /*
+     * Return which kind of instruction set is in use in the
+     * target.  Value is one of the IMAGE_FILE_MACHINE_* constants.
+     */
+    HRESULT GetMachineType([out] ULONG32* machineType);
+
+    /*
+     * Return the size of a pointer on the target, in bytes.
+     */
+    HRESULT GetPointerSize([out] ULONG32* pointerSize);
+
+    /*
+     * Find the base address for a given image.
+     * Image name may or may not have a path.  If a path
+     * is given matching is done with the whole path, otherwise
+     * matching is done only on the file part.
+     * In either case, matching should be case-insensitive.
+     */
+    HRESULT GetImageBase([in, string] LPCWSTR imagePath,
+                         [out] CLRDATA_ADDRESS* baseAddress);
+
+    /*
+     * Virtual memory access.  If any bytes can be processed
+     * the call is considered successful.
+     */
+    HRESULT ReadVirtual([in] CLRDATA_ADDRESS address,
+                        [out, size_is(bytesRequested), length_is(*bytesRead)] BYTE* buffer,
+                        [in] ULONG32 bytesRequested,
+                        [out] ULONG32* bytesRead);
+    HRESULT WriteVirtual([in] CLRDATA_ADDRESS address,
+                         [in, size_is(bytesRequested)] BYTE* buffer,
+                         [in] ULONG32 bytesRequested,
+                         [out] ULONG32* bytesWritten);
+
+    /*
+     * TLS data access for the current thread.
+     */
+    HRESULT GetTLSValue([in] ULONG32 threadID,
+                        [in] ULONG32 index,
+                        [out] CLRDATA_ADDRESS* value);
+    HRESULT SetTLSValue([in] ULONG32 threadID,
+                        [in] ULONG32 index,
+                        [in] CLRDATA_ADDRESS value);
+
+    /*
+     * System ID for the current thread.
+     * If there is no "current" thread for the target
+     * implementation this can fail.
+     */
+    HRESULT GetCurrentThreadID([out] ULONG32* threadID);
+    
+    /*
+     * Thread context.
+     */
+    HRESULT GetThreadContext([in] ULONG32 threadID,
+                             [in] ULONG32 contextFlags,
+                             [in] ULONG32 contextSize,
+                             [out, size_is(contextSize)] BYTE* context);
+    HRESULT SetThreadContext([in] ULONG32 threadID,
+                             [in] ULONG32 contextSize,
+                             [in, size_is(contextSize)] BYTE* context);
+
+    /*
+     * Generic request facility to allow addition of
+     * queries and operations without requiring an interface revision.
+     */
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+};
+
+/*
+ * Interface used by the data access services layer to manipulate 
+ * virtual memory regions in the target. The target may not support
+ * modification.
+ */
+[
+    object,
+    local,
+    uuid(6d05fae3-189c-4630-a6dc-1c251e1c01ab),
+    pointer_default(unique)
+]
+interface ICLRDataTarget2 : ICLRDataTarget
+{
+    /*
+     * Ask the target to allocate memory in its address space.
+     */
+    HRESULT AllocVirtual([in] CLRDATA_ADDRESS addr,
+                         [in] ULONG32 size,
+                         [in] ULONG32 typeFlags,
+                         [in] ULONG32 protectFlags,
+                         [out] CLRDATA_ADDRESS* virt);
+
+    /*
+     * Ask the target to free a previously allocated memory block.
+     */
+    HRESULT FreeVirtual([in] CLRDATA_ADDRESS addr,
+                        [in] ULONG32 size,
+                        [in] ULONG32 typeFlags);
+};
+
+/*
+ * Interface for providing access to exception and context records.
+ */
+[
+    object,
+    local,
+    uuid(a5664f95-0af4-4a1b-960e-2f3346b4214c),
+    pointer_default(unique)
+]
+interface ICLRDataTarget3 : ICLRDataTarget2
+{
+    /*
+     * Returns an associated exception record, if any.
+     */
+    HRESULT GetExceptionRecord([in] ULONG32 bufferSize,
+    [out] ULONG32* bufferUsed,
+    [out, size_is(bufferSize)] BYTE* buffer);
+
+    /*
+     * Returns a context record associated with the exception, if any.
+     */
+    HRESULT GetExceptionContextRecord([in] ULONG32 bufferSize,
+        [out] ULONG32* bufferUsed,
+        [out, size_is(bufferSize)] BYTE* buffer);
+
+    /*
+     * Returns the ID of the thread raising the exception.
+     */
+    HRESULT GetExceptionThreadID([out] ULONG32* threadID);
+};
+
+/*
+ * Interface used by the data access services layer to locate metadata 
+ * of assemblies in a target. 
+ *
+ * The API client must implement this interface as appropriate for the
+ * particular target (for example, a live process or a memory dump).
+ *
+ * This is an old interface you should not be using.
+ * see code:ICorDebugMetaDataLocator in cordebug.idl
+ *
+ */
+[
+    object,
+    local,
+    uuid(aa8fa804-bc05-4642-b2c5-c353ed22fc63),
+    pointer_default(unique)
+]
+interface ICLRMetadataLocator : IUnknown
+{
+    /*
+     * Ask the target to retrieve metadata for an image.  
+     */
+    HRESULT GetMetadata([in] LPCWSTR imagePath,
+                        [in] ULONG32 imageTimestamp,
+                        [in] ULONG32 imageSize,
+                        [in] GUID* mvid,
+                        [in] ULONG32 mdRva,
+                        [in] ULONG32 flags,
+                        [in] ULONG32 bufferSize,
+                        [out, size_is(bufferSize), length_is(*dataSize)]
+                        BYTE* buffer,
+                        [out] ULONG32* dataSize);
+};
+
+
+/*
+ * Callback interface for enumerating memory regions.
+ */
+[
+    object,
+    local,
+    uuid(BCDD6908-BA2D-4ec5-96CF-DF4D5CDCB4A4)
+]
+interface ICLRDataEnumMemoryRegionsCallback : IUnknown
+{
+    /*
+     * ICLRDataEnumMemoryRegions::EnumMemoryRegions will call this
+     * function for every memory region enumerated.  Regions reported
+     * through this callback may be duplicate or overlapping.  Failure
+     * return results will be noted, but will not stop the
+     * enumeration.
+     */
+    HRESULT EnumMemoryRegion([in] CLRDATA_ADDRESS address,
+                             [in] ULONG32 size);
+}
+
+/*
+ * Callback interface for writing/poisoning memory regions.
+ */
+[
+    object,
+    local,
+    uuid(3721A26F-8B91-4D98-A388-DB17B356FADB)
+]
+interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
+{
+    /*
+     * ICLRDataEnumMemoryRegions::EnumMemoryRegions will call this function
+     * for every memory regions it needs to overwrite/poison with the specified 
+     * data buffer passed as input argument. 
+     */
+    HRESULT UpdateMemoryRegion(
+        [in] CLRDATA_ADDRESS address,
+        [in] ULONG32 bufferSize,
+        [in, size_is(bufferSize)] BYTE* buffer);
+}
+
+/*
+ * Flags for controlling which memory regions are enumerated.
+ */
+typedef enum CLRDataEnumMemoryFlags
+{
+    CLRDATA_ENUM_MEM_DEFAULT = 0x0,
+    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,       // generating skinny mini-dump    
+    CLRDATA_ENUM_MEM_HEAP = 0x1,        // generating heap dump
+    CLRDATA_ENUM_MEM_TRIAGE = 0x2,      // generating triage mini-dump
+    
+    /* More bits to be added here later */
+} CLRDataEnumMemoryFlags;
+
+/*
+ * Memory enumeration interface.
+ * This is one of the top-level interfaces creatable by CLRDataCreateInstance.
+ */
+[
+    object,
+    local,
+    uuid(471c35b4-7c2f-4ef0-a945-00f8c38056f1)
+]
+interface ICLRDataEnumMemoryRegions : IUnknown
+{
+    /*
+     * EnumMemoryRegions enumerates regions of interest as specified
+     * by the flags argument by calling the
+     * ICLRDataEnumMemoryRegionsCallback::EnumMemoryRegion for every
+     * region being enumerated.  Attempts to enumerate as many regions
+     * as possible, even if the callback returns failures during
+     * enumeration.
+     */
+    HRESULT EnumMemoryRegions([in] ICLRDataEnumMemoryRegionsCallback *callback,
+                              [in] ULONG32 miniDumpFlags,
+                              [in] CLRDataEnumMemoryFlags clrFlags);
+}
+

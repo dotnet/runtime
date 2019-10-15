@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="Directory.Build.props" />
+
+  <ItemGroup>
+    <Project Include="src\dirs.proj" />
+  </ItemGroup>
+
+  <Import Project="Directory.Build.targets" />
+
+  <Import Project="dir.traversal.targets" />
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      BatchRestorePackages;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)scripts\scripts.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\targeting_pack_ref\targeting_pack_ref.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_dependencies\test_dependencies.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_runtime\test_runtime.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+roslyn\benchmark+roslyn.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+serialize\benchmark+serialize.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark\benchmark.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+intrinsic\benchmark+intrinsic.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\performance\performance.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\external\external.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\ilasm\ilasm.ilproj" />
+  </ItemGroup>
+
+  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
+    <Message Text="Building Targeting Pack" Importance="High" />
+    <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.csproj"
+             Targets="Build" />
+  </Target>
+
+  <Target Name="BatchRestorePackages" Condition="$(__SkipPackageRestore) != 'true'">
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+
+    <!-- restore all csproj's with PackageReferences in one pass -->
+    <MSBuild Projects="build.proj"
+             Properties="RestoreProj=%(RestoreProjects.Identity)"
+             Targets="RestorePackage" />
+
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
+  </Target>
+
+  <Target Name="RestorePackage">
+    <PropertyGroup>
+      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
+      <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
+      <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
+    </PropertyGroup>
+    <Exec Command="$(DotnetRestoreCommand)"/>
+  </Target>
+
+  <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
+  <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
+</Project>

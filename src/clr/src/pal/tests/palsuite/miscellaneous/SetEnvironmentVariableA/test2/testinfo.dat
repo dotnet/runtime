@@ -1,0 +1,19 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Miscellaneous
+Function = SetEnvironmentVariableA
+Name = Return value test of SetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Test to see that passing NULL to the first param fails.
+= Test that passing NULL to both params fails.
+= Set an environment variable, then pass NULL to the second param
+= to delete it.  Then make the same call again, to check that it fails.
+
+
+
+

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ctest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="itest1.csproj" />
+    <ProjectReference Include="itest2.csproj" />
+    <ProjectReference Include="itest3.csproj" />
+    <ProjectReference Include="itest4.csproj" />
+    <ProjectReference Include="itest5.csproj" />
+    <ProjectReference Include="itest6.csproj" />
+    <ProjectReference Include="itest7.csproj" />
+    <ProjectReference Include="itest8.csproj" />
+    <ProjectReference Include="itest9.csproj" />
+    <ProjectReference Include="itest10.csproj" />
+  </ItemGroup>
+</Project>

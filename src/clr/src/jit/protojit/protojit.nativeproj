@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+
+  <!--
+      PROTO JIT: The purpose of this module is to provide an isolated environment to develop
+      the RyuJIT backend without interfering with the development of the frontend.  The
+      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so 
+      it can be still consumed by the RyuJIT frontend separately maintaining the code stability 
+      of the PUCLR codegen.cpp logic.
+
+      This module is meant to be a 'development' JIT, i.e. try to use the generated code by this JIT
+      and in case something goes wrong, fallback to the default JIT.
+  -->
+
+  <!-- Import the CLR's settings -->
+
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+
+  <PropertyGroup>
+
+    <!-- Set the output -->
+
+    <OutputName>protojit</OutputName>
+    <StaticLinkJit>$(FeatureMergeJitAndEngine)</StaticLinkJit>    
+    <FeatureMergeJitAndEngine>false</FeatureMergeJitAndEngine>
+    <TargetType>DYNLINK</TargetType>
+    <FileToMarkForSigning>$(BinariesDirectory)\protojit.dll</FileToMarkForSigning>
+    <BuildCoreBinaries>false</BuildCoreBinaries>
+    <BuildSysBinaries>false</BuildSysBinaries>
+
+    <!-- Motherhood & apple pie here -->
+
+    <DllEntryPoint>_DllMainCRTStartup</DllEntryPoint>
+    <LinkSubsystem>windows</LinkSubsystem>
+    <LibCLib Condition="'$(StaticLinkJit)'!='true'">$(ClrCrtLib)</LibCLib>
+
+    <!-- JIT specific baloney -->
+
+    <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
+
+    <ClDefines>$(ClDefines);ALT_JIT</ClDefines>
+    <ClDefines Condition="'$(BuildArchitecture)' == 'amd64'">$(ClDefines);FEATURE_SIMD</ClDefines>
+
+    <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>
+    <Win32DllLibs>$(Win32DllLibs);$(ClrLibPath)\utilcode.lib</Win32DllLibs>
+
+    <!-- Profile-guided optimization -->
+
+    <PogoOptimize>false</PogoOptimize>
+    <PogoInstrument>false</PogoInstrument>
+    <PogoUpdate>false</PogoUpdate>
+
+    <!-- Do we want to build with msvcdis disassembly capability? This should be enabled for DEBUG, disabled otherwise.
+         However, it can be useful for debugging purposes, such as generating assembly diffs between CHK and RET JITs,
+         to enable it temporarily in non-DEBUG builds, by forcing the EnableLateDisasm property to 'true'.
+    -->
+    <EnableLateDisasm Condition="'$(DebugBuild)' == 'true' and '$(BuildArchitecture)' != 'arm' and '$(BuildForCoreSystem)' != 'true'">true</EnableLateDisasm>
+    <!--
+    <EnableLateDisasm Condition="'$(BuildArchitecture)' != 'arm' and '$(BuildForCoreSystem)' != 'true'">true</EnableLateDisasm>
+    -->
+    <ClDefines Condition="'$(EnableLateDisasm)' == 'true'">$(ClDefines);LATE_DISASM=1</ClDefines>
+    <LinkDelayLoad Condition="'$(EnableLateDisasm)' == 'true'">$(LinkDelayLoad);msvcdis$(VC_NONCRT_ProdVerX).dll</LinkDelayLoad>
+    <UseDelayimpLib Condition="'$(EnableLateDisasm)' == 'true' and '$(FeatureMergeJitAndEngine)'!='true'">true</UseDelayimpLib>
+
+  </PropertyGroup>
+
+  <!-- Leaf Project Items -->
+
+  <ItemGroup>
+    <ProjectReference Include="$(ClrSrcDirectory)utilcode\dyncrt\dyncrt.nativeproj" />
+    <TargetLib Include="$(SdkLibPath)\mscoree.lib" />
+    <TargetLib Condition="'$(BuildArchitecture)'!='i386'" Include="$(ClrLibPath)\gcinfo.lib">
+      <ProjectReference>$(ClrSrcDirectory)gcinfo\lib\gcinfo.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(UseDelayimpLib)' == 'true'" Include="$(ClrLibPath)\delayimp.lib">
+      <ProjectReference>$(ClrSrcDirectory)delayimp\delayimp.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(DebugBuild)' == 'true'" Include="$(ClrLibPath)\gcdump.lib">
+      <ProjectReference>$(ClrSrcDirectory)gcdump\lib\gcdump.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Condition="'$(DebugBuild)' == 'true'" Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Condition="'$(EnableLateDisasm)' == 'true'" Include="$(VCToolsLibPath)\msvcdis.lib" />
+    <RCResourceFile Include="..\native.rc" />
+  </ItemGroup>
+
+  <Import Project="..\jit.settings.targets" />
+
+</Project>

@@ -1,0 +1,91 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for generating command scripts for special GC tests.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+           
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <GCBashScriptExitCode>0</GCBashScriptExitCode>
+        <GCLongGCTestBashScript Condition="'$(IsLongRunningGCTest)' != 'true'"><![CDATA[
+# Long GC script
+if [ ! -z $RunningLongGCTests ]
+then
+    echo "Skipping execution because this is not a long-running GC test"
+    exit $(GCBashScriptExitCode)
+fi
+        ]]></GCLongGCTestBashScript>
+        <GCLongGCTestBashScript Condition="'$(IsLongRunningGCTest)' == 'true'"><![CDATA[
+# Long GC script
+if [ -z $RunningLongGCTests ]
+then
+    echo "Skipping execution because long-running GC tests are not enabled"
+    exit $(GCBashScriptExitCode)
+fi
+        ]]></GCLongGCTestBashScript>
+
+
+        <GCSimulatorTestBashScript Condition="'$(IsGCSimulatorTest)' != 'true'"><![CDATA[
+# GCSimulator script
+if [ ! -z $RunningGCSimulatorTests ]
+then
+    echo "Skipping execution because this is not a GCSimulator test"
+    exit $(GCBashScriptExitCode)
+fi
+        ]]></GCSimulatorTestBashScript>
+        <GCSimulatorTestBashScript Condition="'$(IsGCSimulatorTest)' == 'true'"><![CDATA[
+# GCSimulator script
+if [ -z $RunningGCSimulatorTests ]
+then
+    echo "Skipping execution because GCSimulator tests are not enabled"
+    exit $(GCBashScriptExitCode)
+fi
+        ]]></GCSimulatorTestBashScript>
+
+        <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(GCLongGCTestBashScript);$(GCSimulatorTestBashScript)</BashCLRTestPreCommands>
+        <GCLongGCTestBatchScript Condition="'$(IsLongRunningGCTest)' != 'true'"><![CDATA[
+REM Long GC script
+if defined RunningLongGCTests (
+  echo Skipping execution because this is not a long-running GC test.
+  Exit /b 0
+)
+        ]]></GCLongGCTestBatchScript>
+        <GCLongGCTestBatchScript Condition="'$(IsLongRunningGCTest)' == 'true'"><![CDATA[
+REM Long GC script
+if not defined RunningLongGCTests (
+  echo Skipping execution because long-running GC tests are not enabled.
+  Exit /b 0
+)
+        ]]></GCLongGCTestBatchScript>
+      
+      
+        <GCSimulatorTestBatchScript  Condition="'$(IsGCSimulatorTest)' != 'true'"><![CDATA[
+REM GCSimulator script
+if defined RunningGCSimulatorTests (
+  echo Skipping execution because this is not a GCSimulator test.
+  Exit /b 0
+)
+        ]]></GCSimulatorTestBatchScript>
+        <GCSimulatorTestBatchScript  Condition="'$(IsGCSimulatorTest)' == 'true'"><![CDATA[
+REM GCSimulator script
+if not defined RunningGCSimulatorTests (
+  echo Skipping execution because GCSimulator tests are not enabled
+  Exit /b 0
+)
+        ]]></GCSimulatorTestBatchScript >
+
+        <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(GCLongGCTestBatchScript);$(GCSimulatorTestBatchScript)</CLRTestBatchPreCommands>
+    </PropertyGroup>
+</Project> 

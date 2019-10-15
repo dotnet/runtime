@@ -1,0 +1,76 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+//
+// Used in template metaprogramming, type lists consist of a series of
+// Scheme-like nodes that contain a Head type and a Tail type. The head
+// type is usually a non-list type, but compound lists are possible.
+//
+// Type lists are always terminated with a tail type of mpl::null_type.
+//
+
+#ifndef __type_list__
+#define __type_list__
+
+namespace mpl // 'mpl' => 'meta-programming library'
+{
+    // Used as terminator in type_lists.
+    class null_type {};
+
+    // The core type. See file comment for details.
+    template <class T, class U>
+    struct type_list
+    {
+        typedef T head;
+        typedef U tail;
+    };
+
+    template <class TList, size_t IDX>
+    struct type_at;
+    
+    template <class head, class tail, size_t IDX>
+    struct type_at<type_list<head, tail>, IDX>
+    { typedef typename type_at<tail, IDX-1>::type type; };
+    
+    template <class head, class tail>
+    struct type_at<type_list<head, tail>, 0>
+    { typedef head type; };
+
+    // Helper struct to create a type_list chain from a list of arguments.
+    template
+    <
+        typename T1  = null_type, typename T2  = null_type, typename T3  = null_type,
+        typename T4  = null_type, typename T5  = null_type, typename T6  = null_type,
+        typename T7  = null_type, typename T8  = null_type, typename T9  = null_type,
+        typename T10 = null_type, typename T11 = null_type, typename T12 = null_type,
+        typename T13 = null_type, typename T14 = null_type, typename T15 = null_type,
+        typename T16 = null_type, typename T17 = null_type, typename T18 = null_type
+    > 
+    struct make_type_list
+    {
+    private:
+        // recurse on the tail elements
+        typedef typename make_type_list<T2, T3, T4, T5, T6, T7, T8, T9, T10,
+                                        T11, T12, T13, T14, T15, T16, T17, T18>::type tail;
+
+    public:
+        // combine head with computed tail
+        typedef type_list<T1, tail> type;
+    };
+
+    template<>
+    struct make_type_list
+    <
+        null_type, null_type, null_type, null_type, null_type, null_type,
+        null_type, null_type, null_type, null_type, null_type, null_type,
+        null_type, null_type, null_type, null_type, null_type, null_type
+    >
+    {
+    public:
+        typedef null_type type;
+    };
+}
+
+#endif // __type_list__
+

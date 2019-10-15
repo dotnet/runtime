@@ -1,0 +1,38 @@
+parameters:
+  jobTemplate: ''
+  buildConfig: ''
+  platforms: []
+  # platformGroup is a named collection of platforms. Allowed values:
+  # 'all' - all platforms
+  # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
+  platformGroup: ''
+  # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
+  # used, instead of the usual criteria. Allowed values:
+  # 'pr' - the queues used for a pull request for the platform. Typically a small set.
+  # 'ci' - the queues used for a CI (post-merge) test run.
+  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # 'corefx' - the queues used for a corefx test run.
+  helixQueueGroup: 'pr'
+  stagedBuild: false
+  jobParameters: {}
+
+jobs:
+- template: /eng/platform-matrix-combos.yml
+  parameters:
+    jobTemplate: ${{ parameters.jobTemplate }}
+    buildConfig: ${{ parameters.buildConfig }}
+    helixQueueGroup: ${{ parameters.helixQueueGroup }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    jobParameters: ${{ parameters.jobParameters }}
+
+    linuxArm: ${{ or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}
+    linuxArm64: ${{ or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}
+    linuxMuslX64: ${{ or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}
+    linuxMuslArm64: ${{ or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}
+    linuxRhel6X64: ${{ or(containsValue(parameters.platforms, 'Linux_rhel6_x64'), eq(parameters.platformGroup, 'all')) }}
+    linuxX64: ${{ or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}
+    osxX64: ${{ or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}
+    windowsX64: ${{ or(containsValue(parameters.platforms, 'Windows_NT_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}
+    windowsX86: ${{ or(containsValue(parameters.platforms, 'Windows_NT_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}
+    windowsArm: ${{ or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}
+    windowsArm64: ${{ or(containsValue(parameters.platforms, 'Windows_NT_arm64'), eq(parameters.platformGroup, 'all')) }}

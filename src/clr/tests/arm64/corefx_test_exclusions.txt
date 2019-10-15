@@ -1,0 +1,8 @@
+Microsoft.Win32.SystemEvents.Tests                      # https://github.com/dotnet/coreclr/issues/22442 -- timeout
+System.Drawing.Common.Tests                             # https://github.com/dotnet/corefx/issues/35424
+System.IO.FileSystem.Tests                              # https://github.com/dotnet/coreclr/issues/23447
+System.IO.Tests.dll                                     # https://github.com/dotnet/coreclr/pull/23388 - reenable with the new CoreFX test runner
+System.Management.Tests                                 # https://github.com/dotnet/corefx/issues/34030
+System.Net.HttpListener.Tests                           # https://github.com/dotnet/coreclr/issues/17584
+System.Net.Sockets.Tests                                # https://github.com/dotnet/coreclr/issues/23378
+System.Text.RegularExpressions.Tests                    # https://github.com/dotnet/coreclr/issues/18912 -- timeout -- JitMinOpts only

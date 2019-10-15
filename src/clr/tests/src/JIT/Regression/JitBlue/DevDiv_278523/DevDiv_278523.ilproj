@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PointerSize Condition="'$(Platform)'=='x64'">64</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='armel'">32</PointerSize>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(PointerSize)' == '64' ">
+    <Compile Include="DevDiv_278523_64.il" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(PointerSize)' == '32' ">
+    <Compile Include="DevDiv_278523_32.il" />
+  </ItemGroup>
+</Project>
