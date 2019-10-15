@@ -1,0 +1,234 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Include common targets for specific project types. These files include BuildTools target
+    overrides that shouldn't be applied to other projects.
+  -->
+  <Import Project="framework.bundle.targets" Condition="'$(MSBuildProjectExtension)' == '.bundleproj'" />
+  <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+  <Import Project="framework.packaging.targets" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
+  <Import Project="framework.sharedfx.targets" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />
+
+  <Import Project="installer.targets" />
+
+  <!-- Required by Common.Targets but not used by packaging projects. -->
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="CoreCompile" />
+
+  <Target Name="GetInstallerGenerationFlags">
+    <!-- Filter the installer generation/build flags for the current build machine. -->
+    <PropertyGroup>
+      <_osSupportsWixBasedInstallers>true</_osSupportsWixBasedInstallers>
+      <_osSupportsWixBasedInstallers Condition="'$(OSGroup)' != 'Windows_NT'">false</_osSupportsWixBasedInstallers>
+
+      <_osArchSupportsWixBasedInstallers>$(_osSupportsWixBasedInstallers)</_osArchSupportsWixBasedInstallers>
+      <_osArchSupportsWixBasedInstallers Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</_osArchSupportsWixBasedInstallers>
+
+      <!--
+        Save the project's GenerateMSI setting. It's possible the current arch of the current OS
+        doesn't support MSI generation, but we still want to create an MSI across architectures. For
+        example, we want to make an MSI that installs the arm apphost pack into the x64 SDK location
+        on an x64 machine.
+      -->
+      <GenerateCrossArchMsi Condition="'$(_osSupportsWixBasedInstallers)' == 'true'">$(GenerateMSI)</GenerateCrossArchMsi>
+
+      <GenerateMSI Condition="'$(_osArchSupportsWixBasedInstallers)' != 'true'">false</GenerateMSI>
+      <GenerateExeBundle Condition="'$(_osArchSupportsWixBasedInstallers)' != 'true'">false</GenerateExeBundle>
+
+      <GeneratePkg Condition="'$(OSGroup)' != 'OSX'">false</GeneratePkg>
+    </PropertyGroup>
+
+    <!--
+      Apply the global Build*Package properties. These use distro-specific logic to determine if the
+      current distro should build RPM packages or Debian packages.
+
+      This logic is external because the legacy infra needs the values.
+    -->
+    <PropertyGroup>
+      <GenerateDeb Condition="'$(BuildDebPackage)' != 'true'">false</GenerateDeb>
+      <GenerateRpm Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateRpm>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Set up properties for installer generation. Project-type-specific properties are set up in
+    targets that use BeforeTargets="GetInstallerProperties".
+  -->
+  <Target Name="GetInstallerProperties"
+          DependsOnTargets="
+            GetInstallerBrandingNames;
+            GetProductVersions">
+    <Error
+      Text="InstallerName '$(InstallerName)' is empty or starts with a '-': expected a value like 'dotnet-runtime'."
+      Condition="'$(InstallerName)' == '' or $(InstallerName.StartsWith('-'))" />
+
+    <PropertyGroup>
+      <VersionedInstallerName>$(InstallerName)-$(ProductBandVersion)</VersionedInstallerName>
+      <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
+      <InstallerPackageRelease>1</InstallerPackageRelease>
+
+      <InstallerPackageVersion>$(ProductionVersion)</InstallerPackageVersion>
+    </PropertyGroup>
+
+    <!-- Distinguish the cross-arch installer filename. -->
+    <PropertyGroup Condition="'$(CrossArchContentsArch)' != ''">
+      <CrossArchContentsBuildPart>_$(CrossArchContentsArch)</CrossArchContentsBuildPart>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+      <InstallerPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</InstallerPackageVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+      <InstallerPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</InstallerPackageRelease>
+      <InstallerPackageRelease>$([System.String]::Copy('$(InstallerPackageRelease)').Replace('-', '_'))</InstallerPackageRelease>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <InstallerIntermediatesDir>$(PackagesIntermediateDir)$(InstallerName)/$(InstallerPackageVersion)/</InstallerIntermediatesDir>
+
+      <InstallerBuildPart>$(ProductMoniker)</InstallerBuildPart>
+      <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
+        >$(ProductVersion)-$(TargetArchitecture)</InstallerBuildPart>
+
+      <!-- Location to place the installer, in artifacts. -->
+      <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)$(CrossArchContentsBuildPart)</InstallerFileNameWithoutExtension>
+      <InstallerFile Condition="'$(InstallerFile)' == ''">$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
+      <ExeBundleInstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension).exe</ExeBundleInstallerFile>
+      <ExeBundleInstallerEngineFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)-engine.exe</ExeBundleInstallerEngineFile>
+      <CompressedArchiveFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(CompressedFileExtension)</CompressedArchiveFile>
+    </PropertyGroup>
+
+    <!--
+      Set the directory containing contents to include in the archive (zip/tarball). This default
+      means the "shared" dir is inside the archive and it can be extracted directly into the dotnet
+      home dir. This allows the .NET Core Runtime archive to include files outside the "shared" dir,
+      such as the host, resolver, and license files, without special handling vs. WindowsDesktop and
+      ASP.NET Core sharedfx.
+    -->
+    <PropertyGroup>
+      <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)</SharedFrameworkArchiveSourceDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CrossArchMsiToBuild Include="@(CrossArchSdkMsiInstallerArch)" Exclude="$(TargetArchitecture)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetSkipBuildProps">
+    <PropertyGroup>
+      <!-- Avoid building a project when none of the possible BuildRIDs is the current RID. -->
+      <_packageRIDInBuildRIDList Condition="'%(BuildRID.Identity)' == '$(PackageRID)'">true</_packageRIDInBuildRIDList>
+      <SkipBuild Condition="'$(_packageRIDInBuildRIDList)' != 'true'">true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetLatestCommit"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+    <PropertyGroup>
+      <LatestCommit Condition="'$(LatestCommit)' == ''">$(SourceRevisionId)</LatestCommit>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ReturnLatestCommit"
+          DependsOnTargets="GetLatestCommit"
+          Returns="$(LatestCommit)" />
+
+  <!-- Override pkgproj tool target to provide commit info. -->
+  <Target Name="GetSyncInfo"
+          DependsOnTargets="GetLatestCommit">
+    <ItemGroup>
+      <SyncInfoLines Include="$(LatestCommit)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Acquire NuGet.exe, if not present.
+  -->
+  <Target Name="AcquireNuGetExe"
+          DependsOnTargets="GetAcquireNuGetExeProperties">
+    <MSBuild Projects="$(AcquireNuGetExeProjectFile)" Targets="AcquireNuGetExeCore" />
+  </Target>
+
+  <Target Name="GetAcquireNuGetExeProperties">
+    <PropertyGroup>
+      <AcquireNuGetExeProjectFile>$(PackagingToolsDir)acquire-nuget-exe\acquire-nuget-exe.proj</AcquireNuGetExeProjectFile>
+      <!-- Using 3.5.0 to workaround https://github.com/NuGet/Home/issues/5016 -->
+      <NuGetExeDownloadUrl>https://dist.nuget.org/win-x86-commandline/v3.5.0/nuget.exe</NuGetExeDownloadUrl>
+      <NuGetExeToolDir>$(IntermediateOutputRootPath)nuget\</NuGetExeToolDir>
+      <NuGetExeFile>$(NuGetExeToolDir)NuGet.exe</NuGetExeFile>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    For each file in @(FindSiblingSymbolsForFile), finds symbol files in the same directory as the
+    file ("sibling") and puts them in @(SiblingSymbolFile). The inputs are not included in the
+    outputs, and the output paths are normalized. Symbol files are found by looking in the file's
+    directory for other files with the appropriate changed extensions.
+  -->
+  <Target Name="FindSiblingSymbolFilesByName">
+    <ItemGroup>
+      <!-- Normalize file paths up front (preserving metadata) for easier duplicate detection. -->
+      <FindSiblingSymbolsForFile NormalizedIdentity="$([MSBuild]::NormalizePath('%(Identity)'))" />
+      <FindSiblingSymbolsForFileNormalized
+        Include="@(FindSiblingSymbolsForFile -> '%(NormalizedIdentity)')"
+        RemoveMetadata="NormalizedIdentity" />
+
+      <FindSiblingSymbolsForFile Remove="@(FindSiblingSymbolsForFile)" />
+      <FindSiblingSymbolsForFile Include="@(FindSiblingSymbolsForFileNormalized)" />
+
+      <WindowsNativeFile
+        Include="@(FindSiblingSymbolsForFile)"
+        Condition="
+          '%(FindSiblingSymbolsForFile.Extension)' == '.dll' or
+          '%(FindSiblingSymbolsForFile.Extension)' == '.exe'" />
+
+      <!-- Don't include *.pdb for export libraries or headers -->
+      <WindowsSymbolFile
+        Include="@(FindSiblingSymbolsForFile -> '%(RootDir)%(Directory)%(Filename).pdb')"
+        Condition="
+          '%(FindSiblingSymbolsForFile.Extension)' != '.lib' and
+          '%(FindSiblingSymbolsForFile.Extension)' != '.h'" />
+
+      <!--
+        Crossgened files (on windows) have both a *.pdb and a *.ni.pdb symbol file. Include the
+        *.ni.pdb file as well if it exists.
+      -->
+      <WindowsSymbolFile
+        Include="@(FindSiblingSymbolsForFile -> '%(RootDir)%(Directory)%(Filename).ni.pdb')" />
+
+      <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <!-- Create list of potentially native non-Windows files, check for related symbol files. -->
+      <NonWindowsNativeFile
+        Include="@(FindSiblingSymbolsForFile)"
+        Exclude="@(WindowsNativeFile)" />
+      <NonWindowsSymbolFile
+        Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
+
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <DiscoveredSymbolFile
+        Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)"
+        IsSymbolFile="true" />
+    </ItemGroup>
+
+    <!-- Remove any duplicates in symbol files found by the above searches. -->
+    <RemoveDuplicates Inputs="@(DiscoveredSymbolFile)">
+      <Output TaskParameter="Filtered" ItemName="SiblingSymbolFile"/>
+    </RemoveDuplicates>
+  </Target>
+
+  <Target Name="ReturnProductVersion"
+          DependsOnTargets="GetProductVersions"
+          Returns="$(ProductVersion)" />
+
+  <!--
+    By default, shared frameworks are generated based on the package. This can be overridden by the
+    project, and in the future, the runtime pack is likely to be used to assemble the sfx.
+  -->
+  <Target Name="GetSharedFrameworkPackageReferences"
+          DependsOnTargets="GetPackageIdentity"
+          Returns="@(_PackageIdentity)" />
+
+</Project>

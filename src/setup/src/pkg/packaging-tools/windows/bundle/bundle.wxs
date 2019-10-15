@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:swid="http://schemas.microsoft.com/wix/TagExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?include "..\variables.wxi" ?>
+
+  <Bundle
+    Name="$(var.ProductName)"
+    Manufacturer="$(var.Manufacturer)"
+    Version="$(var.DisplayVersion)"
+    UpgradeCode="$(var.UpgradeCode)"
+    AboutUrl="https://dot.net/core"
+    Compressed="yes">
+    
+    <bal:Condition Message="#(loc.FailureNotSupportedCurrentOperatingSystem)">
+      ((VersionNT &gt; v6.1) OR (VersionNT = v6.1 AND ServicePackLevel &gt;= 1))
+    </bal:Condition>
+
+    <?if $(var.Platform)=x64?>
+      <bal:Condition Message="#(loc.FailureNotSupportedX86OperatingSystem)">
+        VersionNT64
+      </bal:Condition>
+    <?endif?>
+
+    <!--
+      List of bundles that this bundle is an upgrade for. Used to support upgrade from bundles
+      that were produced before UpdateCode was standardized per major-minor channel.
+    -->
+    <?ifdef RelatedDotNetBundleIds?>
+      <?foreach relatedId in $(var.RelatedDotNetBundleIds)?>
+        <RelatedBundle Action="Upgrade" Id="$(var.relatedId)"/>
+      <?endforeach?>
+    <?endif?>
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.Foundation">
+      <bal:WixStandardBootstrapperApplication
+        LicenseFile="$(var.DotNetDummyEulaFile)"
+        ShowFilesInUse="yes"
+        ShowVersion="yes" />
+
+      <PayloadGroupRef Id="DotnetCoreBAPayloads" />
+    </BootstrapperApplicationRef>
+
+    <swid:Tag Regid="microsoft.com" InstallPath="[DOTNETHOME]" />
+
+    <Variable Name="DOTNETHOME" Type="string" Value="[$(var.Program_Files)]dotnet" bal:Overridable="no" />
+
+    <!-- Variables used solely for localization. -->
+    <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitectureDescription))" bal:Overridable="no" />
+    <Variable Name="PRODUCT_NAME" Type="string" Value="$(var.ProductName)" bal:Overridable="no" />
+    <Variable Name="LINK_PREREQ_PAGE" Type="string" Value="https://go.microsoft.com/fwlink/?linkid=846817" bal:Overridable="no" />
+
+    <Chain DisableSystemRestore="yes" ParallelCache="yes">
+      <?foreach chainedFile in $(var.ChainedDotNetPackageFiles)?>
+        <MsiPackage SourceFile="$(var.chainedFile)">
+          <MsiProperty Name="DOTNETHOME" Value="[DOTNETHOME]" />
+        </MsiPackage>
+      <?endforeach?>
+    </Chain>
+  </Bundle>
+
+  <Fragment>
+    <PayloadGroup Id="DotnetCoreBAPayloads">
+      <Payload Name="thm.xml" Compressed="yes" SourceFile="$(var.BundleThmDir)\bundle.thm" />
+      <Payload Name="thm.wxl" Compressed="yes" SourceFile="$(var.BundleThmDir)\bundle.wxl" />
+
+      <Payload Name="bg.png" Compressed="yes" SourceFile="$(var.DotNetBackgroundPngFile)" />
+
+      <?foreach LCID in $(var.LcidList)?>
+        <Payload Id="thm-$(var.LCID)" Compressed="yes" Name="$(var.LCID)\thm.wxl" SourceFile="$(var.BundleThmDir)\theme\$(var.LCID)\bundle.wxl" />
+      <?endforeach?>
+
+      <Payload Name='eula.rtf' Compressed='yes' SourceFile='!(wix.WixStdbaLicenseRtf)' />
+    </PayloadGroup>
+
+    <CustomTable Id='WixStdbaInformation'>
+      <Row>
+        <Data Column='LicenseFile'>eula.rtf</Data>
+      </Row>
+    </CustomTable>
+  </Fragment>
+
+</Wix>

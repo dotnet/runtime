@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.targets))\TestProjects.targets" />
+
+  <!--
+    Some known framework references are downstream of Core-Setup and don't exist with the build's
+    versions. Remove them before the SDK tries to download them.
+  -->
+  <Target Name="RemoveUpstackKnownFrameworkReferences"
+          BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+  </Target>
+
+</Project>

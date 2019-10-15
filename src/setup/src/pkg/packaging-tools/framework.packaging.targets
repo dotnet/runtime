@@ -1,0 +1,279 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Shared targets specific to projects building 'Microsoft.*.App*' packages.
+  -->
+
+  <Target Name="GetTargetingPackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'targeting'"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+      <WixProductMoniker>$(TargetingPackBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>TargetingPack</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetAppHostPackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'apphost'"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-apphost-pack</InstallerName>
+      <WixProductMoniker>$(AppHostPackBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>AppHostPack</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetRuntimePackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'runtime'"
+          BeforeTargets="GetInstallerGenerationFlags">
+    <!-- Runtime packs are obtained only through NuGet. -->
+    <PropertyGroup>
+      <GenerateDeb>false</GenerateDeb>
+      <GenerateRpm>false</GenerateRpm>
+      <GeneratePkg>false</GeneratePkg>
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    This targets file is imported for all pkgproj files, but some (like DotNetHostPolicy) don't need
+    installers and just use the normal packaging tooling.
+  -->
+  <Target Name="DisableInstallerGenerationForPkgprojWithoutInstallers"
+          Condition="'$(FrameworkPackType)' == ''"
+          BeforeTargets="GetInstallerGenerationFlags">
+    <PropertyGroup>
+      <GenerateDeb>false</GenerateDeb>
+      <GenerateRpm>false</GenerateRpm>
+      <GeneratePkg>false</GeneratePkg>
+    </PropertyGroup>
+
+    <!--
+      Generate MSIs for projects that build a part of the shared framework (host, hostfxr) with this
+      tooling. Other installer types are not supported and Core-Setup infra generates them.
+    -->
+    <PropertyGroup Condition="'$(GenerateSharedFrameworkPart)' != 'true'">
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Copy the files in the package's data/ dir to a layout directory. This is what the pack installer
+    will place in the dotnet install dir.
+
+    This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
+    items, but there's some risk of handling TargetPath metadata and filtering symbols differently
+    than the NuGet tasks do. Using the nupkg directly ensures results are identical.
+
+    This is not ideal: the dependency on NuGet package creation is avoidable. We could create (a)
+    layout(s) that both NuGet packaging and installers are based on.
+  -->
+  <Target Name="CreateFrameworkPackLayout"
+          AfterTargets="CreatePackage"
+          Condition="'$(FrameworkPackType)' != ''">
+    <!--
+      Clean up existing layout. Otherwise, unclean dev builds can lay out multiple versions side by
+      side in the layout that all get packed into installers, causing confusion.
+    -->
+    <RemoveDir Directories="$(PackLayoutDir)" />
+
+    <PropertyGroup>
+      <FrameworkPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</FrameworkPackNupkgFile>
+    </PropertyGroup>
+
+    <ZipFileGetEntries TargetArchive="$(FrameworkPackNupkgFile)">
+      <Output TaskParameter="Entries" ItemName="FrameworkPackNupkgEntries" />
+    </ZipFileGetEntries>
+
+    <ItemGroup>
+      <FrameworkPackDataEntries
+        Include="@(FrameworkPackNupkgEntries)"
+        Condition="
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('data/')) OR
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('ref/')) OR
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
+    </ItemGroup>
+
+    <ZipFileExtractToDirectory
+      SourceArchive="$(FrameworkPackNupkgFile)"
+      DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
+      OverwriteDestination="true"
+      Include="@(FrameworkPackDataEntries)" />
+  </Target>
+
+  <!--
+    Add note to Targeting Pack nupkg description that this package shouldn't be referenced directly.
+    The packaging tooling normally only adds this to runtime packages.
+  -->
+  <Target Name="AddTargetingPackNuGetDescriptionInternalNotice"
+          AfterTargets="GetPackageDescription"
+          Condition="'$(FrameworkPackType)' == 'targeting'">
+    <GetPackageDescription DescriptionFile="$(PackageDescriptionFile)" PackageId="RuntimePackage">
+      <Output TaskParameter="Description" PropertyName="RuntimeDisclaimer" />
+    </GetPackageDescription>
+
+    <PropertyGroup>
+      <Description>$(RuntimeDisclaimer) %0A$(Description)</Description>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Closure verification targets for WindowsDesktop. -->
+  <PropertyGroup>
+    <!-- Avoid MSBuild quirk: AfterTargets failure doesn't cause the build to fail. -->
+    <BuildDependsOn>$(BuildDependsOn);VerifyClosure;VerifyDuplicateTypes</BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GetClosureFiles">
+    <!-- Set up ClosureFile items organized by file-set. -->
+    <ItemGroup>
+      <ExistingLibraryFile
+        Include="@(File)"
+        Condition="
+          Exists('%(FullPath)') AND
+          (
+            '%(Extension)' == '.dll' OR
+            '%(Extension)' == '$(LibraryFileExtension)'
+          )"/>
+
+      <ClosureFile
+        Include="@(ExistingLibraryFile)"
+        Condition="'%(ExistingLibraryFile.TargetPath)' == 'ref/$(TargetFramework)'"
+        FileSet="reference" />
+
+      <ClosureFile
+        Include="@(ExistingLibraryFile)"
+        Condition="
+          '%(ExistingLibraryFile.TargetPath)' == 'runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)' OR
+          '%(ExistingLibraryFile.TargetPath)' == 'runtimes/$(PackageTargetRuntime)/native'"
+        FileSet="runtime" />
+
+      <!-- Remove resource files. -->
+      <ClosureFile
+        Remove="@(ClosureFile)"
+        Condition="'%(ClosureFile.DestinationSubDirectory)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="VerifyClosure"
+          DependsOnTargets="GetClosureFiles"
+          Condition="'$(SkipValidatePackage)' != 'true'"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_closureFileNames Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
+
+      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
+      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyClosure
+      Sources="@(_closureFileFiltered)"
+      IgnoredReferences="@(IgnoredReference)"
+      DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
+  </Target>
+
+  <Target Name="VerifyDuplicateTypes"
+          DependsOnTargets="GetClosureFiles"
+          Condition="'$(SkipValidatePackage)' != 'true'"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <PropertyGroup>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_dupTypeFileName Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
+      <_dupTypeFileName
+        Include="@(FrameworkClosureFile->'%(FileName)')"
+        Exclude="@(_dupTypeFileName)"
+        Condition="'$(_fileSet)' == '%(FrameworkClosureFile.FileSet)'"
+        Original="%(Identity)" />
+
+      <_dupTypeFileNamesFiltered Include="@(_dupTypeFileName)" Exclude="@(ExcludeFromDuplicateTypes)"/>
+      <_dupTypeFileFiltered Include="@(_dupTypeFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying no duplicate types in $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyTypes
+      Sources="@(_dupTypeFileFiltered)"
+      IgnoredTypes="@(IgnoredDuplicateType)" />
+  </Target>
+
+  <Target Name="GetBuildRidSpecificPackageProps">
+    <!--
+      If PackageRID should be built for the current package, PackageBuildRID is set to PackageRID.
+      Otherwise, PackageBuildRID is left empty.
+    -->
+    <PropertyGroup>
+      <PackageBuildRID Condition="'%(Identity)' == '$(PackageRID)'">@(BuildRID)</PackageBuildRID>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
+      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName).$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Target overrides (can't be shared with other package projects) -->
+
+  <!--
+    Redefine build. The packaging tools require a parameterized build call to use IDs other than the
+    project name such as the runtime pack RID suffix and runtime package RID prefix. Perform a
+    nested build when these runtime-specific packages are necessary.
+
+    Also, generate shared framework layout and installers as appropriate.
+  -->
+  <Target Name="Build"
+          DependsOnTargets="
+            GetSkipBuildProps;
+            BuildRidAgnosticPackage;
+            GetBuildRidSpecificPackageProps;
+            BuildRidSpecificPackage;
+            GenerateInstallers" />
+
+  <Target Name="BuildRidAgnosticPackage"
+          DependsOnTargets="$(BuildDependsOn)"
+          Condition="
+            '$(SkipBuild)' != 'true' and
+            '$(BuildLineupPackage)' == 'true'">
+    <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
+  </Target>
+
+  <Target Name="BuildRidSpecificPackage"
+          Condition="
+            '$(SkipBuild)' != 'true' and
+            '$(PackageBuildRID)' != '' and
+            (
+              '$(BuildRidSpecificPacks)' == 'true' or
+              ('$(FrameworkPackType)' == '' and '$(BuildRuntimePackages)' == 'true')
+            )">
+    <!--
+      Ensure all project references are built to make sure dependencies (e.g. native build and
+      depproj's crossgen) runs first. The global properties mean we can't let the inner build handle
+      this itself because it would miss the cache of finished builds.
+    -->
+    <MSBuild
+      Projects="@(ProjectReference);@(OrderProjectReference)"
+      Targets="Build" />
+
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="InnerBuildRidSpecificPackage"
+      Properties="
+        BuildPackageLibraryReferences=false;
+        DisableOrderDependencies=true;
+        PackageTargetRuntime=$(PackageBuildRID);
+        RuntimeIdentifier=$(PackageBuildRID);
+        $(RidSpecificPackProperties)" />
+  </Target>
+
+  <Target Name="InnerBuildRidSpecificPackage"
+          DependsOnTargets="$(BuildDependsOn)">
+    <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
+  </Target>
+
+  <Import
+    Project="$(MSBuildThisFileDirectory)skip.GetPackageReport.targets"
+    Condition="'$(SkipValidatePackage)' == 'true'"/>
+
+</Project>

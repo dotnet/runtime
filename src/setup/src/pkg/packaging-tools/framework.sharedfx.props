@@ -1,0 +1,45 @@
+<Project>
+  <!--
+    Shared properties specific to shared framework projects (sfxproj).
+  -->
+
+  <PropertyGroup>
+    <GenerateMSI>true</GenerateMSI>
+    <GenerateCompressedArchive>true</GenerateCompressedArchive>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <PackageId>unused</PackageId>
+
+    <!--
+      When blank, MicrosoftNETPlatformLibrary defaults to Microsoft.NETCore.App. This property
+      causes the SDK to trim dependencies when publishing a framework-dependent app. We want to be
+      able to create Microsoft.NETCore.App here, so disable this behavior. Use a non-'' value to
+      avoid the default and make it hint at the goal in case it shows up in a weird place.
+    -->
+    <MicrosoftNETPlatformLibrary>do-not-consider-existing-platform</MicrosoftNETPlatformLibrary>
+
+    <!-- Only Restore from our built packages -->
+    <RestoreSources>$(ArtifactsShippingPackagesDir);$(ArtifactsNonShippingPackagesDir)</RestoreSources>
+    <AddDotnetfeedProjectSource>false</AddDotnetfeedProjectSource>
+    <RestoreAllBuildRids>false</RestoreAllBuildRids>
+    <!-- Ensure only this repo's NuGet.config file is used. -->
+    <RestoreConfigFile>$(ProjectDir)NuGet.config</RestoreConfigFile>
+    <!-- Use repo-restored packages for platforms and targets dependencies -->
+    <RestoreFallbackFolders>$(PackagesDir)</RestoreFallbackFolders>
+    <!-- Don't error due to lack of runtime-specific deps, we're referencing those directly -->
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <!-- Use a project-local packages folder. 'p', not 'packages': max path breathing room. -->
+    <RestorePackagesPath>$(IntermediateOutputPath)p</RestorePackagesPath>
+    <!-- Do not build or nor build in publish output or deps -->
+    <NoBuild>true</NoBuild>
+
+    <CopyBuildOutputToPublishDirectory>false</CopyBuildOutputToPublishDirectory>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <IncludeMainProjectInDepsFile>false</IncludeMainProjectInDepsFile>
+
+    <GenerateSharedFramework>true</GenerateSharedFramework>
+  </PropertyGroup>
+
+</Project>

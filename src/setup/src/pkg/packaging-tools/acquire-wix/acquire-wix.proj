@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <UsingTask TaskName="DownloadFile" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
+
+  <!--
+    Acquire WiX tools, if not present.
+
+    Adapted from https://github.com/dotnet/core-sdk/blob/6aed0cd3614f9b740cfb3f21fdb795bab53ef7e9/src/redist/targets/GenerateMSIs.targets#L80-L102
+  -->
+  <Target Name="AcquireWixCore"
+          DependsOnTargets="GetAcquireWixProperties"
+          Inputs="$(WixDownloadSentinel)"
+          Outputs="$(WixDestinationPath)">
+    <!-- Setup sentinel to take advantage of incrementality -->
+    <MakeDir Directories="$(WixToolsDir)" />
+    <WriteLinesToFile
+      File="$(WixDownloadSentinel)"
+      Lines="$(WixVersion)"
+      Overwrite="true"
+      Encoding="Unicode" />
+
+    <DownloadFile
+      Uri="$(WixDownloadUrl)"
+      DestinationPath="$(WixDestinationPath)"
+      Overwrite="true" />
+
+    <Unzip
+      SourceFiles="$(WixDestinationPath)"
+      DestinationFolder="$(WixToolsDir)" />
+  </Target>
+
+</Project>

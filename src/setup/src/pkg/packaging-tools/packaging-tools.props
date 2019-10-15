@@ -1,0 +1,85 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="framework.bundle.props" Condition="'$(MSBuildProjectExtension)' == '.bundleproj'" />
+  <Import Project="framework.dependency.props" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+  <Import Project="framework.packaging.props" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
+  <Import Project="framework.sharedfx.props" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />
+
+  <PropertyGroup>
+    <InstallerSourceIntermediateOutputDir>$(ObjDir)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
+
+    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
+  </PropertyGroup>
+
+  <!-- Detect framework pack suffix and apply defaults. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
+    <FrameworkPackType>targeting</FrameworkPackType>
+
+    <!-- Include manifests in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Runtime'))">
+    <FrameworkPackType>runtime</FrameworkPackType>
+    <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+
+    <!-- Create a list of runtime files in the data dir using framework list infra. -->
+    <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
+
+    <!-- Include manifests in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Host'))">
+    <FrameworkPackType>apphost</FrameworkPackType>
+    <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
+    <!-- RID-specific packs don't have a lineup package. -->
+    <BuildLineupPackage>false</BuildLineupPackage>
+
+    <!--
+      Use generic package description: packaging tasks don't handle RID suffix nicely and expect an
+      individual description for each RID.
+    -->
+    <UseRuntimePackageDescription>true</UseRuntimePackageDescription>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(FrameworkPackType)' != ''">
+    <PackageType>DotnetPlatform</PackageType>
+
+    <!--
+      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built, and disable
+      the runtime.json and lineup package infrastructure. Packs are either RID-agnostic or use
+      convention-based runtime packages, not runtime.json with a lineup package.
+    -->
+    <BuildRuntimePackages>false</BuildRuntimePackages>
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <IsLineupPackage>false</IsLineupPackage>
+
+    <!-- Remove package dependencies. -->
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+    <PackProjectDependencies>false</PackProjectDependencies>
+
+    <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
+    <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SharedFrameworkLayoutDir Condition="'$(SharedFrameworkLayoutDir)' == ''">$(InstallerSourceIntermediateOutputDir)sharedFxLayout/</SharedFrameworkLayoutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
+    <OmitDependencies>true</OmitDependencies>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerFileNameWithoutExtension)' != '' AND '$(GenerateMSI)' == 'true'">
+    <OutputType>Package</OutputType>
+    <OutputName>$(InstallerFileNameWithoutExtension)</OutputName>
+  </PropertyGroup>
+
+</Project>

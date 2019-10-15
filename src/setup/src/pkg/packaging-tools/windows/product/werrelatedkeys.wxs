@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include "..\Variables.wxi" ?>
+  <Fragment>
+    <!-- Set registry keys to allow WER to genereate correct dumps-->
+    <ComponentGroup Id="WerRelatedKeys">
+      <Component Directory="TARGETDIR">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules">
+          <RegistryValue
+            Action="write"
+            Name="[DOTNETHOME]shared\$(var.FrameworkName)\$(var.NugetVersion)\mscordaccore.dll"
+            Type="integer"
+            Value="0"
+            KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+      
+      <Component Directory="TARGETDIR">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls">
+          <RegistryValue
+            Action="write"
+            Name="[DOTNETHOME]shared\$(var.FrameworkName)\$(var.NugetVersion)\mscordaccore.dll"
+            Type="integer"
+            Value="0"
+            KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+      
+      <Component Directory="TARGETDIR">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownFunctionTableDlls">
+          <RegistryValue
+            Action="write"
+            Name="[DOTNETHOME]shared\$(var.FrameworkName)\$(var.NugetVersion)\mscordaccore.dll"
+            Type="integer"
+            Value="0"
+            KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+      
+      <Component Directory="TARGETDIR">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls">
+          <RegistryValue
+            Action="write"
+            Name="[DOTNETHOME]shared\$(var.FrameworkName)\$(var.NugetVersion)\coreclr.dll"
+            Type="string"
+            Value="[DOTNETHOME]shared\$(var.FrameworkName)\$(var.NugetVersion)\mscordaccore.dll"
+            KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Shared properties specific to packaging projects (pkgproj).
+  -->
+
+  <PropertyGroup>
+    <GenerateDeb>true</GenerateDeb>
+    <GenerateRpm>true</GenerateRpm>
+    <GeneratePkg>true</GeneratePkg>
+    <GenerateMSI>true</GenerateMSI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+  </ItemGroup>
+
+</Project>

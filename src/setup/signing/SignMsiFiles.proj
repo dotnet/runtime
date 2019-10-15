@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <StageProject Include="@(ProjectToBuild -> WithMetadataValue('SignPhase', 'MsiFiles'))" />
+  </ItemGroup>
+
+  <!--
+    Add shared framework projects to the list to ensure is built. Done in a target because the sfx
+    projects are not available statically.
+  -->
+  <Target Name="EnsureSharedFrameworkProjectsBuilt"
+          DependsOnTargets="GetSharedFrameworkProjects"
+          BeforeTargets="EnsureProjectsBuilt">
+    <ItemGroup>
+      <StageProject Include="@(SharedFrameworkProject)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

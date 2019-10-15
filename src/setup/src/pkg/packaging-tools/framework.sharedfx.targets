@@ -1,0 +1,280 @@
+<Project>
+  <!--
+    Shared targets specific to shared framework projects (sfxproj).
+  -->
+
+  <UsingTask TaskName="ProcessSharedFrameworkDeps" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+
+  <Target Name="GetSharedFrameworkInstallerProperties"
+          Condition="'$(GenerateSharedFramework)' == 'true'"
+          DependsOnTargets="GetInstallerBrandingNames"
+          BeforeTargets="
+            GetInstallerGenerationFlags;
+            GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
+      <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>SharedFramework</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Set up the PackageReference based on the pkgproj output at the right point in the build process.
+    The BeforeTargets makes it try to run even when the project is excluded from a build from
+    source, so this has to be handled directly.
+  -->
+  <Target Name="GetPackageReference"
+          DependsOnTargets="GetProductVersions"
+          BeforeTargets="CollectPackageReferences"
+          Condition="'$(DotNetBuildFromSource)' != 'true' or '$(ExcludeFromSourceBuild)' != 'true'">
+    <PropertyGroup>
+      <SfxVersion Condition="'$(SfxVersion)' == ''">$(ProductVersion)</SfxVersion>
+      <SfxPackageIdentity Condition="'$(SfxPackageIdentity)' == ''">$(SfxIdentity)</SfxPackageIdentity>
+    </PropertyGroup>
+
+    <!--
+      Get rid of NuGet's ExcludeRestorePackageImports=true so that the packaging tooling is
+      accessible for Id and version.
+    -->
+    <MSBuild
+      Projects="@(PkgProjectReference)"
+      Targets="GetPackageIdentity"
+      Properties="ExcludeRestorePackageImports=false">
+      <Output TaskParameter="TargetOutputs" ItemName="FrameworkPackageReference" />
+    </MSBuild>
+
+    <ItemGroup>
+      <PackageReference Include="@(FrameworkPackageReference)" AllowExplicitVersion="true" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    During framework-dependent publish, Microsoft.NETCore.App's props file statically adds a
+    PackageConflictPlatformManifests item. This causes NuGet to remove files from publish output
+    because they're "already" defined in the shared framework. But we're creating a shared framework
+    here, so we need to remove the PackageConflictPlatformManifests items before they're used.
+  -->
+  <Target Name="RemovePlatformManifests"
+          BeforeTargets="
+            _HandlePublishFileConflicts;
+            _HandlePackageFileConflicts">
+    <ItemGroup>
+      <PackageConflictPlatformManifests Remove="@(PackageConflictPlatformManifests)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateNetCoreAppRuntimeConfig"
+          Condition="'$(GenerateNetCoreAppRuntimeConfig)' == 'true'"
+          BeforeTargets="Publish">
+    <MakeDir Directories="$(PublishDir)" />
+
+    <PropertyGroup>
+      <_runtimeConfigContent>
+      <![CDATA[
+{
+  "runtimeOptions": {
+    "tfm": "$(TargetFramework)",
+    "framework": {
+      "name": "Microsoft.NETCore.App",
+      "version": "$(SharedFrameworkNugetVersion)",
+      "rollForward": "LatestPatch"
+    }
+  }
+}
+      ]]>
+      </_runtimeConfigContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(PublishDir)$(SfxIdentity).runtimeconfig.json"
+      Lines="$(_runtimeConfigContent)"
+      Overwrite="true" />
+  </Target>
+
+  <Target Name="GenerateVersionFile"
+          DependsOnTargets="
+            GetPackageReference;
+            GetLatestCommitFromPkgproj"
+          BeforeTargets="Publish">
+    <!-- Generate .version file -->
+    <ItemGroup>
+      <VersionLines Include="$(LatestCommit)" />
+      <VersionLines Include="$(SfxVersion)" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(PublishDir).version"
+      Lines="@(VersionLines)"
+      Overwrite="true" />
+  </Target>
+
+  <!--
+    This project doesn't have access to SourceLink because Restore happened in the same MSBuild
+    context and the generated NuGet props haven't applied. Call into a pkgproj to get this info.
+  -->
+  <Target Name="GetLatestCommitFromPkgproj">
+    <PropertyGroup>
+      <OnePkgProjectReference>%(PkgProjectReference.Identity)</OnePkgProjectReference>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(OnePkgProjectReference)" Targets="ReturnLatestCommit">
+      <Output TaskParameter="TargetOutputs" PropertyName="LatestCommit" />
+    </MSBuild>
+  </Target>
+
+  <!--
+    NETCoreApp (and only NETCoreApp) carries the host and host resolver in the shared framework,
+    which lives outside the shared/ directory. These were included in publish through package
+    references and the files must be moved.
+  -->
+  <Target Name="MoveSharedFrameworkHost"
+          Condition="'$(SfxIdentity)' == 'Microsoft.NETCore.App'"
+          AfterTargets="Publish">
+    <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
+    <Move SourceFiles="$(PublishDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkLayoutDir)" />
+
+    <!--  Use the FXR Resolver we intended to consume (either restored a shipped version or the one we built) -->
+    <Move SourceFiles="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkLayoutDir)\host\fxr\$(HostResolverVersion)" />
+
+    <!-- Ensure the host is executable. See https://github.com/NuGet/Home/issues/4424 -->
+    <Exec Command="chmod u+x $(SharedFrameworkLayoutDir)dotnet$(ExeSuffix)"
+          Condition="'$(OSGroup)' != 'Windows_NT'" />
+  </Target>
+
+  <!-- Clean up artifacts that dotnet-publish generates which we don't need -->
+  <Target Name="DeleteUnnecessaryPublishOutputs" AfterTargets="Publish">
+    <ItemGroup>
+      <ToDelete Include="$(PublishDir)apphost$(ExeSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)comhost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.h" />
+      <!--
+        On Windows, LibSuffix is .dll (for dynamic libraries), but for this particular file, we also
+        build a .lib (static library). Make sure neither is included.
+
+        We only build this library on Windows, so other static library formats don't need to be
+        handled yet.
+      -->
+      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost.lib" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.lib" />
+    </ItemGroup>
+
+    <Delete Files="@(ToDelete)" />
+  </Target>
+
+  <!-- Preserve symbol files for compressed symbol archive. Specific to NETCoreApp. -->
+  <Target Name="CopySymbolsToPublishFolder"
+          Condition="'$(SfxIdentity)' == 'Microsoft.NETCore.App'"
+          AfterTargets="Publish">
+    <PropertyGroup>
+      <!-- Get crossgen-generated and redist symbols from the depproj. -->
+      <CrossgennedPackageSymbolDir>$(PackageSymbolsBinDir)netcoreapp/</CrossgennedPackageSymbolDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SharedFrameworkSymbols Include="$(CrossgennedPackageSymbolDir)**/*.pdb" />
+      <SharedFrameworkSymbols Include="$(CrossgennedPackageSymbolDir)**/*$(SymbolFileExtension)" />
+
+      <SharedFrameworkSymbols
+        Include="$(CrossgennedPackageSymbolDir)**/*$(CrossGenSymbolExtension)"
+        Condition="'$(CrossGenSymbolExtension)' != ''" />
+    </ItemGroup>
+
+    <RemoveDir
+      Directories="$(SharedFrameworkPublishSymbolsDir)"
+      Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
+
+    <MakeDir Directories="$(SharedFrameworkPublishSymbolsDir)" />
+
+    <Copy SourceFiles="@(SharedFrameworkSymbols)" DestinationFolder="$(SharedFrameworkPublishSymbolsDir)" />
+  </Target>
+
+  <Target Name="FixDepsJsonFileName"
+          AfterTargets="Publish">
+    <PropertyGroup>
+      <SharedFrameworkDepsOriginFile>$(PublishDir)$(ProjectDepsFileName)</SharedFrameworkDepsOriginFile>
+      <SharedFrameworkDepsDestinationFile>$(PublishDir)$(SfxIdentity).deps.json</SharedFrameworkDepsDestinationFile>
+    </PropertyGroup>
+
+    <Move
+      SourceFiles="$(SharedFrameworkDepsOriginFile)"
+      DestinationFiles="$(SharedFrameworkDepsDestinationFile)" />
+  </Target>
+
+  <Target Name="GenerateRuntimeGraph"
+          Condition="'$(GenerateRuntimeGraph)' == 'true'"
+          DependsOnTargets="FixDepsJsonFileName"
+          AfterTargets="Publish">
+    <PropertyGroup>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='FreeBSD'">freebsd</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>
+    </PropertyGroup>
+
+    <!--
+      Packages to trim from Microsoft.NETCore.App.deps.json for parity with earlier sfx releases.
+      To be removed once the sfx is constructed from Runtime Packs, which don't have deps.
+    -->
+    <ItemGroup>
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
+    </ItemGroup>
+
+    <ProcessSharedFrameworkDeps AssetsFilePath="$(ProjectAssetsFile)"
+                                DepsFilePath="$(SharedFrameworkDepsDestinationFile)"
+                                PackagesToRemove="@(TrimPkgsFromDeps)"
+                                Runtime="$(RuntimeGraphGeneratorRuntime)"
+                                BuildTasksAssemblyPath="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
+  </Target>
+
+  <Target Name="CleanPackages" BeforeTargets="Clean">
+    <RemoveDir Directories="$(PublishDir);$(RestorePackagesPath)" />
+    <Delete Files="$(ProjectAssetsFile)" />
+  </Target>
+
+  <!--
+    Ensure the pkgproj is already built and binaries signed (if necessary). This isn't a real
+    ProjectReference because the SDK doesn't seem to handle pkgproj nicely for Publish. For now,
+    we're using its nupkg directly. In the future, this will be handled in shared tooling to
+    generate shared frameworks in the Arcade SDK.
+  -->
+  <Target Name="BuildPkgProjectReferences">
+    <MSBuild Projects="$(RepoRoot)signing\SignBinaries.proj" Targets="Build" />
+    <MSBuild Projects="@(PkgProjectReference)" Targets="Build" />
+  </Target>
+
+  <Target Name="SetPublishDir"
+          DependsOnTargets="GetPackageReference">
+    <PropertyGroup>
+      <PublishDir>$(SharedFrameworkLayoutDir)shared/$(SfxIdentity)/$(SfxVersion)/</PublishDir>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Target overrides -->
+
+  <!--
+    Redefine build. Shared framework generation uses pkgproj packages.
+  -->
+  <Target Name="Build"
+          DependsOnTargets="
+            GetSkipBuildProps;
+            BuildSfxprojArtifacts" />
+
+  <Target Name="BuildSfxprojArtifacts"
+          DependsOnTargets="
+            BuildPkgProjectReferences;
+            SetPublishDir;
+            CleanPackages;
+            Restore;
+            Publish;
+            GenerateInstallers"
+          Condition="'$(SkipBuild)' != 'true'" />
+
+</Project>

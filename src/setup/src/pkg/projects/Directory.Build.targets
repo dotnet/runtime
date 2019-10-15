@@ -1,0 +1,339 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+
+  <Import Project="$(PackagingToolsDir)packaging-tools.targets" />
+
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+
+  <PropertyGroup>
+    <!--
+      If we are stabilizing set the StableVersion property for the packages.
+      Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
+    -->
+    <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+  </PropertyGroup>
+
+  <!--
+    For any Dependency items with a VersionProp, set it to the property by that name given by the
+    version generation target. For any with a VersionFromProject, query the ProductVersion from that
+    project file and use it as the dependency's version.
+  -->
+  <Target Name="SetCustomPackageDependencyVersions"
+          BeforeTargets="GetPackageDependencies"
+          DependsOnTargets="GetProductVersions">
+    <!--
+      Generate a VersionProp name for each dependency with VersionFromProject. The batched MSBuild
+      task then generates the property, which is picked up by the VersionProp implementation.
+
+      Using PropertyName rather than ItemName on the MSBuild task avoids the difficulty in
+      reattaching the separate list of items back into the original Dependency items without any
+      reasonable Join operation available.
+    -->
+    <ItemGroup>
+      <Dependency
+        VersionProp="_VersionProp_$([System.String]::new('%(Dependency.Identity)').Replace('.', '_'))"
+        Condition="'%(Dependency.VersionFromProject)' != ''" />
+    </ItemGroup>
+
+    <MSBuild
+      Condition="'%(Dependency.VersionFromProject)' != ''"
+      Projects="%(Dependency.VersionFromProject)"
+      Targets="ReturnProductVersion">
+      <Output TaskParameter="TargetOutputs" PropertyName="%(Dependency.VersionProp)" />
+    </MSBuild>
+
+    <!-- Use batching to use the value of an arbitrary property as the version. -->
+    <ItemGroup>
+      <Dependency Version="$(%(Dependency.VersionProp))" Condition="'%(Dependency.VersionProp)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    If the project is configured to use a shipped package version, set it. Use a target because we
+    need the versions from GetProductVersions.
+  -->
+  <Target Name="SetSpecificPackageVersion"
+          Condition="'$(VersionProp)' != ''"
+          BeforeTargets="GenerateNuSpec"
+          DependsOnTargets="GetProductVersions">
+    <!-- Use item metadata: $(%(foo)) works, $($(foo)) doesn't. -->
+    <ItemGroup>
+      <VersionPropItem Include="$(VersionProp)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <Version>$(%(VersionPropItem.Identity))</Version>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="SetTargetBasedPackageVersion"
+          Condition="'$(VersionProp)' == ''"
+          BeforeTargets="GenerateNuSpec"
+          DependsOnTargets="GetProductVersions">
+    <PropertyGroup>
+      <Version>$(ProductVersion)</Version>
+      <!--
+        PackageVersion is normally calculated using Version during static property evaluation, but
+        we need some info from GetProductVersions, so it's too late to rely on that. We need to set
+        both in target evaluation, here.
+      -->
+      <PackageVersion>$(ProductVersion)</PackageVersion>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Remove duplicate files returned by restore. The resolve task performs extra detection to pick up
+    a PDB file for any file listed in the assets file. This causes duplicates if the assets file
+    lists PDBs. If foo.dll and foo.pdb exist in the package and both are listed in the assets file,
+    the task finds:
+
+      foo.dll
+      foo.pdb (based on foo.dll entry)
+      foo.pdb
+      foo.pdb (based on foo.pdb entry)
+
+    The duplicates cause package validation failure and must be filtered out.
+  -->
+  <Target Name="RemoveDuplicateResolvedNuGetPackageAssets">
+    <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
+      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(FilteredReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetupFindSiblingSymbolFilesByNameForSymbolPackage">
+    <ItemGroup>
+      <FindSiblingSymbolsForFile Include="@(File)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Finds symbol files and injects them into the package build.
+  -->
+  <Target Name="GetSymbolPackageFiles"
+          BeforeTargets="GetPackageFiles"
+          DependsOnTargets="
+            SetupFindSiblingSymbolFilesByNameForSymbolPackage;
+            FindSiblingSymbolFilesByName">
+    <ItemGroup Condition="'$(SymbolFileExtension)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(CrossGenSymbolExtension)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(CrossGenSymbolExtension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!--
+        Discovered symbol files might already be in File, without IsSymbolFile set. Make sure we
+        keep the discovered one, which has IsSymbolFile=true.
+      -->
+      <File Remove="@(SiblingSymbolFile)" />
+      <File Include="@(SiblingSymbolFile)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)' != '' and '@(ExistingWindowsSymbolFile)' == ''">true</NeedsPlaceholderPdb>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <File Include="$(MSBuildThisFileDirectory)../_.pdb"
+            Condition="'$(NeedsPlaceholderPdb)' == 'true' AND '$(PackageTargetRuntime)' != ''">
+        <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <!-- override GetPackageIdentity so that it doesn't attempt to gather
+       files from runtime dependencies,  this prevents folks from needing
+       packages that don't apply to their local OS.
+       https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="GetPackageIdentity" Returns="@(_PackageIdentity)" DependsOnTargets="CalculatePackageVersion">
+    <ItemGroup>
+      <_PackageIdentity Include="$(Id)">
+        <Version>$(PackageVersion)</Version>
+        <TargetRuntime Condition="'$(PackageTargetRuntime)' != ''">$(PackageTargetRuntime)</TargetRuntime>
+      </_PackageIdentity>
+    </ItemGroup>
+  </Target>
+
+  <!-- override AssignPkgProjPackageDependenciesTargetFramework so that
+       it doesn't attempt to resolve all files in order to get dependency
+       TargetFrameworks.
+       https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="AssignPkgProjPackageDependenciesTargetFramework" DependsOnTargets="GetPkgProjPackageDependencies">
+    <SplitDependenciesBySupport Condition="'$(SplitDependenciesBySupport)' == 'true'" OriginalDependencies="@(PkgProjDependency)">
+      <Output TaskParameter="SplitDependencies" ItemName="_SplitPkgProjDependency" />
+    </SplitDependenciesBySupport>
+    <ItemGroup Condition="'@(_SplitPkgProjDependency)' != ''">
+      <PkgProjDependency Remove="@(PkgProjDependency)" />
+      <PkgProjDependency Include="@(_SplitPkgProjDependency)" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- ensure that unconstrained dependencies are also expanded in constrained TFM groups -->
+      <_PkgProjDependencyWithoutTFM Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.TargetFramework)' == '' AND '%(PkgProjDependency.TargetRuntime)' == '' AND '%(PkgProjDependency.DoNotExpand)' != 'true'" />
+      <_AllPkgProjTFMs Include="%(PkgProjDependency.TargetFramework)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
+      <!-- Remove dependencies without a TFM so they can be replaced -->
+      <PkgProjDependency Remove="@(_PkgProjDependencyWithoutTFM)" />
+      <!-- operate on pkgproj dependencies and file dependencies -->
+      <PkgProjDependency Include="@(_PkgProjDependencyWithoutTFM)">
+        <TargetFramework>%(_AllPkgProjTFMs.Identity)</TargetFramework>
+      </PkgProjDependency>
+      <Dependency Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetNonPkgProjDependenciesToPackage"
+          Condition="'$(PackProjectDependencies)' == 'true'"
+          AfterTargets="ExpandProjectReferences">
+    <!-- allow projects to provide dependencies -->
+    <MSBuild Targets="GetDependenciesToPackage"
+             BuildInParallel="$(BuildInParallel)"
+             Projects="@(_NonPkgProjProjectReference)"
+             Properties="$(ProjectProperties)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="Dependency" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="GetDependencyDataFileInclusionDefaults">
+    <PropertyGroup Condition="'$(BuildTargetPath)' != ''">
+      <FileVersionPropsTargetPath Condition="'$(FileVersionPropsTargetPath)' == ''">$(BuildTargetPath)$(Id).props</FileVersionPropsTargetPath>
+      <PlatformManifestTargetPath Condition="'$(PlatformManifestTargetPath)' == ''">$(BuildTargetPath)$(Id.Replace('.Internal', '')).PlatformManifest.txt</PlatformManifestTargetPath>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Get data files (platform manifest, file version props) from depproj dependencies. -->
+  <Target Name="GetDepprojDependencyDataFiles">
+    <MSBuild
+      Projects="@(ProjectReference)"
+      Targets="GetDataFiles"
+      SkipNonExistentTargets="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_depprojDataFile" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="IncludeFileVersionPropsFile"
+          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
+          BeforeTargets="GetFiles">
+    <!-- Create a copy with some per-pkgproj templates replaced. -->
+    <PropertyGroup>
+      <_propsFileTemplateFile Condition="'%(_depprojDataFile.PropsFile)' == 'true'">%(_depprojDataFile.Identity)</_propsFileTemplateFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('$(_propsFileTemplateFile)')">
+      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
+      <_filledPropsFileContent>$([System.IO.File]::ReadAllText('$(_propsFileTemplateFile)')
+        .Replace("__PackageId__", "$(Id.Replace('.', '_'))")
+        .Replace("__PreferredPackages__", "$(Id);$(_runtimeDependencyItems)"))
+      </_filledPropsFileContent>
+
+      <_filledPropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</_filledPropsFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_filledPropsFile)' != ''"
+      File="$(_filledPropsFile)"
+      Lines="$(_filledPropsFileContent)"
+      Overwrite="true" />
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
+      <File
+        Include="$(_filledPropsFile)"
+        TargetPath="$(FileVersionPropsTargetPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludePlatformManifestFile"
+          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
+          BeforeTargets="GetFiles">
+    <!-- Create a copy with some per-pkgproj templates replaced. -->
+    <PropertyGroup>
+      <_platformManifestFileTemplateFile Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'">%(_depprojDataFile.Identity)</_platformManifestFileTemplateFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('$(_platformManifestFileTemplateFile)')">
+      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
+      <_filledPlatformManifestFileContent>$([System.IO.File]::ReadAllText('$(_platformManifestFileTemplateFile)')
+        .Replace("__PackageId__", "$(Id)"))
+      </_filledPlatformManifestFileContent>
+
+      <_filledPlatformManifestFile>$(IntermediateOutputPath)PlatformManifest.txt</_filledPlatformManifestFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_filledPlatformManifestFile)' != ''"
+      File="$(_filledPlatformManifestFile)"
+      Lines="$(_filledPlatformManifestFileContent)"
+      Overwrite="true" />
+
+    <ItemGroup Condition="'$(PlatformManifestTargetPath)' != ''">
+      <File
+        Include="$(_filledPlatformManifestFile)"
+        TargetPath="$(PlatformManifestTargetPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeFrameworkListFile"
+          BeforeTargets="GetFiles"
+          DependsOnTargets="GetSymbolPackageFiles"
+          Condition="
+            '$(FrameworkListTargetPath)' != '' AND
+            (
+              '$(PackageTargetRuntime)' == '' OR
+              '$(PackageTargetRuntime)' == '$(PackageRID)'
+            )">
+    <PropertyGroup>
+      <FrameworkListFilename Condition="'$(FrameworkListFilename)' == ''">FrameworkList.xml</FrameworkListFilename>
+      <FrameworkListFile>$(IntermediateOutputPath)$(FrameworkListFilename)</FrameworkListFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FrameworkListRootAttributes Include="Name" Value="$(FrameworkListName)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(FrameworkListTargetFrameworkIdentifier)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(FrameworkListTargetFrameworkVersion)" />
+      <FrameworkListRootAttributes Include="FrameworkName" Value="$(FrameworkListFrameworkName)" />
+    </ItemGroup>
+
+    <Error
+      Condition="'%(FrameworkListRootAttributes.Value)' == ''"
+      Text="Missing value for property 'FrameworkList%(FrameworkListRootAttributes.Identity)'" />
+
+    <CreateFrameworkListFile
+      Files="@(File)"
+      FileClassifications="@(FrameworkListFileClass)"
+      TargetFile="$(FrameworkListFile)"
+      TargetFilePrefixes="ref/;runtimes/"
+      RootAttributes="@(FrameworkListRootAttributes)" />
+
+    <ItemGroup>
+      <File Include="$(FrameworkListFile)">
+        <TargetPath>$(FrameworkListTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Create RuntimeDependencies just before they're needed. Use MSBuild to get their identities, like
+    GetPkgProjPackageDependencies: this finds package id and version without any guesswork.
+  -->
+  <Target Name="CreateRuntimeDependencyItems"
+          BeforeTargets="DetermineRuntimeDependencies"
+          Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
+    <MSBuild
+      Targets="GetPackageIdentity"
+      BuildInParallel="$(BuildInParallel)"
+      Projects="@(RuntimeProject -> WithMetadataValue('Extension', '.pkgproj'))">
+      <Output TaskParameter="TargetOutputs" ItemName="_runtimeDependencyIdentity" />
+    </MSBuild>
+
+    <ItemGroup>
+      <RuntimeDependency Include="@(_runtimeDependencyIdentity)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

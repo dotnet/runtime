@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Shared properties specific to bundle projects (bundleproj).
+  -->
+
+  <PropertyGroup>
+    <GenerateExeBundle>true</GenerateExeBundle>
+  </PropertyGroup>
+
+</Project>

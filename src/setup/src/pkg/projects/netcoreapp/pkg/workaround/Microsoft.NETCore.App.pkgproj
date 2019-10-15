@@ -1,0 +1,28 @@
+<Project>
+
+  <PropertyGroup>
+    <ExcludeDepprojReference>true</ExcludeDepprojReference>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <!-- Exclude runtime.json from the package. -->
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <IsLineupPackage>false</IsLineupPackage>
+
+    <!-- Prevent old baseline dependencies. -->
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+
+    <BuildRuntimePackages>false</BuildRuntimePackages>
+
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Dependency Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+</Project>

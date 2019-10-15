@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Fragment>
+    <DirectoryRef Id="DOTNETHOME">
+      <Directory Id="SHARED" Name="shared" />
+    </DirectoryRef>
+  </Fragment>
+
+</Wix>

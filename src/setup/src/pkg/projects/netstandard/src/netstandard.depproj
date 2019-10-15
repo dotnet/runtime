@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <NETStandardTargetFramework>netstandard2.1</NETStandardTargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryPackageVersion)" />
+  </ItemGroup>
+
+  <!--
+    Redistribute files from the netstandard package's build/ dir. When this project consumes a 
+    transport package from dotnet/standard with ref assemblies in ref/netstandard2.1, this target
+    can be removed.
+  -->
+  <Target Name="GetNETStandardRefFilesToPackage"
+          BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <FilesToPackage
+        Include="$(PackagesDir)$(NETStandardLibraryPackage.ToLowerInvariant())\$(NETStandardLibraryPackageVersion)\build\$(NETStandardTargetFramework)\ref\*"
+        TargetPath="ref/$(NETStandardTargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

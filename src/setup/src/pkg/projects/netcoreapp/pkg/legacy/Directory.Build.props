@@ -1,0 +1,23 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
+    <BuildTargetPath>build/$(NETCoreAppFramework)/</BuildTargetPath>
+
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <!-- Identity / Reference package content -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- reference RID specific packages to generate lineup -->
+    <LineupProjectReference Include="@(RuntimeProject)" />
+
+    <!-- references the host packages -->
+    <Dependency
+      Include="Microsoft.NETCore.DotNetHostPolicy"
+      VersionFromProject="$(SourceDir)pkg\projects\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj"
+      TargetFramework="$(NETCoreAppFramework)" />
+  </ItemGroup>
+
+</Project>

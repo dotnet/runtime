@@ -1,0 +1,23 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Shared targets specific to bundle projects (bundleproj).
+  -->
+
+  <Target Name="GetSharedFrameworkBundleInstallerProperties"
+          BeforeTargets="GetInstallerProperties">
+    <Error
+      Condition="'@(BundleComponentReference)' == ''"
+      Text="Bundle project lacks references to components that it should bundle." />
+
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
+      <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Target overrides (can't be shared with other package projects) -->
+
+  <Target Name="Build"
+          DependsOnTargets="GenerateInstallers" />
+
+</Project>

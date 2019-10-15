@@ -1,0 +1,45 @@
+name: dotnet-runtime-21
+base: core18
+version: 2.1.13
+summary: Cross-Platform .NET Core Runtime. 
+description: |
+  .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
+  .NET Core is a general purpose development platform maintained by Microsoft. 
+
+grade: stable
+confinement: strict
+
+apps:
+  dotnet:
+    command: dotnet
+    plugs:
+      - network
+      - network-bind
+      - removable-media
+      - home
+
+slots:
+  dotnet-runtime:
+    content: dotnet-runtime-21
+    interface: content
+    read: [/]
+
+parts:
+  dotnet-runtime:
+    plugin: dump
+    source: https://download.visualstudio.microsoft.com/download/pr/7085b86a-0888-49b5-a272-6cd317abc4d3/1d5d8107d575e7fc8b14e9ace9f7667b/dotnet-runtime-2.1.13-linux-x64.tar.gz
+    source-checksum: sha512/10c037287a06d901ec5d5cfb2064c341e9b33a46f72ac8606c926499a5ac500e74a7bd1445224df3ac4ac4cd0aea76cc73cc0b8990d4a5ad6272e6261572359f
+    stage-packages:
+      - libicu60
+      - libssl1.0.0
+      - libcurl3
+      - libgssapi-krb5-2
+      - liblttng-ust0
+      - libstdc++6
+      - zlib1g
+      - libgcc1
+      - lldb
+      - libunwind8
+      - libtinfo5
+      - libdb5.3
+      - libc6

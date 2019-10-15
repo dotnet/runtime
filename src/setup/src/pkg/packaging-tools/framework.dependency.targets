@@ -1,0 +1,539 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Shared targets specific to dependency projects (depproj).
+  -->
+
+  <!-- Fetches all the file items from the packages that we want to redist -->
+  <Target Name="GetFilesFromPackages"
+          DependsOnTargets="
+            GetFilesFromPackageResolve;
+            GetSymbolFilesFromPackages" />
+
+  <Target Name="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <!-- RID-specific: include all runtime files. -->
+      <RidSpecificFilesToPackage Include="@(ReferenceCopyLocalPaths)">
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
+             calculate it by looking for native in the path -->
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </RidSpecificFilesToPackage>
+      <RidSpecificFilesToPackage>
+        <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' != 'true'">runtimes/$(PackageRID)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' == 'true'">runtimes/$(PackageRID)/native</TargetPath>
+      </RidSpecificFilesToPackage>
+      <!-- Ensure localization resource files make it to their subdirs. -->
+      <RidSpecificFilesToPackage Condition="'%(RidSpecificFilesToPackage.DestinationSubDirectory)' != ''">
+        <TargetPath>%(RidSpecificFilesToPackage.TargetPath)/%(RidSpecificFilesToPackage.DestinationSubDirectory)</TargetPath>
+      </RidSpecificFilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+      <FilesToPackage Include="@(RidSpecificFilesToPackage)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+      <!-- Not RID-specific: include all reference files. -->
+      <FilesToPackage Include="@(Reference)">
+        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
+      </FilesToPackage>
+
+      <!-- include all doc files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
+    <!-- Add versions file with the hashes of the repos we consume -->
+    <ItemGroup Condition="'$(FrameworkPackageName)' != ''">
+      <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
+        <TargetPath></TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetupFindSiblingSymbolFilesByName"
+          DependsOnTargets="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <FindSiblingSymbolsForFile Include="@(RidSpecificFilesToPackage)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Include symbol files and mark them as such. Ensures they are redistributed correctly, and that
+    they can be filtered out when necessary.
+  -->
+  <Target Name="GetSymbolFilesFromPackages"
+          DependsOnTargets="
+            SetupFindSiblingSymbolFilesByName;
+            FindSiblingSymbolFilesByName">
+    <ItemGroup>
+      <!--
+        Discovered symbol files might already be in File, without IsSymbolFile set. Make sure we
+        keep the discovered one, which has IsSymbolFile=true.
+      -->
+      <FilesToPackage Remove="@(SiblingSymbolFile)" />
+      <FilesToPackage Include="@(SiblingSymbolFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="ResolveReferences;GetFilesFromPackages"
+          Returns="@(FilesToPackage)" />
+
+  <Target Name="GetDependenciesToPackage"
+          Condition="'@(DependenciesToPackage)' != ''"
+          DependsOnTargets="ResolveReferences"
+          Returns="@(_DependenciesToPackageWithVersion)">
+    <ItemGroup>
+      <!-- intersect ReferencedPackage with DependenciesToPackage -->
+      <_DependenciesToPackageWithVersion Include="@(PackageReference)" Condition="'@(PackageReference)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+        <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+      </_DependenciesToPackageWithVersion>
+    </ItemGroup>
+
+    <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
+  </Target>
+
+  <!-- Creates the *.versions.txt file describing where data in this package came from. -->
+  <Target Name="GenerateHashVersionsFile"
+          DependsOnTargets="
+            GetDependencyVersionFiles;
+            GetLatestCommit"
+          Condition="'$(FrameworkPackageName)' != ''">
+    <Error
+      Condition="'@(DependencyVersionFile)' != '' AND !Exists('%(DependencyVersionFile.Identity)')"
+      Text="'%(Name)' version file does not exist: %(Identity)" />
+
+    <ItemGroup>
+      <DependencyVersionFile Content="$([System.IO.File]::ReadAllText('%(Identity)').Trim())" />
+
+      <_VersionsFileLines Include="core-setup $(LatestCommit)" />
+      <_VersionsFileLines Include="@(DependencyVersionFile ->'%(Name) %(Content)')" />
+    </ItemGroup>
+
+    <!-- GetDependencyVersionFiles may or may not create the intermediate dir. Ensure it exists. -->
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile Lines="@(_VersionsFileLines)"
+                       File="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt"
+                       Overwrite="true"/>
+  </Target>
+
+  <Target Name="SetupGenerateFileVersionProps"
+          Condition="'$(FrameworkPackageName)' != ''">
+    <PropertyGroup>
+      <PropsFile>$(IntermediateOutputPath)$(FrameworkPackageName).props</PropsFile>
+      <PlatformManifestFile>$(IntermediateOutputPath)$(FrameworkPackageName).PlatformManifest.txt</PlatformManifestFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <DepprojDataFile Include="$(PropsFile)" PropsFile="true" />
+      <DepprojDataFile Include="$(PlatformManifestFile)" PlatformManifestFile="true" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Creates the platform manifest and props file. Set properties "IncludePlatformManifestFile" and
+    "IncludeFileVersionPropsFile" to true to include them, respectively.
+  -->
+  <Target Name="GenerateFileVersionProps"
+          Condition="'$(FrameworkPackageName)' != ''"
+          DependsOnTargets="SetupGenerateFileVersionProps">
+    <!--
+      Building the full platform manifest gathers information from the packages of all known RIDs,
+      which we can't do while building from source because the entire product needs to build on a
+      single machine (single RID) without access to prebuilts.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <BuildFullPlatformManifest Condition="'$(BuildFullPlatformManifest)' == ''">false</BuildFullPlatformManifest>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <BuildFullPlatformManifest Condition="'$(BuildFullPlatformManifest)' == ''">true</BuildFullPlatformManifest>
+
+      <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
+          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
+          packages.  This is needed so that we have a complete platform manifest in the shipping version of
+          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
+      <IncludeAllRuntimePackagesInPlatformManifest
+        Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == '' AND
+                   '$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    </PropertyGroup>
+
+    <ItemGroup >
+      <RuntimeIdentifiers Include="$(RuntimeIdentifiers)" Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true'" />
+      <RuntimeIdentifiers Include="$(RuntimeIdentifier)" Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RidSpecificGetPackageFilesProject
+        Include="$(MSBuildProjectFullPath)"
+        AdditionalProperties="RuntimeIdentifier=%(RuntimeIdentifiers.Identity)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(RidSpecificGetPackageFilesProject)"
+             Targets="GetFilesToPackage">
+      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
+    </MSBuild>
+
+    <!-- Don't include symbol files in platform manifest. -->
+    <ItemGroup>
+      <SharedFrameworkRuntimeFiles
+        Remove="@(SharedFrameworkRuntimeFiles)"
+        Condition="'%(SharedFrameworkRuntimeFiles.IsSymbolFile)' == 'true'" />
+    </ItemGroup>
+
+    <!--
+      Workaround: zero-versioned Microsoft.VisualBasic.dll in non-Windows CoreFX transport package.
+      See https://github.com/dotnet/corefx/issues/36630
+    -->
+    <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+      <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    </PropertyGroup>
+
+    <!--
+      Generate the props file using placeholders for __PackageId__ and __PreferredPackages__. Each
+      pkgproj that depends on this depproj needs to fill it in with unique info. The depproj's copy
+      of the props file is considered a template. The tokens use underscores because the PackageId
+      string needs to be valid XML.
+    -->
+    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
+                              PackageId="__PackageId__"
+                              PackageVersion="$(Version)"
+                              PlatformManifestFile="$(PlatformManifestFile)"
+                              PropsFile="$(PropsFile)"
+                              PreferredPackages="__PreferredPackages__"
+                              PermitDllAndExeFilesLackingFileVersion="$(PermitDllAndExeFilesLackingFileVersion)" />
+  </Target>
+
+  <Target Name="GetDataFiles"
+          DependsOnTargets="SetupGenerateFileVersionProps"
+          Returns="@(DepprojDataFile)" />
+
+  <Target Name="AddCrossgenToolPackageReferences"
+          BeforeTargets="CollectPackageReferences">
+    <ItemGroup>
+      <CrossgenToolPackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
+      <CrossgenToolPackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
+      <CrossgenToolPackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" Version="$(MicrosoftTargetingPackPrivateWinRTPackageVersion)" />
+
+      <!-- This tool is a prebuilt not buildable from source. -->
+      <CrossgenToolPackageReference
+        Condition="'$(DotNetBuildFromSource)' != 'true'"
+        Include="Microsoft.DiaSymReader.Native"
+        Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
+
+      <!--
+        If any tool packages are missing, add them with ExcludeAssets=All. Be careful not to modify
+        existing PackageReferences.
+      -->
+      <PackageReference
+        Include="@(CrossgenToolPackageReference)"
+        Exclude="@(PackageReference)"
+        ExcludeAssets="All"/>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Get paths from packages that are needed for crossgen. Only relevant for runtime-specific builds.
+  -->
+  <Target Name="GetCorePackagePaths"
+          DependsOnTargets="ResolveReferences">
+    <PropertyGroup>
+      <_runtimePackageId>transport.runtime.$(PackageRID).$(MicrosoftNETCoreRuntimeCoreCLRPackage.ToLowerInvariant())</_runtimePackageId>
+      <_runtimePackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</_runtimePackageVersion>
+
+      <_runtimePackageDir>$(PackagesDir)$(_runtimePackageId)/$(_runtimePackageVersion)/</_runtimePackageDir>
+      <_jitPackageDir>$(PackagesDir)transport.runtime.$(PackageRID).microsoft.netcore.jit/$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)/</_jitPackageDir>
+      <_corefxPackageDir>$(PackagesDir)runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage.ToLowerInvariant())/$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)/</_corefxPackageDir>
+      <_winmdPackageDir>$(PackagesDir)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTPackageVersion)/</_winmdPackageDir>
+      <_diaSymReaderPackageDir>$(PackagesDir)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativePackageVersion)/</_diaSymReaderPackageDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">
+      <_crossHostArch>x86</_crossHostArch>
+    </PropertyGroup> 
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup> 
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup> 
+    <PropertyGroup>
+      <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_requiredProperty Include="_runtimePackageDir;_jitPackageDir;_corefxPackageDir;_winmdPackageDir" />
+    </ItemGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+  </Target>
+
+  <Target Name="GetCrossgenToolPaths"
+          DependsOnTargets="GetCorePackagePaths">
+    <ItemGroup>
+      <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
+      <_runtimeCLR Include="$(_runtimePackageDir)**/$(LibraryFilePrefix)coreclr$(LibraryFileExtension)" />
+      <_runtimeCoreLib Include="$(_runtimePackageDir)**/native/System.Private.CoreLib.dll" />
+      <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
+      <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
+      <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
+      <_crossGenPath>$(_runtimePackageDir)tools$(_crossDir)/crossgen$(ApplicationFileExtension)</_crossGenPath>
+      <_runtimeDirectory>%(_runtimeCLR.RootDir)%(_runtimeCLR.Directory)</_runtimeDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_runtimeCoreLib)' != ''">
+      <_coreLibDirectory>%(_runtimeCoreLib.RootDir)%(_runtimeCoreLib.Directory)</_coreLibDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_jitPath Condition="'$(_crossDir)' == ''">$(_jitPackageDir)runtimes/$(PackageRID)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+      <_jitPath Condition="'$(_crossDir)' != ''">$(_jitPackageDir)runtimes$(_crossDir)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_fxSystemRuntime)' != ''">
+      <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
+      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
+      <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
+    </PropertyGroup>
+    
+    <!--
+      DiaSymReader can't be built from source, so use an unrelated default directory in that case.
+      This is used as the working directory for crossgen calls.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_requiredProperty Include="_runtimeDirectory;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory;_diaSymReaderToolDir" />
+    </ItemGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+
+    <ItemGroup>
+      <!--
+        The following path must be passed to crossgen to locate all dependencies. Include it first
+        so in case of conflicts, DLLs are found in the framework being crossgenned.
+      -->
+      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
+      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
+      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
+      <!-- the following need not be passed to crossgen but we do so to be safe. -->
+      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+      <!-- The following is necessary to crossgen WindowsDesktop. For NETCoreApp it's automatic because we're crossgenning CoreFX bits. -->
+      <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Prepares all items for cross-gen and replaces package file items with their cross-gen'ed equivalents -->
+  <Target Name="PrepareForCrossGen"
+          Condition="'$(DisableCrossgen)' != 'true'"
+          DependsOnTargets="GetFilesFromPackages">
+    <PropertyGroup>
+      <_crossGenIntermediatePath>$(IntermediateOutputPath)crossgen\</_crossGenIntermediatePath>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <!--
+        Skip crossgen for some files, including:
+
+        System.Runtime.WindowsRuntime. Windows.winmd is required to crossgen this assembly, but
+        Xplat crossgen doesn't accept -Platform_Winmd_Paths. This is fine because
+        System.Runtime.WindowsRuntime is only supported on Windows.
+
+        Resource DLLs in 'cs/', 'de/', ... subdirectories.
+      -->
+      <_filesToCrossGen
+        Include="@(RidSpecificFilesToPackage)"
+        Condition="
+          '%(RidSpecificFilesToPackage.IsNative)' != 'true' AND
+          '%(FileName)' != 'System.Private.CoreLib' AND
+          '%(FileName)' != 'mscorlib' AND
+          '%(Extension)' == '.dll' AND
+          '%(RidSpecificFilesToPackage.DestinationSubDirectory)' == '' AND
+          (
+            '%(FileName)' != 'System.Runtime.WindowsRuntime' Or
+            '$(OS)'=='Windows_NT'
+          )">
+        <CrossGenedDirectory>$(CrossGenOutputPath)%(TargetPath)/</CrossGenedDirectory>
+        <CrossGenedPath>$(CrossGenOutputPath)%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
+        <CrossGenSymbolSemaphorePath>$(_crossGenIntermediatePath)%(FileName).symbol.semaphore</CrossGenSymbolSemaphorePath>
+      </_filesToCrossGen>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+      <FilesToPackage Remove="@(_filesToCrossGen)" />
+      <FilesToPackage Include="@(_filesToCrossGen->'%(CrossGenedPath)')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Ensure crossgen is executable. See https://github.com/NuGet/Home/issues/4424 -->
+  <Target Name="EnsureCrossGenIsExecutable"
+          Condition="'$(OSGroup)' != 'Windows_NT'"
+          DependsOnTargets="GetCrossgenToolPaths">
+    <Exec
+      Command="chmod u+x $(_crossGenPath)"
+      Condition="'$(OSGroup)' != 'Windows_NT' AND Exists('$(_crossGenPath)')" />
+  </Target>
+
+  <Target Name="CrossGen"
+          DependsOnTargets="
+            PrepareForCrossGen;
+            CreateCrossGenImages;
+            CreateCrossGenSymbols" />
+
+  <Target Name="CreateCrossGenImages"
+          Condition="'@(_filesToCrossGen)' != ''"
+          DependsOnTargets="
+            GetCrossgenToolPaths;
+            EnsureCrossGenIsExecutable"
+          Inputs="@(_filesToCrossGen);$(_crossGenPath)"
+          Outputs="%(_filesToCrossGen.CrossGenedPath)">
+    <PropertyGroup>
+      <_crossGenResponseFile>$(_crossGenIntermediatePath)%(_filesToCrossGen.FileName).rsp</_crossGenResponseFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_crossGenArgs Include="-readytorun" />
+      <_crossGenArgs Include="-in %(_filesToCrossGen.FullPath)" />
+      <_crossGenArgs Include="-out %(_filesToCrossGen.CrossGenedPath)" />
+      <_crossGenArgs Include="-platform_assemblies_paths $(_crossgenPlatformAssemblies)" />
+      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OS)'=='Windows_NT'" />
+      <_crossGenArgs Include="-JITPath $(_jitPath)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_partialCrossgenFlag>0</_partialCrossgenFlag>
+    </PropertyGroup>
+
+    <!-- Measurements show that doing partial crossgen on these assemblies captures a lot of the potential size saving. -->
+    <PropertyGroup Condition="'$(OSGroup)' == 'Linux'">
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.ComponentModel.TypeConverter'">1</_partialCrossgenFlag>
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Linq.Expressions'">1</_partialCrossgenFlag>
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Private.Xml'">1</_partialCrossgenFlag>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_crossGenIntermediatePath)" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenedPath)'))" />
+    <WriteLinesToFile File="$(_crossGenResponseFile)" Lines="@(_crossGenArgs)" Overwrite="true" />
+
+    <!--
+      Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and in some cases
+      crossgen warnings need to be ignored, like https://github.com/dotnet/core-setup/issues/5940.
+    -->
+    <Exec
+      Command="$(_crossGenPath) @$(_crossGenResponseFile)"
+      WorkingDirectory="$(_diaSymReaderToolDir)"
+      EnvironmentVariables="COMPlus_PartialNGen=$(_partialCrossgenFlag)"
+      IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
+  <Target Name="CreateCrossGenSymbols"
+          Condition="'$(CrossGenSymbolExtension)' != ''"
+          DependsOnTargets="CreateCrossGenImages"
+          Inputs="%(_filesToCrossGen.CrossGenedPath)"
+          Outputs="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)">
+    <PropertyGroup>
+      <_crossGenSymbolsResponseFile>$(_crossGenIntermediatePath)%(_filesToCrossGen.FileName).symbols.rsp</_crossGenSymbolsResponseFile>
+      <_crossGenSymbolsOptionName Condition="'$(OS)' == 'Windows_NT'">CreatePDB</_crossGenSymbolsOptionName>
+      <_crossGenSymbolsOptionName Condition="'$(_crossGenSymbolsOptionName)' == ''">CreatePerfMap</_crossGenSymbolsOptionName>
+      <_crossGenSymbolsOutputDirectory>$(CrossGenSymbolsOutputPath)/%(_filesToCrossGen.TargetPath)</_crossGenSymbolsOutputDirectory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_crossGenSymbolsArgs Include="-readytorun" />
+      <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)$(_pathSeparatorEscaped)$(_fxLibDirectory)" />
+      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OS)'=='Windows_NT'"/>
+      <_crossGenSymbolsArgs Include="-$(_crossGenSymbolsOptionName)" />
+      <_crossGenSymbolsArgs Include="$(_crossGenSymbolsOutputDirectory)" />
+      <_crossGenSymbolsArgs Include="%(_filesToCrossGen.CrossGenedPath)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(_crossGenIntermediatePath)" />
+    <WriteLinesToFile File="$(_crossGenSymbolsResponseFile)" Lines="@(_crossGenSymbolsArgs)" Overwrite="true" />
+
+    <MakeDir Directories="$(_crossGenSymbolsOutputDirectory)" />
+
+    <Exec
+      Command="$(_crossGenPath) @$(_crossGenSymbolsResponseFile)"
+      WorkingDirectory="$(_diaSymReaderToolDir)"
+      EnvironmentVariables="COMPlus_PartialNGen=0" />
+
+    <Touch Files="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)" AlwaysCreate="true" />
+  </Target>
+
+  <!--
+    Note this target should not build anything since it will run during packaging, so it
+    cannot depend on CreateCrossGenSymbols.  It assumes that this project has already
+    gotten "Build" called on it to generate the symbol files.
+  -->
+  <Target Name="GetCrossGenSymbolsFiles"
+          Condition="'$(CrossGenSymbolExtension)' != ''">
+    <ItemGroup>
+      <FilesToPackage Include="$(CrossGenSymbolsOutputPath)/**/*$(CrossGenSymbolExtension)">
+        <IsSymbolFile>true</IsSymbolFile>
+        <TargetPath>runtimes/$(PackageRID)/lib/$(PackageTargetFramework)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateRedistributeSymbolArchiveLayout"
+          DependsOnTargets="GetFilesToPackage">
+    <ItemGroup>
+      <RedistributeSymbolFile
+        Include="@(FilesToPackage)"
+        Condition="'%(FilesToPackage.IsSymbolFile)' == 'true'" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RedistributeSymbolFile)"
+      DestinationFolder="$(PackageSymbolsBinDir)$(MSBuildProjectName)\%(TargetPath)\" />
+  </Target>
+
+  <Target Name="GetRuntimeFilesToPackage"
+          BeforeTargets="GetFilesToPackage"
+          DependsOnTargets="PrepareForCrossGen;GetCrossGenSymbolsFiles" />
+
+  <Target Name="GetReferenceFilenames"
+          DependsOnTargets="ResolveReferences"
+          Returns="@(Reference -> '%(Filename)')" />
+
+  <!-- Target overrides (can't be shared with pkgproj) -->
+
+  <Target Name="Build"
+          DependsOnTargets="
+            GetSkipBuildProps;
+            BuildDepprojArtifacts" />
+
+  <Target Name="BuildDepprojArtifacts"
+          DependsOnTargets="
+            GetFilesToPackage;
+            CrossGen;
+            GenerateHashVersionsFile;
+            GenerateFileVersionProps;
+            GenerateRedistributeSymbolArchiveLayout"
+          Condition="'$(SkipBuild)' != 'true'" />
+
+</Project>

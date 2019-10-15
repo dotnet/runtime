@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Starting with 3.0, Microsoft.NETCore.App (MNA) is a dummy package, no longer providing any build
+    or runtime assets. For compatibility with existing tests, Microsoft.NETCore.App.Internal (MNAI)
+    now exists as an internal compatibility package. It contains the assets MNA used to have.
+
+    Inject the MNAI package with an opportunity to disable for non-3.0 projects.
+  -->
+  <PropertyGroup>
+    <UseMicrosoftNETCoreAppInternalWorkaround Condition="'$(UseMicrosoftNETCoreAppInternalWorkaround)' == ''">true</UseMicrosoftNETCoreAppInternalWorkaround>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseMicrosoftNETCoreAppInternalWorkaround)' == 'true'">
+    <PackageReference Include="Microsoft.NETCore.App.Internal" Version="$(MNAVersion)" />
+    <!-- Provide a framework to put in the runtimeconfig. -->
+    <RuntimeFramework Include="Microsoft.NETCore.App" Version="$(MNAVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(UseMicrosoftNETCoreAppInternalWorkaround)' == 'true'">
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <DisableImplicitNETCorePlatformsReference>true</DisableImplicitNETCorePlatformsReference>
+    <UseAppHostFromAssetsFile>true</UseAppHostFromAssetsFile>
+  </PropertyGroup>
+
+</Project>

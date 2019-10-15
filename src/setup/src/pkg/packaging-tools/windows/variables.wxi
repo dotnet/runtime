@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <?define Dotnet_ProductVersion = "$(var.BuildVersion)" ?>
+  <?define Dotnet_BuildVersion = "$(var.BuildVersion)" ?>
+
+  <?define Manufacturer     =   "Microsoft Corporation" ?>
+  <?define ProductName      =   "$(var.ProductMoniker) ($(var.TargetArchitectureDescription))" ?>
+  <?define ProductLanguage  =   "1033" ?>
+  <?define ProductVersion   =   "$(var.Dotnet_ProductVersion)" ?>
+  <?define LCID  = "$(var.ProductLanguage)"?>
+  <?define DowngradeErrorMessage  = "A newer version is already installed; please uninstall it and re-run setup."?>
+
+  <?define Platform   =   "$(sys.BUILDARCH)" ?>
+
+  <?if $(var.Platform)=x86?>
+    <?define Program_Files="ProgramFilesFolder"?>
+    <?define Win64AttributeValue=no?>
+  <?elseif $(var.Platform)=x64?>
+    <?define Program_Files="ProgramFiles64Folder"?>
+    <?define Win64AttributeValue=yes?>
+  <?else?>
+    <?error Invalid Platform ($(var.Platform))?>
+  <?endif?>
+
+  <?define DependencyKey   = "$(var.DependencyKeyName)_$(var.BuildVersion)_$(var.Platform)$(var.CrossArchContentsPlatformPart)"?>
+  <?define DependencyKeyId = "$(var.DependencyKey)" ?>
+
+</Include>

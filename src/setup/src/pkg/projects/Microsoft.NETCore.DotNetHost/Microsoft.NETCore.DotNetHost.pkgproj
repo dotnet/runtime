@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <VersionProp>HostVersion</VersionProp>
+
+    <InstallerName>dotnet-host</InstallerName>
+    <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
+  </PropertyGroup>
+
+  <Target Name="SetupHostSpecificWixBuild"
+          DependsOnTargets="GetInstallerBrandingNames"
+          BeforeTargets="GetWixBuildConfiguration">
+    <PropertyGroup>
+      <WixProductMoniker>$(SharedHostBrandName)</WixProductMoniker>
+      <RegKeyProductName>sharedhost</RegKeyProductName>
+      <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
+      <VSInsertionShortComponentName>SharedHost</VSInsertionShortComponentName>
+
+      <PublishRootDir>$(IntermediateOutputPath)publishRoot/</PublishRootDir>
+    </PropertyGroup>
+
+    <!-- Always clean this up to avoid side-by-side versions in unclean dev builds. -->
+    <RemoveDir Directories="$(PublishRootDir)" />
+
+    <!-- copy shared host layout -->
+    <Copy SourceFiles="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)"
+          DestinationFolder="$(PublishRootDir)" />
+
+    <Copy SourceFiles="$(ProjectDir)THIRD-PARTY-NOTICES.TXT"
+          DestinationFiles="$(PublishRootDir)ThirdPartyNotices.txt" />
+
+    <Copy SourceFiles="$(ProjectDir)LICENSE.TXT"
+          DestinationFiles="$(PublishRootDir)LICENSE.txt"
+          Condition="'$(TargetsUnix)' == 'true'"/>
+
+    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MSFT.txt"
+          DestinationFiles="$(PublishRootDir)LICENSE.txt"
+          Condition="'$(TargetsUnix)' != 'true'"/>
+
+    <ItemGroup>
+      <WixSrcFile Include="host.wxs" />
+
+      <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
+
+      <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+      <CandleVariables Include="HostSrc" Value="$(PublishRootDir)" />
+    </ItemGroup>
+  </Target>
+
+  <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildProjectName).props" />
+
+</Project>

@@ -1,0 +1,56 @@
+parameters:
+  name: ''
+
+steps:
+# Upload build outputs as build artifacts only if internal and not PR, to save storage space.
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  - task: CopyFiles@2
+    displayName: Prepare job-specific Artifacts subdirectory
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
+      Contents: |
+        Shipping/**/*
+        NonShipping/**/*
+      TargetFolder: '$(Build.StagingDirectory)/Artifacts/${{ parameters.name }}'
+      CleanTargetFolder: true
+    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      pathToPublish: '$(Build.StagingDirectory)/Artifacts'
+      artifactName: IntermediateUnsignedArtifacts
+      artifactType: container
+    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+# Always upload test outputs and build logs.
+- task: PublishTestResults@2
+  displayName: Publish Test Results
+  inputs:
+    testResultsFormat: 'xUnit'
+    testResultsFiles: '*.xml'
+    searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
+    mergeTestResults: true
+    testRunTitle: ${{ parameters.name }}-$(_BuildConfig)
+  continueOnError: true
+  condition: always()
+
+- task: CopyFiles@2
+  displayName: Prepare BuildLogs staging directory
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      **/*.log
+      **/*.binlog
+    TargetFolder: '$(Build.StagingDirectory)/BuildLogs'
+    CleanTargetFolder: true
+  continueOnError: true
+  condition: succeededOrFailed()
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish BuildLogs
+  inputs:
+    PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
+    ArtifactName: Logs-${{ parameters.name }}-$(_BuildConfig)
+  continueOnError: true
+  condition: succeededOrFailed()

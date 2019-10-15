@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
+    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.Targets" Version="$(MicrosoftNETCoreTargetsPackageVersion)" />
+    <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryPackageVersion)" />
+  </ItemGroup>
+
+  <!-- This tool is a prebuilt not buildable from source. -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="$(MicrosoftDiaSymReaderNativePackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
+         Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
+    <DependenciesToPackage Include="NETStandard.Library" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
+  </ItemGroup>
+
+  <!-- get paths from packages that are needed for cross-gen and other includes,
+       only relevant for runtime-specific builds -->
+  <Target Name="GetPackagePaths"
+          Condition="'$(PackageTargetRuntime)' != ''"
+          DependsOnTargets="GetCorePackagePaths" />
+
+  <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveReferences;GetPackagePaths">
+    <ItemGroup>
+      <_coreFxVersionFile
+        Include="$(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
+        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))"
+        Name="corefx" />
+      <_coreClrVersionFile
+        Include="$(_runtimePackageDir)version.txt"
+        Name="coreclr" />
+
+      <DependencyVersionFile Include="@(_coreFxVersionFile);@(_coreClrVersionFile)" />
+    </ItemGroup>
+
+    <Error
+      Condition="'@(_coreFxVersionFile)' == ''"
+      Text="Failed to locate corefx version.txt file." />
+
+    <Error
+      Condition="'@(_coreClrVersionFile)' == ''"
+      Text="Failed to locate coreclr version.txt file." />
+  </Target>
+
+  <!-- Fetches all the runtime items from the packages that we want to redist -->
+  <Target Name="GetRuntimeFilesFromPackages"
+          BeforeTargets="GetRuntimeFilesToPackage"
+          DependsOnTargets="GetCorePackagePaths">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+      <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
+      <FilesToPackage Include="@(_ToolsToPackage)">
+        <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
+        <!--
+          Trim '/' at the end of the target path, if exists. The packaging tools automatically add
+          an ending '/' for files without any extension, resulting in e.g. 'tools//' for Linux
+          'crossgen', which creates a dir without a name in the nupkg. This folder collapses when
+          extracted to disk, but results in confusing artifacts when inspected manually, especially
+          when 'crossgen.dbg' is outside this nameless dir.
+        -->
+        <TargetPath>$([System.String]::new('tools/%(RecursiveDir)').TrimEnd('/'))</TargetPath>
+        <IsNative>true</IsNative>
+      </FilesToPackage>
+      <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackageDir)runtimes$(_crossDir)/native/*.*">
+        <TargetPath>runtimes$(_crossDir)/native</TargetPath>
+        <IsNative>true</IsNative>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+  
+  <Import Project="localnetcoreapp.override.targets" />
+</Project>

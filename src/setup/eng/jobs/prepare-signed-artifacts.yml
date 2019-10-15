@@ -1,0 +1,63 @@
+parameters:
+  dependsOn: []
+  PublishRidAgnosticPackagesFromJobName: ''
+
+jobs:
+- job: PrepareSignedArtifacts
+  displayName: Prepare Signed Artifacts
+  dependsOn: ${{ parameters.dependsOn }}
+  pool:
+    name: NetCoreInternal-Pool
+    queue: buildpool.windows.10.amd64.vs2017
+  # Double the default timeout.
+  timeoutInMinutes: 120
+  workspace:
+    clean: all
+
+  steps:
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: NuGetAuthenticate@0
+
+  - task: MicroBuildSigningPlugin@2
+    displayName: Install MicroBuild plugin for Signing
+    inputs:
+      signType: $(SignType)
+      zipSources: false
+      feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+    continueOnError: false
+    condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+  - task: DownloadBuildArtifacts@0
+    displayName: Download IntermediateUnsignedArtifacts
+    inputs:
+      artifactName: IntermediateUnsignedArtifacts
+      downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
+
+  - script: >-
+      build.cmd -ci
+      -projects $(Build.SourcesDirectory)\publish\prepare-artifacts.proj
+      /p:Configuration=Release
+      /p:PublishRidAgnosticPackagesFromJobName=${{ parameters.PublishRidAgnosticPackagesFromJobName }}
+      /p:SignType=$(SignType)
+      /p:DotNetSignType=$(SignType)
+      /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
+    displayName: Prepare artifacts and upload to build
+
+  - task: CopyFiles@2
+    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+        **/*.log
+        **/*.binlog
+      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+    continueOnError: true
+    condition: succeededOrFailed()
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact BuildLogs
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+      ArtifactName: Logs-PrepareSignedArtifacts
+    condition: succeededOrFailed()

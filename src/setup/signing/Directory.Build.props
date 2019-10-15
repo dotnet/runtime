@@ -1,0 +1,12 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+
+    <!-- Skip signing steps by default for non-official builds. -->
+    <SkipSigning Condition="'$(SkipSigning)' == '' and '$(OfficialBuild)' != 'true'">true</SkipSigning>
+  </PropertyGroup>
+
+</Project>

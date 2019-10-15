@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="20">
+    <mask id="a">
+        <rect width="240" height="20" rx="0" fill="#fff" />
+    </mask>
+    <g mask="url(#a)">
+        <path fill="#555" d="M0 0h52v20H0z" />
+        <path fill="#007ec6" d="M52 0h188v20H52z" />
+        <path fill="url(#b)" d="M0 0h240v20H0z" />
+    </g>
+    <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+        <text x="26" y="15" fill="#010101" fill-opacity=".3">version</text>
+        <text x="26" y="14">version</text>
+        <text x="146" y="15" fill="#010101" fill-opacity=".3">ver_number</text>
+        <text x="146" y="14">ver_number</text>
+    </g>
+</svg>

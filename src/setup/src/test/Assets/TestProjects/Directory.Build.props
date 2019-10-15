@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.props))\TestProjects.props" />
+
+  <PropertyGroup>
+    <RestorePackagesPath>$(TestRestorePackagesPath)</RestorePackagesPath>
+    <RestoreNoCache>true</RestoreNoCache>
+  </PropertyGroup>
+
+</Project>
