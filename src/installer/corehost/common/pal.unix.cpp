@@ -297,26 +297,32 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
+bool is_read_write_able_directory(pal::string_t& dir)
+{
+    return pal::realpath(&dir) &&
+           (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
+}
+
 bool pal::get_temp_directory(pal::string_t& tmp_dir)
 {
     // First, check for the POSIX standard environment variable
     if (pal::getenv(_X("TMPDIR"), &tmp_dir))
     {
-        return pal::realpath(&tmp_dir);
+        return is_read_write_able_directory(tmp_dir);
     }
 
     // On non-compliant systems (ex: Ubuntu) try /var/tmp or /tmp directories.
     // /var/tmp is prefered since its contents are expected to survive across
     // machine reboot.
     pal::string_t _var_tmp = _X("/var/tmp/");
-    if (pal::realpath(&_var_tmp))
+    if (is_read_write_able_directory(_var_tmp))
     {
         tmp_dir.assign(_var_tmp);
         return true;
     }
 
     pal::string_t _tmp = _X("/tmp/");
-    if (pal::realpath(&_tmp))
+    if (is_read_write_able_directory(_tmp))
     {
         tmp_dir.assign(_tmp);
         return true;
