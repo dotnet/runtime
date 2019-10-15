@@ -136,8 +136,7 @@ namespace System.IO
 
         public static string GetTempPath()
         {
-            Span<char> initialBuffer = stackalloc char[PathInternal.MaxShortPath];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             GetTempPath(ref builder);
 
@@ -165,13 +164,11 @@ namespace System.IO
         // name on disk.
         public static string GetTempFileName()
         {
-            Span<char> initialTempPathBuffer = stackalloc char[PathInternal.MaxShortPath];
-            ValueStringBuilder tempPathBuilder = new ValueStringBuilder(initialTempPathBuffer);
+            var tempPathBuilder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             GetTempPath(ref tempPathBuilder);
 
-            Span<char> initialBuffer = stackalloc char[PathInternal.MaxShortPath];
-            var builder = new ValueStringBuilder(initialBuffer);
+            var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             uint result = Interop.Kernel32.GetTempFileNameW(
                 ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference());

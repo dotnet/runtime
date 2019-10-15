@@ -410,8 +410,7 @@ namespace System
 
         private static string? GetDirectoryEntryFullPath(ref Interop.Sys.DirectoryEntry dirent, string currentPath)
         {
-            Span<char> nameBuffer = stackalloc char[Interop.Sys.DirectoryEntry.NameBufferSize];
-            ReadOnlySpan<char> direntName = dirent.GetName(nameBuffer);
+            ReadOnlySpan<char> direntName = dirent.GetName(stackalloc char[Interop.Sys.DirectoryEntry.NameBufferSize]);
 
             if ((direntName.Length == 1 && direntName[0] == '.') ||
                 (direntName.Length == 2 && direntName[0] == '.' && direntName[1] == '.'))

@@ -1120,8 +1120,7 @@ namespace System
             // Api behavior: if newValue is null, instances of oldValue are to be removed.
             newValue ??= string.Empty;
 
-            Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            var replacementIndices = new ValueListBuilder<int>(initialSpan);
+            var replacementIndices = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
             unsafe
             {
@@ -1272,8 +1271,7 @@ namespace System
                 return new string[] { this };
             }
 
-            Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            var sepListBuilder = new ValueListBuilder<int>(initialSpan);
+            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
             MakeSeparatorList(separators, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
@@ -1350,11 +1348,8 @@ namespace System
                 return SplitInternal(separator!, count, options);
             }
 
-            Span<int> sepListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            var sepListBuilder = new ValueListBuilder<int>(sepListInitialSpan);
-
-            Span<int> lengthListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            var lengthListBuilder = new ValueListBuilder<int>(lengthListInitialSpan);
+            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            var lengthListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
             MakeSeparatorList(separators!, ref sepListBuilder, ref lengthListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
@@ -1378,8 +1373,7 @@ namespace System
 
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
-            Span<int> sepListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            var sepListBuilder = new ValueListBuilder<int>(sepListInitialSpan);
+            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
             MakeSeparatorList(separator, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
