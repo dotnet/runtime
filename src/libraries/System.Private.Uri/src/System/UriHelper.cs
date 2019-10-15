@@ -10,9 +10,11 @@ namespace System
 {
     internal static class UriHelper
     {
-        internal static readonly char[] s_hexUpperChars = {
-                                   '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        internal static ReadOnlySpan<byte> HexUpperChars => new byte[16]
+        {
+            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+            (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F'
+        };
 
         internal static readonly Encoding s_noFallbackCharUTF8 = Encoding.GetEncoding(
             Encoding.UTF8.CodePage, new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
@@ -114,141 +116,186 @@ namespace System
             return true;
         }
 
-        // - forceX characters are always escaped if found
-        // - rsvd character will remain unescaped
-        //
-        // start    - starting offset from input
-        // end      - the exclusive ending offset in input
-        // destPos  - starting offset in dest for output, on return this will be an exclusive "end" in the output.
-        //
-        // In case "dest" has lack of space it will be reallocated by preserving the _whole_ content up to current destPos
-        //
-        // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
-        //
-        private const short c_MaxAsciiCharsReallocate = 40;
-        private const short c_MaxUnicodeCharsReallocate = 40;
-        private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
-        private const short c_EncodedCharsPerByte = 3;
-
-        [return: NotNullIfNotNull("dest")]
-        internal static unsafe char[]? EscapeString(string input, int start, int end, char[]? dest, ref int destPos,
-            bool isUriString, char force1, char force2, char rsvd)
+        internal static string EscapeString(
+            string stringToEscape, // same name as public API
+            bool checkExistingEscaped, ReadOnlySpan<bool> unreserved, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
-            int i = start;
-            int prevInputPos = start;
-            byte* bytes = stackalloc byte[c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar];   // 40*4=160
-
-            fixed (char* pStr = input)
+            if (stringToEscape is null)
             {
-                for (; i < end; ++i)
-                {
-                    char ch = pStr[i];
-
-                    // a Unicode ?
-                    if (ch > '\x7F')
-                    {
-                        short maxSize = (short)Math.Min(end - i, (int)c_MaxUnicodeCharsReallocate - 1);
-
-                        short count = 1;
-                        for (; count < maxSize && pStr[i + count] > '\x7f'; ++count)
-                            ;
-
-                        // Is the last a high surrogate?
-                        if (pStr[i + count - 1] >= 0xD800 && pStr[i + count - 1] <= 0xDBFF)
-                        {
-                            // Should be a rare case where the app tries to feed an invalid Unicode surrogates pair
-                            if (count == 1 || count == end - i)
-                                throw new UriFormatException(SR.net_uri_BadString);
-                            // need to grab one more char as a Surrogate except when it's a bogus input
-                            ++count;
-                        }
-
-                        dest = EnsureDestinationSize(pStr, dest, i,
-                            (short)(count * c_MaxUTF_8BytesPerUnicodeChar * c_EncodedCharsPerByte),
-                            c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar * c_EncodedCharsPerByte,
-                            ref destPos, prevInputPos);
-
-                        short numberOfBytes = (short)Encoding.UTF8.GetBytes(pStr + i, count, bytes,
-                            c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar);
-
-                        // This is the only exception that built in UriParser can throw after a Uri ctor.
-                        // Should not happen unless the app tries to feed an invalid Unicode String
-                        if (numberOfBytes == 0)
-                            throw new UriFormatException(SR.net_uri_BadString);
-
-                        i += (count - 1);
-
-                        for (count = 0; count < numberOfBytes; ++count)
-                            EscapeAsciiChar((char)bytes[count], dest, ref destPos);
-
-                        prevInputPos = i + 1;
-                    }
-                    else if (ch == '%' && rsvd == '%')
-                    {
-                        // Means we don't reEncode '%' but check for the possible escaped sequence
-                        dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
-                            c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        if (i + 2 < end && EscapedAscii(pStr[i + 1], pStr[i + 2]) != Uri.c_DummyChar)
-                        {
-                            // leave it escaped
-                            dest[destPos++] = '%';
-                            dest[destPos++] = pStr[i + 1];
-                            dest[destPos++] = pStr[i + 2];
-                            i += 2;
-                        }
-                        else
-                        {
-                            EscapeAsciiChar('%', dest, ref destPos);
-                        }
-                        prevInputPos = i + 1;
-                    }
-                    else if (ch == force1 || ch == force2)
-                    {
-                        dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
-                            c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        EscapeAsciiChar(ch, dest, ref destPos);
-                        prevInputPos = i + 1;
-                    }
-                    else if (ch != rsvd && (isUriString ? !IsReservedUnreservedOrHash(ch) : !IsUnreserved(ch)))
-                    {
-                        dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
-                            c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        EscapeAsciiChar(ch, dest, ref destPos);
-                        prevInputPos = i + 1;
-                    }
-                }
-
-                if (prevInputPos != i)
-                {
-                    // need to fill up the dest array ?
-                    if (prevInputPos != start || dest != null)
-                        dest = EnsureDestinationSize(pStr, dest, i, 0, 0, ref destPos, prevInputPos);
-                }
+                throw new ArgumentNullException(nameof(stringToEscape));
+            }
+            if (stringToEscape.Length == 0)
+            {
+                return string.Empty;
             }
 
-            return dest;
+            // Get the table of characters that do not need to be escaped.
+            Debug.Assert(unreserved.Length == 0x80);
+            ReadOnlySpan<bool> noEscape = stackalloc bool[0];
+            if ((forceEscape1 | forceEscape2) == 0)
+            {
+                noEscape = unreserved;
+            }
+            else
+            {
+                Span<bool> tmp = stackalloc bool[0x80];
+                unreserved.CopyTo(tmp);
+                tmp[forceEscape1] = false;
+                tmp[forceEscape2] = false;
+                noEscape = tmp;
+            }
+
+            // If the whole string is made up of ASCII unreserved chars, just return it.
+            Debug.Assert(!noEscape['%'], "Need to treat % specially; it should be part of any escaped set");
+            int i = 0;
+            char c;
+            for (; i < stringToEscape.Length && (c = stringToEscape[i]) <= 0x7F && noEscape[c]; i++) ;
+            if (i == stringToEscape.Length)
+            {
+                return stringToEscape;
+            }
+
+            // Otherwise, create a ValueStringBuilder to store the escaped data into,
+            // append to it all of the noEscape chars we already iterated through,
+            // escape the rest, and return the result as a string.
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            vsb.Append(stringToEscape.AsSpan(0, i));
+            EscapeStringToBuilder(stringToEscape.AsSpan(i), ref vsb, noEscape, checkExistingEscaped);
+            return vsb.ToString();
         }
 
-        //
-        // ensure destination array has enough space and contains all the needed input stuff
-        //
-        private static unsafe char[] EnsureDestinationSize(char* pStr, char[]? dest, int currentInputPos,
-            short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
+        // forceX characters are always escaped if found
+        // destPos  - starting offset in dest for output, on return this will be an exclusive "end" in the output.
+        // In case "dest" has lack of space it will be reallocated by preserving the _whole_ content up to current destPos
+        // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
+        [return: NotNullIfNotNull("dest")]
+        internal static char[]? EscapeString(
+            ReadOnlySpan<char> stringToEscape,
+            char[]? dest, ref int destPos,
+            bool checkExistingEscaped, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
-            if ((object?)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
+            // Get the table of characters that do not need to be escaped.
+            ReadOnlySpan<bool> noEscape = stackalloc bool[0];
+            if ((forceEscape1 | forceEscape2) == 0)
             {
-                // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
-                char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
-
-                if ((object?)dest != null && destPos != 0)
-                    Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
-                dest = newresult;
+                noEscape = UnreservedReservedTable;
+            }
+            else
+            {
+                Span<bool> tmp = stackalloc bool[0x80];
+                UnreservedReservedTable.CopyTo(tmp);
+                tmp[forceEscape1] = false;
+                tmp[forceEscape2] = false;
+                noEscape = tmp;
             }
 
-            // ensuring we copied everything form the input string left before last escaping
-            while (prevInputPos != currentInputPos)
-                dest[destPos++] = pStr[prevInputPos++];
+            // If the whole string is made up of ASCII unreserved chars, take a fast pasth.  Per the contract, if
+            // dest is null, just return it.  If it's not null, copy everything to it and update destPos accordingly;
+            // if that requires resizing it, do so.
+            Debug.Assert(!noEscape['%'], "Need to treat % specially in case checkExistingEscaped is true");
+            int i = 0;
+            char c;
+            for (; i < stringToEscape.Length && (c = stringToEscape[i]) <= 0x7F && noEscape[c]; i++) ;
+            if (i == stringToEscape.Length)
+            {
+                if (dest != null)
+                {
+                    EnsureCapacity(dest, destPos, stringToEscape.Length);
+                    stringToEscape.CopyTo(dest.AsSpan(destPos));
+                    destPos += stringToEscape.Length;
+                }
+
+                return dest;
+            }
+
+            // Otherwise, create a ValueStringBuilder to store the escaped data into,
+            // append to it all of the noEscape chars we already iterated through, and
+            // escape the rest into the ValueStringBuilder.
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            vsb.Append(stringToEscape.Slice(0, i));
+            EscapeStringToBuilder(stringToEscape.Slice(i), ref vsb, noEscape, checkExistingEscaped);
+
+            // Finally update dest with the result.
+            EnsureCapacity(dest, destPos, vsb.Length);
+            vsb.TryCopyTo(dest.AsSpan(destPos), out int charsWritten);
+            destPos += charsWritten;
             return dest;
+
+            static void EnsureCapacity(char[]? dest, int destSize, int requiredSize)
+            {
+                if (dest == null || dest.Length - destSize < requiredSize)
+                {
+                    Array.Resize(ref dest, destSize + requiredSize + 120); // 120 == arbitrary minimum-empty space copied from previous implementation
+                }
+            }
+        }
+
+        private static void EscapeStringToBuilder(
+            ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
+            ReadOnlySpan<bool> noEscape, bool checkExistingEscaped)
+        {
+            // Allocate enough stack space to hold any Rune's UTF8 encoding.
+            Span<byte> utf8Bytes = stackalloc byte[4];
+
+            // Then enumerate every rune in the input.
+            SpanRuneEnumerator e = stringToEscape.EnumerateRunes();
+            while (e.MoveNext())
+            {
+                Rune r = e.Current;
+
+                if (!r.IsAscii)
+                {
+                    // The rune is non-ASCII, so encode it as UTF8, and escape each UTF8 byte.
+                    r.TryEncodeToUtf8(utf8Bytes, out int bytesWritten);
+                    foreach (byte b in utf8Bytes.Slice(0, bytesWritten))
+                    {
+                        vsb.Append('%');
+                        vsb.Append((char)HexUpperChars[(b & 0xf0) >> 4]);
+                        vsb.Append((char)HexUpperChars[b & 0xf]);
+                    }
+                    continue;
+                }
+
+                // If the value doesn't need to be escaped, append it and continue.
+                byte value = (byte)r.Value;
+                if (noEscape[value])
+                {
+                    vsb.Append((char)value);
+                    continue;
+                }
+
+                // If we're checking for existing escape sequences, then if this is the beginning of
+                // one, check the next two characters in the sequence.  This is a little tricky to do
+                // as we're using an enumerator, but luckily it's a ref struct-based enumerator: we can
+                // make a copy and iterate through the copy without impacting the original, and then only
+                // push the original ahead if we find what we're looking for in the copy.
+                if (checkExistingEscaped && value == '%')
+                {
+                    // If the next two characters are valid escaped ASCII, then just output them as-is.
+                    SpanRuneEnumerator tmpEnumerator = e;
+                    if (tmpEnumerator.MoveNext())
+                    {
+                        Rune r1 = tmpEnumerator.Current;
+                        if (r1.IsAscii && IsHexDigit((char)r1.Value) && tmpEnumerator.MoveNext())
+                        {
+                            Rune r2 = tmpEnumerator.Current;
+                            if (r2.IsAscii && IsHexDigit((char)r2.Value))
+                            {
+                                vsb.Append('%');
+                                vsb.Append((char)r1.Value);
+                                vsb.Append((char)r2.Value);
+                                e = tmpEnumerator;
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                // Otherwise, append the escaped character.
+                vsb.Append('%');
+                vsb.Append((char)HexUpperChars[(value & 0xf0) >> 4]);
+                vsb.Append((char)HexUpperChars[value & 0xf]);
+            }
         }
 
         //
@@ -627,8 +674,8 @@ namespace System
         internal static void EscapeAsciiChar(char ch, char[] to, ref int pos)
         {
             to[pos++] = '%';
-            to[pos++] = s_hexUpperChars[(ch & 0xf0) >> 4];
-            to[pos++] = s_hexUpperChars[ch & 0xf];
+            to[pos++] = (char)HexUpperChars[(ch & 0xf0) >> 4];
+            to[pos++] = (char)HexUpperChars[ch & 0xf];
         }
 
         internal static char EscapedAscii(char digit, char next)
@@ -664,7 +711,6 @@ namespace System
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
         private const string RFC2396ReservedMarks = @";/?:@&=+$,";
-        private const string RFC3986UnreservedMarks = @"-_.~";
         private const string AdditionalUnsafeToUnescape = @"%\#"; // While not specified as reserved, these are still unsafe to unescape.
 
         // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:
@@ -698,33 +744,36 @@ namespace System
             }
             return false;
         }
+        
+        // "Reserved" and "Unreserved" characters are based on RFC 3986.
 
-        private static unsafe bool IsReservedUnreservedOrHash(char c)
+        internal static ReadOnlySpan<bool> UnreservedReservedTable => new bool[0x80]
         {
-            if (IsUnreserved(c))
-            {
-                return true;
-            }
-            return (RFC3986ReservedMarks.IndexOf(c) >= 0);
-        }
+            // true for all ASCII letters and digits, as well as the RFC3986 reserved characters, unreserved characters, and hash
+            false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+            false, true,  false, true,  true,  false, true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true,  false, true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true,  false, true,
+            false, true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, false, true,  false,
+        };
 
-        internal static unsafe bool IsUnreserved(char c)
-        {
-            if (UriHelper.IsAsciiLetterOrDigit(c))
-            {
-                return true;
-            }
-            return (RFC3986UnreservedMarks.IndexOf(c) >= 0);
-        }
+        internal static bool IsUnreserved(int c) => c < 0x80 && UnreservedTable[c];
 
-        internal static bool Is3986Unreserved(char c)
+        internal static ReadOnlySpan<bool> UnreservedTable => new bool[0x80]
         {
-            if (UriHelper.IsAsciiLetterOrDigit(c))
-            {
-                return true;
-            }
-            return (RFC3986UnreservedMarks.IndexOf(c) >= 0);
-        }
+            // true for all ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'
+            false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false, false, true,  true,  false,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, false, false, false, false,
+            false, true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, false, false, true,
+            false, true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+            true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, false, true,  false,
+        };
 
         //
         // Is this a gen delim char from RFC 3986
@@ -741,17 +790,16 @@ namespace System
             return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
         }
 
-        //Only consider ASCII characters
-        internal static bool IsAsciiLetter(char character)
-        {
-            return (character >= 'a' && character <= 'z') ||
-                   (character >= 'A' && character <= 'Z');
-        }
+        internal static bool IsAsciiLetter(char character) =>
+            (((uint)character - 'A') & ~0x20) < 26;
 
-        internal static bool IsAsciiLetterOrDigit(char character)
-        {
-            return IsAsciiLetter(character) || (character >= '0' && character <= '9');
-        }
+        internal static bool IsAsciiLetterOrDigit(char character) =>
+            ((((uint)character - 'A') & ~0x20) < 26) ||
+            (((uint)character - '0') < 10);
+
+        internal static bool IsHexDigit(char character) =>
+            ((((uint)character - 'A') & ~0x20) < 6) ||
+            (((uint)character - '0') < 10);
 
         //
         // Is this a Bidirectional control char.. These get stripped

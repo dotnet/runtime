@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -250,7 +248,7 @@ namespace System
                         && tempPtr[i + 1] >= '0' && tempPtr[i + 1] <= '7') // max 0x7F
                     {
                         char ch = UriHelper.EscapedAscii(tempPtr[i + 1], tempPtr[i + 2]);
-                        if (ch != c_DummyChar && UriHelper.Is3986Unreserved(ch))
+                        if (ch != c_DummyChar && UriHelper.IsUnreserved(ch))
                         {
                             return true;
                         }
@@ -569,46 +567,15 @@ namespace System
             }
         }
 
-        //
         // Where stringToEscape is intended to be a completely unescaped URI string.
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
-        // Note that EscapeUriString will also do not escape a '#' sign.
-        //
-        public static string EscapeUriString(string stringToEscape)
-        {
-            if ((object)stringToEscape == null)
-                throw new ArgumentNullException(nameof(stringToEscape));
+        public static string EscapeUriString(string stringToEscape) =>
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
 
-            if (stringToEscape.Length == 0)
-                return string.Empty;
-
-            int position = 0;
-            char[]? dest = UriHelper.EscapeString(stringToEscape, 0, stringToEscape.Length, null, ref position, true,
-                c_DummyChar, c_DummyChar, c_DummyChar);
-            if ((object?)dest == null)
-                return stringToEscape;
-            return new string(dest, 0, position);
-        }
-
-        //
         // Where stringToEscape is intended to be URI data, but not an entire URI.
         // This method will escape any character that is not an unreserved character, including percent signs.
-        //
-        public static string EscapeDataString(string stringToEscape)
-        {
-            if ((object)stringToEscape == null)
-                throw new ArgumentNullException(nameof(stringToEscape));
-
-            if (stringToEscape.Length == 0)
-                return string.Empty;
-
-            int position = 0;
-            char[]? dest = UriHelper.EscapeString(stringToEscape, 0, stringToEscape.Length, null, ref position, false,
-                c_DummyChar, c_DummyChar, c_DummyChar);
-            if (dest == null)
-                return stringToEscape;
-            return new string(dest, 0, position);
-        }
+        public static string EscapeDataString(string stringToEscape) =>
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedTable);
 
         //
         // Cleans up the specified component according to Iri rules
@@ -781,19 +748,12 @@ namespace System
         {
             if (format == UriFormat.UriEscaped)
             {
-                if (_string.Length == 0)
-                    return string.Empty;
-                int position = 0;
-                char[]? dest = UriHelper.EscapeString(_string, 0, _string.Length, null, ref position, true,
-                    c_DummyChar, c_DummyChar, '%');
-                if ((object?)dest == null)
-                    return _string;
-                return new string(dest, 0, position);
+                return UriHelper.EscapeString(_string, checkExistingEscaped: true, UriHelper.UnreservedReservedTable);
             }
-
             else if (format == UriFormat.Unescaped)
+            {
                 return UnescapeDataString(_string);
-
+            }
             else if (format == UriFormat.SafeUnescaped)
             {
                 if (_string.Length == 0)
@@ -806,7 +766,9 @@ namespace System
                 return new string(dest, 0, position);
             }
             else
+            {
                 throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         //

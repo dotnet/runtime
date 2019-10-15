@@ -416,9 +416,12 @@ namespace System.Tests
         }
 
         [Fact]
-        public void EscapeDataString_HighSurrogatePair()
+        public void EscapeDataString_InvalidSurrogatePairs()
         {
-            EscapeDataString("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BD%61bc");
+            EscapeDataString("\uD800", "%EF%BF%BD");
+            EscapeDataString("abc\uD800", "abc%EF%BF%BD");
+            EscapeDataString("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BDabc");
+            EscapeDataString("\xD800\xD800\xDFFF", "%EF%BF%BD%F0%90%8F%BF");
         }
 
         [Fact]
@@ -435,12 +438,9 @@ namespace System.Tests
         }
 
         [Fact]
-        public void EscapeDataString_Invalid()
+        public void EscapeDataString_NullArgument()
         {
-            AssertExtensions.Throws<ArgumentNullException>("stringToEscape", () => Uri.EscapeDataString(null)); // StringToEscape is null
-
-            Assert.Throws<UriFormatException>(() => Uri.EscapeDataString("\uD800")); // Incomplete surrogate pair provided
-            Assert.Throws<UriFormatException>(() => Uri.EscapeDataString("abc\uD800")); // Incomplete surrogate pair provided
+            AssertExtensions.Throws<ArgumentNullException>("stringToEscape", () => Uri.EscapeDataString(null));
         }
 
         [Theory]
@@ -470,9 +470,12 @@ namespace System.Tests
         }
 
         [Fact]
-        public void EscapeUriString_HighSurrogatePair()
+        public void EscapeUriString_InvalidSurrogatePairs()
         {
-            EscapeUriString("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BD%61bc");
+            EscapeUriString("\uD800", "%EF%BF%BD");
+            EscapeUriString("abc\uD800", "abc%EF%BF%BD");
+            EscapeUriString("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BDabc");
+            EscapeUriString("\xD800\xD800\xDFFF", "%EF%BF%BD%F0%90%8F%BF");
         }
 
         [Fact]
@@ -492,9 +495,6 @@ namespace System.Tests
         public void EscapeUriString_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("stringToEscape", () => Uri.EscapeUriString(null)); // StringToEscape is null
-
-            Assert.Throws<UriFormatException>(() => Uri.EscapeUriString("\uD800")); // Incomplete surrogate pair provided
-            Assert.Throws<UriFormatException>(() => Uri.EscapeUriString("abc\uD800")); // Incomplete surrogate pair provided
         }
 
         public static IEnumerable<object[]> GetComponents_Basic_TestData()

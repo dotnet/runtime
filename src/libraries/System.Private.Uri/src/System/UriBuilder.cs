@@ -242,11 +242,9 @@ namespace System
             }
             set
             {
-                if ((value == null) || (value.Length == 0))
-                {
-                    value = "/";
-                }
-                _path = Uri.InternalEscapeString(value.Replace('\\', '/'));
+                _path = string.IsNullOrEmpty(value) ?
+                    "/" :
+                    Uri.InternalEscapeString(value.Replace('\\', '/'));
                 _changed = true;
             }
         }
