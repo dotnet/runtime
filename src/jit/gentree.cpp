@@ -3121,8 +3121,8 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
             else
             {
-                assert(op2);
-                assert(op2->gtOper == GT_LSH || op2->gtOper == GT_MUL);
+                assert(op2 != nullptr);
+                assert(op2->OperIs(GT_LSH, GT_MUL));
                 op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
                 // We may have eliminated multiple shifts and multiplies in the addressing mode,
                 // so navigate down through them to get to "idx".
@@ -3146,14 +3146,14 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 {
                     if ((op1->gtOper == GT_MUL) || (op1->gtOper == GT_LSH))
                     {
-                        if ((op1->AsOp()->gtOp1->gtOper == GT_NOP) ||
-                            (op1->AsOp()->gtOp1->gtOper == GT_MUL &&
-                             op1->AsOp()->gtOp1->AsOp()->gtOp1->gtOper == GT_NOP))
+                        GenTree* op1op1 = op1->AsOp()->gtOp1;
+                        if ((op1op1->gtOper == GT_NOP) ||
+                            (op1op1->gtOper == GT_MUL && op1op1->AsOp()->gtOp1->gtOper == GT_NOP))
                         {
                             op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            if (op1->AsOp()->gtOp1->gtOper == GT_MUL)
+                            if (op1op1->gtOper == GT_MUL)
                             {
-                                op1->AsOp()->gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                op1op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                             }
                         }
                     }
@@ -3164,17 +3164,17 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             {
                 if (idx != nullptr)
                 {
-                    assert(op2);
-                    if ((op2->gtOper == GT_MUL) || (op2->gtOper == GT_LSH))
+                    assert(op2 != nullptr);
+                    if (op2->OperIs(GT_MUL, GT_LSH))
                     {
-                        if ((op2->AsOp()->gtOp1->gtOper == GT_NOP) ||
-                            (op2->AsOp()->gtOp1->gtOper == GT_MUL &&
-                             op2->AsOp()->gtOp1->AsOp()->gtOp1->gtOper == GT_NOP))
+                        GenTree* op2op1 = op2->AsOp()->gtOp1;
+                        if ((op2op1->gtOper == GT_NOP) ||
+                            (op2op1->gtOper == GT_MUL && op2op1->AsOp()->gtOp1->gtOper == GT_NOP))
                         {
                             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            if (op2->AsOp()->gtOp1->gtOper == GT_MUL)
+                            if (op2op1->gtOper == GT_MUL)
                             {
-                                op2->AsOp()->gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                             }
                         }
                     }
@@ -17664,8 +17664,8 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                     assert(!AsOp()->gtOp2->gtIntCon.ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
-                    target_ssize_t subMul = target_ssize_t{1}
-                                            << (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t shiftVal = AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t subMul   = target_ssize_t{1} << shiftVal;
                     AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
                 }
