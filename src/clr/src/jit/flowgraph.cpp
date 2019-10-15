@@ -9714,7 +9714,7 @@ void Compiler::fgSimpleLowering()
                 case GT_ARR_LENGTH:
                 {
                     GenTreeArrLen* arrLen = tree->AsArrLen();
-                    GenTree*       arr    = arrLen->gtArrLen.ArrRef();
+                    GenTree*       arr    = arrLen->AsArrLen()->ArrRef();
                     GenTree*       add;
                     GenTree*       con;
 
