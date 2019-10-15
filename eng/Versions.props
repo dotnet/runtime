@@ -1,0 +1,148 @@
+<Project>
+  <PropertyGroup>
+    <!-- The .NET Core product branding version -->
+    <ProductVersion>5.0.0</ProductVersion>
+    <!-- File version numbers -->
+    <MajorVersion>5</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <!-- Always use shipping version instead of dummy version -->
+    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
+    <PreReleaseVersionLabel>alpha1</PreReleaseVersionLabel>
+    <ReleaseBrandSuffix>Alpha 1</ReleaseBrandSuffix>
+    <!-- Enable to remove prerelease label. -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
+    <!-- Opt-in/out repo features -->
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
+    <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
+    <UsingToolXliff>false</UsingToolXliff>
+    <!-- Paths used during restore -->
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>
+    <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ILLink'))</ILLinkDir>
+    <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
+    <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
+    <!-- Blob storage container that has the "Latest" channel to publish to. -->
+    <ContainerName>dotnet</ContainerName>
+    <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
+    <!-- Max version of NETCoreApp, used by test projects. -->
+    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
+    <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Arcade dependencies -->
+    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.1-beta.19463.3</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19463.3</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19463.3</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksPackageVersion>
+    <!-- Core-setup dependencies -->
+    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <!-- Coreclr dependencies -->
+    <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19466.3</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19466.3</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <!-- Corefx dependencies -->
+    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19466.8</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19466.8</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha1.19477.7</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha1.19501.13</MicrosoftNETCoreTargetsPackageVersion>
+    <MicrosoftWin32RegistryVersion>5.0.0-alpha1.19501.13</MicrosoftWin32RegistryVersion>
+    <MicrosoftWin32SystemEventsVersion>5.0.0-alpha1.19501.13</MicrosoftWin32SystemEventsVersion>
+    <MicrosoftWindowsCompatibilityPackageVersion>5.0.0-alpha1.19501.13</MicrosoftWindowsCompatibilityPackageVersion>
+    <SystemCodeDomVersion>5.0.0-alpha1.19501.13</SystemCodeDomVersion>
+    <SystemConfigurationConfigurationManagerVersion>5.0.0-alpha1.19501.13</SystemConfigurationConfigurationManagerVersion>
+    <SystemDiagnosticsEventLogVersion>5.0.0-alpha1.19501.13</SystemDiagnosticsEventLogVersion>
+    <SystemDirectoryServicesVersion>5.0.0-alpha1.19501.13</SystemDirectoryServicesVersion>
+    <SystemDrawingCommonVersion>5.0.0-alpha1.19501.13</SystemDrawingCommonVersion>
+    <SystemIOFileSystemAccessControlVersion>5.0.0-alpha1.19501.13</SystemIOFileSystemAccessControlVersion>
+    <SystemIOPackagingVersion>5.0.0-alpha1.19501.13</SystemIOPackagingVersion>
+    <SystemResourcesExtensionsPackageVersion>5.0.0-alpha1.19501.13</SystemResourcesExtensionsPackageVersion>
+    <SystemSecurityAccessControlVersion>5.0.0-alpha1.19501.13</SystemSecurityAccessControlVersion>
+    <SystemSecurityCryptographyCngVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyCngVersion>
+    <SystemSecurityCryptographyPkcsVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyPkcsVersion>
+    <SystemSecurityCryptographyProtectedDataVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyProtectedDataVersion>
+    <SystemSecurityCryptographyXmlVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyXmlVersion>
+    <SystemSecurityPermissionsVersion>5.0.0-alpha1.19501.13</SystemSecurityPermissionsVersion>
+    <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha1.19501.13</SystemSecurityPrincipalWindowsVersion>
+    <SystemTextJsonVersion>5.0.0-alpha1.19501.13</SystemTextJsonVersion>
+    <SystemTextEncodingsWebVersion>5.0.0-alpha1.19501.13</SystemTextEncodingsWebVersion>
+    <SystemThreadingAccessControlVersion>5.0.0-alpha1.19501.13</SystemThreadingAccessControlVersion>
+    <SystemWindowsExtensionsPackageVersion>5.0.0-alpha1.19501.13</SystemWindowsExtensionsPackageVersion>
+    <!-- Standard dependencies -->
+    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19466.1</NETStandardLibraryPackageVersion>
+    <!-- dotnet-optimization dependencies -->
+    <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationIBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20190716.1</optimizationPGOCoreCLRVersion>
+    <!-- WinForms -->
+    <MicrosoftPrivateWinformsPackageVersion>5.0.0-alpha1.19501.3</MicrosoftPrivateWinformsPackageVersion>
+    <!-- WPF -->
+    <MicrosoftDotNetWpfGitHubPackageVersion>5.0.0-alpha1.19501.7</MicrosoftDotNetWpfGitHubPackageVersion>
+    <!-- WPF Internal -->
+    <MicrosoftDotNetWpfDncEngPackageVersion>5.0.0-alpha1.19502.3</MicrosoftDotNetWpfDncEngPackageVersion>
+    <!-- Not auto-updated. -->
+    <MicrosoftBuildPackageVersion>15.7.179</MicrosoftBuildPackageVersion>
+    <MicrosoftBuildFrameworkPackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildFrameworkPackageVersion>
+    <MicrosoftBuildTasksCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildTasksCorePackageVersion>
+    <MicrosoftBuildUtilitiesCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildUtilitiesCorePackageVersion>
+    <MicrosoftDotNetPlatformAbstractionsPackageVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsPackageVersion>
+    <NugetProjectModelPackageVersion>4.9.4</NugetProjectModelPackageVersion>
+    <NugetPackagingPackageVersion>4.9.4</NugetPackagingPackageVersion>
+    <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
+    <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
+    <!-- sni -->
+    <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
+    <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
+    <!-- Testing -->
+    <MicrosoftNETTestSdkPackageVersion>16.2.0</MicrosoftNETTestSdkPackageVersion>
+    <XUnitPackageVersion>2.4.1</XUnitPackageVersion>
+    <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
+    <MicrosoftDotNetUapTestToolsPackageVersion>1.0.31</MicrosoftDotNetUapTestToolsPackageVersion>
+    <NewtonsoftJsonPackageVersion>12.0.1</NewtonsoftJsonPackageVersion>
+    <!-- Test data -->
+    <SystemIOCompressionTestDataPackageVersion>1.0.14</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>1.0.4</SystemIOPackagingTestDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>1.0.7</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>1.0.6</SystemNetTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>1.0.4</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>1.0.12</SystemDrawingCommonTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>1.0.5</SystemWindowsExtensionsTestDataPackageVersion>
+    <MoqPackageVersion>4.12.0</MoqPackageVersion>
+    <!-- Docs -->
+    <MicrosoftPrivateIntellisensePackageVersion>3.0.0-preview9-190909-1</MicrosoftPrivateIntellisensePackageVersion>
+    <!-- ILLink -->
+    <ILLinkTasksPackageVersion>0.1.5-preview-1461378</ILLinkTasksPackageVersion>
+  </PropertyGroup>
+  <!-- Package names -->
+  <PropertyGroup>
+    <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
+    <WindowsCoreFxOptimizationDataPackageId>optimization.windows_nt-x64.ibc.corefx</WindowsCoreFxOptimizationDataPackageId>
+    <LinuxCoreFxOptimizationDataPackageId>optimization.linux-x64.ibc.corefx</LinuxCoreFxOptimizationDataPackageId>
+    <MicrosoftDotNetUapTestToolsPackageId>microsoft.dotnet.uap.testtools</MicrosoftDotNetUapTestToolsPackageId>
+    <MicrosoftPrivateIntellisensePackageId>microsoft.private.intellisense</MicrosoftPrivateIntellisensePackageId>
+    <MicrosoftDotNetXUnitConsoleRunnerPackage>Microsoft.DotNet.XUnitConsoleRunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
+    <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
+    <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
+    <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
+    <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
+    <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
+    <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
+    <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
+    <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
+    <MicrosoftBclJsonSourcesPackage>Microsoft.Bcl.Json.Sources</MicrosoftBclJsonSourcesPackage>
+    <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
+    <MicrosoftSymbolUploaderBuildTaskPackage>Microsoft.SymbolUploader.Build.Task</MicrosoftSymbolUploaderBuildTaskPackage>
+  </PropertyGroup>
+
+  <!-- Override isolated build dependency versions with versions from Repo API. -->
+  <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
+</Project>
