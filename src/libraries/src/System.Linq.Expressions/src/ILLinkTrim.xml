@@ -1,0 +1,18 @@
+<linker>
+  <assembly fullname="System.Linq.Expressions">
+    <type fullname="System.Linq.Expressions.Interpreter.LightLambda">
+      <!-- required by debugger -->
+      <method name="get_DebugView" />
+    </type>
+    <!-- accessed via reflection -->
+    <type fullname="System.Dynamic.UpdateDelegates" />
+    <type fullname="System.Linq.Expressions.Interpreter.ActionCallInstruction*">
+      <!-- instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Linq.Expressions.Interpreter.FuncCallInstruction*">
+      <!-- instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>

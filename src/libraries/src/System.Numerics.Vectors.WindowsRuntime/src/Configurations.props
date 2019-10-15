@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      uap-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

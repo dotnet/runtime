@@ -1,0 +1,295 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidQuery" xml:space="preserve">
+    <value>The Query string supplied was invalid or improperly formed</value>
+  </data>
+  <data name="InvalidQueryDuplicatedToken" xml:space="preserve">
+    <value>The Query string supplied was invalid because it contains a duplicate token</value>
+  </data>
+  <data name="InvalidQueryNullToken" xml:space="preserve">
+    <value>The Query string supplied was invalid because a supplied token was null</value>
+  </data>
+  <data name="WorkerThreadWakeupFailed" xml:space="preserve">
+    <value>Unable to wakeup the worker thread to create an object in MTA</value>
+  </data>
+  <!-- Strings for WMIGenerator -->
+  <data name="ClassNameNotInitializedException" xml:space="preserve">
+    <value>ClassName not initialized.</value>
+  </data>
+  <data name="ClassNameNotFoundException" xml:space="preserve">
+    <value>Class name does not match.</value>
+  </data>
+  <data name="CommentAttributeProperty" xml:space="preserve">
+    <value>Every property added to the class for WMI property has attributes set to define its behavior in Visual Studio designer and also to define a TypeConverter to be used.</value>
+  </data>
+  <data name="CommentAutoCommitProperty" xml:space="preserve">
+    <value>Property to show the commit behavior for the WMI object. If true, WMI object will be automatically saved after each property modification.(ie. Put() is called after modification of a property).</value>
+  </data>
+  <data name="CommentClassBegin" xml:space="preserve">
+    <value>An Early Bound class generated for the WMI class.</value>
+  </data>
+  <data name="CommentConstructors" xml:space="preserve">
+    <value>Below are different overloads of constructors to initialize an instance of the class with a WMI object.</value>
+  </data>
+  <data name="CommentCreatedClass" xml:space="preserve">
+    <value>Private property to hold the name of WMI class which created this class.</value>
+  </data>
+  <data name="CommentCreatedWmiNamespace" xml:space="preserve">
+    <value>Private property to hold the WMI namespace in which the class resides.</value>
+  </data>
+  <data name="CommentCurrentObject" xml:space="preserve">
+    <value>The current WMI object used</value>
+  </data>
+  <data name="CommentDateConversionFunction" xml:space="preserve">
+    <value>Datetime conversion functions ToDateTime and ToDmtfDateTime are added to the class to convert DMTF datetime to System.DateTime and vice-versa.</value>
+  </data>
+  <data name="CommentEmbeddedObject" xml:space="preserve">
+    <value>Private variable to hold the embedded property representing the instance.</value>
+  </data>
+  <data name="CommentEnumeratorImplementation" xml:space="preserve">
+    <value>Enumerator implementation for enumerating instances of the class.</value>
+  </data>
+  <data name="CommentFlagForEmbedded" xml:space="preserve">
+    <value>Flag to indicate if the instance is an embedded object.</value>
+  </data>
+  <data name="CommentGetInstances" xml:space="preserve">
+    <value>Different overloads of GetInstances() help in enumerating instances of the WMI class.</value>
+  </data>
+  <data name="CommentIsPropNull" xml:space="preserve">
+    <value>Functions Is&lt;PropertyName&gt;Null() are used to check if a property is NULL.</value>
+  </data>
+  <data name="CommentLateBoundObject" xml:space="preserve">
+    <value>Underlying lateBound WMI object.</value>
+  </data>
+  <data name="CommentLateBoundProperty" xml:space="preserve">
+    <value>Property returning the underlying lateBound object.</value>
+  </data>
+  <data name="CommentManagementPath" xml:space="preserve">
+    <value>The ManagementPath of the underlying WMI object.</value>
+  </data>
+  <data name="CommentManagementScope" xml:space="preserve">
+    <value>ManagementScope of the object.</value>
+  </data>
+  <data name="CommentOriginNamespace" xml:space="preserve">
+    <value>Property returns the namespace of the WMI class.</value>
+  </data>
+  <data name="CommentPrivateAutoCommit" xml:space="preserve">
+    <value>Member variable to store the 'automatic commit' behavior for the class.</value>
+  </data>
+  <data name="CommentPrototypeConverter" xml:space="preserve">
+    <value>TypeConverter to handle null values for ValueType properties</value>
+  </data>
+  <data name="CommentResetProperty" xml:space="preserve">
+    <value>Functions Reset&lt;PropertyName&gt; are added for Nullable Read/Write properties. These functions are used by VS designer in property browser to set a property to NULL.</value>
+  </data>
+  <data name="CommentShouldSerialize" xml:space="preserve">
+    <value>Functions ShouldSerialize&lt;PropertyName&gt; are functions used by VS property browser to check if a particular property has to be serialized. These functions are added for all ValueType properties ( properties of type Int32, BOOL etc.. which cannot be set to null). These functions use Is&lt;PropertyName&gt;Null function. These functions are also used in the TypeConverter implementation for the properties to check for NULL value of property so that an empty value can be shown in Property browser in case of Drag and Drop in Visual studio.</value>
+  </data>
+  <data name="CommentStaticManagementScope" xml:space="preserve">
+    <value>Private member variable to hold the ManagementScope which is used by the various methods.</value>
+  </data>
+  <data name="CommentStaticScopeProperty" xml:space="preserve">
+    <value>Public static scope property which is used by the various methods.</value>
+  </data>
+  <data name="CommentSystemObject" xml:space="preserve">
+    <value>Property pointing to an embedded object to get System properties of the WMI object.</value>
+  </data>
+  <data name="CommentSystemPropertiesClass" xml:space="preserve">
+    <value>Embedded class to represent WMI system Properties.</value>
+  </data>
+  <data name="CommentTimeSpanConvertionFunction" xml:space="preserve">
+    <value>Time interval functions  ToTimeSpan and ToDmtfTimeInterval are added to the class to convert DMTF Time Interval to  System.TimeSpan and vice-versa.</value>
+  </data>
+  <data name="CommentToDateTime" xml:space="preserve">
+    <value>Converts a given datetime in DMTF format to System.DateTime object.</value>
+  </data>
+  <data name="CommentToDmtfDateTime" xml:space="preserve">
+    <value>Converts a given System.DateTime object to DMTF datetime format.</value>
+  </data>
+  <data name="CommentToDmtfTimeInterval" xml:space="preserve">
+    <value>Converts a given System.TimeSpan object to DMTF Time interval format.</value>
+  </data>
+  <data name="CommentToTimeSpan" xml:space="preserve">
+    <value>Converts a given time interval in DMTF format to System.TimeSpan object.</value>
+  </data>
+  <data name="EmbeddedComment" xml:space="preserve">
+    <value>If the embedded property is strongly typed then, to strongly type the property to the type of</value>
+  </data>
+  <data name="EmbeddedComment2" xml:space="preserve">
+    <value>the embedded object, you have to do the following things.</value>
+  </data>
+  <data name="EmbeddedComment3" xml:space="preserve">
+    <value>\t1. Generate Managed class for the WMI class of the embedded property. This can be done with MgmtClassGen.exe tool or from Server Explorer.</value>
+  </data>
+  <data name="EmbeddedComment4" xml:space="preserve">
+    <value>\t2. Include the namespace of the generated class.</value>
+  </data>
+  <data name="EmbeddedComment5" xml:space="preserve">
+    <value>\t3. Change the property get/set functions so as return the instance of the Managed class.</value>
+  </data>
+  <data name="EmbeddedComment6" xml:space="preserve">
+    <value>Below is a sample code.</value>
+  </data>
+  <data name="EmbeddedComment7" xml:space="preserve">
+    <value>VB Code</value>
+  </data>
+  <data name="EmbeddedComment8" xml:space="preserve">
+    <value>C# Code</value>
+  </data>
+  <data name="EmbeddedCSharpComment1" xml:space="preserve">
+    <value>public &lt;ManagedClassName of Embedded property&gt; &lt;PropertyName&gt;</value>
+  </data>
+  <data name="EmbeddedCSharpComment10" xml:space="preserve">
+    <value>\t\tIf (AutoCommitProp == true &amp;&amp; isEmbedded == false)</value>
+  </data>
+  <data name="EmbeddedCSharpComment11" xml:space="preserve">
+    <value>\t\t{</value>
+  </data>
+  <data name="EmbeddedCSharpComment12" xml:space="preserve">
+    <value>\t\t\tPrivateLateBoundObject.Put();</value>
+  </data>
+  <data name="EmbeddedCSharpComment13" xml:space="preserve">
+    <value>\t\t}</value>
+  </data>
+  <data name="EmbeddedCSharpComment14" xml:space="preserve">
+    <value>\t}</value>
+  </data>
+  <data name="EmbeddedCSharpComment15" xml:space="preserve">
+    <value>}</value>
+  </data>
+  <data name="EmbeddedCSharpComment2" xml:space="preserve">
+    <value>{</value>
+  </data>
+  <data name="EmbeddedCSharpComment3" xml:space="preserve">
+    <value>\tget</value>
+  </data>
+  <data name="EmbeddedCSharpComment4" xml:space="preserve">
+    <value>\t{</value>
+  </data>
+  <data name="EmbeddedCSharpComment5" xml:space="preserve">
+    <value>\t\treturn new &lt;ManagedClassName of Embedded property&gt;((System.Management.ManagementBaseObject)(curObj["&lt;PropertyName&gt;"]));</value>
+  </data>
+  <data name="EmbeddedCSharpComment6" xml:space="preserve">
+    <value>\t}</value>
+  </data>
+  <data name="EmbeddedCSharpComment7" xml:space="preserve">
+    <value>\tset</value>
+  </data>
+  <data name="EmbeddedCSharpComment8" xml:space="preserve">
+    <value>\t{</value>
+  </data>
+  <data name="EmbeddedCSharpComment9" xml:space="preserve">
+    <value>\t\tcurObj["&lt;PropertyName&gt;"] = value.LateBoundObject;</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment1" xml:space="preserve">
+    <value>Public Property &lt;PropertyName&gt;() As &lt;ManagedClassName of Embedded property&gt;</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment10" xml:space="preserve">
+    <value>\tEnd Set</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment2" xml:space="preserve">
+    <value>\tGet</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment3" xml:space="preserve">
+    <value>\t\tReturn New &lt;ManagedClassName of Embedded Property&gt;(CType(curObj("&lt;PropertyName&gt;"),System.Management.ManagementBaseObject))</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment4" xml:space="preserve">
+    <value>\tEnd Get</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment5" xml:space="preserve">
+    <value>\tSet(ByVal Value As &lt;ManagedClassName of Embedded property&gt;)</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment6" xml:space="preserve">
+    <value>\t\tcurObj("EObject")=Value.LateBoundObject</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment7" xml:space="preserve">
+    <value>\t\tIf (AutoCommitProp = True And isEmbedded = False) Then</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment8" xml:space="preserve">
+    <value>\t\t\tPrivateLateBoundObject.Put()</value>
+  </data>
+  <data name="EmbeddedVisualBasicComment9" xml:space="preserve">
+    <value>\t\tEnd If</value>
+  </data>
+  <data name="EmptyFilePathException" xml:space="preserve">
+    <value>FilePath cannot be empty.</value>
+  </data>
+  <data name="NamespaceNotInitializedException" xml:space="preserve">
+    <value>Namespace not initialized.</value>
+  </data>
+  <data name="NullFilePathException" xml:space="preserve">
+    <value>FilePath or code generator object is null.</value>
+  </data>
+  <data name="UnableToCreateCodeGeneratorException" xml:space="preserve">
+    <value>Unable to create code generator for '{0}'</value>
+  </data>
+  <data name="PlatformNotSupported_SystemManagement" xml:space="preserve">
+    <value>System.Management currently is only supported for Windows desktop applications.</value>
+  </data>
+  <data name="PlatformNotSupported_FullFrameworkRequired" xml:space="preserve">
+    <value>Could not find an installation of .NET Framework v4.0.30319. System.Management requires native modules from the .NET Framework to operate.</value>
+  </data>
+  <data name="LoadLibraryFailed" xml:space="preserve">
+    <value>Failed to load required native library '{0}'.</value>
+  </data>
+  <data name="PlatformNotSupported_FrameworkUpdatedRequired" xml:space="preserve">
+    <value>The native library '{0}' does not have all required functions. Please, update the .NET Framework.</value>
+  </data>
+</root>

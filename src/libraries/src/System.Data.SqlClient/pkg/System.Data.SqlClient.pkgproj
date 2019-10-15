@@ -1,0 +1,31 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
+      <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Data.SqlClient.csproj" />
+    <HarvestIncludePaths Include="ref/net451;lib/net451;runtimes/win/lib/net451" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.2">
+      <SupportedFramework>net451;win81;wpa81</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.3">
+      <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
+
+    <!-- Since UAP and .NETCoreApp are package based we still want to enable
+         OOBing libraries that happen to overlap with their framework package.
+         This avoids us having to lock the API in our NuGet packages just
+         to match what shipped inbox: since we can provide a new library
+         we can update it to add API without raising the netstandard version. -->
+    <ValidatePackageSuppression Include="TreatAsOutOfBox">
+      <Value>.NETCoreApp;UAP</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
+  <ItemGroup>
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

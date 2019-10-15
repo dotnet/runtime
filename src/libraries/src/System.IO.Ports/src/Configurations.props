@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard-Windows_NT;
+      netstandard-Linux;
+      netstandard-OSX;
+      netstandard;
+      net461-Windows_NT;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations)
+      uap-Windows_NT;
+      netfx-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

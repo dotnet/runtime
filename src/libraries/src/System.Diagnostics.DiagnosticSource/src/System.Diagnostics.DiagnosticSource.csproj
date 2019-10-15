@@ -1,0 +1,74 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- To allow this library to work on V4.5 runtimes and other old platforms
+         we also have a separate complilation of this DLL that works for V4.5
+         (which is netstandard1.1).  Again we duplicate in a portable-* folder
+         to work with older NuGet clients -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+    <NoWarn>$(NoWarn);SA1205</NoWarn>
+    <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'net45'">
+    <DefineConstants>$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
+    <DefineConstants>$(DefineConstants);NETSTANDARD1_1</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <DefineConstants>$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
+    <None Include="DiagnosticSourceUsersGuide.md" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <None Include="ActivityUserGuide.md" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'net45' And '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'net45' ">
+    <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Runtime.Remoting" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard'">
+    <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard2.1'">
+    <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netcoreapp' AND '$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'netstandard2.1' AND '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="AssemblyInfo.netfx.cs" />
+    <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+</Project>

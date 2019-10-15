@@ -1,0 +1,15 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      net461;
+      netstandard;
+      netcoreapp2.0;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netcoreapp;
+      uap-Windows_NT;
+      netfx;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

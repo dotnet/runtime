@@ -1,0 +1,112 @@
+<Project DefaultTargets="Build">
+
+  <Import Project="Directory.Build.props" />
+
+  <PropertyGroup>
+    <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
+    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
+    <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
+    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard.txt</ApiCompatNSBaselineFile>
+    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
+    <ApiCompatImplementationDirs>$(RefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
+    <!-- If we are targeting uap run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
+    <!-- also include $(RefPath) last to pick up windows.winmd dependency, which we don't place in RuntimePath -->
+    <ApiCompatImplementationDirs Condition="'$(TargetsUap)' == 'true'">$(RuntimePath.TrimEnd('\/')),$(RefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
+    <!-- Set to true to build this project -->
+    <!-- Separate property otherwise /p:BaselineApiCompat=true would force it to run even for non-UAP -->
+    <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
+    <_RunApiCompat>true</_RunApiCompat>
+    <!-- Disable running apicompat for uap scenarios because the RuntimePath is not correctly setup in BuildAllConfigurations mode -->
+    <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and '$(TargetsUap)' == 'true'">false</_RunApiCompat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Run API compat against the following 1:1 assemblies but don't include them in the list that is used to generate facades -->
+    <NetFxReference Include="System.DirectoryServices" />
+    <NetFxReference Include="System.DirectoryServices.AccountManagement" />
+    <NetFxReference Include="System.DirectoryServices.Protocols" />
+  </ItemGroup>
+
+  <!-- Run ApiCompat -->
+  <Target Name="RunApiCompat"
+          Condition="'$(_RunApiCompat)' == 'true'"
+          Inputs="$(ApiCompatResponseFile)"
+          Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)">
+
+    <PropertyGroup>
+      <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
+      <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)"</ApiCompatArgs>
+      <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">--baseline "$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
+      <ApiCompatExitCode>0</ApiCompatExitCode>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
+
+    <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+          Condition="'$(TargetGroup)' == 'netcoreapp' and '$(BaselineApiCompat)' == 'true'"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netfx to $(TargetGroup)" />
+
+
+    <!--
+      In order to update the .NET Standard baseline, you can just start the build with either
+
+        /p:UpdateNETStandardBaseline=True
+
+      of
+
+        /p:UpdateNETStandardBaselineLocally=True
+
+      The difference is that the former uses the official .NET Standard while the latter uses a locally built
+      .NET Standard (Debug, in a folder parallel to where you checked out CoreFx).
+    -->
+    <PropertyGroup>
+      <UpdateNETStandardBaseline Condition="'$(UpdateNETStandardBaseline)' == ''">False</UpdateNETStandardBaseline>
+      <UpdateNETStandardBaselineLocally Condition="'$(UpdateNETStandardBaselineLocally)' == ''">False</UpdateNETStandardBaselineLocally>
+      <_netStandard21OnlyRef>$(NetStandard21RefPath)netstandard.dll</_netStandard21OnlyRef>
+      <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
+      <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>
+      <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) OR $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(UpdateNETStandardBaseline)">
+    </PropertyGroup>
+
+    <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) &quot;$(ApiCompatNSOnlyBaselineFile)&quot;"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
+
+    <!-- TODO: Once the repo targets netstandard2.1, have this instance of APICompat run against NetStandard21RefPath -->
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(TargetGroup)" />
+
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="RunApiCompat" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

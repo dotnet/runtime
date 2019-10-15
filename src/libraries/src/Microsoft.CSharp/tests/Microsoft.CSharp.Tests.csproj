@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+    <!-- 
+    We wish to test operations that would result in
+    "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
+    -->
+    <Features>$(Features.Replace('strict', '')</Features>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AccessTests.cs" />
+    <Compile Include="ArrayHandling.cs" />
+    <Compile Include="AssignmentTests.cs" />
+    <Compile Include="BindingErrors.cs" />
+    <Compile Include="DynamicDebuggerProxyTests.cs" />
+    <Compile Include="EnumUnaryOperationTests.cs" />
+    <Compile Include="ExplicitConversionTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="ImplicitConversionTests.cs" />
+    <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="DefaultParameterTests.cs" />
+    <Compile Include="DelegateInDynamicTests.cs" />
+    <Compile Include="EnumArithmeticTests.cs" />
+    <Compile Include="IndexingTests.cs" />
+    <Compile Include="IntegerBinaryOperationTests.cs" />
+    <Compile Include="IntegerUnaryOperationTests.cs" />
+    <Compile Include="IsEventTests.cs" />
+    <Compile Include="NamedArgumentTests.cs" />
+    <Compile Include="NullableEnumUnaryOperationTest.cs" />
+    <Compile Include="RuntimeBinderExceptionTests.cs" />
+    <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
+    <Compile Include="RuntimeBinderTests.cs" />
+    <Compile Include="UserDefinedShortCircuitOperators.cs" />
+    <Compile Include="VarArgsTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="AccessTests.netcoreapp.cs" />
+  </ItemGroup>
+</Project>

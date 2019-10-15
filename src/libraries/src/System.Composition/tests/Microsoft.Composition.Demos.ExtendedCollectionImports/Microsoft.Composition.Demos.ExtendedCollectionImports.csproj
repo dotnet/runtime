@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Composition.Demos.ExtendedCollectionImports</AssemblyName>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
+    <Compile Include="Util\Formatters.cs" />
+    <Compile Include="OrderedImportManyAttribute.cs" />
+    <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
+    <Compile Include="KeyByMetadataAttribute.cs" />
+  </ItemGroup>
+</Project>

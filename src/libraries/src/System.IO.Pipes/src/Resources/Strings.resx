@@ -1,0 +1,290 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
+    <value>Invalid PipeAccessRights value.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_NeedNonemptyPipeName" xml:space="preserve">
+    <value>pipeName cannot be an empty string.</value>
+  </data>
+  <data name="Argument_NonContainerInvalidAnyFlag" xml:space="preserve">
+    <value>This flag may not be set on a pipe.</value>
+  </data>
+  <data name="Argument_EmptyServerName" xml:space="preserve">
+    <value>serverName cannot be an empty string.  Use \\\".\\\" for current machine.</value>
+  </data>
+  <data name="Argument_InvalidHandle" xml:space="preserve">
+    <value>Handle has been disposed or is invalid.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_ServerName" xml:space="preserve">
+    <value>serverName cannot be null. Use \".\" for current machine.</value>
+  </data>
+  <data name="ArgumentOutOfRange_AnonymousReserved" xml:space="preserve">
+    <value>The pipeName \"anonymous\" is reserved.</value>
+  </data>
+  <data name="ArgumentOutOfRange_TransmissionModeByteOrMsg" xml:space="preserve">
+    <value>For named pipes, transmission mode can be TransmissionMode.Byte or PipeTransmissionMode.Message. For anonymous pipes, transmission mode can be TransmissionMode.Byte.</value>
+  </data>
+  <data name="ArgumentOutOfRange_DirectionModeInOutOrInOut" xml:space="preserve">
+    <value>For named pipes, the pipe direction can be PipeDirection.In, PipeDirection.Out or PipeDirection.InOut. For anonymous pipes, the pipe direction can be PipeDirection.In or PipeDirection.Out.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ImpersonationInvalid" xml:space="preserve">
+    <value>TokenImpersonationLevel.None, TokenImpersonationLevel.Anonymous, TokenImpersonationLevel.Identification, TokenImpersonationLevel.Impersonation or TokenImpersonationLevel.Delegation required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_OptionsInvalid" xml:space="preserve">
+    <value>options contains an invalid flag.</value>
+  </data>
+  <data name="ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable" xml:space="preserve">
+    <value>HandleInheritability.None or HandleInheritability.Inheritable required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidTimeout" xml:space="preserve">
+    <value>Timeout must be non-negative or equal to -1 (Timeout.Infinite)</value>
+  </data>
+  <data name="ArgumentOutOfRange_MaxNumServerInstances" xml:space="preserve">
+    <value>maxNumberOfServerInstances must either be a value between 1 and 254, or NamedPipeServerStream.MaxAllowedServerInstances (to obtain the maximum number allowed by system resources).</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="InvalidOperation_PipeNotYetConnected" xml:space="preserve">
+    <value>Pipe hasn't been connected yet.</value>
+  </data>
+  <data name="InvalidOperation_PipeDisconnected" xml:space="preserve">
+    <value>Pipe is in a disconnected state.</value>
+  </data>
+  <data name="InvalidOperation_PipeHandleNotSet" xml:space="preserve">
+    <value>Pipe handle has not been set.  Did your PipeStream implementation call InitializeHandle?</value>
+  </data>
+  <data name="InvalidOperation_PipeNotAsync" xml:space="preserve">
+    <value>Pipe is not opened in asynchronous mode.</value>
+  </data>
+  <data name="InvalidOperation_PipeReadModeNotMessage" xml:space="preserve">
+    <value>ReadMode is not of PipeTransmissionMode.Message.</value>
+  </data>
+  <data name="InvalidOperation_PipeAlreadyConnected" xml:space="preserve">
+    <value>Already in a connected state.</value>
+  </data>
+  <data name="InvalidOperation_PipeAlreadyDisconnected" xml:space="preserve">
+    <value>Already in a disconnected state.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_IO_PipeBroken" xml:space="preserve">
+    <value>Pipe is broken.</value>
+  </data>
+  <data name="IO_OperationAborted_Unexpected" xml:space="preserve">
+    <value>IO operation was aborted unexpectedly.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_PipeBroken" xml:space="preserve">
+    <value>Pipe is broken.</value>
+  </data>
+  <data name="IO_InvalidPipeHandle" xml:space="preserve">
+    <value>Invalid pipe handle.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="NotSupported_AnonymousPipeUnidirectional" xml:space="preserve">
+    <value>Anonymous pipes can only be in one direction.</value>
+  </data>
+  <data name="NotSupported_AnonymousPipeMessagesNotSupported" xml:space="preserve">
+    <value>Anonymous pipes do not support PipeTransmissionMode.Message ReadMode.</value>
+  </data>
+  <data name="ObjectDisposed_PipeClosed" xml:space="preserve">
+    <value>Cannot access a closed pipe.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="PlatformNotSupported_MessageTransmissionMode" xml:space="preserve">
+    <value>Message transmission mode is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_RemotePipes" xml:space="preserve">
+    <value>Access to remote named pipes is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_InvalidPipeNameChars" xml:space="preserve">
+    <value>The name of a pipe on this platform must be a valid file name or a valid absolute path to a file name.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="PlatformNotSupported_OperatingSystemError" xml:space="preserve">
+    <value>The operating system returned error '{0}' indicating that the operation is not supported.</value>
+  </data>
+  <data name="IO_AllPipeInstancesAreBusy" xml:space="preserve">
+    <value>All pipe instances are busy.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="UnauthorizedAccess_NotOwnedByCurrentUser" xml:space="preserve">
+    <value>Could not connect to the pipe because it was not owned by the current user.</value>
+  </data>
+  <data name="UnauthorizedAccess_ClientIsNotCurrentUser" xml:space="preserve">
+    <value>Client connection (user id {0}) was refused because it was not owned by the current user (id {1}).</value>
+  </data>
+</root>

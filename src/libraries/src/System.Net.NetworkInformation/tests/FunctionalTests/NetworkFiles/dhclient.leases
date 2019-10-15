@@ -1,0 +1,13 @@
+lease {
+  interface "wlan0";
+  fixed-address 10.105.130.158;
+  option subnet-mask 255.255.252.0;
+  option routers 10.105.128.1;
+  option dhcp-lease-time 10800;
+  option dhcp-message-type 5;
+  option domain-name-servers 157.56.74.180,65.54.238.85;
+  option dhcp-server-identifier 10.105.128.4;
+  renew 3 2015/10/14 19:53:41;
+  rebind 3 2015/10/14 21:11:47;
+  expire 3 2015/10/14 21:34:17;
+}

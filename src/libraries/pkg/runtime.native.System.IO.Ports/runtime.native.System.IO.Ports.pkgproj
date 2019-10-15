@@ -1,0 +1,19 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64'">
+    <File Include="$(NativeBinDir)\System.IO.Ports.Native$(LibraryFileExtension)" >
+      <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
+    </File>
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <_buildRIDWithMetadata Include="@(BuildRID)">
+      <Version>$(PackageVersion)</Version>
+    </_buildRIDWithMetadata>
+    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

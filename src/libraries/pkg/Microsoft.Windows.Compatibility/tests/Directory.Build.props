@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <BaseIntermediateOutputPath>bin</BaseIntermediateOutputPath>
+    <NuGetTargetMoniker Condition="'$(NugetMonikerVersion)' != ''">.NETCoreApp,Version=v$(NugetMonikerVersion)</NuGetTargetMoniker>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <!-- Setting NETCoreAppMaximumVersion to a high version so that the sdk doesn't complain if we're restoring/publishing for a higher version than the sdk. -->
+    <NETCoreAppMaximumVersion>99.9</NETCoreAppMaximumVersion>
+    <PackageConflictPreferredPackages Condition="'$(TargetFramework)' != 'netcoreapp2.0'">Microsoft.Private.CoreFx.NETCoreApp;runtime.$(RuntimeIdentifiers).Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
+    <DisableImplicitFrameworkReferences Condition="$(TargetFramework.Contains('netcoreapp'))">true</DisableImplicitFrameworkReferences>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+</Project>

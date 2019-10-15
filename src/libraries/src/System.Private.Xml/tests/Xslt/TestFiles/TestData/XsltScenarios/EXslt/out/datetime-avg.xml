@@ -1,0 +1,11 @@
+﻿<out xmlns:date2="http://gotdotnet.com/exslt/dates-and-times">
+  <test1>                
+Average time interval is P70DT16H.
+            </test1>
+  <test2>                
+Average time interval is .
+            </test2>
+  <test2>                
+Average time interval is .
+            </test2>
+</out>

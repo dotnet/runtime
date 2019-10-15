@@ -1,0 +1,171 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CountdownEvent_Increment_AlreadyZero" xml:space="preserve">
+    <value>The event is already signaled and cannot be incremented.</value>
+  </data>
+  <data name="CountdownEvent_Increment_AlreadyMax" xml:space="preserve">
+    <value>The increment operation would cause the CurrentCount to overflow.</value>
+  </data>
+  <data name="CountdownEvent_Decrement_BelowZero" xml:space="preserve">
+    <value>Invalid attempt made to decrement the event's count below zero.</value>
+  </data>
+  <data name="Common_OperationCanceled" xml:space="preserve">
+    <value>The operation was canceled.</value>
+  </data>
+  <data name="Barrier_Dispose" xml:space="preserve">
+    <value>The barrier has been disposed.</value>
+  </data>
+  <data name="Barrier_SignalAndWait_InvalidOperation_ZeroTotal" xml:space="preserve">
+    <value>The barrier has no registered participants.</value>
+  </data>
+  <data name="Barrier_SignalAndWait_ArgumentOutOfRange" xml:space="preserve">
+    <value>The specified timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
+  </data>
+  <data name="Barrier_RemoveParticipants_InvalidOperation" xml:space="preserve">
+    <value>The participantCount argument is greater than the number of participants that haven't yet arrived at the barrier in this phase.</value>
+  </data>
+  <data name="Barrier_RemoveParticipants_ArgumentOutOfRange" xml:space="preserve">
+    <value>The participantCount argument must be less than or equal the number of participants.</value>
+  </data>
+  <data name="Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange" xml:space="preserve">
+    <value>The participantCount argument must be a positive value.</value>
+  </data>
+  <data name="Barrier_InvalidOperation_CalledFromPHA" xml:space="preserve">
+    <value>This method may not be called from within the postPhaseAction.</value>
+  </data>
+  <data name="Barrier_AddParticipants_NonPositive_ArgumentOutOfRange" xml:space="preserve">
+    <value>The participantCount argument must be a positive value.</value>
+  </data>
+  <data name="Barrier_SignalAndWait_InvalidOperation_ThreadsExceeded" xml:space="preserve">
+    <value>The number of threads using the barrier exceeded the total number of registered participants.</value>
+  </data>
+  <data name="BarrierPostPhaseException" xml:space="preserve">
+    <value>The postPhaseAction failed with an exception.</value>
+  </data>
+  <data name="Barrier_ctor_ArgumentOutOfRange" xml:space="preserve">
+    <value>The participantCount argument must be non-negative and less than or equal to 32767.</value>
+  </data>
+  <data name="Barrier_AddParticipants_Overflow_ArgumentOutOfRange" xml:space="preserve">
+    <value>Adding participantCount participants would result in the number of participants exceeding the maximum number allowed.</value>
+  </data>
+  <data name="SynchronizationLockException_IncorrectDispose" xml:space="preserve">
+    <value>The lock is being disposed while still being used. It either is being held by a thread and/or has active waiters waiting to acquire the lock.</value>
+  </data>
+  <data name="SynchronizationLockException_MisMatchedWrite" xml:space="preserve">
+    <value>The write lock is being released without being held.</value>
+  </data>
+  <data name="LockRecursionException_UpgradeAfterReadNotAllowed" xml:space="preserve">
+    <value>Upgradeable lock may not be acquired with read lock held.</value>
+  </data>
+  <data name="LockRecursionException_UpgradeAfterWriteNotAllowed" xml:space="preserve">
+    <value>Upgradeable lock may not be acquired with write lock held in this mode. Acquiring Upgradeable lock gives the ability to read along with an option to upgrade to a writer.</value>
+  </data>
+  <data name="SynchronizationLockException_MisMatchedUpgrade" xml:space="preserve">
+    <value>The upgradeable lock is being released without being held.</value>
+  </data>
+  <data name="SynchronizationLockException_MisMatchedRead" xml:space="preserve">
+    <value>The read lock is being released without being held.</value>
+  </data>
+  <data name="LockRecursionException_WriteAfterReadNotAllowed" xml:space="preserve">
+    <value>Write lock may not be acquired with read lock held. This pattern is prone to deadlocks. Please ensure that read locks are released before taking a write lock. If an upgrade is necessary, use an upgrade lock in place of the read lock.</value>
+  </data>
+  <data name="LockRecursionException_RecursiveWriteNotAllowed" xml:space="preserve">
+    <value>Recursive write lock acquisitions not allowed in this mode.</value>
+  </data>
+  <data name="LockRecursionException_ReadAfterWriteNotAllowed" xml:space="preserve">
+    <value>A read lock may not be acquired with the write lock held in this mode.</value>
+  </data>
+  <data name="LockRecursionException_RecursiveUpgradeNotAllowed" xml:space="preserve">
+    <value>Recursive upgradeable lock acquisitions not allowed in this mode.</value>
+  </data>
+  <data name="LockRecursionException_RecursiveReadNotAllowed" xml:space="preserve">
+    <value>Recursive read lock acquisitions not allowed in this mode.</value>
+  </data>
+  <data name="Overflow_UInt16" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt16.</value>
+  </data>
+  <data name="ReaderWriterLock_Timeout" xml:space="preserve">
+    <value>The operation has timed out. {0}</value>
+  </data>
+  <data name="ArgumentOutOfRange_TimeoutMilliseconds" xml:space="preserve">
+    <value>Timeout value in milliseconds must be nonnegative and less than or equal to Int32.MaxValue, or -1 for an infinite timeout.</value>
+  </data>
+  <data name="ReaderWriterLock_NotOwner" xml:space="preserve">
+    <value>Attempt to release a lock that is not owned by the calling thread. {0}</value>
+  </data>
+  <data name="ExceptionFromHResult" xml:space="preserve">
+    <value>(Exception from HRESULT: 0x{0:X})</value>
+  </data>
+  <data name="ReaderWriterLock_InvalidLockCookie" xml:space="preserve">
+    <value>The specified lock cookie is invalid for this operation. {0}</value>
+  </data>
+  <data name="ReaderWriterLock_RestoreLockWithOwnedLocks" xml:space="preserve">
+    <value>ReaderWriterLock.RestoreLock was called without releasing all locks acquired since the call to ReleaseLock.</value>
+  </data>
+  <data name="HostExecutionContextManager_InvalidOperation_NotNewCaptureContext" xml:space="preserve">
+    <value>Cannot apply a context that has been marshaled across AppDomains, that was not acquired through a Capture operation or that has already been the argument to a Set call.</value>
+  </data>
+  <data name="HostExecutionContextManager_InvalidOperation_CannotOverrideSetWithoutRevert" xml:space="preserve">
+    <value>Must override both HostExecutionContextManager.SetHostExecutionContext and HostExecutionContextManager.Revert.</value>
+  </data>
+  <data name="HostExecutionContextManager_InvalidOperation_CannotUseSwitcherOtherThread" xml:space="preserve">
+    <value>Undo operation must be performed on the thread where the corresponding context was Set.</value>
+  </data>
+</root>

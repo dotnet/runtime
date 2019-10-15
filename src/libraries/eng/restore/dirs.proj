@@ -1,0 +1,21 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+
+  <PropertyGroup>
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
+  <!-- Build for all configurations -->
+  <ItemGroup>
+    <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
+    <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="uap/uap.depproj" />
+    <Project Include="netstandard/netstandard.depproj" />
+    <Project Include="netfx/netfx.depproj" />
+    <Project Include="runtime/runtime.depproj" />
+    <Project Include="tools/tools.depproj" />
+    <Project Include="harvestPackages/harvestPackages.depproj" />
+    <Project Include="binplacePackages/binplacePackages.depproj" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+</Project>

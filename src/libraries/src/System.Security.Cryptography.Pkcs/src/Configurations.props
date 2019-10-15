@@ -1,0 +1,19 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard;
+      netstandard-Windows_NT;
+      netstandard2.1;
+      netstandard2.1-Windows_NT;
+      netcoreapp3.0-Windows_NT;
+      netcoreapp3.0;
+      net461-Windows_NT;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations)
+      netfx-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

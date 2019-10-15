@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Drawing</RootNamespace>
+    <AssemblyName>System.Drawing.Primitives</AssemblyName>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <nullable>enable</nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="Microsoft.Win32.SystemEvents" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Drawing\KnownColorNames.cs" />
+    <Compile Include="System\Drawing\Point.cs" />
+    <Compile Include="System\Drawing\PointF.cs" />
+    <Compile Include="System\Drawing\Rectangle.cs" />
+    <Compile Include="System\Drawing\RectangleF.cs" />
+    <Compile Include="System\Drawing\Size.cs" />
+    <Compile Include="System\Drawing\SizeF.cs" />
+    <Compile Include="System\Drawing\Color.cs" />
+    <Compile Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
+      <Link>System\Drawing\ColorConverterCommon.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
+      <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\ColorTranslator.cs">
+      <Link>System\Drawing\ColorTranslator.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
+      <Link>System\Drawing\KnownColor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
+      <Link>System\Drawing\KnownColorTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\SystemColors.cs">
+      <Link>System\Drawing\SystemColors.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- System color features require Win32 PInvoke's which are disallowed in UAP. -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetSysColor.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetSysColor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.Win32SystemColors.cs">
+      <Link>Common\Interop\Windows\User32\Interop.Win32SystemColors.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

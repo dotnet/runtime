@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SubjectPublicKeyInfoAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3280#section-4.1
+
+    SubjectPublicKeyInfo ::= SEQUENCE {
+        algorithm            AlgorithmIdentifier,
+        subjectPublicKey     BIT STRING
+    }
+  -->
+  <asn:AsnType name="Algorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:BitString name="SubjectPublicKey" />
+</asn:Sequence>

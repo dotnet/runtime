@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Tests", "tests\System.Text.Encoding.Tests.csproj", "{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{635F30B9-5566-4096-B772-68FAA9B00DF4} = {635F30B9-5566-4096-B772-68FAA9B00DF4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding", "src\System.Text.Encoding.csproj", "{635F30B9-5566-4096-B772-68FAA9B00DF4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20} = {D5E689FD-4848-4E06-B6ED-35EA09AF9E20}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding", "ref\System.Text.Encoding.csproj", "{D5E689FD-4848-4E06-B6ED-35EA09AF9E20}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{635F30B9-5566-4096-B772-68FAA9B00DF4}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{635F30B9-5566-4096-B772-68FAA9B00DF4}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{635F30B9-5566-4096-B772-68FAA9B00DF4}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{635F30B9-5566-4096-B772-68FAA9B00DF4}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{635F30B9-5566-4096-B772-68FAA9B00DF4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{D5E689FD-4848-4E06-B6ED-35EA09AF9E20} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5C54CDF9-8239-4222-985B-19615BD86692}
+	EndGlobalSection
+EndGlobal

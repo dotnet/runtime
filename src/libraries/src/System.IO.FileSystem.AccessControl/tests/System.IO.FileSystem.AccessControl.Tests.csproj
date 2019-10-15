@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DirectoryObjectSecurityTests.cs" />
+    <Compile Include="FileSystemAccessRuleTests.cs" />
+    <Compile Include="FileSystemAclExtensionsTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="FileSystemAuditRuleTests.cs" />
+    <Compile Include="FileSystemSecurityTests.cs" />
+    <Compile Include="Helpers.cs" />
+  </ItemGroup>
+</Project>

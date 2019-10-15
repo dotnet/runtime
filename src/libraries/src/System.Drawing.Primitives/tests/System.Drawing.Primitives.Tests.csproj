@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ColorTranslatorTests.cs" />
+    <Compile Include="DataContractSerializerTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="PointFTests.cs" />
+    <Compile Include="PointTests.cs" />
+    <Compile Include="RectangleFTests.cs" />
+    <Compile Include="RectangleTests.cs" />
+    <Compile Include="SizeFTests.cs" />
+    <Compile Include="SizeTests.cs" />
+    <Compile Include="ColorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\DataContractSerializerHelper.cs">
+      <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs">
+      <Link>Common\System\Runtime\Serialization\Utils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="SizeFTests.netcoreapp.cs" />
+    <Compile Include="ColorTests.netcoreapp.cs" />
+    <Compile Include="SizeTests.netcoreapp.cs" />
+  </ItemGroup>
+</Project>

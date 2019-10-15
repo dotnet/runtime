@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SignerInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-5.3
+
+    SignerInfo ::= SEQUENCE {
+        version CMSVersion,
+        sid SignerIdentifier,
+        digestAlgorithm DigestAlgorithmIdentifier,
+        signedAttrs[0] IMPLICIT SignedAttributes OPTIONAL,
+        signatureAlgorithm SignatureAlgorithmIdentifier,
+        signature SignatureValue,
+        unsignedAttrs[1] IMPLICIT UnsignedAttributes OPTIONAL
+    }
+
+    CMSVersion ::= INTEGER { v0(0), v1(1), v2(2), v3(3), v4(4), v5(5) }
+    DigestAlgorithmIdentifier ::= AlgorithmIdentifier
+    SignedAttributes ::= SET SIZE (1..MAX) OF Attribute
+    SignatureAlgorithmIdentifier ::= AlgorithmIdentifier
+    SignatureValue ::= OCTET STRING
+    UnsignedAttributes ::= SET SIZE(1..MAX) OF Attribute
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="Sid" typeName="System.Security.Cryptography.Pkcs.Asn1.SignerIdentifierAsn" />
+  <asn:AsnType name="DigestAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:AnyValue name="SignedAttributes" implicitTag="0" optional="true" />
+  <asn:AsnType name="SignatureAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:OctetString name="SignatureValue" />
+  <asn:SetOf name="UnsignedAttributes" implicitTag="1" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" />
+  </asn:SetOf>
+</asn:Sequence>

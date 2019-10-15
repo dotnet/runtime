@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Threading.Channels</RootNamespace>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <DefineConstants>$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\VoidResult.cs" />
+    <Compile Include="System\Collections\Generic\Deque.cs" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
+    <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
+    <Compile Include="System\Threading\Channels\Channel.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
+    <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
+    <Compile Include="System\Threading\Channels\Channel_1.cs" />
+    <Compile Include="System\Threading\Channels\Channel_2.cs" />
+    <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
+    <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
+    <Compile Include="$(CommonPath)\Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+</Project>

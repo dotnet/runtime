@@ -1,0 +1,29 @@
+<Project>
+
+   <!-- Retrieve the UAP Tools to the TestHost folder -->
+  <Target Name="CopyUAPToolsToTestHost"
+          Condition="'$(TargetGroup)' == 'uap' and '$(BuildAllConfigurations)' != 'true' and '$(DotNetBuildFromSource)' != 'true'"
+          AfterTargets="Restore">
+
+    <PropertyGroup>
+      <UAPToolsFolder>$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageId)\$(MicrosoftDotNetUapTestToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(UAPToolsFolder)')" Text="UAP Tools package not restored or missing assets." />
+
+    <ItemGroup>
+      <RunnerFolderContents Include="$(UAPToolsFolder)\Runner\**\*" />
+      <LauncherFolderContents Include="$(UAPToolsFolder)\Launcher\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(RunnerFolderContents)"
+          DestinationFolder="$(TestHostRootPath)Runner\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(LauncherFolderContents)"
+          DestinationFolder="$(TestHostRootPath)Launcher\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+  </Target>
+
+</Project>

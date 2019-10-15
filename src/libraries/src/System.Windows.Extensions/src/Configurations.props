@@ -1,0 +1,13 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <PackageConfigurations>
+      netcoreapp3.0-Windows_NT;
+      netcoreapp3.0;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netcoreapp-Windows_NT;
+      netcoreapp;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

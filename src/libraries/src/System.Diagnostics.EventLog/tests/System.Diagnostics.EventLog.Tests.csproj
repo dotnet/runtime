@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EventInstanceTests.cs" />
+    <Compile Include="EventLogEntryCollectionTests.cs" />
+    <Compile Include="EventLogTests\EventLogEntryWrittenTest.cs" />
+    <Compile Include="EventLogTests\EventLogSourceCreationTests.cs" />
+    <Compile Include="EventLogTests\EventLogTests.cs" />
+    <Compile Include="EventLogTests\EventLogWriteEntryTests.cs" />
+    <Compile Include="EventLogTraceListenerTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogConfigurationTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogExceptionTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogInformationTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogPropertySelectorTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogQueryTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogReaderTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogRecordTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" /> 
+    <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
+  </ItemGroup>
+</Project>

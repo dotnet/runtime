@@ -1,0 +1,21 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.IO.FileSystem.AccessControl.csproj">
+      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.IO.FileSystem.AccessControl.csproj" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3">
+      <SupportedFramework>netcore50</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+
+    <!-- 
+      Suppress NETStandard.Library collpasing as it add more dependencies then needed in some 
+      scenarios like .NET Framework which adds an unecessary amount of package dependencies to download 
+    -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

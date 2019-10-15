@@ -1,0 +1,8 @@
+Compat issues with assembly System.Diagnostics.Tracing:
+CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.Tracing.EventCounter' does not inherit from base type 'System.Diagnostics.Tracing.DiagnosticCounter' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventCounter.Flush()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventCounter.WriteMetric(System.Double)' does not exist in the reference but it does exist in the implementation.
+CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'Family' in the reference but 'Public' in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'Family' in the reference but 'Public' in the implementation.
+Total Issues: 6

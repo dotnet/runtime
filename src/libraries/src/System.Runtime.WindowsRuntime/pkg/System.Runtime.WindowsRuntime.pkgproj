@@ -1,0 +1,65 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Runtime.WindowsRuntime.csproj">
+      <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.csproj"/>
+
+    <HarvestIncludePaths Include="ref/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.0">
+      <SupportedFramework>netcore45;wp8;net45</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.2">
+      <SupportedFramework>net451;netcore451;wpa81;netcoreapp1.0</SupportedFramework>
+    </HarvestIncludePaths>
+
+    <!-- we've previously shipped higer netstandard reference assembly version,
+         this is OK since both of these frameworks will unify down to the inbox version -->
+    <ValidatePackageSuppression Include="PermitInboxRevsion">
+      <Value>.NETCore,Version=v4.5.1;WindowsPhoneApp,Version=v8.1</Value>
+    </ValidatePackageSuppression>
+
+    <!-- We can't harvest an assert to more than one path -->
+    <!-- Disable support for netcoreapp1.0 - netcoreapp2.0 for now.  To support these we need to build the src project for the old TFMs 
+    <File Include="$(NuGetPackageRoot)System.Runtime.WindowsRuntime\4.3.0\runtimes\win8\lib\netstandard1.3\System.Runtime.WindowsRuntime.dll">
+      <TargetPath>runtimes/win/lib/netcoreapp1.0</TargetPath>
+      <TargetFramework>netcoreapp1.0</TargetFramework>
+    </File>  -->
+    
+    <HarvestIncludePaths Include="runtimes/win/lib/netcore50" />
+    <HarvestIncludePaths Include="runtimes/win-aot/lib/netcore50" />
+
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win-aot/lib/uap10.0.16299</TargetPath>
+    </File>
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/uap10.0.16299</TargetPath>
+    </File>
+
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
+    <InboxOnTargetFramework Include="portable-win8+wp8+wpa81" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="wpa81" />
+
+    <!-- 
+        ResolveAssemblyReference was attempting to write binding redirects
+        for these assemblies (even though they are in the unification list).  
+        The included build targets explicitly reference System.Runtime
+        and add the facade references to the compiler.
+    -->
+    <_buildTargetsTFMs Include="net45;net451;net461" 
+                    TFM="%(Identity)"
+                    SourceFile=".\build\%(TFM)\$(Id).targets" />
+    <PackageFile Include="@(_buildTargetsTFMs->'%(SourceFile)')" TargetPath="build\%(TFM)\" />
+    <PackageFile Include="@(_buildTargetsTFMs->'%(SourceFile)')" TargetPath="buildTransitive\%(TFM)\" />
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
+
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project> 

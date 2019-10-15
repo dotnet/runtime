@@ -1,0 +1,194 @@
+﻿<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+
+    There are any number of "resheader" rows that contain simple
+    name/value pairs.
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
+    mimetype set.
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly:
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
+    read any of the formats listed below.
+
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_webstatus_ConnectFailure" xml:space="preserve">
+    <value>Unable to connect to the remote server</value>
+  </data>
+  <data name="net_uri_NotAbsolute" xml:space="preserve">
+    <value>This operation is not supported for a relative URI.</value>
+  </data>
+  <data name="net_Websockets_AlreadyOneOutstandingOperation" xml:space="preserve">
+    <value>There is already one outstanding '{0}' call for this WebSocket instance. ReceiveAsync and SendAsync can be called simultaneously, but at most one outstanding operation for each of them is allowed at the same time.</value>
+  </data>
+  <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
+    <value>The WebSocket protocol is not supported on this platform.</value>
+  </data>
+  <data name="net_WebSockets_AcceptUnsupportedProtocol" xml:space="preserve">
+    <value>The WebSocket client request requested '{0}' protocol(s), but server is only accepting '{1}' protocol(s).</value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
+    <value>The argument must be a value greater than {0}.</value>
+  </data>
+  <data name="net_WebSockets_Connect101Expected" xml:space="preserve">
+    <value>The server returned status code '{0}' when status code '101' was expected.</value>
+  </data>
+  <data name="net_WebSockets_MissingResponseHeader" xml:space="preserve">
+    <value>The server's response was missing the required header '{0}'.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState_ClosedOrAborted" xml:space="preserve">
+    <value>The '{0}' instance cannot be used for communication because it has been transitioned into the '{1}' state.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState" xml:space="preserve">
+    <value>The WebSocket is in an invalid state ('{0}') for this operation. Valid states are: '{1}'</value>
+  </data>
+  <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
+    <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
+  </data>
+  <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
+    <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
+  </data>
+  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
+    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
+  </data>
+  <data name="net_WebSockets_ReasonNotNull" xml:space="preserve">
+    <value>The close status description '{0}' is invalid. When using close status code '{1}' the description must be null.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusCode" xml:space="preserve">
+    <value>The close status code '{0}' is reserved for system use only and cannot be specified when calling this method.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
+    <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
+  </data>
+  <data name="net_WebSockets_Scheme" xml:space="preserve">
+    <value>Only Uris starting with 'ws://' or 'wss://' are supported.</value>
+  </data>
+  <data name="net_WebSockets_AlreadyStarted" xml:space="preserve">
+    <value>The WebSocket has already been started.</value>
+  </data>
+  <data name="net_WebSockets_InvalidResponseHeader" xml:space="preserve">
+    <value>The '{0}' header value '{1}' is invalid.</value>
+  </data>
+  <data name="net_WebSockets_NotConnected" xml:space="preserve">
+    <value>The WebSocket is not connected.</value>
+  </data>
+  <data name="net_WebSockets_NoDuplicateProtocol" xml:space="preserve">
+    <value>Duplicate protocols are not allowed: '{0}'.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="net_WebSockets_UWPClientCertSupportRequiresWindows10GreaterThan1703" xml:space="preserve">
+    <value>Client certificates in UWP are unsupported in Windows 10 version 1703 and earlier versions. Please upgrade Windows 10 to a later release.</value>
+  </data>
+  <data name="net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
+    <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
+  </data>
+  <data name="net_WebSockets_RemoteValidationCallbackNotSupported" xml:space="preserve">
+    <value>ClientWebSocketOptions.RemoteCertificateValidationCallback is not supported on this platform.</value>
+  </data>
+</root>

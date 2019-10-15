@@ -1,0 +1,53 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
+    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)Common\src\CoreLib\CodeAnalysis.ruleset</CodeAnalysisRuleset>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true'">
+    <ProjectReference Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  </ItemGroup>
+
+  <!-- Use msbuild path functions as that property is used in bash scripts. -->
+  <ItemGroup>
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'SR.*'))" />
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'NotImplemented.cs'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Link to the testhost folder to probe additional assemblies. -->
+    <CoverageProbePath Include="shared\Microsoft.NETCore.App\$(ProductVersion)" />
+  </ItemGroup>
+
+  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true'">
+    <!-- Project references for non-test assemblies should never be copied to the output. -->
+    <ProjectReference>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+
+  <!--
+    The Utf8String package is experimental. We don't want tests to inadvertently take a dependency on this
+    feature unless they explicitly opt in to it. (Source projects explicitly reference their dependencies,
+    so they can't inadvertently take a dependency on it.)
+  -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IncludeUtf8StringAsmRef)' != 'true'">
+    <DefaultReferenceExclusions Include="System.Utf8String.Experimental" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
+    <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
+  </PropertyGroup>
+
+  <Import Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'" Project="$(RepositoryEngineeringDir)Analyzers.props" />
+</Project>

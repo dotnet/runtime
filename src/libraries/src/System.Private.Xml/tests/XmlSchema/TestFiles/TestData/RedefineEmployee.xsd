@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema targetNamespace="http://EmployeeTestRedefineCT.org"
+                  elementFormDefault="qualified"
+                  xmlns="http://EmployeeTestRedefineCT.org"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:redefine schemaLocation="BaseEmployee2.xsd">
+        <xs:complexType name="NameType">
+            <xs:complexContent>
+                <xs:extension base="NameType">
+                    <xs:sequence>
+                        <xs:element name="MI" type="xs:string"/>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+
+        <xs:complexType name="PositionType">
+            <xs:simpleContent>
+                <xs:extension base="PositionType">
+                    <xs:attribute name="Test" type="xs:boolean" use="required"/>
+                    <xs:attribute name="Temp" type="xs:boolean" use="required"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+        
+        <xs:complexType name="EmployeeType">
+            <xs:complexContent>
+                <xs:extension base="EmployeeType">
+                    <xs:attribute name="Test" type="xs:boolean" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:redefine>
+
+
+</xs:schema>

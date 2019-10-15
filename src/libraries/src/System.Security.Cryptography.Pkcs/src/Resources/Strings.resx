@@ -1,0 +1,297 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_EmptyOrNullString" xml:space="preserve">
+    <value>String cannot be empty or null.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidOidValue" xml:space="preserve">
+    <value>The OID value was invalid.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
+    <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
+  </data>
+  <data name="Cryptography_Asn_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
+    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListRequiresFlagsEnum" xml:space="preserve">
+    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListValueTooBig" xml:space="preserve">
+    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
+  </data>
+  <data name="Cryptography_Asn_UniversalValueIsFixed" xml:space="preserve">
+    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
+  </data>
+  <data name="Cryptography_Asn_UnusedBitCountRange" xml:space="preserve">
+    <value>Unused bit count must be between 0 and 7, inclusive.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
+    <value>Encode cannot be called while a Sequence or SetOf is still open.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
+    <value>Cannot pop the requested tag as it is not currently in progress.</value>
+  </data>
+  <data name="Cryptography_BadHashValue" xml:space="preserve">
+    <value>The hash value is not correct.</value>
+  </data>
+  <data name="Cryptography_BadSignature" xml:space="preserve">
+    <value>Invalid signature.</value>
+  </data>
+  <data name="Cryptography_Cms_CannotDetermineSignatureAlgorithm" xml:space="preserve">
+    <value>Could not determine signature algorithm for the signer certificate.</value>
+  </data>
+  <data name="Cryptography_Cms_IncompleteCertChain" xml:space="preserve">
+    <value>The certificate chain is incomplete, the self-signed root authority could not be determined.</value>
+  </data>
+  <data name="Cryptography_Cms_Invalid_Originator_Identifier_Choice" xml:space="preserve">
+    <value>Invalid originator identifier choice {0} found in decoded CMS.</value>
+  </data>
+  <data name="Cryptography_Cms_Invalid_Subject_Identifier_Type" xml:space="preserve">
+    <value>The subject identifier type {0} is not valid.</value>
+  </data>
+  <data name="Cryptography_Cms_InvalidMessageType" xml:space="preserve">
+    <value>Invalid cryptographic message type.</value>
+  </data>
+  <data name="Cryptography_Cms_InvalidSignerHashForSignatureAlg" xml:space="preserve">
+    <value>SignerInfo digest algorithm '{0}' is not valid for signature algorithm '{1}'.</value>
+  </data>
+  <data name="Cryptography_Cms_Key_Agree_Date_Not_Available" xml:space="preserve">
+    <value>The Date property is not available for none KID key agree recipient.</value>
+  </data>
+  <data name="Cryptography_Cms_MessageNotEncrypted" xml:space="preserve">
+    <value>The CMS message is not encrypted.</value>
+  </data>
+  <data name="Cryptography_Cms_MessageNotSigned" xml:space="preserve">
+    <value>The CMS message is not signed.</value>
+  </data>
+  <data name="Cryptography_Cms_MissingAuthenticatedAttribute" xml:space="preserve">
+    <value>The cryptographic message does not contain an expected authenticated attribute.</value>
+  </data>
+  <data name="Cryptography_Cms_NoCounterCounterSigner" xml:space="preserve">
+    <value>Only one level of counter-signatures are supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Cms_NoRecipients" xml:space="preserve">
+    <value>The recipients collection is empty. You must specify at least one recipient. This platform does not implement the certificate picker UI.</value>
+  </data>
+  <data name="Cryptography_Cms_NoSignerCert" xml:space="preserve">
+    <value>No signer certificate was provided. This platform does not implement the certificate picker UI.</value>
+  </data>
+  <data name="Cryptography_Cms_NoSignerCertSilent" xml:space="preserve">
+    <value>No signer certificate was provided.</value>
+  </data>
+  <data name="Cryptography_Cms_NoSignerAtIndex" xml:space="preserve">
+    <value>The signed cryptographic message does not have a signer for the specified signer index.</value>
+  </data>
+  <data name="Cryptography_Cms_RecipientNotFound" xml:space="preserve">
+    <value>The enveloped-data message does not contain the specified recipient.</value>
+  </data>
+  <data name="Cryptography_Cms_RecipientType_NotSupported" xml:space="preserve">
+    <value>The recipient type '{0}' is not supported for encryption or decryption on this platform.</value>
+  </data>
+  <data name="Cryptography_Cms_Sign_Empty_Content" xml:space="preserve">
+    <value>Cannot create CMS signature for empty content.</value>
+  </data>
+  <data name="Cryptography_Cms_Sign_No_Signature_First_Signer" xml:space="preserve">
+    <value>CmsSigner has to be the first signer with NoSignature.</value>
+  </data>
+  <data name="Cryptography_Cms_SignerNotFound" xml:space="preserve">
+    <value>Cannot find the original signer.</value>
+  </data>
+  <data name="Cryptography_Cms_Signing_RequiresPrivateKey" xml:space="preserve">
+    <value>A certificate with a private key is required.</value>
+  </data>
+  <data name="Cryptography_Cms_Ktri_RSARequired" xml:space="preserve">
+    <value>An RSA key is required to decrypt for a RecipientInfo with a KeyTransport recipient type.</value>
+  </data>
+  <data name="Cryptography_Cms_Recipient_RSARequired_RSAPaddingModeSupplied" xml:space="preserve">
+    <value>An RSA certificate is required for a CmsRecipient when used with RSAEncryptionPadding.</value>
+  </data>
+  <data name="Cryptography_Cms_TrustFailure" xml:space="preserve">
+    <value>Certificate trust could not be established. The first reported error is: {0}</value>
+  </data>
+  <data name="Cryptography_Cms_UnknownAlgorithm" xml:space="preserve">
+    <value>Unknown algorithm '{0}'.</value>
+  </data>
+  <data name="Cryptography_Cms_UnknownKeySpec" xml:space="preserve">
+    <value>Unable to determine the type of key handle from this keyspec {0}.</value>
+  </data>
+  <data name="Cryptography_Cms_WrongKeyUsage" xml:space="preserve">
+    <value>The certificate is not valid for the requested usage.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_CannotProcessEncryptedSafeContents" xml:space="preserve">
+    <value>This operation is not valid on an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_CertBagNotX509" xml:space="preserve">
+    <value>The Pkcs12CertBag contents are not an X.509 certificate.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxIsSealed" xml:space="preserve">
+    <value>The Pkcs12Builder can no longer be modified because one of the Seal methods was already invoked.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxMustBeSealed" xml:space="preserve">
+    <value>One of the Seal methods must be invoked on the Pkcs12Builder before invoking an Encode method.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsEncrypted" xml:space="preserve">
+    <value>Cannot enumerate the contents of an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsReadOnly" xml:space="preserve">
+    <value>New Pkcs12SafeBag values cannot be added to a Pkcs12SafeContents that was read from existing data.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForDecrypt" xml:space="preserve">
+   <value>This decryption operation applies to 'Pkcs12ConfidentialityMode.{0}', but the target object is in 'Pkcs12ConfidentialityMode.{1}'.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForVerify" xml:space="preserve">
+   <value>This verification operation applies to 'Pkcs12IntegrityMode.{0}', but the target object is in 'Pkcs12IntegrityMode.{1}'.</value>
+  </data>
+  <data name="Cryptography_Pkcs_InvalidSignatureParameters" xml:space="preserve">
+    <value>Invalid signature paramters.</value>
+  </data>
+  <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
+    <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_Pkcs9_AttributeMismatch" xml:space="preserve">
+    <value>The parameter should be a PKCS 9 attribute.</value>
+  </data>
+  <data name="Cryptography_Pkcs9_MultipleSigningTimeNotAllowed" xml:space="preserve">
+    <value>Cannot add multiple PKCS 9 signing time attributes.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMissing" xml:space="preserve">
+    <value>PSS parameters were not present.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersHashMismatch" xml:space="preserve">
+    <value>This platform requires that the PSS hash algorithm ({0}) match the data digest algorithm ({1}).</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfHashMismatch" xml:space="preserve">
+    <value>This platform does not support the MGF hash algorithm ({0}) being different from the signature hash algorithm ({1}).</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfNotSupported" xml:space="preserve">
+    <value>Mask generation function '{0}' is not supported by this platform.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersSaltMismatch" xml:space="preserve">
+    <value>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_BadNonce" xml:space="preserve">
+    <value>The response from the timestamping server did not match the request nonce.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_BadResponse" xml:space="preserve">
+    <value>The response from the timestamping server was not understood.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_Failure" xml:space="preserve">
+    <value>The timestamping server did not grant the request. The request status is '{0}' with failure info '{1}'.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_NoCertFound" xml:space="preserve">
+    <value>The timestamping request required the TSA certificate in the response, but it was not found.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_UnexpectedCertFound" xml:space="preserve">
+    <value>The timestamping request required the TSA certificate not be included in the response, but certificates were present.</value>
+  </data>
+  <data name="InvalidOperation_DuplicateItemNotAllowed" xml:space="preserve">
+    <value>Duplicate items are not allowed in the collection.</value>
+  </data>
+  <data name="InvalidOperation_WrongOidInAsnCollection" xml:space="preserve">
+    <value>AsnEncodedData element in the collection has wrong Oid value: expected = '{0}', actual = '{1}'.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyPkcs" xml:space="preserve">
+    <value>System.Security.Cryptography.Pkcs is only supported on Windows platforms.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
+    <value>The string contains a character not in the 7 bit ASCII character set.</value>
+  </data>
+  <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
+    <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
+  </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
+    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
+  </data>
+  <data name="Cryptography_Cms_NoAttributeFound" xml:space="preserve">
+    <value>Attribute not found.</value>
+  </data>
+  <data name="Cryptography_Cms_NoCertificateFound" xml:space="preserve">
+    <value>Certificate not found.</value>
+  </data>
+  <data name="Cryptography_Cms_CertificateAlreadyInCollection" xml:space="preserve">
+    <value>Certificate already present in the collection.</value>
+  </data>
+</root>

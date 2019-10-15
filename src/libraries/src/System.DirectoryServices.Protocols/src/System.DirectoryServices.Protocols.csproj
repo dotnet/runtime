@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);0649;CA1810</NoWarn>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.DirectoryServicesProtocols_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttribute.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttributeOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryControl.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryRequest.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryResponse.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\PartialResultsCollection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ReferralChasingOption.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ResultCode.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchResults.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchScope.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\utils.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapAsyncResult.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapDirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Xml.ReaderWriter" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.ComponentModel.Primitives" />
+  </ItemGroup>
+</Project>

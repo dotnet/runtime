@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssembliesBeingTested Include="System.IO.Pipes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
+    <Compile Include="PipeTest.AclExtensions.cs" />
+    <Compile Include="..\..\System.IO.Pipes\tests\PipeTestBase.cs" />
+  </ItemGroup>
+</Project>

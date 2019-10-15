@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CoverageSupported>false</CoverageSupported>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NonMsdtcPromoterTests.cs" />
+    <Compile Include="AsyncTransactionScopeTests.cs" />
+    <Compile Include="IntResourceManager.cs" />
+    <Compile Include="TransactionScopeTest.cs" />
+    <Compile Include="AsyncTest.cs" />
+    <Compile Include="EnlistTest.cs" />
+    <Compile Include="CloneTxTests.cs" />
+    <Compile Include="LTMEnlistmentTests.cs" />
+    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="TestEnlistments.cs" />
+    <Compile Include="TransactionTracingEventListener.cs" />
+  </ItemGroup>
+</Project>

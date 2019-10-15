@@ -1,0 +1,19 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Security.Principal.Windows.csproj">
+      <SupportedFramework>net461</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj" />
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/uap10.0.16299</TargetPath>
+    </File>
+    <InboxOnTargetFramework Include="uap10.0.16299" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

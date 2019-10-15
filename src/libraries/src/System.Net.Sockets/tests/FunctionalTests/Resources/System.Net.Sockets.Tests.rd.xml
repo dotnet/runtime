@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Net.Sockets.Tests">
+    <Assembly Name="System.Net.Sockets">
+      <!-- Needed for 2 tests that require inline metadata -->
+      <Namespace Name="System.Net.Sockets" Dynamic="Required All" />
+    </Assembly>
+  </Library>
+</Directives>

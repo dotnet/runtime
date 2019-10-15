@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="$(CompatibilityPackageVersion)" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(PrivateCorefxPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="3.0.0-*" />
+    <PackageReference Include="Microsoft.DesktopUI.App" Version="3.0.0-*" />
+    <PackageReference Include="System.Windows.Extensions" Version="4.6.0-*" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
+    <PackageReference Include="Microsoft.NETCore.App" Version="2.1.5" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.5" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.9" />
+    <PackageReference Include="Microsoft.NETCore.App" Version="2.0.9" />
+  </ItemGroup>
+</Project>

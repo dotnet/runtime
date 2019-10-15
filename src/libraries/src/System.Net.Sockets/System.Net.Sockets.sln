@@ -1,0 +1,63 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets.Tests", "tests\FunctionalTests\System.Net.Sockets.Tests.csproj", "{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets.Async.Stress.Tests", "tests\ManualPerformanceTests\System.Net.Sockets.Async.Stress.Tests.csproj", "{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}"
+	ProjectSection(ProjectDependencies) = postProject
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets", "src\System.Net.Sockets.csproj", "{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3} = {834E3534-6A11-4A8D-923F-35C1E71CCEC3}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets", "ref\System.Net.Sockets.csproj", "{834E3534-6A11-4A8D-923F-35C1E71CCEC3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{834E3534-6A11-4A8D-923F-35C1E71CCEC3} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6E33D5E2-B9BF-49D1-99FA-3C9AC3412636}
+	EndGlobalSection
+EndGlobal

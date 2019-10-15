@@ -1,0 +1,173 @@
+# Linux legs
+parameters:
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+  # Required: value to specify if the full test matrix should be tested
+  #   Default: false
+  fullMatrix: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
+
+stages:
+- stage: LinuxStage
+  displayName: Linux
+  dependsOn: []
+  jobs:
+  - template: corefx-base.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      testScope: ${{ parameters.testScope }}
+      targetOS: Linux
+      jobs:
+
+      # Legs with Helix testing
+      - job: LinuxTest
+        displayName: Build
+        strategy:
+          matrix:
+            # Run RedHat6 in release mode on CI to cover Release configuration differences
+            RedHat6_x64_Release:
+              _BuildConfig: Release
+              _architecture: x64
+              _framework: netcoreapp
+              _buildScriptPrefix: ''
+              _buildExtraArguments: /p:RuntimeOS=rhel.6 /p:PortableBuild=false
+              _dockerContainer: rhel6_container
+              _helixQueues: $(redhatHelixQueue)
+              _publishTests: ${{ parameters.fullMatrix }}
+
+            ${{ if eq(parameters.fullMatrix, 'false') }}:
+              x64_Debug:
+                _BuildConfig: Debug
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(linuxDefaultQueues)
+                _dockerContainer: rhel7_container
+                _buildScriptPrefix: ''
+                _buildExtraArguments: ''
+
+              musl_x64_Debug:
+                _BuildConfig: Debug
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(alpineQueues)
+                _dockerContainer: alpine_36_container
+                _buildScriptPrefix: ''
+                _buildExtraArguments: /p:RuntimeOS=linux-musl
+
+            ${{ if eq(parameters.fullMatrix, 'true') }}:
+              x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(linuxDefaultQueues)
+                _dockerContainer: rhel7_container
+                _buildScriptPrefix: ''
+                _buildExtraArguments: ''
+                _publishTests: true
+
+              musl_x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(alpineQueues)
+                _dockerContainer: alpine_36_container
+                _buildScriptPrefix: ''
+                _buildExtraArguments: /p:RuntimeOS=linux-musl
+                _publishTests: true
+
+              arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: netcoreapp
+                _helixQueues: $(linuxArmQueues)
+                _dockerContainer: ubuntu_1604_arm_cross_container
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
+                _buildExtraArguments: -warnAsError false
+                _publishTests: true
+
+              musl_arm64_Release:
+                _BuildConfig: Release
+                _architecture: arm64
+                _framework: netcoreapp
+                _helixQueues: $(alpineArm64Queues)
+                _dockerContainer: alpine_37_arm64_container
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
+                _publishTests: true
+
+              arm64_Release:
+                _BuildConfig: Release
+                _architecture: arm64
+                _framework: netcoreapp
+                _helixQueues: $(linuxArm64Queues)
+                _dockerContainer: ubuntu_1604_arm64_cross_container
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                _buildExtraArguments: -warnAsError false
+                _publishTests: true
+
+        pool:
+          name: Hosted Ubuntu 1604
+
+        container: $[ variables['_dockerContainer'] ]
+        buildScriptPrefix: $(_buildScriptPrefix)
+        buildExtraArguments: $(_buildExtraArguments)
+
+        submitToHelix: true
+        # Temporary till we reduced workloads on ARM64
+        timeoutInMinutes: 240
+
+        variables:
+          - redhatHelixQueue: RedHat.6.Amd64.Open
+
+          - ${{ if eq(parameters.fullMatrix, 'false') }}:
+            - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.9.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+SLES.15.Amd64.Open+\(Fedora.29.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249
+            - alpineQueues: \(Alpine.310.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
+
+          - ${{ if eq(parameters.fullMatrix, 'true') }}:
+            - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.9.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+SLES.12.Amd64.Open+SLES.15.Amd64.Open+\(Fedora.29.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249+\(Ubuntu.1904.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.04-helix-amd64-09ca40b-20190508143257+\(Debian.10.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-7c6abd3-20190620155928
+            - linuxArmQueues: \(Debian.9.Arm32.Open\)Ubuntu.1604.Arm32.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-74c9941-20190620155841
+            - alpineQueues: \(Alpine.38.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190620184125+\(Alpine.39.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190620184719+\(Alpine.310.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
+            - alpineArm64Queues: \(Alpine.38.Arm64.Open\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+            - linuxArm64Queues: \(Ubuntu.1604.Arm64.Open\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-a45aeeb-20190620160300
+
+      # Legs without helix testing
+      # Only run this leg in PRs.
+      - ${{ if and(eq(parameters.fullMatrix, 'false'), and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all'))) }}:
+        - job: LinuxNoTest
+          displayName: Build
+          strategy:
+            matrix:
+              arm_Debug:
+                _BuildConfig: Debug
+                _architecture: arm
+                _framework: netcoreapp
+                _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04 -warnAsError false
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
+                _dockerContainer: ubuntu_1604_arm_cross_container
+
+              musl_arm64_Debug:
+                _BuildConfig: Debug
+                _architecture: arm64
+                _framework: netcoreapp
+                _dockerContainer: alpine_37_arm64_container
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
+
+              arm64_Debug:
+                _BuildConfig: Debug
+                _architecture: arm64
+                _framework: netcoreapp
+                _dockerContainer: ubuntu_1604_arm64_cross_container
+                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                _buildExtraArguments: --warnAsError false
+
+          pool:
+            name: Hosted Ubuntu 1604
+
+          container: $[ variables['_dockerContainer'] ]
+          buildExtraArguments: $(_buildExtraArguments)
+          buildScriptPrefix: $(_buildScriptPrefix)
+          submitToHelix: false

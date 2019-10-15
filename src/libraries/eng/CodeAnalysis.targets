@@ -1,0 +1,56 @@
+<Project>
+  <PropertyGroup>
+    <!-- Need to keep in sync with Tools.props file. -->
+    <AnalyzerPropsFile>$(ToolSetCommonDirectory)Tools.Analyzers.props</AnalyzerPropsFile>
+  </PropertyGroup>
+
+  <Import Condition="Exists($(AnalyzerPropsFile)) AND '$(EnableAnalyzers)' == 'true'" Project="$(AnalyzerPropsFile)" />
+
+  <!-- This target is executed when building a project and EnableAnalyzers property is set to true. 
+  It will populate the Analyzer item that is passed to the compiler with the analyzers restored
+  as package references in Tools.props. Those analyzers will be saved in a props file -> artifacts\toolset\Common\Tools.Analyzers.props.
+  So in order to add a new analyzer just need to add a package reference in Tools.props to the package containing it.
+  *
+  This target also provides filtering for specific type of projects through to Items.
+  - <AnalyzersToInclude> will include only the specified analyzers and will ignore the others that where restored.
+  - <AnalyzersToExclude> will exclude the specified analyzers from the restored analyzers, but will preserve the others.
+  **The values in these Items are the name of the analyzers' dll.
+  **These to Items are mutually exclusive, so only 1 should be set at a time.
+  Example of usage:
+  <AnalyzersToInclude Condition="$(IsTestProject)" Include="Xunit.Analyzers" /> will only include Xunit analyzers.
+  <AnalyzersToExclude Condition="$(IsSourceProject)" Include="Xunit.Analyzers" /> will include all analyzers but Xunit analyzer. -->
+
+  <Target Name="CalculateAnalyzersForBuildTime">
+    <ItemGroup>
+      <Analyzer Include="@(ResolvedAnalyzer)" />
+    </ItemGroup>
+
+    <Warning Text="AnalyzersToExclude and AnalyzersToInclude shouldn't be set together, they are mutually exclusive." Condition="'@(AnalyzersToExclude)' != '' AND '@(AnalyzersToInclude)' != ''" />
+
+    <ItemGroup Condition="'@(AnalyzersToExclude)' != '' OR '@(AnalyzersToInclude)' != ''">
+      <_AnalyzersToFileName Include="@(Analyzer -> '%(FileName)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_AnalyzersToFileName>
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(AnalyzersToExclude)' != ''">
+      <_AnalyzersToRemove Include="@(_AnalyzersToFileName)" Condition="'@(AnalyzersToExclude)' == '@(_AnalyzersToFileName)' and '%(Identity)' != ''" />
+      <Analyzer Remove="@(_AnalyzersToRemove -> '%(OriginalIdentity)')" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(AnalyzersToInclude)' != ''">
+      <_AnalyzersToRemove Include="@(_AnalyzersToFileName)" Exclude="@(AnalyzersToInclude)" />
+      <_missingAnalyzersToInclude Include="@(AnalyzersToInclude)" Exclude="@(_AnalyzersToFileName)" />
+      <Analyzer Remove="@(_AnalyzersToRemove -> '%(OriginalIdentity)')" />
+    </ItemGroup>
+
+    <Error Text="Couldn't find analyzer to include with values: @(_missingAnalyzersToInclude)" Condition="'@(_missingAnalyzersToInclude)' != '' and '@(_missingAnalyzersToInclude)' != 'None'" />
+  </Target>
+
+  <PropertyGroup Condition="'$(EnableAnalyzers)' == 'true'">
+  	<ResolveReferencesDependsOn>
+  	  $(ResolveReferencesDependsOn);
+  	  CalculateAnalyzersForBuildTime;
+  	</ResolveReferencesDependsOn>
+  </PropertyGroup>
+</Project>

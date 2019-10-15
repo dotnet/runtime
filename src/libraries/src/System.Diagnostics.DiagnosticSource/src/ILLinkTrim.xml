@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Diagnostics.DiagnosticSource">
+    <type fullname="System.Diagnostics.DiagnosticSourceEventSource" />
+    <type fullname="System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/TypedFetchProperty`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>

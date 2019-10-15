@@ -1,0 +1,12 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netcoreapp3.0;
+      uap;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netcoreapp;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

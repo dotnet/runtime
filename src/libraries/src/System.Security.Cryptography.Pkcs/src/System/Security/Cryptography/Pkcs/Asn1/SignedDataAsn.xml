@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SignedDataAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-5.1
+
+    SignedData ::= SEQUENCE {
+        version CMSVersion,
+        digestAlgorithms DigestAlgorithmIdentifiers,
+        encapContentInfo EncapsulatedContentInfo,
+        certificates[0] IMPLICIT CertificateSet OPTIONAL,
+        crls[1] IMPLICIT RevocationInfoChoices OPTIONAL,
+        signerInfos SignerInfos
+    }
+
+    DigestAlgorithmIdentifiers ::= SET OF DigestAlgorithmIdentifier
+    SignerInfos ::= SET OF SignerInfo
+    CertificateSet ::= SET OF CertificateChoices
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:SetOf name="DigestAlgorithms">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  </asn:SetOf>
+  <asn:AsnType name="EncapContentInfo" typeName="System.Security.Cryptography.Pkcs.Asn1.EncapsulatedContentInfoAsn" />
+  <asn:SetOf name="CertificateSet" implicitTag="0" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn" />
+  </asn:SetOf>
+  <asn:SetOf name="Crls" implicitTag="1" optional="true">
+    <asn:AnyValue />
+  </asn:SetOf>
+  <asn:SetOf name="SignerInfos">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn" />
+  </asn:SetOf>
+</asn:Sequence>

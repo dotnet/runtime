@@ -1,0 +1,9 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp;
+      netcoreapp-Windows_NT;
+      uap-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

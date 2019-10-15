@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Private.Xml.Linq</AssemblyName>
+    <RootNamespace>System.Xml</RootNamespace>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+      <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+      <Link>System\Text\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\Extensions.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoEndElementAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XAttribute.cs" />
+    <Compile Include="System\Xml\Linq\XCData.cs" />
+    <Compile Include="System\Xml\Linq\XComment.cs" />
+    <Compile Include="System\Xml\Linq\XContainer.cs" />
+    <Compile Include="System\Xml\Linq\XDeclaration.cs" />
+    <Compile Include="System\Xml\Linq\XDocument.cs" />
+    <Compile Include="System\Xml\Linq\XDocumentType.cs" />
+    <Compile Include="System\Xml\Linq\XElement.cs" />
+    <Compile Include="System\Xml\Linq\XHashtable.cs" />
+    <Compile Include="System\Xml\Linq\XHelper.cs" />
+    <Compile Include="System\Xml\Linq\XLinq.cs" />
+    <Compile Include="System\Xml\Linq\XName.cs" />
+    <Compile Include="System\Xml\Linq\XNamespace.cs" />
+    <Compile Include="System\Xml\Linq\XNode.cs" />
+    <Compile Include="System\Xml\Linq\XNodeBuilder.cs" />
+    <Compile Include="System\Xml\Linq\XNodeDocumentOrderComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeEqualityComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeReader.cs" />
+    <Compile Include="System\Xml\Linq\XObject.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeEventArgs.cs" />
+    <Compile Include="System\Xml\Linq\XProcessingInstruction.cs" />
+    <Compile Include="System\Xml\Linq\XStreamingElement.cs" />
+    <Compile Include="System\Xml\Linq\XText.cs" />
+    <Compile Include="System\Xml\Schema\XNodeValidator.cs" />
+    <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
+    <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+</Project>

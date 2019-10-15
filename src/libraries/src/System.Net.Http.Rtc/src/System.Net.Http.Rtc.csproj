@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Net\Http\RtcRequestFactory.cs" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+</Project>

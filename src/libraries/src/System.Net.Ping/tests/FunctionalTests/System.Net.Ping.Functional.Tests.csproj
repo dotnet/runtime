@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Test APIs introduced after 1.0 -->
+  <ItemGroup>
+    <Compile Include="PingTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="PingExceptionTest.cs" />
+    <Compile Include="PingOptionsTest.cs" />
+    <Compile Include="TestSettings.cs" />
+    <Compile Include="UnixPingUtilityTests.cs" />
+    <!-- System.Net Common -->
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>SocketCommon\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Ping.cs">
+      <Link>SocketCommon\Configuration.Ping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\RawSocketPermissions.cs">
+      <Link>Common\System\Net\RawSocketPermissions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.ReadLink.cs">
+      <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\UnixCommandLinePing.cs">
+      <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.RawSocketPermissions.cs">
+      <Link>Common\System\Net\Capability.RawSocketPermissions.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+  </ItemGroup>
+</Project>

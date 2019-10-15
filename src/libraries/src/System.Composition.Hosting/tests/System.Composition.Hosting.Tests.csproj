@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Composition\Hosting\Core\CompositionDependencyTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\CompositionHostTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\DependencyAccessorTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorPromiseTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\CompositionOperationTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorProviderTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\LifetimeContextTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorTests.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,21 @@
+<mydoc>
+<numbers>
+	<n>1</n>
+	<n>2</n>
+	<n>3</n>
+</numbers>
+<numbers>
+	<n>1</n>
+	<n>1</n>
+	<n>2</n>
+	<n>2</n>
+	<n>3</n>
+	<n>4</n>
+</numbers>
+<numbers>
+	<n>5</n>
+	<n>NaN</n>
+	<n>0</n>
+</numbers>
+
+</mydoc>

@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BinaryFormatterTestData.cs" />
+    <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="EqualityExtensions.cs" />
+    <Compile Include="OptionalFieldAttributeTests.cs" />
+    <Compile Include="FormatterConverterTests.cs" />
+    <Compile Include="FormatterServicesTests.cs" />
+    <Compile Include="FormatterServicesTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="FormatterTests.cs" />
+    <Compile Include="PlatformExtensions.cs" />
+    <Compile Include="SerializationBinderTests.cs" />
+    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SerializationInfoTests.cs" />
+    <Compile Include="SerializationTypes.cs" />
+    <Compile Include="SurrogateSelectorTests.cs" />
+    <Compile Include="TargetFrameworkMoniker.cs" />
+    <Compile Include="TypeSerializableValue.cs" />
+    <Compile Include="$(CommonTestPath)\System\NonRuntimeType.cs">
+      <Link>Common\System\NonRuntimeType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Text.Json" />
+  </ItemGroup>
+</Project>

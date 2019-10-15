@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="ContentInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-3
+
+    ContentInfo ::= SEQUENCE {
+        contentType ContentType,
+        content[0] EXPLICIT ANY DEFINED BY contentType
+    }
+
+    ContentType ::= OBJECT IDENTIFIER
+  -->
+  <asn:ObjectIdentifier name="ContentType" backingType="string" />
+  <asn:AnyValue name="Content" explicitTag="0" />
+</asn:Sequence>

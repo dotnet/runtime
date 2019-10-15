@@ -1,0 +1,11 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- System.Threading.Tasks.Extensions has forwarded types into the runtime on netcoreapp/uap
+         It must win over assemblies versioned at 4.2.* -->
+    <AssemblyVersion>4.3.0.0</AssemblyVersion>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsUAP>true</IsUAP>
+  </PropertyGroup>
+</Project>

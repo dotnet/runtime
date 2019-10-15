@@ -1,0 +1,8 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because UnicodeRangesTests.Range_Unicode explicitly reflects on this type. -->
+    <Type Name="System.Text.Unicode.UnicodeRanges" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+

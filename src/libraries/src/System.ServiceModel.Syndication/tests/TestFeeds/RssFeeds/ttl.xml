@@ -1,0 +1,13 @@
+<!--
+  Description:  ttl is positive integer
+  Expect:       ValidInteger{parent:channel,element:ttl}
+-->
+
+<rss version="2.0">
+<channel>
+<title>RSS 2.0 test case</title>
+<link>http://www.contoso.com/testcases/rss20/</link>
+<description>ttl is positive integer</description>
+<ttl>60</ttl>
+</channel>
+</rss>

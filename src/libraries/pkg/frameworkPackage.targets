@@ -1,0 +1,187 @@
+<Project InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework">
+
+  <PropertyGroup>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
+
+    <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
+    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(NuGetPackageRoot)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
+
+    <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
+    <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
+    <IncludeNativeFiles Condition="'$(IncludeNativeFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeNativeFiles>
+
+    <RefFileTargetPath Condition="'$(RefFileTargetPath)' == ''">ref/$(TargetFramework)</RefFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' AND '$(PackageTargetRuntime)' == ''">lib/$(TargetFramework)</LibFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</LibFileTargetPath>
+
+    <NativeFileTargetPath Condition="'$(NativeFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/native</NativeFileTargetPath>
+    <NativeBinDir Condition="'$(PackageTargetRuntimeSuffix)' == 'aot'">$(NativeBinDir)-aot</NativeBinDir>
+  </PropertyGroup>
+
+  <!-- Bring in ref content from binplaced ref props -->
+  <Import Condition="'$(IncludeReferenceFiles)' == 'true'" Project="$(RefBinDir)\*.props" />
+  <ItemGroup Condition="'$(IncludeReferenceFiles)' == 'true'">
+    <_buildRIDWithMetadata Include="@(BuildRID)">
+      <TargetRuntime>%(Identity)</TargetRuntime>
+      <Version>$(PackageVersion)</Version>
+    </_buildRIDWithMetadata>
+    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
+  </ItemGroup>
+
+  <!-- Bring in lib content from binplaced lib props -->
+  <Import Condition="'$(IncludeLibFiles)' == 'true'" Project="$(LibBinDir)\*.props" />
+
+  <ItemGroup Condition="'$(IncludeNativeFiles)' == 'true'">
+    <!-- Include native -->
+    <ExcludeNative Include="$(NativeBinDir)/*.lib" />
+    <ExcludeNative Include="$(NativeBinDir)/System.IO.Ports.Native.*" />
+    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)" />
+    <!-- force a missing file if native build is absent -->
+    <NativeFile Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
+  </ItemGroup>
+
+  <Target Name="_CheckForFiles">
+    <Error Condition="'$(IncludeReferenceFiles)' == 'true' AND '@(RefFile)' == ''"
+           Text="IncludeReferenceFiles was specified but no file props were found in '$(RefBinDir)'" />
+    <Error Condition="'$(IncludeLibFiles)' == 'true' AND '@(LibFile)' == ''"
+           Text="IncludeLibFiles was specified but no file props were found in '$(LibBinDir)'" />
+    <Error Condition="'$(IncludeNativeFiles)' == 'true' AND '@(NativeFile)' == ''"
+           Text="IncludeNativeFiles was specified but no files were found in '$(NativeBinDir)'" />
+  </Target>
+
+  <Target Name="IncludeFiles">
+    <PropertyGroup>
+      <_repoRootLength>$(RepoRoot.Length)</_repoRootLength>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Include refs -->
+      <File Include="@(RefFile)">
+        <TargetPath Condition="'%(RefFile.TargetPath)' == ''">$(RefFileTargetPath)%(RefFile.SubFolder)</TargetPath>
+      </File>
+
+      <!-- Include lib -->
+      <File Include="@(LibFile)">
+        <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">$(LibFileTargetPath)%(LibFile.SubFolder)</TargetPath>
+      </File>
+
+      <File Include="@(NativeFile)">
+        <TargetPath>$(NativeFileTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSymbolsInPackage)' != 'true'">
+      <!-- Set targetpath for sources to be under src so that it is excluded from the lib package -->
+      <File Condition="'%(File.IsSourceCodeFile)' == 'true'">
+        <TargetPath>src</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(RepoRoot)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_repoRootLength)).Replace('\', '/'))</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetClosureFiles">
+    <!-- sets up ClosureFile items that are organized by file-set -->
+    <ItemGroup>
+      <ClosureFile Include="@(RefFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')" >
+        <FileSet>reference</FileSet>
+      </ClosureFile>
+
+      <ClosureFile Include="@(LibFile);@(NativeFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')">
+        <FileSet>runtime</FileSet>
+      </ClosureFile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="VerifyClosure"
+          DependsOnTargets="GetClosureFiles"
+          AfterTargets="ValidatePackage"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_closureFileNames Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_closureFileNames>
+      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
+      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyClosure Sources="@(_closureFileFiltered)"
+                   IgnoredReferences="@(IgnoredReference)"
+                   DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
+
+  </Target>
+
+  <Target Name="VerifyDuplicateTypes"
+          DependsOnTargets="GetClosureFiles"
+          AfterTargets="ValidatePackage"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <PropertyGroup>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
+    </PropertyGroup>
+    <ItemGroup>
+      <_dupTypeFileName Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_dupTypeFileName>
+      <_dupTypeFileName Include="@(FrameworkClosureFile->'%(FileName)')" Exclude="@(_dupTypeFileName)" Condition="'$(_fileSet)' == '%(FrameworkClosureFile.FileSet)'">
+        <Original>%(Identity)</Original>
+      </_dupTypeFileName>
+      <_dupTypeFileNamesFiltered Include="@(_dupTypeFileName)" Exclude="@(ExcludeFromDuplicateTypes)"/>
+      <_dupTypeFileFiltered Include="@(_dupTypeFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying no duplicate types in $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyTypes Sources="@(_dupTypeFileFiltered)"
+                 IgnoredTypes="@(IgnoredDuplicateType)" />
+
+  </Target>
+
+  <Target Name="VerifyNETStandard"
+          DependsOnTargets="GetClosureFiles"
+          AfterTargets="ValidatePackage"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+
+    <PropertyGroup>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_NETStandardFile Include="$(NETStandardPackageRefPath)\*.dll" />
+
+      <!-- Suppress errors caused by removing S.CM.C shim from inbox -->
+      <SuppressNETStandardMissingFile Include="System.ComponentModel.Composition" />
+
+      <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(ClosureFile->'%(FileName)')" />
+      <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
+      <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_NETStandardFile)' == ''"
+           Text="Could not locate NETStandard package content at '$(NETStandardPackageRefPath)'" />
+
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files." />
+  </Target>
+
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <File>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetValidateFramework">
+    <ItemGroup>
+      <!-- Update validation with locally authored RID list -->
+      <DefaultValidateFramework Remove="$(TargetFramework)"/>
+      <DefaultValidateFramework Include="$(TargetFramework)">
+        <RuntimeIDs>@(BuildRID)</RuntimeIDs>
+      </DefaultValidateFramework>
+    </ItemGroup>
+  </Target>
+</Project>

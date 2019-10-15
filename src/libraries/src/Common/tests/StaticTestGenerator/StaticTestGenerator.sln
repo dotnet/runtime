@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28720.180
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StaticTestGenerator", "StaticTestGenerator.csproj", "{674B4A86-09EF-4A0D-8C09-2C13A5B89514}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{674B4A86-09EF-4A0D-8C09-2C13A5B89514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{674B4A86-09EF-4A0D-8C09-2C13A5B89514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{674B4A86-09EF-4A0D-8C09-2C13A5B89514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{674B4A86-09EF-4A0D-8C09-2C13A5B89514}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {377102F5-7585-47C9-A290-31EC6B59C342}
+	EndGlobalSection
+EndGlobal

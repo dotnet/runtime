@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AlternateViewCollectionTest.cs" />
+    <Compile Include="AlternateViewTest.cs" />
+    <Compile Include="AttachmentCollectionTest.cs" />
+    <Compile Include="AttachmentTest.cs" />
+    <Compile Include="ContentDispositionTest.cs" />
+    <Compile Include="ContentTypeTest.cs" />
+    <Compile Include="SmtpClientCredentialsTest.cs" />
+    <Compile Include="HeaderCollectionTest.cs" />
+    <Compile Include="LinkedResourceCollectionTest.cs" />
+    <Compile Include="LinkedResourceTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="MailAddressCollectionTest.cs" />
+    <Compile Include="MailAddressTest.cs" />
+    <Compile Include="MailMessageTest.cs" />
+    <Compile Include="SmtpClientTest.cs" />
+    <Compile Include="SmtpExceptionTest.cs" />
+    <Compile Include="SmtpServer.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.NetworkInformation" />
+  </ItemGroup>
+</Project>

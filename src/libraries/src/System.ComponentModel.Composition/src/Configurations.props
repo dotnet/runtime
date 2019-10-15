@@ -1,0 +1,14 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard;
+      netcoreapp2.0;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      _netfx;
+      netcoreapp;
+      uap;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

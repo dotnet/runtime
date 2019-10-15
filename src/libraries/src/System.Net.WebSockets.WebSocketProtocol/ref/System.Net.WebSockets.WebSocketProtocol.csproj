@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Net.WebSockets.WebSocketProtocol.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+</Project>

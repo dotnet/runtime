@@ -1,0 +1,169 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.CreateWindowEx.cs">
+      <Link>Common\Interop\Windows\User32\Interop.CreateWindowEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.DefWindowProc.cs">
+      <Link>Common\Interop\Windows\User32\Interop.DefWindowProc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.DestroyWindow.cs">
+      <Link>Common\Interop\Windows\User32\Interop.DestroyWindow.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.DispatchMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.DispatchMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetClassInfo.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetClassInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetWindowThreadProcessId.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetWindowThreadProcessId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.IsWindow.cs">
+      <Link>Common\Interop\Windows\User32\Interop.IsWindow.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.KillTimer.cs">
+      <Link>Common\Interop\Windows\User32\Interop.KillTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.MSG.cs">
+      <Link>Common\Interop\Windows\User32\Interop.MSG.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.MsgWaitForMultipleObjectsEx.cs">
+      <Link>Common\Interop\Windows\User32\Interop.MsgWaitForMultipleObjectsEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.PeekMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.PeekMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.PostMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.PostMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.RegisterClass.cs">
+      <Link>Common\Interop\Windows\User32\Interop.RegisterClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.RegisterWindowMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.RegisterWindowMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SendMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SendMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SetClassLong.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SetClassLong.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SetClassLongPtr.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SetClassLongPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SetTimer.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SetTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SetWindowLong.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SetWindowLong.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SetWindowLongPtr.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SetWindowLongPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.TranslateMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.TranslateMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.UnregisterClass.cs">
+      <Link>Common\Interop\Windows\User32\Interop.UnregisterClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
+      <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.WNDCLASS.cs">
+      <Link>Common\Interop\Windows\User32\Interop.WNDCLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.WndProc.cs">
+      <Link>Common\Interop\Windows\User32\Interop.WndProc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WtsApi32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\WtsApi32\Interop.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WtsApi32\Interop.WTSRegisterSessionNotification.cs">
+      <Link>Common\Interop\Windows\WtsApi32\Interop.WTSRegisterSessionNotification.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs">
+      <Link>Common\Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\Win32\PowerModeChangedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\PowerModeChangedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\PowerModes.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndingEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndingEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndReasons.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchReason.cs" />
+    <Compile Include="Microsoft\Win32\SystemEvents.cs" />
+    <Compile Include="Microsoft\Win32\TimerElapsedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\TimerElapsedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceCategories.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.ComponentModel.EventBasedAsync" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+    <Reference Include="System.ComponentModel.TypeConverter" />
+  </ItemGroup>
+</Project>

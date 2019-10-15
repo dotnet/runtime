@@ -1,0 +1,14 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup);netstandard2.1-$(OSGroup)-$(ConfigurationGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Project Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\ref\*.*proj" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+</Project>

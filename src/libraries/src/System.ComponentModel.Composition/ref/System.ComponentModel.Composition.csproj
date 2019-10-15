@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.ComponentModel.Composition.cs" />
+    <Compile Include="System.ComponentModel.Composition.Forwards.cs" />
+  </ItemGroup>
+</Project>

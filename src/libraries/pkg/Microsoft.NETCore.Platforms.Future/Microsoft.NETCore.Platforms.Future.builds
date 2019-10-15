@@ -1,0 +1,9 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' Or '$(BuildAllConfigurations)' == 'true'">
+    <Project Include="Microsoft.NETCore.Platforms.Future.pkgproj" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))" />
+</Project>

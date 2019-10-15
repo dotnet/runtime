@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE doc [
+<!ENTITY otherFile SYSTEM "ResolveDTD_2.xml">
+]>
+<doc>
+  <foo>
+    <bar>&otherFile;</bar>
+  </foo>
+</doc>

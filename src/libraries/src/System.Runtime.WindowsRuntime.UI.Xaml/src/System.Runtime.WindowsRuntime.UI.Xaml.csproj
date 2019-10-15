@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.WindowsRuntime.UI.Xaml</AssemblyName>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' or '$(TargetGroup)' == 'netstandard'">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true' or '$(TargetsUap)'=='true'">
+    <Compile Include="System\Runtime\InteropServices\HResults.cs" />
+    <Compile Include="System\Windows\CornerRadius.cs" />
+    <Compile Include="System\Windows\Duration.cs" />
+    <Compile Include="System\Windows\GridLength.cs" />
+    <Compile Include="System\Windows\Thickness.cs" />
+    <Compile Include="System\Windows\TokenizerHelper.cs" />
+    <Compile Include="System\Windows\LayoutCycleException.cs" />
+    <Compile Include="System\Windows\Automation\ElementNotAvailableException.cs" />
+    <Compile Include="System\Windows\Automation\ElementNotEnabledException.cs" />
+    <Compile Include="System\Windows\Controls\Primitives\GeneratorPosition.cs" />
+    <Compile Include="System\Windows\Markup\XamlParseException.cs" />
+    <Compile Include="System\Windows\Media\Matrix.cs" />
+    <Compile Include="System\Windows\Media\Animation\KeyTime.cs" />
+    <Compile Include="System\Windows\Media\Animation\RepeatBehavior.cs" />
+    <Compile Include="System\Windows\Media\Media3D\Matrix3D.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
+      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true' or '$(TargetsUap)'=='true'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
+  </ItemGroup>
+</Project>

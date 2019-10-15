@@ -1,0 +1,20 @@
+<linker>
+  <assembly fullname="System.Text.Json">
+    <type fullname="System.Text.Json.JsonPropertyInfoNullable`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Text.Json.Serialization.JsonPropertyInfoNotNullableContravariant`4">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Text.Json.Serialization.Converters.JsonConverterEnum`1">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Text.Json.Serialization.Converters.JsonKeyValuePairConverter`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>

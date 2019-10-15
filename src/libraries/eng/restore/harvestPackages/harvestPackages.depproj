@@ -1,0 +1,44 @@
+﻿<Project InitialTargets="AddPackageDownload" Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)pkg/baseline/baseline.props" />
+
+  <!-- only restore this project during the build, don't copy any of it's packages
+       The sole purpose of this project is to download packages that can be examined
+       for harvesting binaries & support. -->
+  <Target Name="Build" DependsOnTargets="RestorePackages" />
+
+  <Target Name="AddPackageDownload">
+    <ItemGroup>
+      <_AllPkgProjs Include="$(RepoRoot)src/**/*.pkgproj" />
+    </ItemGroup>
+    <!-- Need separate ItemGroups so right metadata gets populated -->
+    <ItemGroup>
+      <_AllPkgProjsToPackageIdentity Include="@(_AllPkgProjs -> '%(Filename)')" />
+    </ItemGroup>
+
+    <GetLastStablePackage
+        LatestPackages="@(_AllPkgProjsToPackageIdentity)"
+        PackageIndexes="$(PackageIndexFile)"
+        DoNotAllowVersionsFromSameRelease="true">
+        <Output TaskParameter="LastStablePackages" ItemName="_PackageDownload" />
+    </GetLastStablePackage>
+
+    <!-- Allow to override package download and versions in case there is already a PackageDownload set -->
+    <ItemGroup>
+      <_OverridenPackageDownloads Include="@(_PackageDownload)" Condition="'@(PackageDownload)' == '@(_PackageDownload)' and %(Identity) != ''" />
+      <_PackageDownload Remove="@(_OverridenPackageDownloads)" />
+      <_PackageDownload Include="@(PackageDownload)" />
+
+      <PackageDownload Remove="@(PackageDownload)" />
+      <PackageDownload Include="@(_PackageDownload)" Condition="'%(_PackageDownload.IsImplicitlyDefined)' != 'true'" />
+      <!-- Add exact version to PackageDownload -->
+      <PackageDownload>
+        <Version>[%(Version)]</Version>
+      </PackageDownload>
+    </ItemGroup>
+  </Target>
+
+</Project>

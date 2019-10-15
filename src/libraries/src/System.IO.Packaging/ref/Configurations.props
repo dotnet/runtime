@@ -1,0 +1,13 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard1.3;
+      net46;
+      netstandard;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netfx;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

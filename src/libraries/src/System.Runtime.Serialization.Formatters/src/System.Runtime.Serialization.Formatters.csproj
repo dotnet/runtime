@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
+    <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
+    <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatter.cs" />
+    <Compile Include="System\Runtime\Serialization\FormatterConverter.cs" />
+    <Compile Include="System\Runtime\Serialization\FormatterServices.cs" />
+    <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
+    <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
+    <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
+    <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationFieldInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationObjectManager.cs" />
+    <Compile Include="System\Runtime\Serialization\SurrogateSelector.cs" />
+    <Compile Include="System\Runtime\Serialization\ValueTypeFixupInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\CommonEnums.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryArray.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssembly.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssemblyInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryTypeConverter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainAssembly.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainString.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObject.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectString.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMapTyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\IStreamable.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveTyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveUntyped.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberReference.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MessageEnd.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectMap.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectNull.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\SerializationHeaderRecord.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectProgress.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
+    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\HashHelpers.cs">
+      <Link>Common\System\Collections\HashHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="..\..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+  </ItemGroup>
+</Project>

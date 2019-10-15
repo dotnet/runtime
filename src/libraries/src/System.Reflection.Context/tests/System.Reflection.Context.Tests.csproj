@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CustomAssemblyAttributes.cs" />
+    <Compile Include="CustomPropertyInfoTests.cs" />
+    <Compile Include="CustomReflectionContextTests.cs" />
+    <Compile Include="TestTypes.cs" />
+    <Compile Include="CustomAssemblyTests.cs" />
+    <Compile Include="ProjectionConstants.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="VirtualPropertyInfo.PropertySetter.Tests.cs" />
+    <Compile Include="VirtualPropertyInfo.PropertyGetter.Tests.cs" />
+    <Compile Include="VirtualPropertyInfoTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="PolicyConstraintsAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.2.1.11
+
+    PolicyConstraints ::= SEQUENCE {
+        requireExplicitPolicy           [0] SkipCerts OPTIONAL,
+        inhibitPolicyMapping            [1] SkipCerts OPTIONAL
+    }
+
+    SkipCerts ::= INTEGER (0..MAX)
+  -->
+  <asn:Integer name="RequireExplicitPolicyDepth" implicitTag="0" backingType="int" optional="true" />
+  <asn:Integer name="InhibitMappingDepth" implicitTag="1" backingType="int" optional="true" />
+</asn:Sequence>

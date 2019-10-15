@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="AddFirstAddFirstIntoDocument.cs" />
+    <Compile Include="AddFirstInvalidIntoXDocument.cs" />
+    <Compile Include="AddFirstSingeNodeAddIntoElement.cs" />
+    <Compile Include="AddNodeAfter.cs" />
+    <Compile Include="AddNodeBefore.cs" />
+    <Compile Include="AddNodeBeforeAfterBase.cs" />
+    <Compile Include="FirstNode.cs" />
+    <Compile Include="LoadFromReader.cs" />
+    <Compile Include="LoadFromStream.cs" />
+    <Compile Include="NextNode.cs" />
+    <Compile Include="ParamsObjectsCreation.cs" />
+    <Compile Include="ParamsObjectsCreationElem.cs" />
+    <Compile Include="RemoveAttributes.cs" />
+    <Compile Include="SaveWithWriter.cs" />
+    <Compile Include="SimpleObjectsCreation.cs" />
+    <Compile Include="TreeManipulationTests.cs" />
+    <Compile Include="XAttributeEnumRemove.cs" />
+    <Compile Include="XAttributeRemove.cs" />
+    <Compile Include="XContainerAddIntoDocument.cs" />
+    <Compile Include="XContainerAddIntoElement.cs" />
+    <Compile Include="XContainerRemoveNodesOnXDocument.cs" />
+    <Compile Include="XContainerRemoveNodesOnXElement.cs" />
+    <Compile Include="XContainerReplaceNodes.cs" />
+    <Compile Include="XContainerReplaceNodesOnDocument.cs" />
+    <Compile Include="XContainerReplaceNodesOnXElement.cs" />
+    <Compile Include="XElement_SetAttributeValue.cs" />
+    <Compile Include="XElement_SetElementValue.cs" />
+    <Compile Include="XNodeRemove.cs" />
+    <Compile Include="XNodeRemoveNodeMisc.cs" />
+    <Compile Include="XNodeRemoveOnDocument.cs" />
+    <Compile Include="XNodeRemoveOnElement.cs" />
+    <Compile Include="XNodeReplace.cs" />
+    <Compile Include="XNodeReplaceOnDocument1.cs" />
+    <Compile Include="XNodeReplaceOnDocument2.cs" />
+    <Compile Include="XNodeReplaceOnDocument3.cs" />
+    <Compile Include="XNodeReplaceOnElement.cs" />
+    <Compile Include="XNodeSequenceRemove.cs" />
+    <Compile Include="XElementChangedNotificationTests.cs" />
+    <Compile Include="SaveWithFileName.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

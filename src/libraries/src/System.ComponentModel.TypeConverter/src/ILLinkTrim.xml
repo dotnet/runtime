@@ -1,0 +1,29 @@
+<linker>
+  <assembly fullname="System.ComponentModel.TypeConverter">
+    <type fullname="MS.Internal.Xml.Linq.ComponentModel.*" />
+    <type fullname="System.ComponentModel.TypeDescriptor">
+      <!-- called through reflection by System.ComponentModel.DefaultValueAttribute -->
+      <method name="ConvertFromInvariantString" />
+    </type>
+    <type fullname="System.ComponentModel.TypeDescriptor/TypeDescriptorComObject">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.ComponentModel.TypeDescriptor/TypeDescriptorInterface">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.ComponentModel.Design.DesignerOptionService/DesignerOptionConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <!-- The following types support the CLR's IClassFactory2 marshaling -->
+    <type fullname="System.ComponentModel.LicenseManager/LicenseInteropHelper" />
+    <type fullname="System.ComponentModel.LicenseManager/CLRLicenseContext" />
+    <type fullname="System.ComponentModel.LicenseManager/LicInfoHelperLicenseContext" />
+  </assembly>
+</linker>

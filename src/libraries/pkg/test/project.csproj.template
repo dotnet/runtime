@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>{TFM}</TargetFramework>
+    <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
+    <TestPackageId>{PackageId}</TestPackageId>
+    <TestPackageVersion>{PackageVersion}</TestPackageVersion>
+
+    <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!--
+      System.Reflection.Emit.Lightweight and System.Reflection.Emit.ILGeneration's versions have been 
+      bumped so we expect validation to fail until we ingest the new core-setup which contains that change.
+    -->
+    <IgnoredReference Include="System.Reflection.Emit.Lightweight" Version="4.1.0.0" />
+    <IgnoredReference Include="System.Reflection.Emit.ILGeneration" Version="4.1.0.0" />
+    <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
+  </ItemGroup>
+
+  <Import Project="$(SupportFilesDir)\packageTest.targets" />
+</Project>

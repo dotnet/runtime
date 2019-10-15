@@ -1,0 +1,18 @@
+{
+  "runtimes": {
+    "unix-wasm": {
+      "#import": []
+    },
+    "webassembly": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "webassembly-wasm": {
+      "#import": [
+        "webassembly",
+        "unix-wasm"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:complexType name="ct-B">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="b1" type="xsd:boolean" />
+			<xsd:element name="b2" type="xsd:int" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element id="a1" name="e2" type="ct-B" />
+	
+</xsd:schema>

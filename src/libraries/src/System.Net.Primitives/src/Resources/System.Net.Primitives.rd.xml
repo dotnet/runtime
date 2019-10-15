@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Net.Primitives*">
+    <Assembly Name="System.Net.Primitives">
+       <!-- VSO 449560 The following types are used by HttpListener. -->
+       <Type Name="System.Net.Cookie">
+         <!-- Used by CookieParser -->
+         <Method Name="InternalSetName" Dynamic="Required" />
+         <Field Name="IsQuotedDomain" Dynamic="Required" />
+         <Field Name="IsQuotedVersion" Dynamic="Required" />
+
+         <!-- Used by CookieExtensions -->
+         <Method Name="ToServerString" Dynamic="Required" />
+         <Method Name="Clone" Dynamic="Required" />
+         <Property Name="Variant" Dynamic="Required" />
+       </Type>
+       <Type Name="System.Net.CookieCollection">
+         <Method Name="InternalAdd" Dynamic="Required" />
+       </Type>
+    </Assembly>
+  </Library>
+</Directives>

@@ -1,0 +1,73 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);package-$(ConfigurationGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" >
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+  </ItemGroup>
+
+  <!-- Need the PackageIndexFile file property from baseline.props -->
+  <Import Project="../pkg/baseline/baseline.props" />
+
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
+
+  <!--
+    Updates the package index to mark all packages we are building that can go stable as stable.
+    this will allow for a kicked off build to control package stability at queue time. This does edit
+    the package index in-place but that shouldn't cause any problems for official builds are the only
+    ones that might do this. After we ship a stable set of packages this target should be ran and the
+    changes to the package index should be commited to the repo.
+  -->
+  <Target Name="UpdatePackageIndexWithStableVersions"
+          BeforeTargets="BuildAllProjects"
+          Condition="'$(DotNetFinalVersionKind)' == 'release'">
+    <ItemGroup>
+      <!--
+      The private packages don't get stabilized so they don't need to be included
+      in the set of packages that we are gathering stable versions from.
+      -->
+      <PkgProjects Include="$(MSBuildThisFileDirectory)..\pkg\*\*.pkgproj" Exclude="$(MSBuildThisFileDirectory)..\pkg\*Private*\*.pkgproj" />
+      <PkgProjects Include="*\pkg\**\*.pkgproj" />
+    </ItemGroup>
+
+    <MSBuild Targets="GetPackageIdentityIfStable"
+             BuildInParallel="$(BuildInParallel)"
+             Projects="@(PkgProjects)"
+             RemoveProperties="Configuration">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_StablePackages" />
+    </MSBuild>
+
+    <Message Text="Marking package '%(_StablePackages.Identity)' stable with version '%(_StablePackages.Version)'" />
+
+    <UpdatePackageIndex
+      PackageIndexFile="$(PackageIndexFile)"
+      StablePackages="@(_StablePackages)" />
+
+  </Target>
+
+  <!-- Generate a version text file we include in our packages -->
+  <Target Name="GenerateVersionFileForPackages"
+          BeforeTargets="BuildAllProjects"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+
+    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
+
+    <WriteLinesToFile
+      File="$(VersionFileForPackages)"
+      Lines="$(SourceRevisionId)"
+      Overwrite="true" />
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+</Project>

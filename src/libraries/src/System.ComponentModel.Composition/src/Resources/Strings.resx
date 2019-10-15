@@ -1,0 +1,405 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentException_EmptyString" xml:space="preserve">
+    <value>'{0}' cannot be an empty string ("").</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidEnum" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data>
+  <data name="ArgumentValueType" xml:space="preserve">
+    <value>The argument was a value type which is not supported.</value>
+  </data>
+  <data name="Argument_AssemblyReflectionOnly" xml:space="preserve">
+    <value>'{0}' is a reflection-only assembly which is not supported.</value>
+  </data>
+  <data name="Argument_NullElement" xml:space="preserve">
+    <value>'{0}' cannot contain a null (Nothing in Visual Basic) element.</value>
+  </data>
+  <data name="AssemblyFileNotFoundOrWrongType" xml:space="preserve">
+    <value>Assembly file {0} is either not found or not a dll or exe file.</value>
+  </data>
+  <data name="CardinalityMismatch_NoExports" xml:space="preserve">
+    <value>No exports were found that match the constraint: {0}</value>
+  </data>
+  <data name="CardinalityMismatch_TooManyExports_Constraint" xml:space="preserve">
+    <value>More than one export was found that matches the constraint: {0}</value>
+  </data>
+  <data name="ImportEngine_ComposeTookTooManyIterations" xml:space="preserve">
+    <value>The composition failed because it did not complete within '{0:N0}' iterations. This is most likely caused by a cycle in the dependency graph of a part which is marked with a non-shared creation policy.</value>
+  </data>
+  <data name="ContractMismatch_ExportedValueCannotBeCastToT" xml:space="preserve">
+    <value>Cannot cast the underlying exported value of type '{0}' to type '{1}'.</value>
+  </data>
+  <data name="DirectoryNotFound" xml:space="preserve">
+    <value>Directory '{0}' could not be found.</value>
+  </data>
+  <data name="ReflectionModel_PartConstructorThrewException" xml:space="preserve">
+    <value>An exception occurred while trying to create an instance of type '{0}'.</value>
+  </data>
+  <data name="ReflectionModel_ExportThrewException" xml:space="preserve">
+    <value>An exception occurred while trying to get the value of property '{0}'.</value>
+  </data>
+  <data name="ReflectionModel_PartOnImportsSatisfiedThrewException" xml:space="preserve">
+    <value>An exception occurred while calling the 'OnImportsSatisfied' method on type '{0}'.</value>
+  </data>
+  <data name="ReflectionModel_ImportThrewException" xml:space="preserve">
+    <value>An exception occurred while trying to set the value of property '{0}'.</value>
+  </data>
+  <data name="ExportDefinitionNotOnThisComposablePart" xml:space="preserve">
+    <value>{0} did not originate from the ExportDefinitions property on this ComposablePart or its ComposablePartDefinition.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionNotWritable" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because it does not implement ICollection&lt;T&gt; or is read-only. If the collection is not IEnumerable&lt;T&gt; or T[] it must implement ICollection&lt;T&gt; and be either pre-initialized or be writable with a default constructor.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionNull" xml:space="preserve">
+    <value>Cannot populate the value of enumerable member '{0}' because it is null (Nothing in Visual Basic). If the collection is not IEnumerable&lt;T&gt; or T[] it must implement ICollection&lt;T&gt; and be either pre-initialized or be writable with a default constructor.</value>
+  </data>
+  <data name="ImportEngine_PartCycle" xml:space="preserve">
+    <value>Cannot compose part '{0}' because a cycle exists in the dependencies between the exports being composed. To break this cycle, consider changing some imports from constructor to property injection.</value>
+  </data>
+  <data name="ImportDefinitionNotOnThisComposablePart" xml:space="preserve">
+    <value>{0} did not originate from the ImportDefinitions property on this ComposablePart or its ComposablePartDefinition.</value>
+  </data>
+  <data name="ImportNotSetOnPart" xml:space="preserve">
+    <value>Could not finishing composing object of type '{0}'. The import '{1}' was not satisfied.</value>
+  </data>
+  <data name="ReflectionModel_ImportNotWritable" xml:space="preserve">
+    <value>Cannot set the value of '{0}' because the member is not writable. If the member is a property, it must have an accessible setter; otherwise, if it is a field, it must not be read-only.</value>
+  </data>
+  <data name="InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred. Additional information: '{0}'.</value>
+  </data>
+  <data name="InvalidMetadataView" xml:space="preserve">
+    <value>The Type '{0}' supplied is not a valid Metadata View.</value>
+  </data>
+  <data name="InvalidOperationReentrantCompose" xml:space="preserve">
+    <value>A call to Compose occurred during a call to Compose on the same CompositionContainer object. Use the IsComposing property on CompositionContainer to ensure a composition is not already in progress before calling Compose.</value>
+  </data>
+  <data name="MetadataItemNotSupported" xml:space="preserve">
+    <value>This export does not support the metadata item '{0}'.</value>
+  </data>
+  <data name="NotSupportedInterfaceMetadataView" xml:space="preserve">
+    <value>Interface '{0}' is not a valid MetadataView; MetadataViews do not support non-public interfaces, and interfaces that contain members that are not properties.</value>
+  </data>
+  <data name="ReflectionModel_PartConstructorMissing" xml:space="preserve">
+    <value>Cannot create an instance of type '{0}' because a constructor could not be selected for construction. Ensure that the type either has a default constructor, or a single constructor marked with the 'System.ComponentModel.Composition.ImportingConstructorAttribute'.</value>
+  </data>
+  <data name="NotImplemented_NotOverriddenByDerived" xml:space="preserve">
+    <value>The {0} member must be overridden by a derived class.</value>
+  </data>
+  <data name="NotSupportedReadOnlyDictionary" xml:space="preserve">
+    <value>The underlying dictionary is read-only.</value>
+  </data>
+  <data name="ObjectAlreadyInitialized" xml:space="preserve">
+    <value>This property cannot be set after the object's public surface has been accessed.</value>
+  </data>
+  <data name="ObjectMustBeInitialized" xml:space="preserve">
+    <value>This object has not been initialized - the property '{0}' must be set.</value>
+  </data>
+  <data name="ReflectionModel_ImportNotAssignableFromExport" xml:space="preserve">
+    <value>The export '{0}' is not assignable to type '{1}'.</value>
+  </data>
+  <data name="ReflectionModel_ExportNotReadable" xml:space="preserve">
+    <value>Cannot get the value of property '{0}', because the member is not readable. The property must have an accessible getter.</value>
+  </data>
+  <data name="Argument_ElementReflectionOnlyType" xml:space="preserve">
+    <value>'{0}' contains a reflection-only type which is not supported.</value>
+  </data>
+  <data name="InvalidOperation_DefinitionCannotBeRecomposed" xml:space="preserve">
+    <value>'definition' cannot be set after Activate has been called because ImportDefinition.IsRecomposable is false.</value>
+  </data>
+  <data name="Argument_ExportsEmpty" xml:space="preserve">
+    <value>'exports' cannot be empty when ImportDefinition.ImportCardinality is ImportCardinality.ExactlyOne.</value>
+  </data>
+  <data name="Argument_ExportsTooMany" xml:space="preserve">
+    <value>'exports' cannot contain more than one element when ImportDefinition.ImportCardinality is ImportCardinality.ZeroOrOne or ImportCardinality.ExactlyOne.</value>
+  </data>
+  <data name="CompositionElement_UnknownOrigin" xml:space="preserve">
+    <value>Unknown Origin</value>
+  </data>
+  <data name="ImportEngine_PartCannotActivate" xml:space="preserve">
+    <value>Cannot activate part '{0}'.</value>
+  </data>
+  <data name="ImportEngine_PartCannotSetImport" xml:space="preserve">
+    <value>Cannot set import '{0}' on part '{1}'.</value>
+  </data>
+  <data name="ImportEngine_PartCannotGetExportedValue" xml:space="preserve">
+    <value>Cannot get export '{0}' from part '{1}'.</value>
+  </data>
+  <data name="TypeCatalog_Empty" xml:space="preserve">
+    <value>&lt;Empty&gt;</value>
+  </data>
+  <data name="InvalidOperation_GetExportedValueBeforePrereqImportSet" xml:space="preserve">
+    <value>GetExportedValue cannot be called before prerequisite import '{0}' has been set.</value>
+  </data>
+  <data name="CompositionException_ErrorPrefix" xml:space="preserve">
+    <value>Resulting in:</value>
+  </data>
+  <data name="CompositionException_MultipleErrorsWithMultiplePaths" xml:space="preserve">
+    <value>The composition produced multiple composition errors, with {0:N0} root causes. The root causes are provided below.</value>
+  </data>
+  <data name="CompositionException_ReviewErrorProperty" xml:space="preserve">
+    <value>Review the CompositionException.Errors property for more detailed information.</value>
+  </data>
+  <data name="CompositionException_SingleErrorWithMultiplePaths" xml:space="preserve">
+    <value>The composition produced a single composition error, with {0:N0} root causes. The root causes are provided below.</value>
+  </data>
+  <data name="CompositionException_SingleErrorWithSinglePath" xml:space="preserve">
+    <value>The composition produced a single composition error. The root cause is provided below.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionGetThrewException" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because an exception occurred while trying to access the collection value. If the collection is not IEnumerable&lt;T&gt; or T[] it must implement ICollection&lt;T&gt; and be either pre-initialized or be writable with a default constructor.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionAddThrewException" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because an exception occurred while calling the Add method on the type '{1}'.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionClearThrewException" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because an exception occurred while calling the Clear method on the type '{1}'.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionIsReadOnlyThrewException" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because an exception occurred while reading the IsReadOnly property on the type '{1}'.</value>
+  </data>
+  <data name="ReflectionModel_ImportCollectionConstructionThrewException" xml:space="preserve">
+    <value>Cannot populate the collection '{0}' because an exception occurred while calling the default constructor on the type '{1}'.</value>
+  </data>
+  <data name="CompositionTrace_Discovery_MemberMarkedWithMultipleImportAndImportMany" xml:space="preserve">
+    <value>The member or parameter '{0}' is marked with multiple Import and ImportMany attributes. Only the first attribute encountered will be respected.</value>
+  </data>
+  <data name="Discovery_MetadataContainsValueWithInvalidType" xml:space="preserve">
+    <value>Property '{0}' has type '{1}' which is an invalid metadata type. Metadata can only contain values with a type that is available to be embedded at compile-time into attributes. For more details of what types are valid reference section 17.1.3 in the C# specification.</value>
+  </data>
+  <data name="Discovery_DuplicateMetadataNameValues" xml:space="preserve">
+    <value>Member or Type '{0}' contains multiple metadata entries with the name '{1}'. The metadata entries could be coming from the ExportMetadataAttribute or from a property of a custom metadata attribute. Either remove the duplicate entries or enable the metadata entry with name '{1}' to allow multiple entries via the IsMultiple property on ExportMetadataAttribute or AttributeUsage.AllowMultiple on custom metadata attributes.</value>
+  </data>
+  <data name="Discovery_ReservedMetadataNameUsed" xml:space="preserve">
+    <value>Member or Type '{0}' contains a metadata entry with the name '{1}', which is a reserved metadata key name. Either remove this metadata entry or change the name associated with the entry.</value>
+  </data>
+  <data name="ReflectionModel_InvalidExportDefinition" xml:space="preserve">
+    <value>ExportDefinition of type '{0}' cannot be used in this context. Only export definitions produced by the ReflectionModelServices.CreateExportDefinition are supported.</value>
+  </data>
+  <data name="ImportEngine_PreventedByExistingImport" xml:space="preserve">
+    <value>Change in exports prevented by non-recomposable import '{0}' on part '{1}'.</value>
+  </data>
+  <data name="ReflectionModel_InvalidImportDefinition" xml:space="preserve">
+    <value>ImportDefinition of type '{0}' cannot be used in this context. Only import definitions produced by the ReflectionModelServices.CreateImportDefinition are supported.</value>
+  </data>
+  <data name="ReflectionModel_InvalidPartDefinition" xml:space="preserve">
+    <value>ComposablePartDefinition of type '{0}' cannot be used in this context. Only part definitions produced by the ReflectionModelServices.CreatePartDefinition are supported.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidEnumInSet" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is not supported. Allowed values are : '{2}'.</value>
+  </data>
+  <data name="ReflectionModel_InvalidMemberImportDefinition" xml:space="preserve">
+    <value>ImportDefinition of type '{0}' cannot be used in this context. Only import definitions produced by the ReflectionModelServices.CreateImportDefinition based on members are supported. Use ReflectionModelServices.IsImportingParameter to determine whether a given import definition is based on a member or a parameter.</value>
+  </data>
+  <data name="ReflectionModel_InvalidParameterImportDefinition" xml:space="preserve">
+    <value>ImportDefinition of type '{0}' cannot be used in this context. Only import definitions produced by the ReflectionModelServices.CreateImportDefinition based on parameters are supported. Use ReflectionModelServices.IsImportingParameter to determine whether a given import definition is based on a member or a parameter.</value>
+  </data>
+  <data name="LazyMemberInfo_AccessorsNull" xml:space="preserve">
+    <value>Accessors must not be null (Nothing in Visual Basic).</value>
+  </data>
+  <data name="LazyMemberInfo_InvalidAccessorOnSimpleMember" xml:space="preserve">
+    <value>A member of type '{0}' must have exactly a single accessor of type '{0}'</value>
+  </data>
+  <data name="LazyMemberinfo_InvalidEventAccessors_AccessorType" xml:space="preserve">
+    <value>All event accessors must be methods.</value>
+  </data>
+  <data name="LazyMemberInfo_InvalidEventAccessors_Cardinality" xml:space="preserve">
+    <value>An event must have exactly three accessors.</value>
+  </data>
+  <data name="LazyMemberinfo_InvalidPropertyAccessors_AccessorType" xml:space="preserve">
+    <value>All property accessors must be methods.</value>
+  </data>
+  <data name="LazyMemberInfo_InvalidPropertyAccessors_Cardinality" xml:space="preserve">
+    <value>A property must have exactly two accessors.</value>
+  </data>
+  <data name="LazyMemberInfo_NoAccessors" xml:space="preserve">
+    <value>A member must have at least one accessor.</value>
+  </data>
+  <data name="LazyServices_LazyResolvesToNull" xml:space="preserve">
+    <value>The lazily evaluated value of type '{0}' passed to the ReflectionModelServices API as part of the argument '{1}' must not return null (Nothing in Visual Basic).</value>
+  </data>
+  <data name="InvalidMetadataValue" xml:space="preserve">
+    <value>Metadata can only contain values with a type that is available to be embedded at compile-time into attributes. For more details of what types are valid reference section 17.1.3 in the C# specification.</value>
+  </data>
+  <data name="ContractMismatch_InvalidCastOnMetadataField" xml:space="preserve">
+    <value>Unable to create an Instance of the Metadata view '{0}' because the exporter exported the metadata  for the item '{1}' with the value '{2}' as type '{3}' but the view imports it as type '{4}'.</value>
+  </data>
+  <data name="ContractMismatch_NullReferenceOnMetadataField" xml:space="preserve">
+    <value>Unable to create an Instance of the Metadata view '{0}' because the exporter exported the metadata for the item '{1}' with a null value and null is not a valid value for type '{2}'.</value>
+  </data>
+  <data name="InvalidSetterOnMetadataField" xml:space="preserve">
+    <value>The MetadataView '{0}' is invalid because property '{1}' has a property set method.</value>
+  </data>
+  <data name="CompositionException_ChangesRejected" xml:space="preserve">
+    <value>The composition remains unchanged. The changes were rejected because of the following error(s): {0}</value>
+  </data>
+  <data name="ImportEngine_InvalidStateForRecomposition" xml:space="preserve">
+    <value>The ComposablePart of type '{0}' cannot be recomposed because it is in an invalid state. It can only be recomposed if it has already been fully previewed or composed.</value>
+  </data>
+  <data name="AtomicComposition_AlreadyCompleted" xml:space="preserve">
+    <value>The atomicComposition can no longer be changed because the atomicComposition has already been completed.</value>
+  </data>
+  <data name="AtomicComposition_PartOfAnotherAtomicComposition" xml:space="preserve">
+    <value>The atomicComposition contains another inner atomicComposition and cannot be changed until the that inner atomicComposition has been completed.</value>
+  </data>
+  <data name="AtomicComposition_AlreadyNested" xml:space="preserve">
+    <value>The atomicComposition already contains an inner atomicComposition and cannot contain more than one atomicComposition at a time.</value>
+  </data>
+  <data name="ReentrantCompose" xml:space="preserve">
+    <value>Currently composing another batch in this ComposablePartExportProvider. Only one batch can be composed at a time.</value>
+  </data>
+  <data name="ReflectionModel_ImportManyOnParameterCanOnlyBeAssigned" xml:space="preserve">
+    <value>The importing constructor on type '{0}' is using ImportManyAttribute on parameter '{1}' with a non-assignable type. On constructor parameters the ImportManyAttribute only supports importing into types T[] or IEnumerable&lt;T&gt;.</value>
+  </data>
+  <data name="CompositionException_ElementPrefix" xml:space="preserve">
+    <value>Element: {0}</value>
+  </data>
+  <data name="CompositionException_OriginSeparator" xml:space="preserve">
+    <value>--&gt; </value>
+  </data>
+  <data name="CompositionTrace_Rejection_DefinitionRejected" xml:space="preserve">
+    <value>The ComposablePartDefinition '{0}' has been rejected. {1}</value>
+  </data>
+  <data name="CompositionTrace_Rejection_DefinitionResurrected" xml:space="preserve">
+    <value>The ComposablePartDefinition '{0}' that was previously rejected has been resurrected.</value>
+  </data>
+  <data name="CompositionTrace_Discovery_AssemblyLoadFailed" xml:space="preserve">
+    <value>The catalog '{0}' could not load assembly '{1}'. {2}</value>
+  </data>
+  <data name="CompositionTrace_Discovery_DefinitionContainsNoExports" xml:space="preserve">
+    <value>The ComposablePartDefinition '{0}' was ignored because it contains no exports.</value>
+  </data>
+  <data name="CompositionTrace_Discovery_DefinitionMarkedWithPartNotDiscoverableAttribute" xml:space="preserve">
+    <value>The ComposablePartDefinition '{0}' was ignored because it was marked with PartNotDiscoverableAttribute.</value>
+  </data>
+  <data name="CompositionException_MetadataViewInvalidConstructor" xml:space="preserve">
+    <value>Unable to create an instance of the Metadata view '{0}' because a constructor could not be selected.  Ensure that the type implements a constructor which takes an argument of type IDictionary&lt;string, object&gt;.</value>
+  </data>
+  <data name="CompositionException_PathsCountSeparator" xml:space="preserve">
+    <value>)</value>
+  </data>
+  <data name="CompositionException_OriginFormat" xml:space="preserve">
+    <value> {0} {1}</value>
+  </data>
+  <data name="TypeCatalog_DisplayNameFormat" xml:space="preserve">
+    <value>{0} (Types='{1}').</value>
+  </data>
+  <data name="ImportNotValidOnIndexers" xml:space="preserve">
+    <value>Import is not valid on an Indexer property.  The import '{0}' was not satisfied.</value>
+  </data>
+  <data name="ExportNotValidOnIndexers" xml:space="preserve">
+    <value>Export is not valid on an Indexer property.  The export '{0}' was not retrieved.</value>
+  </data>
+  <data name="ReflectionContext_Requires_DefaultConstructor" xml:space="preserve">
+    <value>A ReflectionContext must have a default constructor.</value>
+  </data>
+  <data name="ReflectionContext_Type_Required" xml:space="preserve">
+    <value>The type specified in the ReflectionContextDiscoveryAttribute must be assignable to System.Reflection.ReflectionContext.</value>
+  </data>
+  <data name="CompositionTrace_Discovery_DefinitionMismatchedExportArity" xml:space="preserve">
+    <value>The composable part definition '{0}' was ignored because the export '{1}' has different generic parameters than the part type.</value>
+  </data>
+  <data name="InvalidArgument_ReflectionContext" xml:space="preserve">
+    <value>'reflectionContext' must be a type that is assignable from System.Reflection.ReflectionContext.</value>
+  </data>
+  <data name="Argument_ReflectionContextReturnsReflectionOnlyType" xml:space="preserve">
+    <value>'{0}' returns a mapped type that is a reflection-only type which is not supported.</value>
+  </data>
+  <data name="ContractMismatch_MetadataViewImplementationDoesNotImplementViewInterface" xml:space="preserve">
+    <value>Unable to create an Instance of the Metadata view '{0}' because the implementation class : '{0}' does not implement the MetadataView interface '{1}'.</value>
+  </data>
+  <data name="ContractMismatch_MetadataViewImplementationCanNotBeNull" xml:space="preserve">
+    <value>The implementation type for the MetadataView '{0} can not be null.</value>
+  </data>
+  <data name="InvalidPartCreationPolicyOnImport" xml:space="preserve">
+    <value>A CreationPolicy of '(0)' can not be applied to an Import that is not an ExportFactory.</value>
+  </data>
+  <data name="ExportFactory_TooManyGenericParameters" xml:space="preserve">
+    <value>ExportFactory subclass '{0}' can not have more than two generic parameters.</value>
+  </data>
+  <data name="CatalogMutation_Invalid" xml:space="preserve">
+    <value>ScopingPolicyCatalog does not support catalog mutation.</value>
+  </data>
+  <data name="NotSupportedCatalogChanges" xml:space="preserve">
+    <value>This CompositionService does not support catalog changes.</value>
+  </data>
+  <data name="InvalidOperation_RevertAndCompleteActionsMustNotThrow" xml:space="preserve">
+    <value>AtomicComposition encountered an unexpected Exception, review InnerException for details.</value>
+  </data>
+  <data name="PlatformNotSupported_ComponentModel_Composition" xml:space="preserve">
+    <value>System.ComponentModel.Composition APIs are not supported on this platform.</value>
+  </data>
+  <data name="Expecting_AtleastOne_Type" xml:space="preserve">
+    <value>Expecting genericTypeArguments to contain at least one Type</value>
+  </data>
+  <data name="Expecting_Empty_Queue" xml:space="preserve">
+    <value>Expecting genericTypeArguments queue to be empty.</value>
+  </data>
+  <data name="Expecting_Generic_Type" xml:space="preserve">
+    <value>Expecting type to be a generic type</value>
+  </data>
+  <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred. Additional information: '{0}'.</value>
+  </data>
+  <data name="Diagnostic_TraceUnnecessaryWork" xml:space="preserve">
+    <value>To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.</value>
+  </data>
+</root>

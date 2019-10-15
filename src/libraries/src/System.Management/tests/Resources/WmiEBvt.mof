@@ -1,0 +1,304 @@
+#pragma namespace("\\\\.\\root")
+#pragma deleteclass("WmiEBvt", nofail)
+
+instance of __namespace
+{
+	Name = "WmiEBvt";
+};
+
+#pragma namespace("\\\\.\\root\\WmiEBvt")
+#pragma deleteclass("Class1", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("Class2", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("Class3", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("Class4", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("Class5", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassA", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassB", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassC", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassD", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassE", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("ClassF", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("RefClass", nofail)		// This will delete all subclasses and instances
+#pragma deleteclass("AssocClass", nofail)	
+///////////////////////////////////////////////////////////////////////////////////
+instance of __namespace
+{
+	Name = "ms_409";
+};
+
+///////////////////////////////////////////////////////////////////////////////////
+// Create Class1
+[Class1Q1 (1.0): ToInstance, Class1Q2 (2): ToInstance, Class1Q3 ("3"): ToInstance, Class1Q4 (true): ToInstance]
+class Class1
+{
+	[key] string MyKey;
+	sint32 MyNumber;
+};
+
+// Create Class2
+class Class2: Class1
+{
+	sint32 Class2Number;
+};
+
+// Create Class3
+class Class3
+{
+	[key] string Class3Key;
+	sint32 Class3Number;
+};
+
+// Create Class4
+class Class4
+{
+	[key] string Class4Key;
+	sint32 Class4Number;
+};
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Create instances of Class1
+[Alias ("$One1")]
+instance of Class1 as $One1
+{
+	MyKey="One1";
+	MyNumber = 1;
+};
+instance of Class1 as $One2
+{
+	MyKey="One2";
+	MyNumber = 2;
+};
+instance of Class1 as $One3
+{
+	MyKey="One3";
+	MyNumber = 3;
+};
+
+// Create instances of Class2
+instance of Class2 as $Two1
+{
+	MyKey="Two1";
+	MyNumber= 1;
+	Class2Number = 1;
+};
+
+instance of Class2 as $Two2
+{
+	MyKey="Two2";
+	MyNumber = 2;
+	Class2Number = 2;
+};
+
+// Create instances of Class3
+instance of Class3 as $Three1
+{
+	Class3Key="Three1";
+	Class3Number = 1;
+};
+instance of Class3 as $Three2
+{
+	Class3Key="Three2";
+	Class3Number = 2;
+};
+instance of Class3 as $Three3
+{
+	Class3Key="Three3";
+	Class3Number = 3;
+};
+
+// Create instances of Class4
+instance of Class4 as $Four1
+{
+	Class4Key="Four1";
+	Class4Number = 1;
+};
+instance of Class4 as $Four2
+{
+	Class4Key="Four2";
+	Class4Number= 2;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Create Association Class A
+[Association: ToInstance]
+class AssocA
+{
+	[key] Class1 ref Path1;
+	[key] Class3 ref Path2;
+	string Name;
+};
+
+// Create instances of AssocClass A
+instance of AssocA
+{
+	Path1=$One1;
+	Path2=$Three1;
+	Name="AssocA1";
+};
+
+instance of AssocA
+{
+	Path1=$One2;
+	Path2=$Three1;
+	Name="AssocA2";
+};
+
+instance of AssocA
+{
+	Path1=$Two1;
+	Path2=$Three3;
+	Name="AssocA3";
+};
+
+instance of AssocA
+{
+	Path1=$Two2;
+	Path2=$Three3;
+	Name="AssocA4";
+};
+
+// Create Association Class B
+[Association: ToInstance, QB1("VB1"): ToInstance]
+class AssocB
+{
+	[key] Class3 ref Path1;
+	[key] Class4 ref Path2;
+	string Name;
+};
+
+instance of AssocB
+{
+	Path1=$Three1;
+	Path2=$Four1;
+	Name="AssocB1";
+};
+
+instance of AssocB
+{
+	Path1=$Three2;
+	Path2=$Four2;
+	Name="AssocB2";
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This section define class create embedded object
+//
+///////////////////////////////////////////////////////////////////////////////////
+// Create class to compare
+// Create ClassEm
+class ClassEm
+{
+	[key] string ClassKey;
+	object ClassEmbed;
+};
+class EmbedClass
+{
+	string ClassKey;
+	sint32 ClassNumber;
+};
+class EmbedSub : EmbedClass
+{
+};
+instance of ClassEm as $EmRef
+{
+	ClassKey = "ClassEm1";
+	ClassEmbed = 
+	instance of EmbedSub
+	{
+		ClassKey = "1";
+		ClassNumber = 1;
+	};
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Create instances to generate event every 0.1 seconds
+// EventQuery: SELECT * FROM __TimerEvent WHERE TimerID = "MyEvent"
+instance of __IntervalTimerInstruction
+{
+  TimerId = "MyEvent";     // inherited from __TimerInstruction
+  SkipIfPassed = FALSE;    // also inherited
+  IntervalBetweenEvents = 100;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This class is designed for test 2.1.8.8
+//
+
+class RefClass
+{
+	[key] sint32 myKey;
+};
+
+instance of RefClass as $RefRef
+{
+	myKey = 6;
+};
+
+[myReal64 (1.0): ToInstance, mySInt32 (2): ToInstance, myString ("ThisIsAString"): ToInstance, myBool (true): ToInstance]
+class ClassF
+{
+	[key]sint32 mySInt32;
+	sint8 mySInt8; 
+	string myString;
+	boolean myBool;
+	ClassEm myEmbedClass;	
+	sint16 mySInt16;	
+	sint64 mySInt64;
+	Real32 myReal32;
+	Real64 myReal64;
+	UInt8 myUInt8;
+	UInt16 myUInt16;
+	UInt32 myUInt32;
+	UInt64 myUInt64;
+	object myObject;
+	object ref myWeakRef;
+	RefClass ref myStrongRef;
+	char16 myChar16;
+	
+};
+
+instance of ClassF
+{
+	myString = "myInstanceString";
+	myBool = true;
+	myEmbedClass =
+		instance of ClassEm
+		{
+			ClassKey = "ClassEmF";
+			ClassEmbed = 
+			instance of EmbedSub
+			{
+				ClassKey = "F";
+				ClassNumber = 2;
+			};
+		};
+	mySInt8 = -8; 
+	mySInt16 = -16;
+	mySInt32 = -32;
+	mySInt64 = -64;
+	myReal32 = 32.32;
+	myReal64 = 64.64;
+	myUInt8 = 8;
+	myUInt16 = 16;
+	myUInt32 = 32;
+	myUInt64 = 64;
+	myObject = 
+		instance of EmbedSub
+		{
+			ClassKey = "F";
+			ClassNumber = 2;
+		};
+	myWeakRef = $EmRef;
+	myStrongRef = $RefRef;
+	myChar16 = 'c';	
+};
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+

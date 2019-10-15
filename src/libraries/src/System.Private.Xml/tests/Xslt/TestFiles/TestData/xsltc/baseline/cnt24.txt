@@ -1,0 +1,5 @@
+Microsoft (R) XSLT Compiler version 4.0.20914
+[Microsoft (R) .NET Framework version 4.0.20914]
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+fatal error : Class name 'A' must be specified before the corresponding source file.

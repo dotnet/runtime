@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
+    <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
+    <Compile Include="System\Text\BaseCodePageEncoding.cs" />
+    <Compile Include="System\Text\CodePagesEncodingProvider.cs" />
+    <Compile Include="System\Text\DBCSCodePageEncoding.cs" />
+    <Compile Include="System\Text\DecoderBestFitFallback.cs" />
+    <Compile Include="System\Text\DecoderFallbackBufferHelper.cs" />
+    <Compile Include="System\Text\DecoderNLS.cs" />
+    <Compile Include="System\Text\EncoderBestFitFallback.cs" />
+    <Compile Include="System\Text\EncoderFallbackBufferHelper.cs" />
+    <Compile Include="System\Text\EncoderNLS.cs" />
+    <Compile Include="System\Text\EncodingByteBuffer.cs" />
+    <Compile Include="System\Text\EncodingCharBuffer.cs" />
+    <Compile Include="System\Text\EncodingNLS.cs" />
+    <Compile Include="System\Text\EncodingTable.cs" />
+    <Compile Include="System\Text\EncodingTable.Data.cs" />
+    <Compile Include="System\Text\EUCJPEncoding.cs" />
+    <Compile Include="System\Text\GB18030Encoding.cs" />
+    <Compile Include="System\Text\ISO2022Encoding.cs" />
+    <Compile Include="System\Text\ISCIIEncoding.cs" />
+    <Compile Include="System\Text\SBCSCodePageEncoding.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.MAX_PATH.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' ">
+    <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\codepages.nlp">
+      <LogicalName>codepages.nlp</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\CodePageNameMappings.csv" />
+    <None Include="Data\PreferredCodePageNames.csv" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
+  <PropertyGroup>
+    <!-- This Task can be re-run with /t:GenerateEncodingSource
+         An IANA Mapping file contains rows of two elements: a valid IANA encoding identifier, and the equivalent code page.
+         There may be many IANA ids (aliases) mapped to a single code page. -->
+    <IANAMappingPath>Data\CodePageNameMappings.csv</IANAMappingPath>
+    <!-- The preferred name file contains rows of three elements: a code page, the 'canonical' IANA identifier,
+         and an "English" or descriptive name.  There is one row per code page. -->
+    <PreferredIANANamesPath>Data\PreferredCodePageNames.csv</PreferredIANANamesPath>
+    <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
+  </PropertyGroup>
+</Project>

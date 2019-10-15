@@ -1,0 +1,55 @@
+<Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+  <PropertyGroup>
+    <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
+    <FileAlignment Condition="'$(FileAlignment)' == '512'"></FileAlignment>
+    <ErrorReport Condition="'$(ErrorReport)' == 'prompt'"></ErrorReport>
+    <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'"></WarningsAsErrors>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.targets" />
+
+  <Target Name="AddSkipGetTargetFrameworkToProjectReferences" Condition="'@(ProjectReference)' != ''">
+    <ItemGroup>
+      <ProjectReference>
+        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
+  <!-- Used for packaging -->
+  <Target Name="IsNotNetCoreAppProject" Returns="@(IsNotNetCoreAppProjectResult)">
+    <ItemGroup>
+      <IsNotNetCoreAppProjectResult Condition="'$(IsNetCoreApp)' != 'true'" Include="$(MSBuildProjectName)" Version="$(PackageVersion)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Routing dotnet test to a test project's BuildAndTest target. -->
+  <Target Name="VSTest"
+          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
+          DependsOnTargets="BuildAndTest" />
+
+  <Target Name="ValidateTestProjectConfigurations"
+          BeforeTargets="CoreCompile"
+          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true' and '$(TargetsNetStandard)' == 'true'">
+    <Error Text="Targeting .NET Standard in a test project isn't supported." />
+  </Target>
+
+  <PropertyGroup>
+    <!--
+    Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
+    Microsoft.WorkflowBuildExtensions.targets target that always runs in VS
+    -->
+    <GenerateCompiledExpressionsTempFilePathForEditing></GenerateCompiledExpressionsTempFilePathForEditing>
+  </PropertyGroup>
+
+  <!-- Returns the assembly version of the project for consumption
+       by the NuGet package generation -->
+  <Target Name="GetAssemblyVersion"
+          Returns="$(AssemblyVersion)"/>
+
+  <!-- Returns the generated documentation file for consumption
+       by the NuGet package generation -->
+  <Target Name="GetDocumentationFile"
+          Returns="$(DocumentationFile)"/>
+
+</Project>

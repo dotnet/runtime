@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.IO.Redist", "src\Microsoft.IO.Redist.csproj", "{FEF5811F-ED50-4407-A6B9-885EBD3206FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FEF5811F-ED50-4407-A6B9-885EBD3206FB}.Debug|Any CPU.ActiveCfg = netfx-Debug|Any CPU
+		{FEF5811F-ED50-4407-A6B9-885EBD3206FB}.Debug|Any CPU.Build.0 = netfx-Debug|Any CPU
+		{FEF5811F-ED50-4407-A6B9-885EBD3206FB}.Release|Any CPU.ActiveCfg = netfx-Release|Any CPU
+		{FEF5811F-ED50-4407-A6B9-885EBD3206FB}.Release|Any CPU.Build.0 = netfx-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FEF5811F-ED50-4407-A6B9-885EBD3206FB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB207195-D61F-4708-B1FA-75E67F229C9A}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,114 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentNull_GetterOrSetterMustBeSpecified" xml:space="preserve">
+    <value>Either 'getter' or 'setter' must be specified.</value>
+  </data>
+  <data name="Argument_GetMethNotFnd" xml:space="preserve">
+    <value>The get accessor of the property was not found.</value>
+  </data>
+  <data name="Argument_PropertyTypeFromDifferentContext" xml:space="preserve">
+    <value>The property type needs to be mapped to the current ReflectionContext.</value>
+  </data>
+  <data name="Argument_SetMethNotFnd" xml:space="preserve">
+    <value>The set accessor of the property was not found.</value>
+  </data>
+  <data name="Format_AttributeUsage" xml:space="preserve">
+    <value>Duplicate AttributeUsageAttribute records found on attribute type {0}.</value>
+  </data>
+  <data name="InvalidOperation_AddNullProperty" xml:space="preserve">
+    <value>AddProperties returned a null property.</value>
+  </data>
+  <data name="InvalidOperation_AddPropertyDifferentContext" xml:space="preserve">
+    <value>AddProperties returned a property not created by CustomReflectionContext.CreateProperty in the current reflection context.</value>
+  </data>
+  <data name="InvalidOperation_AddPropertyDifferentType" xml:space="preserve">
+    <value>AddProperties returned a property that has already been added to another type.</value>
+  </data>
+  <data name="InvalidOperation_EnumLitValueNotFound" xml:space="preserve">
+    <value>Literal value was not found.</value>
+  </data>
+  <data name="InvalidOperation_InvalidMemberType" xml:space="preserve">
+    <value>The member {0} has an invalid MemberType {1}.</value>
+  </data>
+  <data name="InvalidOperation_InvalidMethodType" xml:space="preserve">
+    <value>The method is neither a MethodInfo nor a ConstructorInfo: {0}.</value>
+  </data>
+  <data name="InvalidOperation_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
+  <data name="InvalidOperation_NoTypeInfoForThisType" xml:space="preserve">
+    <value>Cannot get the TypeInfo object from the Type object: {0}.</value>
+  </data>
+  <data name="InvalidOperation_NullAttribute" xml:space="preserve">
+    <value>The attribute object cannot be null.</value>
+  </data>
+  <data name="PlatformNotSupported_ReflectionContext" xml:space="preserve">
+    <value>Customized reflection contexts are only supported on .NET Framework.</value>
+  </data>
+  <data name="Target_InstanceMethodRequiresTarget" xml:space="preserve">
+    <value>Non-static method requires a target.</value>
+  </data>
+  <data name="Target_ObjectTargetMismatch" xml:space="preserve">
+    <value>Object does not match target type.</value>
+  </data>
+  <data name="Argument_ObjectArgumentMismatch" xml:space="preserve">
+    <value>Object of type '{0}' cannot be converted to type '{1}'.</value>
+  </data>
+</root>

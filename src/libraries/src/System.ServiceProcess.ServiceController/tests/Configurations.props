@@ -1,0 +1,8 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp-Windows_NT;
+      netfx-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

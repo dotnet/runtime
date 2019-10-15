@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.ServiceModel.Syndication</AssemblyName>
+    <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />
+    <Compile Include="System\ServiceModel\Syndication\App10Constants.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Atom10Constants.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Atom10FeedFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Atom10ItemFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\AtomPub10CategoriesDocumentFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\AtomPub10ServiceDocumentFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\CategoriesDocument.cs" />
+    <Compile Include="System\ServiceModel\Syndication\CategoriesDocumentFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\DateTimeHelper.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ExtensibleSyndicationObject.cs" />
+    <Compile Include="System\ServiceModel\Syndication\FeedUtils.cs" />
+    <Compile Include="System\ServiceModel\Syndication\IExtensibleSyndicationObject.cs" />
+    <Compile Include="System\ServiceModel\Syndication\InlineCategoriesDocument.cs" />
+    <Compile Include="System\ServiceModel\Syndication\NullNotAllowedCollection.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ReferencedCategoriesDocument.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ResourceCollectionInfo.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rss20Constants.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rss20FeedFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rss20ItemFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ServiceDocument.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ServiceDocumentFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationCategory.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationContent.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtension.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtensionCollection.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationFeed.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationFeedFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationItem.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationItemFormatter.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationLink.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationPerson.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationTextInput.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationVersions.cs" />
+    <Compile Include="System\ServiceModel\Syndication\TextSyndicationContent.cs" />
+    <Compile Include="System\ServiceModel\Syndication\TextSyndicationContentKind.cs" />
+    <Compile Include="System\ServiceModel\Syndication\UrlSyndicationContent.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Workspace.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlDateTimeData.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlSyndicationContent.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlUriData.cs" />
+    <Compile Include="System\ServiceModel\XmlBuffer.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.ServiceModel" />
+  </ItemGroup>
+</Project>

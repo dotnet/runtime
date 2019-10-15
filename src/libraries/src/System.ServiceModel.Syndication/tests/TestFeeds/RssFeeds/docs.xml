@@ -1,0 +1,13 @@
+<!--
+  Description:  docs contains valid URL
+  Expect:       ValidURI{parent:channel,element:docs}
+-->
+
+<rss version="2.0">
+  <channel>
+    <title>Valid docs</title>
+    <link>http://contoso.com/rss/2.0/</link>
+    <description>foo</description>
+    <docs>http://contoso.com/rss/doc</docs>
+  </channel>
+</rss>

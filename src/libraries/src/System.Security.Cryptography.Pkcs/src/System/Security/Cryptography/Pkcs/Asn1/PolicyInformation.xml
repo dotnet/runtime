@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="PolicyInformation"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3280#section-4.2.1.5
+
+    PolicyInformation ::= SEQUENCE {
+        policyIdentifier   CertPolicyId,
+        policyQualifiers   SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL
+    }
+
+    CertPolicyId ::= OBJECT IDENTIFIER
+  -->
+  <asn:ObjectIdentifier name="PolicyIdentifier" backingType="string" />
+  <asn:SequenceOf name="PolicyQualifiers" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo" />
+  </asn:SequenceOf>
+</asn:Sequence>

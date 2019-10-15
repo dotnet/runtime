@@ -1,0 +1,16 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Diagnostics.Tracing.EventSource.Redist.csproj">
+      <SupportedFramework>net461</SupportedFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HarvestStablePackage>false</HarvestStablePackage>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

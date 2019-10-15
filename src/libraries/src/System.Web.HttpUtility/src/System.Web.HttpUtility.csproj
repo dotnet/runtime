@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Web\HttpUtility.cs" />
+    <Compile Include="System\Web\Util\HttpEncoder.cs" />
+    <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
+    <Compile Include="System\Web\Util\UriUtil.cs" />
+    <Compile Include="System\Web\Util\Utf16StringValidator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Text.Encoding" />
+  </ItemGroup>
+</Project>

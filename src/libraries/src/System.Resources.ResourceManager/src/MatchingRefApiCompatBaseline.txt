@@ -1,0 +1,4 @@
+Compat issues with assembly System.Resources.ResourceManager:
+MembersMustExist : Member 'System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
+Total Issues: 2

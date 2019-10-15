@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Security.Claims</AssemblyName>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup>
+    <Compile Include="System\Security\Claims\Claim.cs" />
+    <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
+    <Compile Include="System\Security\Claims\ClaimsPrincipal.cs" />
+    <Compile Include="System\Security\Claims\ClaimTypes.cs" />
+    <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
+    <Compile Include="System\Security\Claims\GenericIdentity.cs" />
+    <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Principal" />
+  </ItemGroup>
+</Project>

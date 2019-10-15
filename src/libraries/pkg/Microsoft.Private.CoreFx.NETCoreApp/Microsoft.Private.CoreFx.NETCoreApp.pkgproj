@@ -1,0 +1,79 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFrameworkName>netcoreapp</TargetFrameworkName>
+    <TargetFrameworkVersion>3.0</TargetFrameworkVersion>
+    <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
+
+    <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
+    <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
+
+    <IsFrameworkPackage>true</IsFrameworkPackage>
+
+    <!-- Private packages need symbols -->
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IgnoredReference Include="System.Private.CoreLib" />
+    <IgnoredReference Include="Windows" />
+
+    <IgnoredReference Condition="$(PackageTargetRuntime.EndsWith('-aot'))" Include="System.Private.Interop" />
+    <!-- Exclude shims from the closure verification -->
+    <ExcludeFromClosure Include="mscorlib" />
+    <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Configuration" />
+    <ExcludeFromClosure Include="System.Core" />
+    <ExcludeFromClosure Include="System.Data" />
+    <ExcludeFromClosure Include="System.Drawing" />
+    <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
+    <ExcludeFromClosure Include="System.ServiceProcess" />
+    <ExcludeFromClosure Include="System.Transactions" />
+    <ExcludeFromClosure Include="WindowsBase" />
+
+    <AllowedRuntimeOnlyFiles Include="Microsoft.Win32.Registry" />
+    <AllowedRuntimeOnlyFiles Include="System.IO.FileSystem.AccessControl" />
+    <AllowedRuntimeOnlyFiles Include="System.IO.Pipes.AccessControl" />
+    <AllowedRuntimeOnlyFiles Include="System.Private.DataContractSerialization" />
+    <AllowedRuntimeOnlyFiles Include="System.Private.Uri" />
+    <AllowedRuntimeOnlyFiles Include="System.Private.Xml" />
+    <AllowedRuntimeOnlyFiles Include="System.Private.Xml.Linq" />
+    <AllowedRuntimeOnlyFiles Include="System.Runtime.WindowsRuntime" />
+    <AllowedRuntimeOnlyFiles Include="System.Runtime.WindowsRuntime.UI.Xaml" />
+    <AllowedRuntimeOnlyFiles Include="System.Security.AccessControl" />
+    <AllowedRuntimeOnlyFiles Include="System.Security.Cryptography.Cng" />
+    <AllowedRuntimeOnlyFiles Include="System.Security.Cryptography.OpenSsl" />
+    <AllowedRuntimeOnlyFiles Include="System.Security.Principal.Windows" />
+
+    <!-- Permit the following implementation-only assemblies -->
+    <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
+      <Value>
+        @(AllowedRuntimeOnlyFiles);
+      </Value>
+    </ValidatePackageSuppression>
+    <!-- Permit missing Inbox since this used to be a shim and it is now OOB -->
+    <ValidatePackageSuppression Include="PermitMissingInbox">
+        <Value>
+            System.ComponentModel.Composition;
+        </Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
+
+  <Target Name="VerifyRuntimeOnlyFilesArePresentOnAllRuntimePackages"
+      DependsOnTargets="GetClosureFiles"
+      AfterTargets="ValidatePackage"
+      Condition="'$(PackageTargetRuntime)' != ''"
+      Inputs="%(ClosureFile.FileSet)"
+      Outputs="batching-on-FileSet-metadata">
+
+    <ItemGroup>
+      <_RuntimeOnlyMissingFile Include="@(AllowedRuntimeOnlyFiles)" Exclude="@(ClosureFile->'%(FileName)')" />
+    </ItemGroup>
+    <Error Condition="'@(_RuntimeOnlyMissingFile)' != ''" Text="Files '@(_RuntimeOnlyMissingFile)' should be present on all runtime-specific packages, but are not present for the package RID '$(PackageTargetRuntime)'" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

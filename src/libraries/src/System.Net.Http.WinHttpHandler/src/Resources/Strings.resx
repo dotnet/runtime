@@ -1,0 +1,129 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="net_http_invalid_cookiecontainer" xml:space="preserve">
+    <value>When using CookieUsePolicy.UseSpecifiedCookieContainer, the CookieContainer property must not be null.</value>
+  </data>
+  <data name="net_http_invalid_proxyusepolicy" xml:space="preserve">
+    <value>When using a non-null Proxy, the WindowsProxyUsePolicy property must be set to WindowsProxyUsePolicy.UseCustomProxy.</value>
+  </data>
+  <data name="net_http_invalid_proxy" xml:space="preserve">
+    <value>When using WindowsProxyUsePolicy.UseCustomProxy, the Proxy property must not be null.</value>
+  </data>
+  <data name="net_http_handler_norequest" xml:space="preserve">
+    <value>A request message must be provided. It cannot be null.</value>
+  </data>
+  <data name="net_http_operation_started" xml:space="preserve">
+    <value>This instance has already started one or more requests. Properties can only be modified before sending the first request.</value>
+  </data>
+  <data name="net_http_client_execution_error" xml:space="preserve">
+    <value>An error occurred while sending the request.</value>
+  </data>
+  <data name="net_http_io_read" xml:space="preserve">
+    <value>The read operation failed, see inner exception.</value>
+  </data>
+  <data name="net_http_io_read_incomplete" xml:space="preserve">
+    <value>Unable to read data from the transport connection. The connection was closed before all data could be read. Expected {0} bytes, read {1} bytes.</value>
+  </data>
+  <data name="net_http_io_write" xml:space="preserve">
+    <value>The write operation failed, see inner exception.</value>
+  </data>
+  <data name="net_http_chunked_not_allowed_with_empty_content" xml:space="preserve">
+    <value>'Transfer-Encoding: chunked' header can not be used when content object is not specified.</value>
+  </data>
+  <data name="net_http_invalid_enable_first" xml:space="preserve">
+    <value>The {0} property must be set to '{1}' to use this property.</value>
+  </data>
+  <data name="net_http_value_must_be_greater_than" xml:space="preserve">
+    <value>The specified value must be greater than {0}.</value>
+  </data>
+  <data name="net_http_username_empty_string" xml:space="preserve">
+    <value>The username for a credential object cannot be null or empty.</value>
+  </data>
+  <data name="net_http_no_concurrent_io_allowed" xml:space="preserve">
+    <value>The stream does not support concurrent I/O read or write operations.</value>
+  </data>
+  <data name="net_http_buffer_insufficient_length" xml:space="preserve">
+    <value>The buffer was not long enough.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="net_http_content_stream_already_read" xml:space="preserve">
+    <value>The stream was already consumed. It cannot be read again.</value>
+  </data>
+  <data name="net_http_winhttp_error" xml:space="preserve">
+    <value>Error {0} calling {1}, '{2}'.</value>
+  </data>
+  <data name="PlatformNotSupported_WinHttpHandler" xml:space="preserve">
+    <value>WinHttpHandler is only supported on .NET Framework and .NET Core runtimes on Windows. It is not supported for Windows Store Applications (UWP) or Unix platforms.</value>
+  </data>
+</root>

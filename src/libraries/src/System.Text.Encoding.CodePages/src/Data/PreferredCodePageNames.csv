@@ -1,0 +1,142 @@
+﻿#
+# This file contains data for mapping from mapping from code page numbers to their preferred IANA encoding names
+# and English names (we do not currently localize ProjectN libraries)
+#
+# This can be used as input to the EncodingData tool when generating EncodingTable.Data.cs
+#
+# Format:
+#   - Fields in a mapping entry are semi-colon separated
+#   - New mapping entries are delimited by a new line
+#
+37;ibm037;IBM EBCDIC (US-Canada)
+437;ibm437;OEM United States
+500;ibm500;IBM EBCDIC (International)
+708;asmo-708;Arabic (ASMO 708)
+720;dos-720;Arabic (DOS)
+737;ibm737;Greek (DOS)
+775;ibm775;Baltic (DOS)
+850;ibm850;Western European (DOS)
+852;ibm852;Central European (DOS)
+855;ibm855;OEM Cyrillic
+857;ibm857;Turkish (DOS)
+858;ibm00858;OEM Multilingual Latin I
+860;ibm860;Portuguese (DOS)
+861;ibm861;Icelandic (DOS)
+862;dos-862;Hebrew (DOS)
+863;ibm863;French Canadian (DOS)
+864;ibm864;Arabic (864)
+865;ibm865;Nordic (DOS)
+866;cp866;Cyrillic (DOS)
+869;ibm869;Greek, Modern (DOS)
+870;ibm870;IBM EBCDIC (Multilingual Latin-2)
+874;windows-874;Thai (Windows)
+875;cp875;IBM EBCDIC (Greek Modern)
+932;shift_jis;Japanese (Shift-JIS)
+936;gb2312;Chinese Simplified (GB2312)
+949;ks_c_5601-1987;Korean
+950;big5;Chinese Traditional (Big5)
+1026;ibm1026;IBM EBCDIC (Turkish Latin-5)
+1047;ibm01047;IBM Latin-1
+1140;ibm01140;IBM EBCDIC (US-Canada-Euro)
+1141;ibm01141;IBM EBCDIC (Germany-Euro)
+1142;ibm01142;IBM EBCDIC (Denmark-Norway-Euro)
+1143;ibm01143;IBM EBCDIC (Finland-Sweden-Euro)
+1144;ibm01144;IBM EBCDIC (Italy-Euro)
+1145;ibm01145;IBM EBCDIC (Spain-Euro)
+1146;ibm01146;IBM EBCDIC (UK-Euro)
+1147;ibm01147;IBM EBCDIC (France-Euro)
+1148;ibm01148;IBM EBCDIC (International-Euro)
+1149;ibm01149;IBM EBCDIC (Icelandic-Euro)
+1250;windows-1250;Central European (Windows)
+1251;windows-1251;Cyrillic (Windows)
+1252;windows-1252;Western European (Windows)
+1253;windows-1253;Greek (Windows)
+1254;windows-1254;Turkish (Windows)
+1255;windows-1255;Hebrew (Windows)
+1256;windows-1256;Arabic (Windows)
+1257;windows-1257;Baltic (Windows)
+1258;windows-1258;Vietnamese (Windows)
+1361;johab;Korean (Johab)
+10000;macintosh;Western European (Mac)
+10001;x-mac-japanese;Japanese (Mac)
+10002;x-mac-chinesetrad;Chinese Traditional (Mac)
+10003;x-mac-korean;Korean (Mac)
+10004;x-mac-arabic;Arabic (Mac)
+10005;x-mac-hebrew;Hebrew (Mac)
+10006;x-mac-greek;Greek (Mac)
+10007;x-mac-cyrillic;Cyrillic (Mac)
+10008;x-mac-chinesesimp;Chinese Simplified (Mac)
+10010;x-mac-romanian;Romanian (Mac)
+10017;x-mac-ukrainian;Ukrainian (Mac)
+10021;x-mac-thai;Thai (Mac)
+10029;x-mac-ce;Central European (Mac)
+10079;x-mac-icelandic;Icelandic (Mac)
+10081;x-mac-turkish;Turkish (Mac)
+10082;x-mac-croatian;Croatian (Mac)
+20000;x-chinese-cns;Chinese Traditional (CNS)
+20001;x-cp20001;TCA Taiwan
+20002;x-chinese-eten;Chinese Traditional (Eten)
+20003;x-cp20003;IBM5550 Taiwan
+20004;x-cp20004;TeleText Taiwan
+20005;x-cp20005;Wang Taiwan
+20105;x-ia5;Western European (IA5)
+20106;x-ia5-german;German (IA5)
+20107;x-ia5-swedish;Swedish (IA5)
+20108;x-ia5-norwegian;Norwegian (IA5)
+20261;x-cp20261;T.61
+20269;x-cp20269;ISO-6937
+20273;ibm273;IBM EBCDIC (Germany)
+20277;ibm277;IBM EBCDIC (Denmark-Norway)
+20278;ibm278;IBM EBCDIC (Finland-Sweden)
+20280;ibm280;IBM EBCDIC (Italy)
+20284;ibm284;IBM EBCDIC (Spain)
+20285;ibm285;IBM EBCDIC (UK)
+20290;ibm290;IBM EBCDIC (Japanese katakana)
+20297;ibm297;IBM EBCDIC (France)
+20420;ibm420;IBM EBCDIC (Arabic)
+20423;ibm423;IBM EBCDIC (Greek)
+20424;ibm424;IBM EBCDIC (Hebrew)
+20833;x-ebcdic-koreanextended;IBM EBCDIC (Korean Extended)
+20838;ibm-thai;IBM EBCDIC (Thai)
+20866;koi8-r;Cyrillic (KOI8-R)
+20871;ibm871;IBM EBCDIC (Icelandic)
+20880;ibm880;IBM EBCDIC (Cyrillic Russian)
+20905;ibm905;IBM EBCDIC (Turkish)
+20924;ibm00924;IBM Latin-1
+20932;euc-jp;Japanese (JIS 0208-1990 and 0212-1990)
+20936;x-cp20936;Chinese Simplified (GB2312-80)
+20949;x-cp20949;Korean Wansung
+21025;cp1025;IBM EBCDIC (Cyrillic Serbian-Bulgarian)
+21866;koi8-u;Cyrillic (KOI8-U)
+28592;iso-8859-2;Central European (ISO)
+28593;iso-8859-3;Latin 3 (ISO)
+28594;iso-8859-4;Baltic (ISO)
+28595;iso-8859-5;Cyrillic (ISO)
+28596;iso-8859-6;Arabic (ISO)
+28597;iso-8859-7;Greek (ISO)
+28598;iso-8859-8;Hebrew (ISO-Visual)
+28599;iso-8859-9;Turkish (ISO)
+28603;iso-8859-13;Estonian (ISO)
+28605;iso-8859-15;Latin 9 (ISO)
+29001;x-europa;Europa
+38598;iso-8859-8-i;Hebrew (ISO-Logical)
+50220;iso-2022-jp;Japanese (JIS)
+50221;csiso2022jp;Japanese (JIS-Allow 1 byte Kana)
+50222;iso-2022-jp;Japanese (JIS-Allow 1 byte Kana - SO/SI)
+50225;iso-2022-kr;Korean (ISO)
+50227;x-cp50227;Chinese Simplified (ISO-2022)
+51932;euc-jp;Japanese (EUC)
+51936;euc-cn;Chinese Simplified (EUC)
+51949;euc-kr;Korean (EUC)
+52936;hz-gb-2312;Chinese Simplified (HZ)
+54936;gb18030;Chinese Simplified (GB18030)
+57002;x-iscii-de;ISCII Devanagari
+57003;x-iscii-be;ISCII Bengali
+57004;x-iscii-ta;ISCII Tamil
+57005;x-iscii-te;ISCII Telugu
+57006;x-iscii-as;ISCII Assamese
+57007;x-iscii-or;ISCII Oriya
+57008;x-iscii-ka;ISCII Kannada
+57009;x-iscii-ma;ISCII Malayalam
+57010;x-iscii-gu;ISCII Gujarati
+57011;x-iscii-pa;ISCII Punjabi

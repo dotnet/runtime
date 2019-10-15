@@ -1,0 +1,73 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.Functional.Tests", "tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj", "{E671BC9F-A64C-4504-8B00-7A3215B99AF9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.Pal.Tests", "tests\PalTests\System.Net.Primitives.Pal.Tests.csproj", "{7860A11A-1841-4416-8A30-28EEEB42C6BB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.UnitTests.Tests", "tests\UnitTests\System.Net.Primitives.UnitTests.Tests.csproj", "{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives", "src\System.Net.Primitives.csproj", "{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8} = {D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives", "ref\System.Net.Primitives.csproj", "{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E671BC9F-A64C-4504-8B00-7A3215B99AF9}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{E671BC9F-A64C-4504-8B00-7A3215B99AF9}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{E671BC9F-A64C-4504-8B00-7A3215B99AF9}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{E671BC9F-A64C-4504-8B00-7A3215B99AF9}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E671BC9F-A64C-4504-8B00-7A3215B99AF9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{D7A4CF9D-78AA-4140-83E3-6BC43EF2DBB8} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ED70270A-6412-44A6-81B6-1156337C55DF}
+	EndGlobalSection
+EndGlobal

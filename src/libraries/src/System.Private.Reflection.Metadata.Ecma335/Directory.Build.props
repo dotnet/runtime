@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.1.4.0</AssemblyVersion>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project>
+  <Target Name="RemoveUapvNextContent"
+          Condition="'$(KeepUAPContent)' != 'true'"
+          DependsOnTargets="GetPackageReport"
+          BeforeTargets="GenerateNuSpec">
+    <ItemGroup>
+      <PackageFile Remove="@(PackageFile)" Condition="'%(PackageFile.TargetFramework)' == '$(UAPvNextTFM)'" />
+      <PackageFile Remove="@(PackageFile)" Condition="$([System.String]::new('%(PackageFile.TargetPath)').Contains('/$(UAPvNextTFM)'))" />
+      <Dependency Remove="@(Dependency)" Condition="'%(Dependency.TargetFramework)' == '$(UAPvNextTFM)'" />
+    </ItemGroup>
+  </Target>
+</Project>

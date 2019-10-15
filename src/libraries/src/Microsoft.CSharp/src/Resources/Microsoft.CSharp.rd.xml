@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="Microsoft.CSharp">
+    <Assembly Name="Microsoft.CSharp">
+      <Namespace Name="Microsoft.CSharp.RuntimeBinder">
+        <Type Name="Binder">
+          <Method Name="BinaryOperation">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="Convert">
+            <TypeParameter Name="type" Dynamic="Public"/>
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="GetIndex">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="GetMember">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="Invoke">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="Invoke">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="InvokeConstructor">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="InvokeMember">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="IsEvent">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="SetIndex">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="SetMember">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+          <Method Name="UnaryOperation">
+            <TypeParameter Name="context" Dynamic="Public"/>
+          </Method>
+        </Type>
+      </Namespace>
+    </Assembly>
+
+    <!-- Boilerplate to get predefined types to work -->
+    <Assembly Name="System.Private.CoreLib">
+      <Namespace Name="System">
+        <Type Name="Array">
+          <Method Name="GetLength" Dynamic="Required"/>
+          <Method Name="get_Length" Dynamic="Required"/>
+        </Type>
+        <Type Name="Nullable`1" Dynamic="Required All"/>
+        <Type Name="Nullable&lt;System.Char&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.SByte&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Byte&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Int16&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.UInt16&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Int32&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.UInt32&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Int64&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.UInt64&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.IntPtr&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.UIntPtr&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Single&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Double&gt;" Dynamic="Required Public"/>
+        <Type Name="Nullable&lt;System.Decimal&gt;" Dynamic="Required Public"/>
+        <Type Name="Delegate">
+          <Method Name="Combine" Dynamic="Required"/>
+          <Method Name="op_Equality" Dynamic="Required"/>
+          <Method Name="op_Inequality" Dynamic="Required"/>
+          <Method Name="Remove" Dynamic="Required"/>
+        </Type>
+        <Type Name="String">
+          <Method Name="get_Chars" Dynamic="Required"/>
+          <Method Name="get_Length" Dynamic="Required"/>
+          <Method Name="op_Equality" Dynamic="Required"/>
+          <Method Name="op_Inequality" Dynamic="Required"/>
+          <Method Name="Concat" Dynamic="Required"/>
+        </Type>
+        <Type Name="Object" Dynamic="Required Public" />
+      </Namespace>
+      <Namespace Name="System.Reflection">
+        <Type Name="MemberInfo">
+          <Method Name="HasSameMetadataDefinitionAs" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+    </Assembly>
+
+    <Assembly Name="System.Linq.Expressions">
+      <Namespace Name="System.Linq.Expressions">
+        <Type Name="Expression" Dynamic="Required Public">
+        </Type>
+      </Namespace>
+    </Assembly>
+
+    <Assembly Name="System.Runtime.InteropServices">
+      <Type Name="System.Reflection.Missing" Dynamic="Required All" />
+    </Assembly>
+  </Library>
+</Directives>

@@ -1,0 +1,46 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <HarvestStablePackage>false</HarvestStablePackage>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <PackageIndexFileName>packageIndex.json</PackageIndexFileName>
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="Microsoft.Private.PackageBaseline.props">
+      <TargetPath>build</TargetPath>
+    </File>
+    <File Include="$(IntermediateOutputPath)$(PackageIndexFileName)">
+      <TargetPath>build</TargetPath>
+    </File>
+  </ItemGroup>
+  <!-- Stamp the packageIndex with pre-release version for this build -->
+  <Target Name="StampPackageIndex" BeforeTargets="GenerateNuSpec">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Copy SourceFiles="$(PackageIndexFileName)" DestinationFolder="$(IntermediateOutputPath)" OverwriteReadOnlyFiles="true" />
+
+    <UpdatePackageIndex PackageIndexFile="$(IntermediateOutputPath)$(PackageIndexFileName)"
+                        PreRelease="$(VersionSuffix)" />
+  </Target>
+  <Target Name="UpdateFromLocalBuild">
+    <ItemGroup>
+      <AllPackages Include="$(PackageOutputPath)\*.nupkg" Exclude="$(PackageOutputPath)\*Microsoft.Private.*.nupkg" />
+      <FrameworkLayout Include="$(NETCoreAppPackageRefPath)">
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(UAPPackageRefPath)">
+        <TargetFramework>$(UAPvNextTFM)</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\netstandard2.0\ref">
+        <TargetFramework>netstandard2.0</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\net461\ref">
+        <TargetFramework>net461</TargetFramework>
+      </FrameworkLayout>
+    </ItemGroup>
+
+    <UpdatePackageIndex PackageIndexFile="$(PackageIndexFile)"
+                        Packages="@(AllPackages)"
+                        InboxFrameworkLayoutFolders="@(FrameworkLayout)" />
+  </Target>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

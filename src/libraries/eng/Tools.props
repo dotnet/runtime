@@ -1,0 +1,62 @@
+<Project>
+  <PropertyGroup>
+    <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <Language>C#</Language>
+    <!-- Need to keep in sync with CodeAnalysis.targets file. -->
+    <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
+  </PropertyGroup>
+
+  <Import Project="Analyzers.props" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+
+  <!-- source-built packages -->
+  <ItemGroup>
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    
+    <!-- coreclr -->
+    <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
+    <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILPackageVersion)]" />
+
+    <!-- roslyn -->
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- excluded from offline portion of source build -->
+  <ItemGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
+  </ItemGroup>
+
+  <!-- excluded from source build -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
+
+    <!-- SourceLink -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.SourceLink.Vsts.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+
+    <!-- UWP test tools -->
+    <PackageReference Include="Microsoft.DotNet.UAP.TestTools" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" Condition="$(TargetGroup.StartsWith('uap'))" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
+
+  <Target Name="GenerateAnalyzersPropsFile"
+          AfterTargets="Restore"
+          DependsOnTargets="ResolveLockFileAnalyzers">
+
+    <SaveItems Condition="'@(Analyzer)' != ''"
+               ItemName="ResolvedAnalyzer"
+               Items="@(Analyzer)"
+               File="$(AnalyzerPropsFile)" />
+
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" Condition="'$(ILLinkTrimAssembly)' != 'false'" />
+
+</Project>

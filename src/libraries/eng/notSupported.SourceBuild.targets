@@ -1,0 +1,25 @@
+<Project>
+  <Target Name="_RedefineNotSupportedSourceFile"
+          BeforeTargets="BeforeCompile"
+          Condition="'$(DotNetBuildFromSource)' == 'true' and
+                     ('$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != '')">
+                     
+    <Error Condition="'$(DotNetSourceBuildIntermediatePath)' == ''" 
+           Text="'DotNetSourceBuildIntermediatePath' must be specified when 'DotNetBuildFromSource' is true" />
+
+    <PropertyGroup>
+      <_notSupportedSourceDirectory>$([MSBuild]::NormalizeDirectory('$(DotNetSourceBuildIntermediatePath)', '$(MSBuildProjectName)', '$(TargetGroup)-$(OSGroup)'))</_notSupportedSourceDirectory>
+      <NotSupportedSourceFile>$(_notSupportedSourceDirectory)$(TargetName).notsupported.cs</NotSupportedSourceFile>
+    </PropertyGroup>
+
+    <MakeDir Condition="'$(DotNetBuildOffline)' != 'true'" Directories="$(_notSupportedSourceDirectory)" />
+    
+    <Error Condition="'$(DotNetBuildOffline)' == 'true' AND !Exists('$(NotSupportedSourceFile)')"
+           Text="Error NotSupportedSourceFile '$(NotSupportedSourceFile)' did not exist under DotNetSourceBuildIntermediatePath." />
+
+    <!-- DotNetBuildOffline == true, don't use GenAPI and include source from DotNetSourceBuildIntermediatePath -->  
+    <ItemGroup Condition="'$(DotNetBuildOffline)' == 'true'">
+      <Compile Include="$(NotSupportedSourceFile)" />
+    </ItemGroup>
+  </Target>
+</Project>

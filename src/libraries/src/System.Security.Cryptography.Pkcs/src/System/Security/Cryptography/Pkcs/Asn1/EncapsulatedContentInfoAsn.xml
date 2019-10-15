@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="EncapsulatedContentInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-5.2
+
+    EncapsulatedContentInfo ::= SEQUENCE {
+        eContentType ContentType,
+        eContent[0] EXPLICIT OCTET STRING OPTIONAL
+    }
+
+    ContentType ::= OBJECT IDENTIFIER
+  -->
+  <asn:ObjectIdentifier name="ContentType" backingType="string" />
+  <!-- Should be OctetString, but kept as AnyValue for PKCS#7 compatibility -->
+  <asn:AnyValue name="Content" explicitTag="0" optional="true" />
+</asn:Sequence>

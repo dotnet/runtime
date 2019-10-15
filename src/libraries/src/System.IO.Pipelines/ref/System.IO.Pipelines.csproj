@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Nullable>enable</Nullable>
+    <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks we should use the lib
+    asset instead. -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netcoreapp2.0</PackageTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.IO.Pipelines.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Buffers\ref\System.Buffers.csproj" />
+  </ItemGroup>
+</Project>

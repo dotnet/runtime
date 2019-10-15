@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Windows\UI\Xaml\CornerRadiusTests.cs" />
+    <Compile Include="Windows\UI\Xaml\DurationTests.cs" />
+    <Compile Include="Windows\UI\Xaml\GridLengthTests.cs" />
+    <Compile Include="Windows\UI\Xaml\LayoutCycleExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\ThicknessTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Automation\ElementNotEnabledExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Automation\ElementNotAvailableExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Controls\Primitives\GeneratorPositionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Markup\XamlParseExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\MatrixTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\Animation\KeyTimeTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\Animation\RepeatBehaviorTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media3D\Matrix3DTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Runtime.WindowsRuntime.UI.Xaml" />
+  </ItemGroup>
+</Project>

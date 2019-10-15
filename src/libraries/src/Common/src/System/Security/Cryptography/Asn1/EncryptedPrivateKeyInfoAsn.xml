@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="EncryptedPrivateKeyInfoAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5208#section-6
+
+    EncryptedPrivateKeyInfo ::= SEQUENCE {
+        encryptionAlgorithm  EncryptionAlgorithmIdentifier,
+        encryptedData        EncryptedData
+    }
+
+    EncryptionAlgorithmIdentifier ::= AlgorithmIdentifier
+    EncryptedData ::= OCTET STRING
+  -->
+  <asn:AsnType name="EncryptionAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:OctetString name="EncryptedData" />
+</asn:Sequence>

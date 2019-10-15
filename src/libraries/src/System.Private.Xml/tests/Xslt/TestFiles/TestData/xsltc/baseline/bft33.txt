@@ -1,0 +1,1 @@
+fatal error : Unrecognized option: '/foo'.

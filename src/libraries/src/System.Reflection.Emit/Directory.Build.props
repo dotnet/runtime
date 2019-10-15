@@ -1,0 +1,11 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.1.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetsNetStandard)' == 'true'">4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
+  </PropertyGroup>
+</Project>

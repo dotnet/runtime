@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Primitives.Tests", "tests\System.Security.Cryptography.Primitives.Tests.csproj", "{101EB757-55A4-4F48-841C-C088640B8F57}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235} = {DF73E985-E143-4BF5-9FA4-E199E7D36235}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Primitives", "src\System.Security.Cryptography.Primitives.csproj", "{DF73E985-E143-4BF5-9FA4-E199E7D36235}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F050C895-297F-41C6-98C3-406D791AD515} = {F050C895-297F-41C6-98C3-406D791AD515}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Primitives", "ref\System.Security.Cryptography.Primitives.csproj", "{F050C895-297F-41C6-98C3-406D791AD515}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{101EB757-55A4-4F48-841C-C088640B8F57}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{101EB757-55A4-4F48-841C-C088640B8F57} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{F050C895-297F-41C6-98C3-406D791AD515} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E69C9500-E894-44EA-8A1F-0BC23F3C878B}
+	EndGlobalSection
+EndGlobal

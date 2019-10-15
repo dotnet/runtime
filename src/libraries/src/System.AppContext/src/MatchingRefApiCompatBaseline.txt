@@ -1,0 +1,9 @@
+Compat issues with assembly System.AppContext:
+MembersMustExist : Member 'System.AppContext.add_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.add_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.remove_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.remove_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.AppContext.SetData(System.String, System.Object)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 7

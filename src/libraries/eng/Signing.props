@@ -1,0 +1,20 @@
+<Project>
+  <ItemGroup>
+    <!-- Clear out the item list from arcade targets -->
+    <ItemsToSign Remove="@(ItemsToSign)" />
+    <!--
+        List of container files that will be opened and checked for files that need to be signed.
+
+        Note that we use $(ArtifactsDir)packages instead of $(ArtifactsPackagesDir) because the later
+        includes $(Configuration) which is actually different for each of our package outputs compared
+        to what is in when we run the Sign.proj. Corefx encodes more then just Debug/Release into the
+        Configuration property so we simply need to glob everything under packages.
+     -->
+    <ItemsToSign Include="$(ArtifactsDir)packages\**\*.nupkg" Exclude="$(ArtifactsDir)packages\**\*symbols.nupkg" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- We do not build packages for NetFx. -->
+    <AllowEmptySignList Condition="'$(TargetGroup)' == 'netfx'">true</AllowEmptySignList>
+  </PropertyGroup>
+</Project>

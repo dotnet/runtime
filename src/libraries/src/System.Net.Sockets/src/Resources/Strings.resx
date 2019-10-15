@@ -1,0 +1,249 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_invalidversion" xml:space="preserve">
+    <value>This protocol version is not supported.</value>
+  </data>
+  <data name="net_noseek" xml:space="preserve">
+    <value>This stream does not support seek operations.</value>
+  </data>
+  <data name="net_invasync" xml:space="preserve">
+    <value>Cannot block a call on this socket while an earlier asynchronous call is in progress.</value>
+  </data>
+  <data name="net_io_timeout_use_gt_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
+  </data>
+  <data name="net_notconnected" xml:space="preserve">
+    <value>The operation is not allowed on non-connected sockets.</value>
+  </data>
+  <data name="net_notstream" xml:space="preserve">
+    <value>The operation is not allowed on non-stream oriented sockets.</value>
+  </data>
+  <data name="net_stopped" xml:space="preserve">
+    <value>Not listening. You must call the Start() method before calling this method.</value>
+  </data>
+  <data name="net_udpconnected" xml:space="preserve">
+    <value>Cannot send packets to an arbitrary host while connected.</value>
+  </data>
+  <data name="net_readonlystream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="net_writeonlystream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
+  <data name="net_InvalidAddressFamily" xml:space="preserve">
+    <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
+  </data>
+  <data name="net_InvalidEndPointAddressFamily" xml:space="preserve">
+    <value>The supplied EndPoint of AddressFamily {0} is not valid for this Socket, use {1} instead.</value>
+  </data>
+  <data name="net_InvalidSocketAddressSize" xml:space="preserve">
+    <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
+  <data name="net_invalidAddressList" xml:space="preserve">
+    <value>None of the discovered or specified addresses match the socket address family.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_protocol_invalid_family" xml:space="preserve">
+    <value>'{0}' Client can only accept InterNetwork or InterNetworkV6 addresses.</value>
+  </data>
+  <data name="net_protocol_invalid_multicast_family" xml:space="preserve">
+    <value>Multicast family is not the same as the family of the '{0}' Client.</value>
+  </data>
+  <data name="net_sockets_zerolist" xml:space="preserve">
+    <value>The parameter {0} must contain one or more elements.</value>
+  </data>
+  <data name="net_sockets_blocking" xml:space="preserve">
+    <value>The operation is not allowed on a non-blocking Socket.</value>
+  </data>
+  <data name="net_sockets_useblocking" xml:space="preserve">
+    <value>Use the Blocking property to change the status of the Socket.</value>
+  </data>
+  <data name="net_sockets_select" xml:space="preserve">
+    <value>The operation is not allowed on objects of type {0}. Use only objects of type {1}.</value>
+  </data>
+  <data name="net_sockets_toolarge_select" xml:space="preserve">
+    <value>The {0} list contains too many items; a maximum of {1} is allowed.</value>
+  </data>
+  <data name="net_sockets_empty_select" xml:space="preserve">
+    <value>All lists are either null or empty.</value>
+  </data>
+  <data name="net_sockets_mustbind" xml:space="preserve">
+    <value>You must call the Bind method before performing this operation.</value>
+  </data>
+  <data name="net_sockets_mustlisten" xml:space="preserve">
+    <value>You must call the Listen method before performing this operation.</value>
+  </data>
+  <data name="net_sockets_mustnotlisten" xml:space="preserve">
+    <value>You may not perform this operation after calling the Listen method.</value>
+  </data>
+  <data name="net_sockets_mustnotbebound" xml:space="preserve">
+    <value>The socket must not be bound or connected.</value>
+  </data>
+  <data name="net_sockets_namedmustnotbebound" xml:space="preserve">
+    <value>{0}: The socket must not be bound or connected.</value>
+  </data>
+  <data name="net_sockets_invalid_ipaddress_length" xml:space="preserve">
+    <value>The number of specified IP addresses has to be greater than 0.</value>
+  </data>
+  <data name="net_sockets_invalid_optionValue" xml:space="preserve">
+    <value>The specified value is not a valid '{0}'.</value>
+  </data>
+  <data name="net_sockets_invalid_optionValue_all" xml:space="preserve">
+    <value>The specified value is not valid.</value>
+  </data>
+  <data name="net_sockets_invalid_dnsendpoint" xml:space="preserve">
+    <value>The parameter {0} must not be of type DnsEndPoint.</value>
+  </data>
+  <data name="net_sockets_disconnectedConnect" xml:space="preserve">
+    <value>Once the socket has been disconnected, you can only reconnect again asynchronously, and only to a different EndPoint.  BeginConnect must be called on a thread that won't exit until the operation has been completed.</value>
+  </data>
+  <data name="net_sockets_disconnectedAccept" xml:space="preserve">
+    <value>Once the socket has been disconnected, you can only accept again asynchronously.  BeginAccept must be called on a thread that won't exit until the operation has been completed.</value>
+  </data>
+  <data name="net_tcplistener_mustbestopped" xml:space="preserve">
+    <value>The TcpListener must not be listening before performing this operation.</value>
+  </data>
+  <data name="net_socketopinprogress" xml:space="preserve">
+    <value>An asynchronous socket operation is already in progress using this SocketAsyncEventArgs instance.</value>
+  </data>
+  <data name="net_buffercounttoosmall" xml:space="preserve">
+    <value>The Buffer space specified by the Count property is insufficient for the AcceptAsync method.</value>
+  </data>
+  <data name="net_multibuffernotsupported" xml:space="preserve">
+    <value>Multiple buffers cannot be used with this method.</value>
+  </data>
+  <data name="net_ambiguousbuffers" xml:space="preserve">
+    <value>Buffer and BufferList properties cannot both be non-null.</value>
+  </data>
+  <data name="net_io_writefailure" xml:space="preserve">
+    <value>Unable to write data to the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_readfailure" xml:space="preserve">
+    <value>Unable to read data from the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_invalidasyncresult" xml:space="preserve">
+    <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_value_cannot_be_negative" xml:space="preserve">
+    <value>The specified value cannot be negative.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
+    <value>Argument must be between {0} and {1}.</value>
+  </data>
+  <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
+    <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
+  </data>
+  <data name="net_sockets_dualmode_receivefrom_notsupported" xml:space="preserve">
+    <value>This platform does not support packet information for dual-mode sockets.  If packet information is not required, use Socket.Receive.  If packet information is required set Socket.DualMode to false.</value>
+  </data>
+  <data name="net_sockets_accept_receive_notsupported" xml:space="preserve">
+    <value>This platform does not support receiving data with Socket.AcceptAsync.  Instead, make a separate call to Socket.ReceiveAsync.</value>
+  </data>
+  <data name="net_sockets_duplicateandclose_notsupported" xml:space="preserve">
+    <value>This platform does not support Socket.DuplicateAndClose.  Instead, create a new socket.</value>
+  </data>
+  <data name="net_sockets_transmitfileoptions_notsupported" xml:space="preserve">
+    <value>This platform does not support TransmitFileOptions other than TransmitFileOptions.UseDefaultWorkerThread.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_PathLengthInvalid" xml:space="preserve">
+    <value>The path '{0}' is of an invalid length for use with domain sockets on this platform.  The length must be between 1 and {1} characters, inclusive.</value>
+  </data>
+  <data name="net_io_readwritefailure" xml:space="preserve">
+    <value>Unable to transfer data on the transport connection: {0}.</value>
+  </data>
+  <data name="PlatformNotSupported_AcceptSocket" xml:space="preserve">
+    <value>Accepting into an existing Socket is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_IOControl" xml:space="preserve">
+    <value>Socket.IOControl handles Windows-specific control codes and is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_IPProtectionLevel" xml:space="preserve">
+    <value>IP protection level cannot be controlled on this platform.</value>
+  </data>
+  <data name="InvalidOperation_BufferNotExplicitArray" xml:space="preserve">
+    <value>This operation may only be performed when the buffer was set using the SetBuffer overload that accepts an array.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectToken" xml:space="preserve">
+    <value>The result of the operation was already consumed and may not be used again.</value>
+  </data>
+  <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
+    <value>Another continuation was already registered.</value>
+  </data>
+  <data name="net_sockets_sendpackelement_FileStreamMustBeAsync" xml:space="preserve">
+    <value>The FileStream must have been opened for asynchronous reading and writing.</value>
+  </data>
+</root>

@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Net.WebSockets.WebSocketProtocol</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
+      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\WebSockets\ManagedWebSocket.netstandard.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocketExtensions.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketProtocol.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netcoreapp'">
+    <Compile Include="System\Numerics\BitOperations.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="System\Net\WebSockets\ManagedWebSocketExtensions.netstandard.cs" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Net.WebSockets" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Timer" />
+  </ItemGroup>
+</Project>

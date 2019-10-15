@@ -1,0 +1,49 @@
+<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
+    <CompileItem Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp.cs" />
+    <CompileItem Include="$(CommonPath)\System\CharArrayHelpers.cs" />
+    <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\SecurityProtocol.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs" />
+    <CompileItem Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
+    <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <CompileItem Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCookieContainerAdapter.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpException.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpHandler.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestCallback.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestState.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestStream.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseHeaderReader.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseParser.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseStream.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpTraceHelper.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpTransportContext.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinInetProxyHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'net461'">
+    <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
+  </ItemGroup>
+</Project>

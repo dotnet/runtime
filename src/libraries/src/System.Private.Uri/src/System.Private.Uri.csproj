@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Private.Uri</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\DomainNameHelper.cs" />
+    <Compile Include="System\GenericUriParser.cs" />
+    <Compile Include="System\IPv4AddressHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
+      <Link>System\IPv4AddressHelper.Common.cs</Link>
+    </Compile>
+    <Compile Include="System\IPv6AddressHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
+      <Link>System\IPv6AddressHelper.Common.cs</Link>
+    </Compile>
+    <Compile Include="System\IriHelper.cs" />
+    <Compile Include="System\UncNameHelper.cs" />
+    <Compile Include="System\Uri.cs" />
+    <Compile Include="System\UriBuilder.cs" />
+    <Compile Include="System\UriEnumTypes.cs" />
+    <Compile Include="System\UriExt.cs" />
+    <Compile Include="System\UriFormatException.cs" />
+    <Compile Include="System\UriHelper.cs" />
+    <Compile Include="System\UriHostNameType.cs" />
+    <Compile Include="System\UriParserTemplates.cs" />
+    <Compile Include="System\UriPartial.cs" />
+    <Compile Include="System\UriScheme.cs" />
+    <Compile Include="System\UriSyntax.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Uri.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Uri.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+  </ItemGroup>
+</Project>

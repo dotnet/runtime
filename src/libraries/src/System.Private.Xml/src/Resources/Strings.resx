@@ -1,0 +1,3452 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Xml_UserException" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Xml_DefaultException" xml:space="preserve">
+    <value>An XML error has occurred.</value>
+  </data>
+  <data name="Xml_InvalidOperation" xml:space="preserve">
+    <value>Operation is not valid due to the current state of the object.</value>
+  </data>
+  <data name="Xml_ErrorFilePosition" xml:space="preserve">
+    <value>An error occurred at {0}, ({1}, {2}).</value>
+  </data>
+  <data name="Xml_StackOverflow" xml:space="preserve">
+    <value>Stack overflow.</value>
+  </data>
+  <data name="Xslt_NoStylesheetLoaded" xml:space="preserve">
+    <value>No stylesheet was loaded.</value>
+  </data>
+  <data name="Xslt_NotCompiledStylesheet" xml:space="preserve">
+    <value>Type '{0}' is not a compiled stylesheet class.</value>
+  </data>
+  <data name="Xslt_IncompatibleCompiledStylesheetVersion" xml:space="preserve">
+    <value>Executing a stylesheet that was compiled using a later version of the framework is not supported. Stylesheet Version: {0}. Current Framework Version: {1}.</value>
+  </data>
+  <data name="Xml_AsyncIsRunningException" xml:space="preserve">
+    <value>An asynchronous operation is already in progress.</value>
+  </data>
+  <data name="Xml_ReaderAsyncNotSetException" xml:space="preserve">
+    <value>Set XmlReaderSettings.Async to true if you want to use Async Methods.</value>
+  </data>
+  <data name="Xml_UnclosedQuote" xml:space="preserve">
+    <value>There is an unclosed literal string.</value>
+  </data>
+  <data name="Xml_UnexpectedEOF" xml:space="preserve">
+    <value>Unexpected end of file while parsing {0} has occurred.</value>
+  </data>
+  <data name="Xml_UnexpectedEOF1" xml:space="preserve">
+    <value>Unexpected end of file has occurred.</value>
+  </data>
+  <data name="Xml_UnexpectedEOFInElementContent" xml:space="preserve">
+    <value>Unexpected end of file has occurred. The following elements are not closed: {0}</value>
+  </data>
+  <data name="Xml_BadStartNameChar" xml:space="preserve">
+    <value>Name cannot begin with the '{0}' character, hexadecimal value {1}.</value>
+  </data>
+  <data name="Xml_BadNameChar" xml:space="preserve">
+    <value>The '{0}' character, hexadecimal value {1}, cannot be included in a name.</value>
+  </data>
+  <data name="Xml_BadDecimalEntity" xml:space="preserve">
+    <value>Invalid syntax for a decimal numeric entity reference.</value>
+  </data>
+  <data name="Xml_BadHexEntity" xml:space="preserve">
+    <value>Invalid syntax for a hexadecimal numeric entity reference.</value>
+  </data>
+  <data name="Xml_MissingByteOrderMark" xml:space="preserve">
+    <value>There is no Unicode byte order mark. Cannot switch to Unicode.</value>
+  </data>
+  <data name="Xml_UnknownEncoding" xml:space="preserve">
+    <value>System does not support '{0}' encoding.</value>
+  </data>
+  <data name="Xml_InternalError" xml:space="preserve">
+    <value>An internal error has occurred.</value>
+  </data>
+  <data name="Xml_InvalidCharInThisEncoding" xml:space="preserve">
+    <value>Invalid character in the given encoding.</value>
+  </data>
+  <data name="Xml_ErrorPosition" xml:space="preserve">
+    <value>Line {0}, position {1}.</value>
+  </data>
+  <data name="Xml_MessageWithErrorPosition" xml:space="preserve">
+    <value>{0} Line {1}, position {2}.</value>
+  </data>
+  <data name="Xml_UnexpectedTokenEx" xml:space="preserve">
+    <value>'{0}' is an unexpected token. The expected token is '{1}'.</value>
+  </data>
+  <data name="Xml_UnexpectedTokens2" xml:space="preserve">
+    <value>'{0}' is an unexpected token. The expected token is '{1}' or '{2}'.</value>
+  </data>
+  <data name="Xml_ExpectingWhiteSpace" xml:space="preserve">
+    <value>'{0}' is an unexpected token. Expecting whitespace.</value>
+  </data>
+  <data name="Xml_TagMismatchEx" xml:space="preserve">
+    <value>The '{0}' start tag on line {1} position {2} does not match the end tag of '{3}'.</value>
+  </data>
+  <data name="Xml_UnexpectedEndTag" xml:space="preserve">
+    <value>Unexpected end tag.</value>
+  </data>
+  <data name="Xml_UnknownNs" xml:space="preserve">
+    <value>'{0}' is an undeclared prefix.</value>
+  </data>
+  <data name="Xml_BadAttributeChar" xml:space="preserve">
+    <value>'{0}', hexadecimal value {1}, is an invalid attribute character.</value>
+  </data>
+  <data name="Xml_ExpectExternalOrClose" xml:space="preserve">
+    <value>Expecting external ID, '[' or '&gt;'.</value>
+  </data>
+  <data name="Xml_MissingRoot" xml:space="preserve">
+    <value>Root element is missing.</value>
+  </data>
+  <data name="Xml_MultipleRoots" xml:space="preserve">
+    <value>There are multiple root elements.</value>
+  </data>
+  <data name="Xml_InvalidRootData" xml:space="preserve">
+    <value>Data at the root level is invalid.</value>
+  </data>
+  <data name="Xml_XmlDeclNotFirst" xml:space="preserve">
+    <value>Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it.</value>
+  </data>
+  <data name="Xml_InvalidXmlDecl" xml:space="preserve">
+    <value>Syntax for an XML declaration is invalid.</value>
+  </data>
+  <data name="Xml_InvalidNodeType" xml:space="preserve">
+    <value>'{0}' is an invalid XmlNodeType.</value>
+  </data>
+  <data name="Xml_InvalidPIName" xml:space="preserve">
+    <value>'{0}' is an invalid name for processing instructions.</value>
+  </data>
+  <data name="Xml_InvalidXmlSpace" xml:space="preserve">
+    <value>'{0}' is an invalid xml:space value.</value>
+  </data>
+  <data name="Xml_InvalidVersionNumber" xml:space="preserve">
+    <value>Version number '{0}' is invalid.</value>
+  </data>
+  <data name="Xml_DupAttributeName" xml:space="preserve">
+    <value>'{0}' is a duplicate attribute name.</value>
+  </data>
+  <data name="Xml_BadDTDLocation" xml:space="preserve">
+    <value>Unexpected DTD declaration.</value>
+  </data>
+  <data name="Xml_ElementNotFound" xml:space="preserve">
+    <value>Element '{0}' was not found.</value>
+  </data>
+  <data name="Xml_ElementNotFoundNs" xml:space="preserve">
+    <value>Element '{0}' with namespace name '{1}' was not found.</value>
+  </data>
+  <data name="Xml_PartialContentNodeTypeNotSupportedEx" xml:space="preserve">
+    <value>XmlNodeType {0} is not supported for partial content parsing.</value>
+  </data>
+  <data name="Xml_MultipleDTDsProvided" xml:space="preserve">
+    <value>Cannot have multiple DTDs.</value>
+  </data>
+  <data name="Xml_CanNotBindToReservedNamespace" xml:space="preserve">
+    <value>Cannot bind to the reserved namespace.</value>
+  </data>
+  <data name="Xml_InvalidCharacter" xml:space="preserve">
+    <value>'{0}', hexadecimal value {1}, is an invalid character.</value>
+  </data>
+  <data name="Xml_InvalidBinHexValue" xml:space="preserve">
+    <value>'{0}' is not a valid BinHex text sequence.</value>
+  </data>
+  <data name="Xml_InvalidBinHexValueOddCount" xml:space="preserve">
+    <value>'{0}' is not a valid BinHex text sequence. The sequence must contain an even number of characters.</value>
+  </data>
+  <data name="Xml_InvalidTextDecl" xml:space="preserve">
+    <value>Invalid text declaration.</value>
+  </data>
+  <data name="Xml_InvalidBase64Value" xml:space="preserve">
+    <value>'{0}' is not a valid Base64 text sequence.</value>
+  </data>
+  <data name="Xml_UndeclaredEntity" xml:space="preserve">
+    <value>Reference to undeclared entity '{0}'.</value>
+  </data>
+  <data name="Xml_RecursiveParEntity" xml:space="preserve">
+    <value>Parameter entity '{0}' references itself.</value>
+  </data>
+  <data name="Xml_RecursiveGenEntity" xml:space="preserve">
+    <value>General entity '{0}' references itself.</value>
+  </data>
+  <data name="Xml_ExternalEntityInAttValue" xml:space="preserve">
+    <value>External entity '{0}' reference cannot appear in the attribute value.</value>
+  </data>
+  <data name="Xml_UnparsedEntityRef" xml:space="preserve">
+    <value>Reference to unparsed entity '{0}'.</value>
+  </data>
+  <data name="Xml_NotSameNametable" xml:space="preserve">
+    <value>Not the same name table.</value>
+  </data>
+  <data name="Xml_NametableMismatch" xml:space="preserve">
+    <value>XmlReaderSettings.XmlNameTable must be the same name table as in XmlParserContext.NameTable or XmlParserContext.NamespaceManager.NameTable, or it must be null.</value>
+  </data>
+  <data name="Xml_BadNamespaceDecl" xml:space="preserve">
+    <value>Invalid namespace declaration.</value>
+  </data>
+  <data name="Xml_ErrorParsingEntityName" xml:space="preserve">
+    <value>An error occurred while parsing EntityName.</value>
+  </data>
+  <data name="Xml_InvalidNmToken" xml:space="preserve">
+    <value>Invalid NmToken value '{0}'.</value>
+  </data>
+  <data name="Xml_EntityRefNesting" xml:space="preserve">
+    <value>Entity replacement text must nest properly within markup declarations.</value>
+  </data>
+  <data name="Xml_CannotResolveEntity" xml:space="preserve">
+    <value>Cannot resolve entity reference '{0}'.</value>
+  </data>
+  <data name="Xml_CannotResolveEntityDtdIgnored" xml:space="preserve">
+    <value>Cannot resolve entity reference '{0}' because the DTD has been ignored. To enable DTD processing set the DtdProcessing property on XmlReaderSettings to Parse and pass the settings into XmlReader.Create method.</value>
+  </data>
+  <data name="Xml_CannotResolveExternalSubset" xml:space="preserve">
+    <value>Cannot resolve external DTD subset - public ID = '{0}', system ID = '{1}'.</value>
+  </data>
+  <data name="Xml_CannotResolveUrl" xml:space="preserve">
+    <value>Cannot resolve '{0}'.</value>
+  </data>
+  <data name="Xml_CDATAEndInText" xml:space="preserve">
+    <value>']]&gt;' is not allowed in character data.</value>
+  </data>
+  <data name="Xml_ExternalEntityInStandAloneDocument" xml:space="preserve">
+    <value>Standalone document declaration must have a value of 'no' because an external entity '{0}' is referenced.</value>
+  </data>
+  <data name="Xml_DtdAfterRootElement" xml:space="preserve">
+    <value>DTD must be defined before the document root element.</value>
+  </data>
+  <data name="Xml_ReadOnlyProperty" xml:space="preserve">
+    <value>The '{0}' property is read only and cannot be set.</value>
+  </data>
+  <data name="Xml_DtdIsProhibited" xml:space="preserve">
+    <value>DTD is prohibited in this XML document.</value>
+  </data>
+  <data name="Xml_DtdIsProhibitedEx" xml:space="preserve">
+    <value>For security reasons DTD is prohibited in this XML document. To enable DTD processing set the DtdProcessing property on XmlReaderSettings to Parse and pass the settings into XmlReader.Create method.</value>
+  </data>
+  <data name="Xml_ReadSubtreeNotOnElement" xml:space="preserve">
+    <value>ReadSubtree() can be called only if the reader is on an element node.</value>
+  </data>
+  <data name="Xml_DtdNotAllowedInFragment" xml:space="preserve">
+    <value>DTD is not allowed in XML fragments.</value>
+  </data>
+  <data name="Xml_CannotStartDocumentOnFragment" xml:space="preserve">
+    <value>WriteStartDocument cannot be called on writers created with ConformanceLevel.Fragment.</value>
+  </data>
+  <data name="Xml_ErrorOpeningExternalDtd" xml:space="preserve">
+    <value>An error has occurred while opening external DTD '{0}': {1}</value>
+  </data>
+  <data name="Xml_ErrorOpeningExternalEntity" xml:space="preserve">
+    <value>An error has occurred while opening external entity '{0}': {1}</value>
+  </data>
+  <data name="Xml_ReadBinaryContentNotSupported" xml:space="preserve">
+    <value>{0} method is not supported on this XmlReader. Use CanReadBinaryContent property to find out if a reader implements it.</value>
+  </data>
+  <data name="Xml_ReadValueChunkNotSupported" xml:space="preserve">
+    <value>ReadValueChunk method is not supported on this XmlReader. Use CanReadValueChunk property to find out if an XmlReader implements it.</value>
+  </data>
+  <data name="Xml_InvalidReadContentAs" xml:space="preserve">
+    <value>The {0} method is not supported on node type {1}. If you want to read typed content of an element, use the ReadElementContentAs method.</value>
+  </data>
+  <data name="Xml_InvalidReadElementContentAs" xml:space="preserve">
+    <value>The {0} method is not supported on node type {1}.</value>
+  </data>
+  <data name="Xml_MixedReadElementContentAs" xml:space="preserve">
+    <value>ReadElementContentAs() methods cannot be called on an element that has child elements.</value>
+  </data>
+  <data name="Xml_MixingReadValueChunkWithBinary" xml:space="preserve">
+    <value>ReadValueChunk calls cannot be mixed with ReadContentAsBase64 or ReadContentAsBinHex.</value>
+  </data>
+  <data name="Xml_MixingBinaryContentMethods" xml:space="preserve">
+    <value>ReadContentAsBase64 and ReadContentAsBinHex method calls cannot be mixed with calls to ReadElementContentAsBase64 and ReadElementContentAsBinHex.</value>
+  </data>
+  <data name="Xml_MixingV1StreamingWithV2Binary" xml:space="preserve">
+    <value>ReadContentAsBase64 and ReadContentAsBinHex method calls cannot be mixed with calls to ReadChars, ReadBase64, and ReadBinHex.</value>
+  </data>
+  <data name="Xml_InvalidReadValueChunk" xml:space="preserve">
+    <value>The ReadValueAsChunk method is not supported on node type {0}.</value>
+  </data>
+  <data name="Xml_ReadContentAsFormatException" xml:space="preserve">
+    <value>Content cannot be converted to the type {0}.</value>
+  </data>
+  <data name="Xml_DoubleBaseUri" xml:space="preserve">
+    <value>BaseUri must be specified either as an argument of XmlReader.Create or on the XmlParserContext. If it is specified on both, it must be the same base URI.</value>
+  </data>
+  <data name="Xml_NotEnoughSpaceForSurrogatePair" xml:space="preserve">
+    <value>The buffer is not large enough to fit a surrogate pair. Please provide a buffer of size at least 2 characters.</value>
+  </data>
+  <data name="Xml_EmptyUrl" xml:space="preserve">
+    <value>The URL cannot be empty.</value>
+  </data>
+  <data name="Xml_UnexpectedNodeInSimpleContent" xml:space="preserve">
+    <value>Unexpected node type {0}. {1} method can only be called on elements with simple or empty content.</value>
+  </data>
+  <data name="Xml_InvalidWhitespaceCharacter" xml:space="preserve">
+    <value>The Whitespace or SignificantWhitespace node can contain only XML whitespace characters. '{0}' is not an XML white space character.</value>
+  </data>
+  <data name="Xml_IncompatibleConformanceLevel" xml:space="preserve">
+    <value>Cannot change conformance checking to {0}. Make sure the ConformanceLevel in XmlReaderSettings is set to Auto for wrapping scenarios.</value>
+  </data>
+  <data name="Xml_LimitExceeded" xml:space="preserve">
+    <value>The input document has exceeded a limit set by {0}.</value>
+  </data>
+  <data name="Xml_ClosedOrErrorReader" xml:space="preserve">
+    <value>The XmlReader is closed or in error state.</value>
+  </data>
+  <data name="Xml_CharEntityOverflow" xml:space="preserve">
+    <value>Invalid value of a character entity reference.</value>
+  </data>
+  <data name="Xml_BadNameCharWithPos" xml:space="preserve">
+    <value>The '{0}' character, hexadecimal value {1}, at position {2} within the name, cannot be included in a name.</value>
+  </data>
+  <data name="Xml_XmlnsBelongsToReservedNs" xml:space="preserve">
+    <value>The 'xmlns' attribute is bound to the reserved namespace 'http://www.w3.org/2000/xmlns/'.</value>
+  </data>
+  <data name="Xml_UndeclaredParEntity" xml:space="preserve">
+    <value>Reference to undeclared parameter entity '{0}'.</value>
+  </data>
+  <data name="Xml_InvalidXmlDocument" xml:space="preserve">
+    <value>Invalid XML document. {0}</value>
+  </data>
+  <data name="Xml_NoDTDPresent" xml:space="preserve">
+    <value>No DTD found.</value>
+  </data>
+  <data name="Xml_MultipleValidaitonTypes" xml:space="preserve">
+    <value>Unsupported combination of validation types.</value>
+  </data>
+  <data name="Xml_NoValidation" xml:space="preserve">
+    <value>No validation occurred.</value>
+  </data>
+  <data name="Xml_WhitespaceHandling" xml:space="preserve">
+    <value>Expected WhitespaceHandling.None, or WhitespaceHandling.All, or WhitespaceHandling.Significant.</value>
+  </data>
+  <data name="Xml_InvalidResetStateCall" xml:space="preserve">
+    <value>Cannot call ResetState when parsing an XML fragment.</value>
+  </data>
+  <data name="Xml_EntityHandling" xml:space="preserve">
+    <value>Expected EntityHandling.ExpandEntities or EntityHandling.ExpandCharEntities.</value>
+  </data>
+  <data name="Xml_AttlistDuplEnumValue" xml:space="preserve">
+    <value>'{0}' is a duplicate enumeration value.</value>
+  </data>
+  <data name="Xml_AttlistDuplNotationValue" xml:space="preserve">
+    <value>'{0}' is a duplicate notation value.</value>
+  </data>
+  <data name="Xml_EncodingSwitchAfterResetState" xml:space="preserve">
+    <value>'{0}' is an invalid value for the 'encoding' attribute. The encoding cannot be switched after a call to ResetState.</value>
+  </data>
+  <data name="Xml_UnexpectedNodeType" xml:space="preserve">
+    <value>Unexpected XmlNodeType: '{0}'.</value>
+  </data>
+  <data name="Xml_InvalidConditionalSection" xml:space="preserve">
+    <value>A conditional section is not allowed in an internal subset.</value>
+  </data>
+  <data name="Xml_UnexpectedCDataEnd" xml:space="preserve">
+    <value>']]&gt;' is not expected.</value>
+  </data>
+  <data name="Xml_UnclosedConditionalSection" xml:space="preserve">
+    <value>There is an unclosed conditional section.</value>
+  </data>
+  <data name="Xml_ExpectDtdMarkup" xml:space="preserve">
+    <value>Expected DTD markup was not found.</value>
+  </data>
+  <data name="Xml_IncompleteDtdContent" xml:space="preserve">
+    <value>Incomplete DTD content.</value>
+  </data>
+  <data name="Xml_EnumerationRequired" xml:space="preserve">
+    <value>Enumeration data type required.</value>
+  </data>
+  <data name="Xml_InvalidContentModel" xml:space="preserve">
+    <value>Invalid content model.</value>
+  </data>
+  <data name="Xml_FragmentId" xml:space="preserve">
+    <value>Fragment identifier '{0}' cannot be part of the system identifier '{1}'.</value>
+  </data>
+  <data name="Xml_ExpectPcData" xml:space="preserve">
+    <value>Expecting 'PCDATA'.</value>
+  </data>
+  <data name="Xml_ExpectNoWhitespace" xml:space="preserve">
+    <value>Whitespace not allowed before '?', '*', or '+'.</value>
+  </data>
+  <data name="Xml_ExpectOp" xml:space="preserve">
+    <value>Expecting '?', '*', or '+'.</value>
+  </data>
+  <data name="Xml_InvalidAttributeType" xml:space="preserve">
+    <value>'{0}' is an invalid attribute type.</value>
+  </data>
+  <data name="Xml_InvalidAttributeType1" xml:space="preserve">
+    <value>Invalid attribute type.</value>
+  </data>
+  <data name="Xml_ExpectAttType" xml:space="preserve">
+    <value>Expecting an attribute type.</value>
+  </data>
+  <data name="Xml_ColonInLocalName" xml:space="preserve">
+    <value>'{0}' is an unqualified name and cannot contain the character ':'.</value>
+  </data>
+  <data name="Xml_InvalidParEntityRef" xml:space="preserve">
+    <value>A parameter entity reference is not allowed in internal markup.</value>
+  </data>
+  <data name="Xml_ExpectSubOrClose" xml:space="preserve">
+    <value>Expecting an internal subset or the end of the DOCTYPE declaration.</value>
+  </data>
+  <data name="Xml_ExpectExternalOrPublicId" xml:space="preserve">
+    <value>Expecting a system identifier or a public identifier.</value>
+  </data>
+  <data name="Xml_ExpectExternalIdOrEntityValue" xml:space="preserve">
+    <value>Expecting an external identifier or an entity value.</value>
+  </data>
+  <data name="Xml_ExpectIgnoreOrInclude" xml:space="preserve">
+    <value>Conditional sections must specify the keyword 'IGNORE' or 'INCLUDE'.</value>
+  </data>
+  <data name="Xml_UnsupportedClass" xml:space="preserve">
+    <value>Object type is not supported.</value>
+  </data>
+  <data name="Xml_NullResolver" xml:space="preserve">
+    <value>Resolving of external URIs was prohibited.</value>
+  </data>
+  <data name="Xml_RelativeUriNotSupported" xml:space="preserve">
+    <value>Relative URIs are not supported.</value>
+  </data>
+  <data name="Xml_WriterAsyncNotSetException" xml:space="preserve">
+    <value>Set XmlWriterSettings.Async to true if you want to use Async Methods.</value>
+  </data>
+  <data name="Xml_PrefixForEmptyNs" xml:space="preserve">
+    <value>Cannot use a prefix with an empty namespace.</value>
+  </data>
+  <data name="Xml_InvalidCommentChars" xml:space="preserve">
+    <value>An XML comment cannot contain '--', and '-' cannot be the last character.</value>
+  </data>
+  <data name="Xml_UndefNamespace" xml:space="preserve">
+    <value>The '{0}' namespace is not defined.</value>
+  </data>
+  <data name="Xml_EmptyName" xml:space="preserve">
+    <value>The empty string '' is not a valid name.</value>
+  </data>
+  <data name="Xml_EmptyLocalName" xml:space="preserve">
+    <value>The empty string '' is not a valid local name.</value>
+  </data>
+  <data name="Xml_InvalidNameCharsDetail" xml:space="preserve">
+    <value>Invalid name character in '{0}'. The '{1}' character, hexadecimal value {2}, cannot be included in a name.</value>
+  </data>
+  <data name="Xml_NoStartTag" xml:space="preserve">
+    <value>There was no XML start tag open.</value>
+  </data>
+  <data name="Xml_ClosedOrError" xml:space="preserve">
+    <value>The Writer is closed or in error state.</value>
+  </data>
+  <data name="Xml_WrongToken" xml:space="preserve">
+    <value>Token {0} in state {1} would result in an invalid XML document.</value>
+  </data>
+  <data name="Xml_XmlPrefix" xml:space="preserve">
+    <value>Prefix "xml" is reserved for use by XML and can be mapped only to namespace name "http://www.w3.org/XML/1998/namespace".</value>
+  </data>
+  <data name="Xml_XmlnsPrefix" xml:space="preserve">
+    <value>Prefix "xmlns" is reserved for use by XML.</value>
+  </data>
+  <data name="Xml_NamespaceDeclXmlXmlns" xml:space="preserve">
+    <value>Prefix '{0}' cannot be mapped to namespace name reserved for "xml" or "xmlns".</value>
+  </data>
+  <data name="Xml_NonWhitespace" xml:space="preserve">
+    <value>Only whitespace characters should be used.</value>
+  </data>
+  <data name="Xml_DupXmlDecl" xml:space="preserve">
+    <value>Cannot write XML declaration. WriteStartDocument method has already written it.</value>
+  </data>
+  <data name="Xml_CannotWriteXmlDecl" xml:space="preserve">
+    <value>Cannot write XML declaration. XML declaration can be only at the beginning of the document.</value>
+  </data>
+  <data name="Xml_NoRoot" xml:space="preserve">
+    <value>Document does not have a root element.</value>
+  </data>
+  <data name="Xml_InvalidPosition" xml:space="preserve">
+    <value>The current position on the Reader is neither an element nor an attribute.</value>
+  </data>
+  <data name="Xml_IncompleteEntity" xml:space="preserve">
+    <value>Incomplete entity contents.</value>
+  </data>
+  <data name="Xml_InvalidSurrogateHighChar" xml:space="preserve">
+    <value>Invalid high surrogate character (0x{0}). A high surrogate character must have a value from range (0xD800 - 0xDBFF).</value>
+  </data>
+  <data name="Xml_InvalidSurrogateMissingLowChar" xml:space="preserve">
+    <value>The surrogate pair is invalid. Missing a low surrogate character.</value>
+  </data>
+  <data name="Xml_InvalidSurrogatePairWithArgs" xml:space="preserve">
+    <value>The surrogate pair (0x{0}, 0x{1}) is invalid. A high surrogate character (0xD800 - 0xDBFF) must always be paired with a low surrogate character (0xDC00 - 0xDFFF).</value>
+  </data>
+  <data name="Xml_RedefinePrefix" xml:space="preserve">
+    <value>The prefix '{0}' cannot be redefined from '{1}' to '{2}' within the same start element tag.</value>
+  </data>
+  <data name="Xml_DtdAlreadyWritten" xml:space="preserve">
+    <value>The DTD has already been written out.</value>
+  </data>
+  <data name="Xml_InvalidCharsInIndent" xml:space="preserve">
+    <value>XmlWriterSettings.{0} can contain only valid XML text content characters when XmlWriterSettings.CheckCharacters is true. {1}</value>
+  </data>
+  <data name="Xml_IndentCharsNotWhitespace" xml:space="preserve">
+    <value>XmlWriterSettings.{0} can contain only valid XML whitespace characters when XmlWriterSettings.CheckCharacters and XmlWriterSettings.NewLineOnAttributes are true.</value>
+  </data>
+  <data name="Xml_ConformanceLevelFragment" xml:space="preserve">
+    <value>Make sure that the ConformanceLevel setting is set to ConformanceLevel.Fragment or ConformanceLevel.Auto if you want to write an XML fragment. </value>
+  </data>
+  <data name="Xml_InvalidQuote" xml:space="preserve">
+    <value>Invalid XML attribute quote character. Valid attribute quote characters are ' and ".</value>
+  </data>
+  <data name="Xml_UndefPrefix" xml:space="preserve">
+    <value>An undefined prefix is in use.</value>
+  </data>
+  <data name="Xml_NoNamespaces" xml:space="preserve">
+    <value>Cannot set the namespace if Namespaces is 'false'.</value>
+  </data>
+  <data name="Xml_InvalidCDataChars" xml:space="preserve">
+    <value>Cannot have ']]&gt;' inside an XML CDATA block.</value>
+  </data>
+  <data name="Xml_NotTheFirst" xml:space="preserve">
+    <value>WriteStartDocument needs to be the first call.</value>
+  </data>
+  <data name="Xml_InvalidPiChars" xml:space="preserve">
+    <value>Cannot have '?&gt;' inside an XML processing instruction.</value>
+  </data>
+  <data name="Xml_InvalidNameChars" xml:space="preserve">
+    <value>Invalid name character in '{0}'.</value>
+  </data>
+  <data name="Xml_Closed" xml:space="preserve">
+    <value>The Writer is closed.</value>
+  </data>
+  <data name="Xml_InvalidPrefix" xml:space="preserve">
+    <value>Prefixes beginning with "xml" (regardless of whether the characters are uppercase, lowercase, or some combination thereof) are reserved for use by XML.</value>
+  </data>
+  <data name="Xml_InvalidIndentation" xml:space="preserve">
+    <value>Indentation value must be greater than 0.</value>
+  </data>
+  <data name="Xml_NotInWriteState" xml:space="preserve">
+    <value>NotInWriteState.</value>
+  </data>
+  <data name="Xml_SurrogatePairSplit" xml:space="preserve">
+    <value>The second character surrogate pair is not in the input buffer to be written.</value>
+  </data>
+  <data name="Xml_NoMultipleRoots" xml:space="preserve">
+    <value>Document cannot have multiple document elements.</value>
+  </data>
+  <data name="XmlBadName" xml:space="preserve">
+    <value>A node of type '{0}' cannot have the name '{1}'.</value>
+  </data>
+  <data name="XmlNoNameAllowed" xml:space="preserve">
+    <value>A node of type '{0}' cannot have a name.</value>
+  </data>
+  <data name="XmlConvert_BadUri" xml:space="preserve">
+    <value>The string was not recognized as a valid Uri.</value>
+  </data>
+  <data name="XmlConvert_BadFormat" xml:space="preserve">
+    <value>The string '{0}' is not a valid {1} value.</value>
+  </data>
+  <data name="XmlConvert_Overflow" xml:space="preserve">
+    <value>Value '{0}' was either too large or too small for {1}.</value>
+  </data>
+  <data name="XmlConvert_TypeBadMapping" xml:space="preserve">
+    <value>Xml type '{0}' does not support Clr type '{1}'.</value>
+  </data>
+  <data name="XmlConvert_TypeBadMapping2" xml:space="preserve">
+    <value>Xml type '{0}' does not support a conversion from Clr type '{1}' to Clr type '{2}'.</value>
+  </data>
+  <data name="XmlConvert_TypeListBadMapping" xml:space="preserve">
+    <value>Xml type 'List of {0}' does not support Clr type '{1}'.</value>
+  </data>
+  <data name="XmlConvert_TypeListBadMapping2" xml:space="preserve">
+    <value>Xml type 'List of {0}' does not support a conversion from Clr type '{1}' to Clr type '{2}'.</value>
+  </data>
+  <data name="XmlConvert_TypeToString" xml:space="preserve">
+    <value>Xml type '{0}' cannot convert from Clr type '{1}' unless the destination type is String or XmlAtomicValue.</value>
+  </data>
+  <data name="XmlConvert_TypeFromString" xml:space="preserve">
+    <value>Xml type '{0}' cannot convert to Clr type '{1}' unless the source value is a String or an XmlAtomicValue.</value>
+  </data>
+  <data name="XmlConvert_TypeNoPrefix" xml:space="preserve">
+    <value>The QName '{0}' cannot be represented as a String.  A prefix for namespace '{1}' cannot be found.</value>
+  </data>
+  <data name="XmlConvert_TypeNoNamespace" xml:space="preserve">
+    <value>The String '{0}' cannot be represented as an XmlQualifiedName.  A namespace for prefix '{1}' cannot be found.</value>
+  </data>
+  <data name="XmlConvert_NotOneCharString" xml:space="preserve">
+    <value>String must be exactly one character long.</value>
+  </data>
+  <data name="Sch_ParEntityRefNesting" xml:space="preserve">
+    <value>The parameter entity replacement text must nest properly within markup declarations.</value>
+  </data>
+  <data name="Sch_NotTokenString" xml:space="preserve">
+    <value>line-feed (#xA) or tab (#x9) characters, leading or trailing spaces and sequences of one or more spaces (#x20) are not allowed in 'xs:token'.</value>
+  </data>
+  <data name="Sch_InvalidDateTimeOption" xml:space="preserve">
+    <value>The '{0}' value for the 'dateTimeOption' parameter is not an allowed value for the 'XmlDateTimeSerializationMode' enumeration.</value>
+  </data>
+  <data name="Sch_StandAloneNormalization" xml:space="preserve">
+    <value>StandAlone is 'yes' and the value of the attribute '{0}' contains a definition in an external document that changes on normalization.</value>
+  </data>
+  <data name="Sch_UnSpecifiedDefaultAttributeInExternalStandalone" xml:space="preserve">
+    <value>Markup for unspecified default attribute '{0}' is external and standalone='yes'.</value>
+  </data>
+  <data name="Sch_DefaultException" xml:space="preserve">
+    <value>A schema error occurred.</value>
+  </data>
+  <data name="Sch_DupElementDecl" xml:space="preserve">
+    <value>The '{0}' element has already been declared.</value>
+  </data>
+  <data name="Sch_IdAttrDeclared" xml:space="preserve">
+    <value>The attribute of type ID is already declared on the '{0}' element.</value>
+  </data>
+  <data name="Sch_RootMatchDocType" xml:space="preserve">
+    <value>Root element name must match the DocType name.</value>
+  </data>
+  <data name="Sch_DupId" xml:space="preserve">
+    <value>'{0}' is already used as an ID.</value>
+  </data>
+  <data name="Sch_UndeclaredElement" xml:space="preserve">
+    <value>The '{0}' element is not declared.</value>
+  </data>
+  <data name="Sch_UndeclaredAttribute" xml:space="preserve">
+    <value>The '{0}' attribute is not declared.</value>
+  </data>
+  <data name="Sch_UndeclaredNotation" xml:space="preserve">
+    <value>The '{0}' notation is not declared.</value>
+  </data>
+  <data name="Sch_UndeclaredId" xml:space="preserve">
+    <value>Reference to undeclared ID is '{0}'.</value>
+  </data>
+  <data name="Sch_SchemaRootExpected" xml:space="preserve">
+    <value>Expected schema root. Make sure the root element is &lt;schema&gt; and the namespace is 'http://www.w3.org/2001/XMLSchema' for an XSD schema or 'urn:schemas-microsoft-com:xml-data' for an XDR schema.</value>
+  </data>
+  <data name="Sch_XSDSchemaRootExpected" xml:space="preserve">
+    <value>The root element of a W3C XML Schema should be &lt;schema&gt; and its namespace should be 'http://www.w3.org/2001/XMLSchema'.</value>
+  </data>
+  <data name="Sch_UnsupportedAttribute" xml:space="preserve">
+    <value>The '{0}' attribute is not supported in this context.</value>
+  </data>
+  <data name="Sch_UnsupportedElement" xml:space="preserve">
+    <value>The '{0}' element is not supported in this context.</value>
+  </data>
+  <data name="Sch_MissAttribute" xml:space="preserve">
+    <value>The '{0}' attribute is either invalid or missing.</value>
+  </data>
+  <data name="Sch_AnnotationLocation" xml:space="preserve">
+    <value>The 'annotation' element cannot appear at this location.</value>
+  </data>
+  <data name="Sch_DataTypeTextOnly" xml:space="preserve">
+    <value>Content must be "textOnly" when using DataType on an ElementType.</value>
+  </data>
+  <data name="Sch_UnknownModel" xml:space="preserve">
+    <value>The model attribute must have a value of open or closed, not '{0}'.</value>
+  </data>
+  <data name="Sch_UnknownOrder" xml:space="preserve">
+    <value>The order attribute must have a value of 'seq', 'one', or 'many', not '{0}'.</value>
+  </data>
+  <data name="Sch_UnknownContent" xml:space="preserve">
+    <value>The content attribute must have a value of 'textOnly', 'eltOnly', 'mixed', or 'empty', not '{0}'.</value>
+  </data>
+  <data name="Sch_UnknownRequired" xml:space="preserve">
+    <value>The required attribute must have a value of yes or no.</value>
+  </data>
+  <data name="Sch_UnknownDtType" xml:space="preserve">
+    <value>Reference to an unknown data type, '{0}'.</value>
+  </data>
+  <data name="Sch_MixedMany" xml:space="preserve">
+    <value>The order must be many when content is mixed.</value>
+  </data>
+  <data name="Sch_GroupDisabled" xml:space="preserve">
+    <value>The group is not allowed when ElementType has empty or textOnly content.</value>
+  </data>
+  <data name="Sch_MissDtvalue" xml:space="preserve">
+    <value>The DataType value cannot be empty.</value>
+  </data>
+  <data name="Sch_MissDtvaluesAttribute" xml:space="preserve">
+    <value>The dt:values attribute is missing.</value>
+  </data>
+  <data name="Sch_DupDtType" xml:space="preserve">
+    <value>Data type has already been declared.</value>
+  </data>
+  <data name="Sch_DupAttribute" xml:space="preserve">
+    <value>The '{0}' attribute has already been declared for this ElementType.</value>
+  </data>
+  <data name="Sch_RequireEnumeration" xml:space="preserve">
+    <value>Data type should be enumeration when the values attribute is present.</value>
+  </data>
+  <data name="Sch_DefaultIdValue" xml:space="preserve">
+    <value>An attribute or element of type xs:ID or derived from xs:ID, should not have a value constraint.</value>
+  </data>
+  <data name="Sch_ElementNotAllowed" xml:space="preserve">
+    <value>Element is not allowed when the content is empty or textOnly.</value>
+  </data>
+  <data name="Sch_ElementMissing" xml:space="preserve">
+    <value>There is a missing element.</value>
+  </data>
+  <data name="Sch_ManyMaxOccurs" xml:space="preserve">
+    <value>When the order is many, the maxOccurs attribute must have a value of '*'.</value>
+  </data>
+  <data name="Sch_MaxOccursInvalid" xml:space="preserve">
+    <value>The maxOccurs attribute must have a value of 1 or *.</value>
+  </data>
+  <data name="Sch_MinOccursInvalid" xml:space="preserve">
+    <value>The minOccurs attribute must have a value of 0 or 1.</value>
+  </data>
+  <data name="Sch_DtMaxLengthInvalid" xml:space="preserve">
+    <value>The value '{0}' is invalid for dt:maxLength.</value>
+  </data>
+  <data name="Sch_DtMinLengthInvalid" xml:space="preserve">
+    <value>The value '{0}' is invalid for dt:minLength.</value>
+  </data>
+  <data name="Sch_DupDtMaxLength" xml:space="preserve">
+    <value>The value of maxLength has already been declared.</value>
+  </data>
+  <data name="Sch_DupDtMinLength" xml:space="preserve">
+    <value>The value of minLength has already been declared.</value>
+  </data>
+  <data name="Sch_DtMinMaxLength" xml:space="preserve">
+    <value>The maxLength value must be equal to or greater than the minLength value.</value>
+  </data>
+  <data name="Sch_DupElement" xml:space="preserve">
+    <value>The '{0}' element already exists in the content model.</value>
+  </data>
+  <data name="Sch_DupGroupParticle" xml:space="preserve">
+    <value>The content model can only have one of the following; 'all', 'choice', or 'sequence'.</value>
+  </data>
+  <data name="Sch_InvalidValue" xml:space="preserve">
+    <value>The value '{0}' is invalid according to its data type.</value>
+  </data>
+  <data name="Sch_InvalidValueDetailed" xml:space="preserve">
+    <value>The value '{0}' is invalid according to its schema type '{1}' - {2}</value>
+  </data>
+  <data name="Sch_InvalidValueDetailedAttribute" xml:space="preserve">
+    <value>The attribute '{0}' has an invalid value '{1}' according to its schema type '{2}' - {3}</value>
+  </data>
+  <data name="Sch_MissRequiredAttribute" xml:space="preserve">
+    <value>The required attribute '{0}' is missing.</value>
+  </data>
+  <data name="Sch_FixedAttributeValue" xml:space="preserve">
+    <value>The value of the '{0}' attribute does not equal its fixed value.</value>
+  </data>
+  <data name="Sch_FixedElementValue" xml:space="preserve">
+    <value>The value of the '{0}' element does not equal its fixed value.</value>
+  </data>
+  <data name="Sch_AttributeValueDataTypeDetailed" xml:space="preserve">
+    <value>The '{0}' attribute is invalid - The value '{1}' is invalid according to its datatype '{2}' - {3}</value>
+  </data>
+  <data name="Sch_AttributeDefaultDataType" xml:space="preserve">
+    <value>The default value of '{0}' attribute is invalid according to its datatype.</value>
+  </data>
+  <data name="Sch_IncludeLocation" xml:space="preserve">
+    <value>The 'include' element cannot appear at this location.</value>
+  </data>
+  <data name="Sch_ImportLocation" xml:space="preserve">
+    <value>The 'import' element cannot appear at this location.</value>
+  </data>
+  <data name="Sch_RedefineLocation" xml:space="preserve">
+    <value>The 'redefine' element cannot appear at this location.</value>
+  </data>
+  <data name="Sch_InvalidBlockDefaultValue" xml:space="preserve">
+    <value>The values 'list' and 'union' are invalid for the blockDefault attribute.</value>
+  </data>
+  <data name="Sch_InvalidFinalDefaultValue" xml:space="preserve">
+    <value>The value 'substitution' is invalid for the finalDefault attribute.</value>
+  </data>
+  <data name="Sch_InvalidElementBlockValue" xml:space="preserve">
+    <value>The values 'list' and 'union' are invalid for the block attribute on element.</value>
+  </data>
+  <data name="Sch_InvalidElementFinalValue" xml:space="preserve">
+    <value>The values 'substitution', 'list', and 'union' are invalid for the final attribute on element.</value>
+  </data>
+  <data name="Sch_InvalidSimpleTypeFinalValue" xml:space="preserve">
+    <value>The values 'substitution' and 'extension' are invalid for the final attribute on simpleType.</value>
+  </data>
+  <data name="Sch_InvalidComplexTypeBlockValue" xml:space="preserve">
+    <value>The values 'substitution', 'list', and 'union' are invalid for the block attribute on complexType.</value>
+  </data>
+  <data name="Sch_InvalidComplexTypeFinalValue" xml:space="preserve">
+    <value>The values 'substitution', 'list', and 'union' are invalid for the final attribute on complexType.</value>
+  </data>
+  <data name="Sch_DupIdentityConstraint" xml:space="preserve">
+    <value>The identity constraint '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupGlobalElement" xml:space="preserve">
+    <value>The global element '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupGlobalAttribute" xml:space="preserve">
+    <value>The global attribute '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupSimpleType" xml:space="preserve">
+    <value>The simpleType '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupComplexType" xml:space="preserve">
+    <value>The complexType '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupGroup" xml:space="preserve">
+    <value>The group '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupAttributeGroup" xml:space="preserve">
+    <value>The attributeGroup '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DupNotation" xml:space="preserve">
+    <value>The notation '{0}' has already been declared.</value>
+  </data>
+  <data name="Sch_DefaultFixedAttributes" xml:space="preserve">
+    <value>The fixed and default attributes cannot both be present.</value>
+  </data>
+  <data name="Sch_FixedInRef" xml:space="preserve">
+    <value>The fixed value constraint on the '{0}' attribute reference must match the fixed value constraint on the declaration.</value>
+  </data>
+  <data name="Sch_FixedDefaultInRef" xml:space="preserve">
+    <value>The default value constraint cannot be present on the '{0}' attribute reference if the fixed value constraint is present on the declaration.</value>
+  </data>
+  <data name="Sch_DupXsdElement" xml:space="preserve">
+    <value>'{0}' is a duplicate XSD element.</value>
+  </data>
+  <data name="Sch_ForbiddenAttribute" xml:space="preserve">
+    <value>The '{0}' attribute cannot be present.</value>
+  </data>
+  <data name="Sch_AttributeIgnored" xml:space="preserve">
+    <value>The '{0}' attribute is ignored, because the value of 'prohibited' for attribute use only prevents inheritance of an identically named attribute from the base type definition.</value>
+  </data>
+  <data name="Sch_ElementRef" xml:space="preserve">
+    <value>When the ref attribute is present, the type attribute and complexType, simpleType, key, keyref, and unique elements cannot be present.</value>
+  </data>
+  <data name="Sch_TypeMutualExclusive" xml:space="preserve">
+    <value>The type attribute cannot be present with either simpleType or complexType.</value>
+  </data>
+  <data name="Sch_ElementNameRef" xml:space="preserve">
+    <value>For element declaration, either the name or the ref attribute must be present.</value>
+  </data>
+  <data name="Sch_AttributeNameRef" xml:space="preserve">
+    <value>For attribute '{0}', either the name or the ref attribute must be present, but not both.</value>
+  </data>
+  <data name="Sch_TextNotAllowed" xml:space="preserve">
+    <value>The following text is not allowed in this context: '{0}'.</value>
+  </data>
+  <data name="Sch_UndeclaredType" xml:space="preserve">
+    <value>Type '{0}' is not declared.</value>
+  </data>
+  <data name="Sch_UndeclaredSimpleType" xml:space="preserve">
+    <value>Type '{0}' is not declared, or is not a simple type.</value>
+  </data>
+  <data name="Sch_UndeclaredEquivClass" xml:space="preserve">
+    <value>Substitution group refers to '{0}', an undeclared element.</value>
+  </data>
+  <data name="Sch_AttListPresence" xml:space="preserve">
+    <value>An attribute of type ID must have a declared default of either #IMPLIED or #REQUIRED.</value>
+  </data>
+  <data name="Sch_NotationValue" xml:space="preserve">
+    <value>'{0}' is not in the notation list.</value>
+  </data>
+  <data name="Sch_EnumerationValue" xml:space="preserve">
+    <value>'{0}' is not in the enumeration list.</value>
+  </data>
+  <data name="Sch_EmptyAttributeValue" xml:space="preserve">
+    <value>The attribute value cannot be empty.</value>
+  </data>
+  <data name="Sch_InvalidLanguageId" xml:space="preserve">
+    <value>'{0}' is an invalid language identifier.</value>
+  </data>
+  <data name="Sch_XmlSpace" xml:space="preserve">
+    <value>Invalid xml:space syntax.</value>
+  </data>
+  <data name="Sch_InvalidXsdAttributeValue" xml:space="preserve">
+    <value>'{1}' is an invalid value for the '{0}' attribute.</value>
+  </data>
+  <data name="Sch_InvalidXsdAttributeDatatypeValue" xml:space="preserve">
+    <value>The value for the '{0}' attribute is invalid - {1}</value>
+  </data>
+  <data name="Sch_ElementValueDataTypeDetailed" xml:space="preserve">
+    <value>The '{0}' element is invalid - The value '{1}' is invalid according to its datatype '{2}' - {3}</value>
+  </data>
+  <data name="Sch_InvalidElementDefaultValue" xml:space="preserve">
+    <value>The default value '{0}' of element '{1}' is invalid according to the type specified by xsi:type.</value>
+  </data>
+  <data name="Sch_NonDeterministic" xml:space="preserve">
+    <value>Multiple definition of element '{0}' causes the content model to become ambiguous. A content model must be formed such that during validation of an element information item sequence, the particle contained directly, indirectly or implicitly therein with which to attempt to validate each item in the sequence in turn can be uniquely determined without examining the content or attributes of that item, and without any information about the items in the remainder of the sequence.</value>
+  </data>
+  <data name="Sch_NonDeterministicAnyEx" xml:space="preserve">
+    <value>Wildcard '{0}' allows element '{1}', and causes the content model to become ambiguous. A content model must be formed such that during validation of an element information item sequence, the particle contained directly, indirectly or implicitly therein with which to attempt to validate each item in the sequence in turn can be uniquely determined without examining the content or attributes of that item, and without any information about the items in the remainder of the sequence.</value>
+  </data>
+  <data name="Sch_NonDeterministicAnyAny" xml:space="preserve">
+    <value>Wildcards '{0}' and '{1}' have not empty intersection, and causes the content model to become ambiguous. A content model must be formed such that during validation of an element information item sequence, the particle contained directly, indirectly or implicitly therein with which to attempt to validate each item in the sequence in turn can be uniquely determined without examining the content or attributes of that item, and without any information about the items in the remainder of the sequence.</value>
+  </data>
+  <data name="Sch_StandAlone" xml:space="preserve">
+    <value>The standalone document declaration must have a value of 'no'.</value>
+  </data>
+  <data name="Sch_XmlNsAttribute" xml:space="preserve">
+    <value>The value 'xmlns' cannot be used as the name of an attribute declaration.</value>
+  </data>
+  <data name="Sch_AllElement" xml:space="preserve">
+    <value>Element '{0}' cannot appear more than once if content model type is "all".</value>
+  </data>
+  <data name="Sch_MismatchTargetNamespaceInclude" xml:space="preserve">
+    <value>The targetNamespace '{0}' of included/redefined schema should be the same as the targetNamespace '{1}' of the including schema.</value>
+  </data>
+  <data name="Sch_MismatchTargetNamespaceImport" xml:space="preserve">
+    <value>The namespace attribute '{0}' of an import should be the same value as the targetNamespace '{1}' of the imported schema.</value>
+  </data>
+  <data name="Sch_MismatchTargetNamespaceEx" xml:space="preserve">
+    <value>The targetNamespace parameter '{0}' should be the same value as the targetNamespace '{1}' of the schema.</value>
+  </data>
+  <data name="Sch_XsiTypeNotFound" xml:space="preserve">
+    <value>This is an invalid xsi:type '{0}'.</value>
+  </data>
+  <data name="Sch_XsiTypeAbstract" xml:space="preserve">
+    <value>The xsi:type '{0}' cannot be abstract.</value>
+  </data>
+  <data name="Sch_ListFromNonatomic" xml:space="preserve">
+    <value>A list data type must be derived from an atomic or union data type.</value>
+  </data>
+  <data name="Sch_UnionFromUnion" xml:space="preserve">
+    <value>It is an error if a union type has a member with variety union and this member cannot be substituted with its own members. This may be due to the fact that the union member is a restriction of a union with facets.</value>
+  </data>
+  <data name="Sch_DupLengthFacet" xml:space="preserve">
+    <value>This is a duplicate Length constraining facet.</value>
+  </data>
+  <data name="Sch_DupMinLengthFacet" xml:space="preserve">
+    <value>This is a duplicate MinLength constraining facet.</value>
+  </data>
+  <data name="Sch_DupMaxLengthFacet" xml:space="preserve">
+    <value>This is a duplicate MaxLength constraining facet.</value>
+  </data>
+  <data name="Sch_DupWhiteSpaceFacet" xml:space="preserve">
+    <value>This is a duplicate WhiteSpace constraining facet.</value>
+  </data>
+  <data name="Sch_DupMaxInclusiveFacet" xml:space="preserve">
+    <value>This is a duplicate MaxInclusive constraining facet.</value>
+  </data>
+  <data name="Sch_DupMaxExclusiveFacet" xml:space="preserve">
+    <value>This is a duplicate MaxExclusive constraining facet.</value>
+  </data>
+  <data name="Sch_DupMinInclusiveFacet" xml:space="preserve">
+    <value>This is a duplicate MinInclusive constraining facet.</value>
+  </data>
+  <data name="Sch_DupMinExclusiveFacet" xml:space="preserve">
+    <value>This is a duplicate MinExclusive constraining facet.</value>
+  </data>
+  <data name="Sch_DupTotalDigitsFacet" xml:space="preserve">
+    <value>This is a duplicate TotalDigits constraining facet.</value>
+  </data>
+  <data name="Sch_DupFractionDigitsFacet" xml:space="preserve">
+    <value>This is a duplicate FractionDigits constraining facet.</value>
+  </data>
+  <data name="Sch_LengthFacetProhibited" xml:space="preserve">
+    <value>The length constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MinLengthFacetProhibited" xml:space="preserve">
+    <value>The MinLength constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MaxLengthFacetProhibited" xml:space="preserve">
+    <value>The MaxLength constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_PatternFacetProhibited" xml:space="preserve">
+    <value>The Pattern constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_EnumerationFacetProhibited" xml:space="preserve">
+    <value>The Enumeration constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_WhiteSpaceFacetProhibited" xml:space="preserve">
+    <value>The WhiteSpace constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MaxInclusiveFacetProhibited" xml:space="preserve">
+    <value>The MaxInclusive constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MaxExclusiveFacetProhibited" xml:space="preserve">
+    <value>The MaxExclusive constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MinInclusiveFacetProhibited" xml:space="preserve">
+    <value>The MinInclusive constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_MinExclusiveFacetProhibited" xml:space="preserve">
+    <value>The MinExclusive constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_TotalDigitsFacetProhibited" xml:space="preserve">
+    <value>The TotalDigits constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_FractionDigitsFacetProhibited" xml:space="preserve">
+    <value>The FractionDigits constraining facet is prohibited for '{0}'.</value>
+  </data>
+  <data name="Sch_LengthFacetInvalid" xml:space="preserve">
+    <value>The Length constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MinLengthFacetInvalid" xml:space="preserve">
+    <value>The MinLength constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MaxLengthFacetInvalid" xml:space="preserve">
+    <value>The MaxLength constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MaxInclusiveFacetInvalid" xml:space="preserve">
+    <value>The MaxInclusive constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MaxExclusiveFacetInvalid" xml:space="preserve">
+    <value>The MaxExclusive constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MinInclusiveFacetInvalid" xml:space="preserve">
+    <value>The MinInclusive constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_MinExclusiveFacetInvalid" xml:space="preserve">
+    <value>The MinExclusive constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_TotalDigitsFacetInvalid" xml:space="preserve">
+    <value>The TotalDigits constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_FractionDigitsFacetInvalid" xml:space="preserve">
+    <value>The FractionDigits constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_PatternFacetInvalid" xml:space="preserve">
+    <value>The Pattern constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_EnumerationFacetInvalid" xml:space="preserve">
+    <value>The Enumeration constraining facet is invalid - {0}</value>
+  </data>
+  <data name="Sch_InvalidWhiteSpace" xml:space="preserve">
+    <value>The whitespace character, '{0}', is invalid.</value>
+  </data>
+  <data name="Sch_UnknownFacet" xml:space="preserve">
+    <value>This is an unknown facet.</value>
+  </data>
+  <data name="Sch_LengthAndMinMax" xml:space="preserve">
+    <value>It is an error for both length and minLength or maxLength to be present.</value>
+  </data>
+  <data name="Sch_MinLengthGtMaxLength" xml:space="preserve">
+    <value>MinLength is greater than MaxLength.</value>
+  </data>
+  <data name="Sch_FractionDigitsGtTotalDigits" xml:space="preserve">
+    <value>FractionDigits is greater than TotalDigits.</value>
+  </data>
+  <data name="Sch_LengthConstraintFailed" xml:space="preserve">
+    <value>The actual length is not equal to the specified length.</value>
+  </data>
+  <data name="Sch_MinLengthConstraintFailed" xml:space="preserve">
+    <value>The actual length is less than the MinLength value.</value>
+  </data>
+  <data name="Sch_MaxLengthConstraintFailed" xml:space="preserve">
+    <value>The actual length is greater than the MaxLength value.</value>
+  </data>
+  <data name="Sch_PatternConstraintFailed" xml:space="preserve">
+    <value>The Pattern constraint failed.</value>
+  </data>
+  <data name="Sch_EnumerationConstraintFailed" xml:space="preserve">
+    <value>The Enumeration constraint failed.</value>
+  </data>
+  <data name="Sch_MaxInclusiveConstraintFailed" xml:space="preserve">
+    <value>The MaxInclusive constraint failed.</value>
+  </data>
+  <data name="Sch_MaxExclusiveConstraintFailed" xml:space="preserve">
+    <value>The MaxExclusive constraint failed.</value>
+  </data>
+  <data name="Sch_MinInclusiveConstraintFailed" xml:space="preserve">
+    <value>The MinInclusive constraint failed.</value>
+  </data>
+  <data name="Sch_MinExclusiveConstraintFailed" xml:space="preserve">
+    <value>The MinExclusive constraint failed.</value>
+  </data>
+  <data name="Sch_TotalDigitsConstraintFailed" xml:space="preserve">
+    <value>The TotalDigits constraint failed.</value>
+  </data>
+  <data name="Sch_FractionDigitsConstraintFailed" xml:space="preserve">
+    <value>The FractionDigits constraint failed.</value>
+  </data>
+  <data name="Sch_UnionFailedEx" xml:space="preserve">
+    <value>The value '{0}' is not valid according to any of the memberTypes of the union.</value>
+  </data>
+  <data name="Sch_NotationRequired" xml:space="preserve">
+    <value>NOTATION cannot be used directly in a schema; only data types derived from NOTATION by specifying an enumeration value can be used in a schema. All enumeration facet values must match the name of a notation declared in the current schema.</value>
+  </data>
+  <data name="Sch_DupNotationAttribute" xml:space="preserve">
+    <value>No element type can have more than one NOTATION attribute specified.</value>
+  </data>
+  <data name="Sch_MissingPublicSystemAttribute" xml:space="preserve">
+    <value>NOTATION must have either the Public or System attribute present.</value>
+  </data>
+  <data name="Sch_NotationAttributeOnEmptyElement" xml:space="preserve">
+    <value>An attribute of type NOTATION must not be declared on an element declared EMPTY.</value>
+  </data>
+  <data name="Sch_RefNotInScope" xml:space="preserve">
+    <value>The Keyref '{0}' cannot find the referred key or unique in scope.</value>
+  </data>
+  <data name="Sch_UndeclaredIdentityConstraint" xml:space="preserve">
+    <value>The '{0}' identity constraint is not declared.</value>
+  </data>
+  <data name="Sch_RefInvalidIdentityConstraint" xml:space="preserve">
+    <value>Reference to an invalid identity constraint, '{0}'.</value>
+  </data>
+  <data name="Sch_RefInvalidCardin" xml:space="preserve">
+    <value>Keyref '{0}' has different cardinality as the referred key or unique element.</value>
+  </data>
+  <data name="Sch_ReftoKeyref" xml:space="preserve">
+    <value>The '{0}' Keyref can refer to key or unique only.</value>
+  </data>
+  <data name="Sch_EmptyXPath" xml:space="preserve">
+    <value>The XPath for selector or field cannot be empty.</value>
+  </data>
+  <data name="Sch_UnresolvedPrefix" xml:space="preserve">
+    <value>The prefix '{0}' in XPath cannot be resolved.</value>
+  </data>
+  <data name="Sch_UnresolvedKeyref" xml:space="preserve">
+    <value>The key sequence '{0}' in '{1}' Keyref fails to refer to some key.</value>
+  </data>
+  <data name="Sch_ICXpathError" xml:space="preserve">
+    <value>'{0}' is an invalid XPath for selector or field.</value>
+  </data>
+  <data name="Sch_SelectorAttr" xml:space="preserve">
+    <value>'{0}' is an invalid XPath for selector. Selector cannot have an XPath selection with an attribute node.</value>
+  </data>
+  <data name="Sch_FieldSimpleTypeExpected" xml:space="preserve">
+    <value>The field '{0}' is expecting an element or attribute with simple type or simple content.</value>
+  </data>
+  <data name="Sch_FieldSingleValueExpected" xml:space="preserve">
+    <value>The field '{0}' is expecting at the most one value.</value>
+  </data>
+  <data name="Sch_MissingKey" xml:space="preserve">
+    <value>The identity constraint '{0}' validation has failed. Either a key is missing or the existing key has an empty node.</value>
+  </data>
+  <data name="Sch_DuplicateKey" xml:space="preserve">
+    <value>There is a duplicate key sequence '{0}' for the '{1}' key or unique identity constraint.</value>
+  </data>
+  <data name="Sch_TargetNamespaceXsi" xml:space="preserve">
+    <value>The target namespace of an attribute declaration, whether local or global, must not match http://www.w3.org/2001/XMLSchema-instance.</value>
+  </data>
+  <data name="Sch_UndeclaredEntity" xml:space="preserve">
+    <value>Reference to an undeclared entity, '{0}'.</value>
+  </data>
+  <data name="Sch_UnparsedEntityRef" xml:space="preserve">
+    <value>Reference to an unparsed entity, '{0}'.</value>
+  </data>
+  <data name="Sch_MaxOccursInvalidXsd" xml:space="preserve">
+    <value>The value for the 'maxOccurs' attribute must be xsd:nonNegativeInteger or 'unbounded'.</value>
+  </data>
+  <data name="Sch_MinOccursInvalidXsd" xml:space="preserve">
+    <value>The value for the 'minOccurs' attribute must be xsd:nonNegativeInteger.</value>
+  </data>
+  <data name="Sch_MaxInclusiveExclusive" xml:space="preserve">
+    <value>'maxInclusive' and 'maxExclusive' cannot both be specified for the same data type.</value>
+  </data>
+  <data name="Sch_MinInclusiveExclusive" xml:space="preserve">
+    <value>'minInclusive' and 'minExclusive' cannot both be specified for the same data type.</value>
+  </data>
+  <data name="Sch_MinInclusiveGtMaxInclusive" xml:space="preserve">
+    <value>The value specified for 'minInclusive' cannot be greater than the value specified for 'maxInclusive' for the same data type.</value>
+  </data>
+  <data name="Sch_MinExclusiveGtMaxExclusive" xml:space="preserve">
+    <value>The value specified for 'minExclusive' cannot be greater than the value specified for 'maxExclusive' for the same data type.</value>
+  </data>
+  <data name="Sch_MinInclusiveGtMaxExclusive" xml:space="preserve">
+    <value>The value specified for 'minInclusive' cannot be greater than the value specified for 'maxExclusive' for the same data type.</value>
+  </data>
+  <data name="Sch_MinExclusiveGtMaxInclusive" xml:space="preserve">
+    <value>The value specified for 'minExclusive' cannot be greater than the value specified for 'maxInclusive' for the same data type.</value>
+  </data>
+  <data name="Sch_SimpleTypeRestriction" xml:space="preserve">
+    <value>'simpleType' should be the first child of restriction.</value>
+  </data>
+  <data name="Sch_InvalidFacetPosition" xml:space="preserve">
+    <value>Facet should go before 'attribute', 'attributeGroup', or 'anyAttribute'.</value>
+  </data>
+  <data name="Sch_AttributeMutuallyExclusive" xml:space="preserve">
+    <value>'{0}' and content model are mutually exclusive.</value>
+  </data>
+  <data name="Sch_AnyAttributeLastChild" xml:space="preserve">
+    <value>'anyAttribute' must be the last child.</value>
+  </data>
+  <data name="Sch_ComplexTypeContentModel" xml:space="preserve">
+    <value>The content model of a complex type must consist of 'annotation' (if present); followed by zero or one of the following: 'simpleContent', 'complexContent', 'group', 'choice', 'sequence', or 'all'; followed by zero or more 'attribute' or 'attributeGroup'; followed by zero or one 'anyAttribute'.</value>
+  </data>
+  <data name="Sch_ComplexContentContentModel" xml:space="preserve">
+    <value>Complex content restriction or extension should consist of zero or one of 'group', 'choice', 'sequence', or 'all'; followed by zero or more 'attribute' or 'attributeGroup'; followed by zero or one 'anyAttribute'.</value>
+  </data>
+  <data name="Sch_NotNormalizedString" xml:space="preserve">
+    <value>Carriage return (#xD), line feed (#xA), and tab (#x9) characters are not allowed in xs:normalizedString.</value>
+  </data>
+  <data name="Sch_FractionDigitsNotOnDecimal" xml:space="preserve">
+    <value>FractionDigits should be equal to 0 on types other then decimal.</value>
+  </data>
+  <data name="Sch_ContentInNill" xml:space="preserve">
+    <value>Element '{0}' must have no character or element children.</value>
+  </data>
+  <data name="Sch_NoElementSchemaFound" xml:space="preserve">
+    <value>Could not find schema information for the element '{0}'.</value>
+  </data>
+  <data name="Sch_NoAttributeSchemaFound" xml:space="preserve">
+    <value>Could not find schema information for the attribute '{0}'.</value>
+  </data>
+  <data name="Sch_InvalidNamespace" xml:space="preserve">
+    <value>The Namespace '{0}' is an invalid URI.</value>
+  </data>
+  <data name="Sch_InvalidTargetNamespaceAttribute" xml:space="preserve">
+    <value>The targetNamespace attribute cannot have empty string as its value.</value>
+  </data>
+  <data name="Sch_InvalidNamespaceAttribute" xml:space="preserve">
+    <value>The namespace attribute cannot have empty string as its value.</value>
+  </data>
+  <data name="Sch_InvalidSchemaLocation" xml:space="preserve">
+    <value>The SchemaLocation '{0}' is an invalid URI.</value>
+  </data>
+  <data name="Sch_ImportTargetNamespace" xml:space="preserve">
+    <value>Namespace attribute of an import must not match the real value of the enclosing targetNamespace of the &lt;schema&gt;.</value>
+  </data>
+  <data name="Sch_ImportTargetNamespaceNull" xml:space="preserve">
+    <value>The enclosing &lt;schema&gt; must have a targetNamespace, if the Namespace attribute is absent on the import element.</value>
+  </data>
+  <data name="Sch_GroupDoubleRedefine" xml:space="preserve">
+    <value>Double redefine for group.</value>
+  </data>
+  <data name="Sch_ComponentRedefineNotFound" xml:space="preserve">
+    <value>Cannot find a {0} with name '{1}' to redefine.</value>
+  </data>
+  <data name="Sch_GroupRedefineNotFound" xml:space="preserve">
+    <value>No group to redefine.</value>
+  </data>
+  <data name="Sch_AttrGroupDoubleRedefine" xml:space="preserve">
+    <value>Double redefine for attribute group.</value>
+  </data>
+  <data name="Sch_AttrGroupRedefineNotFound" xml:space="preserve">
+    <value>No attribute group to redefine.</value>
+  </data>
+  <data name="Sch_ComplexTypeDoubleRedefine" xml:space="preserve">
+    <value>Double redefine for complex type.</value>
+  </data>
+  <data name="Sch_ComplexTypeRedefineNotFound" xml:space="preserve">
+    <value>No complex type to redefine.</value>
+  </data>
+  <data name="Sch_SimpleToComplexTypeRedefine" xml:space="preserve">
+    <value>Cannot redefine a simple type as complex type.</value>
+  </data>
+  <data name="Sch_SimpleTypeDoubleRedefine" xml:space="preserve">
+    <value>Double redefine for simple type.</value>
+  </data>
+  <data name="Sch_ComplexToSimpleTypeRedefine" xml:space="preserve">
+    <value>Cannot redefine a complex type as simple type.</value>
+  </data>
+  <data name="Sch_SimpleTypeRedefineNotFound" xml:space="preserve">
+    <value>No simple type to redefine.</value>
+  </data>
+  <data name="Sch_MinMaxGroupRedefine" xml:space="preserve">
+    <value>When group is redefined, the real value of both minOccurs and maxOccurs attribute must be 1 (or absent).</value>
+  </data>
+  <data name="Sch_MultipleGroupSelfRef" xml:space="preserve">
+    <value>Multiple self-reference within a group is redefined.</value>
+  </data>
+  <data name="Sch_MultipleAttrGroupSelfRef" xml:space="preserve">
+    <value>Multiple self-reference within an attribute group is redefined.</value>
+  </data>
+  <data name="Sch_InvalidTypeRedefine" xml:space="preserve">
+    <value>If type is being redefined, the base type has to be self-referenced.</value>
+  </data>
+  <data name="Sch_InvalidElementRef" xml:space="preserve">
+    <value>If ref is present, all of &lt;complexType&gt;, &lt;simpleType&gt;, &lt;key&gt;, &lt;keyref&gt;, &lt;unique&gt;, nillable, default, fixed, form, block, and type must be absent.</value>
+  </data>
+  <data name="Sch_MinGtMax" xml:space="preserve">
+    <value>minOccurs value cannot be greater than maxOccurs value.</value>
+  </data>
+  <data name="Sch_DupSelector" xml:space="preserve">
+    <value>Selector cannot appear twice in one identity constraint.</value>
+  </data>
+  <data name="Sch_IdConstraintNoSelector" xml:space="preserve">
+    <value>Selector must be present.</value>
+  </data>
+  <data name="Sch_IdConstraintNoFields" xml:space="preserve">
+    <value>At least one field must be present.</value>
+  </data>
+  <data name="Sch_IdConstraintNoRefer" xml:space="preserve">
+    <value>The referring attribute must be present.</value>
+  </data>
+  <data name="Sch_SelectorBeforeFields" xml:space="preserve">
+    <value>Cannot define fields before selector.</value>
+  </data>
+  <data name="Sch_NoSimpleTypeContent" xml:space="preserve">
+    <value>SimpleType content is missing.</value>
+  </data>
+  <data name="Sch_SimpleTypeRestRefBase" xml:space="preserve">
+    <value>SimpleType restriction should have either the base attribute or a simpleType child, but not both.</value>
+  </data>
+  <data name="Sch_SimpleTypeRestRefBaseNone" xml:space="preserve">
+    <value>SimpleType restriction should have either the base attribute or a simpleType child to indicate the base type for the derivation.</value>
+  </data>
+  <data name="Sch_SimpleTypeListRefBase" xml:space="preserve">
+    <value>SimpleType list should have either the itemType attribute or a simpleType child, but not both.</value>
+  </data>
+  <data name="Sch_SimpleTypeListRefBaseNone" xml:space="preserve">
+    <value>SimpleType list should have either the itemType attribute or a simpleType child to indicate the itemType of the list. </value>
+  </data>
+  <data name="Sch_SimpleTypeUnionNoBase" xml:space="preserve">
+    <value>Either the memberTypes attribute must be non-empty or there must be at least one simpleType child.</value>
+  </data>
+  <data name="Sch_NoRestOrExtQName" xml:space="preserve">
+    <value>'restriction' or 'extension' child is required for complexType '{0}' in namespace '{1}', because it has a simpleContent or complexContent child.</value>
+  </data>
+  <data name="Sch_NoRestOrExt" xml:space="preserve">
+    <value>'restriction' or 'extension' child is required for complexType with simpleContent or complexContent child.</value>
+  </data>
+  <data name="Sch_NoGroupParticle" xml:space="preserve">
+    <value>'sequence', 'choice', or 'all' child is required.</value>
+  </data>
+  <data name="Sch_InvalidAllMin" xml:space="preserve">
+    <value>'all' must have 'minOccurs' value of 0 or 1.</value>
+  </data>
+  <data name="Sch_InvalidAllMax" xml:space="preserve">
+    <value>'all' must have {max occurs}=1.</value>
+  </data>
+  <data name="Sch_InvalidFacet" xml:space="preserve">
+    <value>The 'value' attribute must be present in facet.</value>
+  </data>
+  <data name="Sch_AbstractElement" xml:space="preserve">
+    <value>The element '{0}' is abstract or its type is abstract.</value>
+  </data>
+  <data name="Sch_XsiTypeBlockedEx" xml:space="preserve">
+    <value>The xsi:type attribute value '{0}' is not valid for the element '{1}', either because it is not a type validly derived from the type in the schema, or because it has xsi:type derivation blocked.</value>
+  </data>
+  <data name="Sch_InvalidXsiNill" xml:space="preserve">
+    <value>If the 'nillable' attribute is false in the schema, the 'xsi:nil' attribute must not be present in the instance.</value>
+  </data>
+  <data name="Sch_SubstitutionNotAllowed" xml:space="preserve">
+    <value>Element '{0}' cannot substitute in place of head element '{1}' because it has block='substitution'.</value>
+  </data>
+  <data name="Sch_SubstitutionBlocked" xml:space="preserve">
+    <value>Member element {0}'s type cannot be derived by restriction or extension from head element {1}'s type, because it has block='restriction' or 'extension'.</value>
+  </data>
+  <data name="Sch_InvalidElementInEmptyEx" xml:space="preserve">
+    <value>The element '{0}' cannot contain child element '{1}' because the parent element's content model is empty.</value>
+  </data>
+  <data name="Sch_InvalidElementInTextOnlyEx" xml:space="preserve">
+    <value>The element '{0}' cannot contain child element '{1}' because the parent element's content model is text only.</value>
+  </data>
+  <data name="Sch_InvalidTextInElement" xml:space="preserve">
+    <value>The element {0} cannot contain text.</value>
+  </data>
+  <data name="Sch_InvalidElementContent" xml:space="preserve">
+    <value>The element {0} has invalid child element {1}.</value>
+  </data>
+  <data name="Sch_InvalidElementContentComplex" xml:space="preserve">
+    <value>The element {0} has invalid child element {1} - {2}</value>
+  </data>
+  <data name="Sch_IncompleteContent" xml:space="preserve">
+    <value>The element {0} has incomplete content.</value>
+  </data>
+  <data name="Sch_IncompleteContentComplex" xml:space="preserve">
+    <value>The element {0} has incomplete content - {2}</value>
+  </data>
+  <data name="Sch_InvalidTextInElementExpecting" xml:space="preserve">
+    <value>The element {0} cannot contain text. List of possible elements expected: {1}.</value>
+  </data>
+  <data name="Sch_InvalidElementContentExpecting" xml:space="preserve">
+    <value>The element {0} has invalid child element {1}. List of possible elements expected: {2}.</value>
+  </data>
+  <data name="Sch_InvalidElementContentExpectingComplex" xml:space="preserve">
+    <value>The element {0} has invalid child element {1}. List of possible elements expected: {2}. {3}</value>
+  </data>
+  <data name="Sch_IncompleteContentExpecting" xml:space="preserve">
+    <value>The element {0} has incomplete content. List of possible elements expected: {1}.</value>
+  </data>
+  <data name="Sch_IncompleteContentExpectingComplex" xml:space="preserve">
+    <value>The element {0} has incomplete content. List of possible elements expected: {1}. {2}</value>
+  </data>
+  <data name="Sch_InvalidElementSubstitution" xml:space="preserve">
+    <value>The element {0} cannot substitute for a local element {1} expected in that position.</value>
+  </data>
+  <data name="Sch_ElementNameAndNamespace" xml:space="preserve">
+    <value>'{0}' in namespace '{1}'</value>
+  </data>
+  <data name="Sch_ElementName" xml:space="preserve">
+    <value>'{0}'</value>
+  </data>
+  <data name="Sch_ContinuationString" xml:space="preserve">
+    <value>{0}as well as </value>
+  </data>
+  <data name="Sch_AnyElementNS" xml:space="preserve">
+    <value>any element in namespace '{0}'</value>
+  </data>
+  <data name="Sch_AnyElement" xml:space="preserve">
+    <value>any element</value>
+  </data>
+  <data name="Sch_InvalidTextInEmpty" xml:space="preserve">
+    <value>The element cannot contain text. Content model is empty.</value>
+  </data>
+  <data name="Sch_InvalidWhitespaceInEmpty" xml:space="preserve">
+    <value>The element cannot contain whitespace. Content model is empty.</value>
+  </data>
+  <data name="Sch_InvalidPIComment" xml:space="preserve">
+    <value>The element cannot contain comment or processing instruction. Content model is empty.</value>
+  </data>
+  <data name="Sch_InvalidAttributeRef" xml:space="preserve">
+    <value>If ref is present, all of 'simpleType', 'form', 'type', and 'use' must be absent.</value>
+  </data>
+  <data name="Sch_OptionalDefaultAttribute" xml:space="preserve">
+    <value>The 'use' attribute must be optional (or absent) if the default attribute is present.</value>
+  </data>
+  <data name="Sch_AttributeCircularRef" xml:space="preserve">
+    <value>Circular attribute reference.</value>
+  </data>
+  <data name="Sch_IdentityConstraintCircularRef" xml:space="preserve">
+    <value>Circular identity constraint reference.</value>
+  </data>
+  <data name="Sch_SubstitutionCircularRef" xml:space="preserve">
+    <value>Circular substitution group affiliation.</value>
+  </data>
+  <data name="Sch_InvalidAnyAttribute" xml:space="preserve">
+    <value>Invalid namespace in 'anyAttribute'.</value>
+  </data>
+  <data name="Sch_DupIdAttribute" xml:space="preserve">
+    <value>Duplicate ID attribute.</value>
+  </data>
+  <data name="Sch_InvalidAllElementMax" xml:space="preserve">
+    <value>The {max occurs} of all the particles in the {particles} of an all group must be 0 or 1.</value>
+  </data>
+  <data name="Sch_InvalidAny" xml:space="preserve">
+    <value>Invalid namespace in 'any'.</value>
+  </data>
+  <data name="Sch_InvalidAnyDetailed" xml:space="preserve">
+    <value>The value of the namespace attribute of the element or attribute wildcard is invalid - {0}</value>
+  </data>
+  <data name="Sch_InvalidExamplar" xml:space="preserve">
+    <value>Cannot be nominated as the {substitution group affiliation} of any other declaration.</value>
+  </data>
+  <data name="Sch_NoExamplar" xml:space="preserve">
+    <value>Reference to undeclared substitution group affiliation.</value>
+  </data>
+  <data name="Sch_InvalidSubstitutionMember" xml:space="preserve">
+    <value>'{0}' cannot be a member of substitution group with head element '{1}'.</value>
+  </data>
+  <data name="Sch_RedefineNoSchema" xml:space="preserve">
+    <value>'SchemaLocation' must successfully resolve if &lt;redefine&gt; contains any child other than &lt;annotation&gt;.</value>
+  </data>
+  <data name="Sch_ProhibitedAttribute" xml:space="preserve">
+    <value>The '{0}' attribute is not allowed.</value>
+  </data>
+  <data name="Sch_TypeCircularRef" xml:space="preserve">
+    <value>Circular type reference.</value>
+  </data>
+  <data name="Sch_TwoIdAttrUses" xml:space="preserve">
+    <value>Two distinct members of the attribute uses must not have type definitions which are both xs:ID or are derived from xs:ID.</value>
+  </data>
+  <data name="Sch_AttrUseAndWildId" xml:space="preserve">
+    <value>It is an error if there is a member of the attribute uses of a type definition with type xs:ID or derived from xs:ID and another attribute with type xs:ID matches an attribute wildcard.</value>
+  </data>
+  <data name="Sch_MoreThanOneWildId" xml:space="preserve">
+    <value>It is an error if more than one attribute whose type is xs:ID or is derived from xs:ID, matches an attribute wildcard on an element.</value>
+  </data>
+  <data name="Sch_BaseFinalExtension" xml:space="preserve">
+    <value>The base type is the final extension.</value>
+  </data>
+  <data name="Sch_NotSimpleContent" xml:space="preserve">
+    <value>The content type of the base type must be a simple type definition or it must be mixed, and simpleType child must be present.</value>
+  </data>
+  <data name="Sch_NotComplexContent" xml:space="preserve">
+    <value>The content type of the base type must not be a simple type definition.</value>
+  </data>
+  <data name="Sch_BaseFinalRestriction" xml:space="preserve">
+    <value>The base type is final restriction.</value>
+  </data>
+  <data name="Sch_BaseFinalList" xml:space="preserve">
+    <value>The base type is the final list.</value>
+  </data>
+  <data name="Sch_BaseFinalUnion" xml:space="preserve">
+    <value>The base type is the final union.</value>
+  </data>
+  <data name="Sch_UndefBaseRestriction" xml:space="preserve">
+    <value>Undefined complexType '{0}' is used as a base for complex type restriction.</value>
+  </data>
+  <data name="Sch_UndefBaseExtension" xml:space="preserve">
+    <value>Undefined complexType '{0}' is used as a base for complex type extension.</value>
+  </data>
+  <data name="Sch_DifContentType" xml:space="preserve">
+    <value>The derived type and the base type must have the same content type.</value>
+  </data>
+  <data name="Sch_InvalidContentRestriction" xml:space="preserve">
+    <value>Invalid content type derivation by restriction.</value>
+  </data>
+  <data name="Sch_InvalidContentRestrictionDetailed" xml:space="preserve">
+    <value>Invalid content type derivation by restriction. {0}</value>
+  </data>
+  <data name="Sch_InvalidBaseToEmpty" xml:space="preserve">
+    <value>If the derived content type is Empty, then the base content type should also be Empty or Mixed with Emptiable particle according to rule 5.3 of Schema Component Constraint: Derivation Valid (Restriction, Complex).</value>
+  </data>
+  <data name="Sch_InvalidBaseToMixed" xml:space="preserve">
+    <value>If the derived content type is Mixed, then the base content type should also be Mixed according to rule 5.4 of Schema Component Constraint: Derivation Valid (Restriction, Complex).</value>
+  </data>
+  <data name="Sch_DupAttributeUse" xml:space="preserve">
+    <value>The attribute '{0}' already exists.</value>
+  </data>
+  <data name="Sch_InvalidParticleRestriction" xml:space="preserve">
+    <value>Invalid particle derivation by restriction.</value>
+  </data>
+  <data name="Sch_InvalidParticleRestrictionDetailed" xml:space="preserve">
+    <value>Invalid particle derivation by restriction - '{0}'.</value>
+  </data>
+  <data name="Sch_ForbiddenDerivedParticleForAll" xml:space="preserve">
+    <value>'Choice' or 'any' is forbidden as derived particle when the base particle is 'all'.</value>
+  </data>
+  <data name="Sch_ForbiddenDerivedParticleForElem" xml:space="preserve">
+    <value>Only 'element' is valid as derived particle when the base particle is 'element'.</value>
+  </data>
+  <data name="Sch_ForbiddenDerivedParticleForChoice" xml:space="preserve">
+    <value>'All' or 'any' is forbidden as derived particle when the base particle is 'choice'.</value>
+  </data>
+  <data name="Sch_ForbiddenDerivedParticleForSeq" xml:space="preserve">
+    <value>'All', 'any', and 'choice' are forbidden as derived particles when the base particle is 'sequence'.</value>
+  </data>
+  <data name="Sch_ElementFromElement" xml:space="preserve">
+    <value>Derived element '{0}' is not a valid restriction of base element '{1}' according to Elt:Elt -- NameAndTypeOK.</value>
+  </data>
+  <data name="Sch_ElementFromAnyRule1" xml:space="preserve">
+    <value>The namespace of element '{0}'is not valid with respect to the wildcard's namespace constraint in the base, Elt:Any -- NSCompat Rule 1.</value>
+  </data>
+  <data name="Sch_ElementFromAnyRule2" xml:space="preserve">
+    <value>The occurrence range of element '{0}'is not a valid restriction of the wildcard's occurrence range in the base, Elt:Any -- NSCompat Rule2.</value>
+  </data>
+  <data name="Sch_AnyFromAnyRule1" xml:space="preserve">
+    <value>The derived wildcard's occurrence range is not a valid restriction of the base wildcard's occurrence range, Any:Any -- NSSubset Rule 1.</value>
+  </data>
+  <data name="Sch_AnyFromAnyRule2" xml:space="preserve">
+    <value>The derived wildcard's namespace constraint must be an intensional subset of the base wildcard's namespace constraint, Any:Any -- NSSubset Rule2.</value>
+  </data>
+  <data name="Sch_AnyFromAnyRule3" xml:space="preserve">
+    <value>The derived wildcard's 'processContents' must be identical to or stronger than the base wildcard's 'processContents', where 'strict' is stronger than 'lax' and 'lax' is stronger than 'skip', Any:Any -- NSSubset Rule 3.</value>
+  </data>
+  <data name="Sch_GroupBaseFromAny1" xml:space="preserve">
+    <value>Every member of the derived group particle must be a valid restriction of the base wildcard, NSRecurseCheckCardinality Rule 1.</value>
+  </data>
+  <data name="Sch_GroupBaseFromAny2" xml:space="preserve">
+    <value>The derived particle's occurrence range at ({0}, {1}) is not a valid restriction of the base wildcard's occurrence range at ({2}, {3}), NSRecurseCheckCardinality Rule 2.</value>
+  </data>
+  <data name="Sch_ElementFromGroupBase1" xml:space="preserve">
+    <value>The derived element {0} at ({1}, {2}) is not a valid restriction of the base sequence particle at ({3}, {4}) according to Elt:All/Choice/Sequence -- RecurseAsIfGroup.</value>
+  </data>
+  <data name="Sch_ElementFromGroupBase2" xml:space="preserve">
+    <value>The derived element {0} at ({1}, {2}) is not a valid restriction of the base choice particle at ({3}, {4}) according to Elt:All/Choice/Sequence -- RecurseAsIfGroup.</value>
+  </data>
+  <data name="Sch_ElementFromGroupBase3" xml:space="preserve">
+    <value>The derived element {0} at ({1}, {2}) is not a valid restriction of the base all particle at ({3}, {4}) according to Elt:All/Choice/Sequence -- RecurseAsIfGroup.</value>
+  </data>
+  <data name="Sch_GroupBaseRestRangeInvalid" xml:space="preserve">
+    <value>The derived particle's range is not a valid restriction of the base particle's range according to All:All,Sequence:Sequence -- Recurse Rule 1 or Choice:Choice -- RecurseLax.</value>
+  </data>
+  <data name="Sch_GroupBaseRestNoMap" xml:space="preserve">
+    <value>The derived particle cannot have more members than the base particle - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
+  </data>
+  <data name="Sch_GroupBaseRestNotEmptiable" xml:space="preserve">
+    <value>All particles in the {particles} of the base particle which are not mapped to by any particle in the {particles} of the derived particle should be emptiable - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
+  </data>
+  <data name="Sch_SeqFromAll" xml:space="preserve">
+    <value>The derived sequence particle at ({0}, {1}) is not a valid restriction of the base all particle at ({2}, {3}) according to Sequence:All -- RecurseUnordered.</value>
+  </data>
+  <data name="Sch_SeqFromChoice" xml:space="preserve">
+    <value>The derived sequence particle at ({0}, {1}) is not a valid restriction of the base choice particle at ({2}, {3}) according to Sequence:Choice -- MapAndSum.</value>
+  </data>
+  <data name="Sch_UndefGroupRef" xml:space="preserve">
+    <value>Reference to undeclared model group '{0}'.</value>
+  </data>
+  <data name="Sch_GroupCircularRef" xml:space="preserve">
+    <value>Circular group reference.</value>
+  </data>
+  <data name="Sch_AllRefNotRoot" xml:space="preserve">
+    <value>The group ref to 'all' is not the root particle, or it is being used as an extension.</value>
+  </data>
+  <data name="Sch_AllRefMinMax" xml:space="preserve">
+    <value>The group ref to 'all' must have {min occurs}= 0 or 1 and {max occurs}=1.</value>
+  </data>
+  <data name="Sch_NotAllAlone" xml:space="preserve">
+    <value>'all' is not the only particle in a group, or is being used as an extension.</value>
+  </data>
+  <data name="Sch_AttributeGroupCircularRef" xml:space="preserve">
+    <value>Circular attribute group reference.</value>
+  </data>
+  <data name="Sch_UndefAttributeGroupRef" xml:space="preserve">
+    <value>Reference to undeclared attribute group '{0}'.</value>
+  </data>
+  <data name="Sch_InvalidAttributeExtension" xml:space="preserve">
+    <value>Invalid attribute extension.</value>
+  </data>
+  <data name="Sch_InvalidAnyAttributeRestriction" xml:space="preserve">
+    <value>The base any attribute must be a superset of the derived 'anyAttribute'.</value>
+  </data>
+  <data name="Sch_AttributeRestrictionProhibited" xml:space="preserve">
+    <value>Invalid attribute restriction. Attribute restriction is prohibited in base type.</value>
+  </data>
+  <data name="Sch_AttributeRestrictionInvalid" xml:space="preserve">
+    <value>Invalid attribute restriction. Derived attribute's type is not a valid restriction of the base attribute's type.</value>
+  </data>
+  <data name="Sch_AttributeFixedInvalid" xml:space="preserve">
+    <value>Invalid attribute restriction. Derived attribute's fixed value must be the same as the base attribute's fixed value. </value>
+  </data>
+  <data name="Sch_AttributeUseInvalid" xml:space="preserve">
+    <value>Derived attribute's use has to be required if base attribute's use is required.</value>
+  </data>
+  <data name="Sch_AttributeRestrictionInvalidFromWildcard" xml:space="preserve">
+    <value>The {base type definition} must have an {attribute wildcard} and the {target namespace} of the R's {attribute declaration} must be valid with respect to that wildcard.</value>
+  </data>
+  <data name="Sch_NoDerivedAttribute" xml:space="preserve">
+    <value>The base attribute '{0}' whose use = 'required' does not have a corresponding derived attribute while redefining attribute group '{1}'.</value>
+  </data>
+  <data name="Sch_UnexpressibleAnyAttribute" xml:space="preserve">
+    <value>The 'anyAttribute' is not expressible.</value>
+  </data>
+  <data name="Sch_RefInvalidAttribute" xml:space="preserve">
+    <value>Reference to invalid attribute '{0}'.</value>
+  </data>
+  <data name="Sch_ElementCircularRef" xml:space="preserve">
+    <value>Circular element reference.</value>
+  </data>
+  <data name="Sch_RefInvalidElement" xml:space="preserve">
+    <value>Reference to invalid element '{0}'.</value>
+  </data>
+  <data name="Sch_ElementCannotHaveValue" xml:space="preserve">
+    <value>Element's type does not allow fixed or default value constraint.</value>
+  </data>
+  <data name="Sch_ElementInMixedWithFixed" xml:space="preserve">
+    <value>Although the '{0}' element's content type is mixed, it cannot have element children, because it has a fixed value constraint in the schema.</value>
+  </data>
+  <data name="Sch_ElementTypeCollision" xml:space="preserve">
+    <value>Elements with the same name and in the same scope must have the same type.</value>
+  </data>
+  <data name="Sch_InvalidIncludeLocation" xml:space="preserve">
+    <value>Cannot resolve the 'schemaLocation' attribute.</value>
+  </data>
+  <data name="Sch_CannotLoadSchema" xml:space="preserve">
+    <value>Cannot load the schema for the namespace '{0}' - {1}</value>
+  </data>
+  <data name="Sch_CannotLoadSchemaLocation" xml:space="preserve">
+    <value>Cannot load the schema from the location '{0}' - {1}</value>
+  </data>
+  <data name="Sch_LengthGtBaseLength" xml:space="preserve">
+    <value>It is an error if 'length' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'length'.</value>
+  </data>
+  <data name="Sch_MinLengthGtBaseMinLength" xml:space="preserve">
+    <value>It is an error if 'minLength' is among the members of {facets} of {base type definition} and {value} is less than the {value} of the parent 'minLength'.</value>
+  </data>
+  <data name="Sch_MaxLengthGtBaseMaxLength" xml:space="preserve">
+    <value>It is an error if 'maxLength' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'maxLength'.</value>
+  </data>
+  <data name="Sch_MaxMinLengthBaseLength" xml:space="preserve">
+    <value>It is an error for both 'length' and either 'minLength' or 'maxLength' to be members of {facets}, unless they are specified in different derivation steps. In which case the following must be true: the {value} of 'minLength' &lt;= the {value} of 'length' &lt;= the {value} of 'maxLength'.</value>
+  </data>
+  <data name="Sch_MaxInclusiveMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'maxInclusive' facet value is greater than the parent 'maxInclusive' facet value.</value>
+  </data>
+  <data name="Sch_MaxExclusiveMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'maxExclusive' facet value is greater than the parent 'maxExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinInclusiveMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minInclusive' facet value is less than the parent 'minInclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinExclusiveMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minExclusive' facet value is less than the parent 'minExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinExlIncMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minExclusive' facet value is less than or equal to the parent 'minInclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinExlMaxExlMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minExclusive' facet value is greater than or equal to the parent 'maxExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinIncMaxExlMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minInclusive' facet value is greater than or equal to the parent 'maxExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MinIncExlMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'minInclusive' facet value is less than or equal to the parent 'minExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MaxIncExlMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'maxInclusive' facet value is greater than or equal to the parent 'maxExclusive' facet value.</value>
+  </data>
+  <data name="Sch_MaxExlIncMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'maxExclusive' facet value is greater than or equal to the parent 'maxInclusive' facet value.</value>
+  </data>
+  <data name="Sch_TotalDigitsMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'totalDigits' facet value is greater than the parent 'totalDigits' facet value.</value>
+  </data>
+  <data name="Sch_FacetBaseFixed" xml:space="preserve">
+    <value>Values that are declared as {fixed} in a base type can not be changed in a derived type.</value>
+  </data>
+  <data name="Sch_WhiteSpaceRestriction1" xml:space="preserve">
+    <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'replace' or 'preserve', and the {value} of the parent 'whiteSpace' is 'collapse'.</value>
+  </data>
+  <data name="Sch_WhiteSpaceRestriction2" xml:space="preserve">
+    <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'preserve', and the {value} of the parent 'whiteSpace' is 'replace'.</value>
+  </data>
+  <data name="Sch_XsiNilAndFixed" xml:space="preserve">
+    <value>There must be no fixed value when an attribute is 'xsi:nil' and has a value of 'true'.</value>
+  </data>
+  <data name="Sch_MixSchemaTypes" xml:space="preserve">
+    <value>Different schema types cannot be mixed.</value>
+  </data>
+  <data name="Sch_XSDSchemaOnly" xml:space="preserve">
+    <value>'XmlSchemaSet' can load only W3C XML Schemas.</value>
+  </data>
+  <data name="Sch_InvalidPublicAttribute" xml:space="preserve">
+    <value>Public attribute '{0}' is an invalid URI.</value>
+  </data>
+  <data name="Sch_InvalidSystemAttribute" xml:space="preserve">
+    <value>System attribute '{0}' is an invalid URI.</value>
+  </data>
+  <data name="Sch_TypeAfterConstraints" xml:space="preserve">
+    <value>'simpleType' or 'complexType' cannot follow 'unique', 'key' or 'keyref'.</value>
+  </data>
+  <data name="Sch_XsiNilAndType" xml:space="preserve">
+    <value>There can be no type value when attribute is 'xsi:nil' and has value 'true'.</value>
+  </data>
+  <data name="Sch_DupSimpleTypeChild" xml:space="preserve">
+    <value>'simpleType' should have only one child 'union', 'list', or 'restriction'.</value>
+  </data>
+  <data name="Sch_InvalidIdAttribute" xml:space="preserve">
+    <value>Invalid 'id' attribute value: {0}</value>
+  </data>
+  <data name="Sch_InvalidNameAttributeEx" xml:space="preserve">
+    <value>Invalid 'name' attribute value '{0}': '{1}'.</value>
+  </data>
+  <data name="Sch_InvalidAttribute" xml:space="preserve">
+    <value>Invalid '{0}' attribute: '{1}'.</value>
+  </data>
+  <data name="Sch_EmptyChoice" xml:space="preserve">
+    <value>Empty choice cannot be satisfied if 'minOccurs' is not equal to 0.</value>
+  </data>
+  <data name="Sch_DerivedNotFromBase" xml:space="preserve">
+    <value>The data type of the simple content is not a valid restriction of the base complex type.</value>
+  </data>
+  <data name="Sch_NeedSimpleTypeChild" xml:space="preserve">
+    <value>Simple content restriction must have a simple type child if the content type of the base type is not a simple type definition.</value>
+  </data>
+  <data name="Sch_InvalidCollection" xml:space="preserve">
+    <value>The schema items collection cannot contain an object of type 'XmlSchemaInclude', 'XmlSchemaImport', or 'XmlSchemaRedefine'.</value>
+  </data>
+  <data name="Sch_UnrefNS" xml:space="preserve">
+    <value>Namespace '{0}' is not available to be referenced in this schema.</value>
+  </data>
+  <data name="Sch_InvalidSimpleTypeRestriction" xml:space="preserve">
+    <value>Restriction of 'anySimpleType' is not allowed.</value>
+  </data>
+  <data name="Sch_MultipleRedefine" xml:space="preserve">
+    <value>Multiple redefines of the same schema will be ignored.</value>
+  </data>
+  <data name="Sch_NullValue" xml:space="preserve">
+    <value>Value cannot be null.</value>
+  </data>
+  <data name="Sch_ComplexContentModel" xml:space="preserve">
+    <value>Content model validation resulted in a large number of states, possibly due to large occurrence ranges. Therefore, content model may not be validated accurately.</value>
+  </data>
+  <data name="Sch_SchemaNotPreprocessed" xml:space="preserve">
+    <value>All schemas in the set should be successfully preprocessed prior to compilation.</value>
+  </data>
+  <data name="Sch_SchemaNotRemoved" xml:space="preserve">
+    <value>The schema could not be removed because other schemas in the set have dependencies on this schema or its imports.</value>
+  </data>
+  <data name="Sch_ComponentAlreadySeenForNS" xml:space="preserve">
+    <value>An element or attribute information item has already been validated from the '{0}' namespace. It is an error if 'xsi:schemaLocation', 'xsi:noNamespaceSchemaLocation', or an inline schema occurs for that namespace.</value>
+  </data>
+  <data name="Sch_DefaultAttributeNotApplied" xml:space="preserve">
+    <value>Default attribute '{0}' for element '{1}' could not be applied as the attribute namespace is not mapped to a prefix in the instance document.</value>
+  </data>
+  <data name="Sch_NotXsiAttribute" xml:space="preserve">
+    <value>The attribute '{0}' does not match one of the four allowed attributes in the 'xsi' namespace.</value>
+  </data>
+  <data name="Sch_SchemaDoesNotExist" xml:space="preserve">
+    <value>Schema does not exist in the set.</value>
+  </data>
+  <data name="XmlDocument_ValidateInvalidNodeType" xml:space="preserve">
+    <value>Validate method can be called only on nodes of type Document, DocumentFragment, Element, or Attribute.</value>
+  </data>
+  <data name="XmlDocument_NodeNotFromDocument" xml:space="preserve">
+    <value>Cannot validate '{0}' because its owner document is not the current document. </value>
+  </data>
+  <data name="XmlDocument_NoNodeSchemaInfo" xml:space="preserve">
+    <value>Schema information could not be found for the node passed into Validate. The node may be invalid in its current position. Navigate to the ancestor that has schema information, then call Validate again.</value>
+  </data>
+  <data name="XmlDocument_NoSchemaInfo" xml:space="preserve">
+    <value>The XmlSchemaSet on the document is either null or has no schemas in it. Provide schema information before calling Validate.</value>
+  </data>
+  <data name="Sch_InvalidStartTransition" xml:space="preserve">
+    <value>It is invalid to call the '{0}' method in the current state of the validator. The '{1}' method must be called before proceeding with validation.</value>
+  </data>
+  <data name="Sch_InvalidStateTransition" xml:space="preserve">
+    <value>The transition from the '{0}' method to the '{1}' method is not allowed.</value>
+  </data>
+  <data name="Sch_InvalidEndValidation" xml:space="preserve">
+    <value>The 'EndValidation' method cannot not be called when all the elements have not been validated. 'ValidateEndElement' calls corresponding to 'ValidateElement' calls might be missing.</value>
+  </data>
+  <data name="Sch_InvalidEndElementCall" xml:space="preserve">
+    <value>It is invalid to call the 'ValidateEndElement' overload that takes in a 'typedValue' after 'ValidateText' or 'ValidateWhitespace' methods have been called.</value>
+  </data>
+  <data name="Sch_InvalidEndElementCallTyped" xml:space="preserve">
+    <value>It is invalid to call the 'ValidateEndElement' overload that takes in a 'typedValue' for elements with complex content.</value>
+  </data>
+  <data name="Sch_InvalidEndElementMultiple" xml:space="preserve">
+    <value>The call to the '{0}' method does not match a corresponding call to 'ValidateElement' method.</value>
+  </data>
+  <data name="Sch_DuplicateAttribute" xml:space="preserve">
+    <value>The '{0}' attribute has already been validated and is a duplicate attribute.</value>
+  </data>
+  <data name="Sch_InvalidPartialValidationType" xml:space="preserve">
+    <value>The partial validation type has to be 'XmlSchemaElement', 'XmlSchemaAttribute', or 'XmlSchemaType'.</value>
+  </data>
+  <data name="Sch_SchemaElementNameMismatch" xml:space="preserve">
+    <value>The element name '{0}' does not match the name '{1}' of the 'XmlSchemaElement' set as a partial validation type. </value>
+  </data>
+  <data name="Sch_SchemaAttributeNameMismatch" xml:space="preserve">
+    <value>The attribute name '{0}' does not match the name '{1}' of the 'XmlSchemaAttribute' set as a partial validation type. </value>
+  </data>
+  <data name="Sch_ValidateAttributeInvalidCall" xml:space="preserve">
+    <value>If the partial validation type is 'XmlSchemaElement' or 'XmlSchemaType', the 'ValidateAttribute' method cannot be called.</value>
+  </data>
+  <data name="Sch_ValidateElementInvalidCall" xml:space="preserve">
+    <value>If the partial validation type is 'XmlSchemaAttribute', the 'ValidateElement' method cannot be called.</value>
+  </data>
+  <data name="Sch_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext.</value>
+  </data>
+  <data name="Sch_EnumFinished" xml:space="preserve">
+    <value>Enumeration has already finished.</value>
+  </data>
+  <data name="SchInf_schema" xml:space="preserve">
+    <value>The supplied xml instance is a schema or contains an inline schema. This class cannot infer a schema for a schema.</value>
+  </data>
+  <data name="SchInf_entity" xml:space="preserve">
+    <value>Inference cannot handle entity references. Pass in an 'XmlReader' that expands entities.</value>
+  </data>
+  <data name="SchInf_simplecontent" xml:space="preserve">
+    <value>Expected simple content. Schema was not created using this tool.</value>
+  </data>
+  <data name="SchInf_extension" xml:space="preserve">
+    <value>Expected 'Extension' within 'SimpleContent'. Schema was not created using this tool.</value>
+  </data>
+  <data name="SchInf_particle" xml:space="preserve">
+    <value>Particle cannot exist along with 'ContentModel'.</value>
+  </data>
+  <data name="SchInf_ct" xml:space="preserve">
+    <value>Complex type expected to exist with at least one 'Element' at this point.</value>
+  </data>
+  <data name="SchInf_seq" xml:space="preserve">
+    <value>sequence expected to contain elements only. Schema was not created using this tool.</value>
+  </data>
+  <data name="SchInf_noseq" xml:space="preserve">
+    <value>The supplied schema contains particles other than Sequence and Choice. Only schemas generated by this tool are supported.</value>
+  </data>
+  <data name="SchInf_noct" xml:space="preserve">
+    <value>Expected ComplexType. Schema was not generated using this tool.</value>
+  </data>
+  <data name="SchInf_UnknownParticle" xml:space="preserve">
+    <value>Expected Element. Schema was not generated using this tool.</value>
+  </data>
+  <data name="SchInf_schematype" xml:space="preserve">
+    <value>Inference can only handle simple built-in types for 'SchemaType'.</value>
+  </data>
+  <data name="SchInf_NoElement" xml:space="preserve">
+    <value>There is no element to infer schema.</value>
+  </data>
+  <data name="Xp_UnclosedString" xml:space="preserve">
+    <value>This is an unclosed string.</value>
+  </data>
+  <data name="Xp_ExprExpected" xml:space="preserve">
+    <value>'{0}' is an invalid expression.</value>
+  </data>
+  <data name="Xp_InvalidArgumentType" xml:space="preserve">
+    <value>The argument to function '{0}' in '{1}' cannot be converted to a node-set.</value>
+  </data>
+  <data name="Xp_InvalidNumArgs" xml:space="preserve">
+    <value>Function '{0}' in '{1}' has an invalid number of arguments.</value>
+  </data>
+  <data name="Xp_InvalidName" xml:space="preserve">
+    <value>'{0}' has an invalid qualified name.</value>
+  </data>
+  <data name="Xp_InvalidToken" xml:space="preserve">
+    <value>'{0}' has an invalid token.</value>
+  </data>
+  <data name="Xp_NodeSetExpected" xml:space="preserve">
+    <value>Expression must evaluate to a node-set.</value>
+  </data>
+  <data name="Xp_NotSupported" xml:space="preserve">
+    <value>The XPath query '{0}' is not supported.</value>
+  </data>
+  <data name="Xp_InvalidPattern" xml:space="preserve">
+    <value>'{0}' is an invalid XSLT pattern.</value>
+  </data>
+  <data name="Xp_InvalidKeyPattern" xml:space="preserve">
+    <value>'{0}' is an invalid key pattern. It either contains a variable reference or 'key()' function.</value>
+  </data>
+  <data name="Xp_BadQueryObject" xml:space="preserve">
+    <value>This is an invalid object. Only objects returned from Compile() can be passed as input.</value>
+  </data>
+  <data name="Xp_UndefinedXsltContext" xml:space="preserve">
+    <value>XsltContext is needed for this query because of an unknown function.</value>
+  </data>
+  <data name="Xp_NoContext" xml:space="preserve">
+    <value>Namespace Manager or XsltContext needed. This query has a prefix, variable, or user-defined function.</value>
+  </data>
+  <data name="Xp_UndefVar" xml:space="preserve">
+    <value>The variable '{0}' is undefined.</value>
+  </data>
+  <data name="Xp_UndefFunc" xml:space="preserve">
+    <value>The function '{0}()' is undefined.</value>
+  </data>
+  <data name="Xp_FunctionFailed" xml:space="preserve">
+    <value>Function '{0}()' has failed.</value>
+  </data>
+  <data name="Xp_CurrentNotAllowed" xml:space="preserve">
+    <value>The 'current()' function cannot be used in a pattern.</value>
+  </data>
+  <data name="Xp_QueryTooComplex" xml:space="preserve">
+    <value>The xpath query is too complex.</value>
+  </data>
+  <data name="Xdom_DualDocumentTypeNode" xml:space="preserve">
+    <value>This document already has a 'DocumentType' node.</value>
+  </data>
+  <data name="Xdom_DualDocumentElementNode" xml:space="preserve">
+    <value>This document already has a 'DocumentElement' node.</value>
+  </data>
+  <data name="Xdom_DualDeclarationNode" xml:space="preserve">
+    <value>This document already has an 'XmlDeclaration' node.</value>
+  </data>
+  <data name="Xdom_Import" xml:space="preserve">
+    <value>Cannot import nodes of type '{0}'.</value>
+  </data>
+  <data name="Xdom_Import_NullNode" xml:space="preserve">
+    <value>Cannot import a null node.</value>
+  </data>
+  <data name="Xdom_NoRootEle" xml:space="preserve">
+    <value>The document does not have a root element.</value>
+  </data>
+  <data name="Xdom_Attr_Name" xml:space="preserve">
+    <value>The attribute local name cannot be empty.</value>
+  </data>
+  <data name="Xdom_AttrCol_Object" xml:space="preserve">
+    <value>An 'Attributes' collection can only contain 'Attribute' objects.</value>
+  </data>
+  <data name="Xdom_AttrCol_Insert" xml:space="preserve">
+    <value>The reference node must be a child of the current node.</value>
+  </data>
+  <data name="Xdom_NamedNode_Context" xml:space="preserve">
+    <value>The named node is from a different document context.</value>
+  </data>
+  <data name="Xdom_Version" xml:space="preserve">
+    <value>Wrong XML version information. The XML must match production "VersionNum ::= '1.' [0-9]+".</value>
+  </data>
+  <data name="Xdom_standalone" xml:space="preserve">
+    <value>Wrong value for the XML declaration standalone attribute of '{0}'.</value>
+  </data>
+  <data name="Xdom_Ent_Innertext" xml:space="preserve">
+    <value>The 'InnerText' of an 'Entity' node is read-only and cannot be set.</value>
+  </data>
+  <data name="Xdom_EntRef_SetVal" xml:space="preserve">
+    <value>'EntityReference' nodes have no support for setting value.</value>
+  </data>
+  <data name="Xdom_WS_Char" xml:space="preserve">
+    <value>The string for whitespace contains an invalid character.</value>
+  </data>
+  <data name="Xdom_Node_SetVal" xml:space="preserve">
+    <value>Cannot set a value on node type '{0}'.</value>
+  </data>
+  <data name="Xdom_Empty_LocalName" xml:space="preserve">
+    <value>The local name for elements or attributes cannot be null or an empty string.</value>
+  </data>
+  <data name="Xdom_Set_InnerXml" xml:space="preserve">
+    <value>Cannot set the 'InnerXml' for the current node because it is either read-only or cannot have children.</value>
+  </data>
+  <data name="Xdom_Attr_InUse" xml:space="preserve">
+    <value>The 'Attribute' node cannot be inserted because it is already an attribute of another element.</value>
+  </data>
+  <data name="Xdom_Enum_ElementList" xml:space="preserve">
+    <value>The element list has changed. The enumeration operation failed to continue.</value>
+  </data>
+  <data name="Xdom_Invalid_NT_String" xml:space="preserve">
+    <value>'{0}' does not represent any 'XmlNodeType'.</value>
+  </data>
+  <data name="Xdom_InvalidCharacter_EntityReference" xml:space="preserve">
+    <value>Cannot create an 'EntityReference' node with a name starting with '#'.</value>
+  </data>
+  <data name="Xdom_IndexOutOfRange" xml:space="preserve">
+    <value>The index being passed in is out of range.</value>
+  </data>
+  <data name="Xdom_Document_Innertext" xml:space="preserve">
+    <value>The 'InnerText' of a 'Document' node is read-only and cannot be set.</value>
+  </data>
+  <data name="Xpn_BadPosition" xml:space="preserve">
+    <value>Operation is not valid due to the current position of the navigator.</value>
+  </data>
+  <data name="Xpn_MissingParent" xml:space="preserve">
+    <value>The current position of the navigator is missing a valid parent.</value>
+  </data>
+  <data name="Xpn_NoContent" xml:space="preserve">
+    <value>No content generated as the result of the operation.</value>
+  </data>
+  <data name="Xdom_Load_NoDocument" xml:space="preserve">
+    <value>The document to be loaded could not be found.</value>
+  </data>
+  <data name="Xdom_Load_NoReader" xml:space="preserve">
+    <value>There is no reader from which to load the document.</value>
+  </data>
+  <data name="Xdom_Node_Null_Doc" xml:space="preserve">
+    <value>Cannot create a node without an owner document.</value>
+  </data>
+  <data name="Xdom_Node_Insert_Child" xml:space="preserve">
+    <value>Cannot insert a node or any ancestor of that node as a child of itself.</value>
+  </data>
+  <data name="Xdom_Node_Insert_Contain" xml:space="preserve">
+    <value>The current node cannot contain other nodes.</value>
+  </data>
+  <data name="Xdom_Node_Insert_Path" xml:space="preserve">
+    <value>The reference node is not a child of this node.</value>
+  </data>
+  <data name="Xdom_Node_Insert_Context" xml:space="preserve">
+    <value>The node to be inserted is from a different document context.</value>
+  </data>
+  <data name="Xdom_Node_Insert_Location" xml:space="preserve">
+    <value>Cannot insert the node in the specified location.</value>
+  </data>
+  <data name="Xdom_Node_Insert_TypeConflict" xml:space="preserve">
+    <value>The specified node cannot be inserted as the valid child of this node, because the specified node is the wrong type.</value>
+  </data>
+  <data name="Xdom_Node_Remove_Contain" xml:space="preserve">
+    <value>The current node cannot contain other nodes, so the node to be removed is not its child.</value>
+  </data>
+  <data name="Xdom_Node_Remove_Child" xml:space="preserve">
+    <value>The node to be removed is not a child of this node.</value>
+  </data>
+  <data name="Xdom_Node_Modify_ReadOnly" xml:space="preserve">
+    <value>This node is read-only. It cannot be modified.</value>
+  </data>
+  <data name="Xdom_TextNode_SplitText" xml:space="preserve">
+    <value>The 'Text' node is not connected in the DOM live tree. No 'SplitText' operation could be performed.</value>
+  </data>
+  <data name="Xdom_Attr_Reserved_XmlNS" xml:space="preserve">
+    <value>The namespace declaration attribute has an incorrect 'namespaceURI': '{0}'.</value>
+  </data>
+  <data name="Xdom_Node_Cloning" xml:space="preserve">
+    <value>'Entity' and 'Notation' nodes cannot be cloned.</value>
+  </data>
+  <data name="Xnr_ResolveEntity" xml:space="preserve">
+    <value>The node is not an expandable 'EntityReference' node.</value>
+  </data>
+  <data name="XPathDocument_MissingSchemas" xml:space="preserve">
+    <value>An XmlSchemaSet must be provided to validate the document.</value>
+  </data>
+  <data name="XPathDocument_NotEnoughSchemaInfo" xml:space="preserve">
+    <value>Element should have prior schema information to call this method.</value>
+  </data>
+  <data name="XPathDocument_ValidateInvalidNodeType" xml:space="preserve">
+    <value>Validate and CheckValidity are only allowed on Root or Element nodes.</value>
+  </data>
+  <data name="XPathDocument_SchemaSetNotAllowed" xml:space="preserve">
+    <value>An XmlSchemaSet is only allowed as a parameter on the Root node.</value>
+  </data>
+  <data name="XmlBin_MissingEndCDATA" xml:space="preserve">
+    <value>CDATA end token is missing.</value>
+  </data>
+  <data name="XmlBin_InvalidQNameID" xml:space="preserve">
+    <value>Invalid QName ID.</value>
+  </data>
+  <data name="XmlBinary_UnexpectedToken" xml:space="preserve">
+    <value>Unexpected BinaryXml token.</value>
+  </data>
+  <data name="XmlBinary_InvalidSqlDecimal" xml:space="preserve">
+    <value>Unable to parse data as SQL_DECIMAL.</value>
+  </data>
+  <data name="XmlBinary_InvalidSignature" xml:space="preserve">
+    <value>Invalid BinaryXml signature.</value>
+  </data>
+  <data name="XmlBinary_InvalidProtocolVersion" xml:space="preserve">
+    <value>Invalid BinaryXml protocol version.</value>
+  </data>
+  <data name="XmlBinary_UnsupportedCodePage" xml:space="preserve">
+    <value>Unsupported BinaryXml codepage.</value>
+  </data>
+  <data name="XmlBinary_InvalidStandalone" xml:space="preserve">
+    <value>Invalid BinaryXml standalone token.</value>
+  </data>
+  <data name="XmlBinary_NoParserContext" xml:space="preserve">
+    <value>BinaryXml Parser does not support initialization with XmlParserContext.</value>
+  </data>
+  <data name="XmlBinary_ListsOfValuesNotSupported" xml:space="preserve">
+    <value>Lists of BinaryXml value tokens not supported.</value>
+  </data>
+  <data name="XmlBinary_CastNotSupported" xml:space="preserve">
+    <value>Token '{0}' does not support a conversion to Clr type '{1}'.</value>
+  </data>
+  <data name="XmlBinary_NoRemapPrefix" xml:space="preserve">
+    <value>Prefix '{0}' is already assigned to namespace '{1}' and cannot be reassigned to '{2}' on this tag.</value>
+  </data>
+  <data name="XmlBinary_AttrWithNsNoPrefix" xml:space="preserve">
+    <value>Attribute '{0}' has namespace '{1}' but no prefix.</value>
+  </data>
+  <data name="XmlBinary_ValueTooBig" xml:space="preserve">
+    <value>The value is too big to fit into an Int32. The arithmetic operation resulted in an overflow.</value>
+  </data>
+  <data name="SqlTypes_ArithOverflow" xml:space="preserve">
+    <value>Arithmetic Overflow.</value>
+  </data>
+  <data name="XmlMissingType" xml:space="preserve">
+    <value>Invalid serialization assembly: Required type {0} cannot be found in the generated assembly '{1}'.</value>
+  </data>
+  <data name="XmlSerializerUnsupportedType" xml:space="preserve">
+    <value>{0} is an unsupported type. Please use [XmlIgnore] attribute to exclude members of this type from serialization graph.</value>
+  </data>
+  <data name="XmlSerializerUnsupportedMember" xml:space="preserve">
+    <value>Cannot serialize member '{0}' of type '{1}', see inner exception for more details.</value>
+  </data>
+  <data name="XmlUnsupportedTypeKind" xml:space="preserve">
+    <value>The type {0} may not be serialized.</value>
+  </data>
+  <data name="XmlUnsupportedSoapTypeKind" xml:space="preserve">
+    <value>The type {0} may not be serialized with SOAP-encoded messages. Set the Use for your message to Literal.</value>
+  </data>
+  <data name="XmlUnsupportedIDictionary" xml:space="preserve">
+    <value>The type {0} is not supported because it implements IDictionary.</value>
+  </data>
+  <data name="XmlUnsupportedIDictionaryDetails" xml:space="preserve">
+    <value>Cannot serialize member {0} of type {1}, because it implements IDictionary.</value>
+  </data>
+  <data name="XmlDuplicateTypeName" xml:space="preserve">
+    <value>A type with the name {0} has already been added in namespace {1}.</value>
+  </data>
+  <data name="XmlSerializableNameMissing1" xml:space="preserve">
+    <value>Schema Id is missing. The schema returned from {0}.GetSchema() must have an Id.</value>
+  </data>
+  <data name="XmlConstructorInaccessible" xml:space="preserve">
+    <value>{0} cannot be serialized because it does not have a parameterless constructor.</value>
+  </data>
+  <data name="XmlTypeInaccessible" xml:space="preserve">
+    <value>{0} is inaccessible due to its protection level. Only public types can be processed.</value>
+  </data>
+  <data name="XmlTypeStatic" xml:space="preserve">
+    <value>{0} cannot be serialized. Static types cannot be used as parameters or return types.</value>
+  </data>
+  <data name="XmlNoDefaultAccessors" xml:space="preserve">
+    <value>You must implement a default accessor on {0} because it inherits from ICollection.</value>
+  </data>
+  <data name="XmlNoAddMethod" xml:space="preserve">
+    <value>To be XML serializable, types which inherit from {2} must have an implementation of Add({1}) at all levels of their inheritance hierarchy. {0} does not implement Add({1}).</value>
+  </data>
+  <data name="XmlReadOnlyPropertyError" xml:space="preserve">
+    <value>Cannot deserialize type '{0}' because it contains property '{1}' which has no public setter.</value>
+  </data>
+  <data name="XmlAttributeSetAgain" xml:space="preserve">
+    <value>'{0}.{1}' already has attributes.</value>
+  </data>
+  <data name="XmlIllegalWildcard" xml:space="preserve">
+    <value>Cannot use wildcards at the top level of a schema.</value>
+  </data>
+  <data name="XmlIllegalArrayElement" xml:space="preserve">
+    <value>An element declared at the top level of a schema cannot have maxOccurs &gt; 1. Provide a wrapper element for '{0}' by using XmlArray or XmlArrayItem instead of XmlElementAttribute, or by using the Wrapped parameter style.</value>
+  </data>
+  <data name="XmlIllegalForm" xml:space="preserve">
+    <value>There was an error exporting '{0}': elements declared at the top level of a schema cannot be unqualified.</value>
+  </data>
+  <data name="XmlBareTextMember" xml:space="preserve">
+    <value>There was an error exporting '{0}': bare members cannot contain text content.</value>
+  </data>
+  <data name="XmlBareAttributeMember" xml:space="preserve">
+    <value>There was an error exporting '{0}': bare members cannot be attributes.</value>
+  </data>
+  <data name="XmlReflectionError" xml:space="preserve">
+    <value>There was an error reflecting '{0}'.</value>
+  </data>
+  <data name="XmlTypeReflectionError" xml:space="preserve">
+    <value>There was an error reflecting type '{0}'.</value>
+  </data>
+  <data name="XmlPropertyReflectionError" xml:space="preserve">
+    <value>There was an error reflecting property '{0}'.</value>
+  </data>
+  <data name="XmlFieldReflectionError" xml:space="preserve">
+    <value>There was an error reflecting field '{0}'.</value>
+  </data>
+  <data name="XmlInvalidDataTypeUsage" xml:space="preserve">
+    <value>'{0}' is an invalid value for the {1} property. The property may only be specified for primitive types.</value>
+  </data>
+  <data name="XmlInvalidXsdDataType" xml:space="preserve">
+    <value>Value '{0}' cannot be used for the {1} property. The datatype '{2}' is missing.</value>
+  </data>
+  <data name="XmlDataTypeMismatch" xml:space="preserve">
+    <value>'{0}' is an invalid value for the {1} property. {0} cannot be converted to {2}.</value>
+  </data>
+  <data name="XmlIllegalTypeContext" xml:space="preserve">
+    <value>{0} cannot be used as: 'xml {1}'.</value>
+  </data>
+  <data name="XmlUdeclaredXsdType" xml:space="preserve">
+    <value>The type, {0}, is undeclared.</value>
+  </data>
+  <data name="XmlInvalidConstantAttribute" xml:space="preserve">
+    <value>Only XmlEnum may be used on enumerated constants.</value>
+  </data>
+  <data name="XmlIllegalAttributesArrayAttribute" xml:space="preserve">
+    <value>XmlAttribute and XmlAnyAttribute cannot be used in conjunction with XmlElement, XmlText, XmlAnyElement, XmlArray, or XmlArrayItem.</value>
+  </data>
+  <data name="XmlIllegalElementsArrayAttribute" xml:space="preserve">
+    <value>XmlElement, XmlText, and XmlAnyElement cannot be used in conjunction with XmlAttribute, XmlAnyAttribute, XmlArray, or XmlArrayItem.</value>
+  </data>
+  <data name="XmlIllegalArrayArrayAttribute" xml:space="preserve">
+    <value>XmlArray and XmlArrayItem cannot be used in conjunction with XmlAttribute, XmlAnyAttribute, XmlElement, XmlText, or XmlAnyElement.</value>
+  </data>
+  <data name="XmlIllegalAttribute" xml:space="preserve">
+    <value>For non-array types, you may use the following attributes: XmlAttribute, XmlText, XmlElement, or XmlAnyElement.</value>
+  </data>
+  <data name="XmlIllegalType" xml:space="preserve">
+    <value>The type for {0} may not be specified for primitive types.</value>
+  </data>
+  <data name="XmlIllegalAttrOrText" xml:space="preserve">
+    <value>Cannot serialize member '{0}' of type {1}. XmlAttribute/XmlText cannot be used to encode complex types.</value>
+  </data>
+  <data name="XmlIllegalSoapAttribute" xml:space="preserve">
+    <value>Cannot serialize member '{0}' of type {1}. SoapAttribute cannot be used to encode complex types.</value>
+  </data>
+  <data name="XmlIllegalAttrOrTextInterface" xml:space="preserve">
+    <value>Cannot serialize member '{0}' of type {1}. XmlAttribute/XmlText cannot be used to encode types implementing {2}.</value>
+  </data>
+  <data name="XmlIllegalAttributeFlagsArray" xml:space="preserve">
+    <value>XmlAttribute cannot be used to encode array of {1}, because it is marked with FlagsAttribute.</value>
+  </data>
+  <data name="XmlIllegalAnyElement" xml:space="preserve">
+    <value>Cannot serialize member of type {0}: XmlAnyElement can only be used with classes of type XmlNode or a type deriving from XmlNode.</value>
+  </data>
+  <data name="XmlInvalidIsNullable" xml:space="preserve">
+    <value>IsNullable may not be 'true' for value type {0}.  Please consider using Nullable&lt;{0}&gt; instead.</value>
+  </data>
+  <data name="XmlInvalidNotNullable" xml:space="preserve">
+    <value>IsNullable may not be set to 'false' for a Nullable&lt;{0}&gt; type. Consider using '{0}' type or removing the IsNullable property from the {1} attribute.</value>
+  </data>
+  <data name="XmlInvalidFormUnqualified" xml:space="preserve">
+    <value>The Form property may not be 'Unqualified' when an explicit Namespace property is present.</value>
+  </data>
+  <data name="XmlDuplicateNamespace" xml:space="preserve">
+    <value>The namespace, {0}, is a duplicate.</value>
+  </data>
+  <data name="XmlElementHasNoName" xml:space="preserve">
+    <value>This element has no name. Please review schema type '{0}' from namespace '{1}'.</value>
+  </data>
+  <data name="XmlAttributeHasNoName" xml:space="preserve">
+    <value>This attribute has no name.</value>
+  </data>
+  <data name="XmlElementImportedTwice" xml:space="preserve">
+    <value>The element, {0}, from namespace, {1}, was imported in two different contexts: ({2}, {3}).</value>
+  </data>
+  <data name="XmlHiddenMember" xml:space="preserve">
+    <value>Member {0}.{1} of type {2} hides base class member {3}.{4} of type {5}. Use XmlElementAttribute or XmlAttributeAttribute to specify a new name.</value>
+  </data>
+  <data name="XmlInvalidXmlOverride" xml:space="preserve">
+    <value>Member '{0}.{1}' hides inherited member '{2}.{3}', but has different custom attributes.</value>
+  </data>
+  <data name="XmlMembersDeriveError" xml:space="preserve">
+    <value>These members may not be derived.</value>
+  </data>
+  <data name="XmlTypeUsedTwice" xml:space="preserve">
+    <value>The type '{0}' from namespace '{1}' was used in two different ways.</value>
+  </data>
+  <data name="XmlMissingGroup" xml:space="preserve">
+    <value>Group {0} is missing.</value>
+  </data>
+  <data name="XmlMissingAttributeGroup" xml:space="preserve">
+    <value>The attribute group {0} is missing.</value>
+  </data>
+  <data name="XmlMissingDataType" xml:space="preserve">
+    <value>The datatype '{0}' is missing.</value>
+  </data>
+  <data name="XmlInvalidEncoding" xml:space="preserve">
+    <value>Referenced type '{0}' is only valid for encoded SOAP.</value>
+  </data>
+  <data name="XmlMissingElement" xml:space="preserve">
+    <value>The element '{0}' is missing.</value>
+  </data>
+  <data name="XmlMissingAttribute" xml:space="preserve">
+    <value>The attribute {0} is missing.</value>
+  </data>
+  <data name="XmlMissingMethodEnum" xml:space="preserve">
+    <value>The method for enum {0} is missing.</value>
+  </data>
+  <data name="XmlNoAttributeHere" xml:space="preserve">
+    <value>Cannot write a node of type XmlAttribute as an element value. Use XmlAnyAttributeAttribute with an array of XmlNode or XmlAttribute to write the node as an attribute.</value>
+  </data>
+  <data name="XmlNeedAttributeHere" xml:space="preserve">
+    <value>The node must be either type XmlAttribute or a derived type.</value>
+  </data>
+  <data name="XmlElementNameMismatch" xml:space="preserve">
+    <value>This element was named '{0}' from namespace '{1}' but should have been named '{2}' from namespace '{3}'.</value>
+  </data>
+  <data name="XmlUnsupportedDefaultType" xml:space="preserve">
+    <value>The default value type, {0}, is unsupported.</value>
+  </data>
+  <data name="XmlUnsupportedDefaultValue" xml:space="preserve">
+    <value>The formatter {0} cannot be used for default values.</value>
+  </data>
+  <data name="XmlInvalidDefaultValue" xml:space="preserve">
+    <value>Value '{0}' cannot be converted to {1}.</value>
+  </data>
+  <data name="XmlInvalidDefaultEnumValue" xml:space="preserve">
+    <value>Enum {0} cannot be converted to {1}.</value>
+  </data>
+  <data name="XmlUnknownNode" xml:space="preserve">
+    <value>{0} was not expected.</value>
+  </data>
+  <data name="XmlUnknownConstant" xml:space="preserve">
+    <value>Instance validation error: '{0}' is not a valid value for {1}.</value>
+  </data>
+  <data name="XmlSerializeError" xml:space="preserve">
+    <value>There is an error in the XML document.</value>
+  </data>
+  <data name="XmlSerializeErrorDetails" xml:space="preserve">
+    <value>There is an error in XML document ({0}, {1}).</value>
+  </data>
+  <data name="XmlSchemaDuplicateNamespace" xml:space="preserve">
+    <value>There are more then one schema with targetNamespace='{0}'.</value>
+  </data>
+  <data name="XmlSchemaCompiled" xml:space="preserve">
+    <value>Cannot add schema to compiled schemas collection.</value>
+  </data>
+  <data name="XmlInvalidArrayDimentions" xml:space="preserve">
+    <value>SOAP-ENC:arrayType with multidimensional array found at {0}. Only single-dimensional arrays are supported. Consider using an array of arrays instead.</value>
+  </data>
+  <data name="XmlInvalidArrayTypeName" xml:space="preserve">
+    <value>The SOAP-ENC:arrayType references type is named '{0}'; a type named '{1}' was expected at {2}.</value>
+  </data>
+  <data name="XmlInvalidArrayTypeNamespace" xml:space="preserve">
+    <value>The SOAP-ENC:arrayType references type is from namespace '{0}'; the namespace '{1}' was expected at {2}.</value>
+  </data>
+  <data name="XmlMissingArrayType" xml:space="preserve">
+    <value>SOAP-ENC:arrayType was missing at {0}.</value>
+  </data>
+  <data name="XmlEmptyArrayType" xml:space="preserve">
+    <value>SOAP-ENC:arrayType was empty at {0}.</value>
+  </data>
+  <data name="XmlInvalidArraySyntax" xml:space="preserve">
+    <value>SOAP-ENC:arrayType must end with a ']' character.</value>
+  </data>
+  <data name="XmlInvalidArrayTypeSyntax" xml:space="preserve">
+    <value>Invalid wsd:arrayType syntax: '{0}'.</value>
+  </data>
+  <data name="XmlMismatchedArrayBrackets" xml:space="preserve">
+    <value>SOAP-ENC:arrayType has mismatched brackets.</value>
+  </data>
+  <data name="XmlInvalidArrayLength" xml:space="preserve">
+    <value>SOAP-ENC:arrayType could not handle '{1}' as the length of the array.</value>
+  </data>
+  <data name="XmlMissingHref" xml:space="preserve">
+    <value>The referenced element with ID '{0}' is located outside the current document and cannot be retrieved.</value>
+  </data>
+  <data name="XmlInvalidHref" xml:space="preserve">
+    <value>The referenced element with ID '{0}' was not found in the document.</value>
+  </data>
+  <data name="XmlUnknownType" xml:space="preserve">
+    <value>The specified type was not recognized: name='{0}', namespace='{1}', at {2}.</value>
+  </data>
+  <data name="XmlAbstractType" xml:space="preserve">
+    <value>The specified type is abstract: name='{0}', namespace='{1}', at {2}.</value>
+  </data>
+  <data name="XmlMappingsScopeMismatch" xml:space="preserve">
+    <value>Exported mappings must come from the same importer.</value>
+  </data>
+  <data name="XmlMethodTypeNameConflict" xml:space="preserve">
+    <value>The XML element '{0}' from namespace '{1}' references a method and a type. Change the method's message name using WebMethodAttribute or change the type's root element using the XmlRootAttribute.</value>
+  </data>
+  <data name="XmlCannotReconcileAccessor" xml:space="preserve">
+    <value>The top XML element '{0}' from namespace '{1}' references distinct types {2} and {3}. Use XML attributes to specify another XML name or namespace for the element or types.</value>
+  </data>
+  <data name="XmlCannotReconcileAttributeAccessor" xml:space="preserve">
+    <value>The global XML attribute '{0}' from namespace '{1}' references distinct types {2} and {3}. Use XML attributes to specify another XML name or namespace for the attribute or types.</value>
+  </data>
+  <data name="XmlCannotReconcileAccessorDefault" xml:space="preserve">
+    <value>The global XML item '{0}' from namespace '{1}' has mismatch default value attributes: '{2}' and '{3}' and cannot be mapped to the same schema item. Use XML attributes to specify another XML name or namespace for one of the items, or make sure that the default values match.</value>
+  </data>
+  <data name="XmlInvalidTypeAttributes" xml:space="preserve">
+    <value>XmlRoot and XmlType attributes may not be specified for the type {0}.</value>
+  </data>
+  <data name="XmlInvalidAttributeUse" xml:space="preserve">
+    <value>XML attributes may not be specified for the type {0}.</value>
+  </data>
+  <data name="XmlTypesDuplicate" xml:space="preserve">
+    <value>Types '{0}' and '{1}' both use the XML type name, '{2}', from namespace '{3}'. Use XML attributes to specify a unique XML name and/or namespace for the type.</value>
+  </data>
+  <data name="XmlInvalidSoapArray" xml:space="preserve">
+    <value>An array of type {0} may not be used with XmlArrayType.Soap.</value>
+  </data>
+  <data name="XmlCannotIncludeInSchema" xml:space="preserve">
+    <value>The type {0} may not be exported to a schema because the IncludeInSchema property of the XmlType attribute is 'false'.</value>
+  </data>
+  <data name="XmlInvalidSerializable" xml:space="preserve">
+    <value>The type {0} may not be used in this context. To use {0} as a parameter, return type, or member of a class or struct, the parameter, return type, or member must be declared as type {0} (it cannot be object). Objects of type {0} may not be used in un-typed collections, such as ArrayLists.</value>
+  </data>
+  <data name="XmlInvalidUseOfType" xml:space="preserve">
+    <value>The type {0} may not be used in this context.</value>
+  </data>
+  <data name="XmlUnxpectedType" xml:space="preserve">
+    <value>The type {0} was not expected. Use the XmlInclude or SoapInclude attribute to specify types that are not known statically.</value>
+  </data>
+  <data name="XmlUnknownAnyElement" xml:space="preserve">
+    <value>The XML element '{0}' from namespace '{1}' was not expected. The XML element name and namespace must match those provided via XmlAnyElementAttribute(s).</value>
+  </data>
+  <data name="XmlMultipleAttributeOverrides" xml:space="preserve">
+    <value>{0}. {1} already has attributes.</value>
+  </data>
+  <data name="XmlInvalidEnumAttribute" xml:space="preserve">
+    <value>Only SoapEnum may be used on enum constants.</value>
+  </data>
+  <data name="XmlInvalidReturnPosition" xml:space="preserve">
+    <value>The return value must be the first member.</value>
+  </data>
+  <data name="XmlInvalidElementAttribute" xml:space="preserve">
+    <value>Only SoapElementAttribute or SoapAttributeAttribute may be used on members.</value>
+  </data>
+  <data name="XmlInvalidVoid" xml:space="preserve">
+    <value>The type Void is not valid in this context.</value>
+  </data>
+  <data name="XmlInvalidContent" xml:space="preserve">
+    <value>Invalid content {0}.</value>
+  </data>
+  <data name="XmlInvalidAttributeType" xml:space="preserve">
+    <value>{0} may not be used on parameters or return values when they are not wrapped.</value>
+  </data>
+  <data name="XmlInvalidBaseType" xml:space="preserve">
+    <value>Type {0} cannot derive from {1} because it already has base type {2}.</value>
+  </data>
+  <data name="XmlInvalidIdentifier" xml:space="preserve">
+    <value>Identifier '{0}' is not CLS-compliant.</value>
+  </data>
+  <data name="XmlGenError" xml:space="preserve">
+    <value>There was an error generating the XML document.</value>
+  </data>
+  <data name="XmlInvalidXmlns" xml:space="preserve">
+    <value>Invalid namespace attribute: xmlns:{0}="".</value>
+  </data>
+  <data name="XmlCircularReference" xml:space="preserve">
+    <value>A circular reference was detected while serializing an object of type {0}.</value>
+  </data>
+  <data name="XmlCircularReference2" xml:space="preserve">
+    <value>A circular type reference was detected in anonymous type '{0}'.  Please change '{0}' to be a named type by setting {1}={2} in the type definition.</value>
+  </data>
+  <data name="XmlAnonymousBaseType" xml:space="preserve">
+    <value>Illegal type derivation: Type '{0}' derives from anonymous type '{1}'. Please change '{1}' to be a named type by setting {2}={3} in the type definition.</value>
+  </data>
+  <data name="XmlMissingSchema" xml:space="preserve">
+    <value>Missing schema targetNamespace="{0}".</value>
+  </data>
+  <data name="XmlNoSerializableMembers" xml:space="preserve">
+    <value>Cannot serialize object of type '{0}'. The object does not have serializable members.</value>
+  </data>
+  <data name="XmlIllegalOverride" xml:space="preserve">
+    <value>Error: Type '{0}' could not be imported because it redefines inherited member '{1}' with a different type. '{1}' is declared as type '{3}' on '{0}', but as type '{2}' on base class '{4}'.</value>
+  </data>
+  <data name="XmlReadOnlyCollection" xml:space="preserve">
+    <value>Could not deserialize {0}. Parameterless constructor is required for collections and enumerators.</value>
+  </data>
+  <data name="XmlRpcNestedValueType" xml:space="preserve">
+    <value>Cannot serialize {0}. Nested structs are not supported with encoded SOAP.</value>
+  </data>
+  <data name="XmlRpcRefsInValueType" xml:space="preserve">
+    <value>Cannot serialize {0}. References in structs are not supported with encoded SOAP.</value>
+  </data>
+  <data name="XmlRpcArrayOfValueTypes" xml:space="preserve">
+    <value>Cannot serialize {0}. Arrays of structs are not supported with encoded SOAP.</value>
+  </data>
+  <data name="XmlDuplicateElementName" xml:space="preserve">
+    <value>The XML element '{0}' from namespace '{1}' is already present in the current scope. Use XML attributes to specify another XML name or namespace for the element.</value>
+  </data>
+  <data name="XmlDuplicateAttributeName" xml:space="preserve">
+    <value>The XML attribute '{0}' from namespace '{1}' is already present in the current scope. Use XML attributes to specify another XML name or namespace for the attribute.</value>
+  </data>
+  <data name="XmlBadBaseElement" xml:space="preserve">
+    <value>Element '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.</value>
+  </data>
+  <data name="XmlBadBaseType" xml:space="preserve">
+    <value>Type '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.</value>
+  </data>
+  <data name="XmlUndefinedAlias" xml:space="preserve">
+    <value>Namespace prefix '{0}' is not defined.</value>
+  </data>
+  <data name="XmlChoiceIdentifierType" xml:space="preserve">
+    <value>Type of choice identifier '{0}' is inconsistent with type of '{1}'. Please use {2}.</value>
+  </data>
+  <data name="XmlChoiceIdentifierArrayType" xml:space="preserve">
+    <value>Type of choice identifier '{0}' is inconsistent with type of '{1}'. Please use array of {2}.</value>
+  </data>
+  <data name="XmlChoiceIdentifierTypeEnum" xml:space="preserve">
+    <value>Choice identifier '{0}' must be an enum.</value>
+  </data>
+  <data name="XmlChoiceIdentiferMemberMissing" xml:space="preserve">
+    <value>Missing '{0}' member needed for serialization of choice '{1}'.</value>
+  </data>
+  <data name="XmlChoiceIdentiferAmbiguous" xml:space="preserve">
+    <value>Ambiguous choice identifier. There are several members named '{0}'.</value>
+  </data>
+  <data name="XmlChoiceIdentiferMissing" xml:space="preserve">
+    <value>You need to add {0} to the '{1}' member.</value>
+  </data>
+  <data name="XmlChoiceMissingValue" xml:space="preserve">
+    <value>Type {0} is missing enumeration value '{1}' for element '{2}' from namespace '{3}'.</value>
+  </data>
+  <data name="XmlChoiceMissingAnyValue" xml:space="preserve">
+    <value>Type {0} is missing enumeration value '##any:' corresponding to XmlAnyElementAttribute.</value>
+  </data>
+  <data name="XmlChoiceMismatchChoiceException" xml:space="preserve">
+    <value>Value of {0} mismatches the type of {1}; you need to set it to {2}.</value>
+  </data>
+  <data name="XmlArrayItemAmbiguousTypes" xml:space="preserve">
+    <value>Ambiguous types specified for member '{0}'.  Items '{1}' and '{2}' have the same type.  Please consider using {3} with {4} instead.</value>
+  </data>
+  <data name="XmlUnsupportedInterface" xml:space="preserve">
+    <value>Cannot serialize interface {0}.</value>
+  </data>
+  <data name="XmlUnsupportedInterfaceDetails" xml:space="preserve">
+    <value>Cannot serialize member {0} of type {1} because it is an interface.</value>
+  </data>
+  <data name="XmlUnsupportedRank" xml:space="preserve">
+    <value>Cannot serialize object of type {0}. Multidimensional arrays are not supported.</value>
+  </data>
+  <data name="XmlUnsupportedInheritance" xml:space="preserve">
+    <value>Using {0} as a base type for a class is not supported by XmlSerializer.</value>
+  </data>
+  <data name="XmlIllegalMultipleText" xml:space="preserve">
+    <value>Cannot serialize object of type '{0}' because it has multiple XmlText attributes. Consider using an array of strings with XmlTextAttribute for serialization of a mixed complex type.</value>
+  </data>
+  <data name="XmlIllegalMultipleTextMembers" xml:space="preserve">
+    <value>XmlText may not be used on multiple parameters or return values.</value>
+  </data>
+  <data name="XmlIllegalArrayTextAttribute" xml:space="preserve">
+    <value>Member '{0}' cannot be encoded using the XmlText attribute. You may use the XmlText attribute to encode primitives, enumerations, arrays of strings, or arrays of XmlNode.</value>
+  </data>
+  <data name="XmlIllegalTypedTextAttribute" xml:space="preserve">
+    <value>Cannot serialize object of type '{0}'. Consider changing type of XmlText member '{0}.{1}' from {2} to string or string array.</value>
+  </data>
+  <data name="XmlIllegalSimpleContentExtension" xml:space="preserve">
+    <value>Cannot serialize object of type '{0}'. Base type '{1}' has simpleContent and can only be extended by adding XmlAttribute elements. Please consider changing XmlText member of the base class to string array.</value>
+  </data>
+  <data name="XmlInvalidCast" xml:space="preserve">
+    <value>Cannot assign object of type {0} to an object of type {1}.</value>
+  </data>
+  <data name="XmlInvalidCastWithId" xml:space="preserve">
+    <value>Cannot assign object of type {0} to an object of type {1}. The error occurred while reading node with id='{2}'.</value>
+  </data>
+  <data name="XmlInvalidArrayRef" xml:space="preserve">
+    <value>Invalid reference id='{0}'. Object of type {1} cannot be stored in an array of this type. Details: array index={2}.</value>
+  </data>
+  <data name="XmlInvalidNullCast" xml:space="preserve">
+    <value>Cannot assign null value to an object of type {1}.</value>
+  </data>
+  <data name="XmlMultipleXmlns" xml:space="preserve">
+    <value>Cannot serialize object of type '{0}' because it has multiple XmlNamespaceDeclarations attributes.</value>
+  </data>
+  <data name="XmlMultipleXmlnsMembers" xml:space="preserve">
+    <value>XmlNamespaceDeclarations may not be used on multiple parameters or return values.</value>
+  </data>
+  <data name="XmlXmlnsInvalidType" xml:space="preserve">
+    <value>Cannot use XmlNamespaceDeclarations attribute on member '{0}' of type {1}.  This attribute is only valid on members of type {2}.</value>
+  </data>
+  <data name="XmlSoleXmlnsAttribute" xml:space="preserve">
+    <value>XmlNamespaceDeclarations attribute cannot be used in conjunction with any other custom attributes.</value>
+  </data>
+  <data name="XmlConstructorHasSecurityAttributes" xml:space="preserve">
+    <value>The type '{0}' cannot be serialized because its parameterless constructor is decorated with declarative security permission attributes. Consider using imperative asserts or demands in the constructor.</value>
+  </data>
+  <data name="XmlInvalidChoiceIdentifierValue" xml:space="preserve">
+    <value>Invalid or missing value of the choice identifier '{1}' of type '{0}[]'.</value>
+  </data>
+  <data name="XmlAnyElementDuplicate" xml:space="preserve">
+    <value>The element '{0}' has been attributed with duplicate XmlAnyElementAttribute(Name="{1}", Namespace="{2}").</value>
+  </data>
+  <data name="XmlChoiceIdDuplicate" xml:space="preserve">
+    <value>Enum values in the XmlChoiceIdentifier '{0}' have to be unique.  Value '{1}' already present.</value>
+  </data>
+  <data name="XmlChoiceIdentifierMismatch" xml:space="preserve">
+    <value>Value '{0}' of the choice identifier '{1}' does not match element '{2}' from namespace '{3}'.</value>
+  </data>
+  <data name="XmlUnsupportedRedefine" xml:space="preserve">
+    <value>Cannot import schema for type '{0}' from namespace '{1}'. Redefine not supported.</value>
+  </data>
+  <data name="XmlDuplicateElementInScope" xml:space="preserve">
+    <value>The XML element named '{0}' from namespace '{1}' is already present in the current scope.</value>
+  </data>
+  <data name="XmlDuplicateElementInScope1" xml:space="preserve">
+    <value>The XML element named '{0}' from namespace '{1}' is already present in the current scope. Elements with the same name in the same scope must have the same type.</value>
+  </data>
+  <data name="XmlNoPartialTrust" xml:space="preserve">
+    <value>One or more assemblies referenced by the XmlSerializer cannot be called from partially trusted code.</value>
+  </data>
+  <data name="XmlInvalidEncodingNotEncoded1" xml:space="preserve">
+    <value>The encoding style '{0}' is not valid for this call because this XmlSerializer instance does not support encoding. Use the SoapReflectionImporter to initialize an XmlSerializer that supports encoding.</value>
+  </data>
+  <data name="XmlInvalidEncoding3" xml:space="preserve">
+    <value>The encoding style '{0}' is not valid for this call. Valid values are '{1}' for SOAP 1.1 encoding or '{2}' for SOAP 1.2 encoding.</value>
+  </data>
+  <data name="XmlInvalidSpecifiedType" xml:space="preserve">
+    <value>Member '{0}' of type {1} cannot be serialized.  Members with names ending on 'Specified' suffix have special meaning to the XmlSerializer: they control serialization of optional ValueType members and have to be of type {2}.</value>
+  </data>
+  <data name="XmlUnsupportedOpenGenericType" xml:space="preserve">
+    <value>Type {0} is not supported because it has unbound generic parameters.  Only instantiated generic types can be serialized.</value>
+  </data>
+  <data name="XmlMismatchSchemaObjects" xml:space="preserve">
+    <value>Warning: Cannot share {0} named '{1}' from '{2}' namespace. Several mismatched schema declarations were found.</value>
+  </data>
+  <data name="XmlCircularTypeReference" xml:space="preserve">
+    <value>Type '{0}' from targetNamespace='{1}' has invalid definition: Circular type reference.</value>
+  </data>
+  <data name="XmlCircularGroupReference" xml:space="preserve">
+    <value>Group '{0}' from targetNamespace='{1}' has invalid definition: Circular group reference.</value>
+  </data>
+  <data name="XmlRpcLitElementNamespace" xml:space="preserve">
+    <value>{0}='{1}' is not supported with rpc\literal SOAP. The wrapper element has to be unqualified.</value>
+  </data>
+  <data name="XmlRpcLitElementNullable" xml:space="preserve">
+    <value>{0}='{1}' is not supported with rpc\literal SOAP. The wrapper element cannot be nullable.</value>
+  </data>
+  <data name="XmlRpcLitElements" xml:space="preserve">
+    <value>Multiple accessors are not supported with rpc\literal SOAP, you may use the following attributes: XmlArray, XmlArrayItem, or single XmlElement.</value>
+  </data>
+  <data name="XmlRpcLitArrayElement" xml:space="preserve">
+    <value>Input or output values of an rpc\literal method cannot have maxOccurs &gt; 1. Provide a wrapper element for '{0}' by using XmlArray or XmlArrayItem instead of XmlElement attribute.</value>
+  </data>
+  <data name="XmlRpcLitAttributeAttributes" xml:space="preserve">
+    <value>XmlAttribute and XmlAnyAttribute cannot be used with rpc\literal SOAP, you may use the following attributes: XmlArray, XmlArrayItem, or single XmlElement.</value>
+  </data>
+  <data name="XmlRpcLitAttributes" xml:space="preserve">
+    <value>XmlText, XmlAnyElement, or XmlChoiceIdentifier cannot be used with rpc\literal SOAP, you may use the following attributes: XmlArray, XmlArrayItem, or single XmlElement.</value>
+  </data>
+  <data name="XmlSequenceMembers" xml:space="preserve">
+    <value>Explicit sequencing may not be used on parameters or return values.  Please remove {0} property from custom attributes.</value>
+  </data>
+  <data name="XmlRpcLitXmlns" xml:space="preserve">
+    <value>Input or output values of an rpc\literal method cannot have an XmlNamespaceDeclarations attribute (member '{0}').</value>
+  </data>
+  <data name="XmlDuplicateNs" xml:space="preserve">
+    <value>Illegal namespace declaration xmlns:{0}='{1}'. Namespace alias '{0}' already defined in the current scope.</value>
+  </data>
+  <data name="XmlAnonymousInclude" xml:space="preserve">
+    <value>Cannot include anonymous type '{0}'.</value>
+  </data>
+  <data name="XmlSchemaIncludeLocation" xml:space="preserve">
+    <value>Schema attribute schemaLocation='{1}' is not supported on objects of type {0}.  Please set {0}.Schema property.</value>
+  </data>
+  <data name="XmlSerializableSchemaError" xml:space="preserve">
+    <value>Schema type information provided by {0} is invalid: {1}</value>
+  </data>
+  <data name="XmlGetSchemaMethodName" xml:space="preserve">
+    <value>'{0}' is an invalid language identifier.</value>
+  </data>
+  <data name="XmlGetSchemaMethodMissing" xml:space="preserve">
+    <value>You must implement public static {0}({1}) method on {2}.</value>
+  </data>
+  <data name="XmlGetSchemaMethodReturnType" xml:space="preserve">
+    <value>Method {0}.{1}() specified by {2} has invalid signature: return type must be compatible with {3}.</value>
+  </data>
+  <data name="XmlGetSchemaEmptyTypeName" xml:space="preserve">
+    <value>{0}.{1}() must return a valid type name.</value>
+  </data>
+  <data name="XmlGetSchemaTypeMissing" xml:space="preserve">
+    <value>{0}.{1}() must return a valid type name. Type '{2}' cannot be found in the targetNamespace='{3}'.</value>
+  </data>
+  <data name="XmlGetSchemaInclude" xml:space="preserve">
+    <value>Multiple schemas with targetNamespace='{0}' returned by {1}.{2}().  Please use only the main (parent) schema, and add the others to the schema Includes.</value>
+  </data>
+  <data name="XmlSerializableAttributes" xml:space="preserve">
+    <value>Only XmlRoot attribute may be specified for the type {0}. Please use {1} to specify schema type.</value>
+  </data>
+  <data name="XmlSerializableMergeItem" xml:space="preserve">
+    <value>Cannot merge schemas with targetNamespace='{0}'. Several mismatched declarations were found: {1}</value>
+  </data>
+  <data name="XmlSerializableBadDerivation" xml:space="preserve">
+    <value>Type '{0}' from namespace '{1}' declared as derivation of type '{2}' from namespace '{3}, but corresponding CLR types are not compatible.  Cannot convert type '{4}' to '{5}'.</value>
+  </data>
+  <data name="XmlSerializableMissingClrType" xml:space="preserve">
+    <value>Type '{0}' from namespace '{1}' does not have corresponding IXmlSerializable type. Please consider adding {2} to '{3}'.</value>
+  </data>
+  <data name="XmlCircularDerivation" xml:space="preserve">
+    <value>Circular reference in derivation of IXmlSerializable type '{0}'.</value>
+  </data>
+  <data name="XmlMelformMapping" xml:space="preserve">
+    <value>This mapping was not crated by reflection importer and cannot be used in this context.</value>
+  </data>
+  <data name="XmlSchemaSyntaxErrorDetails" xml:space="preserve">
+    <value>Schema with targetNamespace='{0}' has invalid syntax. {1} Line {2}, position {3}.</value>
+  </data>
+  <data name="XmlSchemaElementReference" xml:space="preserve">
+    <value>Element reference '{0}' declared in schema type '{1}' from namespace '{2}'.</value>
+  </data>
+  <data name="XmlSchemaAttributeReference" xml:space="preserve">
+    <value>Attribute reference '{0}' declared in schema type '{1}' from namespace '{2}'.</value>
+  </data>
+  <data name="XmlSchemaItem" xml:space="preserve">
+    <value>Schema item '{1}' from namespace '{0}'. {2}</value>
+  </data>
+  <data name="XmlSchemaNamedItem" xml:space="preserve">
+    <value>Schema item '{1}' named '{2}' from namespace '{0}'. {3}</value>
+  </data>
+  <data name="XmlSchemaContentDef" xml:space="preserve">
+    <value>Check content definition of schema type '{0}' from namespace '{1}'. {2}</value>
+  </data>
+  <data name="XmlSchema" xml:space="preserve">
+    <value>Schema with targetNamespace='{0}' has invalid syntax. {1}</value>
+  </data>
+  <data name="XmlSerializableRootDupName" xml:space="preserve">
+    <value>Cannot reconcile schema for '{0}'. Please use [XmlRoot] attribute to change default name or namespace of the top-level element to avoid duplicate element declarations: element name='{1}' namespace='{2}'.</value>
+  </data>
+  <data name="XmlNotSerializable" xml:space="preserve">
+    <value>Type '{0}' is not serializable.</value>
+  </data>
+  <data name="XmlPregenInvalidXmlSerializerAssemblyAttribute" xml:space="preserve">
+    <value>Invalid XmlSerializerAssemblyAttribute usage. Please use {0} property or {1} property.</value>
+  </data>
+  <data name="XmlSequenceInconsistent" xml:space="preserve">
+    <value>Inconsistent sequencing: if used on one of the class's members, the '{0}' property is required on all particle-like members, please explicitly set '{0}' using XmlElement, XmlAnyElement or XmlArray custom attribute on class member '{1}'.</value>
+  </data>
+  <data name="XmlSequenceUnique" xml:space="preserve">
+    <value>'{1}' values must be unique within the same scope. Value '{0}' is in use. Please change '{1}' property on '{2}'.</value>
+  </data>
+  <data name="XmlSequenceHierarchy" xml:space="preserve">
+    <value>There was an error processing type '{0}'. Type member '{1}' declared in '{2}' is missing required '{3}' property. If one class in the class hierarchy uses explicit sequencing feature ({3}), then its base class and all derived classes have to do the same.</value>
+  </data>
+  <data name="XmlSequenceMatch" xml:space="preserve">
+    <value>If multiple custom attributes specified on a single member only one of them have to have explicit '{0}' property, however if more that one attribute has the explicit '{0}', all values have to match.</value>
+  </data>
+  <data name="XmlDisallowNegativeValues" xml:space="preserve">
+    <value>Negative values are prohibited.</value>
+  </data>
+  <data name="Xml_UnexpectedToken" xml:space="preserve">
+    <value>This is an unexpected token. The expected token is '{0}'.</value>
+  </data>
+  <data name="Sch_AttributeValueDataType" xml:space="preserve">
+    <value>The '{0}' attribute has an invalid value according to its data type.</value>
+  </data>
+  <data name="Sch_ElementValueDataType" xml:space="preserve">
+    <value>The '{0}' element has an invalid value according to its data type.</value>
+  </data>
+  <data name="XmlInternalError" xml:space="preserve">
+    <value>Internal error.</value>
+  </data>
+  <data name="XmlInternalErrorDetails" xml:space="preserve">
+    <value>Internal error: {0}.</value>
+  </data>
+  <data name="XmlInternalErrorMethod" xml:space="preserve">
+    <value>Internal error: missing generated method for {0}.</value>
+  </data>
+  <data name="Arg_NeverValueType" xml:space="preserve">
+    <value>Only TypeKind.Root can be set for typeof(object) which is never value type.</value>
+  </data>
+  <data name="XmlInternalErrorReaderAdvance" xml:space="preserve">
+    <value>Internal error: deserialization failed to advance over underlying stream.</value>
+  </data>
+  <data name="Enc_InvalidByteInEncoding" xml:space="preserve">
+    <value>Invalid byte was found at index {0}.</value>
+  </data>
+  <data name="Arg_ExpectingXmlTextReader" xml:space="preserve">
+    <value>The XmlReader passed in to construct this XmlValidatingReaderImpl must be an instance of a System.Xml.XmlTextReader.</value>
+  </data>
+  <data name="Arg_CannotCreateNode" xml:space="preserve">
+    <value>Cannot create node of type {0}.</value>
+  </data>
+  <data name="Arg_IncompatibleParamType" xml:space="preserve">
+    <value>Type is incompatible.</value>
+  </data>
+  <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
+    <value>Cannot open '{0}'. The Uri parameter must be a file system relative or absolute path.</value>
+  </data>
+  <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
+    <value>--- End of inner exception stack trace ---</value>
+  </data>
+  <data name="XPath_UnclosedString" xml:space="preserve">
+    <value>String literal was not closed.</value>
+  </data>
+  <data name="XPath_ScientificNotation" xml:space="preserve">
+    <value>Scientific notation is not allowed.</value>
+  </data>
+  <data name="XPath_UnexpectedToken" xml:space="preserve">
+    <value>Unexpected token '{0}' in the expression.</value>
+  </data>
+  <data name="XPath_NodeTestExpected" xml:space="preserve">
+    <value>Expected a node test, found '{0}'.</value>
+  </data>
+  <data name="XPath_EofExpected" xml:space="preserve">
+    <value>Expected end of the expression, found '{0}'.</value>
+  </data>
+  <data name="XPath_TokenExpected" xml:space="preserve">
+    <value>Expected token '{0}', found '{1}'.</value>
+  </data>
+  <data name="XPath_InvalidAxisInPattern" xml:space="preserve">
+    <value>Only 'child' and 'attribute' axes are allowed in a pattern outside predicates.</value>
+  </data>
+  <data name="XPath_PredicateAfterDot" xml:space="preserve">
+    <value>Abbreviated step '.' cannot be followed by a predicate. Use the full form 'self::node()[predicate]' instead.</value>
+  </data>
+  <data name="XPath_PredicateAfterDotDot" xml:space="preserve">
+    <value>Abbreviated step '..' cannot be followed by a predicate. Use the full form 'parent::node()[predicate]' instead.</value>
+  </data>
+  <data name="XPath_NArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have {1} argument(s).</value>
+  </data>
+  <data name="XPath_NOrMArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have {1} or {2} argument(s).</value>
+  </data>
+  <data name="XPath_AtLeastNArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have at least {1} argument(s).</value>
+  </data>
+  <data name="XPath_AtMostMArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have no more than {2} arguments.</value>
+  </data>
+  <data name="XPath_NodeSetArgumentExpected" xml:space="preserve">
+    <value>Argument {1} of function '{0}()' cannot be converted to a node-set.</value>
+  </data>
+  <data name="XPath_NodeSetExpected" xml:space="preserve">
+    <value>Expression must evaluate to a node-set.</value>
+  </data>
+  <data name="XPath_RtfInPathExpr" xml:space="preserve">
+    <value>To use a result tree fragment in a path expression, first convert it to a node-set using the msxsl:node-set() function.</value>
+  </data>
+  <data name="Xslt_WarningAsError" xml:space="preserve">
+    <value>Warning as Error: {0}</value>
+  </data>
+  <data name="Xslt_InputTooComplex" xml:space="preserve">
+    <value>The stylesheet is too complex.</value>
+  </data>
+  <data name="Xslt_CannotLoadStylesheet" xml:space="preserve">
+    <value>Cannot load the stylesheet object referenced by URI '{0}', because the provided XmlResolver returned an object of type '{1}'. One of Stream, XmlReader, and IXPathNavigable types was expected.</value>
+  </data>
+  <data name="Xslt_WrongStylesheetElement" xml:space="preserve">
+    <value>Stylesheet must start either with an 'xsl:stylesheet' or an 'xsl:transform' element, or with a literal result element that has an 'xsl:version' attribute, where prefix 'xsl' denotes the 'http://www.w3.org/1999/XSL/Transform' namespace.</value>
+  </data>
+  <data name="Xslt_WdXslNamespace" xml:space="preserve">
+    <value>The 'http://www.w3.org/TR/WD-xsl' namespace is no longer supported.</value>
+  </data>
+  <data name="Xslt_NotAtTop" xml:space="preserve">
+    <value>'{0}' element children must precede all other children of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_UnexpectedElement" xml:space="preserve">
+    <value>'{0}' cannot be a child of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_NullNsAtTopLevel" xml:space="preserve">
+    <value>Top-level element '{0}' may not have a null namespace URI.</value>
+  </data>
+  <data name="Xslt_TextNodesNotAllowed" xml:space="preserve">
+    <value>'{0}' element cannot have text node children.</value>
+  </data>
+  <data name="Xslt_NotEmptyContents" xml:space="preserve">
+    <value>The contents of '{0}' must be empty.</value>
+  </data>
+  <data name="Xslt_InvalidAttribute" xml:space="preserve">
+    <value>'{0}' is an invalid attribute for the '{1}' element.</value>
+  </data>
+  <data name="Xslt_MissingAttribute" xml:space="preserve">
+    <value>Missing mandatory attribute '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidAttrValue" xml:space="preserve">
+    <value>'{1}' is an invalid value for the '{0}' attribute.</value>
+  </data>
+  <data name="Xslt_BistateAttribute" xml:space="preserve">
+    <value>The value of the '{0}' attribute must be '{1}' or '{2}'.</value>
+  </data>
+  <data name="Xslt_CharAttribute" xml:space="preserve">
+    <value>The value of the '{0}' attribute must be a single character.</value>
+  </data>
+  <data name="Xslt_CircularInclude" xml:space="preserve">
+    <value>Stylesheet '{0}' cannot directly or indirectly include or import itself.</value>
+  </data>
+  <data name="Xslt_SingleRightBraceInAvt" xml:space="preserve">
+    <value>The right curly brace in an attribute value template '{0}' outside an expression must be doubled.</value>
+  </data>
+  <data name="Xslt_VariableCntSel2" xml:space="preserve">
+    <value>The variable or parameter '{0}' cannot have both a 'select' attribute and non-empty content.</value>
+  </data>
+  <data name="Xslt_KeyCntUse" xml:space="preserve">
+    <value>'xsl:key' has a 'use' attribute and has non-empty content, or it has empty content and no 'use' attribute.</value>
+  </data>
+  <data name="Xslt_DupTemplateName" xml:space="preserve">
+    <value>'{0}' is a duplicate template name.</value>
+  </data>
+  <data name="Xslt_BothMatchNameAbsent" xml:space="preserve">
+    <value>'xsl:template' must have either a 'match' attribute or a 'name' attribute, or both.</value>
+  </data>
+  <data name="Xslt_InvalidVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' is either not defined or it is out of scope.</value>
+  </data>
+  <data name="Xslt_DupGlobalVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' was duplicated with the same import precedence.</value>
+  </data>
+  <data name="Xslt_DupLocalVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' was duplicated within the same scope.</value>
+  </data>
+  <data name="Xslt_DupNsAlias" xml:space="preserve">
+    <value>Namespace URI '{0}' is declared to be an alias for multiple different namespace URIs with the same import precedence.</value>
+  </data>
+  <data name="Xslt_EmptyAttrValue" xml:space="preserve">
+    <value>The value of the '{0}' attribute cannot be empty.</value>
+  </data>
+  <data name="Xslt_EmptyNsAlias" xml:space="preserve">
+    <value>The value of the '{0}' attribute cannot be empty. Use '#default' to specify the default namespace.</value>
+  </data>
+  <data name="Xslt_UnknownXsltFunction" xml:space="preserve">
+    <value>'{0}()' is an unknown XSLT function.</value>
+  </data>
+  <data name="Xslt_UnsupportedXsltFunction" xml:space="preserve">
+    <value>'{0}()' is an unsupported XSLT function.</value>
+  </data>
+  <data name="Xslt_NoAttributeSet" xml:space="preserve">
+    <value>A reference to attribute set '{0}' cannot be resolved. An 'xsl:attribute-set' of this name must be declared at the top level of the stylesheet.</value>
+  </data>
+  <data name="Xslt_UndefinedKey" xml:space="preserve">
+    <value>A reference to key '{0}' cannot be resolved. An 'xsl:key' of this name must be declared at the top level of the stylesheet.</value>
+  </data>
+  <data name="Xslt_CircularAttributeSet" xml:space="preserve">
+    <value>Circular reference in the definition of attribute set '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidCallTemplate" xml:space="preserve">
+    <value>The named template '{0}' does not exist.</value>
+  </data>
+  <data name="Xslt_InvalidPrefix" xml:space="preserve">
+    <value>Prefix '{0}' is not defined.</value>
+  </data>
+  <data name="Xslt_ScriptXsltNamespace" xml:space="preserve">
+    <value>Script block cannot implement the XSLT namespace.</value>
+  </data>
+  <data name="Xslt_ScriptInvalidLanguage" xml:space="preserve">
+    <value>Scripting language '{0}' is not supported.</value>
+  </data>
+  <data name="Xslt_ScriptMixedLanguages" xml:space="preserve">
+    <value>All script blocks implementing the namespace '{0}' must use the same language.</value>
+  </data>
+  <data name="Xslt_ScriptAndExtensionClash" xml:space="preserve">
+    <value>Cannot have both an extension object and a script implementing the same namespace '{0}'.</value>
+  </data>
+  <data name="Xslt_NoDecimalFormat" xml:space="preserve">
+    <value>Decimal format '{0}' is not defined.</value>
+  </data>
+  <data name="Xslt_DecimalFormatSignsNotDistinct" xml:space="preserve">
+    <value>The '{0}' and '{1}' attributes of 'xsl:decimal-format' must have distinct values.</value>
+  </data>
+  <data name="Xslt_DecimalFormatRedefined" xml:space="preserve">
+    <value>The '{0}' attribute of 'xsl:decimal-format' cannot be redefined with a value of '{1}'.</value>
+  </data>
+  <data name="Xslt_UnknownExtensionElement" xml:space="preserve">
+    <value>'{0}' is not a recognized extension element.</value>
+  </data>
+  <data name="Xslt_ModeWithoutMatch" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'mode' attribute.</value>
+  </data>
+  <data name="Xslt_ModeListEmpty" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't be empty. </value>
+  </data>
+  <data name="Xslt_ModeListDup" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't contain duplicates ('{0}'). </value>
+  </data>
+  <data name="Xslt_ModeListAll" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't contain token '#all' together with any other value. </value>
+  </data>
+  <data name="Xslt_PriorityWithoutMatch" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'priority' attribute.</value>
+  </data>
+  <data name="Xslt_InvalidApplyImports" xml:space="preserve">
+    <value>An 'xsl:apply-imports' element can only occur within an 'xsl:template' element with a 'match' attribute, and cannot occur within an 'xsl:for-each' element.</value>
+  </data>
+  <data name="Xslt_DuplicateWithParam" xml:space="preserve">
+    <value>Value of parameter '{0}' cannot be specified more than once within a single 'xsl:call-template' or 'xsl:apply-templates' element.</value>
+  </data>
+  <data name="Xslt_ReservedNS" xml:space="preserve">
+    <value>Elements and attributes cannot belong to the reserved namespace '{0}'.</value>
+  </data>
+  <data name="Xslt_XmlnsAttr" xml:space="preserve">
+    <value>An attribute with a local name 'xmlns' and a null namespace URI cannot be created.</value>
+  </data>
+  <data name="Xslt_NoWhen" xml:space="preserve">
+    <value>An 'xsl:choose' element must have at least one 'xsl:when' child.</value>
+  </data>
+  <data name="Xslt_WhenAfterOtherwise" xml:space="preserve">
+    <value>'xsl:when' must precede the 'xsl:otherwise' element.</value>
+  </data>
+  <data name="Xslt_DupOtherwise" xml:space="preserve">
+    <value>An 'xsl:choose' element can have only one 'xsl:otherwise' child.</value>
+  </data>
+  <data name="Xslt_AttributeRedefinition" xml:space="preserve">
+    <value>Attribute '{0}' of 'xsl:output' cannot be defined more than once with the same import precedence.</value>
+  </data>
+  <data name="Xslt_InvalidMethod" xml:space="preserve">
+    <value>'{0}' is not a supported output method. Supported methods are 'xml', 'html', and 'text'.</value>
+  </data>
+  <data name="Xslt_InvalidEncoding" xml:space="preserve">
+    <value>'{0}' is not a supported encoding name.</value>
+  </data>
+  <data name="Xslt_InvalidLanguage" xml:space="preserve">
+    <value>'{0}' is not a supported language identifier.</value>
+  </data>
+  <data name="Xslt_InvalidCompareOption" xml:space="preserve">
+    <value>String comparison option(s) '{0}' are either invalid or cannot be used together.</value>
+  </data>
+  <data name="Xslt_KeyNotAllowed" xml:space="preserve">
+    <value>The 'key()' function cannot be used in 'use' and 'match' attributes of 'xsl:key' element.</value>
+  </data>
+  <data name="Xslt_VariablesNotAllowed" xml:space="preserve">
+    <value>Variables cannot be used within this expression.</value>
+  </data>
+  <data name="Xslt_CurrentNotAllowed" xml:space="preserve">
+    <value>The 'current()' function cannot be used in a pattern.</value>
+  </data>
+  <data name="Xslt_DocumentFuncProhibited" xml:space="preserve">
+    <value>Execution of the 'document()' function was prohibited. Use the XsltSettings.EnableDocumentFunction property to enable it.</value>
+  </data>
+  <data name="Xslt_ScriptsProhibited" xml:space="preserve">
+    <value>Execution of scripts was prohibited. Use the XsltSettings.EnableScript property to enable it.</value>
+  </data>
+  <data name="Xslt_ItemNull" xml:space="preserve">
+    <value>Extension functions cannot return null values.</value>
+  </data>
+  <data name="Xslt_NodeSetNotNode" xml:space="preserve">
+    <value>Cannot convert a node-set which contains zero nodes or more than one node to a single node.</value>
+  </data>
+  <data name="Xslt_UnsupportedClrType" xml:space="preserve">
+    <value>Extension function parameters or return values which have Clr type '{0}' are not supported.</value>
+  </data>
+  <data name="Xslt_NotYetImplemented" xml:space="preserve">
+    <value>'{0}' is not yet implemented.</value>
+  </data>
+  <data name="Xslt_SchemaDeclaration" xml:space="preserve">
+    <value>'{0}' declaration is not permitted in non-schema aware processor.</value>
+  </data>
+  <data name="Xslt_SchemaAttribute" xml:space="preserve">
+    <value>Attribute '{0}' is not permitted in basic XSLT processor (http://www.w3.org/TR/xslt20/#dt-basic-xslt-processor).</value>
+  </data>
+  <data name="Xslt_SchemaAttributeValue" xml:space="preserve">
+    <value>Value '{1}' of attribute '{0}' is not permitted in basic XSLT processor (http://www.w3.org/TR/xslt20/#dt-basic-xslt-processor).</value>
+  </data>
+  <data name="Xslt_ElementCntSel" xml:space="preserve">
+    <value>The element '{0}' cannot have both a 'select' attribute and non-empty content.</value>
+  </data>
+  <data name="Xslt_PerformSortCntSel" xml:space="preserve">
+    <value>The element 'xsl:perform-sort' cannot have 'select' attribute any content other than 'xsl:sort' and 'xsl:fallback' instructions.</value>
+  </data>
+  <data name="Xslt_RequiredAndSelect" xml:space="preserve">
+    <value>Mandatory parameter '{0}' must be empty and must not have a 'select' attribute.</value>
+  </data>
+  <data name="Xslt_NoSelectNoContent" xml:space="preserve">
+    <value>Element '{0}' must have either 'select' attribute or non-empty content.</value>
+  </data>
+  <data name="Xslt_NonTemplateTunnel" xml:space="preserve">
+    <value>Stylesheet or function parameter '{0}' cannot have attribute 'tunnel'.</value>
+  </data>
+  <data name="Xslt_RequiredOnFunction" xml:space="preserve">
+    <value>The 'required' attribute must not be specified for parameter '{0}'. Function parameters are always mandatory. </value>
+  </data>
+  <data name="Xslt_ExcludeDefault" xml:space="preserve">
+    <value>Value '#default' is used within the 'exclude-result-prefixes' attribute and the parent element of this attribute has no default namespace.</value>
+  </data>
+  <data name="Xslt_CollationSyntax" xml:space="preserve">
+    <value>The value of an 'default-collation' attribute contains no recognized collation URI.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringDupChild" xml:space="preserve">
+    <value>'xsl:analyze-string' cannot have second child with name '{0}'.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringChildOrder" xml:space="preserve">
+    <value>When both 'xsl:matching-string' and 'xsl:non-matching-string' elements are present, 'xsl:matching-string' element must come first.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringEmpty" xml:space="preserve">
+    <value>'xsl:analyze-string' must contain either 'xsl:matching-string' or 'xsl:non-matching-string' elements or both.</value>
+  </data>
+  <data name="Xslt_SortStable" xml:space="preserve">
+    <value>Only the first 'xsl:sort' element may have 'stable' attribute.</value>
+  </data>
+  <data name="Xslt_InputTypeAnnotations" xml:space="preserve">
+    <value>It is an error if there is a stylesheet module in the stylesheet that specifies 'input-type-annotations'="strip" and another stylesheet module that specifies 'input-type-annotations'="preserve".</value>
+  </data>
+  <data name="Coll_BadOptFormat" xml:space="preserve">
+    <value>Collation option '{0}' is invalid. Options must have the following format: &lt;option-name&gt;=&lt;option-value&gt;.</value>
+  </data>
+  <data name="Coll_Unsupported" xml:space="preserve">
+    <value>The collation '{0}' is not supported.</value>
+  </data>
+  <data name="Coll_UnsupportedLanguage" xml:space="preserve">
+    <value>Collation language '{0}' is not supported.</value>
+  </data>
+  <data name="Coll_UnsupportedOpt" xml:space="preserve">
+    <value>Unsupported option '{0}' in collation.</value>
+  </data>
+  <data name="Coll_UnsupportedOptVal" xml:space="preserve">
+    <value>Collation option '{0}' cannot have the value '{1}'.</value>
+  </data>
+  <data name="Coll_UnsupportedSortOpt" xml:space="preserve">
+    <value>Unsupported sort option '{0}' in collation.</value>
+  </data>
+  <data name="Qil_Validation" xml:space="preserve">
+    <value>QIL Validation Error! '{0}'.</value>
+  </data>
+  <data name="XmlIl_TooManyParameters" xml:space="preserve">
+    <value>Functions may not have more than 65535 parameters.</value>
+  </data>
+  <data name="XmlIl_BadXmlState" xml:space="preserve">
+    <value>An item of type '{0}' cannot be constructed within a node of type '{1}'.</value>
+  </data>
+  <data name="XmlIl_BadXmlStateAttr" xml:space="preserve">
+    <value>Attribute and namespace nodes cannot be added to the parent element after a text, comment, pi, or sub-element node has already been added.</value>
+  </data>
+  <data name="XmlIl_NmspAfterAttr" xml:space="preserve">
+    <value>Namespace nodes cannot be added to the parent element after an attribute node has already been added.</value>
+  </data>
+  <data name="XmlIl_NmspConflict" xml:space="preserve">
+    <value>Cannot construct namespace declaration xmlns{0}{1}='{2}'. Prefix '{1}' is already mapped to namespace '{3}'.</value>
+  </data>
+  <data name="XmlIl_CantResolveEntity" xml:space="preserve">
+    <value>Cannot query the data source object referenced by URI '{0}', because the provided XmlResolver returned an object of type '{1}'. Only Stream, XmlReader, and IXPathNavigable data source objects are currently supported.</value>
+  </data>
+  <data name="XmlIl_NoDefaultDocument" xml:space="preserve">
+    <value>Query requires a default data source, but no default was supplied to the query engine.</value>
+  </data>
+  <data name="XmlIl_UnknownDocument" xml:space="preserve">
+    <value>Data source '{0}' cannot be located.</value>
+  </data>
+  <data name="XmlIl_UnknownParam" xml:space="preserve">
+    <value>Supplied XsltArgumentList does not contain a parameter with local name '{0}' and namespace '{1}'.</value>
+  </data>
+  <data name="XmlIl_UnknownExtObj" xml:space="preserve">
+    <value>Cannot find a script or an extension object associated with namespace '{0}'.</value>
+  </data>
+  <data name="XmlIl_CantStripNav" xml:space="preserve">
+    <value>Whitespace cannot be stripped from input documents that have already been loaded. Provide the input document as an XmlReader instead.</value>
+  </data>
+  <data name="XmlIl_ExtensionError" xml:space="preserve">
+    <value>An error occurred during a call to extension function '{0}'. See InnerException for a complete description of the error.</value>
+  </data>
+  <data name="XmlIl_TopLevelAttrNmsp" xml:space="preserve">
+    <value>XmlWriter cannot process the sequence returned by the query, because it contains an attribute or namespace node.</value>
+  </data>
+  <data name="XmlIl_NoExtensionMethod" xml:space="preserve">
+    <value>Extension object '{0}' does not contain a matching '{1}' method that has {2} parameter(s).</value>
+  </data>
+  <data name="XmlIl_AmbiguousExtensionMethod" xml:space="preserve">
+    <value>Ambiguous method call. Extension object '{0}' contains multiple '{1}' methods that have {2} parameter(s).</value>
+  </data>
+  <data name="XmlIl_NonPublicExtensionMethod" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it is not public.</value>
+  </data>
+  <data name="XmlIl_GenericExtensionMethod" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it is generic.</value>
+  </data>
+  <data name="XmlIl_ByRefType" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it has one or more ByRef parameters.</value>
+  </data>
+  <data name="XmlIl_DocumentLoadError" xml:space="preserve">
+    <value>An error occurred while loading document '{0}'. See InnerException for a complete description of the error.</value>
+  </data>
+  <data name="Xslt_CompileError" xml:space="preserve">
+    <value>XSLT compile error at {0}({1},{2}). See InnerException for details.</value>
+  </data>
+  <data name="Xslt_CompileError2" xml:space="preserve">
+    <value>XSLT compile error.</value>
+  </data>
+  <data name="Xslt_UnsuppFunction" xml:space="preserve">
+    <value>'{0}()' is an unsupported XSLT function.</value>
+  </data>
+  <data name="Xslt_NotFirstImport" xml:space="preserve">
+    <value>'xsl:import' instructions must precede all other element children of an 'xsl:stylesheet' element.</value>
+  </data>
+  <data name="Xslt_UnexpectedKeyword" xml:space="preserve">
+    <value>'{0}' cannot be a child of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_InvalidContents" xml:space="preserve">
+    <value>The contents of '{0}' are invalid.</value>
+  </data>
+  <data name="Xslt_CantResolve" xml:space="preserve">
+    <value>Cannot resolve the referenced document '{0}'.</value>
+  </data>
+  <data name="Xslt_SingleRightAvt" xml:space="preserve">
+    <value>Right curly brace in the attribute value template '{0}' must be doubled.</value>
+  </data>
+  <data name="Xslt_OpenBracesAvt" xml:space="preserve">
+    <value>The braces are not closed in AVT expression '{0}'.</value>
+  </data>
+  <data name="Xslt_OpenLiteralAvt" xml:space="preserve">
+    <value>The literal in AVT expression is not correctly closed '{0}'.</value>
+  </data>
+  <data name="Xslt_NestedAvt" xml:space="preserve">
+    <value>AVT cannot be nested in AVT '{0}'.</value>
+  </data>
+  <data name="Xslt_EmptyAvtExpr" xml:space="preserve">
+    <value>XPath Expression in AVT cannot be empty: '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidXPath" xml:space="preserve">
+    <value>'{0}' is an invalid XPath expression.</value>
+  </data>
+  <data name="Xslt_InvalidQName" xml:space="preserve">
+    <value>'{0}' is an invalid QName.</value>
+  </data>
+  <data name="Xslt_TemplateNoAttrib" xml:space="preserve">
+    <value>The 'xsl:template' instruction must have the 'match' and/or 'name' attribute present.</value>
+  </data>
+  <data name="Xslt_DupVarName" xml:space="preserve">
+    <value>Variable or parameter '{0}' was duplicated within the same scope.</value>
+  </data>
+  <data name="Xslt_WrongNumberArgs" xml:space="preserve">
+    <value>XSLT function '{0}()' has the wrong number of arguments.</value>
+  </data>
+  <data name="Xslt_NoNodeSetConversion" xml:space="preserve">
+    <value>Cannot convert the operand to a node-set.</value>
+  </data>
+  <data name="Xslt_NoNavigatorConversion" xml:space="preserve">
+    <value>Cannot convert the operand to 'Result tree fragment'.</value>
+  </data>
+  <data name="Xslt_InvalidFormat" xml:space="preserve">
+    <value>Format cannot be empty.</value>
+  </data>
+  <data name="Xslt_InvalidFormat1" xml:space="preserve">
+    <value>Format '{0}' cannot have digit symbol after zero digit symbol before a decimal point.</value>
+  </data>
+  <data name="Xslt_InvalidFormat2" xml:space="preserve">
+    <value>Format '{0}' cannot have zero digit symbol after digit symbol after decimal point.</value>
+  </data>
+  <data name="Xslt_InvalidFormat3" xml:space="preserve">
+    <value>Format '{0}' has two pattern separators.</value>
+  </data>
+  <data name="Xslt_InvalidFormat5" xml:space="preserve">
+    <value>Format '{0}' cannot have two decimal separators.</value>
+  </data>
+  <data name="Xslt_InvalidFormat8" xml:space="preserve">
+    <value>Format string should have at least one digit or zero digit.</value>
+  </data>
+  <data name="Xslt_ScriptInvalidPrefix" xml:space="preserve">
+    <value>Cannot find the script or external object that implements prefix '{0}'.</value>
+  </data>
+  <data name="Xslt_ScriptDub" xml:space="preserve">
+    <value>Namespace '{0}' has a duplicate implementation.</value>
+  </data>
+  <data name="Xslt_ScriptEmpty" xml:space="preserve">
+    <value>The 'msxsl:script' element cannot be empty.</value>
+  </data>
+  <data name="Xslt_DupDecimalFormat" xml:space="preserve">
+    <value>Decimal format '{0}' has a duplicate declaration.</value>
+  </data>
+  <data name="Xslt_CircularReference" xml:space="preserve">
+    <value>Circular reference in the definition of variable '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidExtensionNamespace" xml:space="preserve">
+    <value>Extension namespace cannot be 'null' or an XSLT namespace URI.</value>
+  </data>
+  <data name="Xslt_InvalidModeAttribute" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'mode' attribute.</value>
+  </data>
+  <data name="Xslt_MultipleRoots" xml:space="preserve">
+    <value>There are multiple root elements in the output XML.</value>
+  </data>
+  <data name="Xslt_ApplyImports" xml:space="preserve">
+    <value>The 'xsl:apply-imports' instruction cannot be included within the content of an 'xsl:for-each' instruction or within an 'xsl:template' instruction without the 'match' attribute.</value>
+  </data>
+  <data name="Xslt_Terminate" xml:space="preserve">
+    <value>Transform terminated: '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidPattern" xml:space="preserve">
+    <value>'{0}' is an invalid XSLT pattern.</value>
+  </data>
+  <data name="XmlInvalidCharSchemaPrimitive" xml:space="preserve">
+    <value>Char is not a valid schema primitive and should be treated as int in DataContract</value>
+  </data>
+  <data name="UnknownConstantType" xml:space="preserve">
+    <value>Internal Error: Unrecognized constant type {0}.</value>
+  </data>
+  <data name="ArrayTypeIsNotSupported" xml:space="preserve">
+    <value>Array of type {0} is not supported.</value>
+  </data>
+  <data name="Xml_MissingSerializationCodeException" xml:space="preserve">
+    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. http://go.microsoft.com/fwlink/?LinkId=613136</value>
+  </data>
+  <data name="Xslt_UpperCaseFirstNotSupported" xml:space="preserve">
+    <value>Uppercase-First sorting option is not supported.</value>
+  </data>
+  <data name="XmlPregenTypeDynamic" xml:space="preserve">
+    <value>Cannot pre-generate serialization code for type '{0}'. Pre-generation of serialization assemblies is not supported for dynamic types. Save the assembly and load it from disk to use it with XmlSerialization.</value>
+  </data>
+  <data name="XmlPregenOrphanType" xml:space="preserve">
+    <value>Cannot pre-generate serializer for multiple assemblies. Type '{0}' does not belong to assembly {1}.</value>
+  </data>
+  <data name="ErrSerializerExists" xml:space="preserve">
+    <value>Cannot generate serialization code {0} because the code file already exists. Use /{1} to force an overwrite of the existing file.</value>
+  </data>
+  <data name="ErrDirectoryExists" xml:space="preserve">
+    <value>Cannot generate serialization code '{0}' because a directory with the same name already exists.</value>
+  </data>
+  <data name="ErrDirectoryNotExists" xml:space="preserve">
+    <value>Cannot generate serialization code because directory {0} doesn't exist.</value>
+  </data>
+  <data name="ErrInvalidArgument" xml:space="preserve">
+    <value>Ignoring invalid command line argument: '{0}'.</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning: {0}.</value>
+  </data>
+  <data name="ErrMissingRequiredArgument" xml:space="preserve">
+    <value>Missing required command-line argument: {0}.</value>
+  </data>
+  <data name="ErrAssembly" xml:space="preserve">
+    <value>The name of the source assembly.</value>
+  </data>
+  <data name="InfoGeneratedFile" xml:space="preserve">
+    <value>Generated serialization code for assembly {0} --&gt; '{1}'.</value>
+  </data>
+  <data name="InfoFileName" xml:space="preserve">
+    <value>Serialization Code File Name: {0}.</value>
+  </data>
+  <data name="ErrGenerationFailed" xml:space="preserve">
+    <value>Sgen utility failed to pregenerate serialization code for {0}.</value>
+  </data>
+  <data name="ErrorDetails" xml:space="preserve">
+    <value>Error: {0}.</value>
+  </data>
+  <data name="ErrLoadType" xml:space="preserve">
+    <value>Type '{0}' was not found in the assembly '{1}'.</value>
+  </data>
+  <data name="DirectoryAccessDenied" xml:space="preserve">
+    <value>Access to directory {0} is denied.  The process under which XmlSerializer is running does not have sufficient permission to access the directory.</value>
+  </data>
+  <data name="Xslt_NotSupported" xml:space="preserve">
+    <value>Compilation of XSLT is not supported on this platform.</value>
+  </data>
+  <data name="ErrLoadAssembly" xml:space="preserve">
+    <value>File or assembly name '{0}', or one of its dependencies, was not found.</value>
+  </data>
+  <data name="InfoNoSerializableTypes" xml:space="preserve">
+    <value>Assembly '{0}' does not contain any types that can be serialized using XmlSerializer.</value>
+  </data>
+  <data name="InfoIgnoreType" xml:space="preserve">
+    <value>Ignoring '{0}'.</value>
+  </data>
+  <data name="FailLoadAssemblyUnderPregenMode" xml:space="preserve">
+    <value>"Fail to load assembly {0} or {0} doesn't exist under PreGen Mode.</value>
+  </data>
+  <data name="HelpDescription" xml:space="preserve">
+    <value>Generates serialization code for use with XmlSerializer.
+The utility allows developers to pre-generate code for serialization
+building and deploying the assemblies with the application.
+    </value>
+  </data>
+  <data name="HelpUsage" xml:space="preserve">
+    <value>
+Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&gt;]</value>
+  </data>
+  <data name="HelpDevOptions" xml:space="preserve">
+    <value>  
+  Developer options:</value>
+  </data>
+  <data name="HelpAssembly" xml:space="preserve">
+    <value>     {0}|{1}   Assembly location or display name.</value>
+  </data>
+  <data name="HelpType" xml:space="preserve">
+    <value>     {0}          Generate code for serialization/deserialization of the specified type from the input assembly.</value>
+  </data>
+  <data name="HelpForce" xml:space="preserve">
+    <value>     {0}         Forces overwrite of a previously generated assembly.</value>
+  </data>
+  <data name="HelpProxy" xml:space="preserve">
+    <value>     {0}    Generate serialization code only for proxy classes and web method parameters.</value>
+  </data>
+  <data name="HelpOut" xml:space="preserve">
+    <value>     {0}|{1}        Output directory name (default: target assembly location).</value>
+  </data>
+  <data name="HelpMiscOptions" xml:space="preserve">
+    <value>  
+  Miscellaneous options:</value>
+  </data>
+  <data name="HelpHelp" xml:space="preserve">
+    <value>     {0}|{1}       Show help.</value>
+  </data>
+  <data name="MoreHelp" xml:space="preserve">
+    <value>If you would like more help, please type "sgen {0}".</value>
+  </data>
+  <data name="GenerateSerializerNotFound" xml:space="preserve">
+    <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
+  </data>
+  <data name="event_XmlSerializerExpired" xml:space="preserve">
+    <value>Pre-generated serializer '{0}' has expired. You need to re-generate serializer for '{1}'</value>
+  </data>
+</root>

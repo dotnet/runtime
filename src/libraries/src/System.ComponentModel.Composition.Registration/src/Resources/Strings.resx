@@ -1,0 +1,102 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Registration_ConstructorConventionOverridden" xml:space="preserve">
+    <value>A constructor selection convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_TypeExportConventionOverridden" xml:space="preserve">
+    <value>An Export specification convention that would apply to type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_MemberExportConventionOverridden" xml:space="preserve">
+    <value>An Export specification convention that would apply to Member '{0}' of type '{1}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_MemberImportConventionOverridden" xml:space="preserve">
+    <value>An Import specification convention that would apply to Member '{0}' of type '{1}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_MemberImportConventionMatchedTwice" xml:space="preserve">
+    <value>Only one import specification convention can apply to a single Member. More than one convention specification applies to this Member '{0}' of Type '{1}'.</value>
+  </data>
+  <data name="Registration_ParameterImportConventionOverridden" xml:space="preserve">
+    <value>A ParameterImport specification convention that would apply to Parameter '{0}' of Constructor '{1}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_PartCreationConventionOverridden" xml:space="preserve">
+    <value>A PartCreationPolicy specification convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Registration_PartMetadataConventionOverridden" xml:space="preserve">
+    <value>A PartMetadata specification convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+  <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred.</value>
+  </data>
+  <data name="Argument_ExpressionMustBeNew" xml:space="preserve">
+    <value>The value of argument '{0}' is not supported.  The expression must use operator new.</value>
+  </data>
+  <data name="Argument_ExpressionMustBePropertyMember" xml:space="preserve">
+    <value>The value of argument '{0}' is not supported.  The expression must be a property member expression.</value>
+  </data>
+  <data name="Diagnostic_TraceUnnecessaryWork" xml:space="preserve">
+    <value>To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.</value>
+  </data>
+  <data name="PlatformNotSupported_ComponentModel_Composition_Registration" xml:space="preserve">
+    <value>System.ComponentModel.Composition.Registration APIs are not supported on this platform.</value>
+  </data>
+  <data name="Registration_OnSatisfiedImportNotificationOverridden" xml:space="preserve">
+    <value>A OnSatisfiedImports specification convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
+</root>

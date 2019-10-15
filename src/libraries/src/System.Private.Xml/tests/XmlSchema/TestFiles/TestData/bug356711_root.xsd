@@ -1,0 +1,12 @@
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'>
+
+<xsd:complexType name="CT">
+  <xsd:sequence>
+	<xsd:any namespace="##any" minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+  </xsd:sequence>
+</xsd:complexType>
+
+<xsd:element name="root" type="CT"/>
+
+</xsd:schema>
+

@@ -1,0 +1,20 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netcoreapp2.0-FreeBSD;
+      netcoreapp2.0-Linux;
+      netcoreapp2.0-OSX;
+      netcoreapp2.0-Windows_NT;
+      net461-Windows_NT;
+      netstandard;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations)
+      netcoreapp-FreeBSD;
+      netcoreapp-Linux;
+      netcoreapp-OSX;
+      netcoreapp-Windows_NT;
+      netfx-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

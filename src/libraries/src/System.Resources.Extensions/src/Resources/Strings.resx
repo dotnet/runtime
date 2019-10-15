@@ -1,0 +1,147 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
+    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+  </data>
+  <data name="Argument_StreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable</value>
+  </data>
+  <data name="Argument_StreamNotWritable" xml:space="preserve">
+    <value>Stream was not writable.</value>
+  </data>
+  <data name="Arg_ResourceFileUnsupportedVersion" xml:space="preserve">
+    <value>The ResourceReader class does not know how to read this version of .resources files. Expected version: {0}  This file: {1}</value>
+  </data>
+  <data name="BadImageFormat_InvalidType" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't exist.</value>
+  </data>
+  <data name="BadImageFormat_NegativeStringLength" xml:space="preserve">
+    <value>Corrupt .resources file. String length must be non-negative.</value>
+  </data>
+  <data name="BadImageFormat_ResourceDataLengthInvalid" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified data length '{0}' is not a valid position in the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourceNameCorrupted" xml:space="preserve">
+    <value>Corrupt .resources file. A resource name extends past the end of the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourceNameCorrupted_NameIndex" xml:space="preserve">
+    <value>Corrupt .resources file. The resource name for name index {0} extends past the end of the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. Invalid offset '{0}' into data section.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesHeaderCorrupted" xml:space="preserve">
+    <value>Corrupt .resources file. Unable to read resources from this file because of invalid header information. Try regenerating the .resources file.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesIndexTooLong" xml:space="preserve">
+    <value>Corrupt .resources file. String for name index '{0}' extends past the end of the file.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesNameInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. Invalid offset '{0}' into name section.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesNameTooLong" xml:space="preserve">
+    <value>Corrupt .resources file. Resource name extends past the end of the file.</value>
+  </data>
+  <data name="BadImageFormat_ResType_SerBlobMismatch" xml:space="preserve">
+    <value>The type serialized in the .resources file was not the same type that the .resources file said it contained. Expected '{0}' but read '{1}'.</value>
+  </data>
+  <data name="BadImageFormat_TypeMismatch" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't match the available data in the stream.</value>
+  </data>
+  <data name="Format_Bad7BitInt32" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  </data>
+  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
+    <value>Enumeration already finished.</value>
+  </data>
+  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext.</value>
+  </data>
+  <data name="InvalidOperation_ResourceNotString_Type" xml:space="preserve">
+    <value>Resource was of type '{0}' instead of String - call GetObject instead.</value>
+  </data>
+  <data name="InvalidOperation_ResourceWriterSaved" xml:space="preserve">
+    <value>The resource writer has already been closed and cannot be edited.</value>
+  </data>
+  <data name="NotSupported_BinarySerializedResources" xml:space="preserve">
+    <value>This platform does not support binary serialized resources.</value>
+  </data>
+  <data name="NotSupported_ResourceObjectSerialization" xml:space="preserve">
+    <value>Cannot read resources that depend on serialization.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_WrongResourceReader_Type" xml:space="preserve">
+    <value>This .resources file should not be read with this reader. The resource reader type is "{0}".</value>
+  </data>
+  <data name="ObjectDisposed_ResourceSet" xml:space="preserve">
+    <value>Cannot access a closed resource set.</value>
+  </data>
+  <data name="ResourceReaderIsClosed" xml:space="preserve">
+    <value>ResourceReader is closed.</value>
+  </data>
+  <data name="Resources_StreamNotValid" xml:space="preserve">
+    <value>Stream is not a valid resource file.</value>
+  </data>
+  <data name="TypeLoadException_CannotLoadConverter" xml:space="preserve">
+    <value>Could not load a converter for type {0}.</value>
+  </data>
+</root>

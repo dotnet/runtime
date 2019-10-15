@@ -1,0 +1,12 @@
+<Project>
+  <!-- this is a generated project, to make changes update the template above this directory
+       and rebuild generateShims.proj -->
+  <!-- only import SDK if this project is built directly -->
+  <Import Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileFullPath)'" Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
+    <ContractAssemblyPath>$(NetFxRefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
+  </PropertyGroup>
+  <Import Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileFullPath)'" Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

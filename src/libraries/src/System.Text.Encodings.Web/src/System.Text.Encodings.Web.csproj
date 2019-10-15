@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Text.Encodings.Web</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
+    <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
+    <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
+    <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
+      <Link>System\Text\UnicodeDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeUtility.cs">
+      <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsUap)' == 'true'">
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

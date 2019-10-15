@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime.Extensions:
+MembersMustExist : Member 'System.AppDomain.GetThreadPrincipal()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Environment.FailFast(System.String, System.Exception, System.String)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 5

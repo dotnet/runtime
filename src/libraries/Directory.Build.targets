@@ -1,0 +1,154 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+    For non-SDK projects that import this file and then import Microsoft.Common.targets,
+    tell Microsoft.Common.targets not to import Directory.Build.targets again
+    -->
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <!-- This is a workaround to allow the SDK to accept the netcoreapp5.0 tfm until the SDK supports targeting this tfm. -->
+    <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup>
+    <ArtifactsPackagesDir>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'packages', '$(ConfigurationGroup)'))</ArtifactsPackagesDir>
+    <ArtifactsShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Shipping'))</ArtifactsShippingPackagesDir>
+    <ArtifactsNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'NonShipping'))</ArtifactsNonShippingPackagesDir>
+
+    <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
+    <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+
+  <!-- Corefx-specific binplacing properties -->
+  <PropertyGroup>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(BinPlaceRef)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <!-- Try to determine if this is a simple library without a ref project.
+         https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(MSBuildProjectName)') and !Exists('$(SourceDir)/$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+    <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
+    <IsNetFxNETStandardRef Condition="'$(IsNetFxNETStandardRef)' == ''">$(IsNetFxNETStandard)</IsNetFxNETStandardRef>
+
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
+    <!-- binplace to directories for the target vertical -->
+    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
+      <RefPath>$(BuildConfigurationRefPath)</RefPath>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <!-- binplace to directories for packages -->
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime</RuntimePath>
+      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' AND '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app</RefPath>
+      <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
+      <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
+    </BinPlaceConfiguration>
+
+    <!-- Setup the shared framework directory for testing -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-Windows_NT">
+      <RuntimePath>$(UAPTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="netfx-Windows_NT">
+      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- binplace targeting packs which may be different from BuildConfiguration -->
+    <BinPlaceConfiguration Include="netstandard">
+      <RefPath>$(NetStandardRefPath)</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="netstandard2.1">
+      <RefPath>$(NetStandard21RefPath)</RefPath>
+    </BinPlaceConfiguration>
+    <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
+    <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
+      <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
+    </BinPlaceConfiguration>
+    <!-- some libraries that produce packages will remain targeting uap10.0.16299 -->
+    <BinPlaceConfiguration Condition="'$(BuildingUAPVertical)' == 'true'" Include="uap10.0.16299">
+      <RefPath>$(RefRootPath)uap10.0.16299/</RefPath>
+    </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
+      <RefPath>$(RefRootPath)%(Identity)/</RefPath>
+    </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp-$(_bc_OSGroup);uap-Windows_NT">
+      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+  <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+  <Import Project="$(RepositoryEngineeringDir)references.targets" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
+
+  <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+  <Target Name="ReportConfigurationErrorMessage"
+          BeforeTargets="AssignProjectConfiguration"
+           Condition="'$(BuildConfigurations)' != ''" >
+    <Message Importance="Low" Text="$(MSBuildProjectFullPath), C: $(Configuration) BC: $(BuildConfiguration) BCs: $(BuildConfigurations)" />
+    <Message Importance="High" Condition="'$(ConfigurationErrorMsg)' != ''" Text="$(MSBuildProjectFullPath) ConfigurationErrorMessage: $(ConfigurationErrorMsg)" />
+  </Target>
+
+  <Target Name="GenerateReferenceSource">
+    <PropertyGroup>
+      <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
+      <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
+      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
+      <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
+    </PropertyGroup>
+
+    <Exec Command="$(_GenAPICmd)" />
+    <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
+  </Target>
+
+  <!-- Import Packaging targets -->
+  <Import Project="$(RepositoryEngineeringDir)Packaging.targets" />
+
+  <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+
+  <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
+  <Target Name="CreateVersionFileDuringBuild" />
+
+  <!-- Define this target to override the workaround in arcade as we don't need it for our pkgprojs -->
+  <Target Name="InitializeStandardNuspecProperties" />
+
+</Project>

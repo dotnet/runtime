@@ -1,0 +1,10 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp-Linux;
+      netcoreapp-OSX;
+      netcoreapp-Windows_NT;
+      uap-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

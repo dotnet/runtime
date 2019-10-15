@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks Condition="'$(TargetsWindows)' == 'true'">true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetsNetFx)'!='true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\AccessControl\FileSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\DirectoryObjectSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\DirectorySecurity.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemAccessRule.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemAuditRule.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemRights.cs" />
+    <Compile Include="System\Security\AccessControl\FileSystemSecurity.cs" />
+    <Compile Include="System\IO\FileSystemAclExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\Interop\Windows\mincore\NotImplemented.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)'=='true'">
+    <Reference Include="mscorlib" />
+    <Compile Include="System\IO\FileSystemAclExtensions.net46.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)'!='true'">
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.Handles" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+</Project>

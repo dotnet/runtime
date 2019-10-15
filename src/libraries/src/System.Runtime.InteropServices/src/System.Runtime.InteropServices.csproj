@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.InteropServices</AssemblyName>
+    <OutputType>Library</OutputType>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\HResults.cs">
+      <Link>Common\CoreLib\System\HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs</Link>
+    </Compile>
+    <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ADVF.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\DATADIR.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\DVASPECT.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\FORMATETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IDataObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFormatETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumSTATDATA.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\STATDATA.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\STGMEDIUM.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\TYMED.cs" />
+    <Compile Include="System\Runtime\InteropServices\AssemblyRegistrationFlags.cs" />
+    <Compile Include="System\Runtime\InteropServices\AutomationProxyAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAliasNameAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComCompatibleVersionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComConversionLossAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDispatchImplType.cs" />
+    <Compile Include="System\Runtime\InteropServices\IMarshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
+    <Compile Include="System\Runtime\InteropServices\StandardOleMarshalObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibFuncFlags.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibTypeAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibTypeFlags.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibVarAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibVarFlags.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
+    <Compile Include="System\Security\SecureStringMarshal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
+  </ItemGroup>
+</Project>

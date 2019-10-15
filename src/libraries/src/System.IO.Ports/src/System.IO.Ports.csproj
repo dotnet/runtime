@@ -1,0 +1,231 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Linux-Debug;netstandard-Linux-Release;netstandard-OSX-Debug;netstandard-OSX-Release;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND ('$(TargetsWindows)' == 'true' OR '$(TargetsLinux)' == 'true' OR '$(TargetsOSX)' == 'true')">
+    <Compile Include="System\IO\Ports\Handshake.cs" />
+    <Compile Include="System\IO\Ports\InternalResources.cs" />
+    <Compile Include="System\IO\Ports\Parity.cs" />
+    <Compile Include="System\IO\Ports\SerialData.cs" />
+    <Compile Include="System\IO\Ports\SerialDataReceivedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialDataReceivedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialError.cs" />
+    <Compile Include="System\IO\Ports\SerialErrorReceivedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialErrorReceivedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChange.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChangedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChangedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.cs" />
+    <Compile Include="System\IO\Ports\StopBits.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DCB.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DCB.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMMPROP.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMMPROP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMMTIMEOUTS.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMMTIMEOUTS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMSTAT.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMSTAT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommState.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommBreak.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommBreak.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ClearCommBreak.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ClearCommBreak.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.EscapeCommFunction.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.EscapeCommFunction.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommTimeouts.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommTimeouts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommModemStatus.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommModemStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ClearCommError.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ClearCommError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommProperties.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommProperties.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommMask.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommMask.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.PurgeComm.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.PurgeComm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetupComm.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetupComm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommState.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.WaitCommEvent.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.WaitCommEvent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FileTypes.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FileTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
+      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
+      <Link>Common\CoreLib\System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.OpenCommPort.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.OpenCommPort.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.GetCommPorts.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.GetCommPorts.cs</Link>
+    </Compile>
+    <Compile Include="System\IO\Ports\SerialPort.Uap.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.Uap.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap' and '$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FileOperations.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="System\IO\Ports\SerialPort.Linux.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\IO\Ports\SerialPort.OSX.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'  OR '$(TargetsOSX)' == 'true'">
+    <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
+    <Compile Include="Interop\Unix\Interop.Termios.cs" />
+    <Compile Include="Interop\Unix\Interop.Serial.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\CoreLib\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Read.cs">
+      <Link>Interop\Unix\System.Native\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Write.cs">
+      <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Interop\Unix\System.Native\Interop.Poll.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Shutdown.cs">
+      <Link>Interop\Unix\System.Native\Interop.Shutdown.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Overlapped" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsOSX)' == 'true'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+</Project>

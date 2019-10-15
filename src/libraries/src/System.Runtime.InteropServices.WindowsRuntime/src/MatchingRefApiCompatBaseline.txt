@@ -1,0 +1,8 @@
+Compat issues with assembly System.Runtime.InteropServices.WindowsRuntime:
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken' does not implement interface 'System.IEquatable<System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken>' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken..ctor(System.UInt64)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken.Equals(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken.Value.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T>.RemoveEventHandler(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken, T)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal.GetUniqueObjectForIUnknownWithoutUnboxing(System.IntPtr)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 6

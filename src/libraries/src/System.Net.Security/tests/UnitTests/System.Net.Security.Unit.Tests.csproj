@@ -1,0 +1,89 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <!--
+      UnitTests compile production source-code in order to test internal units such as individual methods and classes.
+      Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones
+      imported. We are disabling the "Type conflicts with the imported type CS0436 warning" for these types of projects.
+    -->
+    <NoWarn>436</NoWarn>
+    <!-- Disable: CLSCompliant attribute is not needed -->
+    <NoWarn>$(NoWarn);3021</NoWarn>
+    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SslApplicationProtocolTests.cs" />
+    <Compile Include="SslAuthenticationOptionsTests.cs" />
+    <Compile Include="SslStreamAllowedProtocolsTest.cs" />
+    <Compile Include="System\Security\Authentication\AuthenticationExceptionTest.cs" />
+    <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
+    <Compile Include="System\Security\Authentication\InvalidCredentialExceptionTest.cs" />
+    <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
+    <!-- Fakes -->
+    <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
+    <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
+    <Compile Include="Fakes\FakeLazyAsyncResult.cs" />
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\Net\SslProtocolSupport.cs">
+      <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Production code references -->
+    <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
+      <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslClientAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslClientAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslServerAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslServerAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslAuthenticationOptions.cs">
+      <Link>ProductionCode\System\Net\Security\SslAuthenticationOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslApplicationProtocol.cs">
+      <Link>ProductionCode\System\Net\Security\SslApplicationProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslConnectionInfo.cs">
+      <Link>ProductionCode\System\Net\Security\SslConnectionInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\SslStream.Implementation.Adapters.cs">
+      <Link>ProductionCode\System\Net\Security\SslStream.Implementation.Adapters.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
+      <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
+      <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <!-- Logging -->
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,55 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <!-- Target that builds all the native binaries in the Native folder -->
+  <Target Name="Build" DependsOnTargets="GenerateNativeVersionFile;BuildNativeUnix;BuildNativeWindows" />
+
+  <PropertyGroup>
+    <!-- Hardcode version paths in a global location. -->
+    <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) $(OSGroup) outconfig $(Configuration)</_BuildNativeArgs>
+  </PropertyGroup>
+
+  <Target Name="BuildNativeUnix"
+          Condition="'$(OS)' != 'Windows_NT'">
+
+    <PropertyGroup>
+      <!--
+        MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
+        then we should consider calling Environment.ProcessorCount
+      -->
+      <_ProcessorCountArg> --numproc $(MSBuildNodeCount)</_ProcessorCountArg>
+      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true'"> stripsymbols</_StripSymbolsArg>
+      <_PortableBuildArg Condition="'$(PortableBuild)' == 'true'"> -portable</_PortableBuildArg>
+
+      <!--
+        BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
+        used to force a specific compiler toolset.
+      -->
+      <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
+
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_StripSymbolsArg)$(_PortableBuildArg)$(_BuildNativeCompilerArg)</_BuildNativeUnixArgs>
+    </PropertyGroup>
+
+    <Message Text="$(MSBuildProjectDirectory)/build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildProjectDirectory)/build-native.sh&quot; $(_BuildNativeUnixArgs)" />
+
+  </Target>
+
+  <!-- We don't have any native components when building for netfx. -->
+  <Target Name="BuildNativeWindows"
+          Condition="'$(OS)' == 'Windows_NT' AND '$(TargetsNetFx)' != 'true'">
+
+    <PropertyGroup>
+      <_BuildNativeWindowsArgs>$(_BuildNativeArgs)</_BuildNativeWindowsArgs>
+    </PropertyGroup>
+
+    <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
+    <Message Text="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" />
+
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

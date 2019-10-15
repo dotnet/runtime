@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Numerics</RootNamespace>
+    <AssemblyName>System.Runtime.Numerics</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
+    <Compile Include="System\Numerics\BigInteger.cs" />
+    <Compile Include="System\Numerics\BigNumber.cs" />
+    <Compile Include="System\Numerics\NumericsHelpers.cs" />
+    <Compile Include="System\Numerics\Complex.cs" />
+    <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
+    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
+    <Compile Include="$(CommonPath)\System\Globalization\FormatProvider.Number.cs">
+      <Link>System\Globalization\FormatProvider.Number.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+</Project>

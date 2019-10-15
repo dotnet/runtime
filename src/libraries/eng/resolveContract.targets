@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
+    <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
+    <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
+    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(RefPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
+
+    <!-- Disable API compat if the project doesn't have reference assembly -->
+    <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
+    <ResolvedMatchingContract Condition="Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
+    <!-- If the contract doesn't exist in the default contract output path add a project reference to the contract project to resolve -->
+    <ProjectReference Condition="'@(ResolvedMatchingContract)' == ''" Include="$(ContractProject)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>ResolvedMatchingContract</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- intentionally empty since we no longer need a target -->
+  <Target Name="ResolveMatchingContract" />
+</Project>

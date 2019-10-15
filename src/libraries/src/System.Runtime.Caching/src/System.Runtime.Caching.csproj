@@ -1,0 +1,73 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.Caching</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Runtime\Caching\_shims.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedArguments.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedCallback.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedReason.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryUpdateArguments.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryUpdateCallback.cs" />
+    <Compile Include="System\Runtime\Caching\CacheExpires.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItem.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItemPolicy.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItemPriority.cs" />
+    <Compile Include="System\Runtime\Caching\CacheMemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\CacheUsage.cs" />
+    <Compile Include="System\Runtime\Caching\ChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\Dbg.cs" />
+    <Compile Include="System\Runtime\Caching\DefaultCacheCapabilities.cs" />
+    <Compile Include="System\Runtime\Caching\EntryState.cs" />
+    <Compile Include="System\Runtime\Caching\FileChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\FileChangeNotificationSystem.cs" />
+    <Compile Include="System\Runtime\Caching\HostFileChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCache.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheEntry.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheEntryChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheKey.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheKeyEqualityComparer.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheStatistics.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheStore.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\ObjectCache.cs" />
+    <Compile Include="System\Runtime\Caching\OnChangedCallback.cs" />
+    <Compile Include="System\Runtime\Caching\PerfCounterName.cs" />
+    <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\SafeBitVector32.cs" />
+    <Compile Include="System\Runtime\Caching\SRef.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\CachingSectionGroup.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\ConfigUtil.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheElement.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheSection.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheSettingsCollection.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IApplicationIdentifier.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IFileChangeNotificationSystem.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IMemoryCacheManager.cs" />
+    <Compile Include="System\Runtime\Caching\Resources\RH.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
+    <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Configuration.ConfigurationManager" />
+  </ItemGroup>
+</Project>

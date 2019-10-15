@@ -1,0 +1,9 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netfx;
+      net461;
+      netstandard;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,129 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MoreThanOneMatch" xml:space="preserve">
+    <value>Sequence contains more than one matching element</value>
+  </data>
+  <data name="NoElements" xml:space="preserve">
+    <value>Sequence contains no elements</value>
+  </data>
+  <data name="ParallelPartitionable_NullReturn" xml:space="preserve">
+    <value>The return value must not be null.</value>
+  </data>
+  <data name="ParallelPartitionable_IncorretElementCount" xml:space="preserve">
+    <value>The returned array's length must equal the number of partitions requested.</value>
+  </data>
+  <data name="ParallelPartitionable_NullElement" xml:space="preserve">
+    <value>Elements returned must not be null.</value>
+  </data>
+  <data name="PLINQ_CommonEnumerator_Current_NotStarted" xml:space="preserve">
+    <value>Enumeration has not started. MoveNext must be called to initiate enumeration.</value>
+  </data>
+  <data name="PLINQ_ExternalCancellationRequested" xml:space="preserve">
+    <value>The query has been canceled via the token supplied to WithCancellation.</value>
+  </data>
+  <data name="PLINQ_DisposeRequested" xml:space="preserve">
+    <value>The query enumerator has been disposed.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateTaskScheduler" xml:space="preserve">
+    <value>The WithTaskScheduler operator may be used at most once in a query.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateDOP" xml:space="preserve">
+    <value>The WithDegreeOfParallelism operator may be used at most once in a query.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateExecutionMode" xml:space="preserve">
+    <value>The WithExecutionMode operator may be used at most once in a query.</value>
+  </data>
+  <data name="PartitionerQueryOperator_NullPartitionList" xml:space="preserve">
+    <value>Partitioner returned null instead of a list of partitions.</value>
+  </data>
+  <data name="PartitionerQueryOperator_WrongNumberOfPartitions" xml:space="preserve">
+    <value>Partitioner returned a wrong number of partitions.</value>
+  </data>
+  <data name="PartitionerQueryOperator_NullPartition" xml:space="preserve">
+    <value>Partitioner returned a null partition.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateWithCancellation" xml:space="preserve">
+    <value>The WithCancellation operator may by used at most once in a query.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateMergeOptions" xml:space="preserve">
+    <value>The WithMergeOptions operator may be used at most once in a query.</value>
+  </data>
+  <data name="PLINQ_EnumerationPreviouslyFailed" xml:space="preserve">
+    <value>The query enumerator previously threw an exception.</value>
+  </data>
+  <data name="ParallelQuery_PartitionerNotOrderable" xml:space="preserve">
+    <value>AsOrdered may not be used with a partitioner that is not orderable.</value>
+  </data>
+  <data name="ParallelQuery_InvalidAsOrderedCall" xml:space="preserve">
+    <value>AsOrdered may only be called on the result of AsParallel, ParallelEnumerable.Range, or ParallelEnumerable.Repeat.</value>
+  </data>
+  <data name="ParallelQuery_InvalidNonGenericAsOrderedCall" xml:space="preserve">
+    <value>Non-generic AsOrdered may only be called on the result of the non-generic AsParallel.</value>
+  </data>
+  <data name="ParallelEnumerable_BinaryOpMustUseAsParallel" xml:space="preserve">
+    <value>The second data source of a binary operator must be of type System.Linq.ParallelQuery&lt;T&gt; rather than System.Collections.Generic.IEnumerable&lt;T&gt;. To fix this problem, use the AsParallel() extension method to convert the right data source to System.Linq.ParallelQuery&lt;T&gt;.</value>
+  </data>
+  <data name="ParallelEnumerable_WithQueryExecutionMode_InvalidMode" xml:space="preserve">
+    <value>The executionMode argument contains an invalid value.</value>
+  </data>
+  <data name="ParallelEnumerable_WithMergeOptions_InvalidOptions" xml:space="preserve">
+    <value>The mergeOptions argument contains an invalid value.</value>
+  </data>
+</root>

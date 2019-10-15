@@ -1,0 +1,249 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.IO.Redist</AssemblyName>
+    <Configurations>netfx-Debug;netfx-Release</Configurations>
+    <DefineConstants>$(DefineConstants);MS_IO_REDIST;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <ClsCompliant>false</ClsCompliant>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\System.IO.FileSystem\src\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Microsoft\IO\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Directory.cs" Link="Microsoft\IO\Directory.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\DirectoryInfo.cs" Link="Microsoft\IO\DirectoryInfo.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\EnumerationOptions.cs" Link="Microsoft\IO\EnumerationOptions.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEntry.cs" Link="Microsoft\IO\Enumeration\FileSystemEntry.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEntry.Windows.cs" Link="Microsoft\IO\Enumeration\FileSystemEntry.Windows.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerable.cs" Link="Microsoft\IO\Enumeration\FileSystemEnumerable.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerableFactory.cs" Link="Microsoft\IO\Enumeration\FileSystemEnumerableFactory.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.cs" Link="Microsoft\IO\Enumeration\FileSystemEnumerator.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.Win32.cs" Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemEnumerator.Windows.cs" Link="Microsoft\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Enumeration\FileSystemName.cs" Link="Microsoft\IO\Enumeration\FileSystemName.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Error.cs" Link="Microsoft\IO\Error.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\File.cs" Link="Microsoft\IO\File.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileInfo.cs" Link="Microsoft\IO\FileInfo.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Win32.cs" Link="Microsoft\IO\FileSystem.Win32.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Windows.cs" Link="Microsoft\IO\FileSystem.Windows.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.cs" Link="Microsoft\IO\FileSystemInfo.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.Windows.cs" Link="Microsoft\IO\FileSystemInfo.Windows.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Iterator.cs" Link="Microsoft\IO\Iterator.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\MatchCasing.cs" Link="Microsoft\IO\MatchCasing.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\MatchType.cs" Link="Microsoft\IO\MatchType.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\ReadLinesIterator.cs" Link="Microsoft\IO\ReadLinesIterator.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchOption.cs" Link="Microsoft\IO\SearchOption.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchTarget.cs" Link="Microsoft\IO\SearchTarget.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\NullableAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\DriveInfoInternal.Windows.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Memory\FixedBufferExtensions.cs">
+      <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\DisableMediaInsertionPrompt.cs">
+      <Link>Common\System\IO\DisableMediaInsertionPrompt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOLEAN.cs">
+      <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs">
+      <Link>Common\Interop\Windows\Interop.IO_STATUS_BLOCK.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryDirectoryFile.cs">
+      <Link>Common\Interop\Windows\Interop.NtQueryDirectoryFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtCreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.NtCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.FILE_INFORMATION_CLASS.cs">
+      <Link>Common\Interop\Windows\Interop.FILE_INFORMATION_CLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs">
+      <Link>Common\Interop\Windows\Interop.NtStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs">
+      <Link>Common\Interop\Windows\Interop.RtlNtStatusToDosError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.FILE_FULL_DIR_INFORMATION.cs">
+      <Link>Common\Interop\Windows\Interop.FILE_FULL_DIR_INFORMATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.LongFileTime.cs">
+      <Link>Common\Interop\Windows\Interop.LongFileTime.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs">
+      <Link>Common\Interop\Windows\Interop.WIN32_FIND_DATA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FILE_TIME.cs">
+      <Link>Common\Interop\Windows\Interop.FILE_TIME.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
+      <Link>Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ReplaceFile.cs">
+      <Link>Common\Interop\Windows\Interop.ReplaceFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CopyFile.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MoveFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.MoveFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DeleteFile.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileAttributesEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.CreateDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs">
+      <Link>Common\Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FindNextFile.cs">
+      <Link>Common\Interop\Windows\Interop.FindNextFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DeleteVolumeMountPoint.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileInformationByHandle.cs">
+      <Link>Common\Interop\Windows\Interop.SetFileInformationByHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RemoveDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.RemoveDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.SetFileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs">
+      <Link>Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.MAX_PATH.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CopyFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs">
+      <Link>Common\Interop\Windows\Interop.EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
+      <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FindFirstFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.GetTempFileNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.GetLongPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
+      <Link>Common\CoreLib\System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\Path.cs">
+      <Link>Common\CoreLib\System\IO\Path.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\Path.Windows.cs">
+      <Link>Common\CoreLib\System\IO\Path.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathHelper.Windows.cs">
+      <Link>Common\CoreLib\System\IO\PathHelper.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+      <Link>Common\CoreLib\System\Text\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FindClose.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FindClose.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\IO\StringExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Microsoft\IO\Enumeration\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PinvokeAnalyzerExceptionList.analyzerdata" />
+  </ItemGroup>
+</Project>

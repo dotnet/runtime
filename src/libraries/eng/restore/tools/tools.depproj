@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputPath>$(ILAsmToolPath)</OutputPath>
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <RuntimeIdentifier>$(ToolRuntimeRID)</RuntimeIdentifier>
+    <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.ILAsm">
+      <Version>$(MicrosoftNETCoreILAsmPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.ILDAsm">
+      <Version>$(MicrosoftNETCoreILAsmPackageVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

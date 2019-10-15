@@ -1,0 +1,380 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InternalCompilerError" xml:space="preserve">
+    <value>An unexpected exception occurred while binding a dynamic operation</value>
+  </data>
+  <data name="BindPropertyFailedMethodGroup" xml:space="preserve">
+    <value>The name '{0}' is bound to a method and cannot be used like a property</value>
+  </data>
+  <data name="BindPropertyFailedEvent" xml:space="preserve">
+    <value>The event '{0}' can only appear on the left hand side of +</value>
+  </data>
+  <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
+    <value>Cannot invoke a non-delegate type</value>
+  </data>
+  <data name="NullReferenceOnMemberException" xml:space="preserve">
+    <value>Cannot perform runtime binding on a null reference</value>
+  </data>
+  <data name="BindCallToConditionalMethod" xml:space="preserve">
+    <value>Cannot dynamically invoke method '{0}' because it has a Conditional attribute</value>
+  </data>
+  <data name="BindToVoidMethodButExpectResult" xml:space="preserve">
+    <value>Cannot implicitly convert type 'void' to 'object'</value>
+  </data>
+  <data name="EmptyDynamicView" xml:space="preserve">
+    <value>No further information on this object could be discovered</value>
+  </data>
+  <data name="GetValueonWriteOnlyProperty" xml:space="preserve">
+    <value>Write Only properties are not supported</value>
+  </data>
+  <data name="BadBinaryOps" xml:space="preserve">
+    <value>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</value>
+  </data>
+  <data name="BadIndexLHS" xml:space="preserve">
+    <value>Cannot apply indexing with [] to an expression of type '{0}'</value>
+  </data>
+  <data name="BadIndexCount" xml:space="preserve">
+    <value>Wrong number of indices inside []; expected '{0}'</value>
+  </data>
+  <data name="BadUnaryOp" xml:space="preserve">
+    <value>Operator '{0}' cannot be applied to operand of type '{1}'</value>
+  </data>
+  <data name="NoImplicitConv" xml:space="preserve">
+    <value>Cannot implicitly convert type '{0}' to '{1}'</value>
+  </data>
+  <data name="NoExplicitConv" xml:space="preserve">
+    <value>Cannot convert type '{0}' to '{1}'</value>
+  </data>
+  <data name="ConstOutOfRange" xml:space="preserve">
+    <value>Constant value '{0}' cannot be converted to a '{1}'</value>
+  </data>
+  <data name="AmbigBinaryOps" xml:space="preserve">
+    <value>Operator '{0}' is ambiguous on operands of type '{1}' and '{2}'</value>
+  </data>
+  <data name="AmbigUnaryOp" xml:space="preserve">
+    <value>Operator '{0}' is ambiguous on an operand of type '{1}'</value>
+  </data>
+  <data name="ValueCantBeNull" xml:space="preserve">
+    <value>Cannot convert null to '{0}' because it is a non-nullable value type</value>
+  </data>
+  <data name="NoSuchMember" xml:space="preserve">
+    <value>'{0}' does not contain a definition for '{1}'</value>
+  </data>
+  <data name="ObjectRequired" xml:space="preserve">
+    <value>An object reference is required for the non-static field, method, or property '{0}'</value>
+  </data>
+  <data name="AmbigCall" xml:space="preserve">
+    <value>The call is ambiguous between the following methods or properties: '{0}' and '{1}'</value>
+  </data>
+  <data name="BadAccess" xml:space="preserve">
+    <value>'{0}' is inaccessible due to its protection level</value>
+  </data>
+  <data name="AssgLvalueExpected" xml:space="preserve">
+    <value>The left-hand side of an assignment must be a variable, property or indexer</value>
+  </data>
+  <data name="NoConstructors" xml:space="preserve">
+    <value>The type '{0}' has no constructors defined</value>
+  </data>
+  <data name="PropertyLacksGet" xml:space="preserve">
+    <value>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</value>
+  </data>
+  <data name="ObjectProhibited" xml:space="preserve">
+    <value>Member '{0}' cannot be accessed with an instance reference; qualify it with a type name instead</value>
+  </data>
+  <data name="AssgReadonly" xml:space="preserve">
+    <value>A readonly field cannot be assigned to (except in a constructor or a variable initializer)</value>
+  </data>
+  <data name="AssgReadonlyStatic" xml:space="preserve">
+    <value>A static readonly field cannot be assigned to (except in a static constructor or a variable initializer)</value>
+  </data>
+  <data name="AssgReadonlyProp" xml:space="preserve">
+    <value>Property or indexer '{0}' cannot be assigned to -- it is read only</value>
+  </data>
+  <data name="UnsafeNeeded" xml:space="preserve">
+    <value>Dynamic calls cannot be used in conjunction with pointers</value>
+  </data>
+  <data name="BadBoolOp" xml:space="preserve">
+    <value>In order to be applicable as a short circuit operator a user-defined logical operator ('{0}') must have the same return type as the type of its 2 parameters</value>
+  </data>
+  <data name="MustHaveOpTF" xml:space="preserve">
+    <value>The type ('{0}') must contain declarations of operator true and operator false</value>
+  </data>
+  <data name="ConstOutOfRangeChecked" xml:space="preserve">
+    <value>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</value>
+  </data>
+  <data name="AmbigMember" xml:space="preserve">
+    <value>Ambiguity between '{0}' and '{1}'</value>
+  </data>
+  <data name="NoImplicitConvCast" xml:space="preserve">
+    <value>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</value>
+  </data>
+  <data name="InaccessibleGetter" xml:space="preserve">
+    <value>The property or indexer '{0}' cannot be used in this context because the get accessor is inaccessible</value>
+  </data>
+  <data name="InaccessibleSetter" xml:space="preserve">
+    <value>The property or indexer '{0}' cannot be used in this context because the set accessor is inaccessible</value>
+  </data>
+  <data name="BadArity" xml:space="preserve">
+    <value>Using the generic {1} '{0}' requires '{2}' type arguments</value>
+  </data>
+  <data name="TypeArgsNotAllowed" xml:space="preserve">
+    <value>The {1} '{0}' cannot be used with type arguments</value>
+  </data>
+  <data name="HasNoTypeVars" xml:space="preserve">
+    <value>The non-generic {1} '{0}' cannot be used with type arguments</value>
+  </data>
+  <data name="NewConstraintNotSatisfied" xml:space="preserve">
+    <value>'{2}' must be a non-abstract type with a public parameterless constructor in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
+  </data>
+  <data name="GenericConstraintNotSatisfiedRefType" xml:space="preserve">
+    <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no implicit reference conversion from '{3}' to '{1}'.</value>
+  </data>
+  <data name="GenericConstraintNotSatisfiedNullableEnum" xml:space="preserve">
+    <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'.</value>
+  </data>
+  <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
+    <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</value>
+  </data>
+  <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
+    <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</value>
+  </data>
+  <data name="CantInferMethTypeArgs" xml:space="preserve">
+    <value>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</value>
+  </data>
+  <data name="RefConstraintNotSatisfied" xml:space="preserve">
+    <value>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
+  </data>
+  <data name="ValConstraintNotSatisfied" xml:space="preserve">
+    <value>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
+  </data>
+  <data name="AmbigUDConv" xml:space="preserve">
+    <value>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</value>
+  </data>
+  <data name="BindToBogus" xml:space="preserve">
+    <value>'{0}' is not supported by the language</value>
+  </data>
+  <data name="CantCallSpecialMethod" xml:space="preserve">
+    <value>'{0}': cannot explicitly call operator or accessor</value>
+  </data>
+  <data name="ConvertToStaticClass" xml:space="preserve">
+    <value>Cannot convert to static type '{0}'</value>
+  </data>
+  <data name="IncrementLvalueExpected" xml:space="preserve">
+    <value>The operand of an increment or decrement operator must be a variable, property or indexer</value>
+  </data>
+  <data name="BadArgCount" xml:space="preserve">
+    <value>No overload for method '{0}' takes {1} arguments</value>
+  </data>
+  <data name="BadArgTypes" xml:space="preserve">
+    <value>The best overloaded method match for '{0}' has some invalid arguments</value>
+  </data>
+  <data name="BadProtectedAccess" xml:space="preserve">
+    <value>Cannot access protected member '{0}' via a qualifier of type '{1}'; the qualifier must be of type '{2}' (or derived from it)</value>
+  </data>
+  <data name="BindToBogusProp2" xml:space="preserve">
+    <value>Property, indexer, or event '{0}' is not supported by the language; try directly calling accessor methods '{1}' or '{2}'</value>
+  </data>
+  <data name="BindToBogusProp1" xml:space="preserve">
+    <value>Property, indexer, or event '{0}' is not supported by the language; try directly calling accessor method '{1}'</value>
+  </data>
+  <data name="BadDelArgCount" xml:space="preserve">
+    <value>Delegate '{0}' does not take '{1}' arguments</value>
+  </data>
+  <data name="BadDelArgTypes" xml:space="preserve">
+    <value>Delegate '{0}' has some invalid arguments</value>
+  </data>
+  <data name="BadCtorArgCount" xml:space="preserve">
+    <value>'{0}' does not contain a constructor that takes '{1}' arguments</value>
+  </data>
+  <data name="NonInvocableMemberCalled" xml:space="preserve">
+    <value>Non-invocable member '{0}' cannot be used like a method.</value>
+  </data>
+  <data name="BadNamedArgument" xml:space="preserve">
+    <value>The best overload for '{0}' does not have a parameter named '{1}'</value>
+  </data>
+  <data name="BadNamedArgumentForDelegateInvoke" xml:space="preserve">
+    <value>The delegate '{0}' does not have a parameter named '{1}'</value>
+  </data>
+  <data name="DuplicateNamedArgument" xml:space="preserve">
+    <value>Named argument '{0}' cannot be specified multiple times</value>
+  </data>
+  <data name="NamedArgumentUsedInPositional" xml:space="preserve">
+    <value>Named argument '{0}' specifies a parameter for which a positional argument has already been given</value>
+  </data>
+  <data name="TypeArgumentRequiredForStaticCall" xml:space="preserve">
+    <value>The first argument to dynamically-bound static or constructor call must be a Type</value>
+  </data>
+  <data name="DynamicArgumentNeedsValue" xml:space="preserve">
+    <value>The runtime binder cannot bind a metaobject without a value</value>
+  </data>
+  <data name="BadNonTrailingNamedArgument" xml:space="preserve">
+    <value>Named argument '{0}' is used out-of-position but is followed by an unnamed argument</value>
+  </data>
+  <data name="AnonMethod" xml:space="preserve">
+    <value>anonymous method</value>
+  </data>
+  <data name="DynamicBindingComUnsupported" xml:space="preserve">
+    <value>The C# runtime binder cannot dynamically resolve members on COM Runtime Callable Wrappers.</value>
+  </data>
+  <data name="ERRORSYM" xml:space="preserve">
+    <value>&lt;error&gt;</value>
+  </data>
+  <data name="GlobalNamespace" xml:space="preserve">
+    <value>&lt;global namespace&gt;</value>
+  </data>
+  <data name="Lambda" xml:space="preserve">
+    <value>lambda expression</value>
+  </data>
+  <data name="MethodGroup" xml:space="preserve">
+    <value>method group</value>
+  </data>
+  <data name="NULL" xml:space="preserve">
+    <value>&lt;null&gt;</value>
+  </data>
+  <data name="SK_ALIAS" xml:space="preserve">
+    <value>using alias</value>
+  </data>
+  <data name="SK_CLASS" xml:space="preserve">
+    <value>type</value>
+  </data>
+  <data name="SK_EVENT" xml:space="preserve">
+    <value>event</value>
+  </data>
+  <data name="SK_FIELD" xml:space="preserve">
+    <value>field</value>
+  </data>
+  <data name="SK_METHOD" xml:space="preserve">
+    <value>method</value>
+  </data>
+  <data name="SK_NAMESPACE" xml:space="preserve">
+    <value>namespace</value>
+  </data>
+  <data name="SK_PROPERTY" xml:space="preserve">
+    <value>property</value>
+  </data>
+  <data name="SK_TYVAR" xml:space="preserve">
+    <value>type parameter</value>
+  </data>
+  <data name="SK_UNKNOWN" xml:space="preserve">
+    <value>element</value>
+  </data>
+  <data name="SK_VARIABLE" xml:space="preserve">
+    <value>variable</value>
+  </data>
+</root>

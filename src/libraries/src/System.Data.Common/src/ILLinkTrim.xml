@@ -1,0 +1,40 @@
+<linker>
+  <assembly fullname="System.Data.Common">
+    <type fullname="System.Data.ColumnTypeConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.ConstraintConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.ConstraintConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.DataTableTypeConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.DefaultValueTypeConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.PrimaryKeyTypeConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.RelationshipConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.Common.DataColumnMapping/DataColumnMappingConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Data.Common.DataTableMapping/DataTableMappingConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>

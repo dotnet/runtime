@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NTAccount.cs" />
+    <Compile Include="SecurityIdentifierTests.cs" />
+    <Compile Include="WindowsIdentityTests.cs" />
+    <Compile Include="WindowsPrincipalTests.cs" />
+    <Compile Include="WellKnownSidTypeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+      <Link>Common\System\Threading\ThreadTestHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssertCrypto.cs" />
+    <Compile Include="CipherDataTests.cs" />
+    <Compile Include="DataObjectTest.cs" />
+    <Compile Include="DataObjectTests.cs" />
+    <Compile Include="DataReferenceTest.cs" />
+    <Compile Include="DSAKeyValueTest.cs" />
+    <Compile Include="EncryptedXmlEqualityComparer.cs" />
+    <Compile Include="EncryptionMethodTests.cs" />
+    <Compile Include="EncryptedXmlTest.cs" />
+    <Compile Include="EncryptedXmlTests.cs" />
+    <Compile Include="EncryptionPropertyCollectionTest.cs" />
+    <Compile Include="EncryptionPropertyTest.cs" />
+    <Compile Include="SignedXml_Helpers.cs" />
+    <Compile Include="KeyInfoNameTest.cs" />
+    <Compile Include="KeyInfoNodeTest.cs" />
+    <Compile Include="KeyInfoRetrievalMethodTest.cs" />
+    <Compile Include="KeyInfoTest.cs" />
+    <Compile Include="KeyInfoTests.cs" />
+    <Compile Include="KeyInfoX509DataTest.cs" />
+    <Compile Include="ReferenceTest.cs" />
+    <Compile Include="RSAKeyValueTest.cs" />
+    <Compile Include="Samples\EncryptingDecryptingSymmetricKeyWrap.cs" />
+    <Compile Include="Samples\EncryptingDecryptingAsymmetric.cs" />
+    <Compile Include="Samples\SigningVerifyingWithCustomSignatureMethod.cs" />
+    <Compile Include="Samples\SigningVerifyingX509Cert.cs" />
+    <Compile Include="Samples\SigningVerifying.cs" />
+    <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
+    <Compile Include="SignatureTest.cs" />
+    <Compile Include="SignedInfoTest.cs" />
+    <Compile Include="SignedXmlTest.cs" />
+    <Compile Include="SignedXmlTests.cs" />
+    <Compile Include="SymmetricAlgorithmFactory.cs" />
+    <Compile Include="TestHelpers.cs" />
+    <Compile Include="TransformChainTest.cs" />
+    <Compile Include="TransformTest.cs" />
+    <Compile Include="XmlDsigBase64TransformTest.cs" />
+    <Compile Include="XmlDsigC14NTransformTest.cs" />
+    <Compile Include="XmlDsigC14NWithCommentsTransformTest.cs" />
+    <Compile Include="XmlDsigEnvelopedSignatureTransformTest.cs" />
+    <Compile Include="XmlDsigExcC14NTransformTest.cs" />
+    <Compile Include="XmlDsigExcC14NWithCommentsTransformTest.cs" />
+    <Compile Include="XmlDsigXPathTransformTest.cs" />
+    <Compile Include="XmlDsigXsltTransformTest.cs" />
+    <Compile Include="XmlLicenseEncryptedRef.cs" />
+    <Compile Include="XmlLicenseTransformTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="KeyInfo_ArbitraryElements.cs" />
+    <Compile Include="Reference_ArbitraryElements.cs" />
+    <Compile Include="Signature_ArbitraryElements.cs" />
+    <Compile Include="SignedInfo_ArbitraryElements.cs" />
+    <Compile Include="SignedXml_Limits.cs" />
+    <Compile Include="SignedXml_SignatureMethodAlgorithm.cs" />
+    <Compile Include="XmlDecryptionTransformTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample3.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample2.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample1.xml" />
+    <EmbeddedResource Include="XmlLicenseSample.xml" />
+  </ItemGroup>
+</Project>

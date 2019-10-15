@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
+    <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
+    <Compile Include="System\IO\Pipelines\CompletionData.cs" />
+    <Compile Include="System\IO\Pipelines\FlushResult.cs" />
+    <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
+    <Compile Include="System\IO\Pipelines\IDuplexPipe.cs" />
+    <Compile Include="System\IO\Pipelines\BufferSegmentStack.cs" />
+    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeReader.cs" />
+    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeWriter.cs" />
+    <Compile Include="System\IO\Pipelines\Pipe.cs" />
+    <Compile Include="System\IO\Pipelines\PipeAwaitable.cs" />
+    <Compile Include="System\IO\Pipelines\PipeCompletion.cs" />
+    <Compile Include="System\IO\Pipelines\PipeCompletionCallback.cs" />
+    <Compile Include="System\IO\Pipelines\PipeCompletionCallbacks.cs" />
+    <Compile Include="System\IO\Pipelines\PipeOptions.cs" />
+    <Compile Include="System\IO\Pipelines\PipeReader.cs" />
+    <Compile Include="System\IO\Pipelines\PipeOperationState.cs" />
+    <Compile Include="System\IO\Pipelines\PipeReaderStream.cs" />
+    <Compile Include="System\IO\Pipelines\PipeScheduler.cs" />
+    <Compile Include="System\IO\Pipelines\PipeWriter.cs" />
+    <Compile Include="System\IO\Pipelines\PipeWriterStream.cs" />
+    <Compile Include="System\IO\Pipelines\ReadResult.cs" />
+    <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeReader.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeReaderOptions.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeWriter.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeWriterOptions.cs" />
+    <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true'">
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
+    <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+</Project>

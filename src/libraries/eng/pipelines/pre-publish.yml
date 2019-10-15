@@ -1,0 +1,88 @@
+parameters:
+  buildConfiguration: Release
+  dependsOn: []
+
+stages:
+- stage: PrePublish
+  displayName: Pre-publish
+  dependsOn: ${{ parameters.dependsOn }}
+  jobs:
+    - template: ../common/templates/jobs/jobs.yml
+      parameters:
+        enableMicrobuild: true
+        enablePublishUsingPipelines: $(_PublishUsingPipelines)
+        enablePublishBuildAssets: true
+        enablePublishBuildArtifacts: true
+        jobs:
+        - job: SignAndPrepare
+          displayName: Sign and prepare to publish
+          timeoutInMinutes: 160
+
+          pool:
+            name: NetCoreInternal-Pool
+            queue: buildpool.windows.10.amd64.vs2017
+
+          workspace:
+            clean: all
+
+          variables:
+            - group: DotNet-Versions-Publish
+            - _artifactsDir: $(Build.SourcesDirectory)/artifacts
+            - _TeamName: DotNetCore
+            - _SignType: real
+            - _BuildConfig: ${{ parameters.buildConfiguration }}
+
+          steps:
+            - powershell: |
+                $prefix = "refs/heads/"
+                $branch = "$(Build.SourceBranch)"
+                $branchName = $branch
+                if ($branchName.StartsWith($prefix))
+                {
+                  $branchName = $branchName.Substring($prefix.Length)
+                }
+                Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+                Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+              displayName: Find true SourceBranchName
+
+            - task: DownloadBuildArtifacts@0
+              displayName: Download packages to publish
+              inputs:
+                artifactName: packages
+                downloadPath: $(_artifactsDir)
+
+            - script: build.cmd
+                      -restore
+                      -ci
+              displayName: Restore tools
+
+            - script: build.cmd
+                      -sign
+                      -ci
+                      -configuration $(_BuildConfig)
+                      /p:DotNetSignType=$(_SignType)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+              displayName: Sign packages
+
+            - script: build.cmd
+                      -publish
+                      -ci
+                      -configuration $(_BuildConfig)
+                      /p:DotNetPublishUsingPipelines=$(_PublishUsingPipelines)
+                      /p:DotNetArtifactsCategory=$(_DotNetArtifactsCategory)
+                      /p:DotNetPublishBlobFeedUrl=$(_dotnetFeedUrl)
+                      /p:DotNetPublishToBlobFeed=true
+                      /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+                      /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/PublishToArtifacts.binlog
+              displayName: Publish to artifacts and produce manifest
+
+            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 build.proj
+                      -warnaserror:0 -ci
+                      /t:UpdatePublishedVersions
+                      /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
+                      /p:VersionsRepoOwner=dotnet
+                      /p:VersionsRepo=versions
+                      /p:VersionsRepoPath=build-info/dotnet/corefx/$(FullBranchName)
+                      /p:ShippedNuGetPackageGlobPath=$(_artifactsDir)/packages/**/*.nupkg
+              displayName: Update dotnet/versions

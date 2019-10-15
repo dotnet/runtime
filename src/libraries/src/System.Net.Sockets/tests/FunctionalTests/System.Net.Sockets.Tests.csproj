@@ -1,0 +1,117 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Accept.cs" />
+    <Compile Include="AgnosticListenerTest.cs" />
+    <Compile Include="ArgumentValidationTests.cs" />
+    <Compile Include="DisconnectTest.cs" />
+    <Compile Include="HandleTest.cs" />
+    <Compile Include="Connect.cs" />
+    <Compile Include="Close.cs" />
+    <Compile Include="CreateSocketTests.cs" />
+    <Compile Include="CreateSocketTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="DisposedSocketTests.cs" />
+    <Compile Include="DisposedSocketTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="DnsEndPointTest.cs" />
+    <Compile Include="DualModeSocketTest.cs" />
+    <Compile Include="ExecutionContextFlowTest.cs" />
+    <Compile Include="ExecutionContextFlowTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="IPPacketInformationTest.cs" />
+    <Compile Include="KeepAliveTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="LingerStateTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="NetworkStreamTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ReceiveMessageFrom.cs" />
+    <Compile Include="ReceiveMessageFromAsync.cs" />
+    <Compile Include="SafeHandleTest.cs" />
+    <Compile Include="SelectTest.cs" />
+    <Compile Include="SendPacketsAsync.cs" />
+    <Compile Include="SendPacketsAsync.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SendPacketsElementTest.cs" />
+    <Compile Include="SendFile.cs" />
+    <Compile Include="OSSupport.cs" />
+    <Compile Include="SendPacketsElementTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SendReceive.cs" />
+    <Compile Include="SendReceive.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SocketTestHelper.cs" />
+    <Compile Include="SocketTestHelper.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SelectAndPollTests.cs" />
+    <Compile Include="SocketInformationTest.cs" />
+    <Compile Include="TcpListenerTest.cs" />
+    <Compile Include="TimeoutTest.cs" />
+    <Compile Include="TcpClientTest.cs" />
+    <Compile Include="Shutdown.cs" />
+    <Compile Include="SocketAsyncEventArgsTest.cs" />
+    <Compile Include="SocketAsyncEventArgsTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SocketOptionNameTest.cs" />
+    <Compile Include="SocketOptionNameTest.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="SocketOptionNameTest.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="MulticastOptionTest.cs" />
+    <Compile Include="UdpClientTest.cs" />
+    <Compile Include="UnixDomainSocketTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>SocketCommon\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Sockets.cs">
+      <Link>SocketCommon\Configuration.Sockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\TestSettings.cs">
+      <Link>SocketCommon\TestSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Fletcher32.cs">
+      <Link>SocketCommon\Fletcher32.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestExtensions.cs">
+      <Link>SocketCommon\SocketTestExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
+      <Link>SocketCommon\SocketTestServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
+      <Link>SocketCommon\SocketTestServerAsync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAPM.cs">
+      <Link>SocketCommon\SocketTestServerAPM.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketImplementationType.cs">
+      <Link>SocketCommon\SocketImplementationType.cs</Link>
+    </Compile>
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
+      <Link>Common\System\Net\TestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
+      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
+      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
+      <Link>Common\System\Net\Capability.Sockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs">
+      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

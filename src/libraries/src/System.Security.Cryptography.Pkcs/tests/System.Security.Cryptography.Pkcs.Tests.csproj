@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      UAP fails when loading the src assembly:
+      Could not load file or assembly 'System.Security.Cryptography.Pkcs, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. 
+      The located assembly's manifest definition does not match the assembly reference. (0x80131040)
+    -->
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="Certificates.cs" />
+    <Compile Include="CertLoader.cs" />
+    <Compile Include="CertLoader.Settings.cs" />
+    <Compile Include="CmsRecipientCollectionTests.cs" />
+    <Compile Include="CryptographicAttributeObjectCollectionTests.cs" />
+    <Compile Include="EnvelopedCms\CertificateTests.cs" />
+    <Compile Include="EnvelopedCms\ContentEncryptionAlgorithmTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsUsingCertWithPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\EdgeCasesTests.cs" />
+    <Compile Include="EnvelopedCms\GeneralTests.cs" />
+    <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\StateTests.cs" />
+    <Compile Include="EnvelopedCms\UnprotectedAttributeTests.cs" />
+    <Compile Include="Oids.cs" />
+    <Compile Include="Pkcs9AttributeTests.cs" />
+    <Compile Include="RecipientInfoCollectionTests.cs" />
+    <Compile Include="SignedCms\CmsSignerTests.cs" />
+    <Compile Include="SignedCms\CounterSigningDerOrder.cs" />
+    <Compile Include="SignedCms\SignedCmsTests.cs" />
+    <Compile Include="SignedCms\SignedCmsWholeDocumentTests.cs" />
+    <Compile Include="SignedCms\SignedDocuments.cs" />
+    <Compile Include="SignedCms\SignerInfoTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="AlgorithmIdentifierTest.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
+    <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
+    <Compile Include="Pkcs12\CertBagTests.cs" />
+    <Compile Include="Pkcs12\CustomBagTypeTests.cs" />
+    <Compile Include="Pkcs12\KeyBagTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12BuilderTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12Documents.cs" />
+    <Compile Include="Pkcs12\Pkcs12InfoTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12SafeContentsTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12SafeBagTests.cs" />
+    <Compile Include="Pkcs12\Pkcs9LocalKeyIdTests.cs" />
+    <Compile Include="Pkcs12\SafeContentsBagTests.cs" />
+    <Compile Include="Pkcs12\SecretBagTests.cs" />
+    <Compile Include="Pkcs12\ShroudedKeyBagTests.cs" />
+    <Compile Include="Pkcs12\SimpleRead.cs" />
+    <Compile Include="Pkcs12\WriteToWindows.cs" />
+    <Compile Include="Rfc3161\TimestampRequestTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenInfoTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTestData.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTests.cs" />
+    <Compile Include="SignedCms\SignedCmsTests.netcoreapp.cs" />
+    <Compile Include="SignedCms\SignerInfoTests.netcoreapp.cs" />
+    <Compile Include="ImportedCollection.cs" />
+    <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
+    <Compile Include="PrivateKeyHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsNetFx)' == 'true'">
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
+  </ItemGroup>
+</Project>

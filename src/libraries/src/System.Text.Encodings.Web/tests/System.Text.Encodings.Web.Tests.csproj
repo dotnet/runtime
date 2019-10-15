@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <FileAlignment>512</FileAlignment>
+    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
+      <Visible>False</Visible>
+    </CodeAnalysisDependentAssemblyPaths>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\src\Common\TextEncoderExtensions.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" />
+    <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
+    <Compile Include="AllowedCharsBitmapTests.cs" />
+    <Compile Include="TextEncoderTests.cs" />
+    <Compile Include="ConfigurableScalarTextEncoder.cs" />
+    <Compile Include="ScalarTestEncoder.cs" />
+    <Compile Include="EncoderCommon.cs" />
+    <Compile Include="EncoderCommonTests.cs" />
+    <Compile Include="EncoderExtensionsTests.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="HtmlEncoderTests.cs" />
+    <Compile Include="IHtmlEncoder.cs" />
+    <Compile Include="IJavaScriptStringEncoder.cs" />
+    <Compile Include="IUrlEncoder.cs" />
+    <Compile Include="JavaScriptStringEncoderTests.cs" />
+    <Compile Include="JavaScriptStringEncoderTests.Relaxed.cs" />
+    <Compile Include="PerformanceTests.cs" />
+    <Compile Include="TemporaryEncoderAdapters.cs" />
+    <Compile Include="TemporaryEncoderExtensions.cs" />
+    <Compile Include="TemporaryInternalTypes.cs" />
+    <Compile Include="TextEncoderSettingsTests.cs" />
+    <Compile Include="UnicodeEncoderBase.cs" />
+    <Compile Include="UnicodeEncoderBaseTests.cs" />
+    <Compile Include="UnicodeHelpersTests.cs" />
+    <Compile Include="UnicodeRangesTests.cs" />
+    <Compile Include="UnicodeRangesTests.generated.cs" />
+    <Compile Include="UnicodeRangeTests.cs" />
+    <Compile Include="UrlEncoderTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
+      <Link>System\Text\UnicodeDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeUtility.cs">
+      <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.12.1.txt">
+      <LogicalName>UnicodeData.12.1.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

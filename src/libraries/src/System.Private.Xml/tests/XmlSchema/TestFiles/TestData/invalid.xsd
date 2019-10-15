@@ -1,0 +1,8 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="xsderror"
+    targetNamespace="xsderror"
+    version="1.0"
+    >
+    <xsd:element name="foo" type="xsd:string"/>
+    <xsd:attribute name="afoo" type="xsd:strings"/>
+    <xsd:annotation/>
+</xsd:schema>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\IO\AsWinRTStreamTests.cs" />
+    <Compile Include="System\IO\TestStreamProvider.cs" />
+    <Compile Include="System\IO\StorageFileMock.cs" />
+    <Compile Include="System\IO\CreateSafeFileHandleTests.cs" />
+    <Compile Include="System\IO\StorageFolderMock.cs" />
+    <Compile Include="System\IO\WriteOnlyStream.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferExtensionsTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferTests.cs" />
+    <Compile Include="Windows\Foundation\PointTests.cs" />
+    <Compile Include="Windows\Foundation\RectTests.cs" />
+    <Compile Include="Windows\Foundation\SizeTests.cs" />
+    <Compile Include="Windows\UI\ColorTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Windows" />
+  </ItemGroup>
+</Project>

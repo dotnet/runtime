@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- We cannot reference the current build of runtime.native.System.IO.Ports because its built across multiple machines -->
+    <PackageReference Include="runtime.native.System.IO.Ports" Version="$(runtimenativeSystemIOPortsPackageVersion)" NoWarn="NU1605" />
+  </ItemGroup>
+</Project>

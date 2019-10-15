@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard1.1' OR '$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="System\Reflection\Context\CollectionServices.cs" />
+    <Compile Include="System\Reflection\Context\CustomReflectionContext.cs" />
+    <Compile Include="System\Reflection\Context\CustomReflectionContext.Projector.cs" />
+    <Compile Include="System\Reflection\Context\Custom\AttributeUtils.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomModule.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomType.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingExceptionHandlingClause.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingLocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingMethodBody.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingModule.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingType.cs" />
+    <Compile Include="System\Reflection\Context\Projection\IProjectable.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingExceptionHandlingClause.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingLocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingMethodBody.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingModule.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingType.cs" />
+    <Compile Include="System\Reflection\Context\Projection\Projector.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\InheritedMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\InheritedPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualMethodBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualParameter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.FuncPropertyAccessorBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.PropertyGetterBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.PropertySetterBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertyGetter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertySetter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualReturnParameter.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,52 @@
+﻿<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Interface Name="System.Collections.Generic.IHashKeyCollection&lt;TKey&gt;">
+    <Position X="12.75" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IHashKeyCollection.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Immutable.IImmutableDictionary&lt;TKey, TValue&gt;">
+    <Position X="8" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAABAEAAAAABAAAAAAAACAAAAAAAIBUAAA=</HashCode>
+      <FileName>IImmutableDictionary.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Immutable.IImmutableList&lt;T&gt;">
+    <Position X="4.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AGIAAEAAAAAABAEAAAAABAAAAAAAAAAAKAAAAIBUACA=</HashCode>
+      <FileName>IImmutableList.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Immutable.IImmutableQueue&lt;T&gt;">
+    <Position X="2.5" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAEAAAAAAAAAAAAAAAABAAAAAAAAABAAAA=</HashCode>
+      <FileName>IImmutableQueue.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Immutable.IImmutableSet&lt;T&gt;">
+    <Position X="6.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAoAgBAAACBAAABAAAAEBAAAAABAAAAAAgAAAQBQAAA=</HashCode>
+      <FileName>IImmutableSet.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Immutable.IImmutableStack&lt;T&gt;">
+    <Position X="0.5" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAEAAAAAAAAAAAAAACAAAAAAAAAAABACAA=</HashCode>
+      <FileName>IImmutableStack.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="System.Collections.Generic.ISortKeyCollection&lt;TKey&gt;">
+    <Position X="10.75" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ISortKeyCollection.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Rfc3161Accuracy"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3161#section-2.4.2
+
+    Accuracy ::= SEQUENCE {
+        seconds INTEGER              OPTIONAL,
+        millis[0] INTEGER(1..999)    OPTIONAL,
+        micros[1] INTEGER(1..999)    OPTIONAL
+    }
+
+    And the ASN.1 module starts as DEFINITIONS IMPLICIT TAGS
+  -->
+  <asn:Integer name="Seconds" backingType="int" optional="true" />
+  <asn:Integer name="Millis" implicitTag="0" backingType="int" optional="true" />
+  <asn:Integer name="Micros" implicitTag="1" backingType="int" optional="true" />
+</asn:Sequence>

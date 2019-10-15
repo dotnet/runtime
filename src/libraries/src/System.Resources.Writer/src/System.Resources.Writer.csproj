@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>System.Resources.Writer</AssemblyName>
+    <RootNamespace>System.Resources</RootNamespace>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Resources\__FastResourceComparer.cs" />
+    <Compile Include="System\Resources\IResourceWriter.cs" />
+    <Compile Include="System\Resources\ResourceWriter.core.cs" />
+    <Compile Include="$(CommonPath)\System\Resources\ResourceWriter.cs" Link="System\Resources\ResourceWriter.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../System.Resources.ResourceManager/ref/System.Resources.ResourceManager.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+</Project>

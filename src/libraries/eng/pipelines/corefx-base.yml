@@ -1,0 +1,217 @@
+parameters:
+  # Required: TargetOS value to know what script commands to use
+  # Accepted values:
+  # - Windows_NT
+  # - Linux
+  # - OSX
+  # - FreeBSD
+  targetOS: ''
+
+  # Required: A collection of jobs to run - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#job
+  jobs: []
+
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+
+  # EACH JOB SHOULD INCLUDE THE FOLLOWING PROPERTIES (ASIDE FROM THE REQUIRED ONES IN THE JOB SCHEMA)
+
+  # Required: as part of the strategy matrix, the following variables should be defined
+  #     _BuildConfig: Debug | Release
+  #     _architecture: x64 | x86 | arm | arm64
+  #     _framework: (netcoreapp, netfx, uap, etc).
+  #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
+
+  # Required: empty | innerloop | outerloop | all
+  testScope: ''
+
+  # Optional: _publishTests -> Boolean -> Publish test assets to blob storage if true.
+  # Default: false
+  #     _publishTests: true | false
+
+  # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
+
+  # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
+  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./build.sh ...'
+
+  # Optional: buildExtraArguments -> String -> string to append at the end of the build arguments
+  #   buildExtraArguments: /p:RuntimeOS=win10 -> 'build.cmd ... /p:RuntimeOS=win10'
+
+  # Optional: customBuildSteps -> Array -> list of steps to run instead of the common build steps.
+  #   customBuildSteps:
+  #     - script: echo Hello World
+  #       displayName: MyScript
+
+  # Optional: preBuildSteps -> Array -> list of steps to be executed before common build steps.
+  # In example, to install build dependencies, or setup an environment.
+  #   preBuildSteps:
+  #     - script: brew install cmake
+  #       displayName: Install Cmake
+
+  # timeoutInMinutes: if a job doesn't define it, we will default it to 150 minutes
+
+jobs:
+  - ${{ each job in parameters.jobs }}:
+    - template: ../common/templates/job/job.yml
+      parameters:
+        variables:
+
+        # pass along job variables
+        - ${{ each variable in job.variables }}:
+          - ${{ if ne(variable.name, '') }}:
+            - name: ${{ variable.name }}
+              value: ${{ variable.value }}
+          - ${{ if ne(variable.group, '') }}:
+            - group: ${{ variable.group }}
+
+          # handle key-value variable syntax.
+          # example:
+          # - [key]: [value]
+          - ${{ if and(eq(variable.name, ''), eq(variable.group, '')) }}:
+            - ${{ each pair in variable }}:
+              - name: ${{ pair.key }}
+                value: ${{ pair.value }}
+
+        - _msbuildCommonParameters: ''
+        - _archiveTestsParameter: ''
+        - _finalFrameworkArg: -framework $(_framework)
+        - _testScopeArg: ''
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        - ${{ if eq(job.submitToHelix, 'true') }}:
+          - _archiveTestsParameter: /p:ArchiveTests=Tests
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - group: DotNet-HelixApi-Access
+
+        - ${{ if ne(job.frameworkArg, '') }}:
+          - _finalFrameworkArg: ${{ job.frameworkArg }}
+
+        - _args: -configuration $(_BuildConfig) -ci -arch $(_architecture) $(_finalFrameworkArg) $(_archiveTestsParameter) ${{ job.buildExtraArguments }}
+        - _commonArguments: $(_args)
+
+        # Windows variables
+        - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: build.cmd
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
+          - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _commonArguments: $(_args) -stripSymbols
+
+        # pass along job properties
+        ${{ each property in job }}:
+          ${{ if and(ne(property.key, 'job'), ne(property.key, 'variables')) }}:
+            ${{ property.key }}: ${{ property.value }}
+
+        # enable helix telemetry -- we only send telemetry during official builds
+        enableTelemetry: ${{ parameters.isOfficialBuild }}
+        helixRepo: dotnet/corefx
+
+        name: ${{ job.job }}
+        workspace:
+          clean: all
+
+        # enabling publish build artifacts, will publish all build logs under /artifacts/log/
+        enablePublishBuildArtifacts: true
+
+        ${{ if eq(job.timeoutInMinutes, '') }}:
+          timeoutInMinutes: 150
+
+        steps:
+          - ${{ if ne(job.preBuildSteps[0], '') }}:
+            - ${{ job.preBuildSteps }}
+
+          - script: $(_buildScript) -restore $(_commonArguments)
+            displayName: Restore Build Tools
+
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - task: DotNetCoreCLI@2
+              displayName: Restore internal tools
+              condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+              inputs:
+                command: restore
+                feedsToUse: config
+                projects: 'eng/common/internal/Tools.csproj'
+                nugetConfigPath: 'eng/internal/NuGet.config'
+                restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+                verbosityRestore: 'normal'
+                externalFeedCredentials: 'dotnet-core-internal-tooling'
+
+          - ${{ if eq(job.customBuildSteps[0], '') }}:
+            - script: $(_buildScript)
+                    -build
+                    -buildtests
+                    $(_commonArguments)
+                    $(_testScopeArg)
+                    $(_msbuildCommonParameters)
+              displayName: Build Sources and Tests
+
+          - ${{ if ne(job.customBuildSteps[0], '') }}:
+            - ${{ job.customBuildSteps }}
+
+          - ${{ if eq(job.submitToHelix, 'true') }}:
+            - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              - script: $(_msbuildCommand) eng/publishTestAssets.proj
+                      /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
+                      /p:AccountKey=$(dotnetfeed-storage-access-key-1)
+                      /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+                      /p:OSGroup=${{ parameters.targetOS }}
+                      /p:ArchGroup=$(_architecture)
+                      /p:ConfigurationGroup=$(_BuildConfig)
+                      /p:TargetGroup=$(_framework)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+                      /p:ContinuousIntegrationBuild=true
+                      /p:AssetManifestFileName=corefx-test-assets.xml
+                      /p:ManifestBuildId=$(Build.BuildNumber)
+                      /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
+                      /p:ManifestBranch=$(Build.SourceBranchName)
+                      /p:ManifestCommit=$(Build.SourceVersion)
+                      /p:ManifestRepoUri=$(Build.Repository.Uri)
+                displayName: Publish test assets to dotnet-core feed
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
+              - task: PublishBuildArtifacts@1
+                displayName: Publish test asset manifest to artifacts container
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/TestAssetsManifests
+                  artifactName: $(Agent.Os)_$(Agent.JobName)
+                  artifactType: container
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
+            - template: /eng/pipelines/helix.yml
+              parameters:
+                # send tests to helix only on public builds, official scheduled builds or manual official builds.
+                condition: eq(${{ parameters.isOfficialBuild }}, False)
+                targetOS: ${{ parameters.targetOS }}
+                archGroup: $(_architecture)
+                configuration: $(_BuildConfig)
+                helixQueues: $(_helixQueues)
+                msbuildScript: $(_msbuildCommand)
+                framework: $(_framework)
+                testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
+
+                ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+                  officialBuildId: $(Build.BuildNumber)
+                  helixToken: $(HelixApiAccessToken)
+
+                ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+                  # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
+                  creator: dotnet-bot
+                  helixToken: ''
+
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - task: PublishBuildArtifacts@1
+              displayName: Publish packages to artifacts container
+              inputs:
+                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages
+                artifactName: packages
+                artifactType: container
+              condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))

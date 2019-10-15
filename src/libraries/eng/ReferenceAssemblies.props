@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
+
+    <!-- Create a common root output directory for all reference assemblies -->
+    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</ReferenceAssemblyOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', '$(MSBuildProjectName)'))</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)</OutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'ref', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)</IntermediateOutputPath>
+
+    <!-- disable warnings about unused fields -->
+    <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
+
+    <!-- disable CS8597 because we throw null on reference assemblies. -->
+    <NoWarn>$(NoWarn);CS8597</NoWarn>
+
+    <!-- We base calls from constructors with null literals. -->
+    <NoWarn>$(NoWarn);CS8625</NoWarn>
+
+    <!-- We dont need to add null annotation within the ref for explicit interface methods. -->
+    <NoWarn>$(NoWarn);CS8617</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <!-- All reference assemblies should have the 0x70 flag which prevents them from loading
+         and the ReferenceAssemblyAttribute. -->
+    <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />
+    <AssemblyInfoLines Include="[assembly:System.Reflection.AssemblyFlags((System.Reflection.AssemblyNameFlags)0x70)]" />
+  </ItemGroup>
+</Project>

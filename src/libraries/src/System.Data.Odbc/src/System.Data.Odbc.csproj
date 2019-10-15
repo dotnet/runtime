@@ -1,0 +1,187 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Data.Odbc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-FreeBSD-Debug;netcoreapp2.0-FreeBSD-Release;netcoreapp2.0-Linux-Debug;netcoreapp2.0-Linux-Release;netcoreapp2.0-OSX-Debug;netcoreapp2.0-OSX-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
+      <Link>Common\System\Data\Common\AdapterUtil.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.Drivers.cs">
+      <Link>System\Data\Common\AdapterUtil.Drivers.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\Data\Common\AdapterUtil.Odbc.cs" />
+    <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
+      <Link>Common\System\Data\Common\DbConnectionOptions.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
+      <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\Data\Common\DBConnectionString.cs" />
+    <Compile Include="Common\System\Data\Common\DbConnectionStringCommon.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\NameValuePair.cs">
+      <Link>Common\System\Data\Common\NameValuePair.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\Data\Common\NameValuePermission.cs" />
+    <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
+    <Compile Include="Common\System\Data\DataStorage.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbBuffer.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
+      <Link>Common\System\Data\ProviderBase\FieldNameLookup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\BasicFieldNameLookup.cs">
+      <Link>Common\System\Data\ProviderBase\BasicFieldNameLookup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionInternal.cs">
+      <Link>System\Data\ProviderBase\DbConnectionInternal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionFactory.cs">
+      <Link>System\Data\ProviderBase\DbConnectionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionPoolGroup.cs">
+      <Link>System\Data\ProviderBase\DbConnectionPoolGroup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\TimeoutTimer.cs">
+      <Link>System\Data\ProviderBase\TimeoutTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbReferenceCollection.cs">
+      <Link>System\Data\ProviderBase\DbReferenceCollection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbMetaDataFactory.cs">
+      <Link>System\Data\ProviderBase\DbMetaDataFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionClosed.cs">
+      <Link>System\Data\ProviderBase\DbConnectionClosed.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionClosed.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionFactory.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionInternal.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPool.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolGroupProviderInfo.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
+    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
+    <Compile Include="System\Data\Odbc\DbDataRecord.cs" />
+    <Compile Include="System\Data\Odbc\Odbc32.cs" />
+    <Compile Include="System\Data\Odbc\OdbcCommand.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Odbc\OdbcCommandBuilder.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Odbc\OdbcConnection.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Odbc\OdbcConnectionFactory.cs" />
+    <Compile Include="System\Data\Odbc\OdbcConnectionHandle.cs" />
+    <Compile Include="System\Data\Odbc\OdbcConnectionHelper.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Odbc\OdbcConnectionOpen.cs" />
+    <Compile Include="System\Data\Odbc\OdbcConnectionPoolProviderInfo.cs" />
+    <Compile Include="System\Data\Odbc\OdbcConnectionString.cs" />
+    <Compile Include="System\Data\Odbc\OdbcConnectionStringbuilder.cs" />
+    <Compile Include="System\Data\Odbc\OdbcDataAdapter.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Odbc\OdbcDataReader.cs" />
+    <Compile Include="System\Data\Odbc\OdbcEnvironment.cs" />
+    <Compile Include="System\Data\Odbc\OdbcEnvironmentHandle.cs" />
+    <Compile Include="System\Data\Odbc\OdbcError.cs" />
+    <Compile Include="System\Data\Odbc\OdbcErrorCollection.cs" />
+    <Compile Include="System\Data\Odbc\OdbcException.cs" />
+    <Compile Include="System\Data\Odbc\OdbcFactory.cs" />
+    <Compile Include="System\Data\Odbc\OdbcHandle.cs" />
+    <Compile Include="System\Data\Odbc\OdbcInfoMessageEvent.cs" />
+    <Compile Include="System\Data\Odbc\OdbcMetaDataCollectionNames.cs" />
+    <Compile Include="System\Data\Odbc\OdbcMetaDataColumnNames.cs" />
+    <Compile Include="System\Data\Odbc\OdbcMetaDataFactory.cs" />
+    <Compile Include="System\Data\Odbc\OdbcParameter.cs" />
+    <Compile Include="System\Data\Odbc\OdbcParameterCollection.cs" />
+    <Compile Include="System\Data\Odbc\OdbcParameterCollectionHelper.cs" />
+    <Compile Include="System\Data\Odbc\OdbcParameterHelper.cs" />
+    <Compile Include="System\Data\Odbc\OdbcReferenceCollection.cs" />
+    <Compile Include="System\Data\Odbc\OdbcRowUpdatingEvent.cs" />
+    <Compile Include="System\Data\Odbc\OdbcStatementHandle.cs" />
+    <Compile Include="System\Data\Odbc\OdbcTransaction.cs" />
+    <Compile Include="System\Data\Odbc\OdbcType.cs" />
+    <Compile Include="System\Data\Odbc\OdbcUtils.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\HResults.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
+      <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.Odbc.cs">
+      <Link>Common\Interop\Interop.Odbc.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true' OR '$(TargetsWebAssembly)'=='true'">
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And $(TargetGroup.StartsWith('netcoreapp'))">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Data" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.FileVersionInfo" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Claims" />
+    <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Text.Encoding.CodePages" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.Timer" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
+    <Reference Include="System.Transactions.Local" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System.Data.Odbc.OdbcMetaData.xml">
+      <LogicalName>System.Data.Odbc.OdbcMetaData.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DatabaseSetupInstructions.md" />
+  </ItemGroup>
+</Project>

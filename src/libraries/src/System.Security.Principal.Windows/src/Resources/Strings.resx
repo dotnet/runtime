@@ -1,0 +1,123 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_EmptyCollection" xml:space="preserve">
+    <value>Collection must not be empty.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Argument_ImpersonateUser" xml:space="preserve">
+    <value>Unable to impersonate user.</value>
+  </data>
+  <data name="Argument_ImproperType" xml:space="preserve">
+    <value>Improper types in collection.</value>
+  </data>
+  <data name="Argument_InvalidImpersonationToken" xml:space="preserve">
+    <value>Invalid token for impersonation - it cannot be duplicated.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="Argument_TokenZero" xml:space="preserve">
+    <value>Token cannot be zero.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ArrayTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the required data. Check array length and offset.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="Argument_StringZeroLength" xml:space="preserve">
+    <value>String cannot be of zero length.</value>
+  </data>
+  <data name="IdentityReference_AccountNameTooLong" xml:space="preserve">
+    <value>Account name is too long.</value>
+  </data>
+  <data name="IdentityReference_CannotCreateLogonIdsSid" xml:space="preserve">
+    <value>Well-known SIDs of type LogonIdsSid cannot be created.</value>
+  </data>
+  <data name="IdentityReference_DomainNameTooLong" xml:space="preserve">
+    <value>Domain name is too long.</value>
+  </data>
+  <data name="IdentityReference_DomainSidRequired" xml:space="preserve">
+    <value>The domainSid parameter must be specified for creating well-known SID of type {0}.</value>
+  </data>
+  <data name="IdentityReference_IdentifierAuthorityTooLarge" xml:space="preserve">
+    <value>The size of the identifier authority must not exceed 6 bytes.</value>
+  </data>
+  <data name="IdentityReference_IdentityNotMapped" xml:space="preserve">
+    <value>Some or all identity references could not be translated.</value>
+  </data>
+  <data name="IdentityReference_InvalidNumberOfSubauthorities" xml:space="preserve">
+    <value>The number of sub-authorities must not exceed {0}.</value>
+  </data>
+  <data name="IdentityReference_InvalidSidRevision" xml:space="preserve">
+    <value>SIDs with revision other than '1' are not supported.</value>
+  </data>
+  <data name="IdentityReference_MustBeIdentityReference" xml:space="preserve">
+    <value>The targetType parameter must be of IdentityReference type.</value>
+  </data>
+  <data name="IdentityReference_NotAWindowsDomain" xml:space="preserve">
+    <value>The domainSid parameter is not a valid Windows domain SID.</value>
+  </data>
+  <data name="PlatformNotSupported_Principal" xml:space="preserve">
+    <value>Windows Principal functionality is not supported on this platform.</value>
+  </data>
+</root>

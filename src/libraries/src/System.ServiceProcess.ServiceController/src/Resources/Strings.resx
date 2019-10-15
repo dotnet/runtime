@@ -1,0 +1,195 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgsCantBeNull" xml:space="preserve">
+    <value>Arguments within the 'args' array passed to Start cannot be null.</value>
+  </data>
+  <data name="BadMachineName" xml:space="preserve">
+    <value>MachineName '{0}' is invalid.</value>
+  </data>
+  <data name="CannotStart" xml:space="preserve">
+    <value>Cannot start service '{0}' on computer '{1}'.</value>
+  </data>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="NoMachineName" xml:space="preserve">
+    <value>MachineName was not set.</value>
+  </data>
+  <data name="NoService" xml:space="preserve">
+    <value>Service '{0}' was not found on computer '{1}'.</value>
+  </data>
+  <data name="OpenSC" xml:space="preserve">
+    <value>Cannot open Service Control Manager on computer '{0}'. This operation might require other privileges.</value>
+  </data>
+  <data name="OpenService" xml:space="preserve">
+    <value>Cannot open '{0}' service on computer '{1}'.</value>
+  </data>
+  <data name="PauseService" xml:space="preserve">
+    <value>Cannot pause '{0}' service on computer '{1}'.</value>
+  </data>
+  <data name="ResumeService" xml:space="preserve">
+    <value>Cannot resume '{0}' service on computer '{1}'.</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Cannot stop '{0}' service on computer '{1}'.</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Time out has expired and the operation has not been completed.</value>
+  </data>
+  <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
+    <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
+  </data>
+  <data name="CannotChangeProperties" xml:space="preserve">
+    <value>Cannot change CanStop, CanPauseAndContinue, CanShutdown, CanHandlePowerEvent, or CanHandleSessionChangeEvent property values after the service has been started.</value>
+  </data>
+  <data name="CannotChangeName" xml:space="preserve">
+    <value>Cannot change service name when the service is running.</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service name '{0}' contains invalid characters, is empty, or is too long (max length = {1}).</value>
+  </data>
+  <data name="NoServices" xml:space="preserve">
+    <value>Service has not been supplied. At least one object derived from ServiceBase is required in order to run.</value>
+  </data>
+  <data name="CantStartFromCommandLine" xml:space="preserve">
+    <value>Cannot start service from the command line or a debugger.  A Windows Service must first be installed and then started with the ServerExplorer, Windows Services Administrative tool or the NET START command.</value>
+  </data>
+  <data name="NotInPendingState" xml:space="preserve">
+    <value>UpdatePendingStatus can only be called during the handling of Start, Stop, Pause and Continue commands.</value>
+  </data>
+  <data name="StartSuccessful" xml:space="preserve">
+    <value>Service started successfully.</value>
+  </data>
+  <data name="StopSuccessful" xml:space="preserve">
+    <value>Service stopped successfully.</value>
+  </data>
+  <data name="PauseSuccessful" xml:space="preserve">
+    <value>Service paused successfully.</value>
+  </data>
+  <data name="ContinueSuccessful" xml:space="preserve">
+    <value>Service continued successfully.</value>
+  </data>
+  <data name="InstallSuccessful" xml:space="preserve">
+    <value>Service was installed successfully.</value>
+  </data>
+  <data name="UninstallSuccessful" xml:space="preserve">
+    <value>Service was uninstalled successfully.</value>
+  </data>
+  <data name="CommandSuccessful" xml:space="preserve">
+    <value>Service command was processed successfully.</value>
+  </data>
+  <data name="StartFailed" xml:space="preserve">
+    <value>Service cannot be started. {0}</value>
+  </data>
+  <data name="StopFailed" xml:space="preserve">
+    <value>Failed to stop service. {0}</value>
+  </data>
+  <data name="PauseFailed" xml:space="preserve">
+    <value>Failed to pause service. {0}</value>
+  </data>
+  <data name="ContinueFailed" xml:space="preserve">
+    <value>Failed to continue service. {0}</value>
+  </data>
+  <data name="SessionChangeFailed" xml:space="preserve">
+    <value>Failed to process session change. {0}</value>
+  </data>
+  <data name="InstallFailed" xml:space="preserve">
+    <value>Failed to install service. Service may have been installed already.</value>
+  </data>
+  <data name="UninstallFailed" xml:space="preserve">
+    <value>Failed to uninstall service. Service may be running.</value>
+  </data>
+  <data name="CommandFailed" xml:space="preserve">
+    <value>Failed to process service command. {0}</value>
+  </data>
+  <data name="ErrorNumber" xml:space="preserve">
+    <value>Windows Error number: {0}.</value>
+  </data>
+  <data name="ShutdownOK" xml:space="preserve">
+    <value>Service has been successfully shut down.</value>
+  </data>
+  <data name="ShutdownFailed" xml:space="preserve">
+    <value>Failed to shut down service. The error that occurred was: {0}.</value>
+  </data>
+  <data name="PowerEventOK" xml:space="preserve">
+    <value>PowerEvent handled successfully by the service.</value>
+  </data>
+  <data name="PowerEventFailed" xml:space="preserve">
+    <value>Failed in handling the PowerEvent. The error that occurred was: {0}.</value>
+  </data>
+  <data name="InstallOK" xml:space="preserve">
+    <value>Service '{0}' has been successfully installed.</value>
+  </data>
+  <data name="TryToStop" xml:space="preserve">
+    <value>Attempt to stop service '{0}'.</value>
+  </data>
+  <data name="ServiceRemoving" xml:space="preserve">
+    <value>Service '{0}' is being removed from the system...</value>
+  </data>
+  <data name="ServiceRemoved" xml:space="preserve">
+    <value>Service '{0}' was successfully removed from the system.</value>
+  </data>
+  <data name="ControlService" xml:space="preserve">
+    <value>Cannot control '{0}' service on computer '{1}'.</value>
+  </data>
+</root>

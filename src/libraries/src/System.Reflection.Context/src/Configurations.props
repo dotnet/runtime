@@ -1,0 +1,9 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netstandard;
+      netstandard1.1;
+      netstandard2.1;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

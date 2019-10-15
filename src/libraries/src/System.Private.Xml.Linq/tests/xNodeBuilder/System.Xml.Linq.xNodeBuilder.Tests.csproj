@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="CommonTests.cs" />
+    <Compile Include="EndOfLineHandlingTests.cs" />
+    <Compile Include="ErrorConditions.cs" />
+    <Compile Include="FunctionalTests.cs" />
+    <Compile Include="OmitDuplicateNamespaceDecl.cs" />
+    <Compile Include="OmitDuplicatesAnnotation.cs" />
+    <Compile Include="SaveOptions_OmitDuplicateNamespace.cs" />
+    <Compile Include="WriterSettings.cs" />
+    <Compile Include="XmlFactoryWriterTests.cs" />
+    <Compile Include="XmlReaderDiff.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

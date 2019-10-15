@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema id="XMLSchema" targetNamespace="foo" elementFormDefault="qualified" xmlns:a="foo" xmlns:b="bar" xmlns:xs="http://www.w3.org/2001/XMLSchema"> 
+    <xs:complexType name="CCustomer">
+        <xs:sequence>
+            <xs:element name="CustomerID" type="xs:string"/>
+            <xs:element name="Age" type="xs:int"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

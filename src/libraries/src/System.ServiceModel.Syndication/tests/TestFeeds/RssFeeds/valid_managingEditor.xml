@@ -1,0 +1,13 @@
+<!--
+  Description:  managingEditor must include email address
+  Expect:       ValidContact{parent:channel,element:managingEditor}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Invalid webMaster</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>managingEditor must include email address</description>
+<managingEditor>editor@contoso.com</managingEditor>
+</channel>
+</rss>

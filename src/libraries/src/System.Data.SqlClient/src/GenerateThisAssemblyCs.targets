@@ -1,0 +1,44 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(IntermediateOutputPath)\ThisAssembly.cs"/>
+  </ItemGroup>
+
+  <Target Name="GenerateThisAssemblyCs"
+          DependsOnTargets="GetAssemblyVersion"
+          BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <ThisAssemblyCsContents>
+namespace System
+{
+internal static class ThisAssembly
+{
+internal const string InformationalVersion = "$(FileVersion)"%3B
+}
+}
+      </ThisAssemblyCsContents>
+    </PropertyGroup>
+
+    <!-- Get the last version number we built with (if any) -->
+    <ReadLinesFromFile
+      Condition="Exists('$(IntermediateOutputPath)\LastVersionNumber')"
+      File="$(IntermediateOutputPath)\LastVersionNumber">
+      <Output TaskParameter="Lines" PropertyName="LastVersionNumber"/>
+    </ReadLinesFromFile>
+
+    <!-- Write ThisAssembly.cs if this is a new version number, or it is missing -->
+    <WriteLinesToFile
+      Condition="('$(LastVersionNumber)'!='$(FileVersion)') or !Exists('$(IntermediateOutputPath)\ThisAssembly.cs')"
+      File="$(IntermediateOutputPath)\ThisAssembly.cs"
+      Lines="$(ThisAssemblyCsContents)"
+      Overwrite="true"
+      Encoding="Unicode"/>
+
+    <!-- Write the new version number (if it has changed) -->
+    <WriteLinesToFile
+      Condition="'$(LastVersionNumber)'!='$(FileVersion)'"
+      File="$(IntermediateOutputPath)\LastVersionNumber"
+      Lines="$(FileVersion)"
+      Overwrite="true"
+      Encoding="Unicode"/>
+  </Target>
+</Project>

@@ -1,0 +1,29 @@
+﻿<out>
+  <test1>4</test1>
+  <test2>
+    <order id="o12" xmlns:o="http://orders.com">Polo Shirt</order>
+  </test2>
+  <test3>o12</test3>
+  <test4>
+    <order id="o12" xmlns:o="http://orders.com">Polo Shirt</order>
+  </test4>
+  <test5></test5>
+  <test6></test6>
+  <test7>
+    <order id="o44" xmlns:o="http://orders.com" xmlns="http://orders.com">Baz</order>
+  </test7>
+  <test8>
+    <order id="o332" xmlns:o="http://orders.com">Shoes</order>
+  </test8>
+  <test9>
+    <order id="o332" xmlns:o="http://orders.com">Shoes</order>
+  </test9>
+  <test10>
+    <order id="o11" xmlns:o="http://orders.com" xmlns="http://orders.com">Foo</order>
+  </test10>
+  <test11></test11>
+  <test12>
+    <order id="o11" xmlns:o="http://orders.com" xmlns="http://orders.com">Foo</order>
+  </test12>
+  <test13></test13>
+</out>

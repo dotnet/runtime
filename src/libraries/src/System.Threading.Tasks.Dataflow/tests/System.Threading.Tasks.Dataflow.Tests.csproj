@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Dataflow\ActionBlockTests.cs" />
+    <Compile Include="Dataflow\BatchBlockTests.cs" />
+    <Compile Include="Dataflow\BatchedJoinBlockTests.cs" />
+    <Compile Include="Dataflow\BroadcastBlockTests.cs" />
+    <Compile Include="Dataflow\BufferBlockTests.cs" />
+    <Compile Include="Dataflow\ConcurrentTests.cs" />
+    <Compile Include="Dataflow\DataflowBlockExtensionTests.cs" />
+    <Compile Include="Dataflow\DataflowBlockOptionsTests.cs" />
+    <Compile Include="Dataflow\DataflowTestHelper.cs" />
+    <Compile Include="Dataflow\DebugAttributeTests.cs" />
+    <Compile Include="Dataflow\DelegateBasedMocks.cs" />
+    <Compile Include="Dataflow\EtwTests.cs" />
+    <Compile Include="Dataflow\JoinBlockTests.cs" />
+    <Compile Include="Dataflow\SimpleNetworkTests.cs" />
+    <Compile Include="Dataflow\TransformBlockTests.cs" />
+    <Compile Include="Dataflow\TransformManyBlockTests.cs" />
+    <Compile Include="Dataflow\WriteOnceBlockTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

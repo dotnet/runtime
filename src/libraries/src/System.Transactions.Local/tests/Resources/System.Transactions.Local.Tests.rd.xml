@@ -1,0 +1,13 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- VerifySoftDependencies() helper in test reflects on these types and caches a bunch of members --> 
+    <Type Name="System.Transactions.IPromotableSinglePhaseNotification" Dynamic="Required Public" />
+    <Type Name="System.Transactions.Transaction" Dynamic="Required Public" />
+    <Type Name="System.Transactions.TransactionInterop" Dynamic="Required Public" />
+
+    <!-- XUnit causes indirect Reflection on these due to them appearing in InlineData attributes. -->
+    <Type Name="System.Transactions.TransactionScopeOption" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+

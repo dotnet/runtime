@@ -1,0 +1,12 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<xs:element name="e" />
+  <xs:attribute name="a" />
+  <xs:complexType name="ct" />
+  <xs:simpleType name="st" >
+	<xs:restriction base="xs:string"/>
+  </xs:simpleType>
+
+  <xs:element name="m2" substitutionGroup="head" />
+
+</xs:schema>

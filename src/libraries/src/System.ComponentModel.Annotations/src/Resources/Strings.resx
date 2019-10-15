@@ -1,0 +1,219 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentIsNullOrWhitespace" xml:space="preserve">
+    <value>The argument '{0}' cannot be null, empty or contain only whitespace.</value>
+  </data>
+  <data name="AssociatedMetadataTypeTypeDescriptor_MetadataTypeContainsUnknownProperties" xml:space="preserve">
+    <value>The associated metadata type for type '{0}' contains the following unknown properties or fields: {1}. Please make sure that the names of these members match the names of the properties on the main type.</value>
+  </data>
+  <data name="AttributeStore_Unknown_Property" xml:space="preserve">
+    <value>The type '{0}' does not contain a public property named '{1}'.</value>
+  </data>
+  <data name="Common_PropertyNotFound" xml:space="preserve">
+    <value>The property {0}.{1} could not be found.</value>
+  </data>
+  <data name="CompareAttribute_MustMatch" xml:space="preserve">
+    <value>'{0}' and '{1}' do not match.</value>
+  </data>
+  <data name="CompareAttribute_UnknownProperty" xml:space="preserve">
+    <value>Could not find a property named {0}.</value>
+  </data>
+  <data name="CreditCardAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field is not a valid credit card number.</value>
+  </data>
+  <data name="CustomValidationAttribute_Method_Must_Return_ValidationResult" xml:space="preserve">
+    <value>The CustomValidationAttribute method '{0}' in type '{1}' must return System.ComponentModel.DataAnnotations.ValidationResult.  Use System.ComponentModel.DataAnnotations.ValidationResult.Success to represent success.</value>
+  </data>
+  <data name="CustomValidationAttribute_Method_Not_Found" xml:space="preserve">
+    <value>The CustomValidationAttribute method '{0}' does not exist in type '{1}' or is not public and static.</value>
+  </data>
+  <data name="CustomValidationAttribute_Method_Required" xml:space="preserve">
+    <value>The CustomValidationAttribute.Method was not specified.</value>
+  </data>
+  <data name="CustomValidationAttribute_Method_Signature" xml:space="preserve">
+    <value>The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static ValidationResult {0}(object value, ValidationContext context).  The value can be strongly typed.  The ValidationContext parameter is optional.</value>
+  </data>
+  <data name="CustomValidationAttribute_Type_Conversion_Failed" xml:space="preserve">
+    <value>Could not convert the value of type '{0}' to '{1}' as expected by method {2}.{3}.</value>
+  </data>
+  <data name="CustomValidationAttribute_Type_Must_Be_Public" xml:space="preserve">
+    <value>The custom validation type '{0}' must be public.</value>
+  </data>
+  <data name="CustomValidationAttribute_ValidationError" xml:space="preserve">
+    <value>{0} is not valid.</value>
+  </data>
+  <data name="CustomValidationAttribute_ValidatorType_Required" xml:space="preserve">
+    <value>The CustomValidationAttribute.ValidatorType was not specified.</value>
+  </data>
+  <data name="DataTypeAttribute_EmptyDataTypeString" xml:space="preserve">
+    <value>The custom DataType string cannot be null or empty.</value>
+  </data>
+  <data name="DisplayAttribute_PropertyNotSet" xml:space="preserve">
+    <value>The {0} property has not been set.  Use the {1} method to get the value.</value>
+  </data>
+  <data name="EmailAddressAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field is not a valid e-mail address.</value>
+  </data>
+  <data name="EnumDataTypeAttribute_TypeCannotBeNull" xml:space="preserve">
+    <value>The type provided for EnumDataTypeAttribute cannot be null.</value>
+  </data>
+  <data name="EnumDataTypeAttribute_TypeNeedsToBeAnEnum" xml:space="preserve">
+    <value>The type '{0}' needs to represent an enumeration type.</value>
+  </data>
+  <data name="FileExtensionsAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field only accepts files with the following extensions: {1}</value>
+  </data>
+  <data name="LocalizableString_LocalizationFailed" xml:space="preserve">
+    <value>Cannot retrieve property '{0}' because localization failed.  Type '{1}' is not public or does not contain a public static string property with the name '{2}'.</value>
+  </data>
+  <data name="MaxLengthAttribute_InvalidMaxLength" xml:space="preserve">
+    <value>MaxLengthAttribute must have a Length value that is greater than zero. Use MaxLength() without parameters to indicate that the string or array can have the maximum allowable length.</value>
+  </data>
+  <data name="MaxLengthAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} must be a string or array type with a maximum length of '{1}'.</value>
+  </data>
+  <data name="MetadataTypeAttribute_TypeCannotBeNull" xml:space="preserve">
+    <value>MetadataClassType cannot be null.</value>
+  </data>
+  <data name="MinLengthAttribute_InvalidMinLength" xml:space="preserve">
+    <value>MinLengthAttribute must have a Length value that is zero or greater.</value>
+  </data>
+  <data name="MinLengthAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} must be a string or array type with a minimum length of '{1}'.</value>
+  </data>
+  <data name="LengthAttribute_InvalidValueType" xml:space="preserve">
+    <value>The field of type {0} must be a string, array or ICollection type.</value>
+  </data>
+  <data name="PhoneAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field is not a valid phone number.</value>
+  </data>
+  <data name="RangeAttribute_ArbitraryTypeNotIComparable" xml:space="preserve">
+    <value>The type {0} must implement {1}.</value>
+  </data>
+  <data name="RangeAttribute_MinGreaterThanMax" xml:space="preserve">
+    <value>The maximum value '{0}' must be greater than or equal to the minimum value '{1}'.</value>
+  </data>
+  <data name="RangeAttribute_Must_Set_Min_And_Max" xml:space="preserve">
+    <value>The minimum and maximum values must be set.</value>
+  </data>
+  <data name="RangeAttribute_Must_Set_Operand_Type" xml:space="preserve">
+    <value>The OperandType must be set when strings are used for minimum and maximum values.</value>
+  </data>
+  <data name="RangeAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} must be between {1} and {2}.</value>
+  </data>
+  <data name="RegexAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} must match the regular expression '{1}'.</value>
+  </data>
+  <data name="RegularExpressionAttribute_Empty_Pattern" xml:space="preserve">
+    <value>The pattern must be set to a valid regular expression.</value>
+  </data>
+  <data name="RequiredAttribute_ValidationError" xml:space="preserve">
+    <value>The {0} field is required.</value>
+  </data>
+  <data name="StringLengthAttribute_InvalidMaxLength" xml:space="preserve">
+    <value>The maximum length must be a nonnegative integer.</value>
+  </data>
+  <data name="StringLengthAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} must be a string with a maximum length of {1}.</value>
+  </data>
+  <data name="StringLengthAttribute_ValidationErrorIncludingMinimum" xml:space="preserve">
+    <value>The field {0} must be a string with a minimum length of {2} and a maximum length of {1}.</value>
+  </data>
+  <data name="UIHintImplementation_ControlParameterKeyIsNotAString" xml:space="preserve">
+    <value>The key parameter at position {0} with value '{1}' is not a string. Every key control parameter must be a string.</value>
+  </data>
+  <data name="UIHintImplementation_ControlParameterKeyIsNull" xml:space="preserve">
+    <value>The key parameter at position {0} is null. Every key control parameter must be a string.</value>
+  </data>
+  <data name="UIHintImplementation_ControlParameterKeyOccursMoreThanOnce" xml:space="preserve">
+    <value>The key parameter at position {0} with value '{1}' occurs more than once.</value>
+  </data>
+  <data name="UIHintImplementation_NeedEvenNumberOfControlParameters" xml:space="preserve">
+    <value>The number of control parameters must be even.</value>
+  </data>
+  <data name="UrlAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field is not a valid fully-qualified http, https, or ftp URL.</value>
+  </data>
+  <data name="ValidationAttribute_Cannot_Set_ErrorMessage_And_Resource" xml:space="preserve">
+    <value>Either ErrorMessageString or ErrorMessageResourceName must be set, but not both.</value>
+  </data>
+  <data name="ValidationAttribute_IsValid_NotImplemented" xml:space="preserve">
+    <value>IsValid(object value) has not been implemented by this class.  The preferred entry point is GetValidationResult() and classes should override IsValid(object value, ValidationContext context).</value>
+  </data>
+  <data name="ValidationAttribute_NeedBothResourceTypeAndResourceName" xml:space="preserve">
+    <value>Both ErrorMessageResourceType and ErrorMessageResourceName need to be set on this attribute.</value>
+  </data>
+  <data name="ValidationAttribute_ResourcePropertyNotStringType" xml:space="preserve">
+    <value>The property '{0}' on resource type '{1}' is not a string type.</value>
+  </data>
+  <data name="ValidationAttribute_ResourceTypeDoesNotHaveProperty" xml:space="preserve">
+    <value>The resource type '{0}' does not have an accessible static property named '{1}'.</value>
+  </data>
+  <data name="ValidationAttribute_ValidationError" xml:space="preserve">
+    <value>The field {0} is invalid.</value>
+  </data>
+  <data name="Validator_InstanceMustMatchValidationContextInstance" xml:space="preserve">
+    <value>The instance provided must match the ObjectInstance on the ValidationContext supplied.</value>
+  </data>
+  <data name="Validator_Property_Value_Wrong_Type" xml:space="preserve">
+    <value>The value for property '{0}' must be of type '{1}'.</value>
+  </data>
+</root>

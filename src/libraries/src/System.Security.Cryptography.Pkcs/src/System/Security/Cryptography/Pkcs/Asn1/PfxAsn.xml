@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="PfxAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc7292#section-4
+
+    PFX ::= SEQUENCE {
+        version    INTEGER {v3(3)}(v3,...),
+        authSafe   ContentInfo,
+        macData    MacData OPTIONAL
+    }
+  -->
+  <asn:Integer name="Version" backingType="byte" />
+  <asn:AsnType name="AuthSafe" typeName="System.Security.Cryptography.Pkcs.Asn1.ContentInfoAsn" />
+  <asn:AsnType name="MacData" typeName="System.Security.Cryptography.Pkcs.Asn1.MacData" optional="true" />
+</asn:Sequence>

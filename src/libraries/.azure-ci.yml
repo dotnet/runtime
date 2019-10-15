@@ -1,0 +1,110 @@
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - release/3.*
+  paths:
+    exclude:
+    - Documentation/*
+    - /*.md
+
+pr:
+  branches:
+    include:
+    - master
+    - release/3.*
+  paths:
+    exclude:
+    - Documentation/*
+    - /*.md
+
+resources:
+  containers:
+  - container: rhel7_container
+    image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
+
+  - container: rhel6_container
+    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+
+  - container: alpine_36_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
+
+  - container: alpine_37_arm64_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+  - container: ubuntu_1604_arm_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
+
+variables:
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+    - group: DotNet-Blob-Feed
+    - group: corefx-sdl-validation
+    - name: _dotnetFeedUrl
+      value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+    - name: _PublishUsingPipelines
+      value: true
+    - name: _DotNetArtifactsCategory
+      value: .NETCore
+    - name: _DotNetValidationArtifactsCategory
+      value: .NETCore
+
+stages:
+  # Windows legs
+  - template: /eng/pipelines/windows.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+
+  # Linux legs
+  - template: /eng/pipelines/linux.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+
+  # MacOS legs
+  - template: /eng/pipelines/macos.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+
+    # FreeBSD leg is only for official builds
+    # - template: /eng/pipelines/freebsd.yml
+    #   parameters:
+    #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+    #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+
+  # Publish and validation steps. Only run in official builds
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+    - template: /eng/pipelines/pre-publish.yml
+      parameters:
+        dependsOn:
+          - WindowsStage
+          - LinuxStage
+          - MacOSStage
+          # - FreeBSD
+
+    - template: eng\common\templates\post-build\post-build.yml
+      parameters:
+        validateDependsOn:
+          - PrePublish
+        enableSymbolValidation: false # https://github.com/dotnet/arcade/issues/2871
+        SDLValidationParameters:
+          enable: true
+          params: ' -SourceToolsList @("policheck","credscan")
+          -TsaInstanceURL "https://devdiv.visualstudio.com/"
+          -TsaProjectName "DEVDIV"
+          -TsaNotificationEmail "$(TsaNotificationEmail)"
+          -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
+          -TsaBugAreaPath "DevDiv\NET\NET Core"
+          -TsaIterationPath "DevDiv"
+          -TsaRepositoryName "CoreFX"
+          -TsaCodebaseName "CoreFX"
+          -TsaPublish $True'

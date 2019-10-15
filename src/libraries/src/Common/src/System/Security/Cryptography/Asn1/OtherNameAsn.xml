@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="OtherNameAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.2.1.6
+
+    OtherName ::= SEQUENCE {
+        type-id    OBJECT IDENTIFIER,
+        value      [0] EXPLICIT ANY DEFINED BY type-id }
+    }
+  -->
+  <asn:ObjectIdentifier name="TypeId" backingType="string" />
+  <asn:AnyValue name="Value" explicitTag="0" />
+</asn:Sequence>

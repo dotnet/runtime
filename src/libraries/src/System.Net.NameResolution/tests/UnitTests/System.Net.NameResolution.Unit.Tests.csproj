@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Avoid warnings about type conflicts for types we're building in -->
+    <NoWarn>0436</NoWarn>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <DefaultReferenceExclusions Include="System.Net.NameResolution" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Net\IPHostEntry.cs">
+      <Link>ProductionCode\System\Net\IPHostEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Dns.cs">
+      <Link>ProductionCode\System\Net\Dns.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="InitializationTest.cs" />
+    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+    <!-- Fakes -->
+    <Compile Include="Fakes\FakeContextAwareResult.cs" />
+    <Compile Include="Fakes\FakeExceptionDispatchInfo.cs" />
+    <Compile Include="Fakes\FakeNameResolutionPal.cs" />
+    <Compile Include="Fakes\FakeNameResolutionUtilities.cs" />
+    <Compile Include="Fakes\FakeSocketExceptionFactory.cs" />
+    <Compile Include="Fakes\FakeSocketProtocolSupportPal.cs" />
+  </ItemGroup>
+  <!-- Production Code under test-->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
+      <Link>ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

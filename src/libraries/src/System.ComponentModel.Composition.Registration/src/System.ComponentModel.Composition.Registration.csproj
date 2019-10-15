@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.ComponentModel.Composition.Registration</AssemblyName>
+    <Configurations>netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ImportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ParameterImportBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilder.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfT.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilder.cs" />
+    <Compile Include="System\Threading\Lock.cs" />
+    <Compile Include="System\Threading\ReadLock.cs" />
+    <Compile Include="System\Threading\WriteLock.cs" />
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTrace.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTrace.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceId.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceSource.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\DebuggerTraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\TraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Reflection.Context" />
+  </ItemGroup>
+</Project>

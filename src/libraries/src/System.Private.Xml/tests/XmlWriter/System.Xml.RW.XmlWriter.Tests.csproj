@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DisposeTests.cs" />
+    <Compile Include="WriteWithEncoding.cs" />
+    <Compile Include="WriteWithEncodingWithFallback.cs" />
+    <Compile Include="WriteWithInvalidSurrogate.cs" />
+  </ItemGroup>
+</Project>

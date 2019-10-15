@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
+    <XUnitNoAppdomain>true</XUnitNoAppdomain>
+    <XUnitMaxThreads>1</XUnitMaxThreads>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs">
+      <Link>Source\ConfigPathUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs">
+      <Link>Source\ExceptionUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\StringUtil.cs">
+      <Link>Source\StringUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs">
+      <Link>Source\TypeUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\UrlPath.cs">
+      <Link>Source\UrlPath.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs">
+      <Link>Source\ValidatorUtils.cs</Link>
+    </Compile>
+    <Compile Include="Mono\CallbackValidatorTest.cs" />
+    <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
+    <Compile Include="Mono\CommaDelimitedStringCollectionTest.cs" />
+    <Compile Include="Mono\ConfigurationElementTest.cs" />
+    <Compile Include="Mono\ConfigurationErrorsExceptionTest.cs" />
+    <Compile Include="Mono\ConfigurationLockCollectionTest.cs" />
+    <Compile Include="Mono\ConfigurationManagerTest.cs" />
+    <Compile Include="Mono\ConfigurationPropertyTest.cs" />
+    <Compile Include="Mono\ConfigurationSaveTest.cs" />
+    <Compile Include="Mono\ConfigurationSectionGroupTest.cs" />
+    <Compile Include="Mono\ConfigurationSectionTest.cs" />
+    <Compile Include="Mono\ConnectionStringSettingsTest.cs" />
+    <Compile Include="Mono\DefaultValidatorTest.cs" />
+    <Compile Include="Mono\ExeConfigurationFileMapTest.cs" />
+    <Compile Include="Mono\GenericEnumConverterTest.cs" />
+    <Compile Include="Mono\InfiniteIntConverterTest.cs" />
+    <Compile Include="Mono\InfiniteTimeSpanConverterTest.cs" />
+    <Compile Include="Mono\IntegerValidatorTest.cs" />
+    <Compile Include="Mono\KeyValueConfigurationCollectionTest.cs" />
+    <Compile Include="Mono\KeyValueConfigurationElementTest.cs" />
+    <Compile Include="Mono\LongValidatorTest.cs" />
+    <Compile Include="Mono\PositiveTimeSpanValidatorTest.cs" />
+    <Compile Include="Mono\RegexStringValidatorTest.cs" />
+    <Compile Include="Mono\StringValidatorTest.cs" />
+    <Compile Include="Mono\SubclassTypeValidatorTest.cs" />
+    <Compile Include="Mono\TestLabel.cs" />
+    <Compile Include="Mono\TestUtil.cs" />
+    <Compile Include="Mono\TimeSpanMinutesConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanMinutesOrInfiniteConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanSecondsConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanSecondsOrInfiniteConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanValidatorTest.cs" />
+    <Compile Include="Mono\TypeNameConverterTest.cs" />
+    <Compile Include="Mono\WhiteSpaceTrimStringConverterTest.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
+    <Compile Include="System\Configuration\AppSettingsReaderTests.cs" />
+    <Compile Include="System\Configuration\AppSettingsTests.cs" />
+    <Compile Include="System\Configuration\CallBackValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationTests.cs" />
+    <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />
+    <Compile Include="System\Configuration\ConnectionStringsTests.cs" />
+    <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
+    <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
+    <Compile Include="System\Configuration\KeyValueConfigurationCollectionTests.cs" />
+    <Compile Include="System\Configuration\LocalFileSettingsProviderTests.cs" />
+    <Compile Include="System\Configuration\NameValueConfigurationCollectionTests.cs" />
+    <Compile Include="System\Configuration\SectionGroupsTests.cs" />
+    <Compile Include="System\Configuration\SettingElementCollectionTests.cs" />
+    <Compile Include="System\Configuration\SettingElementTests.cs" />
+    <Compile Include="System\Configuration\SettingsDescriptionAttributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsGroupDescriptionAttributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsManageabilityAtrributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyIsReadOnlyExceptionTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyNotFoundExceptionTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyWrongTypeExceptionTests.cs" />
+    <Compile Include="System\Configuration\SmokeTest.cs" />
+    <Compile Include="System\Configuration\StringUtilTests.cs" />
+    <Compile Include="System\Configuration\TempConfig.cs" />
+    <Compile Include="System\Configuration\TempConfigurationHost.cs" />
+    <Compile Include="System\Configuration\TestData.cs" />
+    <Compile Include="System\Configuration\StringValidatorTests.cs" />
+    <Compile Include="System\Configuration\SubclassTypeValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\StringValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\TimeSpanValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\TypeUtilTests.cs" />
+    <Compile Include="System\Configuration\UriSectionTests.cs" />
+    <Compile Include="System\Configuration\UrlPathTests.cs" />
+    <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
+    <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
+  </ItemGroup>
+</Project>

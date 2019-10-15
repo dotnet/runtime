@@ -1,0 +1,10 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
+      uap-Windows_NT;
+      $(PackageConfigurations);
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,13 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="custom1.xsd" />
+
+	<xs:element name="doc">
+	<xs:complexType >
+		<xs:attribute name="att1" />
+		<xs:attribute name="att2" />
+		<xs:anyAttribute namespace="a b c http://www.w3.org/XML/1998/namespace d"/>
+	</xs:complexType>
+	</xs:element>
+
+</xs:schema>

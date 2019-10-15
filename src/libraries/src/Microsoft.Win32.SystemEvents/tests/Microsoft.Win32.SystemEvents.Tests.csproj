@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.FindWindow.cs">
+      <Link>Common\Interop\Windows\User32\Interop.FindWindow.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.SendMessage.cs">
+      <Link>Common\Interop\Windows\User32\Interop.SendMessage.cs</Link>
+    </Compile>
+    <Compile Include="GenericEventTests.cs" />
+    <Compile Include="SystemEvents.InvokeOnEventsThread.cs" />
+    <Compile Include="SystemEvents.UserPreference.cs" />
+    <Compile Include="SystemEvents.InstalledFontsChanged.cs" />
+    <Compile Include="SystemEvents.LowMemory.cs" />
+    <Compile Include="SystemEvents.PaletteChanged.cs" />
+    <Compile Include="SystemEvents.SessionEnded.cs" />
+    <Compile Include="SystemEvents.SessionEnding.cs" />
+    <Compile Include="SystemEvents.SessionSwitch.cs" />
+    <Compile Include="SystemEvents.PowerMode.cs" />
+    <Compile Include="SystemEvents.TimeChanged.cs" />
+    <Compile Include="SystemEventsTest.cs" />
+    <Compile Include="SystemEvents.DisplaySettings.cs" />
+    <Compile Include="SystemEvents.CreateTimer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+</Project>

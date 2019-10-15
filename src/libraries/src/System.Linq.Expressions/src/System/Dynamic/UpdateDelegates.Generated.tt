@@ -1,0 +1,338 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Runtime.CompilerServices;
+
+namespace System.Dynamic
+{
+    internal static partial class UpdateDelegates
+    {
+#if FEATURE_COMPILE
+<#
+for (int i = 1; i <= 10; i++)
+{
+    string genericParameters = string.Join(", ", Enumerable.Range(0, i).Select(j => "T" + j).Concat(new[] { "TRet" }));
+    string parameters = string.Join(", ", new[] { "CallSite site" }.Concat(Enumerable.Range(0, i).Select(j => "T" + j + " arg" + j)));
+    string ruleInvocationArguments = string.Join(", ", new[] { "site" }.Concat(Enumerable.Range(0, i).Select(j => "arg" + j)));
+    string argsArray = i == 0 ? "Array.Empty<object>()" : "new object[] { " + string.Join(", ", Enumerable.Range(0, i).Select(j => "arg" + j)) + " }";
+#>
+        [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        internal static TRet UpdateAndExecute<#=i#><<#=genericParameters#>>(<#=parameters#>)
+        {
+            //
+            // Declare the locals here upfront. It actually saves JIT stack space.
+            //
+            var @this = (CallSite<Func<CallSite, <#=genericParameters#>>>)site;
+            Func<CallSite, <#=genericParameters#>>[] applicable;
+            Func<CallSite, <#=genericParameters#>> rule, originalRule = @this.Target;
+            TRet result;
+
+
+            //
+            // Create matchmaker and its site. We'll need them regardless.
+            //
+            site = @this.GetMatchmaker();
+
+            //
+            // Level 1 cache lookup
+            //
+            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            {
+                for (int i = 0; i < applicable.Length; i++)
+                {
+                    rule = applicable[i];
+
+                    //
+                    // Execute the rule
+                    //
+
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule)
+                    {
+                        @this.Target = rule;
+                        result = rule(<#=ruleInvocationArguments#>);
+
+                        if (CallSiteOps.GetMatch(site))
+                        {
+                            CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
+                            return result;
+                        }
+
+                        // Rule didn't match, try the next one
+                        CallSiteOps.ClearMatch(site);
+                    }
+                }
+            }
+
+            //
+            // Level 2 cache lookup
+            //
+
+            //
+            // Any applicable rules in level 2 cache?
+            //
+
+            var cache = CallSiteOps.GetRuleCache(@this);
+
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++)
+            {
+                rule = applicable[i];
+
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
+
+                try
+                {
+                    result = rule(<#=ruleInvocationArguments#>);
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        @this.ReleaseMatchmaker(site);
+                        return result;
+                    }
+                }
+                finally
+                {
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
+                    }
+                }
+
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
+
+            //
+            // Miss on Level 0, 1 and 2 caches. Create new rule
+            //
+
+            rule = null;
+            var args = <#=argsArray#>;
+
+            for (; ; )
+            {
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
+
+                //
+                // Execute the rule on the matchmaker site
+                //
+
+                try
+                {
+                    result = rule(<#=ruleInvocationArguments#>);
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        @this.ReleaseMatchmaker(site);
+                        return result;
+                    }
+                }
+                finally
+                {
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        //
+                        // The rule worked. Add it to level 1 cache.
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                    }
+                }
+
+                // Rule we got back didn't work, try another one
+                CallSiteOps.ClearMatch(site);
+            }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch<#=i#><<#=genericParameters#>>(<#=parameters#>)
+        {
+            site._match = false;
+            return default(TRet);
+        }
+
+
+
+<#
+}
+#>
+<#
+for (int i = 1; i <= 10; i++)
+{
+    string genericParameters = string.Join(", ", Enumerable.Range(0, i).Select(j => "T" + j));
+    string parameters = string.Join(", ", new[] { "CallSite site" }.Concat(Enumerable.Range(0, i).Select(j => "T" + j + " arg" + j)));
+    string ruleInvocationArguments = string.Join(", ", new[] { "site" }.Concat(Enumerable.Range(0, i).Select(j => "arg" + j)));
+    string argsArray = i == 0 ? "Array.Empty<object>()" : "new object[] { " + string.Join(", ", Enumerable.Range(0, i).Select(j => "arg" + j)) + " }";
+#>
+        [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        internal static void UpdateAndExecuteVoid<#=i#><<#=genericParameters#>>(<#=parameters#>)
+        {
+            //
+            // Declare the locals here upfront. It actually saves JIT stack space.
+            //
+            var @this = (CallSite<Action<CallSite, <#=genericParameters#>>>)site;
+            Action<CallSite, <#=genericParameters#>>[] applicable;
+            Action<CallSite, <#=genericParameters#>> rule, originalRule = @this.Target;
+
+
+            //
+            // Create matchmaker and its site. We'll need them regardless.
+            //
+            site = @this.GetMatchmaker();
+
+            //
+            // Level 1 cache lookup
+            //
+            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            {
+                for (int i = 0; i < applicable.Length; i++)
+                {
+                    rule = applicable[i];
+
+                    //
+                    // Execute the rule
+                    //
+
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule)
+                    {
+                        @this.Target = rule;
+                        rule(<#=ruleInvocationArguments#>);
+
+                        if (CallSiteOps.GetMatch(site))
+                        {
+                            CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
+                            return;
+                        }
+
+                        // Rule didn't match, try the next one
+                        CallSiteOps.ClearMatch(site);
+                    }
+                }
+            }
+
+            //
+            // Level 2 cache lookup
+            //
+
+            //
+            // Any applicable rules in level 2 cache?
+            //
+
+            var cache = CallSiteOps.GetRuleCache(@this);
+
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++)
+            {
+                rule = applicable[i];
+
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
+
+                try
+                {
+                    rule(<#=ruleInvocationArguments#>);
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        @this.ReleaseMatchmaker(site);
+                        return;
+                    }
+                }
+                finally
+                {
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
+                    }
+                }
+
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
+
+            //
+            // Miss on Level 0, 1 and 2 caches. Create new rule
+            //
+
+            rule = null;
+            var args = <#=argsArray#>;
+
+            for (; ; )
+            {
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
+
+                //
+                // Execute the rule on the matchmaker site
+                //
+
+                try
+                {
+                    rule(<#=ruleInvocationArguments#>);
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        @this.ReleaseMatchmaker(site);
+                        return;
+                    }
+                }
+                finally
+                {
+                    if (CallSiteOps.GetMatch(site))
+                    {
+                        //
+                        // The rule worked. Add it to level 1 cache.
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                    }
+                }
+
+                // Rule we got back didn't work, try another one
+                CallSiteOps.ClearMatch(site);
+            }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid<#=i#><<#=genericParameters#>>(<#=parameters#>)
+        {
+            site._match = false;
+            return;
+        }
+<#
+    if (i != 10)
+    {
+#>
+
+
+
+<#
+    }
+}
+#>
+#endif
+    }
+}

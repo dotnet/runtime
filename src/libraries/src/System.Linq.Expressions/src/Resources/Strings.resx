@@ -1,0 +1,570 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ReducibleMustOverrideReduce" xml:space="preserve">
+    <value>reducible nodes must override Expression.Reduce()</value>
+  </data>
+  <data name="MustReduceToDifferent" xml:space="preserve">
+    <value>node cannot reduce to itself or null</value>
+  </data>
+  <data name="ReducedNotCompatible" xml:space="preserve">
+    <value>cannot assign from the reduced node type to the original node type</value>
+  </data>
+  <data name="SetterHasNoParams" xml:space="preserve">
+    <value>Setter must have parameters.</value>
+  </data>
+  <data name="PropertyCannotHaveRefType" xml:space="preserve">
+    <value>Property cannot have a managed pointer type.</value>
+  </data>
+  <data name="IndexesOfSetGetMustMatch" xml:space="preserve">
+    <value>Indexing parameters of getter and setter must match.</value>
+  </data>
+  <data name="AccessorsCannotHaveVarArgs" xml:space="preserve">
+    <value>Accessor method should not have VarArgs.</value>
+  </data>
+  <data name="AccessorsCannotHaveByRefArgs" xml:space="preserve">
+    <value>Accessor indexes cannot be passed ByRef.</value>
+  </data>
+  <data name="BoundsCannotBeLessThanOne" xml:space="preserve">
+    <value>Bounds count cannot be less than 1</value>
+  </data>
+  <data name="TypeMustNotBeByRef" xml:space="preserve">
+    <value>Type must not be ByRef</value>
+  </data>
+  <data name="TypeMustNotBePointer" xml:space="preserve">
+    <value>Type must not be a pointer type</value>
+  </data>
+  <data name="SetterMustBeVoid" xml:space="preserve">
+    <value>Setter should have void type.</value>
+  </data>
+  <data name="PropertyTypeMustMatchGetter" xml:space="preserve">
+    <value>Property type must match the value type of getter</value>
+  </data>
+  <data name="PropertyTypeMustMatchSetter" xml:space="preserve">
+    <value>Property type must match the value type of setter</value>
+  </data>
+  <data name="BothAccessorsMustBeStatic" xml:space="preserve">
+    <value>Both accessors must be static.</value>
+  </data>
+  <data name="OnlyStaticFieldsHaveNullInstance" xml:space="preserve">
+    <value>Static field requires null instance, non-static field requires non-null instance.</value>
+  </data>
+  <data name="OnlyStaticPropertiesHaveNullInstance" xml:space="preserve">
+    <value>Static property requires null instance, non-static property requires non-null instance.</value>
+  </data>
+  <data name="OnlyStaticMethodsHaveNullInstance" xml:space="preserve">
+    <value>Static method requires null instance, non-static method requires non-null instance.</value>
+  </data>
+  <data name="PropertyTypeCannotBeVoid" xml:space="preserve">
+    <value>Property cannot have a void type.</value>
+  </data>
+  <data name="InvalidUnboxType" xml:space="preserve">
+    <value>Can only unbox from an object or interface type to a value type.</value>
+  </data>
+  <data name="ExpressionMustBeWriteable" xml:space="preserve">
+    <value>Expression must be writeable</value>
+  </data>
+  <data name="ArgumentMustNotHaveValueType" xml:space="preserve">
+    <value>Argument must not have a value type.</value>
+  </data>
+  <data name="MustBeReducible" xml:space="preserve">
+    <value>must be reducible node</value>
+  </data>
+  <data name="AllTestValuesMustHaveSameType" xml:space="preserve">
+    <value>All test values must have the same type.</value>
+  </data>
+  <data name="AllCaseBodiesMustHaveSameType" xml:space="preserve">
+    <value>All case bodies and the default body must have the same type.</value>
+  </data>
+  <data name="DefaultBodyMustBeSupplied" xml:space="preserve">
+    <value>Default body must be supplied if case bodies are not System.Void.</value>
+  </data>
+  <data name="LabelMustBeVoidOrHaveExpression" xml:space="preserve">
+    <value>Label type must be System.Void if an expression is not supplied</value>
+  </data>
+  <data name="LabelTypeMustBeVoid" xml:space="preserve">
+    <value>Type must be System.Void for this label argument</value>
+  </data>
+  <data name="QuotedExpressionMustBeLambda" xml:space="preserve">
+    <value>Quoted expression must be a lambda</value>
+  </data>
+  <data name="VariableMustNotBeByRef" xml:space="preserve">
+    <value>Variable '{0}' uses unsupported type '{1}'. Reference types are not supported for variables.</value>
+  </data>
+  <data name="DuplicateVariable" xml:space="preserve">
+    <value>Found duplicate parameter '{0}'. Each ParameterExpression in the list must be a unique object.</value>
+  </data>
+  <data name="StartEndMustBeOrdered" xml:space="preserve">
+    <value>Start and End must be well ordered</value>
+  </data>
+  <data name="FaultCannotHaveCatchOrFinally" xml:space="preserve">
+    <value>fault cannot be used with catch or finally clauses</value>
+  </data>
+  <data name="TryMustHaveCatchFinallyOrFault" xml:space="preserve">
+    <value>try must have at least one catch, finally, or fault clause</value>
+  </data>
+  <data name="BodyOfCatchMustHaveSameTypeAsBodyOfTry" xml:space="preserve">
+    <value>Body of catch must have the same type as body of try.</value>
+  </data>
+  <data name="ExtensionNodeMustOverrideProperty" xml:space="preserve">
+    <value>Extension node must override the property {0}.</value>
+  </data>
+  <data name="UserDefinedOperatorMustBeStatic" xml:space="preserve">
+    <value>User-defined operator method '{0}' must be static.</value>
+  </data>
+  <data name="UserDefinedOperatorMustNotBeVoid" xml:space="preserve">
+    <value>User-defined operator method '{0}' must not be void.</value>
+  </data>
+  <data name="CoercionOperatorNotDefined" xml:space="preserve">
+    <value>No coercion operator is defined between types '{0}' and '{1}'.</value>
+  </data>
+  <data name="UnaryOperatorNotDefined" xml:space="preserve">
+    <value>The unary operator {0} is not defined for the type '{1}'.</value>
+  </data>
+  <data name="BinaryOperatorNotDefined" xml:space="preserve">
+    <value>The binary operator {0} is not defined for the types '{1}' and '{2}'.</value>
+  </data>
+  <data name="ReferenceEqualityNotDefined" xml:space="preserve">
+    <value>Reference equality is not defined for the types '{0}' and '{1}'.</value>
+  </data>
+  <data name="OperandTypesDoNotMatchParameters" xml:space="preserve">
+    <value>The operands for operator '{0}' do not match the parameters of method '{1}'.</value>
+  </data>
+  <data name="OverloadOperatorTypeDoesNotMatchConversionType" xml:space="preserve">
+    <value>The return type of overload method for operator '{0}' does not match the parameter type of conversion method '{1}'.</value>
+  </data>
+  <data name="ConversionIsNotSupportedForArithmeticTypes" xml:space="preserve">
+    <value>Conversion is not supported for arithmetic types without operator overloading.</value>
+  </data>
+  <data name="ArgumentMustBeArray" xml:space="preserve">
+    <value>Argument must be array</value>
+  </data>
+  <data name="ArgumentMustBeBoolean" xml:space="preserve">
+    <value>Argument must be boolean</value>
+  </data>
+  <data name="EqualityMustReturnBoolean" xml:space="preserve">
+    <value>The user-defined equality method '{0}' must return a boolean value.</value>
+  </data>
+  <data name="ArgumentMustBeFieldInfoOrPropertyInfo" xml:space="preserve">
+    <value>Argument must be either a FieldInfo or PropertyInfo</value>
+  </data>
+  <data name="ArgumentMustBeFieldInfoOrPropertyInfoOrMethod" xml:space="preserve">
+    <value>Argument must be either a FieldInfo, PropertyInfo or MethodInfo</value>
+  </data>
+  <data name="ArgumentMustBeInstanceMember" xml:space="preserve">
+    <value>Argument must be an instance member</value>
+  </data>
+  <data name="ArgumentMustBeInteger" xml:space="preserve">
+    <value>Argument must be of an integer type</value>
+  </data>
+  <data name="ArgumentMustBeArrayIndexType" xml:space="preserve">
+    <value>Argument for array index must be of type Int32</value>
+  </data>
+  <data name="ArgumentMustBeSingleDimensionalArrayType" xml:space="preserve">
+    <value>Argument must be single-dimensional, zero-based array type</value>
+  </data>
+  <data name="ArgumentTypesMustMatch" xml:space="preserve">
+    <value>Argument types do not match</value>
+  </data>
+  <data name="CannotAutoInitializeValueTypeElementThroughProperty" xml:space="preserve">
+    <value>Cannot auto initialize elements of value type through property '{0}', use assignment instead</value>
+  </data>
+  <data name="CannotAutoInitializeValueTypeMemberThroughProperty" xml:space="preserve">
+    <value>Cannot auto initialize members of value type through property '{0}', use assignment instead</value>
+  </data>
+  <data name="IncorrectTypeForTypeAs" xml:space="preserve">
+    <value>The type used in TypeAs Expression must be of reference or nullable type, {0} is neither</value>
+  </data>
+  <data name="CoalesceUsedOnNonNullType" xml:space="preserve">
+    <value>Coalesce used with type that cannot be null</value>
+  </data>
+  <data name="ExpressionTypeCannotInitializeArrayType" xml:space="preserve">
+    <value>An expression of type '{0}' cannot be used to initialize an array of type '{1}'</value>
+  </data>
+  <data name="ArgumentTypeDoesNotMatchMember" xml:space="preserve">
+    <value> Argument type '{0}' does not match the corresponding member type '{1}'</value>
+  </data>
+  <data name="ArgumentMemberNotDeclOnType" xml:space="preserve">
+    <value> The member '{0}' is not declared on type '{1}' being created</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchReturn" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for return type '{1}'</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchAssignment" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for assignment to type '{1}'</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchLabel" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for label of type '{1}'</value>
+  </data>
+  <data name="ExpressionTypeNotInvocable" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be invoked</value>
+  </data>
+  <data name="FieldNotDefinedForType" xml:space="preserve">
+    <value>Field '{0}' is not defined for type '{1}'</value>
+  </data>
+  <data name="InstanceFieldNotDefinedForType" xml:space="preserve">
+    <value>Instance field '{0}' is not defined for type '{1}'</value>
+  </data>
+  <data name="FieldInfoNotDefinedForType" xml:space="preserve">
+    <value>Field '{0}.{1}' is not defined for type '{2}'</value>
+  </data>
+  <data name="IncorrectNumberOfIndexes" xml:space="preserve">
+    <value>Incorrect number of indexes</value>
+  </data>
+  <data name="IncorrectNumberOfLambdaDeclarationParameters" xml:space="preserve">
+    <value>Incorrect number of parameters supplied for lambda declaration</value>
+  </data>
+  <data name="IncorrectNumberOfMembersForGivenConstructor" xml:space="preserve">
+    <value> Incorrect number of members for constructor</value>
+  </data>
+  <data name="IncorrectNumberOfArgumentsForMembers" xml:space="preserve">
+    <value>Incorrect number of arguments for the given members </value>
+  </data>
+  <data name="LambdaTypeMustBeDerivedFromSystemDelegate" xml:space="preserve">
+    <value>Lambda type parameter must be derived from System.MulticastDelegate</value>
+  </data>
+  <data name="MemberNotFieldOrProperty" xml:space="preserve">
+    <value>Member '{0}' not field or property</value>
+  </data>
+  <data name="MethodContainsGenericParameters" xml:space="preserve">
+    <value>Method {0} contains generic parameters</value>
+  </data>
+  <data name="MethodIsGeneric" xml:space="preserve">
+    <value>Method {0} is a generic method definition</value>
+  </data>
+  <data name="MethodNotPropertyAccessor" xml:space="preserve">
+    <value>The method '{0}.{1}' is not a property accessor</value>
+  </data>
+  <data name="PropertyDoesNotHaveGetter" xml:space="preserve">
+    <value>The property '{0}' has no 'get' accessor</value>
+  </data>
+  <data name="PropertyDoesNotHaveSetter" xml:space="preserve">
+    <value>The property '{0}' has no 'set' accessor</value>
+  </data>
+  <data name="PropertyDoesNotHaveAccessor" xml:space="preserve">
+    <value>The property '{0}' has no 'get' or 'set' accessors</value>
+  </data>
+  <data name="NotAMemberOfType" xml:space="preserve">
+    <value>'{0}' is not a member of type '{1}'</value>
+  </data>
+  <data name="NotAMemberOfAnyType" xml:space="preserve">
+    <value>'{0}' is not a member of any type</value>
+  </data>
+  <data name="UnsupportedExpressionType" xml:space="preserve">
+    <value>The expression type '{0}' is not supported</value>
+  </data>
+  <data name="ParameterExpressionNotValidAsDelegate" xml:space="preserve">
+    <value>ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'</value>
+  </data>
+  <data name="PropertyNotDefinedForType" xml:space="preserve">
+    <value>Property '{0}' is not defined for type '{1}'</value>
+  </data>
+  <data name="InstancePropertyNotDefinedForType" xml:space="preserve">
+    <value>Instance property '{0}' is not defined for type '{1}'</value>
+  </data>
+  <data name="InstancePropertyWithoutParameterNotDefinedForType" xml:space="preserve">
+    <value>Instance property '{0}' that takes no argument is not defined for type '{1}'</value>
+  </data>
+  <data name="InstancePropertyWithSpecifiedParametersNotDefinedForType" xml:space="preserve">
+    <value>Instance property '{0}{1}' is not defined for type '{2}'</value>
+  </data>
+  <data name="InstanceAndMethodTypeMismatch" xml:space="preserve">
+    <value>Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'</value>
+  </data>
+  <data name="TypeContainsGenericParameters" xml:space="preserve">
+    <value>Type {0} contains generic parameters</value>
+  </data>
+  <data name="TypeIsGeneric" xml:space="preserve">
+    <value>Type {0} is a generic type definition</value>
+  </data>
+  <data name="TypeMissingDefaultConstructor" xml:space="preserve">
+    <value>Type '{0}' does not have a default constructor</value>
+  </data>
+  <data name="ElementInitializerMethodNotAdd" xml:space="preserve">
+    <value>Element initializer method must be named 'Add'</value>
+  </data>
+  <data name="ElementInitializerMethodNoRefOutParam" xml:space="preserve">
+    <value>Parameter '{0}' of element initializer method '{1}' must not be a pass by reference parameter</value>
+  </data>
+  <data name="ElementInitializerMethodWithZeroArgs" xml:space="preserve">
+    <value>Element initializer method must have at least 1 parameter</value>
+  </data>
+  <data name="ElementInitializerMethodStatic" xml:space="preserve">
+    <value>Element initializer method must be an instance method</value>
+  </data>
+  <data name="TypeNotIEnumerable" xml:space="preserve">
+    <value>Type '{0}' is not IEnumerable</value>
+  </data>
+  <data name="UnhandledBinary" xml:space="preserve">
+    <value>Unhandled binary: {0}</value>
+  </data>
+  <data name="UnhandledBinding" xml:space="preserve">
+    <value>Unhandled binding </value>
+  </data>
+  <data name="UnhandledBindingType" xml:space="preserve">
+    <value>Unhandled Binding Type: {0}</value>
+  </data>
+  <data name="UnhandledUnary" xml:space="preserve">
+    <value>Unhandled unary: {0}</value>
+  </data>
+  <data name="UnknownBindingType" xml:space="preserve">
+    <value>Unknown binding type</value>
+  </data>
+  <data name="UserDefinedOpMustHaveConsistentTypes" xml:space="preserve">
+    <value>The user-defined operator method '{1}' for operator '{0}' must have identical parameter and return types.</value>
+  </data>
+  <data name="UserDefinedOpMustHaveValidReturnType" xml:space="preserve">
+    <value>The user-defined operator method '{1}' for operator '{0}' must return the same type as its parameter or a derived type.</value>
+  </data>
+  <data name="LogicalOperatorMustHaveBooleanOperators" xml:space="preserve">
+    <value>The user-defined operator method '{1}' for operator '{0}' must have associated boolean True and False operators.</value>
+  </data>
+  <data name="MethodWithArgsDoesNotExistOnType" xml:space="preserve">
+    <value>No method '{0}' on type '{1}' is compatible with the supplied arguments.</value>
+  </data>
+  <data name="GenericMethodWithArgsDoesNotExistOnType" xml:space="preserve">
+    <value>No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. </value>
+  </data>
+  <data name="MethodWithMoreThanOneMatch" xml:space="preserve">
+    <value>More than one method '{0}' on type '{1}' is compatible with the supplied arguments.</value>
+  </data>
+  <data name="PropertyWithMoreThanOneMatch" xml:space="preserve">
+    <value>More than one property '{0}' on type '{1}' is compatible with the supplied arguments.</value>
+  </data>
+  <data name="IncorrectNumberOfTypeArgsForFunc" xml:space="preserve">
+    <value>An incorrect number of type arguments were specified for the declaration of a Func type.</value>
+  </data>
+  <data name="IncorrectNumberOfTypeArgsForAction" xml:space="preserve">
+    <value>An incorrect number of type arguments were specified for the declaration of an Action type.</value>
+  </data>
+  <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
+    <value>Argument type cannot be System.Void.</value>
+  </data>
+  <data name="OutOfRange" xml:space="preserve">
+    <value>{0} must be greater than or equal to {1}</value>
+  </data>
+  <data name="LabelTargetAlreadyDefined" xml:space="preserve">
+    <value>Cannot redefine label '{0}' in an inner block.</value>
+  </data>
+  <data name="LabelTargetUndefined" xml:space="preserve">
+    <value>Cannot jump to undefined label '{0}'.</value>
+  </data>
+  <data name="ControlCannotLeaveFinally" xml:space="preserve">
+    <value>Control cannot leave a finally block.</value>
+  </data>
+  <data name="ControlCannotLeaveFilterTest" xml:space="preserve">
+    <value>Control cannot leave a filter test.</value>
+  </data>
+  <data name="AmbiguousJump" xml:space="preserve">
+    <value>Cannot jump to ambiguous label '{0}'.</value>
+  </data>
+  <data name="ControlCannotEnterTry" xml:space="preserve">
+    <value>Control cannot enter a try block.</value>
+  </data>
+  <data name="ControlCannotEnterExpression" xml:space="preserve">
+    <value>Control cannot enter an expression--only statements can be jumped into.</value>
+  </data>
+  <data name="NonLocalJumpWithValue" xml:space="preserve">
+    <value>Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values.</value>
+  </data>
+  <data name="CannotCompileConstant" xml:space="preserve">
+    <value>CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value.</value>
+  </data>
+  <data name="CannotCompileDynamic" xml:space="preserve">
+    <value>Dynamic expressions are not supported by CompileToMethod. Instead, create an expression tree that uses System.Runtime.CompilerServices.CallSite.</value>
+  </data>
+  <data name="InvalidLvalue" xml:space="preserve">
+    <value>Invalid lvalue for assignment: {0}.</value>
+  </data>
+  <data name="UndefinedVariable" xml:space="preserve">
+    <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>
+  </data>
+  <data name="CannotCloseOverByRef" xml:space="preserve">
+    <value>Cannot close over byref parameter '{0}' referenced in lambda '{1}'</value>
+  </data>
+  <data name="UnexpectedVarArgsCall" xml:space="preserve">
+    <value>Unexpected VarArgs call to method '{0}'</value>
+  </data>
+  <data name="RethrowRequiresCatch" xml:space="preserve">
+    <value>Rethrow statement is valid only inside a Catch block.</value>
+  </data>
+  <data name="TryNotAllowedInFilter" xml:space="preserve">
+    <value>Try expression is not allowed inside a filter body.</value>
+  </data>
+  <data name="MustRewriteToSameNode" xml:space="preserve">
+    <value>When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.</value>
+  </data>
+  <data name="MustRewriteChildToSameType" xml:space="preserve">
+    <value>Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite.</value>
+  </data>
+  <data name="MustRewriteWithoutMethod" xml:space="preserve">
+    <value>Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is intentional, override '{1}' and change it to allow this rewrite.</value>
+  </data>
+  <data name="InvalidNullValue" xml:space="preserve">
+    <value>The value null is not of type '{0}' and cannot be used in this collection.</value>
+  </data>
+  <data name="InvalidObjectType" xml:space="preserve">
+    <value>The value '{0}' is not of type '{1}' and cannot be used in this collection.</value>
+  </data>
+  <data name="TryNotSupportedForMethodsWithRefArgs" xml:space="preserve">
+    <value>TryExpression is not supported as an argument to method '{0}' because it has an argument with by-ref type. Construct the tree so the TryExpression is not nested inside of this expression.</value>
+  </data>
+  <data name="TryNotSupportedForValueTypeInstances" xml:space="preserve">
+    <value>TryExpression is not supported as a child expression when accessing a member on type '{0}' because it is a value type. Construct the tree so the TryExpression is not nested inside of this expression.</value>
+  </data>
+  <data name="EnumerationIsDone" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
+  <data name="TestValueTypeDoesNotMatchComparisonMethodParameter" xml:space="preserve">
+    <value>Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'</value>
+  </data>
+  <data name="SwitchValueTypeDoesNotMatchComparisonMethodParameter" xml:space="preserve">
+    <value>Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'</value>
+  </data>
+  <data name="PdbGeneratorNeedsExpressionCompiler" xml:space="preserve">
+    <value>DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod.</value>
+  </data>
+  <data name="InvalidArgumentValue_ParamName" xml:space="preserve">
+    <value>Invalid argument value</value>
+  </data>
+  <data name="NonEmptyCollectionRequired" xml:space="preserve">
+    <value>Non-empty collection required</value>
+  </data>
+  <data name="CollectionModifiedWhileEnumerating" xml:space="preserve">
+    <value>Collection was modified; enumeration operation may not execute.</value>
+  </data>
+  <data name="ExpressionMustBeReadable" xml:space="preserve">
+    <value>Expression must be readable</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchMethodParameter" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for parameter of type '{1}' of method '{2}'</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchParameter" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for parameter of type '{1}'</value>
+  </data>
+  <data name="ExpressionTypeDoesNotMatchConstructorParameter" xml:space="preserve">
+    <value>Expression of type '{0}' cannot be used for constructor parameter of type '{1}'</value>
+  </data>
+  <data name="IncorrectNumberOfMethodCallArguments" xml:space="preserve">
+    <value>Incorrect number of arguments supplied for call to method '{0}'</value>
+  </data>
+  <data name="IncorrectNumberOfLambdaArguments" xml:space="preserve">
+    <value>Incorrect number of arguments supplied for lambda invocation</value>
+  </data>
+  <data name="IncorrectNumberOfConstructorArguments" xml:space="preserve">
+    <value>Incorrect number of arguments for constructor</value>
+  </data>
+  <data name="NonStaticConstructorRequired" xml:space="preserve">
+    <value>The constructor should not be static</value>
+  </data>
+  <data name="NonAbstractConstructorRequired" xml:space="preserve">
+    <value>Can't compile a NewExpression with a constructor declared on an abstract class</value>
+  </data>
+  <data name="FirstArgumentMustBeCallSite" xml:space="preserve">
+    <value>First argument of delegate must be CallSite</value>
+  </data>
+  <data name="NoOrInvalidRuleProduced" xml:space="preserve">
+    <value>No or Invalid rule produced</value>
+  </data>
+  <data name="TypeMustBeDerivedFromSystemDelegate" xml:space="preserve">
+    <value>Type must be derived from System.Delegate</value>
+  </data>
+  <data name="TypeParameterIsNotDelegate" xml:space="preserve">
+    <value>Type parameter is {0}. Expected a delegate.</value>
+  </data>
+  <data name="ArgumentTypeCannotBeVoid" xml:space="preserve">
+    <value>Argument type cannot be void</value>
+  </data>
+  <data name="ArgCntMustBeGreaterThanNameCnt" xml:space="preserve">
+    <value>Argument count must be greater than number of named arguments.</value>
+  </data>
+  <data name="BinderNotCompatibleWithCallSite" xml:space="preserve">
+    <value>The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site.</value>
+  </data>
+  <data name="BindingCannotBeNull" xml:space="preserve">
+    <value>Bind cannot return null.</value>
+  </data>
+  <data name="DynamicBinderResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.</value>
+  </data>
+  <data name="DynamicBindingNeedsRestrictions" xml:space="preserve">
+    <value>The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction.</value>
+  </data>
+  <data name="DynamicObjectResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.</value>
+  </data>
+  <data name="InvalidMetaObjectCreated" xml:space="preserve">
+    <value>An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.</value>
+  </data>
+  <data name="AmbiguousMatchInExpandoObject" xml:space="preserve">
+    <value>More than one key matching '{0}' was found in the ExpandoObject.</value>
+  </data>
+  <data name="CollectionReadOnly" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="KeyDoesNotExistInExpando" xml:space="preserve">
+    <value>The specified key '{0}' does not exist in the ExpandoObject.</value>
+  </data>
+  <data name="SameKeyExistsInExpando" xml:space="preserve">
+    <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
+  </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
+</root>

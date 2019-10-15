@@ -1,0 +1,201 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AccessControl_AclTooLong" xml:space="preserve">
+    <value>Length of the access control list exceed the allowed maximum.</value>
+  </data>
+  <data name="AccessControl_InvalidAccessRuleType" xml:space="preserve">
+    <value>The access rule is not the correct type.</value>
+  </data>
+  <data name="AccessControl_InvalidAuditRuleType" xml:space="preserve">
+    <value>The audit rule is not the correct type.</value>
+  </data>
+  <data name="AccessControl_InvalidOwner" xml:space="preserve">
+    <value>The security identifier is not allowed to be the owner of this object.</value>
+  </data>
+  <data name="AccessControl_InvalidGroup" xml:space="preserve">
+    <value>The security identifier is not allowed to be the primary group of this object.</value>
+  </data>
+  <data name="AccessControl_InvalidHandle" xml:space="preserve">
+    <value>The supplied handle is invalid. This can happen when trying to set an ACL on an anonymous kernel object.</value>
+  </data>
+  <data name="AccessControl_InvalidSecurityDescriptorRevision" xml:space="preserve">
+    <value>Security descriptor with revision other than '1' are not legal.</value>
+  </data>
+  <data name="AccessControl_InvalidSecurityDescriptorSelfRelativeForm" xml:space="preserve">
+    <value>Security descriptor must be in the self-relative form.</value>
+  </data>
+  <data name="AccessControl_InvalidSidInSDDLString" xml:space="preserve">
+    <value>The SDDL string contains an invalid sid or a sid that cannot be translated.</value>
+  </data>
+  <data name="AccessControl_MustSpecifyContainerAcl" xml:space="preserve">
+    <value>The named parameter must be a container ACL.</value>
+  </data>
+  <data name="AccessControl_MustSpecifyDirectoryObjectAcl" xml:space="preserve">
+    <value>The named parameter must be a directory-object ACL.</value>
+  </data>
+  <data name="AccessControl_MustSpecifyLeafObjectAcl" xml:space="preserve">
+    <value>The named parameter must be a non-container ACL.</value>
+  </data>
+  <data name="AccessControl_MustSpecifyNonDirectoryObjectAcl" xml:space="preserve">
+    <value>The named parameter must be a non-directory-object ACL.</value>
+  </data>
+  <data name="AccessControl_NoAssociatedSecurity" xml:space="preserve">
+    <value>Unable to perform a security operation on an object that has no associated security. This can happen when trying to get an ACL of an anonymous kernel object.</value>
+  </data>
+  <data name="AccessControl_UnexpectedError" xml:space="preserve">
+    <value>Method failed with unexpected error code {0}.</value>
+  </data>
+  <data name="Arg_EnumAtLeastOneFlag" xml:space="preserve">
+    <value>Must set at least one flag.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Arg_InvalidOperationException" xml:space="preserve">
+    <value>Operation is not valid due to the current state of the object.</value>
+  </data>
+  <data name="Arg_MustBeIdentityReferenceType" xml:space="preserve">
+    <value>Type must be an IdentityReference, such as NTAccount or SecurityIdentifier.</value>
+  </data>
+  <data name="Argument_ArgumentZero" xml:space="preserve">
+    <value>Argument cannot be zero.</value>
+  </data>
+  <data name="Argument_InvalidAnyFlag" xml:space="preserve">
+    <value>No flags can be set.</value>
+  </data>
+  <data name="Argument_InvalidEnumValue" xml:space="preserve">
+    <value>The value '{0}' is not valid for this usage of the type {1}.</value>
+  </data>
+  <data name="Argument_InvalidName" xml:space="preserve">
+    <value>Invalid name.</value>
+  </data>
+  <data name="Argument_InvalidPrivilegeName" xml:space="preserve">
+    <value>Privilege '{0}' is not valid on this system.</value>
+  </data>
+  <data name="Argument_InvalidSafeHandle" xml:space="preserve">
+    <value>The SafeHandle is invalid.</value>
+  </data>
+  <data name="ArgumentException_InvalidAceBinaryForm" xml:space="preserve">
+    <value>The binary form of an ACE object is invalid.</value>
+  </data>
+  <data name="ArgumentException_InvalidAclBinaryForm" xml:space="preserve">
+    <value>The binary form of an ACL object is invalid.</value>
+  </data>
+  <data name="ArgumentException_InvalidSDSddlForm" xml:space="preserve">
+    <value>The SDDL form of a security descriptor object is invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ArrayLength" xml:space="preserve">
+    <value>The length of the array must be between {0} and {1}, inclusive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ArrayLengthMultiple" xml:space="preserve">
+    <value>The length of the array must be a multiple of {0}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ArrayTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the required data. Check array length and offset.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidUserDefinedAceType" xml:space="preserve">
+    <value>User-defined ACEs must not have a well-known ACE type.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="InvalidOperation_ModificationOfNonCanonicalAcl" xml:space="preserve">
+    <value>This access control list is not in canonical form and therefore cannot be modified.</value>
+  </data>
+  <data name="InvalidOperation_MustBeSameThread" xml:space="preserve">
+    <value>This operation must take place on the same thread on which the object was created.</value>
+  </data>
+  <data name="InvalidOperation_MustLockForReadOrWrite" xml:space="preserve">
+    <value>Object must be locked for read or write.</value>
+  </data>
+  <data name="InvalidOperation_MustLockForWrite" xml:space="preserve">
+    <value>Object must be locked for read.</value>
+  </data>
+  <data name="InvalidOperation_MustRevertPrivilege" xml:space="preserve">
+    <value>Must revert the privilege prior to attempting this operation.</value>
+  </data>
+  <data name="InvalidOperation_NoSecurityDescriptor" xml:space="preserve">
+    <value>The object does not contain a security descriptor.</value>
+  </data>
+  <data name="InvalidOperation_OnlyValidForDS" xml:space="preserve">
+    <value>Adding ACEs with Object Flags and Object GUIDs is only valid for directory-object ACLs.</value>
+  </data>
+  <data name="InvalidOperation_DisconnectedPipe" xml:space="preserve">
+    <value>The pipe has been disconnected.</value>
+  </data>
+  <data name="NotSupported_SetMethod" xml:space="preserve">
+    <value>The 'set' method is not supported on this property.</value>
+  </data>
+  <data name="PrivilegeNotHeld_Default" xml:space="preserve">
+    <value>The process does not possess some privilege required for this operation.</value>
+  </data>
+  <data name="PrivilegeNotHeld_Named" xml:space="preserve">
+    <value>The process does not possess the '{0}' privilege which is required for this operation.</value>
+  </data>
+  <data name="Rank_MultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimension arrays are supported here.</value>
+  </data>
+  <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
+    <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
+  </data>
+</root>

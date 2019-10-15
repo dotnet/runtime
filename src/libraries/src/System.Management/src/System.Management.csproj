@@ -1,0 +1,92 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Management</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);0618</NoWarn>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalLock.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="System\Management\ManagementBaseObject.cs" />
+    <Compile Include="System\Management\ManagementClass.cs" />
+    <Compile Include="System\Management\ManagementDateTime.cs" />
+    <Compile Include="System\Management\ManagementEventArgs.cs" />
+    <Compile Include="System\Management\ManagementEventWatcher.cs" />
+    <Compile Include="System\Management\ManagementException.cs" />
+    <Compile Include="System\Management\ManagementNamedValueCollection.cs" />
+    <Compile Include="System\Management\ManagementObject.cs" />
+    <Compile Include="System\Management\ManagementObjectCollection.cs" />
+    <Compile Include="System\Management\ManagementObjectSearcher.cs" />
+    <Compile Include="System\Management\ManagementOperationWatcher.cs" />
+    <Compile Include="System\Management\ManagementOptions.cs" />
+    <Compile Include="System\Management\ManagementPath.cs" />
+    <Compile Include="System\Management\ManagementQuery.cs" />
+    <Compile Include="System\Management\ManagementScope.cs" />
+    <Compile Include="System\Management\Method.cs" />
+    <Compile Include="System\Management\MethodSet.cs" />
+    <Compile Include="System\Management\Property.cs" />
+    <Compile Include="System\Management\PropertySet.cs" />
+    <Compile Include="System\Management\Qualifier.cs" />
+    <Compile Include="System\Management\QualifierSet.cs" />
+    <Compile Include="System\Management\WmiEventSink.cs" />
+    <Compile Include="System\Management\wmiutil.cs" />
+    <Compile Include="System\Management\WMIGenerator.cs" />
+    <Compile Include="System\Management\InteropClasses\WMIInterop.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.CodeDom" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+</Project>

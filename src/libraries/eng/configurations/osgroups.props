@@ -1,0 +1,44 @@
+﻿<Project>
+  <ItemGroup>
+    <OSGroups Include="Windows_NT">
+      <Imports>AnyOS</Imports>
+      <TargetsWindows>true</TargetsWindows>
+      <PackageTargetRuntime>win</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="Unix">
+      <Imports>AnyOS</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <PackageTargetRuntime>unix</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="Linux">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsLinux>true</TargetsLinux>
+      <PackageTargetRuntime>linux</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="OSX">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsOSX>true</TargetsOSX>
+      <PackageTargetRuntime>osx</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="FreeBSD">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsFreeBSD>true</TargetsFreeBSD>
+      <PackageTargetRuntime>freebsd</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="NetBSD">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsNetBSD>true</TargetsNetBSD>
+      <PackageTargetRuntime>netbsd</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="WebAssembly">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsWebAssembly>true</TargetsWebAssembly>
+    </OSGroups>
+    <OSGroups Include="AnyOS" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationTrustTests.cs" />
+    <Compile Include="CodeConnectAccessTests.cs" />
+    <Compile Include="CodeGroupTests.cs" />
+    <Compile Include="EvidenceBaseTests.cs" />
+    <Compile Include="EvidenceTests.cs" />
+    <Compile Include="HostProtectionTests.cs" />
+    <Compile Include="HostSecurityManagerTests.cs" />
+    <Compile Include="MembershipConditionTests.cs" />
+    <Compile Include="PermissionSetTests.cs" />
+    <Compile Include="PermissionTests.cs" />
+    <Compile Include="PolicyTests.cs" />
+    <Compile Include="PrincipalPermissionTests.cs" />
+    <Compile Include="SecurityElementTests.cs" />
+    <Compile Include="TrustManagerContextTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">
+    <Compile Include="XamlLoadPermissionTests.cs"/>
+  </ItemGroup>
+</Project>

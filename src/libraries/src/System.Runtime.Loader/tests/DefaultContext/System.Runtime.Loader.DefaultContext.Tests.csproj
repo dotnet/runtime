@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+    <!-- LoadInDefaultContext test relies on no deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DefaultLoadContextTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../System.Runtime.Loader.Noop.Assembly/System.Runtime.Loader.Noop.Assembly.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="RenameTestAssembly" AfterTargets="PrepareForRun">
+    <Move SourceFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly_test.dll" />
+  </Target>
+</Project>

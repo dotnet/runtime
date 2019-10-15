@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard;
+      netcoreapp2.0-Windows_NT;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netcoreapp-Windows_NT;
+      _netfx;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

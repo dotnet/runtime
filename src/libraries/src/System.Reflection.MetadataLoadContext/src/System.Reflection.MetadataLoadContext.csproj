@@ -1,0 +1,158 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Reflection.MetadataLoadContext</AssemblyName>
+    <RootNamespace>System.Reflection</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <!-- Only the netcoreapp version supports the new reflection apis (IsSZArray, etc.) -->
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\CoreRtBridge.cs" />
+    <Compile Include="System\Reflection\DefaultBinder.cs" />
+    <Compile Include="System\Reflection\DefaultBinder.CanConvert.cs" />
+    <Compile Include="System\Reflection\MetadataAssemblyResolver.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.Apis.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.CoreAssembly.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.Disposing.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.KnownConstructors.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.Loading.cs" />
+    <Compile Include="System\Reflection\MetadataLoadContext.Resolving.cs" />
+    <Compile Include="System\Reflection\PathAssemblyResolver.cs" />
+    <Compile Include="System\Reflection\Runtime\AssemblyNameHelpers.cs" />
+    <Compile Include="System\Reflection\Runtime\SignatureTypeExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\EventPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\FieldPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MethodPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NestedTypePolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\PropertyPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.Enumerator.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\Shared.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\AssemblyFileInfo.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\Ecma\EcmaAssembly.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\Ecma\EcmaAssembly.GetName.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\Ecma\EcmaAssembly.ManifestResources.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\Ecma\EcmaAssembly.Modules.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\RoAssembly.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\RoAssembly.GetForwardedTypes.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\RoAssembly.Modules.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\RoExceptionAssembly.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Assemblies\RoStubAssembly.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Constructors\RoConstructor.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Constructors\RoDefinitionConstructor.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Constructors\RoSyntheticConstructor.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\CustomAttributeArguments.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\CustomAttributeHelpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\Ecma\EcmaCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\Ecma\EcmaCustomAttributeHelpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\RoCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\TypeLoading\CustomAttributes\RoPseudoCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Events\Ecma\EcmaEvent.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Events\RoEvent.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Fields\Ecma\EcmaField.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Fields\RoField.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Assignability.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\AssemblyNameData.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\CoreType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\CoreTypes.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaDefaultValueProcessing.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaHelpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaModifiedTypeProvider.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaPinnedTypeProvider.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaResolver.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaSignatureTypeProviderForToString.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaToStringHelpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaWrappedTypeProvider.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\GuardedPEReader.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\InternalManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataExtensions.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetsNetStandard)' == 'true'" />
+    <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeFactories.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\Utf8Constants.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\IMethodDecoder.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\IRoMethodBase.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\Ecma\EcmaMethodBody.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\Ecma\EcmaMethodDecoder.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\RoExceptionHandlingClause.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\RoLocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\TypeLoading\MethodBase\RoMethodBody.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Methods\RoConstructedGenericMethod.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Methods\RoDefinitionMethod.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Methods\RoDefinitionMethod.DllImport.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Methods\RoMethod.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Methods\RoSyntheticMethod.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\GetTypeCoreCache.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\Ecma\EcmaModule.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\Ecma\EcmaModule.GetTypeCore.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\Ecma\EcmaModule.ManifestResources.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\Ecma\EcmaModule.MetadataTables.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\Ecma\EcmaModule.TypeProvider.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\RoModule.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\RoModule.Unifier.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Modules\RoResourceModule.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\Ecma\EcmaFatMethodParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\RoFatMethodParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\RoMethodParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\RoParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\RoPropertyIndexParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Parameters\RoThinMethodParameter.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Properties\Ecma\EcmaProperty.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Properties\RoProperty.cs" />
+    <Compile Include="System\Reflection\TypeLoading\RuntimeTypeInfo.BindingFlags.cs" />
+    <Compile Include="System\Reflection\TypeLoading\RuntimeTypeInfo.GetMember.cs" />
+    <Compile Include="System\Reflection\TypeLoading\RuntimeTypeInfo.TypeComponentsCache.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\Ecma\EcmaDefinitionType.BindingFlags.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\Ecma\EcmaDefinitionType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\Ecma\EcmaGenericMethodParameterType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\Ecma\EcmaGenericParameterType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\Ecma\EcmaGenericTypeParameterType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoArrayType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoArrayType.Key.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoByRefType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoConstructedGenericType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoConstructedGenericType.Key.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoDefinitionType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoExceptionType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoGenericParameterType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoHasElementType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoInstantiationProviderType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoPinnedType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoPointerType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoStubType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoType.GetInterface.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.Immutable" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Reflection.Metadata" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

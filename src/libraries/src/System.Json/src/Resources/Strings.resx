@@ -1,0 +1,111 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentException_ExtraCharacters" xml:space="preserve">
+    <value>Extra characters in JSON input.</value>
+  </data>
+  <data name="ArgumentException_IncompleteInput" xml:space="preserve">
+    <value>Incomplete JSON input.</value>
+  </data>
+  <data name="ArgumentException_UnexpectedCharacter" xml:space="preserve">
+    <value>Unexpected character '{0}'.</value>
+  </data>
+  <data name="ArgumentException_ArrayMustEndWithBracket" xml:space="preserve">
+    <value>JSON array must end with ']'.</value>
+  </data>
+  <data name="ArgumentException_LeadingZeros" xml:space="preserve">
+    <value>Leading zeros are not allowed.</value>
+  </data>
+  <data name="ArgumentException_NoDigitFound" xml:space="preserve">
+    <value>Invalid JSON numeric literal; no digit found.</value>
+  </data>
+  <data name="ArgumentException_ExtraDot" xml:space="preserve">
+    <value>Invalid JSON numeric literal; extra dot.</value>
+  </data>
+  <data name="ArgumentException_IncompleteExponent" xml:space="preserve">
+    <value>Invalid JSON numeric literal; incomplete exponent.</value>
+  </data>
+  <data name="ArgumentException_InvalidLiteralFormat" xml:space="preserve">
+    <value>Invalid JSON string literal format.</value>
+  </data>
+  <data name="ArgumentException_StringNotClosed" xml:space="preserve">
+    <value>JSON string is not closed.</value>
+  </data>
+  <data name="ArgumentException_IncompleteEscapeSequence" xml:space="preserve">
+    <value>Invalid JSON string literal; incomplete escape sequence.</value>
+  </data>
+  <data name="ArgumentException_IncompleteEscapeLiteral" xml:space="preserve">
+    <value>Incomplete unicode character escape literal.</value>
+  </data>
+  <data name="ArgumentException_UnexpectedEscapeCharacter" xml:space="preserve">
+    <value>Invalid JSON string literal; unexpected escape character.</value>
+  </data>
+  <data name="ArgumentException_ExpectedXButGotY" xml:space="preserve">
+    <value>Expected '{0}', got '{1}'.</value>
+  </data>
+  <data name="ArgumentException_ExpectedXDiferedAtY" xml:space="preserve">
+    <value>Expected '{0}', differed at {1}.</value>
+  </data>
+  <data name="ArgumentException_MessageAt" xml:space="preserve">
+    <value>{0} At line {1}, column {2}.</value>
+  </data>
+  <data name="NotImplemented_GetFormattedString" xml:space="preserve">
+    <value>GetFormattedString from value type {0}.</value>
+  </data>
+</root>

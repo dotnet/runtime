@@ -1,0 +1,11 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard1.1;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netstandard;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

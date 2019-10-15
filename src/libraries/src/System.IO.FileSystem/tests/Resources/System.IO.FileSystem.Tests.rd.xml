@@ -1,0 +1,6 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of FileOptions instance in [Theory] data which causes xunit to reflect on its ToString() -->
+    <Type Name="System.IO.FileOptions" Dynamic="Required Public" />
+  </Library>
+</Directives>

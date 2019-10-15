@@ -1,0 +1,10 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <!-- identity project, runtime specific projects are included through netcoreapp.rids.props -->
+    <Project Include="$(MSBuildProjectName).pkgproj"  Condition="'$(TargetGroup)'=='netcoreapp'" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))" />
+</Project>

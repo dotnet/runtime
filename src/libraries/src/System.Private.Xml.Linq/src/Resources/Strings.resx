@@ -1,0 +1,153 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_AddAttribute" xml:space="preserve">
+    <value>An attribute cannot be added to content.</value>
+  </data>
+  <data name="Argument_AddNode" xml:space="preserve">
+    <value>A node of type {0} cannot be added to content.</value>
+  </data>
+  <data name="Argument_AddNonWhitespace" xml:space="preserve">
+    <value>Non-whitespace characters cannot be added to content.</value>
+  </data>
+  <data name="Argument_ConvertToString" xml:space="preserve">
+    <value>The argument cannot be converted to a string.</value>
+  </data>
+  <data name="Argument_InvalidExpandedName" xml:space="preserve">
+    <value>'{0}' is an invalid expanded name.</value>
+  </data>
+  <data name="Argument_InvalidPIName" xml:space="preserve">
+    <value>'{0}' is an invalid name for a processing instruction.</value>
+  </data>
+  <data name="Argument_InvalidPrefix" xml:space="preserve">
+    <value>'{0}' is an invalid prefix.</value>
+  </data>
+  <data name="Argument_MustBeDerivedFrom" xml:space="preserve">
+    <value>The argument must be derived from {0}.</value>
+  </data>
+  <data name="Argument_NamespaceDeclarationPrefixed" xml:space="preserve">
+    <value>The prefix '{0}' cannot be bound to the empty namespace name.</value>
+  </data>
+  <data name="Argument_NamespaceDeclarationXml" xml:space="preserve">
+    <value>The prefix 'xml' is bound to the namespace name 'http://www.w3.org/XML/1998/namespace'. Other prefixes must not be bound to this namespace name, and it must not be declared as the default namespace.</value>
+  </data>
+  <data name="Argument_NamespaceDeclarationXmlns" xml:space="preserve">
+    <value>The prefix 'xmlns' is bound to the namespace name 'http://www.w3.org/2000/xmlns/'. It must not be declared. Other prefixes must not be bound to this namespace name, and it must not be declared as the default namespace.</value>
+  </data>
+  <data name="Argument_XObjectValue" xml:space="preserve">
+    <value>An XObject cannot be used as a value.</value>
+  </data>
+  <data name="InvalidOperation_DeserializeInstance" xml:space="preserve">
+    <value>This instance cannot be deserialized.</value>
+  </data>
+  <data name="InvalidOperation_DocumentStructure" xml:space="preserve">
+    <value>This operation would create an incorrectly structured document.</value>
+  </data>
+  <data name="InvalidOperation_DuplicateAttribute" xml:space="preserve">
+    <value>Duplicate attribute.</value>
+  </data>
+  <data name="InvalidOperation_ExpectedEndOfFile" xml:space="preserve">
+    <value>The XmlReader state should be EndOfFile after this operation.</value>
+  </data>
+  <data name="InvalidOperation_ExpectedInteractive" xml:space="preserve">
+    <value>The XmlReader state should be Interactive.</value>
+  </data>
+  <data name="InvalidOperation_ExpectedNodeType" xml:space="preserve">
+    <value>The XmlReader must be on a node of type {0} instead of a node of type {1}.</value>
+  </data>
+  <data name="InvalidOperation_ExternalCode" xml:space="preserve">
+    <value>This operation was corrupted by external code.</value>
+  </data>
+  <data name="InvalidOperation_MissingAncestor" xml:space="preserve">
+    <value>A common ancestor is missing.</value>
+  </data>
+  <data name="InvalidOperation_MissingParent" xml:space="preserve">
+    <value>The parent is missing.</value>
+  </data>
+  <data name="InvalidOperation_MissingRoot" xml:space="preserve">
+    <value>The root element is missing.</value>
+  </data>
+  <data name="InvalidOperation_UnexpectedNodeType" xml:space="preserve">
+    <value>The XmlReader should not be on a node of type {0}.</value>
+  </data>
+  <data name="InvalidOperation_UnresolvedEntityReference" xml:space="preserve">
+    <value>The XmlReader cannot resolve entity references.</value>
+  </data>
+  <data name="InvalidOperation_WriteAttribute" xml:space="preserve">
+    <value>An attribute cannot be written after content.</value>
+  </data>
+  <data name="NotSupported_WriteBase64" xml:space="preserve">
+    <value>This XmlWriter does not support base64 encoded data.</value>
+  </data>
+  <data name="NotSupported_WriteEntityRef" xml:space="preserve">
+    <value>This XmlWriter does not support entity references.</value>
+  </data>
+  <data name="Argument_CreateNavigator" xml:space="preserve">
+    <value>This XPathNavigator cannot be created on a node of type {0}.</value>
+  </data>
+  <data name="InvalidOperation_BadNodeType" xml:space="preserve">
+    <value>This operation is not valid on a node of type {0}.</value>
+  </data>
+  <data name="InvalidOperation_UnexpectedEvaluation" xml:space="preserve">
+    <value>The XPath expression evaluated to unexpected type {0}.</value>
+  </data>
+  <data name="NotSupported_MoveToId" xml:space="preserve">
+    <value>This XPathNavigator does not support IDs.</value>
+  </data>
+</root>

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StackTraceTests.cs" />
+    <Compile Include="SymDocumentTypeTests.cs" />
+    <Compile Include="SymLanguageTypeTests.cs" />
+    <Compile Include="SymLanguageVendorTests.cs" />
+    <Compile Include="SymbolTokenTests.cs" />
+    <Compile Include="StackFrameTests.cs" />
+    <Compile Include="StackFrameExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="StackTraceSymbolsTests.cs" />
+  </ItemGroup>
+</Project>

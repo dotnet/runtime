@@ -1,0 +1,24 @@
+<!DOCTYPE HeadCount [
+<!ELEMENT HeadCount (Name)*>
+<!ELEMENT Name (Name*)>
+<!ATTLIST Name First CDATA #REQUIRED>
+<!ATTLIST Name Middle CDATA #IMPLIED>
+<!ATTLIST Name Last CDATA #REQUIRED>
+<!ATTLIST Name Relation (self | spouse | child) "self">
+<!ENTITY MyFirst "Ralph">
+<!ENTITY MyLast "Curry">
+]>
+<HeadCount>
+  <Name First="Waldo" Last="Pepper">
+    <Name First="Salt" Middle="N." Last="Pepper" Relation="spouse"/>
+    <Name First="Red" Last="Pepper" Relation="child"/>
+  </Name>
+  <Name First="&MyFirst;" Last="&MyLast;">
+    <Name First="Sharon" Last="&MyLast;" Relation="spouse"/>
+    <Name First="Morgan" Last="&MyLast;" Relation="child"/>
+    <Name First="Shelby" Last="&MyLast;" Relation="child"/>
+  </Name>
+  <Name First="Mac" Middle="N." Last="Cheese">
+    <Name First="Chedder" Last="Cheese" Relation="child"/>
+  </Name>
+</HeadCount>

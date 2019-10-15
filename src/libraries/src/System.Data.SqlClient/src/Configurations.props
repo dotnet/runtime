@@ -1,0 +1,24 @@
+﻿<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard-Unix;
+      netstandard-Windows_NT;
+      netstandard1.2;
+      netstandard1.3;
+      netstandard;
+      net461-Windows_NT;
+      netcoreapp2.1;
+      netcoreapp2.1-Unix;
+      netcoreapp2.1-Windows_NT;
+      uap10.0.16299-Windows_NT;
+      uap-Windows_NT;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations)
+      netcoreapp;
+      netcoreapp-Unix;
+      netcoreapp-Windows_NT;
+      netfx-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

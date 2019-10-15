@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);xUnit2008</NoWarn>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CaptureCollectionTests.cs" />
+    <Compile Include="GroupCollectionTests.cs" />
+    <Compile Include="MatchCollectionTests.cs" />
+    <Compile Include="Regex.Cache.Tests.cs" />
+    <Compile Include="Regex.EscapeUnescape.Tests.cs" />
+    <Compile Include="Regex.GetGroupNames.Tests.cs" />
+    <Compile Include="Regex.Ctor.Tests.cs" />
+    <Compile Include="Regex.MultipleMatches.Tests.cs" />
+    <Compile Include="Regex.UnicodeChar.Tests.cs" />
+    <Compile Include="Regex.Groups.Tests.cs" />
+    <Compile Include="Regex.Replace.Tests.cs" />
+    <Compile Include="Regex.Split.Tests.cs" />
+    <Compile Include="Regex.Match.Tests.cs" />
+    <Compile Include="Regex.Tests.Common.cs" />
+    <Compile Include="RegexCompilationHelper.cs" />
+    <Compile Include="RegexCultureTests.cs" />
+    <Compile Include="RegexParserTests.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
+      <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
+    <Compile Include="CaptureCollectionTests2.cs" />
+    <Compile Include="GroupCollectionTests2.cs" />
+    <Compile Include="MatchCollectionTests2.cs" />
+    <Compile Include="PrecompiledRegexScenarioTest.cs" />
+    <Compile Include="RegexCompilationInfoTests.cs" />
+    <Compile Include="RegexGroupNameTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

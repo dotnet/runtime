@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="KeyAgreeRecipientIdentifierAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.2
+
+    KeyAgreeRecipientIdentifier ::= CHOICE {
+        issuerAndSerialNumber IssuerAndSerialNumber,
+        rKeyId[0] IMPLICIT RecipientKeyIdentifier
+    }
+  -->
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:AsnType name="RKeyId" typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier" implicitTag="0" />
+</asn:Choice>

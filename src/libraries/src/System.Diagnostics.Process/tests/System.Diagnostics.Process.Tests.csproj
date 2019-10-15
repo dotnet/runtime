@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
+      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Microsoft\Win32\TempRegistryKey.cs">
+      <Link>Common\Microsoft\Win32\TempRegistryKey.cs</Link>
+    </Compile>
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Interop.cs" />
+    <Compile Include="Interop.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="ProcessCollectionTests.cs" />
+    <Compile Include="ProcessModuleTests.cs" />
+    <Compile Include="ProcessStandardConsoleTests.cs" />
+    <Compile Include="ProcessStartInfoTests.cs" />
+    <Compile Include="ProcessStreamReadTests.cs" />
+    <Compile Include="ProcessTestBase.cs" />
+    <Compile Condition="'$(TargetsUap)' != 'true'" Include="ProcessTestBase.NonUap.cs" />
+    <Compile Condition="'$(TargetsUap)' == 'true'" Include="ProcessTestBase.Uap.cs" />
+    <Compile Include="ProcessTests.cs" />
+    <Compile Include="ProcessThreadTests.cs" />
+    <Compile Include="ProcessWaitingTests.cs" />
+    <Compile Include="RemotelyInvokable.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
+    <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
+    <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
+    <Compile Include="ProcessTests.netcoreapp.cs" />
+  </ItemGroup>
+  <!-- WINDOWS: Shared CoreCLR -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="ProcessTests.Windows.cs" />
+    <Compile Include="ProcessThreadTests.Windows.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- UNIX -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="ProcessTests.Unix.cs" />
+    <Compile Include="ProcessThreadTests.Unix.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

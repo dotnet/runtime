@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Runtime.Serialization.Primitives">
+    <Assembly Name="System.Runtime.Serialization.Primitives">
+      <Namespace Name="System.Runtime.Serialization">
+        <!-- Method marked with these attributes can be invoked by serialization code (ours or 
+        library serializers) -->
+        <Type Name="OnSerializedAttribute">
+          <AttributeImplies Dynamic="Required All" />
+        </Type>
+        <Type Name="OnSerializingAttribute">
+          <AttributeImplies Dynamic="Required All" />
+        </Type>
+        <Type Name="OnDeserializedAttribute">
+          <AttributeImplies Dynamic="Required All" />
+        </Type>
+        <Type Name="OnDeserializingAttribute">
+          <AttributeImplies Dynamic="Required All" />
+        </Type>
+      </Namespace>
+
+      <Type Name="System.Runtime.Serialization.SerializationException" Activate="Required All" />
+
+    </Assembly>
+  </Library>
+</Directives>

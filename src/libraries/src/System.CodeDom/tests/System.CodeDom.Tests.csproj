@@ -1,0 +1,119 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\CodeDom\CodeAttributeDeclarationCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeArgumentCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeCatchClauseCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeStatementCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeCollectionTestBase.cs" />
+    <Compile Include="System\CodeDom\CodeCommentStatementCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeDirectiveCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeExpressionCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceImportCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDeclarationCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeMemberCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeParameterCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeReferenceCollectionTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\ExecutorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeCompilerTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGeneratorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGeneratorOptionsTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeValidatorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerErrorCollectionTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerErrorTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerInfoTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerParametersTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerResultsTests.cs" />
+    <Compile Include="System\CodeDom\TempFileCollectionTests.cs" />
+    <Compile Include="System\CodeDom\CodeObjectCreateExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeMethodReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeMethodInvokeExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeVariableReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodePrimitiveExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodePropertyReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeIndexerExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeFieldReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeEventReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeDirectionExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeDelegateInvokeExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeDelegateCreateExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeDefaultValueExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeCastExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeArrayIndexerExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeArrayCreateExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeArgumentReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeBinaryOperatorExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetExpressionTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGenerationTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeReferenceTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeParameterTests.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceTests.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceImportTests.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetCompileUnitTests.cs" />
+    <Compile Include="System\CodeDom\CodeCompileUnitTests.cs" />
+    <Compile Include="System\CodeDom\CodeCommentTests.cs" />
+    <Compile Include="System\CodeDom\CodeTryCatchFinallyStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeRemoveEventStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeVariableDeclarationStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeReferenceExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeOfExpressionTests.cs" />
+    <Compile Include="System\CodeDom\CodeThrowExceptionStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeMethodReturnStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeLabeledStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeIterationStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeGotoStatement.cs" />
+    <Compile Include="System\CodeDom\CodeConditionStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeExpressionStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeAttachEventStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeAssignStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeCommentStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetStatementTests.cs" />
+    <Compile Include="System\CodeDom\CodeStatementTestBase.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDelegateTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDeclarationTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeConstructorTests.cs" />
+    <Compile Include="System\CodeDom\CodeConstructorTests.cs" />
+    <Compile Include="System\CodeDom\CodeMemberMethodTests.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetTypeMemberTests.cs" />
+    <Compile Include="System\CodeDom\CodeMemberFieldTests.cs" />
+    <Compile Include="System\CodeDom\CodeMemberEventTests.cs" />
+    <Compile Include="System\CodeDom\CodeTypeMemberTestBase.cs" />
+    <Compile Include="System\CodeDom\CodeMemberPropertyTests.cs" />
+    <Compile Include="System\CodeDom\CodeChecksumPragmaTests.cs" />
+    <Compile Include="System\CodeDom\CodeObjectTestBase.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeDomProviderTests.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeProviderTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProviderTests.cs" />
+    <Compile Include="System\CodeDom\CodeRegionDirectiveTests.cs" />
+    <Compile Include="System\CodeDom\CodeLinePragmaTests.cs" />
+    <Compile Include="System\CodeDom\CodeCatchClauseTests.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeDeclarationTests.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeArgumentTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\VBCodeGenerationTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\CSharpCodeGenerationTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

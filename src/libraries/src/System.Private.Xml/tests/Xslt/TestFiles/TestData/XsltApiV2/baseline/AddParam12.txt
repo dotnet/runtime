@@ -1,0 +1,8 @@
+﻿<result>
+	<arg1>Test1</arg1>
+	<arg2>No Value Specified</arg2>	
+	<arg3>No Value Specified</arg3>
+	<arg4>No Value Specified</arg4>
+	<arg5>No Value Specified</arg5>
+	<arg6>No Value Specified</arg6>
+</result>

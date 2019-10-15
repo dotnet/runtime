@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificateChoiceAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-10.2.2
+
+    CertificateChoices ::= CHOICE {
+        certificate Certificate,
+        extendedCertificate[0] IMPLICIT ExtendedCertificate, - Obsolete
+        v1AttrCert[1] IMPLICIT AttributeCertificateV1,       - Obsolete
+        v2AttrCert[2] IMPLICIT AttributeCertificateV2,
+        other[3] IMPLICIT OtherCertificateFormat
+    }
+
+    OtherCertificateFormat ::= SEQUENCE {
+        otherCertFormat OBJECT IDENTIFIER,
+        otherCert ANY DEFINED BY otherCertFormat
+    }
+
+    Except we only support public key certificates, so just trim the choice here.
+  -->
+  <asn:AnyValue name="Certificate" universalTagNumber="16" />
+</asn:Choice>

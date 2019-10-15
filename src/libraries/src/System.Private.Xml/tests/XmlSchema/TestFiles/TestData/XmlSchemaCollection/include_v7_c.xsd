@@ -1,0 +1,18 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	targetNamespace="ns-a"
+	xmlns="ns-a"
+>
+
+	<xsd:complexType name="ct-C">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="c1" type="xsd:int" />
+			<xsd:element name="c2" type="xsd:int" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e3" type="ct-C" />
+
+
+</xsd:schema>
+
+

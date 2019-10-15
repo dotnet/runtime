@@ -1,0 +1,32 @@
+parameters:
+  archGroup: ''
+  configuration: ''
+  creator: ''
+  framework: ''
+  helixQueues: ''
+  helixToken: ''
+  msbuildScript: ''
+  targetOS: ''
+  officialBuildId: ''
+  testScope: 'innerloop' # innerloop | outerloop | all
+  condition: always()
+
+steps:
+  - script: ${{ parameters.msbuildScript }}
+            eng/sendtohelix.proj
+            /t:test
+            /p:ArchGroup=${{ parameters.archGroup }}
+            /p:ConfigurationGroup=${{ parameters.configuration }}
+            /p:OSGroup=${{ parameters.targetOS }}
+            /p:TestScope=${{ parameters.testScope }}
+            /p:TargetGroup=${{ parameters.framework }}
+            /p:HelixTargetQueues=${{ parameters.helixQueues }}
+            /p:HelixBuild=$(Build.BuildNumber)
+            /p:HelixAccessToken=${{ parameters.helixToken }}
+            /p:Creator=${{ parameters.creator }}
+            /p:OfficialBuildId=${{ parameters.officialBuildId }}
+            /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
+    displayName: Send to Helix
+    condition: and(succeeded(), ${{ parameters.condition }})
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops

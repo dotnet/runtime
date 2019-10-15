@@ -1,0 +1,30 @@
+<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp;
+      uap;
+      netstandard;
+      netfx;
+    </BuildConfigurations>
+  </PropertyGroup>
+  <Import Project="..\Directory.Build.props" />
+  <Target Name="Build" DependsOnTargets="BinPlace" />
+  <Target Name="Clean" />
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+
+  <Target Name="GetBinPlaceItems">
+    <ItemGroup>
+      <BinPlaceItem Include="$(NativeBinDir)/*.dll" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.pdb" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.lib" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.a" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.so" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.dbg" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.dylib" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.dwarf" />
+      <FileWrites Include="@(BinPlaceItem)" />
+    </ItemGroup>
+  </Target>
+</Project>

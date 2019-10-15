@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Rfc3161TimeStampReq"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3161#section-2.4.1
+
+    TimeStampReq ::= SEQUENCE  {
+        version                      INTEGER  { v1(1) },
+        messageImprint               MessageImprint,
+          - a hash algorithm OID and the hash value of the data to be
+          - time-stamped
+        reqPolicy             TSAPolicyId              OPTIONAL,
+        nonce                 INTEGER                  OPTIONAL,
+        certReq               BOOLEAN                  DEFAULT FALSE,
+        extensions            [0] IMPLICIT Extensions  OPTIONAL
+    }
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="MessageImprint" typeName="System.Security.Cryptography.Pkcs.Asn1.MessageImprint" />
+  <asn:ObjectIdentifier name="ReqPolicy" optional="true" />
+  <asn:Integer name="Nonce"  backingType="ReadOnlyMemory" optional="true" />
+  <asn:Boolean name="CertReq" defaultDerInit="0x01, 0x01, 0x00" />
+  <asn:SequenceOf name="Extensions" implicitTag="0" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.X509ExtensionAsn" />
+  </asn:SequenceOf>
+</asn:Sequence>

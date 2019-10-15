@@ -1,0 +1,117 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_toosmall" xml:space="preserve">
+    <value>The specified value must be greater than 0.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="net_PropertyNotImplementedException" xml:space="preserve">
+    <value>This property is not implemented by this class.</value>
+  </data>
+  <data name="net_InvalidAddressFamily" xml:space="preserve">
+    <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
+  </data>
+  <data name="net_InvalidSocketAddressSize" xml:space="preserve">
+    <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
+  <data name="net_sockets_invalid_optionValue_all" xml:space="preserve">
+    <value>The specified value is not valid.</value>
+  </data>
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="dns_bad_ip_address" xml:space="preserve">
+    <value>An invalid IP address was specified.</value>
+  </data>
+  <data name="net_container_add_cookie" xml:space="preserve">
+    <value>An error occurred when adding a cookie to the container.</value>
+  </data>
+  <data name="net_cookie_size" xml:space="preserve">
+    <value>The value size of the cookie is '{0}'. This exceeds the configured maximum size, which is '{1}'.</value>
+  </data>
+  <data name="net_cookie_parse_header" xml:space="preserve">
+    <value>An error occurred when parsing the Cookie header for Uri '{0}'.</value>
+  </data>
+  <data name="net_cookie_attribute" xml:space="preserve">
+    <value>The '{0}'='{1}' part of the cookie is invalid.</value>
+  </data>
+  <data name="net_cookie_format" xml:space="preserve">
+    <value>Cookie format error.</value>
+  </data>
+  <data name="net_cookie_capacity_range" xml:space="preserve">
+    <value>'{0}' has to be greater than '{1}' and less than '{2}'.</value>
+  </data>
+  <data name="net_collection_readonly" xml:space="preserve">
+    <value>The collection is read-only.</value>
+  </data>
+  <data name="net_nodefaultcreds" xml:space="preserve">
+    <value>Default credentials cannot be supplied for the {0} authentication scheme.</value>
+  </data>
+  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
+    <value>Collection was modified after the enumerator was instantiated.</value>
+  </data>
+  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
+  <data name="bad_endpoint_string" xml:space="preserve">
+    <value>An invalid IPEndPoint was specified.</value>
+  </data>
+</root>

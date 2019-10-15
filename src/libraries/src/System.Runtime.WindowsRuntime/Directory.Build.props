@@ -1,0 +1,10 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.0.14.0</AssemblyVersion>
+    <StrongNameKeyId>ECMA</StrongNameKeyId>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsUAP>true</IsUAP>
+  </PropertyGroup>
+</Project>

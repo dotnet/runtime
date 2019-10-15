@@ -1,0 +1,35 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.DispatchProxy.csproj">
+      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <!-- Make sure this doesn't get stripped during harvesting.
+           We have an implementation that will work on desktop, thus needs a unique assembly version -->
+      <Preserve>true</Preserve>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
+    <HarvestIncludePaths Include="runtimes/aot/lib/netcore50" />
+    <HarvestIncludePaths Include="runtimes/win-aot/lib/uap10.0.16299" />
+    <HarvestIncludePaths Include="runtimes/win/lib/uap10.0.16299" />
+    <HarvestIncludePaths Include="ref/uap10.0.16299" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
+
+    <!-- Since UAP and .NETCoreApp are package based we still want to enable
+         OOBing libraries that happen to overlap with their framework package.
+         This avoids us having to lock the API in our NuGet packages just 
+         to match what shipped inbox: since we can provide a new library 
+         we can update it to add API without raising the netstandard version. -->
+    <ValidatePackageSuppression Include="TreatAsOutOfBox">
+      <Value>.NETCoreApp;UAP</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

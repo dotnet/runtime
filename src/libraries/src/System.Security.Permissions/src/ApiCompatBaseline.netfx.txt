@@ -1,0 +1,5 @@
+Compat issues with assembly System.Security.Permissions:
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator..ctor()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 3

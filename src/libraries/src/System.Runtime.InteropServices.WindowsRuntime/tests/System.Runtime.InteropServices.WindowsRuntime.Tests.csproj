@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EmptyAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTableTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshalTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'false'">
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\UnixTests.cs" />
+  </ItemGroup>
+</Project>

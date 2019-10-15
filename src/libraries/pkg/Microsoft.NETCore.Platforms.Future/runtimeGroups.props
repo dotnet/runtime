@@ -1,0 +1,26 @@
+﻿<Project>
+  <ItemGroup>
+    <RuntimeGroup Include="unix">
+      <Architectures>wasm</Architectures>
+      <!-- don't generate the archiecture-less RID -->
+      <OmitRIDs>unix</OmitRIDs>
+    </RuntimeGroup>
+    <RuntimeGroup Include="webassembly">
+      <Parent>unix</Parent>
+      <Architectures>wasm</Architectures>
+    </RuntimeGroup>
+  </ItemGroup>
+
+  <Target Name="GenerateRuntimeJson" BeforeTargets="CreatePackage">
+    <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
+         Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
+         The graph can be visualized using the generated dmgl -->
+    <MakeDir Directories="$(PackageReportDir)" />
+    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroup)"
+                          RuntimeJson="runtime.json"
+                          ExternalRuntimeJsons="..\Microsoft.NETCore.Platforms\runtime.json"
+                          CompatibilityMap="runtime.compatibility.json"
+                          RuntimeDirectedGraph="$(PackageReportDir)$(Id)$(NuspecSuffix)-runtime.json.dgml"
+                          UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
+  </Target>
+</Project>

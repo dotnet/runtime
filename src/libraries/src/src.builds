@@ -1,0 +1,19 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(ConfigurationGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
+    <Project Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
+    <Project Include="$(DirectoryToBuild)\src\*.*proj" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+</Project>

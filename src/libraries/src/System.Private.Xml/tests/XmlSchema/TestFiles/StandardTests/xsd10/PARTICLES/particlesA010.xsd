@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="doc">
+		<xsd:complexType>
+			<xsd:choice>
+				<xsd:element name="elem" type="elem"/>
+			</xsd:choice>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:complexType name="elem">
+		<xsd:choice minOccurs="2" maxOccurs="3">
+			<xsd:element name="e1"/>
+			<xsd:element name="e2"/>
+		</xsd:choice>
+	</xsd:complexType>
+</xsd:schema>

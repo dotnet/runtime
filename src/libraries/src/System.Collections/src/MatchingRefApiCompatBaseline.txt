@@ -1,0 +1,8 @@
+Compat issues with assembly System.Collections:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.TypeDependencyAttribute' exists on 'System.Collections.Generic.Comparer<T>' in the implementation but not the reference.
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.TypeDependencyAttribute' exists on 'System.Collections.Generic.EqualityComparer<T>' in the implementation but not the reference.
+TypesMustExist : Type 'System.Collections.Generic.SortedDictionary<TKey, TValue>.KeyValuePairComparer' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Collections.Generic.SortedList<TKey, TValue>.KeyList' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Collections.Generic.SortedList<TKey, TValue>.ValueList' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Collections.Generic.TreeSet<T>' does not exist in the reference but it does exist in the implementation.
+Total Issues: 6

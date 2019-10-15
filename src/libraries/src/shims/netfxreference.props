@@ -1,0 +1,27 @@
+<Project>
+  <!-- IMPORTANT: please rebuild generateShims.proj when making changes to this file -->
+  <ItemGroup>
+    <NetFxReference Include="mscorlib" />
+    <NetFxReference Condition="'$(TargetFramework)' != 'netcoreapp2.0'" Include="Microsoft.VisualBasic" />
+    <NetFxReference Include="System" />
+    <NetFxReference Include="System.ComponentModel.DataAnnotations" />
+    <NetFxReference Include="System.Configuration" />
+    <NetFxReference Include="System.Core" />
+    <NetFxReference Include="System.Data" />
+    <NetFxReference Include="System.Drawing" />
+    <NetFxReference Include="System.IO.Compression.FileSystem" />
+    <NetFxReference Include="System.Net" />
+    <NetFxReference Include="System.Numerics" />
+    <NetFxReference Include="System.Runtime.Serialization" />
+    <NetFxReference Include="System.Security" />
+    <NetFxReference Include="System.ServiceProcess" />
+    <NetFxReference Include="System.ServiceModel.Web" />
+    <NetFxReference Include="System.Transactions" />
+    <NetFxReference Include="System.Web" />
+    <NetFxReference Include="System.Windows" />
+    <NetFxReference Include="System.Xml" />
+    <NetFxReference Include="System.Xml.Serialization" />
+    <NetFxReference Include="System.Xml.Linq" />
+    <NetFxReference Include="WindowsBase" />
+  </ItemGroup>
+</Project>

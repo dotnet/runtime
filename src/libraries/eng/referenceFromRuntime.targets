@@ -1,0 +1,76 @@
+<Project>
+  <Target Name="AddReferenceFromRuntimeForTests"
+          BeforeTargets="SetupDefaultReferences"
+          Condition="'$(IsTestProject)'=='true' AND '@(ReferenceFromRuntime)' != ''">
+    <ItemGroup>
+      <Reference Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
+    </ItemGroup>
+  </Target>
+  
+  <PropertyGroup>
+    <PrepareProjectReferencesDependsOn>
+      AddRuntimeProjectReference;
+      $(PrepareProjectReferencesDependsOn);
+    </PrepareProjectReferencesDependsOn>
+    <ResolveReferencesDependsOn>
+      AddRuntimeProjectReference;
+      $(ResolveReferencesDependsOn);
+    </ResolveReferencesDependsOn>
+    <CleanDependsOn>
+      AddRuntimeProjectReference;
+      $(CleanDependsOn)
+    </CleanDependsOn>
+  </PropertyGroup>
+
+  <Target Name="AddRuntimeProjectReference"
+          Condition="'$(IsTestProject)'!='true' AND '@(ReferenceFromRuntime)' != ''">
+    <Error Condition="('$(IsReferenceAssembly)' != 'true' OR '$(AllowReferenceFromRuntime)' == 'true') AND '$(RuntimeProjectFile)' == ''" Text="RuntimeProjectFile must be specified when using ReferenceFromRuntime from source projects." />
+    <Error Condition="'$(IsReferenceAssembly)' == 'true' AND '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
+
+    <ItemGroup>
+      <ProjectReference Include="$(RuntimeProjectFile)">
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <OutputItemType>_referencePathFromRuntime</OutputItemType>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="FilterReferenceFromRuntime"
+          AfterTargets="ResolveProjectReferences"
+          Condition="'$(IsTestProject)'!='true' AND '@(ReferenceFromRuntime)' != ''">
+    <ItemGroup>
+      <!-- transform to filename in order to intersect -->
+      <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" Condition="'%(_referencePathFromRuntime.Extension)' == '.dll'" >
+        <ReferencePath>%(Identity)</ReferencePath>
+      </_referencePathFromRuntimeByFileName>
+
+      <!-- intersect with ReferenceFromRuntime -->
+      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
+          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' AND '%(Identity)' != ''">
+        <Aliases>@(ReferenceFromRuntime->'%(Aliases)')</Aliases>
+      </_filteredReferencePathFromRuntimeByFileName>
+
+      <_remainingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
+
+      <!-- Fallback and check for native images for the references as well -->
+      <_remainingReferenceFromRuntimeWithNI Include="@(_remainingReferenceFromRuntime->'%(Identity).ni')">
+        <OriginalReferenceFromRuntime>%(Identity)</OriginalReferenceFromRuntime>
+      </_remainingReferenceFromRuntimeWithNI>
+
+      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
+          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(_remainingReferenceFromRuntimeWithNI)' AND '%(Identity)' != ''">
+        <Aliases>@(_remainingReferenceFromRuntimeWithNI->'%(Aliases)')</Aliases>
+      </_filteredReferencePathFromRuntimeByFileName>
+
+      <_missingReferenceFromRuntime Include="@(_remainingReferenceFromRuntimeWithNI)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
+
+      <!-- transform back to path -->
+      <!-- We are adding two items(with and without aliases) for references having Aliases. The major reason behind this to not use the Aliases for all the types in that reference.  -->
+      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
+      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(Aliases)' != ''" Aliases="" />
+    </ItemGroup>
+
+    <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
+           Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
+  </Target>
+</Project>

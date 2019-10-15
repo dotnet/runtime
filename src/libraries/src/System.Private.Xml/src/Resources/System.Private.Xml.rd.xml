@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Xml">
+    <Assembly Name="System.Private.Xml">
+      <Namespace Name="System.Xml">
+        <!-- XmlQualifiedName is well known to the serializers and must not be explicitly specified to sg.exe -->
+        <Type Name="XmlQualifiedName" DataContractSerializer="Excluded" DataContractJsonSerializer="Excluded"/>
+      </Namespace>
+      <Namespace Name="System.Xml.Serialization">
+        <Type Name="XmlSerializer">
+          <Method Name=".ctor">
+            <TypeParameter Name="type" XmlSerializer="Public"/>
+            <TypeEnumerableParameter Name="extraTypes" Dynamic="Public"/>
+          </Method>
+        </Type>
+        <Type Name="ReflectionXmlSerializationReaderHelper" Dynamic="Required All" />
+      </Namespace>
+    </Assembly>
+    <Namespace Name="System.Collections">
+      <Type Name="IEnumerable" Dynamic="Required All" />
+      <Type Name="IEnumerator" Dynamic="Required All" />
+    </Namespace>
+  </Library>
+</Directives>

@@ -1,0 +1,3 @@
+# Bug - https://devdiv.visualstudio.com/DefaultCollection/DevDiv/Managed%20Languages%20IDE/_workitems#id=158916&fullScreen=false&_a=edit
+MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.

@@ -1,0 +1,10 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp3.0;
+      netcoreapp;
+      uap;
+      netstandard1.0;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

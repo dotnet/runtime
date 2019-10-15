@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="System.Runtime.InteropServices">
+    <!-- IMarshal is internal and never directly called, but needed by COM -->
+    <type fullname="System.Runtime.InteropServices.IMarshal" />
+  </assembly>
+</linker>

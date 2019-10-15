@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AppxUriValue.cs" />
+    <Compile Include="IdnCheckHostNameTest.cs" />
+    <Compile Include="IdnDnsSafeHostTest.cs" />
+    <Compile Include="IdnHostNameValidationTest.cs" />
+    <Compile Include="IriEncodingDecodingTests.cs" />
+    <Compile Include="IriRelativeFileResolutionTest.cs" />
+    <Compile Include="IriTest.cs" />
+    <Compile Include="UriBuilderParameterTest.cs" />
+    <Compile Include="UriBuilderRefreshTest.cs" />
+    <Compile Include="UriBuilderTests.cs" />
+    <Compile Include="UriEscapingTest.cs" />
+    <Compile Include="UriGetComponentsTest.cs" />
+    <Compile Include="UriIpHostTest.cs" />
+    <Compile Include="UriIsWellFormedUriStringTest.cs" />
+    <Compile Include="UriMailToTest.cs" />
+    <Compile Include="UriParameterValidationTest.cs" />
+    <Compile Include="UriParserTest.cs" />
+    <Compile Include="UriRelativeResolutionTest.cs" />
+    <Compile Include="UriTests.cs" />
+    <Compile Include="WebSocketsUriParserTest.cs" />
+    <!-- Test common -->
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

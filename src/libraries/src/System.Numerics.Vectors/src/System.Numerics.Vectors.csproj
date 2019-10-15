@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Numerics</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <HasIntrinsics Condition="'$(TargetsNetCoreApp)'=='true'">true</HasIntrinsics>
+    <DefineConstants Condition="'$(HasIntrinsics)'=='true'">$(DefineConstants);HAS_INTRINSICS</DefineConstants>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- Shared -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
+      <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Portable version only -->
+  <ItemGroup>
+    <Compile Include="System\Numerics\Matrix3x2.cs" />
+    <Compile Include="System\Numerics\Matrix4x4.cs" />
+    <Compile Include="System\Numerics\Plane.cs" />
+    <Compile Include="System\Numerics\Quaternion.cs" />
+    <Compile Include="System\Numerics\Vector2.cs" />
+    <Compile Include="System\Numerics\Vector2_Intrinsics.cs" />
+    <Compile Include="System\Numerics\Vector3.cs" />
+    <Compile Include="System\Numerics\Vector3_Intrinsics.cs" />
+    <Compile Include="System\Numerics\Vector4.cs" />
+    <Compile Include="System\Numerics\Vector4_Intrinsics.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HasIntrinsics)' == 'true'">
+    <Compile Include="System\Numerics\VectorMath.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+</Project>
