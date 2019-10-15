@@ -19,6 +19,8 @@
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
+    <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\Diagnostics\RemoteExecutorForUap.cs" />
     <!-- We don't compile per but and instead use runtime platform checks. -->
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
@@ -72,6 +74,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitPackageVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.assert" Version="$(XUnitPackageVersion)" />

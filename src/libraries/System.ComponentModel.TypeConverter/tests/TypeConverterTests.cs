@@ -6,6 +6,7 @@ using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -71,25 +72,27 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertFrom_InstanceDescriptor()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
-                DateTime testDateAndTime = DateTime.UtcNow;
-                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
+                using (new ThreadCultureChange("fr-FR"))
                 {
-                    typeof(int), typeof(int), typeof(int), typeof(int),
-                    typeof(int), typeof(int), typeof(int)
-                });
+                    DateTime testDateAndTime = DateTime.UtcNow;
+                    ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
+                    {
+                        typeof(int), typeof(int), typeof(int), typeof(int),
+                        typeof(int), typeof(int), typeof(int)
+                    });
 
-                InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
-                {
-                    testDateAndTime.Year, testDateAndTime.Month, testDateAndTime.Day, testDateAndTime.Hour,
-                    testDateAndTime.Minute, testDateAndTime.Second, testDateAndTime.Millisecond
-                });
+                    InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
+                    {
+                        testDateAndTime.Year, testDateAndTime.Month, testDateAndTime.Day, testDateAndTime.Hour,
+                        testDateAndTime.Minute, testDateAndTime.Second, testDateAndTime.Millisecond
+                    });
 
-                const string format = "dd MMM yyyy hh:mm";
-                object o = s_converter.ConvertFrom(descriptor);
-                Assert.Equal(testDateAndTime.ToString(format), ((DateTime)o).ToString(format));
+                    const string format = "dd MMM yyyy hh:mm";
+                    object o = s_converter.ConvertFrom(descriptor);
+                    Assert.Equal(testDateAndTime.ToString(format), ((DateTime)o).ToString(format));
+                }
             }).Dispose();
         }
 
@@ -110,32 +113,32 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+                using (new ThreadCultureChange("pl-PL"))
+                {
+                    Assert.Throws<ArgumentNullException>(
+                        () => s_converter.ConvertTo(s_context, null, c_conversionInputValue, null));
 
-                Assert.Throws<ArgumentNullException>(
-                    () => s_converter.ConvertTo(s_context, null, c_conversionInputValue, null));
+                    Assert.Throws<NotSupportedException>(
+                        () => s_converter.ConvertTo(s_context, null, c_conversionInputValue, typeof(int)));
 
-                Assert.Throws<NotSupportedException>(
-                    () => s_converter.ConvertTo(s_context, null, c_conversionInputValue, typeof(int)));
+                    object o = s_converter.ConvertTo(s_context, null, c_conversionInputValue, typeof(string));
+                    VerifyConversionToString(o);
 
-                object o = s_converter.ConvertTo(s_context, null, c_conversionInputValue, typeof(string));
-                VerifyConversionToString(o);
+                    o = s_converter.ConvertTo(
+                        s_context, CultureInfo.CurrentCulture, c_conversionInputValue, typeof(string));
+                    VerifyConversionToString(o);
 
-                o = s_converter.ConvertTo(
-                    s_context, CultureInfo.CurrentCulture, c_conversionInputValue, typeof(string));
-                VerifyConversionToString(o);
+                    o = s_converter.ConvertTo(
+                        s_context, CultureInfo.InvariantCulture, c_conversionInputValue, typeof(string));
+                    VerifyConversionToString(o);
 
-                o = s_converter.ConvertTo(
-                    s_context, CultureInfo.InvariantCulture, c_conversionInputValue, typeof(string));
-                VerifyConversionToString(o);
-
-                string s = s_converter.ConvertTo(
-                    s_context, CultureInfo.InvariantCulture, new FormattableClass(), typeof(string)) as string;
-                Assert.NotNull(s);
-                Assert.Equal(FormattableClass.Token, s);
-                return RemoteExecutor.SuccessExitCode;
+                    string s = s_converter.ConvertTo(
+                        s_context, CultureInfo.InvariantCulture, new FormattableClass(), typeof(string)) as string;
+                    Assert.NotNull(s);
+                    Assert.Equal(FormattableClass.Token, s);
+                }
             }).Dispose();
         }
 

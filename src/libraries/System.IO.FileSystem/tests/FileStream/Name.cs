@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -41,10 +42,9 @@ namespace System.IO.Tests
         [Fact]
         public void NameReturnsUnknownForHandle()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite))
                 using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
                 {

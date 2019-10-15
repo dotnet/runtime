@@ -45,7 +45,7 @@ namespace System.Buffers.ArrayPool.Tests
             RemoteExecutor.Invoke(action).Dispose();
         }
 
-        protected static void RemoteInvokeWithTrimming(Func<string, int> method, bool trim = false, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
+        protected static void RemoteInvokeWithTrimming(Action<string> method, bool trim = false, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
         {
             var options = new RemoteInvokeOptions
             {

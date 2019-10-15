@@ -5,9 +5,5 @@
   <ItemGroup>
     <Compile Include="UriRelativeResolutionTest.cs" />
     <Compile Include="UriTests.cs" />
-    <!-- Test common -->
-    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
-      <Link>Common\System\ThreadCultureChange.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>

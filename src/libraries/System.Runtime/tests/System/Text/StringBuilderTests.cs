@@ -259,15 +259,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Decimal()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-                foreach (var testdata in Append_Decimal_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Append_Decimal((string)testdata[0], (double)testdata[1], (string)testdata[2]);
+                    foreach (var testdata in Append_Decimal_TestData())
+                    {
+                        Append_Decimal((string)testdata[0], (double)testdata[1], (string)testdata[2]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -296,14 +296,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Double()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                foreach (var testdata in Append_Double_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Append_Double((string)testdata[0], (double)testdata[1], (string)testdata[2]);
+                    foreach (var testdata in Append_Double_TestData())
+                    {
+                        Append_Double((string)testdata[0], (double)testdata[1], (string)testdata[2]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -435,14 +436,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Float()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                foreach (var testdata in Append_Float_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Append_Float((string)testdata[0], (float)testdata[1], (string)testdata[2]);
+                    foreach (var testdata in Append_Float_TestData())
+                    {
+                        Append_Float((string)testdata[0], (float)testdata[1], (string)testdata[2]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1258,14 +1260,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Float()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                foreach (var testdata in Insert_Float_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Insert_Float((string)testdata[0], (int)testdata[1], (float)testdata[2], (string)testdata[3]);
+                    foreach (var testdata in Insert_Float_TestData())
+                    {
+                        Insert_Float((string)testdata[0], (int)testdata[1], (float)testdata[2], (string)testdata[3]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1387,14 +1390,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Double()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                foreach (var testdata in Insert_Double_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Insert_Double((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
+                    foreach (var testdata in Insert_Double_TestData())
+                    {
+                        Insert_Double((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1426,14 +1430,15 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Decimal()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                foreach (var testdata in Test_Insert_Decimal_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    Insert_Decimal((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
+                    foreach (var testdata in Test_Insert_Decimal_TestData())
+                    {
+                        Insert_Decimal((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

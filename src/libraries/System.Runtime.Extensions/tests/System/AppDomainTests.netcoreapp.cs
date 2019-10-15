@@ -26,7 +26,6 @@ namespace System.Tests
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(AppContext.BaseDirectory, AppDomain.CurrentDomain.SetupInformation.ApplicationBase);
                 Assert.Equal(AppContext.TargetFrameworkName, AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -35,7 +34,6 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -239,8 +237,6 @@ namespace System.Tests
 
                 Exception thrown = Assert.Throws<FileNotFoundException>(() => assembly.GetType("System.Tests.AGenericClass`1[[Bogus, AnotherBogusAssembly]]", true));
                 Assert.Same(firstChanceExceptionThrown, thrown);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

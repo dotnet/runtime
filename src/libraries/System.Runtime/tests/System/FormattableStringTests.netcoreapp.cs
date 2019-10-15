@@ -29,16 +29,16 @@ namespace System.Tests
         [Fact]
         public static void CurrentCulture_DutchCulture_FormatsDoubleBasedOnCurrentCulture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 var dutchCulture = new CultureInfo("nl");
-                CultureInfo.CurrentCulture = dutchCulture;
-                double d = 123.456;
-                string expected = string.Format(dutchCulture, "Dutch decimal separator is comma {0}", d);
-                string actual = FormattableString.CurrentCulture($"Dutch decimal separator is comma {d}");
-                Assert.Equal(expected, actual);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(dutchCulture))
+                {
+                    double d = 123.456;
+                    string expected = string.Format(dutchCulture, "Dutch decimal separator is comma {0}", d);
+                    string actual = FormattableString.CurrentCulture($"Dutch decimal separator is comma {d}");
+                    Assert.Equal(expected, actual);
+                }
             }).Dispose();
         }
     }

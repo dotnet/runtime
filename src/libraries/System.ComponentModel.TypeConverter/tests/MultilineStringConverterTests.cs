@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -13,15 +14,16 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-
-                ConvertTo_WithContext(new object[1, 3]
-                    {
-                        { "any string", "(Text)", null }
-                    },
-                    new MultilineStringConverter());
+                using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
+                {
+                    ConvertTo_WithContext(new object[1, 3]
+                        {
+                            { "any string", "(Text)", null }
+                        },
+                        new MultilineStringConverter());
+                }
             }).Dispose();
         }
     }

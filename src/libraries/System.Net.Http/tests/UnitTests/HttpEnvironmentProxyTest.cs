@@ -100,8 +100,6 @@ namespace System.Net.Http.Tests
                 Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -184,8 +182,6 @@ namespace System.Net.Http.Tests
                 // This should not match Proxy Uri
                 Assert.Null(p.Credentials.GetCredential(fooHttp, "Basic"));
                 Assert.Null(p.Credentials.GetCredential(null, null));
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -206,8 +202,6 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(new Uri("http://test.com")));
                 Assert.False(p.IsBypassed(new Uri("http://1test.com")));
                 Assert.True(p.IsBypassed(new Uri("http://www.test.com")));
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -239,8 +233,6 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(directUri));
                 Assert.False(p.IsBypassed(thruProxyUri));
                 Assert.Equal(new Uri(proxy), p.GetProxy(thruProxyUri));
-
-                return RemoteExecutor.SuccessExitCode;
             }, proxy, options).Dispose();
         }
 
@@ -283,8 +275,6 @@ namespace System.Net.Http.Tests
                 {
                     Assert.False(created);
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, proxy, expectedProxyUse.ToString(), options).Dispose();
         }
     }

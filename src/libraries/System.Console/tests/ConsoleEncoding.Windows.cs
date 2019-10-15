@@ -20,8 +20,6 @@ public partial class ConsoleEncoding
             Console.InputEncoding = encoding;
             Assert.Equal(encoding, Console.InputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleCP());
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -38,8 +36,6 @@ public partial class ConsoleEncoding
             Console.InputEncoding = unicodeEncoding;
             Assert.Equal(unicodeEncoding, Console.InputEncoding);
             Assert.Equal((uint)oldEncoding.CodePage, GetConsoleCP());
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -53,8 +49,6 @@ public partial class ConsoleEncoding
             Console.OutputEncoding = encoding;
             Assert.Equal(encoding, Console.OutputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleOutputCP());
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -71,8 +65,6 @@ public partial class ConsoleEncoding
             Assert.Equal(unicodeEncoding, Console.OutputEncoding);
 
             Assert.Equal((uint)oldEncoding.CodePage, GetConsoleOutputCP());
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 

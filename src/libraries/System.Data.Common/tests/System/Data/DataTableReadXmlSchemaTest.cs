@@ -31,6 +31,7 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 namespace System.Data.Tests
 {
@@ -430,7 +431,7 @@ namespace System.Data.Tests
         [Fact]
         public void XsdSchemaSerializationIgnoresLocale()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 var serializer = new BinaryFormatter();
                 var table = new DataTable();
@@ -445,22 +446,10 @@ namespace System.Data.Tests
                 table.Rows.Add(2, "Data");
 
                 var buffer = new MemoryStream();
-                var savedCulture = CultureInfo.CurrentCulture;
-                try
+                using (new ThreadCultureChange(new CultureInfo("en-US") { NumberFormat = new NumberFormatInfo() { NegativeSign = "()" } }))
                 {
                     // Before serializing, update the culture to use a weird negative number format. This test is ensuring that this is ignored.
-                    CultureInfo.CurrentCulture = new CultureInfo("en-US")
-                        {
-                            NumberFormat = new NumberFormatInfo()
-                                {
-                                    NegativeSign = "()"
-                                }
-                        };
                     serializer.Serialize(buffer, table);
-                }
-                finally
-                {
-                    CultureInfo.CurrentCulture = savedCulture;
                 }
 
                 // The raw serialized data now contains an embedded XML schema. We need to verify that this embedded schema used "-1" for the numeric value
@@ -493,7 +482,7 @@ namespace System.Data.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not yet have the fix for this bug")]
         public void XsdSchemaDeserializationIgnoresLocale()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 var serializer = new BinaryFormatter();
 
@@ -578,24 +567,12 @@ namespace System.Data.Tests
                     });
 
                 DataTable table;
-                var savedCulture = CultureInfo.CurrentCulture;
-                try
+                using (new ThreadCultureChange(new CultureInfo("en-US") { NumberFormat = new NumberFormatInfo() { NegativeSign = "()" } }))
                 {
                     // Before deserializing, update the culture to use a weird negative number format. This test is ensuring that this is ignored.
                     // The bug this test is testing would cause "-1" to no longer be treated as a valid representation of the value -1, instead
                     // only accepting the string "()1".
-                    CultureInfo.CurrentCulture = new CultureInfo("en-US")
-                        {
-                            NumberFormat = new NumberFormatInfo()
-                                {
-                                    NegativeSign = "()"
-                                }
-                        };
                     table = (DataTable)serializer.Deserialize(buffer); // BUG: System.Exception: "-1 is not a valid value for Int64."        }
-                }
-                finally
-                {
-                    CultureInfo.CurrentCulture = savedCulture;
                 }
 
                 DataColumn rowIDColumn = table.Columns["RowID"];

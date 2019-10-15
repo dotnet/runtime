@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -375,8 +376,6 @@ namespace System.Text.RegularExpressions.Tests
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -788,28 +787,28 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_SpecialUnicodeCharacters_enUS()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-US");
-                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange("en-US"))
+                {
+                    Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                    Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                }
             }).Dispose();
         }
 
         [Fact]
         public void Match_SpecialUnicodeCharacters_Invariant()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                    Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                    Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                    Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                }
             }).Dispose();
         }
 

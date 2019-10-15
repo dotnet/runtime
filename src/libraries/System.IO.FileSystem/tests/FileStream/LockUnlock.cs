@@ -178,7 +178,6 @@ namespace System.IO.Tests
                     {
                         Assert.Throws<IOException>(() => fs2.Lock(long.Parse(secondPos), long.Parse(secondLen)));
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 }, path, secondPosition.ToString(), secondLength.ToString()).Dispose();
 
                 fs1.Unlock(firstPosition, firstLength);
@@ -189,7 +188,6 @@ namespace System.IO.Tests
                         fs2.Lock(long.Parse(secondPos), long.Parse(secondLen));
                         fs2.Unlock(long.Parse(secondPos), long.Parse(secondLen));
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 }, path, secondPosition.ToString(), secondLength.ToString()).Dispose();
             }
         }

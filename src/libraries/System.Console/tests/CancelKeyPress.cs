@@ -35,7 +35,6 @@ public partial class CancelKeyPressTests
         {
             CanAddAndRemoveHandler();
             CanAddAndRemoveHandler(); // add and remove again
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 }

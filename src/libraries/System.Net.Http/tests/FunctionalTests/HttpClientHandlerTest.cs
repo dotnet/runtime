@@ -579,8 +579,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                     }
-
-                    return RemoteExecutor.SuccessExitCode;
                 }
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Common.Tests;
 using System.Globalization;
 using System.Reflection;
+using System.Tests;
 using System.Threading;
 using Xunit;
 
@@ -191,7 +191,7 @@ namespace System.Drawing.Tests
         [MemberData(nameof(FromHtml_TestData))]
         public void FromHtml_String_ReturnsExpected(string htmlColor, Color expected)
         {
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
             {
                 Assert.Equal(expected, ColorTranslator.FromHtml(htmlColor));
             }
@@ -212,7 +212,7 @@ namespace System.Drawing.Tests
         [InlineData("&hG12")]
         public void FromHtml_Invalid_Throws(string htmlColor)
         {
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
             {
                 Exception exception = AssertExtensions.Throws<ArgumentException, Exception>(() => ColorTranslator.FromHtml(htmlColor));
                 if (exception is ArgumentException argumentException)
@@ -233,7 +233,7 @@ namespace System.Drawing.Tests
         [InlineData("1,2,256", typeof(ArgumentException))]
         public void FromHtml_Invalid_Throw(string htmlColor, Type exception)
         {
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
             {
                 Assert.Throws(exception, () => ColorTranslator.FromHtml(htmlColor));
             }

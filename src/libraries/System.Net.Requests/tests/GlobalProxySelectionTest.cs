@@ -84,8 +84,6 @@ namespace System.Net.Tests
                 Assert.NotNull(GlobalProxySelection.Select);
                 Assert.True(GlobalProxySelection.Select.IsBypassed(null)); // This is true for EmptyWebProxy, but not for most proxies
 #pragma warning restore 0618
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

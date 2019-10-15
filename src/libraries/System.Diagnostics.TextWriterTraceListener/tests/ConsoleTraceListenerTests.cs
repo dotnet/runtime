@@ -62,8 +62,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                         Assert.DoesNotContain(Environment.NewLine, writerOutput);
                     }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, value.ToString()).Dispose();
         }
 
@@ -89,8 +87,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                         Assert.Contains(message, stringWriter.ToString() + Environment.NewLine);
                     }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, value.ToString()).Dispose();
         }
     }

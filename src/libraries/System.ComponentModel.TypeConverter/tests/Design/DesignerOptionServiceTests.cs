@@ -6,6 +6,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -267,12 +268,13 @@ namespace System.ComponentModel.Design.Tests
         [Fact]
         public void DesignerOptionConverter_ConvertToString_ReturnsExpected()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-
-                TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
-                Assert.Equal("(Collection)", converter.ConvertToString(null));
+                using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
+                {
+                    TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
+                    Assert.Equal("(Collection)", converter.ConvertToString(null));
+                }
             }).Dispose();
         }
 

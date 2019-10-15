@@ -34,6 +34,7 @@ using System.Text;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 namespace System.Data.Tests.SqlTypes
 {
@@ -173,31 +174,31 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-AU");
-                var one = new SqlString("First TestString");
+                using (new ThreadCultureChange("en-AU"))
+                {
+                    var one = new SqlString("First TestString");
 
-                // CompareInfo
-                Assert.Equal(3081, one.CompareInfo.LCID);
+                    // CompareInfo
+                    Assert.Equal(3081, one.CompareInfo.LCID);
 
-                // CultureInfo
-                Assert.Equal(3081, one.CultureInfo.LCID);
+                    // CultureInfo
+                    Assert.Equal(3081, one.CultureInfo.LCID);
 
-                // LCID
-                Assert.Equal(3081, one.LCID);
+                    // LCID
+                    Assert.Equal(3081, one.LCID);
 
-                // IsNull
-                Assert.True(!one.IsNull);
-                Assert.True(SqlString.Null.IsNull);
+                    // IsNull
+                    Assert.True(!one.IsNull);
+                    Assert.True(SqlString.Null.IsNull);
 
-                // SqlCompareOptions
-                Assert.Equal("IgnoreCase, IgnoreKanaType, IgnoreWidth", one.SqlCompareOptions.ToString());
+                    // SqlCompareOptions
+                    Assert.Equal("IgnoreCase, IgnoreKanaType, IgnoreWidth", one.SqlCompareOptions.ToString());
 
-                // Value
-                Assert.Equal("First TestString", one.Value);
-
-                return RemoteExecutor.SuccessExitCode;
+                    // Value
+                    Assert.Equal("First TestString", one.Value);
+                }
             }).Dispose();
         }
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -17,7 +18,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 var turkish = new CultureInfo("tr-TR");
                 string input = "I\u0131\u0130i";
@@ -52,19 +53,15 @@ namespace System.Text.RegularExpressions.Tests
         /// <returns></returns>
         Regex[] Create(string input, CultureInfo info, RegexOptions additional)
         {
-            CultureInfo current = CultureInfo.CurrentCulture;
-            try
+            using (new ThreadCultureChange(info))
             {
-                CultureInfo.CurrentCulture = info;
-
                 // When RegexOptions.IgnoreCase is supplied the current thread culture is used to lowercase the input string.
                 // Except if RegexOptions.CultureInvariant is additionally added locale dependent effects on the generated code or state machine may happen.
-                var localizedRegex = new Regex[] { new Regex(input, additional), new Regex(input, RegexOptions.Compiled | additional) };
-                return localizedRegex;
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = current;
+                return new Regex[]
+                {
+                    new Regex(input, additional),
+                    new Regex(input, RegexOptions.Compiled | additional)
+                };
             }
         }
     }

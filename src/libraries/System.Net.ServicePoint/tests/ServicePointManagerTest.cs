@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -16,174 +14,185 @@ namespace System.Net.Tests
         [Fact]
         public static void RequireEncryption_ExpectedDefault()
         {
-            RemoteExecutor.Invoke(() => Assert.Equal(EncryptionPolicy.RequireEncryption, ServicePointManager.EncryptionPolicy)).Dispose();
+            Assert.Equal(EncryptionPolicy.RequireEncryption, ServicePointManager.EncryptionPolicy);
         }
 
         [Fact]
         public static void CheckCertificateRevocationList_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.False(ServicePointManager.CheckCertificateRevocationList);
+            try
             {
-                Assert.False(ServicePointManager.CheckCertificateRevocationList);
-
                 ServicePointManager.CheckCertificateRevocationList = true;
                 Assert.True(ServicePointManager.CheckCertificateRevocationList);
-
+            }
+            finally
+            {
                 ServicePointManager.CheckCertificateRevocationList = false;
                 Assert.False(ServicePointManager.CheckCertificateRevocationList);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void DefaultConnectionLimit_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
+            try
             {
-                Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
-
                 ServicePointManager.DefaultConnectionLimit = 20;
                 Assert.Equal(20, ServicePointManager.DefaultConnectionLimit);
-
+            }
+            finally
+            {
                 ServicePointManager.DefaultConnectionLimit = 2;
                 Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void DnsRefreshTimeout_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.Equal(120_000, ServicePointManager.DnsRefreshTimeout);
+            try
             {
-                Assert.Equal(120000, ServicePointManager.DnsRefreshTimeout);
-
                 ServicePointManager.DnsRefreshTimeout = 42;
                 Assert.Equal(42, ServicePointManager.DnsRefreshTimeout);
-
-                ServicePointManager.DnsRefreshTimeout = 120000;
-                Assert.Equal(120000, ServicePointManager.DnsRefreshTimeout);
-            }).Dispose();
+            }
+            finally
+            {
+                ServicePointManager.DnsRefreshTimeout = 120_000;
+                Assert.Equal(120_000, ServicePointManager.DnsRefreshTimeout);
+            }
         }
 
         [Fact]
         public static void EnableDnsRoundRobin_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.False(ServicePointManager.EnableDnsRoundRobin);
+            try
             {
-                Assert.False(ServicePointManager.EnableDnsRoundRobin);
-
                 ServicePointManager.EnableDnsRoundRobin = true;
                 Assert.True(ServicePointManager.EnableDnsRoundRobin);
-
+            }
+            finally
+            {
                 ServicePointManager.EnableDnsRoundRobin = false;
                 Assert.False(ServicePointManager.EnableDnsRoundRobin);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void Expect100Continue_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.True(ServicePointManager.Expect100Continue);
+            try
             {
-                Assert.True(ServicePointManager.Expect100Continue);
-
                 ServicePointManager.Expect100Continue = false;
                 Assert.False(ServicePointManager.Expect100Continue);
-
+            }
+            finally
+            {
                 ServicePointManager.Expect100Continue = true;
                 Assert.True(ServicePointManager.Expect100Continue);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void MaxServicePointIdleTime_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.Equal(100_000, ServicePointManager.MaxServicePointIdleTime);
+            try
             {
-                Assert.Equal(100000, ServicePointManager.MaxServicePointIdleTime);
-
                 ServicePointManager.MaxServicePointIdleTime = 42;
                 Assert.Equal(42, ServicePointManager.MaxServicePointIdleTime);
-
-                ServicePointManager.MaxServicePointIdleTime = 100000;
-                Assert.Equal(100000, ServicePointManager.MaxServicePointIdleTime);
-            }).Dispose();
+            }
+            finally
+            {
+                ServicePointManager.MaxServicePointIdleTime = 100_000;
+                Assert.Equal(100_000, ServicePointManager.MaxServicePointIdleTime);
+            }
         }
 
         [Fact]
         public static void MaxServicePoints_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.Equal(0, ServicePointManager.MaxServicePoints);
+            try
             {
-                Assert.Equal(0, ServicePointManager.MaxServicePoints);
-
                 ServicePointManager.MaxServicePoints = 42;
                 Assert.Equal(42, ServicePointManager.MaxServicePoints);
-
+            }
+            finally
+            {
                 ServicePointManager.MaxServicePoints = 0;
                 Assert.Equal(0, ServicePointManager.MaxServicePoints);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void ReusePort_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.False(ServicePointManager.ReusePort);
+            try
             {
-                Assert.False(ServicePointManager.ReusePort);
-
                 ServicePointManager.ReusePort = true;
                 Assert.True(ServicePointManager.ReusePort);
-
+            }
+            finally
+            {
                 ServicePointManager.ReusePort = false;
                 Assert.False(ServicePointManager.ReusePort);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void SecurityProtocol_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            var orig = (SecurityProtocolType)0; // SystemDefault.
+            Assert.Equal(orig, ServicePointManager.SecurityProtocol);
+            try
             {
-                var orig = (SecurityProtocolType)0; // SystemDefault.
-                Assert.Equal(orig, ServicePointManager.SecurityProtocol);
-
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11;
                 Assert.Equal(SecurityProtocolType.Tls11, ServicePointManager.SecurityProtocol);
-
+            }
+            finally
+            {
                 ServicePointManager.SecurityProtocol = orig;
                 Assert.Equal(orig, ServicePointManager.SecurityProtocol);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void ServerCertificateValidationCallback_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.Null(ServicePointManager.ServerCertificateValidationCallback);
+            try
             {
-                Assert.Null(ServicePointManager.ServerCertificateValidationCallback);
-
                 RemoteCertificateValidationCallback callback = delegate { return true; };
                 ServicePointManager.ServerCertificateValidationCallback = callback;
                 Assert.Same(callback, ServicePointManager.ServerCertificateValidationCallback);
-
+            }
+            finally
+            {
                 ServicePointManager.ServerCertificateValidationCallback = null;
                 Assert.Null(ServicePointManager.ServerCertificateValidationCallback);
-            }).Dispose();
+            }
         }
 
         [Fact]
         public static void UseNagleAlgorithm_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            Assert.True(ServicePointManager.UseNagleAlgorithm);
+            try
             {
-                Assert.True(ServicePointManager.UseNagleAlgorithm);
-
                 ServicePointManager.UseNagleAlgorithm = false;
                 Assert.False(ServicePointManager.UseNagleAlgorithm);
-
+            }
+            finally
+            {
                 ServicePointManager.UseNagleAlgorithm = true;
                 Assert.True(ServicePointManager.UseNagleAlgorithm);
-            }).Dispose();
+            }
         }
 
         [Fact]
@@ -220,17 +229,22 @@ namespace System.Net.Tests
         [Fact]
         public static void SecurityProtocol_Ssl3_NotSupported()
         {
-            RemoteExecutor.Invoke(() =>
-            {
-                const int ssl2Client = 0x00000008;
-                const int ssl2Server = 0x00000004;
-                const SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
+            const int ssl2Client = 0x00000008;
+            const int ssl2Server = 0x00000004;
+            const SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
 
+            SecurityProtocolType orig = ServicePointManager.SecurityProtocol;
+            try
+            {
 #pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
                 Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
                 Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
 #pragma warning restore
-            }).Dispose();
+            }
+            finally
+            {
+                ServicePointManager.SecurityProtocol = orig;
+            }
         }
 
         [Fact]
@@ -380,8 +394,11 @@ namespace System.Net.Tests
         }
 
         // Separated out to avoid the JIT in debug builds interfering with object lifetimes
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool GetExpect100Continue(string address) =>
             ServicePointManager.FindServicePoint(address, null).Expect100Continue;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void SetExpect100Continue(string address, bool value) =>
             ServicePointManager.FindServicePoint(address, null).Expect100Continue = value;
 

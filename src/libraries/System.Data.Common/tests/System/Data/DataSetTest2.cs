@@ -33,6 +33,7 @@ using System.Runtime.Serialization.Formatters.Tests;
 using System.Globalization;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 namespace System.Data.Tests
 {
@@ -1008,17 +1009,16 @@ namespace System.Data.Tests
         [Fact]
         public void DataSetSpecificCulture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("cs-CZ");
-
-                var ds = new DataSet();
-                ds.Locale = CultureInfo.GetCultureInfo(1033);
-                var dt = ds.Tables.Add("machine");
-                dt.Locale = ds.Locale;
-                Assert.Same(dt, ds.Tables["MACHINE"]);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange("cs-CZ"))
+                {
+                    var ds = new DataSet();
+                    ds.Locale = CultureInfo.GetCultureInfo(1033);
+                    var dt = ds.Tables.Add("machine");
+                    dt.Locale = ds.Locale;
+                    Assert.Same(dt, ds.Tables["MACHINE"]);
+                }
             }).Dispose();
         }
 

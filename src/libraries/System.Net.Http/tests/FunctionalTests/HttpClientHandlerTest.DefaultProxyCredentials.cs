@@ -118,7 +118,6 @@ namespace System.Net.Http.Functional.Tests
                         // Correctness of user and password is done in server part.
                         Assert.True(response.StatusCode == HttpStatusCode.OK);
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 }, useProxy.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
                 if (useProxy)
                 {

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Common.Tests;
 using System.Globalization;
+using System.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,10 +54,8 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             {
                 InvalidOperationException exception;
-                using (var tcc = new ThreadCultureChange())
+                using (var tcc = new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
                 {
-                    tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
-
                     exception = await Assert.ThrowsAsync<InvalidOperationException>(
                         () => cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()));
                 }
@@ -95,9 +93,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 InvalidOperationException exception;
 
-                using (var tcc = new ThreadCultureChange())
+                using (var tcc = new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
                 {
-                    tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
                     exception = await Assert.ThrowsAsync<InvalidOperationException>(
                         () => cws.ReceiveAsync(segment, ct));
                 }
@@ -134,9 +131,8 @@ namespace System.Net.WebSockets.Client.Tests
                 var ct = new CancellationToken();
 
                 InvalidOperationException exception;
-                using (var tcc = new ThreadCultureChange())
+                using (var tcc = new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
                 {
-                    tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
                     exception = await Assert.ThrowsAsync<InvalidOperationException>(
                         () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct));
                 }

@@ -55,7 +55,6 @@ namespace System.Net.Http.Tests
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
                 Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
-                return RemoteExecutor.SuccessExitCode;
             }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
         }
 
@@ -89,7 +88,6 @@ namespace System.Net.Http.Tests
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
                 Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
-                return RemoteExecutor.SuccessExitCode;
             }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
         }
 
@@ -135,8 +133,6 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(p);
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttp)).ToString());
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttps)).ToString());
-
-                return RemoteExecutor.SuccessExitCode;
             }, rawProxyString, expectedUri).Dispose();
         }
 
@@ -174,8 +170,6 @@ namespace System.Net.Http.Tests
 
                 Uri u = new Uri(url);
                 Assert.Equal(expectedResult, p.GetProxy(u) == null);
-
-                return RemoteExecutor.SuccessExitCode;
            }, name, shouldBypass.ToString()).Dispose();
         }
 
@@ -210,7 +204,6 @@ namespace System.Net.Http.Tests
                 {
                     Assert.Null(sp.BypassList);
                 }
-                return RemoteExecutor.SuccessExitCode;
            }, bypass, count.ToString()).Dispose();
         }
 
@@ -239,7 +232,6 @@ namespace System.Net.Http.Tests
                 Assert.Null(p.GetProxy(new Uri(fooHttps)));
                 Assert.Null(p.GetProxy(new Uri(fooWs)));
                 Assert.Null(p.GetProxy(new Uri(fooWss)));
-                return RemoteExecutor.SuccessExitCode;
             }, rawProxyString).Dispose();
         }
 
@@ -285,8 +277,6 @@ namespace System.Net.Http.Tests
                 }
 
                 Assert.False(multi.ReadNext(out _, out _));
-
-                return RemoteExecutor.SuccessExitCode;
             }, manualConfig.ToString(), proxyConfig, url, expected).Dispose();
         }
 
@@ -375,7 +365,6 @@ namespace System.Net.Http.Tests
                 Assert.True(multiC.ReadNext(out Uri proxyC, out _));
                 Assert.Equal(firstProxy, proxyC);
                 Assert.False(multiC.ReadNext(out proxyC, out _));
-               return RemoteExecutor.SuccessExitCode;
             }, manualConfig.ToString()).Dispose();
         }
     }

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Tests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -16,20 +17,20 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                CultureInfo.CurrentCulture = newCulture;
-
-                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                var newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                }
 
                 newCulture = new CultureInfo("de-DE_phoneb");
-                CultureInfo.CurrentCulture = newCulture;
-
-                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                    Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+                }
             }).Dispose();
         }
 
@@ -42,19 +43,20 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                CultureInfo.CurrentUICulture = newUICulture;
-
-                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                var newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+                using (new ThreadCultureChange(null, newUICulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                }
 
                 newUICulture = new CultureInfo("de-DE_phoneb");
-                CultureInfo.CurrentUICulture = newUICulture;
-
-                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(null, newUICulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                    Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+                }
             }).Dispose();
         }
 
@@ -73,8 +75,6 @@ namespace System.Globalization.Tests
                 });
                 ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
                 task.Wait();
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -93,8 +93,6 @@ namespace System.Globalization.Tests
                 });
                 ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
                 task.Wait();
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -127,8 +125,6 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(expected, CultureInfo.CurrentCulture.Name);
                 Assert.Equal(expected, CultureInfo.CurrentUICulture.Name);
-
-                return RemoteExecutor.SuccessExitCode;
             }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
@@ -155,8 +151,6 @@ namespace System.Globalization.Tests
 
                 Assert.Equal("", CultureInfo.CurrentCulture.Name);
                 Assert.Equal("", CultureInfo.CurrentUICulture.Name);
-
-                return RemoteExecutor.SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 

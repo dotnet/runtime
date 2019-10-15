@@ -74,7 +74,6 @@ namespace System.IO.Tests
                         CreateFileStream(fileName, FileMode.Open, access, share | FileShare.Inheritable).Dispose();
                     }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

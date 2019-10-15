@@ -5,8 +5,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-using Microsoft.VisualBasic;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.VisualBasic;
 using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
@@ -582,129 +583,129 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void MetadataAttributes()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    var cu = new CodeCompileUnit();
 
-                var cu = new CodeCompileUnit();
+                    var ns = new CodeNamespace();
+                    ns.Name = "MyNamespace";
+                    ns.Imports.Add(new CodeNamespaceImport("System"));
+                    ns.Imports.Add(new CodeNamespaceImport("System.Drawing"));
+                    ns.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
+                    ns.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
+                    cu.Namespaces.Add(ns);
 
-                var ns = new CodeNamespace();
-                ns.Name = "MyNamespace";
-                ns.Imports.Add(new CodeNamespaceImport("System"));
-                ns.Imports.Add(new CodeNamespaceImport("System.Drawing"));
-                ns.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
-                ns.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
-                cu.Namespaces.Add(ns);
+                    var attrs = cu.AssemblyCustomAttributes;
+                    attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyTitle", new CodeAttributeArgument(new CodePrimitiveExpression("MyAssembly"))));
+                    attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyVersion", new CodeAttributeArgument(new CodePrimitiveExpression("1.0.6.2"))));
+                    attrs.Add(new CodeAttributeDeclaration("System.CLSCompliantAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
 
-                var attrs = cu.AssemblyCustomAttributes;
-                attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyTitle", new CodeAttributeArgument(new CodePrimitiveExpression("MyAssembly"))));
-                attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyVersion", new CodeAttributeArgument(new CodePrimitiveExpression("1.0.6.2"))));
-                attrs.Add(new CodeAttributeDeclaration("System.CLSCompliantAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
+                    var class1 = new CodeTypeDeclaration() { Name = "MyClass" };
+                    class1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Serializable"));
+                    class1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Class"))));
+                    ns.Types.Add(class1);
 
-                var class1 = new CodeTypeDeclaration() { Name = "MyClass" };
-                class1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Serializable"));
-                class1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Class"))));
-                ns.Types.Add(class1);
+                    var nestedClass = new CodeTypeDeclaration("NestedClass") { IsClass = true, TypeAttributes = TypeAttributes.NestedPublic };
+                    nestedClass.CustomAttributes.Add(new CodeAttributeDeclaration("System.Serializable"));
+                    class1.Members.Add(nestedClass);
 
-                var nestedClass = new CodeTypeDeclaration("NestedClass") { IsClass = true, TypeAttributes = TypeAttributes.NestedPublic };
-                nestedClass.CustomAttributes.Add(new CodeAttributeDeclaration("System.Serializable"));
-                class1.Members.Add(nestedClass);
+                    var method1 = new CodeMemberMethod() { Name = "MyMethod" };
+                    method1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Method"))));
+                    method1.CustomAttributes.Add(new CodeAttributeDeclaration("System.ComponentModel.Editor", new CodeAttributeArgument(new CodePrimitiveExpression("This")), new CodeAttributeArgument(new CodePrimitiveExpression("That"))));
+                    var param1 = new CodeParameterDeclarationExpression(typeof(string), "blah");
+                    param1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute",
+                                    new CodeAttributeArgument("Form", new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
+                                    new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false))));
+                    method1.Parameters.Add(param1);
+                    var param2 = new CodeParameterDeclarationExpression(typeof(int[]), "arrayit");
+                    param2.CustomAttributes.Add(
+                                new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute",
+                                    new CodeAttributeArgument("Form", new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
+                                    new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false))));
+                    method1.Parameters.Add(param2);
+                    class1.Members.Add(method1);
 
-                var method1 = new CodeMemberMethod() { Name = "MyMethod" };
-                method1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Method"))));
-                method1.CustomAttributes.Add(new CodeAttributeDeclaration("System.ComponentModel.Editor", new CodeAttributeArgument(new CodePrimitiveExpression("This")), new CodeAttributeArgument(new CodePrimitiveExpression("That"))));
-                var param1 = new CodeParameterDeclarationExpression(typeof(string), "blah");
-                param1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute",
-                                new CodeAttributeArgument("Form", new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
-                                new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false))));
-                method1.Parameters.Add(param1);
-                var param2 = new CodeParameterDeclarationExpression(typeof(int[]), "arrayit");
-                param2.CustomAttributes.Add(
-                            new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute",
-                                new CodeAttributeArgument("Form", new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
-                                new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false))));
-                method1.Parameters.Add(param2);
-                class1.Members.Add(method1);
+                    var function1 = new CodeMemberMethod();
+                    function1.Name = "MyFunction";
+                    function1.ReturnType = new CodeTypeReference(typeof(string));
+                    function1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Function"))));
+                    function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlIgnoreAttribute"));
+                    function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlRootAttribute", new
+                        CodeAttributeArgument("Namespace", new CodePrimitiveExpression("Namespace Value")), new
+                        CodeAttributeArgument("ElementName", new CodePrimitiveExpression("Root, hehehe"))));
+                    function1.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression("Return")));
+                    class1.Members.Add(function1);
 
-                var function1 = new CodeMemberMethod();
-                function1.Name = "MyFunction";
-                function1.ReturnType = new CodeTypeReference(typeof(string));
-                function1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Function"))));
-                function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlIgnoreAttribute"));
-                function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlRootAttribute", new
-                    CodeAttributeArgument("Namespace", new CodePrimitiveExpression("Namespace Value")), new
-                    CodeAttributeArgument("ElementName", new CodePrimitiveExpression("Root, hehehe"))));
-                function1.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression("Return")));
-                class1.Members.Add(function1);
+                    CodeMemberMethod function2 = new CodeMemberMethod();
+                    function2.Name = "GlobalKeywordFunction";
+                    function2.CustomAttributes.Add(new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObsoleteAttribute), CodeTypeReferenceOptions.GlobalReference), new
+                        CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Function"))));
+                    CodeTypeReference typeRef = new CodeTypeReference("System.Xml.Serialization.XmlIgnoreAttribute", CodeTypeReferenceOptions.GlobalReference);
+                    CodeAttributeDeclaration codeAttrib = new CodeAttributeDeclaration(typeRef);
+                    function2.ReturnTypeCustomAttributes.Add(codeAttrib);
+                    class1.Members.Add(function2);
 
-                CodeMemberMethod function2 = new CodeMemberMethod();
-                function2.Name = "GlobalKeywordFunction";
-                function2.CustomAttributes.Add(new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObsoleteAttribute), CodeTypeReferenceOptions.GlobalReference), new
-                    CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Function"))));
-                CodeTypeReference typeRef = new CodeTypeReference("System.Xml.Serialization.XmlIgnoreAttribute", CodeTypeReferenceOptions.GlobalReference);
-                CodeAttributeDeclaration codeAttrib = new CodeAttributeDeclaration(typeRef);
-                function2.ReturnTypeCustomAttributes.Add(codeAttrib);
-                class1.Members.Add(function2);
+                    CodeMemberField field1 = new CodeMemberField();
+                    field1.Name = "myField";
+                    field1.Type = new CodeTypeReference(typeof(string));
+                    field1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute"));
+                    field1.InitExpression = new CodePrimitiveExpression("hi!");
+                    class1.Members.Add(field1);
 
-                CodeMemberField field1 = new CodeMemberField();
-                field1.Name = "myField";
-                field1.Type = new CodeTypeReference(typeof(string));
-                field1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlElementAttribute"));
-                field1.InitExpression = new CodePrimitiveExpression("hi!");
-                class1.Members.Add(field1);
+                    CodeMemberProperty prop1 = new CodeMemberProperty();
+                    prop1.Name = "MyProperty";
+                    prop1.Type = new CodeTypeReference(typeof(string));
+                    prop1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Property"))));
+                    prop1.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "myField")));
+                    class1.Members.Add(prop1);
 
-                CodeMemberProperty prop1 = new CodeMemberProperty();
-                prop1.Name = "MyProperty";
-                prop1.Type = new CodeTypeReference(typeof(string));
-                prop1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Property"))));
-                prop1.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "myField")));
-                class1.Members.Add(prop1);
+                    CodeConstructor const1 = new CodeConstructor();
+                    const1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Constructor"))));
+                    class1.Members.Add(const1);
 
-                CodeConstructor const1 = new CodeConstructor();
-                const1.CustomAttributes.Add(new CodeAttributeDeclaration("System.Obsolete", new CodeAttributeArgument(new CodePrimitiveExpression("Don't use this Constructor"))));
-                class1.Members.Add(const1);
+                    class1 = new CodeTypeDeclaration("Test");
+                    class1.IsClass = true;
+                    class1.BaseTypes.Add(new CodeTypeReference("Form"));
+                    ns.Types.Add(class1);
 
-                class1 = new CodeTypeDeclaration("Test");
-                class1.IsClass = true;
-                class1.BaseTypes.Add(new CodeTypeReference("Form"));
-                ns.Types.Add(class1);
+                    CodeMemberField mfield = new CodeMemberField(new CodeTypeReference("Button"), "b");
+                    mfield.InitExpression = new CodeObjectCreateExpression(new CodeTypeReference("Button"));
+                    class1.Members.Add(mfield);
 
-                CodeMemberField mfield = new CodeMemberField(new CodeTypeReference("Button"), "b");
-                mfield.InitExpression = new CodeObjectCreateExpression(new CodeTypeReference("Button"));
-                class1.Members.Add(mfield);
+                    CodeConstructor ctor = new CodeConstructor();
+                    ctor.Attributes = MemberAttributes.Public;
+                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
+                                        "Size"), new CodeObjectCreateExpression(new CodeTypeReference("Size"),
+                                        new CodePrimitiveExpression(600), new CodePrimitiveExpression(600))));
+                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                                        "Text"), new CodePrimitiveExpression("Test")));
+                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                                        "TabIndex"), new CodePrimitiveExpression(0)));
+                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                                        "Location"), new CodeObjectCreateExpression(new CodeTypeReference("Point"),
+                                        new CodePrimitiveExpression(400), new CodePrimitiveExpression(525))));
+                    ctor.Statements.Add(new CodeAttachEventStatement(new CodeEventReferenceExpression(new
+                        CodeThisReferenceExpression(), "MyEvent"), new CodeDelegateCreateExpression(new CodeTypeReference("EventHandler")
+                        , new CodeThisReferenceExpression(), "b_Click")));
+                    class1.Members.Add(ctor);
 
-                CodeConstructor ctor = new CodeConstructor();
-                ctor.Attributes = MemberAttributes.Public;
-                ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
-                                    "Size"), new CodeObjectCreateExpression(new CodeTypeReference("Size"),
-                                    new CodePrimitiveExpression(600), new CodePrimitiveExpression(600))));
-                ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                                    "Text"), new CodePrimitiveExpression("Test")));
-                ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                                    "TabIndex"), new CodePrimitiveExpression(0)));
-                ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                                    "Location"), new CodeObjectCreateExpression(new CodeTypeReference("Point"),
-                                    new CodePrimitiveExpression(400), new CodePrimitiveExpression(525))));
-                ctor.Statements.Add(new CodeAttachEventStatement(new CodeEventReferenceExpression(new
-                    CodeThisReferenceExpression(), "MyEvent"), new CodeDelegateCreateExpression(new CodeTypeReference("EventHandler")
-                    , new CodeThisReferenceExpression(), "b_Click")));
-                class1.Members.Add(ctor);
+                    CodeMemberEvent evt = new CodeMemberEvent();
+                    evt.Name = "MyEvent";
+                    evt.Type = new CodeTypeReference("System.EventHandler");
+                    evt.Attributes = MemberAttributes.Public;
+                    evt.CustomAttributes.Add(new CodeAttributeDeclaration("System.CLSCompliantAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
+                    class1.Members.Add(evt);
 
-                CodeMemberEvent evt = new CodeMemberEvent();
-                evt.Name = "MyEvent";
-                evt.Type = new CodeTypeReference("System.EventHandler");
-                evt.Attributes = MemberAttributes.Public;
-                evt.CustomAttributes.Add(new CodeAttributeDeclaration("System.CLSCompliantAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
-                class1.Members.Add(evt);
+                    CodeMemberMethod cmm = new CodeMemberMethod();
+                    cmm.Name = "b_Click";
+                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(object), "sender"));
+                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(EventArgs), "e"));
+                    class1.Members.Add(cmm);
 
-                CodeMemberMethod cmm = new CodeMemberMethod();
-                cmm.Name = "b_Click";
-                cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(object), "sender"));
-                cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(EventArgs), "e"));
-                class1.Members.Add(cmm);
-
-                AssertEqual(cu,
-                    @"'------------------------------------------------------------------------------
+                    AssertEqual(cu,
+                        @"'------------------------------------------------------------------------------
                       ' <auto-generated>
                       '     This code was generated by a tool.
                       '
@@ -785,6 +786,7 @@ namespace System.CodeDom.Compiler.Tests
                               End Sub
                           End Class
                       End Namespace");
+                }
             }).Dispose();
         }
 
@@ -1403,182 +1405,182 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegionsSnippetsAndLinePragmas()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    CodeCompileUnit cu = new CodeCompileUnit();
+                    CodeNamespace ns = new CodeNamespace("Namespace1");
 
-                CodeCompileUnit cu = new CodeCompileUnit();
-                CodeNamespace ns = new CodeNamespace("Namespace1");
+                    cu.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Compile Unit Region"));
+                    cu.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                cu.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Compile Unit Region"));
-                cu.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    cu.Namespaces.Add(ns);
 
-                cu.Namespaces.Add(ns);
+                    CodeTypeDeclaration cd = new CodeTypeDeclaration("Class1");
+                    ns.Types.Add(cd);
 
-                CodeTypeDeclaration cd = new CodeTypeDeclaration("Class1");
-                ns.Types.Add(cd);
+                    cd.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Outer Type Region"));
+                    cd.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                cd.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Outer Type Region"));
-                cd.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    cd.Comments.Add(new CodeCommentStatement("Outer Type Comment"));
 
-                cd.Comments.Add(new CodeCommentStatement("Outer Type Comment"));
+                    CodeMemberField field1 = new CodeMemberField(typeof(String), "field1");
+                    CodeMemberField field2 = new CodeMemberField(typeof(String), "field2");
+                    field1.Comments.Add(new CodeCommentStatement("Field 1 Comment"));
+                    field2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Field Region"));
+                    field2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeMemberField field1 = new CodeMemberField(typeof(String), "field1");
-                CodeMemberField field2 = new CodeMemberField(typeof(String), "field2");
-                field1.Comments.Add(new CodeCommentStatement("Field 1 Comment"));
-                field2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Field Region"));
-                field2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    CodeMemberEvent evt1 = new CodeMemberEvent();
+                    evt1.Name = "Event1";
+                    evt1.Type = new CodeTypeReference(typeof(System.EventHandler));
+                    evt1.Attributes = (evt1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
 
-                CodeMemberEvent evt1 = new CodeMemberEvent();
-                evt1.Name = "Event1";
-                evt1.Type = new CodeTypeReference(typeof(System.EventHandler));
-                evt1.Attributes = (evt1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    CodeMemberEvent evt2 = new CodeMemberEvent();
+                    evt2.Name = "Event2";
+                    evt2.Type = new CodeTypeReference(typeof(System.EventHandler));
+                    evt2.Attributes = (evt2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
 
-                CodeMemberEvent evt2 = new CodeMemberEvent();
-                evt2.Name = "Event2";
-                evt2.Type = new CodeTypeReference(typeof(System.EventHandler));
-                evt2.Attributes = (evt2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    evt2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Event Region"));
+                    evt2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                evt2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Event Region"));
-                evt2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
-
-                CodeMemberMethod method1 = new CodeMemberMethod();
-                method1.Name = "Method1";
-                method1.Attributes = (method1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                method1.Statements.Add(
-                    new CodeDelegateInvokeExpression(
-                        new CodeEventReferenceExpression(new CodeThisReferenceExpression(), "Event1"),
-                        new CodeExpression[] {
+                    CodeMemberMethod method1 = new CodeMemberMethod();
+                    method1.Name = "Method1";
+                    method1.Attributes = (method1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    method1.Statements.Add(
+                        new CodeDelegateInvokeExpression(
+                            new CodeEventReferenceExpression(new CodeThisReferenceExpression(), "Event1"),
+                            new CodeExpression[] {
                             new CodeThisReferenceExpression(),
                             new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.EventArgs"), "Empty")
-                        }));
+                            }));
 
-                CodeMemberMethod method2 = new CodeMemberMethod();
-                method2.Name = "Method2";
-                method2.Attributes = (method2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                method2.Statements.Add(
-                    new CodeDelegateInvokeExpression(
-                        new CodeEventReferenceExpression(new CodeThisReferenceExpression(), "Event2"),
-                        new CodeExpression[] {
+                    CodeMemberMethod method2 = new CodeMemberMethod();
+                    method2.Name = "Method2";
+                    method2.Attributes = (method2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    method2.Statements.Add(
+                        new CodeDelegateInvokeExpression(
+                            new CodeEventReferenceExpression(new CodeThisReferenceExpression(), "Event2"),
+                            new CodeExpression[] {
                         new CodeThisReferenceExpression(),
                         new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.EventArgs"), "Empty")
-                        }));
-                method2.LinePragma = new CodeLinePragma("MethodLinePragma.txt", 500);
-                method2.Comments.Add(new CodeCommentStatement("Method 2 Comment"));
+                            }));
+                    method2.LinePragma = new CodeLinePragma("MethodLinePragma.txt", 500);
+                    method2.Comments.Add(new CodeCommentStatement("Method 2 Comment"));
 
-                method2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Method Region"));
-                method2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    method2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Method Region"));
+                    method2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeMemberProperty property1 = new CodeMemberProperty();
-                property1.Name = "Property1";
-                property1.Type = new CodeTypeReference(typeof(string));
-                property1.Attributes = (property1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                property1.GetStatements.Add(
-                    new CodeMethodReturnStatement(
-                        new CodeFieldReferenceExpression(
-                            new CodeThisReferenceExpression(),
-                            "field1")));
+                    CodeMemberProperty property1 = new CodeMemberProperty();
+                    property1.Name = "Property1";
+                    property1.Type = new CodeTypeReference(typeof(string));
+                    property1.Attributes = (property1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    property1.GetStatements.Add(
+                        new CodeMethodReturnStatement(
+                            new CodeFieldReferenceExpression(
+                                new CodeThisReferenceExpression(),
+                                "field1")));
 
-                CodeMemberProperty property2 = new CodeMemberProperty();
-                property2.Name = "Property2";
-                property2.Type = new CodeTypeReference(typeof(string));
-                property2.Attributes = (property2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                property2.GetStatements.Add(
-                    new CodeMethodReturnStatement(
-                        new CodeFieldReferenceExpression(
-                            new CodeThisReferenceExpression(),
-                            "field2")));
+                    CodeMemberProperty property2 = new CodeMemberProperty();
+                    property2.Name = "Property2";
+                    property2.Type = new CodeTypeReference(typeof(string));
+                    property2.Attributes = (property2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    property2.GetStatements.Add(
+                        new CodeMethodReturnStatement(
+                            new CodeFieldReferenceExpression(
+                                new CodeThisReferenceExpression(),
+                                "field2")));
 
-                property2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Property Region"));
-                property2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    property2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Property Region"));
+                    property2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeConstructor constructor1 = new CodeConstructor();
-                constructor1.Attributes = (constructor1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                CodeStatement conState1 = new CodeAssignStatement(
-                                            new CodeFieldReferenceExpression(
-                                                new CodeThisReferenceExpression(),
-                                                "field1"),
-                                            new CodePrimitiveExpression("value1"));
-                conState1.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Statements Region"));
-                constructor1.Statements.Add(conState1);
-                CodeStatement conState2 = new CodeAssignStatement(
-                                            new CodeFieldReferenceExpression(
-                                                new CodeThisReferenceExpression(),
-                                                "field2"),
-                                            new CodePrimitiveExpression("value2"));
-                conState2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
-                constructor1.Statements.Add(conState2);
+                    CodeConstructor constructor1 = new CodeConstructor();
+                    constructor1.Attributes = (constructor1.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    CodeStatement conState1 = new CodeAssignStatement(
+                                                new CodeFieldReferenceExpression(
+                                                    new CodeThisReferenceExpression(),
+                                                    "field1"),
+                                                new CodePrimitiveExpression("value1"));
+                    conState1.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Statements Region"));
+                    constructor1.Statements.Add(conState1);
+                    CodeStatement conState2 = new CodeAssignStatement(
+                                                new CodeFieldReferenceExpression(
+                                                    new CodeThisReferenceExpression(),
+                                                    "field2"),
+                                                new CodePrimitiveExpression("value2"));
+                    conState2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    constructor1.Statements.Add(conState2);
 
-                constructor1.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Constructor Region"));
-                constructor1.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    constructor1.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Constructor Region"));
+                    constructor1.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeConstructor constructor2 = new CodeConstructor();
-                constructor2.Attributes = (constructor2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                constructor2.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "value1"));
-                constructor2.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "value2"));
+                    CodeConstructor constructor2 = new CodeConstructor();
+                    constructor2.Attributes = (constructor2.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
+                    constructor2.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "value1"));
+                    constructor2.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "value2"));
 
-                CodeTypeConstructor typeConstructor2 = new CodeTypeConstructor();
+                    CodeTypeConstructor typeConstructor2 = new CodeTypeConstructor();
 
-                typeConstructor2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Type Constructor Region"));
-                typeConstructor2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    typeConstructor2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Type Constructor Region"));
+                    typeConstructor2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeEntryPointMethod methodMain = new CodeEntryPointMethod();
+                    CodeEntryPointMethod methodMain = new CodeEntryPointMethod();
 
-                CodeTypeDeclaration nestedClass1 = new CodeTypeDeclaration("NestedClass1");
-                CodeTypeDeclaration nestedClass2 = new CodeTypeDeclaration("NestedClass2");
-                nestedClass2.LinePragma = new CodeLinePragma("NestedTypeLinePragma.txt", 400);
-                nestedClass2.Comments.Add(new CodeCommentStatement("Nested Type Comment"));
+                    CodeTypeDeclaration nestedClass1 = new CodeTypeDeclaration("NestedClass1");
+                    CodeTypeDeclaration nestedClass2 = new CodeTypeDeclaration("NestedClass2");
+                    nestedClass2.LinePragma = new CodeLinePragma("NestedTypeLinePragma.txt", 400);
+                    nestedClass2.Comments.Add(new CodeCommentStatement("Nested Type Comment"));
 
-                nestedClass2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Nested Type Region"));
-                nestedClass2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    nestedClass2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Nested Type Region"));
+                    nestedClass2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                CodeTypeDelegate delegate1 = new CodeTypeDelegate();
-                delegate1.Name = "nestedDelegate1";
-                delegate1.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.Object"), "sender"));
-                delegate1.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.EventArgs"), "e"));
+                    CodeTypeDelegate delegate1 = new CodeTypeDelegate();
+                    delegate1.Name = "nestedDelegate1";
+                    delegate1.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.Object"), "sender"));
+                    delegate1.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.EventArgs"), "e"));
 
-                CodeTypeDelegate delegate2 = new CodeTypeDelegate();
-                delegate2.Name = "nestedDelegate2";
-                delegate2.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.Object"), "sender"));
-                delegate2.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.EventArgs"), "e"));
+                    CodeTypeDelegate delegate2 = new CodeTypeDelegate();
+                    delegate2.Name = "nestedDelegate2";
+                    delegate2.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.Object"), "sender"));
+                    delegate2.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference("System.EventArgs"), "e"));
 
-                delegate2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Delegate Region"));
-                delegate2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    delegate2.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Delegate Region"));
+                    delegate2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                var snippet1 = new CodeSnippetTypeMember();
-                var snippet2 = new CodeSnippetTypeMember();
+                    var snippet1 = new CodeSnippetTypeMember();
+                    var snippet2 = new CodeSnippetTypeMember();
 
-                CodeRegionDirective regionStart = new CodeRegionDirective(CodeRegionMode.End, "");
-                regionStart.RegionText = "Snippet Region";
-                regionStart.RegionMode = CodeRegionMode.Start;
-                snippet2.StartDirectives.Add(regionStart);
-                snippet2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+                    CodeRegionDirective regionStart = new CodeRegionDirective(CodeRegionMode.End, "");
+                    regionStart.RegionText = "Snippet Region";
+                    regionStart.RegionMode = CodeRegionMode.Start;
+                    snippet2.StartDirectives.Add(regionStart);
+                    snippet2.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
 
-                cd.Members.Add(field1);
-                cd.Members.Add(method1);
-                cd.Members.Add(constructor1);
-                cd.Members.Add(property1);
-                cd.Members.Add(methodMain);
+                    cd.Members.Add(field1);
+                    cd.Members.Add(method1);
+                    cd.Members.Add(constructor1);
+                    cd.Members.Add(property1);
+                    cd.Members.Add(methodMain);
 
-                cd.Members.Add(evt1);
-                cd.Members.Add(nestedClass1);
-                cd.Members.Add(delegate1);
+                    cd.Members.Add(evt1);
+                    cd.Members.Add(nestedClass1);
+                    cd.Members.Add(delegate1);
 
-                cd.Members.Add(snippet1);
+                    cd.Members.Add(snippet1);
 
-                cd.Members.Add(field2);
-                cd.Members.Add(method2);
-                cd.Members.Add(constructor2);
-                cd.Members.Add(property2);
+                    cd.Members.Add(field2);
+                    cd.Members.Add(method2);
+                    cd.Members.Add(constructor2);
+                    cd.Members.Add(property2);
 
-                cd.Members.Add(typeConstructor2);
-                cd.Members.Add(evt2);
-                cd.Members.Add(nestedClass2);
-                cd.Members.Add(delegate2);
-                cd.Members.Add(snippet2);
+                    cd.Members.Add(typeConstructor2);
+                    cd.Members.Add(evt2);
+                    cd.Members.Add(nestedClass2);
+                    cd.Members.Add(delegate2);
+                    cd.Members.Add(snippet2);
 
-                AssertEqual(cu,
-                    @"#Region ""Compile Unit Region""
+                    AssertEqual(cu,
+                        @"#Region ""Compile Unit Region""
                       '------------------------------------------------------------------------------
                       ' <auto-generated>
                       '     This code was generated by a tool.
@@ -1660,6 +1662,7 @@ namespace System.CodeDom.Compiler.Tests
                           #End Region
                       End Namespace
                       #End Region");
+                }
             }).Dispose();
         }
 
@@ -2366,566 +2369,566 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ProviderSupports()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-
-                CodeDomProvider provider = GetProvider();
-
-                CodeCompileUnit cu = new CodeCompileUnit();
-                CodeNamespace nspace = new CodeNamespace("NSPC");
-                nspace.Imports.Add(new CodeNamespaceImport("System"));
-                nspace.Imports.Add(new CodeNamespaceImport("System.Drawing"));
-                nspace.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
-                nspace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
-                cu.Namespaces.Add(nspace);
-
-                CodeTypeDeclaration cd = new CodeTypeDeclaration("TEST");
-                cd.IsClass = true;
-                nspace.Types.Add(cd);
-
-                // Arrays of Arrays
-                CodeMemberMethod cmm = new CodeMemberMethod();
-                cmm.Name = "ArraysOfArrays";
-                cmm.ReturnType = new CodeTypeReference(typeof(int));
-                cmm.Attributes = MemberAttributes.Final | MemberAttributes.Public;
-                if (provider.Supports(GeneratorSupport.ArraysOfArrays))
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference(typeof(int[][])),
-                        "arrayOfArrays", new CodeArrayCreateExpression(typeof(int[][]),
-                        new CodeArrayCreateExpression(typeof(int[]), new CodePrimitiveExpression(3), new CodePrimitiveExpression(4)),
-                        new CodeArrayCreateExpression(typeof(int[]), new CodeExpression[] { new CodePrimitiveExpression(1) }))));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeArrayIndexerExpression(
-                        new CodeArrayIndexerExpression(new CodeVariableReferenceExpression("arrayOfArrays"), new CodePrimitiveExpression(0))
-                        , new CodePrimitiveExpression(1))));
-                }
-                else
-                {
-                    throw new Exception("not supported");
-                }
-                cd.Members.Add(cmm);
+                    CodeDomProvider provider = GetProvider();
 
-                // assembly attributes
-                if (provider.Supports(GeneratorSupport.AssemblyAttributes))
-                {
-                    CodeAttributeDeclarationCollection attrs = cu.AssemblyCustomAttributes;
-                    attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyTitle", new
-                        CodeAttributeArgument(new CodePrimitiveExpression("MyAssembly"))));
-                    attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyVersion", new
-                        CodeAttributeArgument(new CodePrimitiveExpression("1.0.6.2"))));
-                }
+                    CodeCompileUnit cu = new CodeCompileUnit();
+                    CodeNamespace nspace = new CodeNamespace("NSPC");
+                    nspace.Imports.Add(new CodeNamespaceImport("System"));
+                    nspace.Imports.Add(new CodeNamespaceImport("System.Drawing"));
+                    nspace.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
+                    nspace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
+                    cu.Namespaces.Add(nspace);
 
-                CodeTypeDeclaration class1 = new CodeTypeDeclaration();
-                if (provider.Supports(GeneratorSupport.ChainedConstructorArguments))
-                {
-                    class1.Name = "Test2";
-                    class1.IsClass = true;
-                    nspace.Types.Add(class1);
+                    CodeTypeDeclaration cd = new CodeTypeDeclaration("TEST");
+                    cd.IsClass = true;
+                    nspace.Types.Add(cd);
 
-                    class1.Members.Add(new CodeMemberField(new CodeTypeReference(typeof(String)), "stringField"));
-                    CodeMemberProperty prop = new CodeMemberProperty();
-                    prop.Name = "accessStringField";
-                    prop.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    prop.Type = new CodeTypeReference(typeof(String));
-                    prop.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
-                        "stringField")));
-                    prop.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new
-                        CodeThisReferenceExpression(), "stringField"),
-                        new CodePropertySetValueReferenceExpression()));
-                    class1.Members.Add(prop);
-
-                    CodeConstructor cctor = new CodeConstructor();
-                    cctor.Attributes = MemberAttributes.Public;
-                    cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression("testingString"));
-                    cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression(null));
-                    cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression(null));
-                    class1.Members.Add(cctor);
-
-                    CodeConstructor cc = new CodeConstructor();
-                    cc.Attributes = MemberAttributes.Public | MemberAttributes.Overloaded;
-                    cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p1"));
-                    cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p2"));
-                    cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p3"));
-                    cc.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression()
-                        , "stringField"), new CodeVariableReferenceExpression("p1")));
-                    class1.Members.Add(cc);
-                    // verify chained constructors work
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "ChainedConstructorUse";
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    cmm.ReturnType = new CodeTypeReference(typeof(String));
-                    // utilize constructor
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement("Test2", "t", new CodeObjectCreateExpression("Test2")));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodReferenceExpression(
-                        new CodeVariableReferenceExpression("t"), "accessStringField")));
-                    cd.Members.Add(cmm);
-                }
-
-                // complex expressions
-                if (provider.Supports(GeneratorSupport.ComplexExpressions))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "ComplexExpressions";
+                    // Arrays of Arrays
+                    CodeMemberMethod cmm = new CodeMemberMethod();
+                    cmm.Name = "ArraysOfArrays";
                     cmm.ReturnType = new CodeTypeReference(typeof(int));
                     cmm.Attributes = MemberAttributes.Final | MemberAttributes.Public;
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(int)), "i"));
-                    cmm.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("i"),
-                        new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Multiply,
-                        new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Add,
-                        new CodePrimitiveExpression(3)))));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("i")));
-                    cd.Members.Add(cmm);
-                }
-
-                if (provider.Supports(GeneratorSupport.DeclareEnums))
-                {
-                    CodeTypeDeclaration ce = new CodeTypeDeclaration("DecimalEnum");
-                    ce.IsEnum = true;
-                    nspace.Types.Add(ce);
-
-                    // things to enumerate
-                    for (int k = 0; k < 5; k++)
+                    if (provider.Supports(GeneratorSupport.ArraysOfArrays))
                     {
-                        CodeMemberField Field = new CodeMemberField("System.Int32", "Num" + (k).ToString());
-                        Field.InitExpression = new CodePrimitiveExpression(k);
-                        ce.Members.Add(Field);
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference(typeof(int[][])),
+                            "arrayOfArrays", new CodeArrayCreateExpression(typeof(int[][]),
+                            new CodeArrayCreateExpression(typeof(int[]), new CodePrimitiveExpression(3), new CodePrimitiveExpression(4)),
+                            new CodeArrayCreateExpression(typeof(int[]), new CodeExpression[] { new CodePrimitiveExpression(1) }))));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeArrayIndexerExpression(
+                            new CodeArrayIndexerExpression(new CodeVariableReferenceExpression("arrayOfArrays"), new CodePrimitiveExpression(0))
+                            , new CodePrimitiveExpression(1))));
                     }
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "OutputDecimalEnumVal";
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
-                    cmm.Parameters.Add(param);
-                    CodeBinaryOperatorExpression eq = new CodeBinaryOperatorExpression(
-                        new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.ValueEquality,
-                        new CodePrimitiveExpression(3));
-                    CodeMethodReturnStatement truestmt = new CodeMethodReturnStatement(
-                        new CodeCastExpression(typeof(int),
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num3")));
-                    CodeConditionStatement condstmt = new CodeConditionStatement(eq, truestmt);
-                    cmm.Statements.Add(condstmt);
-
-                    eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
-                        CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(4));
-                    truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num4")));
-                    condstmt = new CodeConditionStatement(eq, truestmt);
-                    cmm.Statements.Add(condstmt);
-                    eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
-                        CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(2));
-                    truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num2")));
-                    condstmt = new CodeConditionStatement(eq, truestmt);
-                    cmm.Statements.Add(condstmt);
-
-                    eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
-                        CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(1));
-                    truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num1")));
-                    condstmt = new CodeConditionStatement(eq, truestmt);
-                    cmm.Statements.Add(condstmt);
-
-                    eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
-                        CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(0));
-                    truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num0")));
-                    condstmt = new CodeConditionStatement(eq, truestmt);
-                    cmm.Statements.Add(condstmt);
-
-                    cmm.ReturnType = new CodeTypeReference("System.int32");
-
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression(
-                        new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Add, new CodePrimitiveExpression(10))));
-                    cd.Members.Add(cmm);
-                }
-
-                if (provider.Supports(GeneratorSupport.DeclareInterfaces))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "TestSingleInterface";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement("TestSingleInterfaceImp", "t", new CodeObjectCreateExpression("TestSingleInterfaceImp")));
-                    CodeMethodInvokeExpression methodinvoke = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("t")
-                        , "InterfaceMethod");
-                    methodinvoke.Parameters.Add(new CodeVariableReferenceExpression("i"));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(methodinvoke));
-                    cd.Members.Add(cmm);
-
-                    class1 = new CodeTypeDeclaration("InterfaceA");
-                    class1.IsInterface = true;
-                    nspace.Types.Add(class1);
-                    cmm = new CodeMemberMethod();
-                    cmm.Attributes = MemberAttributes.Public;
-                    cmm.Name = "InterfaceMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
-                    class1.Members.Add(cmm);
-
-                    if (provider.Supports(GeneratorSupport.MultipleInterfaceMembers))
+                    else
                     {
-                        CodeTypeDeclaration classDecl = new CodeTypeDeclaration("InterfaceB");
-                        classDecl.IsInterface = true;
-                        nspace.Types.Add(classDecl);
+                        throw new Exception("not supported");
+                    }
+                    cd.Members.Add(cmm);
+
+                    // assembly attributes
+                    if (provider.Supports(GeneratorSupport.AssemblyAttributes))
+                    {
+                        CodeAttributeDeclarationCollection attrs = cu.AssemblyCustomAttributes;
+                        attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyTitle", new
+                            CodeAttributeArgument(new CodePrimitiveExpression("MyAssembly"))));
+                        attrs.Add(new CodeAttributeDeclaration("System.Reflection.AssemblyVersion", new
+                            CodeAttributeArgument(new CodePrimitiveExpression("1.0.6.2"))));
+                    }
+
+                    CodeTypeDeclaration class1 = new CodeTypeDeclaration();
+                    if (provider.Supports(GeneratorSupport.ChainedConstructorArguments))
+                    {
+                        class1.Name = "Test2";
+                        class1.IsClass = true;
+                        nspace.Types.Add(class1);
+
+                        class1.Members.Add(new CodeMemberField(new CodeTypeReference(typeof(String)), "stringField"));
+                        CodeMemberProperty prop = new CodeMemberProperty();
+                        prop.Name = "accessStringField";
+                        prop.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                        prop.Type = new CodeTypeReference(typeof(String));
+                        prop.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
+                            "stringField")));
+                        prop.SetStatements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new
+                            CodeThisReferenceExpression(), "stringField"),
+                            new CodePropertySetValueReferenceExpression()));
+                        class1.Members.Add(prop);
+
+                        CodeConstructor cctor = new CodeConstructor();
+                        cctor.Attributes = MemberAttributes.Public;
+                        cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression("testingString"));
+                        cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression(null));
+                        cctor.ChainedConstructorArgs.Add(new CodePrimitiveExpression(null));
+                        class1.Members.Add(cctor);
+
+                        CodeConstructor cc = new CodeConstructor();
+                        cc.Attributes = MemberAttributes.Public | MemberAttributes.Overloaded;
+                        cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p1"));
+                        cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p2"));
+                        cc.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "p3"));
+                        cc.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression()
+                            , "stringField"), new CodeVariableReferenceExpression("p1")));
+                        class1.Members.Add(cc);
+                        // verify chained constructors work
                         cmm = new CodeMemberMethod();
-                        cmm.Name = "InterfaceMethod";
+                        cmm.Name = "ChainedConstructorUse";
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        cmm.ReturnType = new CodeTypeReference(typeof(String));
+                        // utilize constructor
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement("Test2", "t", new CodeObjectCreateExpression("Test2")));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodReferenceExpression(
+                            new CodeVariableReferenceExpression("t"), "accessStringField")));
+                        cd.Members.Add(cmm);
+                    }
+
+                    // complex expressions
+                    if (provider.Supports(GeneratorSupport.ComplexExpressions))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "ComplexExpressions";
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Attributes = MemberAttributes.Final | MemberAttributes.Public;
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(int)), "i"));
+                        cmm.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("i"),
+                            new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Multiply,
+                            new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Add,
+                            new CodePrimitiveExpression(3)))));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("i")));
+                        cd.Members.Add(cmm);
+                    }
+
+                    if (provider.Supports(GeneratorSupport.DeclareEnums))
+                    {
+                        CodeTypeDeclaration ce = new CodeTypeDeclaration("DecimalEnum");
+                        ce.IsEnum = true;
+                        nspace.Types.Add(ce);
+
+                        // things to enumerate
+                        for (int k = 0; k < 5; k++)
+                        {
+                            CodeMemberField Field = new CodeMemberField("System.Int32", "Num" + (k).ToString());
+                            Field.InitExpression = new CodePrimitiveExpression(k);
+                            ce.Members.Add(Field);
+                        }
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "OutputDecimalEnumVal";
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
+                        cmm.Parameters.Add(param);
+                        CodeBinaryOperatorExpression eq = new CodeBinaryOperatorExpression(
+                            new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.ValueEquality,
+                            new CodePrimitiveExpression(3));
+                        CodeMethodReturnStatement truestmt = new CodeMethodReturnStatement(
+                            new CodeCastExpression(typeof(int),
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num3")));
+                        CodeConditionStatement condstmt = new CodeConditionStatement(eq, truestmt);
+                        cmm.Statements.Add(condstmt);
+
+                        eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
+                            CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(4));
+                        truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num4")));
+                        condstmt = new CodeConditionStatement(eq, truestmt);
+                        cmm.Statements.Add(condstmt);
+                        eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
+                            CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(2));
+                        truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num2")));
+                        condstmt = new CodeConditionStatement(eq, truestmt);
+                        cmm.Statements.Add(condstmt);
+
+                        eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
+                            CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(1));
+                        truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num1")));
+                        condstmt = new CodeConditionStatement(eq, truestmt);
+                        cmm.Statements.Add(condstmt);
+
+                        eq = new CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("i"),
+                            CodeBinaryOperatorType.ValueEquality, new CodePrimitiveExpression(0));
+                        truestmt = new CodeMethodReturnStatement(new CodeCastExpression(typeof(int),
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("DecimalEnum"), "Num0")));
+                        condstmt = new CodeConditionStatement(eq, truestmt);
+                        cmm.Statements.Add(condstmt);
+
+                        cmm.ReturnType = new CodeTypeReference("System.int32");
+
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression(
+                            new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.Add, new CodePrimitiveExpression(10))));
+                        cd.Members.Add(cmm);
+                    }
+
+                    if (provider.Supports(GeneratorSupport.DeclareInterfaces))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "TestSingleInterface";
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement("TestSingleInterfaceImp", "t", new CodeObjectCreateExpression("TestSingleInterfaceImp")));
+                        CodeMethodInvokeExpression methodinvoke = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("t")
+                            , "InterfaceMethod");
+                        methodinvoke.Parameters.Add(new CodeVariableReferenceExpression("i"));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(methodinvoke));
+                        cd.Members.Add(cmm);
+
+                        class1 = new CodeTypeDeclaration("InterfaceA");
+                        class1.IsInterface = true;
+                        nspace.Types.Add(class1);
+                        cmm = new CodeMemberMethod();
                         cmm.Attributes = MemberAttributes.Public;
+                        cmm.Name = "InterfaceMethod";
                         cmm.ReturnType = new CodeTypeReference(typeof(int));
                         cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
-                        classDecl.Members.Add(cmm);
+                        class1.Members.Add(cmm);
 
-                        CodeTypeDeclaration class2 = new CodeTypeDeclaration("TestMultipleInterfaceImp");
-                        class2.BaseTypes.Add(new CodeTypeReference("System.Object"));
-                        class2.BaseTypes.Add(new CodeTypeReference("InterfaceB"));
-                        class2.BaseTypes.Add(new CodeTypeReference("InterfaceA"));
-                        class2.IsClass = true;
-                        nspace.Types.Add(class2);
+                        if (provider.Supports(GeneratorSupport.MultipleInterfaceMembers))
+                        {
+                            CodeTypeDeclaration classDecl = new CodeTypeDeclaration("InterfaceB");
+                            classDecl.IsInterface = true;
+                            nspace.Types.Add(classDecl);
+                            cmm = new CodeMemberMethod();
+                            cmm.Name = "InterfaceMethod";
+                            cmm.Attributes = MemberAttributes.Public;
+                            cmm.ReturnType = new CodeTypeReference(typeof(int));
+                            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
+                            classDecl.Members.Add(cmm);
+
+                            CodeTypeDeclaration class2 = new CodeTypeDeclaration("TestMultipleInterfaceImp");
+                            class2.BaseTypes.Add(new CodeTypeReference("System.Object"));
+                            class2.BaseTypes.Add(new CodeTypeReference("InterfaceB"));
+                            class2.BaseTypes.Add(new CodeTypeReference("InterfaceA"));
+                            class2.IsClass = true;
+                            nspace.Types.Add(class2);
+                            cmm = new CodeMemberMethod();
+                            cmm.ImplementationTypes.Add(new CodeTypeReference("InterfaceA"));
+                            cmm.ImplementationTypes.Add(new CodeTypeReference("InterfaceB"));
+                            cmm.Name = "InterfaceMethod";
+                            cmm.ReturnType = new CodeTypeReference(typeof(int));
+                            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
+                            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                            cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
+                            class2.Members.Add(cmm);
+
+                            cmm = new CodeMemberMethod();
+                            cmm.Name = "TestMultipleInterfaces";
+                            cmm.ReturnType = new CodeTypeReference(typeof(int));
+                            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
+                            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                            cmm.Statements.Add(new CodeVariableDeclarationStatement("TestMultipleInterfaceImp", "t", new CodeObjectCreateExpression("TestMultipleInterfaceImp")));
+                            cmm.Statements.Add(new CodeVariableDeclarationStatement("InterfaceA", "interfaceAobject", new CodeCastExpression("InterfaceA",
+                                new CodeVariableReferenceExpression("t"))));
+                            cmm.Statements.Add(new CodeVariableDeclarationStatement("InterfaceB", "interfaceBobject", new CodeCastExpression("InterfaceB",
+                                new CodeVariableReferenceExpression("t"))));
+                            methodinvoke = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("interfaceAobject")
+                                , "InterfaceMethod");
+                            methodinvoke.Parameters.Add(new CodeVariableReferenceExpression("i"));
+                            CodeMethodInvokeExpression methodinvoke2 = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("interfaceBobject")
+                                , "InterfaceMethod");
+                            methodinvoke2.Parameters.Add(new CodeVariableReferenceExpression("i"));
+                            cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression(
+                                methodinvoke,
+                                CodeBinaryOperatorType.Subtract, methodinvoke2)));
+                            cd.Members.Add(cmm);
+                        }
+
+                        class1 = new CodeTypeDeclaration("TestSingleInterfaceImp");
+                        class1.BaseTypes.Add(new CodeTypeReference("System.Object"));
+                        class1.BaseTypes.Add(new CodeTypeReference("InterfaceA"));
+                        class1.IsClass = true;
+                        nspace.Types.Add(class1);
                         cmm = new CodeMemberMethod();
                         cmm.ImplementationTypes.Add(new CodeTypeReference("InterfaceA"));
-                        cmm.ImplementationTypes.Add(new CodeTypeReference("InterfaceB"));
                         cmm.Name = "InterfaceMethod";
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
+                        cmm.Attributes = MemberAttributes.Public;
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
+                        class1.Members.Add(cmm);
+                    }
+
+                    if (provider.Supports(GeneratorSupport.DeclareValueTypes))
+                    {
+                        CodeTypeDeclaration structA = new CodeTypeDeclaration("structA");
+                        structA.IsStruct = true;
+
+                        CodeTypeDeclaration structB = new CodeTypeDeclaration("structB");
+                        structB.Attributes = MemberAttributes.Public;
+                        structB.IsStruct = true;
+
+                        CodeMemberField firstInt = new CodeMemberField(typeof(int), "int1");
+                        firstInt.Attributes = MemberAttributes.Public;
+                        structB.Members.Add(firstInt);
+
+                        CodeMemberField innerStruct = new CodeMemberField("structB", "innerStruct");
+                        innerStruct.Attributes = MemberAttributes.Public;
+
+                        structA.Members.Add(structB);
+                        structA.Members.Add(innerStruct);
+                        nspace.Types.Add(structA);
+
+                        CodeMemberMethod nestedStructMethod = new CodeMemberMethod();
+                        nestedStructMethod.Name = "NestedStructMethod";
+                        nestedStructMethod.ReturnType = new CodeTypeReference(typeof(int));
+                        nestedStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        CodeVariableDeclarationStatement varStructA = new CodeVariableDeclarationStatement("structA", "varStructA");
+                        nestedStructMethod.Statements.Add(varStructA);
+                        nestedStructMethod.Statements.Add
+                            (
+                            new CodeAssignStatement
+                            (
+                            /* Expression1 */ new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1"),
+                            /* Expression1 */ new CodePrimitiveExpression(3)
+                            )
+                            );
+                        nestedStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1")));
+                        cd.Members.Add(nestedStructMethod);
+                    }
+
+                    if (provider.Supports(GeneratorSupport.EntryPointMethod))
+                    {
+                        CodeEntryPointMethod cep = new CodeEntryPointMethod();
+                        cd.Members.Add(cep);
+                    }
+
+                    // goto statements
+                    if (provider.Supports(GeneratorSupport.GotoStatements))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "GoToMethod";
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                        CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
+                        cmm.Parameters.Add(param);
+                        CodeConditionStatement condstmt = new CodeConditionStatement(new CodeBinaryOperatorExpression(
+                            new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.LessThan, new CodePrimitiveExpression(1)),
+                            new CodeGotoStatement("comehere"));
+                        cmm.Statements.Add(condstmt);
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(6)));
+                        cmm.Statements.Add(new CodeLabeledStatement("comehere",
+                            new CodeMethodReturnStatement(new CodePrimitiveExpression(7))));
+                        cd.Members.Add(cmm);
+                    }
+
+                    if (provider.Supports(GeneratorSupport.NestedTypes))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "CallingPublicNestedScenario";
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference
+                            ("PublicNestedClassA+PublicNestedClassB2+PublicNestedClassC"), "t",
+                            new CodeObjectCreateExpression(new CodeTypeReference
+                            ("PublicNestedClassA+PublicNestedClassB2+PublicNestedClassC"))));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("t"),
+                            "publicNestedClassesMethod",
+                            new CodeVariableReferenceExpression("i"))));
+                        cd.Members.Add(cmm);
+
+                        class1 = new CodeTypeDeclaration("PublicNestedClassA");
+                        class1.IsClass = true;
+                        nspace.Types.Add(class1);
+                        CodeTypeDeclaration nestedClass = new CodeTypeDeclaration("PublicNestedClassB1");
+                        nestedClass.IsClass = true;
+                        nestedClass.TypeAttributes = TypeAttributes.NestedPublic;
+                        class1.Members.Add(nestedClass);
+                        nestedClass = new CodeTypeDeclaration("PublicNestedClassB2");
+                        nestedClass.TypeAttributes = TypeAttributes.NestedPublic;
+                        nestedClass.IsClass = true;
+                        class1.Members.Add(nestedClass);
+                        CodeTypeDeclaration innerNestedClass = new CodeTypeDeclaration("PublicNestedClassC");
+                        innerNestedClass.TypeAttributes = TypeAttributes.NestedPublic;
+                        innerNestedClass.IsClass = true;
+                        nestedClass.Members.Add(innerNestedClass);
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "publicNestedClassesMethod";
                         cmm.ReturnType = new CodeTypeReference(typeof(int));
                         cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
                         cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                         cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
-                        class2.Members.Add(cmm);
+                        innerNestedClass.Members.Add(cmm);
+                    }
 
+                    // Parameter Attributes
+                    if (provider.Supports(GeneratorSupport.ParameterAttributes))
+                    {
+                        CodeMemberMethod method1 = new CodeMemberMethod();
+                        method1.Name = "MyMethod";
+                        method1.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                        CodeParameterDeclarationExpression param1 = new CodeParameterDeclarationExpression(typeof(string), "blah");
+                        param1.CustomAttributes.Add(
+                            new CodeAttributeDeclaration(
+                            "System.Xml.Serialization.XmlElementAttribute",
+                            new CodeAttributeArgument(
+                            "Form",
+                            new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
+                            new CodeAttributeArgument(
+                            "IsNullable",
+                            new CodePrimitiveExpression(false))));
+                        method1.Parameters.Add(param1);
+                        cd.Members.Add(method1);
+                    }
+
+                    // public static members
+                    if (provider.Supports(GeneratorSupport.PublicStaticMembers))
+                    {
                         cmm = new CodeMemberMethod();
-                        cmm.Name = "TestMultipleInterfaces";
+                        cmm.Name = "PublicStaticMethod";
                         cmm.ReturnType = new CodeTypeReference(typeof(int));
-                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
                         cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                        cmm.Statements.Add(new CodeVariableDeclarationStatement("TestMultipleInterfaceImp", "t", new CodeObjectCreateExpression("TestMultipleInterfaceImp")));
-                        cmm.Statements.Add(new CodeVariableDeclarationStatement("InterfaceA", "interfaceAobject", new CodeCastExpression("InterfaceA",
-                            new CodeVariableReferenceExpression("t"))));
-                        cmm.Statements.Add(new CodeVariableDeclarationStatement("InterfaceB", "interfaceBobject", new CodeCastExpression("InterfaceB",
-                            new CodeVariableReferenceExpression("t"))));
-                        methodinvoke = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("interfaceAobject")
-                            , "InterfaceMethod");
-                        methodinvoke.Parameters.Add(new CodeVariableReferenceExpression("i"));
-                        CodeMethodInvokeExpression methodinvoke2 = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("interfaceBobject")
-                            , "InterfaceMethod");
-                        methodinvoke2.Parameters.Add(new CodeVariableReferenceExpression("i"));
-                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression(
-                            methodinvoke,
-                            CodeBinaryOperatorType.Subtract, methodinvoke2)));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(16)));
                         cd.Members.Add(cmm);
                     }
 
-                    class1 = new CodeTypeDeclaration("TestSingleInterfaceImp");
-                    class1.BaseTypes.Add(new CodeTypeReference("System.Object"));
-                    class1.BaseTypes.Add(new CodeTypeReference("InterfaceA"));
-                    class1.IsClass = true;
-                    nspace.Types.Add(class1);
-                    cmm = new CodeMemberMethod();
-                    cmm.ImplementationTypes.Add(new CodeTypeReference("InterfaceA"));
-                    cmm.Name = "InterfaceMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
-                    cmm.Attributes = MemberAttributes.Public;
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
-                    class1.Members.Add(cmm);
-                }
+                    // reference parameters
+                    if (provider.Supports(GeneratorSupport.ReferenceParameters))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "Work";
+                        cmm.ReturnType = new CodeTypeReference("System.void");
+                        cmm.Attributes = MemberAttributes.Static;
+                        // add parameter with ref direction
+                        CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
+                        param.Direction = FieldDirection.Ref;
+                        cmm.Parameters.Add(param);
+                        // add parameter with out direction
+                        param = new CodeParameterDeclarationExpression(typeof(int), "j");
+                        param.Direction = FieldDirection.Out;
+                        cmm.Parameters.Add(param);
+                        cmm.Statements.Add(new CodeAssignStatement(new CodeArgumentReferenceExpression("i"),
+                            new CodeBinaryOperatorExpression(new CodeArgumentReferenceExpression("i"),
+                            CodeBinaryOperatorType.Add, new CodePrimitiveExpression(4))));
+                        cmm.Statements.Add(new CodeAssignStatement(new CodeArgumentReferenceExpression("j"),
+                            new CodePrimitiveExpression(5)));
+                        cd.Members.Add(cmm);
 
-                if (provider.Supports(GeneratorSupport.DeclareValueTypes))
-                {
-                    CodeTypeDeclaration structA = new CodeTypeDeclaration("structA");
-                    structA.IsStruct = true;
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "CallingWork";
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        CodeParameterDeclarationExpression parames = new CodeParameterDeclarationExpression(typeof(int), "a");
+                        cmm.Parameters.Add(parames);
+                        cmm.ReturnType = new CodeTypeReference("System.int32");
+                        cmm.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("a"),
+                            new CodePrimitiveExpression(10)));
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement(typeof(int), "b"));
+                        // invoke the method called "work"
+                        CodeMethodInvokeExpression methodinvoked = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression
+                            (new CodeTypeReferenceExpression("TEST"), "Work"));
+                        // add parameter with ref direction
+                        CodeDirectionExpression parameter = new CodeDirectionExpression(FieldDirection.Ref,
+                            new CodeVariableReferenceExpression("a"));
+                        methodinvoked.Parameters.Add(parameter);
+                        // add parameter with out direction
+                        parameter = new CodeDirectionExpression(FieldDirection.Out, new CodeVariableReferenceExpression("b"));
+                        methodinvoked.Parameters.Add(parameter);
+                        cmm.Statements.Add(methodinvoked);
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression
+                            (new CodeVariableReferenceExpression("a"), CodeBinaryOperatorType.Add, new CodeVariableReferenceExpression("b"))));
+                        cd.Members.Add(cmm);
+                    }
 
-                    CodeTypeDeclaration structB = new CodeTypeDeclaration("structB");
-                    structB.Attributes = MemberAttributes.Public;
-                    structB.IsStruct = true;
+                    if (provider.Supports(GeneratorSupport.ReturnTypeAttributes))
+                    {
+                        CodeMemberMethod function1 = new CodeMemberMethod();
+                        function1.Name = "MyFunction";
+                        function1.ReturnType = new CodeTypeReference(typeof(string));
+                        function1.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                        function1.ReturnTypeCustomAttributes.Add(new
+                            CodeAttributeDeclaration("System.Xml.Serialization.XmlIgnoreAttribute"));
+                        function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlRootAttribute", new
+                            CodeAttributeArgument("Namespace", new CodePrimitiveExpression("Namespace Value")), new
+                            CodeAttributeArgument("ElementName", new CodePrimitiveExpression("Root, hehehe"))));
+                        function1.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression("Return")));
+                        cd.Members.Add(function1);
+                    }
 
-                    CodeMemberField firstInt = new CodeMemberField(typeof(int), "int1");
-                    firstInt.Attributes = MemberAttributes.Public;
-                    structB.Members.Add(firstInt);
+                    if (provider.Supports(GeneratorSupport.StaticConstructors))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "TestStaticConstructor";
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "a");
+                        cmm.Parameters.Add(param);
+                        // utilize constructor
+                        cmm.Statements.Add(new CodeVariableDeclarationStatement("Test4", "t", new CodeObjectCreateExpression("Test4")));
+                        // set then get number
+                        cmm.Statements.Add(new CodeAssignStatement(new CodePropertyReferenceExpression(new CodeVariableReferenceExpression("t"), "i")
+                            , new CodeVariableReferenceExpression("a")));
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodReferenceExpression(
+                            new CodeVariableReferenceExpression("t"), "i")));
+                        cd.Members.Add(cmm);
 
-                    CodeMemberField innerStruct = new CodeMemberField("structB", "innerStruct");
-                    innerStruct.Attributes = MemberAttributes.Public;
+                        class1 = new CodeTypeDeclaration();
+                        class1.Name = "Test4";
+                        class1.IsClass = true;
+                        nspace.Types.Add(class1);
 
-                    structA.Members.Add(structB);
-                    structA.Members.Add(innerStruct);
-                    nspace.Types.Add(structA);
+                        class1.Members.Add(new CodeMemberField(new CodeTypeReference(typeof(int)), "number"));
+                        CodeMemberProperty prop = new CodeMemberProperty();
+                        prop.Name = "i";
+                        prop.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                        prop.Type = new CodeTypeReference(typeof(int));
+                        prop.GetStatements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("number")));
+                        prop.SetStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("number"),
+                            new CodePropertySetValueReferenceExpression()));
+                        class1.Members.Add(prop);
+                        CodeTypeConstructor ctc = new CodeTypeConstructor();
+                        class1.Members.Add(ctc);
+                    }
 
-                    CodeMemberMethod nestedStructMethod = new CodeMemberMethod();
-                    nestedStructMethod.Name = "NestedStructMethod";
-                    nestedStructMethod.ReturnType = new CodeTypeReference(typeof(int));
-                    nestedStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    CodeVariableDeclarationStatement varStructA = new CodeVariableDeclarationStatement("structA", "varStructA");
-                    nestedStructMethod.Statements.Add(varStructA);
-                    nestedStructMethod.Statements.Add
-                        (
-                        new CodeAssignStatement
-                        (
-                        /* Expression1 */ new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1"),
-                        /* Expression1 */ new CodePrimitiveExpression(3)
-                        )
-                        );
-                    nestedStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1")));
-                    cd.Members.Add(nestedStructMethod);
-                }
+                    if (provider.Supports(GeneratorSupport.TryCatchStatements))
+                    {
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "TryCatchMethod";
+                        cmm.ReturnType = new CodeTypeReference(typeof(int));
+                        cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                        CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "a");
+                        cmm.Parameters.Add(param);
 
-                if (provider.Supports(GeneratorSupport.EntryPointMethod))
-                {
-                    CodeEntryPointMethod cep = new CodeEntryPointMethod();
-                    cd.Members.Add(cep);
-                }
+                        CodeTryCatchFinallyStatement tcfstmt = new CodeTryCatchFinallyStatement();
+                        tcfstmt.FinallyStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("a"), new
+                            CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("a"), CodeBinaryOperatorType.Add,
+                            new CodePrimitiveExpression(5))));
+                        cmm.Statements.Add(tcfstmt);
+                        cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
+                        cd.Members.Add(cmm);
+                    }
 
-                // goto statements
-                if (provider.Supports(GeneratorSupport.GotoStatements))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "GoToMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
-                    cmm.Parameters.Add(param);
-                    CodeConditionStatement condstmt = new CodeConditionStatement(new CodeBinaryOperatorExpression(
-                        new CodeVariableReferenceExpression("i"), CodeBinaryOperatorType.LessThan, new CodePrimitiveExpression(1)),
-                        new CodeGotoStatement("comehere"));
-                    cmm.Statements.Add(condstmt);
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(6)));
-                    cmm.Statements.Add(new CodeLabeledStatement("comehere",
-                        new CodeMethodReturnStatement(new CodePrimitiveExpression(7))));
-                    cd.Members.Add(cmm);
-                }
+                    if (provider.Supports(GeneratorSupport.DeclareEvents))
+                    {
+                        CodeNamespace ns = new CodeNamespace();
+                        ns.Name = "MyNamespace";
+                        ns.Imports.Add(new CodeNamespaceImport("System"));
+                        ns.Imports.Add(new CodeNamespaceImport("System.Drawing"));
+                        ns.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
+                        ns.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
+                        cu.Namespaces.Add(ns);
+                        class1 = new CodeTypeDeclaration("Test");
+                        class1.IsClass = true;
+                        class1.BaseTypes.Add(new CodeTypeReference("Form"));
+                        ns.Types.Add(class1);
 
-                if (provider.Supports(GeneratorSupport.NestedTypes))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "CallingPublicNestedScenario";
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference
-                        ("PublicNestedClassA+PublicNestedClassB2+PublicNestedClassC"), "t",
-                        new CodeObjectCreateExpression(new CodeTypeReference
-                        ("PublicNestedClassA+PublicNestedClassB2+PublicNestedClassC"))));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("t"),
-                        "publicNestedClassesMethod",
-                        new CodeVariableReferenceExpression("i"))));
-                    cd.Members.Add(cmm);
+                        CodeMemberField mfield = new CodeMemberField(new CodeTypeReference("Button"), "b");
+                        mfield.InitExpression = new CodeObjectCreateExpression(new CodeTypeReference("Button"));
+                        class1.Members.Add(mfield);
 
-                    class1 = new CodeTypeDeclaration("PublicNestedClassA");
-                    class1.IsClass = true;
-                    nspace.Types.Add(class1);
-                    CodeTypeDeclaration nestedClass = new CodeTypeDeclaration("PublicNestedClassB1");
-                    nestedClass.IsClass = true;
-                    nestedClass.TypeAttributes = TypeAttributes.NestedPublic;
-                    class1.Members.Add(nestedClass);
-                    nestedClass = new CodeTypeDeclaration("PublicNestedClassB2");
-                    nestedClass.TypeAttributes = TypeAttributes.NestedPublic;
-                    nestedClass.IsClass = true;
-                    class1.Members.Add(nestedClass);
-                    CodeTypeDeclaration innerNestedClass = new CodeTypeDeclaration("PublicNestedClassC");
-                    innerNestedClass.TypeAttributes = TypeAttributes.NestedPublic;
-                    innerNestedClass.IsClass = true;
-                    nestedClass.Members.Add(innerNestedClass);
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "publicNestedClassesMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "a"));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
-                    innerNestedClass.Members.Add(cmm);
-                }
+                        CodeConstructor ctor = new CodeConstructor();
+                        ctor.Attributes = MemberAttributes.Public;
+                        ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
+                            "Size"), new CodeObjectCreateExpression(new CodeTypeReference("Size"),
+                            new CodePrimitiveExpression(600), new CodePrimitiveExpression(600))));
+                        ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                            "Text"), new CodePrimitiveExpression("Test")));
+                        ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                            "TabIndex"), new CodePrimitiveExpression(0)));
+                        ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
+                            "Location"), new CodeObjectCreateExpression(new CodeTypeReference("Point"),
+                            new CodePrimitiveExpression(400), new CodePrimitiveExpression(525))));
+                        ctor.Statements.Add(new CodeAttachEventStatement(new CodeEventReferenceExpression(new
+                            CodeThisReferenceExpression(), "MyEvent"), new CodeDelegateCreateExpression(new CodeTypeReference("EventHandler")
+                            , new CodeThisReferenceExpression(), "b_Click")));
+                        class1.Members.Add(ctor);
 
-                // Parameter Attributes
-                if (provider.Supports(GeneratorSupport.ParameterAttributes))
-                {
-                    CodeMemberMethod method1 = new CodeMemberMethod();
-                    method1.Name = "MyMethod";
-                    method1.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    CodeParameterDeclarationExpression param1 = new CodeParameterDeclarationExpression(typeof(string), "blah");
-                    param1.CustomAttributes.Add(
-                        new CodeAttributeDeclaration(
-                        "System.Xml.Serialization.XmlElementAttribute",
-                        new CodeAttributeArgument(
-                        "Form",
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.Xml.Schema.XmlSchemaForm"), "Unqualified")),
-                        new CodeAttributeArgument(
-                        "IsNullable",
-                        new CodePrimitiveExpression(false))));
-                    method1.Parameters.Add(param1);
-                    cd.Members.Add(method1);
-                }
+                        CodeMemberEvent evt = new CodeMemberEvent();
+                        evt.Name = "MyEvent";
+                        evt.Type = new CodeTypeReference("System.EventHandler");
+                        evt.Attributes = MemberAttributes.Public;
+                        class1.Members.Add(evt);
 
-                // public static members
-                if (provider.Supports(GeneratorSupport.PublicStaticMembers))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "PublicStaticMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(16)));
-                    cd.Members.Add(cmm);
-                }
+                        cmm = new CodeMemberMethod();
+                        cmm.Name = "b_Click";
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(object), "sender"));
+                        cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(EventArgs), "e"));
+                        class1.Members.Add(cmm);
+                    }
 
-                // reference parameters
-                if (provider.Supports(GeneratorSupport.ReferenceParameters))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "Work";
-                    cmm.ReturnType = new CodeTypeReference("System.void");
-                    cmm.Attributes = MemberAttributes.Static;
-                    // add parameter with ref direction
-                    CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "i");
-                    param.Direction = FieldDirection.Ref;
-                    cmm.Parameters.Add(param);
-                    // add parameter with out direction
-                    param = new CodeParameterDeclarationExpression(typeof(int), "j");
-                    param.Direction = FieldDirection.Out;
-                    cmm.Parameters.Add(param);
-                    cmm.Statements.Add(new CodeAssignStatement(new CodeArgumentReferenceExpression("i"),
-                        new CodeBinaryOperatorExpression(new CodeArgumentReferenceExpression("i"),
-                        CodeBinaryOperatorType.Add, new CodePrimitiveExpression(4))));
-                    cmm.Statements.Add(new CodeAssignStatement(new CodeArgumentReferenceExpression("j"),
-                        new CodePrimitiveExpression(5)));
-                    cd.Members.Add(cmm);
-
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "CallingWork";
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    CodeParameterDeclarationExpression parames = new CodeParameterDeclarationExpression(typeof(int), "a");
-                    cmm.Parameters.Add(parames);
-                    cmm.ReturnType = new CodeTypeReference("System.int32");
-                    cmm.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("a"),
-                        new CodePrimitiveExpression(10)));
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement(typeof(int), "b"));
-                    // invoke the method called "work"
-                    CodeMethodInvokeExpression methodinvoked = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression
-                        (new CodeTypeReferenceExpression("TEST"), "Work"));
-                    // add parameter with ref direction
-                    CodeDirectionExpression parameter = new CodeDirectionExpression(FieldDirection.Ref,
-                        new CodeVariableReferenceExpression("a"));
-                    methodinvoked.Parameters.Add(parameter);
-                    // add parameter with out direction
-                    parameter = new CodeDirectionExpression(FieldDirection.Out, new CodeVariableReferenceExpression("b"));
-                    methodinvoked.Parameters.Add(parameter);
-                    cmm.Statements.Add(methodinvoked);
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeBinaryOperatorExpression
-                        (new CodeVariableReferenceExpression("a"), CodeBinaryOperatorType.Add, new CodeVariableReferenceExpression("b"))));
-                    cd.Members.Add(cmm);
-                }
-
-                if (provider.Supports(GeneratorSupport.ReturnTypeAttributes))
-                {
-                    CodeMemberMethod function1 = new CodeMemberMethod();
-                    function1.Name = "MyFunction";
-                    function1.ReturnType = new CodeTypeReference(typeof(string));
-                    function1.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    function1.ReturnTypeCustomAttributes.Add(new
-                        CodeAttributeDeclaration("System.Xml.Serialization.XmlIgnoreAttribute"));
-                    function1.ReturnTypeCustomAttributes.Add(new CodeAttributeDeclaration("System.Xml.Serialization.XmlRootAttribute", new
-                        CodeAttributeArgument("Namespace", new CodePrimitiveExpression("Namespace Value")), new
-                        CodeAttributeArgument("ElementName", new CodePrimitiveExpression("Root, hehehe"))));
-                    function1.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression("Return")));
-                    cd.Members.Add(function1);
-                }
-
-                if (provider.Supports(GeneratorSupport.StaticConstructors))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "TestStaticConstructor";
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "a");
-                    cmm.Parameters.Add(param);
-                    // utilize constructor
-                    cmm.Statements.Add(new CodeVariableDeclarationStatement("Test4", "t", new CodeObjectCreateExpression("Test4")));
-                    // set then get number
-                    cmm.Statements.Add(new CodeAssignStatement(new CodePropertyReferenceExpression(new CodeVariableReferenceExpression("t"), "i")
-                        , new CodeVariableReferenceExpression("a")));
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeMethodReferenceExpression(
-                        new CodeVariableReferenceExpression("t"), "i")));
-                    cd.Members.Add(cmm);
-
-                    class1 = new CodeTypeDeclaration();
-                    class1.Name = "Test4";
-                    class1.IsClass = true;
-                    nspace.Types.Add(class1);
-
-                    class1.Members.Add(new CodeMemberField(new CodeTypeReference(typeof(int)), "number"));
-                    CodeMemberProperty prop = new CodeMemberProperty();
-                    prop.Name = "i";
-                    prop.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-                    prop.Type = new CodeTypeReference(typeof(int));
-                    prop.GetStatements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("number")));
-                    prop.SetStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("number"),
-                        new CodePropertySetValueReferenceExpression()));
-                    class1.Members.Add(prop);
-                    CodeTypeConstructor ctc = new CodeTypeConstructor();
-                    class1.Members.Add(ctc);
-                }
-
-                if (provider.Supports(GeneratorSupport.TryCatchStatements))
-                {
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "TryCatchMethod";
-                    cmm.ReturnType = new CodeTypeReference(typeof(int));
-                    cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-                    CodeParameterDeclarationExpression param = new CodeParameterDeclarationExpression(typeof(int), "a");
-                    cmm.Parameters.Add(param);
-
-                    CodeTryCatchFinallyStatement tcfstmt = new CodeTryCatchFinallyStatement();
-                    tcfstmt.FinallyStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("a"), new
-                        CodeBinaryOperatorExpression(new CodeVariableReferenceExpression("a"), CodeBinaryOperatorType.Add,
-                        new CodePrimitiveExpression(5))));
-                    cmm.Statements.Add(tcfstmt);
-                    cmm.Statements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression("a")));
-                    cd.Members.Add(cmm);
-                }
-
-                if (provider.Supports(GeneratorSupport.DeclareEvents))
-                {
-                    CodeNamespace ns = new CodeNamespace();
-                    ns.Name = "MyNamespace";
-                    ns.Imports.Add(new CodeNamespaceImport("System"));
-                    ns.Imports.Add(new CodeNamespaceImport("System.Drawing"));
-                    ns.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
-                    ns.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
-                    cu.Namespaces.Add(ns);
-                    class1 = new CodeTypeDeclaration("Test");
-                    class1.IsClass = true;
-                    class1.BaseTypes.Add(new CodeTypeReference("Form"));
-                    ns.Types.Add(class1);
-
-                    CodeMemberField mfield = new CodeMemberField(new CodeTypeReference("Button"), "b");
-                    mfield.InitExpression = new CodeObjectCreateExpression(new CodeTypeReference("Button"));
-                    class1.Members.Add(mfield);
-
-                    CodeConstructor ctor = new CodeConstructor();
-                    ctor.Attributes = MemberAttributes.Public;
-                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(),
-                        "Size"), new CodeObjectCreateExpression(new CodeTypeReference("Size"),
-                        new CodePrimitiveExpression(600), new CodePrimitiveExpression(600))));
-                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                        "Text"), new CodePrimitiveExpression("Test")));
-                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                        "TabIndex"), new CodePrimitiveExpression(0)));
-                    ctor.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("b"),
-                        "Location"), new CodeObjectCreateExpression(new CodeTypeReference("Point"),
-                        new CodePrimitiveExpression(400), new CodePrimitiveExpression(525))));
-                    ctor.Statements.Add(new CodeAttachEventStatement(new CodeEventReferenceExpression(new
-                        CodeThisReferenceExpression(), "MyEvent"), new CodeDelegateCreateExpression(new CodeTypeReference("EventHandler")
-                        , new CodeThisReferenceExpression(), "b_Click")));
-                    class1.Members.Add(ctor);
-
-                    CodeMemberEvent evt = new CodeMemberEvent();
-                    evt.Name = "MyEvent";
-                    evt.Type = new CodeTypeReference("System.EventHandler");
-                    evt.Attributes = MemberAttributes.Public;
-                    class1.Members.Add(evt);
-
-                    cmm = new CodeMemberMethod();
-                    cmm.Name = "b_Click";
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(object), "sender"));
-                    cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(EventArgs), "e"));
-                    class1.Members.Add(cmm);
-                }
-
-                AssertEqual(cu,
-                    @"'------------------------------------------------------------------------------
+                    AssertEqual(cu,
+                        @"'------------------------------------------------------------------------------
                       ' <auto-generated>
                       '     This code was generated by a tool.
                       '
@@ -3186,6 +3189,7 @@ namespace System.CodeDom.Compiler.Tests
                               End Sub
                           End Class
                       End Namespace");
+                }
             }).Dispose();
         }
 

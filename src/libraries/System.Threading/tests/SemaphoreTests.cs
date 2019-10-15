@@ -279,7 +279,7 @@ namespace System.Threading.Tests
             // Create the two semaphores and the other process with which to synchronize
             using (var inbound = new Semaphore(1, 1, inboundName))
             using (var outbound = new Semaphore(0, 1, outboundName))
-            using (var remote = RemoteExecutor.Invoke(new Func<string, string, int>(PingPong_OtherProcess), outboundName, inboundName))
+            using (var remote = RemoteExecutor.Invoke(new Action<string, string>(PingPong_OtherProcess), outboundName, inboundName))
             {
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
@@ -290,7 +290,7 @@ namespace System.Threading.Tests
             }
         }
 
-        private static int PingPong_OtherProcess(string inboundName, string outboundName)
+        private static void PingPong_OtherProcess(string inboundName, string outboundName)
         {
             // Open the two semaphores
             using (var inbound = Semaphore.OpenExisting(inboundName))
@@ -303,8 +303,6 @@ namespace System.Threading.Tests
                     outbound.Release();
                 }
             }
-
-            return RemoteExecutor.SuccessExitCode;
         }
 
         public static TheoryData<string> GetValidNames()

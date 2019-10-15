@@ -88,8 +88,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
                             Assert.Equal(expected: 0, actual: ce.CurrentCount);
                         });
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

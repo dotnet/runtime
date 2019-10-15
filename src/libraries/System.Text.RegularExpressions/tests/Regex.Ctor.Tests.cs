@@ -84,8 +84,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, true);
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -96,8 +94,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.Zero);
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

@@ -34,6 +34,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
+using System.Tests;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.DotNet.RemoteExecutor;
@@ -865,58 +866,53 @@ Assert.False(true);
         [Fact]
         public void PropertyExceptions()
         {
-            RemoteExecutor.Invoke(() =>
+            DataSet set = new DataSet();
+            DataTable table = new DataTable();
+            DataTable table1 = new DataTable();
+            set.Tables.Add(table);
+            set.Tables.Add(table1);
+
+            DataColumn col = new DataColumn();
+            col.ColumnName = "Id";
+            col.DataType = typeof(int);
+            table.Columns.Add(col);
+            UniqueConstraint uc = new UniqueConstraint("UK1", table.Columns[0]);
+            table.Constraints.Add(uc);
+            table.CaseSensitive = false;
+
+            col = new DataColumn();
+            col.ColumnName = "Name";
+            col.DataType = typeof(string);
+            table.Columns.Add(col);
+
+            col = new DataColumn();
+            col.ColumnName = "Id";
+            col.DataType = typeof(int);
+            table1.Columns.Add(col);
+            col = new DataColumn();
+            col.ColumnName = "Name";
+            col.DataType = typeof(string);
+            table1.Columns.Add(col);
+
+            DataRelation dr = new DataRelation("DR", table.Columns[0], table1.Columns[0]);
+            set.Relations.Add(dr);
+
+            Assert.Throws<ArgumentException>(() =>
             {
-                DataSet set = new DataSet();
-                DataTable table = new DataTable();
-                DataTable table1 = new DataTable();
-                set.Tables.Add(table);
-                set.Tables.Add(table1);
+                // Set to a different sensitivity than before: this breaks the DataRelation constraint
+                // because it is not the sensitivity of the related table
+                table.CaseSensitive = true;
+            });
 
-                DataColumn col = new DataColumn();
-                col.ColumnName = "Id";
-                col.DataType = typeof(int);
-                table.Columns.Add(col);
-                UniqueConstraint uc = new UniqueConstraint("UK1", table.Columns[0]);
-                table.Constraints.Add(uc);
-                table.CaseSensitive = false;
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // Set to a different culture than before: this breaks the DataRelation constraint
+                // because it is not the locale of the related table
+                CultureInfo cultureInfo = table.Locale.Name == "en-US" ? new CultureInfo("en-GB") : new CultureInfo("en-US");
+                table.Locale = cultureInfo;
+            });
 
-                col = new DataColumn();
-                col.ColumnName = "Name";
-                col.DataType = typeof(string);
-                table.Columns.Add(col);
-
-                col = new DataColumn();
-                col.ColumnName = "Id";
-                col.DataType = typeof(int);
-                table1.Columns.Add(col);
-                col = new DataColumn();
-                col.ColumnName = "Name";
-                col.DataType = typeof(string);
-                table1.Columns.Add(col);
-
-                DataRelation dr = new DataRelation("DR", table.Columns[0], table1.Columns[0]);
-                set.Relations.Add(dr);
-
-                Assert.Throws<ArgumentException>(() =>
-                {
-                    // Set to a different sensitivity than before: this breaks the DataRelation constraint
-                    // because it is not the sensitivity of the related table
-                    table.CaseSensitive = true;
-                });
-
-                Assert.Throws<ArgumentException>(() =>
-                {
-                    // Set to a different culture than before: this breaks the DataRelation constraint
-                    // because it is not the locale of the related table
-                    CultureInfo cultureInfo = table.Locale.Name == "en-US" ? new CultureInfo("en-GB") : new CultureInfo("en-US");
-                    table.Locale = cultureInfo;
-                });
-
-                Assert.Throws<DataException>(() => table.Prefix = "Prefix#1");
-
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+            Assert.Throws<DataException>(() => table.Prefix = "Prefix#1");
         }
 
         [Fact]
@@ -3332,86 +3328,85 @@ Assert.False(true);
         [Fact]
         public void WriteXmlSchema()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-GB");
+                using (new ThreadCultureChange("en-GB"))
+                {
+                    var ds = new DataSet();
+                    ds.ReadXml(new StringReader(DataProvider.region));
+                    TextWriter writer = new StringWriter();
+                    ds.Tables[0].WriteXmlSchema(writer);
 
-                var ds = new DataSet();
-                ds.ReadXml(new StringReader(DataProvider.region));
-                TextWriter writer = new StringWriter();
-                ds.Tables[0].WriteXmlSchema(writer);
+                    string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
+                    //string TextString = writer.ToString ();
 
-                string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
-                //string TextString = writer.ToString ();
+                    string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-                string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    // Looks like whoever added this test depended on English culture, which is wrong.
+                    Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" msdata:MainDataTable=\"Region\" name=\"Root\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                // Looks like whoever added this test depended on English culture, which is wrong.
-                Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" msdata:MainDataTable=\"Region\" name=\"Root\">", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("    <xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("    <xs:complexType>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("        <xs:element name=\"Region\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("        <xs:element name=\"Region\">", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("          <xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("          <xs:complexType>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("            <xs:sequence>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("            <xs:sequence>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("            </xs:sequence>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("            </xs:sequence>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("          </xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("          </xs:complexType>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("        </xs:element>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("        </xs:element>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("      </xs:choice>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("      </xs:choice>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("    </xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("    </xs:complexType>", substring);
+                    substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                    TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                    Assert.Equal("  </xs:element>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-                Assert.Equal("  </xs:element>", substring);
-
-                Assert.Equal("</xs:schema>", TextString);
-
-                return RemoteExecutor.SuccessExitCode;
+                    Assert.Equal("</xs:schema>", TextString);
+                }
             }).Dispose();
         }
 
@@ -4081,7 +4076,7 @@ Assert.False(true);
         [Fact]
         public void Bug82109()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 DataTable tbl = new DataTable();
                 tbl.Columns.Add("data", typeof(DateTime));
@@ -4089,16 +4084,20 @@ Assert.False(true);
                 row["Data"] = new DateTime(2007, 7, 1);
                 tbl.Rows.Add(row);
 
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Select(tbl);
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    Select(tbl);
+                }
 
-                CultureInfo.CurrentCulture = new CultureInfo("it-IT");
-                Select(tbl);
+                using (new ThreadCultureChange("it-IT"))
+                {
+                    Select(tbl);
+                }
 
-                CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
-                Select(tbl);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange("fr-FR"))
+                {
+                    Select(tbl);
+                }
             }).Dispose();
         }
 

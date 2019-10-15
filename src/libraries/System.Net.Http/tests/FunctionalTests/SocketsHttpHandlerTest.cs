@@ -1682,7 +1682,6 @@ namespace System.Net.Http.Functional.Tests
                     await releaseServer.Task;
                 }),
                 new LoopbackServer.Options { UseSsl = bool.Parse(secureString) });
-                return RemoteExecutor.SuccessExitCode;
             }, secure.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -2119,7 +2118,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal(bool.Parse(innerExpectedUseSocketsHandler), IsSocketsHttpHandler(handler));
                 }
-                return RemoteExecutor.SuccessExitCode;
             }, envVarValue, expectedUseSocketsHandler.ToString()).Dispose();
         }
 
@@ -2139,8 +2137,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.False(IsSocketsHttpHandler(handler));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -2167,8 +2163,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.True(IsSocketsHttpHandler(handler));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

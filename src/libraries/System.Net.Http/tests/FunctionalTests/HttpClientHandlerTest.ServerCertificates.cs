@@ -425,8 +425,6 @@ namespace System.Net.Http.Functional.Tests
                             useSocketsHttpHandlerString,
                             useHttp2String,
                             (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
-
-                        return RemoteExecutor.SuccessExitCode;
                     }, url, expectedErrors.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
                 }
                 else

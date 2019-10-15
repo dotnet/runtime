@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Common.Tests;
+using System.Tests;
 
 using Xunit;
 
@@ -183,16 +183,13 @@ namespace System.Net.Test.Uri.IriTest
             string[] results_en = new string[components.Length];
             string[] results_zh = new string[components.Length];
 
-
-            using (ThreadCultureChange helper = new ThreadCultureChange())
+            for (int i = 0; i < components.Length; i++)
             {
-                for (int i = 0; i < components.Length; i++)
-                {
-                    results_en[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
-                }
+                results_en[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
+            }
 
-                helper.ChangeCultureInfo("zh-cn");
-
+            using (new ThreadCultureChange("zh-cn"))
+            {
                 for (int i = 0; i < components.Length; i++)
                 {
                     results_zh[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
@@ -308,15 +305,13 @@ namespace System.Net.Test.Uri.IriTest
 
         private void MatchUTF8SequenceTest(byte[] inbytes, int numBytes)
         {
-            using (ThreadCultureChange helper = new ThreadCultureChange())
+            MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, false);
+            MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, true);
+            MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, false);
+            MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, true);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, false);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, true);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, false);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, true);
-
-                helper.ChangeCultureInfo("zh-cn");
-
                 MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, false);
                 MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, true);
                 MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, false);

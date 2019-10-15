@@ -20,7 +20,7 @@ namespace System.Tests
 
             File.WriteAllText(fileName, string.Empty);
 
-            Func<string, int> otherProcess = f =>
+            Action<string> otherProcess = f =>
             {
                 Action<int> OnUnloading = i => File.AppendAllText(f, string.Format("u{0}", i));
                 Action<int> OnProcessExit = i => File.AppendAllText(f, string.Format("e{0}", i));
@@ -31,8 +31,6 @@ namespace System.Tests
                 AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnProcessExit(1);
                 System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += acl => OnUnloading(1);
                 File.AppendAllText(f, "h");
-
-                return RemoteExecutor.SuccessExitCode;
             };
 
             using (var remote = RemoteExecutor.Invoke(otherProcess, fileName))

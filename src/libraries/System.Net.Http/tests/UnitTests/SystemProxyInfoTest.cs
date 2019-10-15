@@ -42,8 +42,6 @@ namespace System.Net.Http.Tests
 
                 HttpEnvironmentProxy envProxy = proxy as HttpEnvironmentProxy;
                 Assert.Null(envProxy);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -57,8 +55,6 @@ namespace System.Net.Http.Tests
                 IWebProxy proxy = SystemProxyInfo.ConstructSystemProxy();
                 HttpEnvironmentProxy envProxy = proxy as HttpEnvironmentProxy;
                 Assert.NotNull(envProxy);
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
     }

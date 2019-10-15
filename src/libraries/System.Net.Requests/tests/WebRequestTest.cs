@@ -40,8 +40,6 @@ namespace System.Net.Tests
 
                 WebRequest.DefaultWebProxy = p;
                 Assert.Same(p, WebRequest.DefaultWebProxy);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

@@ -323,8 +323,6 @@ namespace System.Tests
 
                    Assert.NotNull(t2);
                    Assert.Equal(t1, t2);
-
-                   return RemoteExecutor.SuccessExitCode;
                }, options).Dispose();
         }
 
@@ -337,8 +335,6 @@ namespace System.Tests
             {
                 Assert.Throws<TypeLoadException>(() => Type.GetType(marshalledTypeName, assemblyloader, typeloader, true));
                 Assert.Null(Type.GetType(marshalledTypeName, assemblyloader, typeloader, false));
-
-                return RemoteExecutor.SuccessExitCode;
             }, typeName).Dispose();
         }
 
@@ -367,8 +363,6 @@ namespace System.Tests
                   );
 
                    Assert.Null(t2);
-
-                   return RemoteExecutor.SuccessExitCode;
                }, options).Dispose();
         }
 
