@@ -4,7 +4,9 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System
 {
@@ -137,6 +139,233 @@ namespace System
             // UTF-8 data, otherwise the input strings aren't equivalent.
 
             return utf8Text.IsEmpty;
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains
+        /// <paramref name="value"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool Contains(char value)
+        {
+            return Rune.TryCreate(value, out Rune rune) && Contains(rune);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains
+        /// <paramref name="value"/>. The specified comparison is used.
+        /// </summary>
+        public bool Contains(char value, StringComparison comparison)
+        {
+            return Rune.TryCreate(value, out Rune rune) && Contains(rune, comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains
+        /// the specified <see cref="Rune"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool Contains(Rune value)
+        {
+            // TODO_UTF8STRING: This should be split into two methods:
+            // One which operates on a single-byte (ASCII) search value,
+            // the other which operates on a multi-byte (non-ASCII) search value.
+
+            Span<byte> runeBytes = stackalloc byte[Utf8Utility.MaxBytesPerScalar];
+            int runeBytesWritten = value.EncodeToUtf8(runeBytes);
+
+            return SpanHelpers.IndexOf(
+                ref DangerousGetMutableReference(), Length,
+                ref MemoryMarshal.GetReference(runeBytes), runeBytesWritten) >= 0;
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains
+        /// the specified <see cref="Rune"/>. The specified comparison is used.
+        /// </summary>
+        public bool Contains(Rune value, StringComparison comparison)
+        {
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().Contains(value.ToString(), comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains <paramref name="value"/>.
+        /// An ordinal comparison is used.
+        /// </summary>
+        public bool Contains(Utf8String value)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            return this.AsBytes().IndexOf(value.AsBytes()) >= 0;
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance contains <paramref name="value"/>.
+        /// The specified comparison is used.
+        /// </summary>
+        public bool Contains(Utf8String value, StringComparison comparison)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().Contains(value.ToString(), comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with
+        /// <paramref name="value"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool EndsWith(char value)
+        {
+            return Rune.TryCreate(value, out Rune rune) && EndsWith(rune);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with
+        /// <paramref name="value"/>. The specified comparison is used.
+        /// </summary>
+        public bool EndsWith(char value, StringComparison comparison)
+        {
+            return Rune.TryCreate(value, out Rune rune) && EndsWith(rune, comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with
+        /// the specified <see cref="Rune"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool EndsWith(Rune value)
+        {
+            // TODO_UTF8STRING: This should be split into two methods:
+            // One which operates on a single-byte (ASCII) search value,
+            // the other which operates on a multi-byte (non-ASCII) search value.
+
+            Span<byte> runeBytes = stackalloc byte[Utf8Utility.MaxBytesPerScalar];
+            int runeBytesWritten = value.EncodeToUtf8(runeBytes);
+
+            return this.AsBytes().EndsWith(runeBytes.Slice(0, runeBytesWritten));
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with
+        /// the specified <see cref="Rune"/>. The specified comparison is used.
+        /// </summary>
+        public bool EndsWith(Rune value, StringComparison comparison)
+        {
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().EndsWith(value.ToString(), comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with <paramref name="value"/>.
+        /// An ordinal comparison is used.
+        /// </summary>
+        public bool EndsWith(Utf8String value)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            return this.AsBytes().EndsWith(value.AsBytes());
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance ends with <paramref name="value"/>.
+        /// The specified comparison is used.
+        /// </summary>
+        public bool EndsWith(Utf8String value, StringComparison comparison)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().EndsWith(value.ToString(), comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with
+        /// <paramref name="value"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool StartsWith(char value)
+        {
+            return Rune.TryCreate(value, out Rune rune) && StartsWith(rune);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with
+        /// <paramref name="value"/>. The specified comparison is used.
+        /// </summary>
+        public bool StartsWith(char value, StringComparison comparison)
+        {
+            return Rune.TryCreate(value, out Rune rune) && StartsWith(rune, comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with
+        /// the specified <see cref="Rune"/>. An ordinal comparison is used.
+        /// </summary>
+        public bool StartsWith(Rune value)
+        {
+            // TODO_UTF8STRING: This should be split into two methods:
+            // One which operates on a single-byte (ASCII) search value,
+            // the other which operates on a multi-byte (non-ASCII) search value.
+
+            Span<byte> runeBytes = stackalloc byte[Utf8Utility.MaxBytesPerScalar];
+            int runeBytesWritten = value.EncodeToUtf8(runeBytes);
+
+            return this.AsBytes().StartsWith(runeBytes.Slice(0, runeBytesWritten));
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with
+        /// the specified <see cref="Rune"/>. The specified comparison is used.
+        /// </summary>
+        public bool StartsWith(Rune value, StringComparison comparison)
+        {
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().StartsWith(value.ToString(), comparison);
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with <paramref name="value"/>.
+        /// An ordinal comparison is used.
+        /// </summary>
+        public bool StartsWith(Utf8String value)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            return this.AsBytes().StartsWith(value.AsBytes());
+        }
+
+        /// <summary>
+        /// Returns a value stating whether the current <see cref="Utf8String"/> instance begins with <paramref name="value"/>.
+        /// The specified comparison is used.
+        /// </summary>
+        public bool StartsWith(Utf8String value, StringComparison comparison)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            // TODO_UTF8STRING: Optimize me to avoid allocations.
+
+            return this.ToString().StartsWith(value.ToString(), comparison);
         }
     }
 }

@@ -391,7 +391,7 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new <see cref="Utf8String"/> representation of this <see cref="Rune"/>.
+        /// Returns a <see cref="Utf8String"/> representation of this <see cref="Rune"/> instance.
         /// </summary>
         public static Utf8String ToUtf8String(this Rune rune) => Utf8String.CreateFromRune(rune);
     }

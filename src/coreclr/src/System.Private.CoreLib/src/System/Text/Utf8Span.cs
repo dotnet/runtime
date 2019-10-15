@@ -58,7 +58,10 @@ namespace System.Text
 
         public bool IsEmpty => Bytes.IsEmpty;
 
-        internal int Length => Bytes.Length;
+        /// <summary>
+        /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
+        /// </summary>
+        public int Length => Bytes.Length;
 
         public Utf8Span this[Range range]
         {
@@ -143,9 +146,7 @@ namespace System.Text
             // TODO_UTF8STRING: This perf can be improved, including removing
             // the virtual dispatch by putting the switch directly in this method.
 
-            // TODO_UTF8STRING: To avoid allocations, use Utf8StringComparer instead of StringComparer once it's submitted.
-
-            return StringComparer.FromComparison(comparison).Equals(left.ToString(), right.ToString());
+            return Utf8StringComparer.FromComparison(comparison).Equals(left, right);
         }
 
         public override int GetHashCode()
@@ -163,9 +164,7 @@ namespace System.Text
             // TODO_UTF8STRING: This perf can be improved, including removing
             // the virtual dispatch by putting the switch directly in this method.
 
-            // TODO_UTF8STRING: To avoid allocations, use Utf8StringComparer instead of StringComparer once it's submitted.
-
-            return StringComparer.FromComparison(comparison).GetHashCode(this.ToString());
+            return Utf8StringComparer.FromComparison(comparison).GetHashCode(this);
         }
 
         /// <summary>
@@ -174,7 +173,7 @@ namespace System.Text
         /// </summary>
         /// <remarks>
         /// ASCII text is defined as text consisting only of scalar values in the range [ U+0000..U+007F ].
-        /// The runtime of this method is O(n).
+        /// Empty spans are considered to be all-ASCII. The runtime of this method is O(n).
         /// </remarks>
         public bool IsAscii()
         {
@@ -189,6 +188,13 @@ namespace System.Text
             }
         }
 
+        /// <summary>
+        /// Returns a value stating whether this <see cref="Utf8Span"/> instance is normalized
+        /// using the specified Unicode normalization form.
+        /// </summary>
+        /// <param name="normalizationForm">The <see cref="NormalizationForm"/> to check.</param>
+        /// <returns><see langword="true"/> if this <see cref="Utf8Span"/> instance represents text
+        /// normalized under <paramref name="normalizationForm"/>, otherwise <see langword="false"/>.</returns>
         public bool IsNormalized(NormalizationForm normalizationForm = NormalizationForm.FormC)
         {
             // TODO_UTF8STRING: Avoid allocations in this code path.
@@ -262,7 +268,7 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
-            return new Utf8String(Bytes);
+            return Utf8String.UnsafeCreateWithoutValidation(Bytes);
         }
 
         /// <summary>

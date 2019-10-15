@@ -57,6 +57,11 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.
+        /// </summary>
+        public byte[] ToByteArray() => Bytes.ToArray();
+
+        /// <summary>
         /// Converts this <see cref="Utf8Span"/> to a <see langword="char[]"/>.
         /// </summary>
         public unsafe char[] ToCharArray()
