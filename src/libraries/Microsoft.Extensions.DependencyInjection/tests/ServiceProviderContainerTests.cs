@@ -121,6 +121,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<IFakeService, FakeService>();
+            serviceCollection.AddSingleton<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void ResolvesServiceMixedServiceAndOptionalStructConstructorArgumentsReliably()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IFakeService, FakeService>();
             serviceCollection.AddTransient<ClassWithServiceAndOptionalArgsCtorWithStructs>();
 
             var provider = CreateServiceProvider(serviceCollection);
@@ -130,7 +142,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
 
                 Assert.NotNull(service);
-                Assert.Equal(default, service.DateTimeDefault);
+                Assert.Equal(new DateTime(), service.DateTime);
+                Assert.Equal(default(DateTime), service.DateTimeDefault);
+                Assert.Equal(new TimeSpan(), service.TimeSpan);
+                Assert.Equal(default(TimeSpan), service.TimeSpanDefault);
+                Assert.Equal(new DateTimeOffset(), service.DateTimeOffset);
+                Assert.Equal(default(DateTimeOffset), service.DateTimeOffsetDefault);
+                Assert.Equal(new Guid(), service.Guid);
+                Assert.Equal(default(Guid), service.GuidDefault);
+                Assert.Equal(new ClassWithServiceAndOptionalArgsCtorWithStructs.CustomStruct(), service.CustomStructValue);
+                Assert.Equal(default(ClassWithServiceAndOptionalArgsCtorWithStructs.CustomStruct), service.CustomStructDefault);
             }
         }
 
