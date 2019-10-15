@@ -744,7 +744,7 @@ namespace System
             }
             return false;
         }
-        
+
         // "Reserved" and "Unreserved" characters are based on RFC 3986.
 
         internal static ReadOnlySpan<bool> UnreservedReservedTable => new bool[0x80]
