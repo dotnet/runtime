@@ -1,7 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.props))" />
-
   <!-- Generate rsp -->
   <Import Project="GenerateCompilerResponseFile.targets" />
 
@@ -317,7 +315,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-    <Compile Include="$(IntermediateOutputPath)../Eventing/NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' AND '$(BuildingInsideVisualStudio)' != 'true' " />
+    <Compile Include="$(IntermediateOutputPath)../../../Eventing/$(Platform)/$(Configuration)/NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' AND '$(BuildingInsideVisualStudio)' != 'true' " />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />

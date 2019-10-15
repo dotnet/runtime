@@ -179,8 +179,7 @@ restore_optdata()
 
 generate_event_logging_sources()
 {
-    __OutputDir=$1
-    __OutputEventingDir="$__OutputDir/Eventing"
+    __OutputEventingDir=$1
 
     __PythonWarningFlags="-Wall"
     if [[ $__IgnoreWarnings == 0 ]]; then
@@ -195,7 +194,7 @@ generate_event_logging()
 {
     # Event Logging Infrastructure
     if [[ $__SkipMSCorLib == 0 ]]; then
-        generate_event_logging_sources "$__IntermediatesDir"
+        generate_event_logging_sources "$__ArtifactsIntermediatesDir/Eventing/$__BuildArch/$__BuildType"
     fi
 }
 
@@ -236,7 +235,7 @@ build_native()
             pwd
             "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $__ProjectRoot/eng/empty.csproj \
                                                    /p:NativeVersionFile=$__versionSourceFile \
-                                                   /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore \
+                                                   /t:GenerateNativeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__UnprocessedBuildArgs
         local exit_code=$?
         if [ $exit_code != 0 ]; then
@@ -419,7 +418,7 @@ build_CoreLib()
 
     "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
-                                           /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true /p:ArcadeBuild=true\
+                                           /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
@@ -432,7 +431,7 @@ build_CoreLib()
 
     "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
-                                           /p:PortableBuild=true /maxcpucount /p:ArcadeBuild=true\
+                                           /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
@@ -520,7 +519,7 @@ generate_NugetPackages()
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     $__ProjectRoot/eng/common/build.sh -r -b -projects $__SourceDir/.nuget/packages.builds \
                                        -verbosity minimal -bl:$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog \
-                                       /p:PortableBuild=true /p:ArcadeBuild=true \
+                                       /p:PortableBuild=true \
                                        /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:__DoCrossArchBuild=$__CrossBuild \
                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
 
@@ -1020,6 +1019,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
+export __ArtifactsIntermediatesDir="$__ProjectDir/artifacts/obj"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 

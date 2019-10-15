@@ -1,6 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.props))" />
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>

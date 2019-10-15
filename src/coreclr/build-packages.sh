@@ -128,7 +128,7 @@ fi
 logFile=$__ProjectRoot/bin/Logs/build-packages.binlog
 $__ProjectRoot/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
-                                   /p:__BuildOS=$__BuildOS /p:ArcadeBuild=true \
+                                   /p:__BuildOS=$__BuildOS \
                                    /p:PortableBuild=true /p:__DistroRid=$__DistroRid \
                                    $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]

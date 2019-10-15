@@ -1,3 +1,0 @@
-Microsoft.CodeAnalysis
-Microsoft.CodeAnalysis.CSharp
-System.Private.CoreLib
