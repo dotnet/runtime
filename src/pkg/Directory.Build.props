@@ -24,8 +24,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackagingToolsDir>$(MSBuildThisFileDirectory)packaging-tools/</PackagingToolsDir>
-
     <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
 
     <RpmTemplatesDir>$(MSBuildThisFileDirectory)packaging/rpm/templates/</RpmTemplatesDir>
@@ -54,15 +52,6 @@
       off to avoid producing redundant packages.
     -->
     <BuildDistroIndependentInstallers Condition="'$(BuildDistroIndependentInstallers)' == ''">true</BuildDistroIndependentInstallers>
-
-    <WixVersion>3.10.4</WixVersion>
-    <WixToolsDir>$(IntermediateOutputRootPath)WixTools.$(WixVersion)/</WixToolsDir>
-    <!-- Used in WiX targets to locate files. -->
-    <WixInstallPath>$(WixToolsDir)</WixInstallPath>
-    <WixTargetsPath>$(WixToolsDir)wix.targets</WixTargetsPath>
-    <WixObjRoot>$(IntermediateOutputRootPath)wix/</WixObjRoot>
-    <WixObjDir>$(WixObjRoot)$(MSBuildProjectName)/</WixObjDir>
-    <MsiArch>$(TargetArchitecture)</MsiArch>
 
     <!--
       Allow packaging one build's outputs for a different RID. For example, package portable bits

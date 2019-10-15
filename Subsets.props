@@ -94,6 +94,16 @@
 
   <ItemGroup>
     <SubsetName
+      Include="sfxproj"
+      Description="The shared framework projects. These put together the NETCoreApp shared framework and its installers." />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SubsetToLower)' == '' or $(SubsetToLower.Contains('sfxproj'))">
+    <SfxprojProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.sfxproj" SignPhase="MsiFiles" />
+    <ProjectToBuild Include="@(SfxprojProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SubsetName
       Include="Bundle"
       Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
   </ItemGroup>

@@ -96,24 +96,6 @@
              Importance="High" />
   </Target>
 
-  <!--
-    Acquire WiX tools, if not present.
-  -->
-  <Target Name="AcquireWix"
-          DependsOnTargets="GetAcquireWixProperties">
-    <MSBuild Projects="$(AcquireWixProjectFile)" Targets="AcquireWixCore" />
-  </Target>
-
-  <Target Name="GetAcquireWixProperties">
-    <PropertyGroup>
-      <AcquireWixProjectFile>$(PackagingToolsDir)acquire-wix\acquire-wix.proj</AcquireWixProjectFile>
-      <WixDownloadFilename>wix.$(WixVersion).zip</WixDownloadFilename>
-      <WixDownloadUrl>https://dotnetcli.azureedge.net/build/wix/$(WixDownloadFilename)</WixDownloadUrl>
-      <WixDestinationPath>$(WixToolsDir)$(WixDownloadFilename)</WixDestinationPath>
-      <WixDownloadSentinel>$(WixToolsDir)WixDownload.$(WixVersion).sentinel</WixDownloadSentinel>
-    </PropertyGroup>
-  </Target>
-
   <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
   <Target Name="GenerateMsiVersionString">

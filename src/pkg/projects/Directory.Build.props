@@ -1,21 +1,21 @@
 <Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+
   <PropertyGroup>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
-    
+
     <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(RuntimeIdentifier)</PackageTargetRuntime>
 
-    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <BuildRuntimePackages Condition="'$(BuildRuntimePackages)' == ''">true</BuildRuntimePackages>
+    <BuildLineupPackage Condition="'$(BuildLineupPackage)' == ''">true</BuildLineupPackage>
 
-    <BuildRuntimePackages>true</BuildRuntimePackages>
-    <BuildLineupPackage>true</BuildLineupPackage>
-
-    <PackProjectDependencies>true</PackProjectDependencies>
+    <PackProjectDependencies Condition="'$(PackProjectDependencies)' == ''">true</PackProjectDependencies>
 
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
@@ -68,10 +68,9 @@
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <SkipValidatePackage>true</SkipValidatePackage>
-    <IncludeRuntimeJson>true</IncludeRuntimeJson>
+    <IncludeRuntimeJson Condition="'$(IncludeRuntimeJson)' == ''">true</IncludeRuntimeJson>
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
-
-  <Import Project="$(PackagingToolsDir)packaging-tools.props" />
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
     <!--
