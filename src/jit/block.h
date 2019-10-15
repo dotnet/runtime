@@ -95,8 +95,8 @@ struct EHblkDsc;
  */
 struct BBswtDesc
 {
-    unsigned     bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
     BasicBlock** bbsDstTab; // case label table address
+    unsigned     bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
     bool         bbsHasDefault;
 
     BBswtDesc() : bbsHasDefault(true)
