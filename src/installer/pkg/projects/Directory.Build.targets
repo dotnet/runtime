@@ -1,10 +1,10 @@
 <Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 
-  <Import Project="$(PackagingToolsDir)packaging-tools.targets" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
 
   <PropertyGroup>
     <!--
