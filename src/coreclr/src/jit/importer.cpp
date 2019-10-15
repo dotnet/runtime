@@ -4801,7 +4801,7 @@ typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd, bool bashStructT
 }
 
 /******************************************************************************/
-BOOL Compiler::verIsSDArray(typeInfo ti)
+BOOL Compiler::verIsSDArray(const typeInfo& ti)
 {
     if (ti.IsNullObjRef())
     { // nulls are SD arrays
@@ -4824,7 +4824,7 @@ BOOL Compiler::verIsSDArray(typeInfo ti)
 /* Given 'arrayObjectType' which is an array type, fetch the element type. */
 /* Returns an error type if anything goes wrong */
 
-typeInfo Compiler::verGetArrayElemType(typeInfo arrayObjectType)
+typeInfo Compiler::verGetArrayElemType(const typeInfo& arrayObjectType)
 {
     assert(!arrayObjectType.IsNullObjRef()); // you need to check for null explicitly since that is a success case
 
@@ -4949,7 +4949,7 @@ BOOL Compiler::verIsBoxable(const typeInfo& ti)
 }
 
 // Is it a boxed value type?
-bool Compiler::verIsBoxedValueType(typeInfo ti)
+bool Compiler::verIsBoxedValueType(const typeInfo& ti)
 {
     if (ti.GetType() == TI_REF)
     {
@@ -16003,7 +16003,7 @@ void Compiler::impPushVar(GenTree* op, typeInfo tiRetVal)
 
 // Load a local/argument on the operand stack
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
-void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, typeInfo tiRetVal)
+void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
 {
     var_types lclTyp;
 
@@ -20531,7 +20531,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 //
 // Return Value:
 //    pointer to token into jit-allocated memory.
-CORINFO_RESOLVED_TOKEN* Compiler::impAllocateToken(CORINFO_RESOLVED_TOKEN token)
+CORINFO_RESOLVED_TOKEN* Compiler::impAllocateToken(const CORINFO_RESOLVED_TOKEN& token)
 {
     CORINFO_RESOLVED_TOKEN* memory = getAllocator(CMK_Unknown).allocate<CORINFO_RESOLVED_TOKEN>(1);
     *memory                        = token;
