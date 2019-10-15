@@ -45,7 +45,7 @@ checkedPossibleDirectoryToBuild=false
 
 # Check if an action is passed in
 declare -a actions=("r" "restore" "b" "build" "rebuild" "t" "test" "buildtests")
-actInt=($(comm -8 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build"
 fi
