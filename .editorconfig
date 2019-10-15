@@ -10,6 +10,7 @@ root = true
 insert_final_newline = true
 indent_style = space
 indent_size = 4
+trim_trailing_whitespace = true
 
 [project.json]
 indent_size = 2
@@ -63,6 +64,7 @@ dotnet_naming_rule.static_fields_should_have_prefix.symbols  = static_fields
 dotnet_naming_rule.static_fields_should_have_prefix.style    = static_prefix_style
 dotnet_naming_symbols.static_fields.applicable_kinds   = field
 dotnet_naming_symbols.static_fields.required_modifiers = static
+dotnet_naming_symbols.static_fields.applicable_accessibilities = private, internal, private_protected
 dotnet_naming_style.static_prefix_style.required_prefix = s_
 dotnet_naming_style.static_prefix_style.capitalization = camel_case 
 
@@ -77,7 +79,7 @@ dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
 
 # Code style defaults
 csharp_using_directive_placement = outside_namespace:suggestion
-dotnet_sort_system_directives_first = true:suggestion
+dotnet_sort_system_directives_first = true
 csharp_prefer_braces = true:refactoring
 csharp_preserve_single_line_blocks = true:none
 csharp_preserve_single_line_statements = false:none
