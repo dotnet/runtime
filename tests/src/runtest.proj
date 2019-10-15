@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="src\dir.props" />
-  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" />
+  <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -139,7 +138,7 @@ $(_XunitEpilog)
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
-  <Import Project="testgrouping.proj" />
+  <Import Project="$(MSBuildThisFileDirectory)../testgrouping.proj" />
 
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
@@ -363,8 +362,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <DesiredPackageVersionArg>$(VersionToRestore)</DesiredPackageVersionArg>
   </PropertyGroup>
 
-  <Import Project="tests.targets" />
-  <Import Project="publishdependency.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)../tests.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)../publishdependency.targets" />
 
   <PropertyGroup>
     <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</DesiredPackageVersionArg>
@@ -381,7 +380,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
    -->
 
   <Target Name="CreateTestHost">
-    <MSBuild Projects="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.csproj"
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\CoreFX\CoreFX.csproj"
              Targets="SetupTestingHost"
              Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath)" />
   </Target>
@@ -389,7 +388,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="Build">
 
     <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Default for building -->
@@ -413,6 +412,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

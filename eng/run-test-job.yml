@@ -243,7 +243,7 @@ jobs:
         ${{ if eq(parameters.corefxTests, true) }}:
           helixProjectArguments: 'eng/helixcorefxtests.proj'
         ${{ if ne(parameters.corefxTests, true) }}:
-          helixProjectArguments: 'tests/helixpublishwitharcade.proj'
+          helixProjectArguments: 'tests/src/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
@@ -355,3 +355,12 @@ jobs:
           scenarios:
           - jitelthookenabled
           - jitelthookenabled_tiered
+
+    # Publish Logs
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
+        artifactName: ${{ format('TestRunLogs_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.managedTestBuildOsGroup, parameters.managedTestBuildOsSubgroup, parameters.testGroup) }}
+      continueOnError: true
+      condition: always()

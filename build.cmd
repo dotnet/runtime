@@ -302,6 +302,7 @@ if /i %__BuildType% NEQ Release set __RestoreOptData=0
 
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__ArtifactsIntermediatesDir=%__ProjectDir%\artifacts\obj\"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
@@ -320,6 +321,9 @@ if not exist "%__BinDir%"              md "%__BinDir%"
 if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"             md "%__LogsDir%"
 if not exist "%__MsbuildDebugLogsDir%" md "%__MsbuildDebugLogsDir%"
+
+if not exist "%__RootBinDir%\Directory.Build.props" copy %__ProjectDir%\EmptyProps.props %__RootBinDir%\Directory.Build.props
+if not exist "%__RootBinDir%\Directory.Build.targets" copy %__ProjectDir%\EmptyProps.props %__RootBinDir%\Directory.Build.targets
 
 REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
@@ -365,7 +369,7 @@ REM ============================================================================
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     %__ProjectDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
-    /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore^
+    /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
@@ -430,7 +434,7 @@ REM ===
 REM =========================================================================================
 
 set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
-set __IntermediatesEventingDir=%__IntermediatesDir%\Eventing
+set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__BuildArch%\%__BuildType%
 
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
@@ -629,7 +633,7 @@ if %__BuildCoreLib% EQU 1 (
 
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
-            /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true /p:ArcadeBuild=true^
+            /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies restore failed. Refer to the build log files for details.
@@ -642,7 +646,7 @@ if %__BuildCoreLib% EQU 1 (
         REM Disable warnAsError to work around VS bug (948084) where ucrt lib path is not set properly, resulting in CS1668
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj -warnAsError:0^
-            /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:ArcadeBuild=true^
+            /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
@@ -864,7 +868,7 @@ if %__BuildPackages% EQU 1 (
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
         -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
-        /p:PortableBuild=true /p:ArcadeBuild=true^
+        /p:PortableBuild=true^
         /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Nuget package generation failed. Refer to the build log file for details.

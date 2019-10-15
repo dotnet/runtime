@@ -1,19 +1,5 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <!-- NuGet package restore sources. -->
-  <PropertyGroup>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
-      https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
-      https://api.nuget.org/v3/index.json;
-      $(RestoreSources)
-    </RestoreSources>
-  </PropertyGroup>
-
-  <!-- [ARCADE REMOVE] Versions.props is imported by Arcade SDK targets when building with Arcade -->
-  <Import Project="eng/Versions.props" Condition="'$(ArcadeBuild)' != 'true'" />
-
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreClrCurrentRef>5d3c9a7c54c1c59b764de0e2dfb6bbb4ce29476c</CoreClrCurrentRef>
