@@ -1274,7 +1274,7 @@ private:
 
     struct VNDefFunc2ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc2Arg>
     {
-        static unsigned GetHashCode(VNDefFunc2Arg val)
+        static unsigned GetHashCode(const VNDefFunc2Arg& val)
         {
             return (val.m_func << 24) + (val.m_arg0 << 8) + val.m_arg1;
         }
@@ -1292,7 +1292,7 @@ private:
 
     struct VNDefFunc3ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc3Arg>
     {
-        static unsigned GetHashCode(VNDefFunc3Arg val)
+        static unsigned GetHashCode(const VNDefFunc3Arg& val)
         {
             return (val.m_func << 24) + (val.m_arg0 << 16) + (val.m_arg1 << 8) + val.m_arg2;
         }
@@ -1310,7 +1310,7 @@ private:
 
     struct VNDefFunc4ArgKeyFuncs : public JitKeyFuncsDefEquals<VNDefFunc4Arg>
     {
-        static unsigned GetHashCode(VNDefFunc4Arg val)
+        static unsigned GetHashCode(const VNDefFunc4Arg& val)
         {
             return (val.m_func << 24) + (val.m_arg0 << 16) + (val.m_arg1 << 8) + val.m_arg2 + (val.m_arg3 << 12);
         }

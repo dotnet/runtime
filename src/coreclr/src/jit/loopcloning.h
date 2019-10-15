@@ -327,8 +327,8 @@ struct LC_Ident
         Null,
     };
 
-    unsigned  constant; // The constant value if this node is of type "Const", or the lcl num if "Var"
     LC_Array  arrLen;   // The LC_Array if the type is "ArrLen"
+    unsigned  constant; // The constant value if this node is of type "Const", or the lcl num if "Var"
     IdentType type;     // The type of this object
 
     // Equality operator
