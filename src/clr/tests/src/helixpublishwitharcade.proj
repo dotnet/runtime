@@ -5,6 +5,7 @@
        to send test jobs to helix. -->
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
+  <Import Project="Directory.Build.props" Condition=" '$(UsesHelixSdk)' != 'true' "/>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
@@ -54,8 +55,6 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
-  <Import Project="src\dir.props" />
-
   <PropertyGroup>
     <BinDir>$([MSBuild]::NormalizeDirectory($(BinDir)))</BinDir>
     <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
@@ -64,7 +63,7 @@
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
-  <Import Project="testgrouping.proj" />
+  <Import Project="../testgrouping.proj" />
 
   <Target Name="DiscoverAllXUnitWrappers">
     <ItemGroup>
@@ -137,7 +136,7 @@
 
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
-      <_ProjectsToBuild Include="testenvironment.proj">
+      <_ProjectsToBuild Include="../testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>

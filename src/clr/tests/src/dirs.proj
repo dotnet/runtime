@@ -1,5 +1,5 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="dir.props" />
+  <Import Project="Directory.Build.props" />
 
   <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects;CopyAllNativeTestProjectBinaries" >
     <ItemGroup>
