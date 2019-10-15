@@ -146,8 +146,6 @@ namespace System.Net.Http.Functional.Tests
                         string body = await response.Content.ReadAsStringAsync();
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
-
-                    return RemoteExecutor.SuccessExitCode;
                 }
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }

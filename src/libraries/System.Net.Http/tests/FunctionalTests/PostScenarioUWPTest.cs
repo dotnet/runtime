@@ -42,8 +42,6 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -66,8 +64,6 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -94,8 +90,6 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
                     }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -122,8 +116,6 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
                     }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -150,8 +142,6 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
                     }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
     }

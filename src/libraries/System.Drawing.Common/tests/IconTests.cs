@@ -643,7 +643,6 @@ namespace System.Drawing.Tests
                 {
                     AppContext.SetSwitch(DontSupportPngFramesInIcons, false);
                     VerifyPng();
-                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
             else
@@ -670,7 +669,6 @@ namespace System.Drawing.Tests
                 {
                     AppContext.SetSwitch(DontSupportPngFramesInIcons, true);
                     VerifyPngNotSupported();
-                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
             else

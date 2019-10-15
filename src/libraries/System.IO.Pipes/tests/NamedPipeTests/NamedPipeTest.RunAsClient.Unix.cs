@@ -32,15 +32,15 @@ namespace System.IO.Pipes.Tests
         {
             string pipeName = Path.GetRandomFileName();
             uint pairID = (uint)(Math.Abs(new Random(5125123).Next()));
-            RemoteExecutor.Invoke(new Func<string, string, int>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
+            RemoteExecutor.Invoke(new Action<string, string>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
         }
 
-        private static int ServerConnectAsId(string pipeName, string pairIDString)
+        private static void ServerConnectAsId(string pipeName, string pairIDString)
         {
             uint pairID = uint.Parse(pairIDString);
             Assert.NotEqual(-1, seteuid(pairID));
             using (var outbound = new NamedPipeServerStream(pipeName, PipeDirection.Out))
-            using (var handle = RemoteExecutor.Invoke(new Func<string, string, int>(ClientConnectAsID), pipeName, pairIDString))
+            using (var handle = RemoteExecutor.Invoke(new Action<string, string>(ClientConnectAsID), pipeName, pairIDString))
             {
                 // Connect as the unpriveleged user, but RunAsClient as the superuser
                 outbound.WaitForConnection();
@@ -55,10 +55,9 @@ namespace System.IO.Pipes.Tests
                 Assert.True(ran, "Expected delegate to have been invoked");
                 Assert.Equal(pairID, ranAs);
             }
-            return RemoteExecutor.SuccessExitCode;
         }
 
-        private static int ClientConnectAsID(string pipeName, string pairIDString)
+        private static void ClientConnectAsID(string pipeName, string pairIDString)
         {
             uint pairID = uint.Parse(pairIDString);
             using (var inbound = new NamedPipeClientStream(".", pipeName, PipeDirection.In))
@@ -66,7 +65,6 @@ namespace System.IO.Pipes.Tests
                 Assert.NotEqual(-1, seteuid(pairID));
                 inbound.Connect();
             }
-            return RemoteExecutor.SuccessExitCode;
         }
     }
 }

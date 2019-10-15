@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Tests;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -294,22 +295,24 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteMisc()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
-                var sw = new StringWriter();
+                using (new ThreadCultureChange("en-US")) // floating-point formatting comparison depends on culture
+                {
+                    var sw = new StringWriter();
 
-                sw.Write(true);
-                sw.Write((char)'a');
-                sw.Write(new decimal(1234.01));
-                sw.Write((double)3452342.01);
-                sw.Write((int)23456);
-                sw.Write((long)long.MinValue);
-                sw.Write((float)1234.50f);
-                sw.Write((uint)uint.MaxValue);
-                sw.Write((ulong)ulong.MaxValue);
+                    sw.Write(true);
+                    sw.Write((char)'a');
+                    sw.Write(new decimal(1234.01));
+                    sw.Write((double)3452342.01);
+                    sw.Write((int)23456);
+                    sw.Write((long)long.MinValue);
+                    sw.Write((float)1234.50f);
+                    sw.Write((uint)uint.MaxValue);
+                    sw.Write((ulong)ulong.MaxValue);
 
-                Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
+                    Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
+                }
             }).Dispose();
         }
 
@@ -324,21 +327,23 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteLineMisc()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
-                var sw = new StringWriter();
-                sw.WriteLine((bool)false);
-                sw.WriteLine((char)'B');
-                sw.WriteLine((int)987);
-                sw.WriteLine((long)875634);
-                sw.WriteLine((float)1.23457f);
-                sw.WriteLine((uint)45634563);
-                sw.WriteLine((ulong.MaxValue));
+                using (new ThreadCultureChange("en-US")) // floating-point formatting comparison depends on culture
+                {
+                    var sw = new StringWriter();
+                    sw.WriteLine((bool)false);
+                    sw.WriteLine((char)'B');
+                    sw.WriteLine((int)987);
+                    sw.WriteLine((long)875634);
+                    sw.WriteLine((float)1.23457f);
+                    sw.WriteLine((uint)45634563);
+                    sw.WriteLine((ulong.MaxValue));
 
-                Assert.Equal(
-                    string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),
-                    sw.ToString());
+                    Assert.Equal(
+                        string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),
+                        sw.ToString());
+                }
             }).Dispose();
         }
 

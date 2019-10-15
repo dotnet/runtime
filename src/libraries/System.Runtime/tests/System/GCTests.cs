@@ -465,7 +465,6 @@ namespace System.Tests
                     GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
                     Assert.Throws<ArgumentNullException>(() => GC.GetGeneration(weakref));
 #endif
-                    return RemoteExecutor.SuccessExitCode;
                 }, options).Dispose();
 
         }
@@ -504,7 +503,6 @@ namespace System.Tests
             RemoteExecutor.Invoke((approachString, timeoutString) =>
                 {
                     TestWait(bool.Parse(approachString), int.Parse(timeoutString));
-                    return RemoteExecutor.SuccessExitCode;
                 }, approach.ToString(), timeout.ToString(), options).Dispose();
         }
 
@@ -517,7 +515,6 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
                 {
                     Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-                    return RemoteExecutor.SuccessExitCode;
                 }, options).Dispose();
         }
 
@@ -546,7 +543,6 @@ namespace System.Tests
                     // at this point, the GC should have booted us out of the no GC region
                     // since we allocated too much.
                     Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-                    return RemoteExecutor.SuccessExitCode;
                 }, options).Dispose();
         }
 
@@ -562,8 +558,6 @@ namespace System.Tests
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
 
@@ -579,8 +573,6 @@ namespace System.Tests
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
 
@@ -596,8 +588,6 @@ namespace System.Tests
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
 
@@ -613,8 +603,6 @@ namespace System.Tests
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
 
@@ -636,8 +624,6 @@ namespace System.Tests
                 Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
 
                 GC.EndNoGCRegion();
-
-                return RemoteExecutor.SuccessExitCode;
             }, options).Dispose();
         }
 
@@ -649,13 +635,9 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteExecutor.Invoke(() =>
                 {
-
                     Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget));
                     Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                     GC.EndNoGCRegion();
-
-                    return RemoteExecutor.SuccessExitCode;
-
                 }, options).Dispose();
         }
 
@@ -670,9 +652,6 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
                 Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
-
-                return RemoteExecutor.SuccessExitCode;
-
             }, options).Dispose();
         }
 
@@ -687,9 +666,6 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
                 Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
-
-                return RemoteExecutor.SuccessExitCode;
-
             }, options).Dispose();
         }
 
@@ -704,9 +680,6 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
                 Assert.Equal(GCLatencyMode.NoGCRegion, GCSettings.LatencyMode);
                 GC.EndNoGCRegion();
-
-                return RemoteExecutor.SuccessExitCode;
-
             }, options).Dispose();
         }
 
@@ -721,7 +694,6 @@ namespace System.Tests
             RemoteExecutor.Invoke(sizeString =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("totalSize", () => GC.TryStartNoGCRegion(long.Parse(sizeString)));
-                return RemoteExecutor.SuccessExitCode;
             }, size.ToString(), options).Dispose();
         }
 
@@ -737,7 +709,6 @@ namespace System.Tests
             RemoteExecutor.Invoke(sizeString =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("lohSize", () => GC.TryStartNoGCRegion(1024, long.Parse(sizeString)));
-                return RemoteExecutor.SuccessExitCode;
             }, size.ToString(), options).Dispose();
         }
 

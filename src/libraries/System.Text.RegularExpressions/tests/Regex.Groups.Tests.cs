@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -677,84 +678,84 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void GroupsEnUS()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = s_enUSCulture;
-                foreach (object[] testCase in Groups_CustomCulture_TestData_enUS())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(s_enUSCulture))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_CustomCulture_TestData_enUS())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void GroupsCzech()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = s_czechCulture;
-                foreach (object[] testCase in Groups_CustomCulture_TestData_Czech())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(s_czechCulture))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_CustomCulture_TestData_Czech())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void GroupsDanish()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = s_danishCulture;
-                foreach (object[] testCase in Groups_CustomCulture_TestData_Danish())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(s_danishCulture))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_CustomCulture_TestData_Danish())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void GroupsTurkish()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = s_turkishCulture;
-                foreach (object[] testCase in Groups_CustomCulture_TestData_Turkish())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(s_turkishCulture))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_CustomCulture_TestData_Turkish())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void GroupsAzeriLatin()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = s_azeriLatinCulture;
-                foreach (object[] testCase in Groups_CustomCulture_TestData_AzeriLatin())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(s_azeriLatinCulture))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_CustomCulture_TestData_AzeriLatin())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void GroupsBasic()
         {
-            RemoteExecutor.Invoke(() => {
-                CultureInfo.CurrentCulture = GetDefaultCultureForTests();
-                foreach (object[] testCase in Groups_Basic_TestData())
+            RemoteExecutorForUap.Invoke(() => {
+                using (new ThreadCultureChange(GetDefaultCultureForTests()))
                 {
-                    GroupsTest(testCase);
+                    foreach (object[] testCase in Groups_Basic_TestData())
+                    {
+                        GroupsTest(testCase);
+                    }
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

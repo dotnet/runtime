@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Tests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -1335,7 +1336,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Item_Get_DifferentCulture()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 var sortList = new SortedList();
 
@@ -1343,11 +1344,11 @@ namespace System.Collections.Tests
                 {
                     var cultureNames = new string[]
                     {
-                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                    "zh-CN","zh-HK","zh-TW"
+                        "cs-CZ","da-DK","de-DE","el-GR","en-US",
+                        "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
+                        "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
+                        "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
+                        "zh-CN","zh-HK","zh-TW"
                     };
 
                     var installedCultures = new CultureInfo[cultureNames.Length];
@@ -1366,18 +1367,17 @@ namespace System.Collections.Tests
 
                     // In Czech ch comes after h if the comparer changes based on the current culture of the thread
                     // we will not be able to find some items
-                    CultureInfo.CurrentCulture = new CultureInfo("cs-CZ");
-
-                    for (int i = 0; i < uniqueDisplayNameCount; i++)
+                    using (new ThreadCultureChange("cs-CZ"))
                     {
-                        Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                        for (int i = 0; i < uniqueDisplayNameCount; i++)
+                        {
+                            Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                        }
                     }
                 }
                 catch (CultureNotFoundException)
                 {
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

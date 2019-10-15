@@ -571,7 +571,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Check nr of certificates in store.
                     Assert.Equal(2, store.Certificates.Count);
                 }
-                return RemoteExecutor.SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 

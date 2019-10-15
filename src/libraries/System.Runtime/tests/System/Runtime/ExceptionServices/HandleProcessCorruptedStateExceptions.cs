@@ -44,7 +44,7 @@ namespace System.Runtime.ExceptionServices.Tests
             // We expect the launched process to crash; don't let it write the resulting AV message to the console.
             var psi = new ProcessStartInfo() { RedirectStandardError = true, RedirectStandardOutput = true };
 
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => { CauseAVInNative(); return RemoteExecutor.SuccessExitCode; }, new RemoteInvokeOptions { CheckExitCode = false, StartInfo = psi }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => CauseAVInNative(), new RemoteInvokeOptions { CheckExitCode = false, StartInfo = psi }))
             {
                 Process p = handle.Process;
                 p.WaitForExit();

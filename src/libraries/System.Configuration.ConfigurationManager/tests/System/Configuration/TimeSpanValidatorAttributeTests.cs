@@ -5,6 +5,7 @@
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -116,36 +117,38 @@ namespace System.ConfigurationTests
         [Fact]
         public void MinValueString_TooSmall()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
 
-                TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
-
-                attribute.MaxValueString = new TimeSpan(2, 2, 2, 2).ToString();
-                ArgumentOutOfRangeException result = Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    attribute.MinValueString = new TimeSpan(3, 3, 3, 3).ToString());
-                ArgumentOutOfRangeException expectedException =
-                    new ArgumentOutOfRangeException("value", SR.Validator_min_greater_than_max);
-                Assert.Equal(expectedException.Message, result.Message);
+                    attribute.MaxValueString = new TimeSpan(2, 2, 2, 2).ToString();
+                    ArgumentOutOfRangeException result = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                        attribute.MinValueString = new TimeSpan(3, 3, 3, 3).ToString());
+                    ArgumentOutOfRangeException expectedException =
+                        new ArgumentOutOfRangeException("value", SR.Validator_min_greater_than_max);
+                    Assert.Equal(expectedException.Message, result.Message);
+                }
             }).Dispose();
         }
 
         [Fact]
         public void MaxValueString_TooBig()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                {
+                    TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
 
-                TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
-
-                attribute.MinValueString = new TimeSpan(2, 2, 2, 2).ToString();
-                ArgumentOutOfRangeException result = Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    attribute.MaxValueString = new TimeSpan(1, 1, 1, 1).ToString());
-                ArgumentOutOfRangeException expectedException =
-                    new ArgumentOutOfRangeException("value", SR.Validator_min_greater_than_max);
-                Assert.Equal(expectedException.Message, result.Message);
+                    attribute.MinValueString = new TimeSpan(2, 2, 2, 2).ToString();
+                    ArgumentOutOfRangeException result = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                        attribute.MaxValueString = new TimeSpan(1, 1, 1, 1).ToString());
+                    ArgumentOutOfRangeException expectedException =
+                        new ArgumentOutOfRangeException("value", SR.Validator_min_greater_than_max);
+                    Assert.Equal(expectedException.Message, result.Message);
+                }
             }).Dispose();
         }
     }

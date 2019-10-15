@@ -142,7 +142,6 @@ namespace System.IO.Tests
                 {
                     FileInfo info = new FileInfo(p);
                     Assert.True(info.Exists);
-                    return RemoteExecutor.SuccessExitCode;
                 }, path).Dispose();
             }
         }
@@ -162,7 +161,6 @@ namespace System.IO.Tests
                 {
                     FileInfo info = new FileInfo(p);
                     Assert.True(info.Exists);
-                    return RemoteExecutor.SuccessExitCode;
                 }, path).Dispose();
 
                 stream.Unlock(0, 10);

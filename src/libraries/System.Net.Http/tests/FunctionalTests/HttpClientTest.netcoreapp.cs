@@ -32,8 +32,6 @@ namespace System.Net.Http.Functional.Tests
                 IWebProxy proxy = new WebProxy("http://localhost:3128/");
                 HttpClient.DefaultProxy = proxy;
                 Assert.True(Object.ReferenceEquals(proxy, HttpClient.DefaultProxy));
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

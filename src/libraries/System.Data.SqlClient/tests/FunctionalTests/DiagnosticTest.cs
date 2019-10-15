@@ -44,7 +44,6 @@ namespace System.Data.SqlClient.Tests
                         var output = cmd.ExecuteScalar();
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -68,7 +67,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -90,7 +88,6 @@ namespace System.Data.SqlClient.Tests
                         var output = cmd.ExecuteNonQuery();
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -128,7 +125,6 @@ namespace System.Data.SqlClient.Tests
                     }
                     Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest Connection Disposed");
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -151,7 +147,6 @@ namespace System.Data.SqlClient.Tests
                         while (reader.Read()) { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -177,7 +172,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -200,7 +194,6 @@ namespace System.Data.SqlClient.Tests
                         while (reader.Read()) { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -223,7 +216,6 @@ namespace System.Data.SqlClient.Tests
                         while (reader.Read()) { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }, s_tcpConnStr).Dispose();
         }
 
@@ -249,7 +241,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -271,7 +262,6 @@ namespace System.Data.SqlClient.Tests
                         var output = await cmd.ExecuteScalarAsync();
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -295,7 +285,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -317,7 +306,6 @@ namespace System.Data.SqlClient.Tests
                         var output = await cmd.ExecuteNonQueryAsync();
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -340,7 +328,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -363,7 +350,6 @@ namespace System.Data.SqlClient.Tests
                         while (reader.Read()) { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -389,7 +375,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -412,7 +397,6 @@ namespace System.Data.SqlClient.Tests
                         while (reader.Read()) { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }, s_tcpConnStr).Dispose();
         }
 
@@ -438,7 +422,6 @@ namespace System.Data.SqlClient.Tests
                         catch { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }, s_tcpConnStr).Dispose();
         }
 
@@ -459,7 +442,6 @@ namespace System.Data.SqlClient.Tests
                 }, true);
 
                 Console.WriteLine("SqlClient.DiagnosticsTest.ConnectionOpenTest:: Done with Diagnostics collection");
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -476,7 +458,6 @@ namespace System.Data.SqlClient.Tests
                         try { sqlConnection.Open(); } catch { }
                     }
                 });
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -493,7 +474,6 @@ namespace System.Data.SqlClient.Tests
                         await sqlConnection.OpenAsync();
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -510,7 +490,6 @@ namespace System.Data.SqlClient.Tests
                         try { await sqlConnection.OpenAsync(); } catch { }
                     }
                 }).GetAwaiter().GetResult();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

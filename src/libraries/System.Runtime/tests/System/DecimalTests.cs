@@ -1392,15 +1392,15 @@ namespace System.Tests
         [Fact]
         public static void Test_ToString()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-                foreach (var testdata in ToString_TestData())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    ToString((decimal)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    foreach (object[] testdata in ToString_TestData())
+                    {
+                        ToString((decimal)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

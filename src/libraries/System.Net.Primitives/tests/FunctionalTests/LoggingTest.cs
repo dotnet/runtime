@@ -40,7 +40,6 @@ namespace System.Net.Primitives.Functional.Tests
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

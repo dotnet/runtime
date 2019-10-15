@@ -170,9 +170,6 @@
     <Compile Include="System\UnitTesting\ExtendedAssert.cs" />
     <Compile Include="System\UnitTesting\RetryMode.cs" />
     <Compile Include="System\UnitTesting\TestServices.cs" />
-    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
-      <Link>Common\System\ThreadCultureChange.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="System.ComponentModel.Composition.Noop.Assembly/System.ComponentModel.Composition.Noop.Assembly.csproj">

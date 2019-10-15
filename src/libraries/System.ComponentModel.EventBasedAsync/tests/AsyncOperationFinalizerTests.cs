@@ -20,8 +20,6 @@ namespace System.ComponentModel.Tests
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -49,8 +47,6 @@ namespace System.ComponentModel.Tests
                 GC.WaitForPendingFinalizers();
 
                 Assert.True(tracker.OperationDidComplete);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

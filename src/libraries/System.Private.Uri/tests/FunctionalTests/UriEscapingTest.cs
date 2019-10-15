@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Common.Tests;
 using System.Collections.Generic;
 using System.Linq;
+using System.Tests;
 using System.Text;
 
 using Xunit;
@@ -78,33 +78,30 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriEscapingDataString_UnicodeWithIRI_Escaped()
         {
-            using (var iriHelper = new ThreadCultureChange())
-            {
-                string input = "\u30AF";
-                string output = Uri.EscapeDataString(input);
-                Assert.Equal("%E3%82%AF", output);
+            string input = "\u30AF";
 
-                iriHelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.EscapeDataString(input);
-                Assert.Equal(output, outputZhCn); //, "Same normalized result expected in different locales."
+            string output = Uri.EscapeDataString(input);
+            Assert.Equal("%E3%82%AF", output);
+
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                Assert.Equal(output, Uri.EscapeDataString(input)); //, "Same normalized result expected in different locales."
             }
         }
 
         [Fact]
         public void UriEscapingDataString_Unicode_SurrogatePair()
         {
-            using (ThreadCultureChange iriHelper = new ThreadCultureChange())
-            {
-                string output = Uri.EscapeDataString(GB18030CertificationString1);
-                Assert.Equal(
+            string output = Uri.EscapeDataString(GB18030CertificationString1);
+            Assert.Equal(
                  @"%E6%95%B0%E6%8D%AE%20eq" +
                 "%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0%AA%9B%91" +
                 "%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27",
                 output);
 
-                iriHelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.EscapeDataString(GB18030CertificationString1);
-                Assert.Equal(output, outputZhCn); //"Same normalized result expected in different locales."
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                Assert.Equal(output, Uri.EscapeDataString(GB18030CertificationString1)); //"Same normalized result expected in different locales."
             }
         }
 
@@ -191,30 +188,26 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriUnescapingDataString_UnicodeWithIRI_Unescaped()
         {
-            using (ThreadCultureChange helper = new ThreadCultureChange())
-            {
-                string input = @"\u30AF";
-                string output = Uri.UnescapeDataString(Escape(input));
-                Assert.Equal(input, output);
+            string input = @"\u30AF";
+            string output = Uri.UnescapeDataString(Escape(input));
+            Assert.Equal(input, output);
 
-                helper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.UnescapeDataString(Escape(input));
-                Assert.Equal(output, outputZhCn); // Same normalized result expected in different locales.
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                Assert.Equal(output, Uri.UnescapeDataString(Escape(input))); // Same normalized result expected in different locales.
             }
         }
 
         [Fact]
         public void UriUnescapingDataString_Unicode_SurrogatePair()
         {
-            using (ThreadCultureChange iriHelper = new ThreadCultureChange())
-            {
-                string escapedInput = Uri.EscapeDataString(GB18030CertificationString1);
-                string output = Uri.UnescapeDataString(escapedInput);
-                Assert.Equal(GB18030CertificationString1, output);
+            string escapedInput = Uri.EscapeDataString(GB18030CertificationString1);
+            string output = Uri.UnescapeDataString(escapedInput);
+            Assert.Equal(GB18030CertificationString1, output);
 
-                iriHelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.UnescapeDataString(escapedInput);
-                Assert.Equal(output, outputZhCn); //Same normalized result expected in different locales.
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                Assert.Equal(output, Uri.UnescapeDataString(escapedInput)); // Same normalized result expected in different locales.
             }
         }
 
@@ -280,15 +273,13 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriEscapingUriString_UnicodeWithIRI_Escaped()
         {
-            using (ThreadCultureChange helper = new ThreadCultureChange())
-            {
-                string input = "\u30AF";
-                string output = Uri.EscapeUriString(input);
-                Assert.Equal("%E3%82%AF", output);
+            string input = "\u30AF";
+            string output = Uri.EscapeUriString(input);
+            Assert.Equal("%E3%82%AF", output);
 
-                helper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.EscapeUriString(input);
-                Assert.Equal(output, outputZhCn); // Same normalized result expected in different locales.
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                Assert.Equal(output, Uri.EscapeUriString(input)); // Same normalized result expected in different locales.
             }
         }
 
@@ -444,12 +435,11 @@ namespace System.PrivateUri.Tests
             string expectedString = uriString + "%E6%95%B0%E6%8D%AE%20eq%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0" +
                                                 "%AA%9B%91%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27";
 
-            using (ThreadCultureChange iriHelper = new ThreadCultureChange())
-            {
-                Uri uri = new Uri(uriString + Uri.EscapeDataString(GB18030CertificationString1));
-                Assert.Equal(expectedString, uri.AbsoluteUri);
+            Uri uri = new Uri(uriString + Uri.EscapeDataString(GB18030CertificationString1));
+            Assert.Equal(expectedString, uri.AbsoluteUri);
 
-                iriHelper.ChangeCultureInfo("zh-cn");
+            using (new ThreadCultureChange("zh-cn"))
+            {
                 Uri uriZhCn = new Uri(uriString + Uri.EscapeDataString(GB18030CertificationString1));
                 Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri); // Same normalized result expected in different locales.
             }
@@ -632,42 +622,36 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriUnescape_AsciiUtf8AsciiIriOn_ValidUnescaped()
         {
-            using (ThreadCultureChange irihelper = new ThreadCultureChange())
+            string input = "http://host/%5A%E6%9C%88%5A";
+
+            string output = Uri.UnescapeDataString(input);
+            Assert.Equal("http://host/Z\u6708Z", output);
+
+            Uri uri = new Uri(input);
+            Assert.Equal("http://host/Z%E6%9C%88Z", uri.AbsoluteUri);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                string input = "http://host/%5A%E6%9C%88%5A";
-
-                string output = Uri.UnescapeDataString(input);
-                Assert.Equal("http://host/Z\u6708Z", output);
-
-                Uri uri = new Uri(input);
-                Assert.Equal("http://host/Z%E6%9C%88Z", uri.AbsoluteUri);
-
-                irihelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.UnescapeDataString(input);
-                Assert.Equal(output, outputZhCn);
-
-                Uri uriZhCn = new Uri(input);
-                Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri);
+                Assert.Equal(output, Uri.UnescapeDataString(input));
+                Assert.Equal(uri.AbsoluteUri, new Uri(input).AbsoluteUri);
             }
         }
 
         [Fact]
         public void UriUnescapeInvalid_AsciiIncompleteUtf8AsciiIriOn_InvalidUtf8LeftAlone()
         {
-            using (ThreadCultureChange irihelper = new ThreadCultureChange())
+            string input = "http://host/%5A%E5%9B%5A";
+
+            string output = Uri.UnescapeDataString(input);
+            Assert.Equal("http://host/Z%E5%9BZ", output);
+
+            Uri uri = new Uri(input);
+            Assert.Equal("http://host/Z%E5%9BZ", uri.ToString());
+            Assert.Equal("http://host/Z%E5%9BZ", uri.AbsoluteUri);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                string input = "http://host/%5A%E5%9B%5A";
-
-                string output = Uri.UnescapeDataString(input);
-                Assert.Equal("http://host/Z%E5%9BZ", output);
-
-                Uri uri = new Uri(input);
-                Assert.Equal("http://host/Z%E5%9BZ", uri.ToString());
-                Assert.Equal("http://host/Z%E5%9BZ", uri.AbsoluteUri);
-
-                irihelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.UnescapeDataString(input);
-                Assert.Equal(output, outputZhCn);
+                Assert.Equal(output, Uri.UnescapeDataString(input));
 
                 Uri uriZhCn = new Uri(input);
                 Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri);
@@ -678,70 +662,62 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriUnescapeInvalid_IncompleteUtf8BetweenValidUtf8IriOn_InvalidUtf8LeftAlone()
         {
-            using (ThreadCultureChange irihelper = new ThreadCultureChange())
+            string input = "http://host/%E6%9C%88%E5%9B%E6%9C%88";
+
+            string output = Uri.UnescapeDataString(input);
+            Assert.Equal("http://host/\u6708%E5%9B\u6708", output);
+
+            Uri uri = new Uri(input);
+            Assert.Equal(input, uri.AbsoluteUri);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                string input = "http://host/%E6%9C%88%E5%9B%E6%9C%88";
-
-                string output = Uri.UnescapeDataString(input);
-                Assert.Equal("http://host/\u6708%E5%9B\u6708", output);
-
-                Uri uri = new Uri(input);
-                Assert.Equal(input, uri.AbsoluteUri);
-
-                irihelper.ChangeCultureInfo("zh-cn");
-                string outputZhCn = Uri.UnescapeDataString(input);
-                Assert.Equal(output, outputZhCn);
-
-                Uri uriZhCn = new Uri(input);
-                Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri);
+                Assert.Equal(output, Uri.UnescapeDataString(input));
+                Assert.Equal(uri.AbsoluteUri, new Uri(input).AbsoluteUri);
             }
         }
 
         [Fact]
         public void UriUnescapeInvalid_IncompleteUtf8AfterValidUtf8IriOn_InvalidUtf8LeftAlone()
         {
-            using (ThreadCultureChange irihelper = new ThreadCultureChange())
+            string input = "http://host/%59%E6%9C%88%E5%9B";
+
+            Uri uri = new Uri(input);
+            Assert.Equal("http://host/Y%E6%9C%88%E5%9B", uri.AbsoluteUri);
+            Assert.Equal("http://host/Y\u6708%E5%9B", uri.ToString());
+
+            string output = Uri.UnescapeDataString(input);
+            Assert.Equal("http://host/Y\u6708%E5%9B", output);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                string input = "http://host/%59%E6%9C%88%E5%9B";
-
-                Uri uri = new Uri(input);
-                Assert.Equal("http://host/Y%E6%9C%88%E5%9B", uri.AbsoluteUri);
-                Assert.Equal("http://host/Y\u6708%E5%9B", uri.ToString());
-
-                string output = Uri.UnescapeDataString(input);
-                Assert.Equal("http://host/Y\u6708%E5%9B", output);
-
-                irihelper.ChangeCultureInfo("zh-cn");
                 Uri uriZhCn = new Uri(input);
                 Assert.Equal(uri.ToString(), uriZhCn.ToString());
                 Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri);
 
-                string outputZhCn = Uri.UnescapeDataString(input);
-                Assert.Equal(output, outputZhCn);
+                Assert.Equal(output, Uri.UnescapeDataString(input));
             }
         }
 
         [Fact]
         public void UriUnescapeInvalid_ValidUtf8IncompleteUtf8AsciiIriOn_InvalidUtf8LeftAlone()
         {
-            using (ThreadCultureChange irihelper = new ThreadCultureChange())
+            string input = "http://host/%E6%9C%88%E6%9C%59";
+
+            Uri uri = new Uri(input);
+            Assert.Equal("http://host/%E6%9C%88%E6%9CY", uri.AbsoluteUri);
+            Assert.Equal("http://host/\u6708%E6%9CY", uri.ToString());
+
+            string output = Uri.UnescapeDataString(input);
+            Assert.Equal("http://host/\u6708%E6%9CY", output);
+
+            using (new ThreadCultureChange("zh-cn"))
             {
-                string input = "http://host/%E6%9C%88%E6%9C%59";
-
-                Uri uri = new Uri(input);
-                Assert.Equal("http://host/%E6%9C%88%E6%9CY", uri.AbsoluteUri);
-                Assert.Equal("http://host/\u6708%E6%9CY", uri.ToString());
-
-                string output = Uri.UnescapeDataString(input);
-                Assert.Equal("http://host/\u6708%E6%9CY", output);
-
-                irihelper.ChangeCultureInfo("zh-cn");
                 Uri uriZhCn = new Uri(input);
                 Assert.Equal(uri.ToString(), uriZhCn.ToString());
                 Assert.Equal(uri.AbsoluteUri, uriZhCn.AbsoluteUri);
 
-                string outputZhCn = Uri.UnescapeDataString(input);
-                Assert.Equal(output, outputZhCn);
+                Assert.Equal(output, Uri.UnescapeDataString(input));
             }
         }
 

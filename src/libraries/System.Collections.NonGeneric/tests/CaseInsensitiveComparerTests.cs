@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 namespace System.Collections.Tests
 {
@@ -132,7 +133,7 @@ namespace System.Collections.Tests
         [InlineData("null", "null", 0)]
         public void DefaultInvariant_Compare(object a, object b, int expected)
         {
-            RemoteExecutor.Invoke((ra, rb, rexpected) =>
+            RemoteExecutorForUap.Invoke((ra, rb, rexpected) =>
             {
                 Func<string, object> convert = (string o) =>
                 {
@@ -147,13 +148,13 @@ namespace System.Collections.Tests
                 var rexpected_val = convert(rexpected);
 
                 var cultureNames = new string[]
-{
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-};
+                {
+                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
+                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
+                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
+                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
+                    "zh-CN","zh-HK","zh-TW"
+                };
 
                 foreach (string cultureName in cultureNames)
                 {
@@ -168,14 +169,13 @@ namespace System.Collections.Tests
                     }
 
                     // Set current culture
-                    CultureInfo.CurrentCulture = culture;
-                    CultureInfo.CurrentUICulture = culture;
-
-                    // All cultures should sort the same way, irrespective of the thread's culture
-                    CaseInsensitiveComparer defaultInvComparer = CaseInsensitiveComparer.DefaultInvariant;
-                    Assert.Equal(rexpected_val, Math.Sign(defaultInvComparer.Compare(ra_val, rb_val)));
+                    using (new ThreadCultureChange(culture, culture))
+                    {
+                        // All cultures should sort the same way, irrespective of the thread's culture
+                        CaseInsensitiveComparer defaultInvComparer = CaseInsensitiveComparer.DefaultInvariant;
+                        Assert.Equal(rexpected_val, Math.Sign(defaultInvComparer.Compare(ra_val, rb_val)));
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }, a.ToString(), b.ToString(), expected.ToString()).Dispose();
         }
 

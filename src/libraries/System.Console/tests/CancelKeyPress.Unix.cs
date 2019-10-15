@@ -60,8 +60,6 @@ public partial class CancelKeyPressTests
 
             // Release CancelKeyPress
             mre.Set();
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -99,8 +97,6 @@ public partial class CancelKeyPressTests
             {
                 Console.CancelKeyPress -= handler;
             }
-
-            return RemoteExecutor.SuccessExitCode;
         }, signalOuter.ToString()).Dispose();
     }
 

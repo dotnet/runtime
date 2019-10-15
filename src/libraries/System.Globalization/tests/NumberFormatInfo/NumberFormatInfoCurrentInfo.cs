@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -23,34 +24,37 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CurrentInfo_CustomCulture_TestData))]
         public void CurrentInfo_CustomCulture(CultureInfo newCurrentCulture)
         {
-            RemoteExecutor.Invoke((cultureName) =>
+            RemoteExecutorForUap.Invoke((cultureName) =>
             {
-                CultureInfo newCulture = CultureInfo.GetCultureInfo(cultureName);
-                CultureInfo.CurrentCulture = newCulture;
-                Assert.Same(newCulture.NumberFormat, NumberFormatInfo.CurrentInfo);
-                return RemoteExecutor.SuccessExitCode;
+                var newCulture = CultureInfo.GetCultureInfo(cultureName);
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Same(newCulture.NumberFormat, NumberFormatInfo.CurrentInfo);
+                }
             }, newCurrentCulture.Name).Dispose();
         }
 
         [Fact]
         public void CurrentInfo_Subclass_OverridesGetFormat()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfoSubclassOverridesGetFormat("en-US");
-                Assert.Same(CultureInfoSubclassOverridesGetFormat.CustomFormat, NumberFormatInfo.CurrentInfo);
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(new CultureInfoSubclassOverridesGetFormat("en-US")))
+                {
+                    Assert.Same(CultureInfoSubclassOverridesGetFormat.CustomFormat, NumberFormatInfo.CurrentInfo);
+                }
             }).Dispose();
         }
 
         [Fact]
         public void CurrentInfo_Subclass_OverridesNumberFormat()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfoSubclassOverridesNumberFormat("en-US");
-                Assert.Same(CultureInfoSubclassOverridesNumberFormat.CustomFormat, NumberFormatInfo.CurrentInfo);
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange(new CultureInfoSubclassOverridesNumberFormat("en-US")))
+                {
+                    Assert.Same(CultureInfoSubclassOverridesNumberFormat.CustomFormat, NumberFormatInfo.CurrentInfo);
+                }
             }).Dispose();
         }
 

@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Common.Tests;
+using System.Tests;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static IEnumerable<object[]> SerializableObjects_MemberData()
         {
             // Save old culture and set a fixed culture for object instantiation
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
             {
                 return SerializableObjects().ToArray();
             }

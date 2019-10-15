@@ -53,8 +53,6 @@ namespace System.Reflection.Tests
                 Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
                 Assert.Contains(asm, alc.Assemblies);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -76,8 +74,6 @@ namespace System.Reflection.Tests
                 Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
                 Assert.Contains(asm, alc.Assemblies);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -99,8 +95,6 @@ namespace System.Reflection.Tests
                 Assert.Contains("System.Reflection.Tests.TestAssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
                 Assert.Contains(asm, alc.Assemblies);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -130,8 +124,6 @@ namespace System.Reflection.Tests
                 Assert.NotNull(member);
 
                 Assert.False(member.IsCollectible);
-
-                return RemoteExecutor.SuccessExitCode;
             }, memberName).Dispose();
         }
 
@@ -161,8 +153,6 @@ namespace System.Reflection.Tests
                 Assert.NotNull(member);
 
                 Assert.False(member.IsCollectible);
-
-                return RemoteExecutor.SuccessExitCode;
             }, memberName).Dispose();
         }
 
@@ -194,8 +184,6 @@ namespace System.Reflection.Tests
                 Assert.NotNull(member);
 
                 Assert.True(member.IsCollectible);
-
-                return RemoteExecutor.SuccessExitCode;
             }, memberName).Dispose();
         }
 
@@ -227,8 +215,6 @@ namespace System.Reflection.Tests
                 Assert.NotNull(member);
 
                 Assert.True(member.IsCollectible);
-
-                return RemoteExecutor.SuccessExitCode;
             }, memberName).Dispose();
         }
 
@@ -249,8 +235,6 @@ namespace System.Reflection.Tests
                 Assert.NotNull(t1);
 
                 Assert.True(t1.IsCollectible);
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

@@ -797,8 +797,6 @@ namespace System.Net.Tests
                 {
                     HttpWebRequest.DefaultMaximumResponseHeadersLength = defaultMaximumResponseHeadersLength;
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -819,8 +817,6 @@ namespace System.Net.Tests
                 {
                     HttpWebRequest.DefaultMaximumErrorResponseLength = defaultMaximumErrorsResponseLength;
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -841,8 +837,6 @@ namespace System.Net.Tests
                 {
                     HttpWebRequest.DefaultCachePolicy = requestCachePolicy;
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1503,8 +1497,6 @@ namespace System.Net.Tests
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
-
-                    return RemoteExecutor.SuccessExitCode;
                 }, cred.UserName, cred.Password, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
                 await proxyTask;
@@ -1662,7 +1654,6 @@ namespace System.Net.Tests
                         }
                     }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }, JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).Dispose();
         }
 
@@ -1726,7 +1717,6 @@ namespace System.Net.Tests
                          }
                      }
                  }
-                 return RemoteExecutor.SuccessExitCode;
              }).Dispose();
         }
 

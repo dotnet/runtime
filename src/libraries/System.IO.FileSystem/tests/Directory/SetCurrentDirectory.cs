@@ -42,7 +42,6 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -79,7 +78,6 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
         }

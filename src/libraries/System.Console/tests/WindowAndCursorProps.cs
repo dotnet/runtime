@@ -204,7 +204,6 @@ public class WindowAndCursorProps
         RemoteExecutor.Invoke(() =>
         {
             Console.Title = "Title set by unit test";
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -253,7 +252,6 @@ public class WindowAndCursorProps
             {
                 Assert.Equal(newTitle, Console.Title);
             }
-            return RemoteExecutor.SuccessExitCode;
         }, lengthOfTitle.ToString()).Dispose();
     }
 

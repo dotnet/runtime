@@ -26,8 +26,6 @@ namespace System.Tests
                 {
                     Console.Write(data);
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } });
 
             using (remote)

@@ -170,8 +170,6 @@ namespace System.Net.Http.Functional.Tests
                         var receivedCert = new X509Certificate2(bytes);
                         Assert.Equal(clientCert, receivedCert);
                     }
-
-                    return RemoteExecutor.SuccessExitCode;
                 }
             }, certIndex.ToString(), expectedStatusCode.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }

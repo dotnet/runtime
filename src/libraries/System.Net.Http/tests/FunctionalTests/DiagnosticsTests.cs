@@ -113,8 +113,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityLogged, "HttpOutReq was logged while HttpOutReq logging was disabled");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -174,8 +172,6 @@ namespace System.Net.Http.Functional.Tests
                         "Response was logged while logging disabled.");
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while logging disabled.");
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -225,8 +221,6 @@ namespace System.Net.Http.Functional.Tests
                         ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), useSsl.ToString()).Dispose();
         }
 
@@ -273,8 +267,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(exceptionLogged, "Exception was not logged");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -322,8 +314,6 @@ namespace System.Net.Http.Functional.Tests
                 WaitForTrue(() => Volatile.Read(ref cancelLogged), TimeSpan.FromSeconds(1),
                     "Cancellation was not logged within 1 second timeout.");
                 diagnosticListenerObserver.Disable();
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -408,8 +398,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(responseLogged, "Response was logged when Activity logging was enabled.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -493,8 +481,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(responseLogged, "Response was logged when Activity logging was enabled.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -553,8 +539,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -610,8 +594,6 @@ namespace System.Net.Http.Functional.Tests
                         "HttpRequestOut.Stop was not logged within 1 second timeout.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -668,8 +650,6 @@ namespace System.Net.Http.Functional.Tests
                         "HttpRequestOut.Stop was not logged within 1 second timeout.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -717,8 +697,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while URL disabled.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -766,8 +744,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(exceptionLogged, "Exception was not logged");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -857,8 +833,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(exceptionLogged, "Exception was not logged");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -909,8 +883,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(responseLogged, "Response was not logged.");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -952,8 +924,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityLogged, "HttpOutReq was logged when logging was disabled");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -994,8 +964,6 @@ namespace System.Net.Http.Functional.Tests
                         "HttpRequestOut.Start was logged when start logging was disabled");
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -1013,8 +981,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(response.RequestMessage.Headers.Contains(parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
                     parent.Stop();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -1033,8 +999,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(response.RequestMessage.Headers.Contains("tracestate"));
                     Assert.False(response.RequestMessage.Headers.Contains("Correlation-Context"));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -1085,8 +1049,6 @@ namespace System.Net.Http.Functional.Tests
 
                     diagnosticListenerObserver.Disable();
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, envVarValue, isInstrumentationEnabled.ToString()).Dispose();
         }
 
@@ -1108,8 +1070,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(bool.Parse(innerSwitchValue), response.RequestMessage.Headers.Contains(
                         parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }, switchValue.ToString()).Dispose();
         }
 
@@ -1158,8 +1118,6 @@ namespace System.Net.Http.Functional.Tests
                 WaitForTrue(() => Volatile.Read(ref cancelLogged), TimeSpan.FromSeconds(1),
                     "Cancellation was not logged within 1 second timeout.");
                 diagnosticListenerObserver.Disable();
-
-                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
@@ -1190,7 +1148,6 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 diagnosticListenerObserver.Disable();
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

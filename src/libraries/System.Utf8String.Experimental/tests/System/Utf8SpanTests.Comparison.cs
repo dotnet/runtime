@@ -68,31 +68,28 @@ namespace System.Text.Tests
         {
             Func<string, string, string, string, string, int> action = (str1, str2, comparison, culture, shouldCompareAsEqual) =>
             {
-                if (culture != null)
+                using (new ThreadCultureChange(culture))
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo(culture);
+                    using BoundedUtf8Span boundedSpan1 = new BoundedUtf8Span(str1);
+                    using BoundedUtf8Span boundedSpan2 = new BoundedUtf8Span(str2);
+
+                    Utf8Span span1 = boundedSpan1.Span;
+                    Utf8Span span2 = boundedSpan2.Span;
+
+                    StringComparison comparisonType = Enum.Parse<StringComparison>(comparison);
+                    bool expected = bool.Parse(shouldCompareAsEqual);
+
+                    Assert.Equal(expected, span1.Equals(span2, comparisonType));
+                    Assert.Equal(expected, span2.Equals(span1, comparisonType));
+                    Assert.Equal(expected, Utf8Span.Equals(span1, span2, comparisonType));
+                    Assert.Equal(expected, Utf8Span.Equals(span2, span1, comparisonType));
                 }
-
-                using BoundedUtf8Span boundedSpan1 = new BoundedUtf8Span(str1);
-                using BoundedUtf8Span boundedSpan2 = new BoundedUtf8Span(str2);
-
-                Utf8Span span1 = boundedSpan1.Span;
-                Utf8Span span2 = boundedSpan2.Span;
-
-                StringComparison comparisonType = Enum.Parse<StringComparison>(comparison);
-                bool expected = bool.Parse(shouldCompareAsEqual);
-
-                Assert.Equal(expected, span1.Equals(span2, comparisonType));
-                Assert.Equal(expected, span2.Equals(span1, comparisonType));
-                Assert.Equal(expected, Utf8Span.Equals(span1, span2, comparisonType));
-                Assert.Equal(expected, Utf8Span.Equals(span2, span1, comparisonType));
 
                 return RemoteExecutor.SuccessExitCode;
             };
 
-            if (culture != null)
+            if (culture != null && PlatformDetection.IsUap) // need to apply a culture to the current thread
             {
-                // need to apply a culture to the current thread
                 RemoteExecutor.Invoke(action, str1, str2, comparison.ToString(), culture, shouldCompareAsEqual.ToString()).Dispose();
             }
             else

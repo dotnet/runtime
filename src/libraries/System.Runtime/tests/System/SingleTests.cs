@@ -452,15 +452,15 @@ namespace System.Tests
         [Fact]
         public static void Test_ToString_NotNetFramework()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-                foreach (var testdata in ToString_TestData_NotNetFramework())
+                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
                 {
-                    ToString((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    foreach (object[] testdata in ToString_TestData_NotNetFramework())
+                    {
+                        ToString((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

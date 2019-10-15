@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -189,7 +190,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunRegionSpecificStandardFormatToStringTests()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
                 CultureInfo[] cultures = new CultureInfo[] { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),
                                                              new CultureInfo("ar-SA"), new CultureInfo("de-DE"), new CultureInfo("he-IL"),
@@ -197,88 +198,89 @@ namespace System.Numerics.Tests
                 foreach (CultureInfo culture in cultures)
                 {
                     // Set CurrentCulture to simulate different locales
-                    CultureInfo.CurrentCulture = culture;
+                    using (new ThreadCultureChange(culture))
+                    {
+                        // Currency
+                        RunStandardFormatToStringTests(s_random, "C", culture.NumberFormat.NegativeSign, culture.NumberFormat.CurrencyDecimalDigits, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "c0", culture.NumberFormat.NegativeSign, 0, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "C1", culture.NumberFormat.NegativeSign, 1, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "c2", culture.NumberFormat.NegativeSign, 2, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "C5", culture.NumberFormat.NegativeSign, 5, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "c33", culture.NumberFormat.NegativeSign, 33, CurrencyFormatter);
+                        RunStandardFormatToStringTests(s_random, "C99", culture.NumberFormat.NegativeSign, 99, CurrencyFormatter);
 
-                    // Currency
-                    RunStandardFormatToStringTests(s_random, "C", culture.NumberFormat.NegativeSign, culture.NumberFormat.CurrencyDecimalDigits, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "c0", culture.NumberFormat.NegativeSign, 0, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "C1", culture.NumberFormat.NegativeSign, 1, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "c2", culture.NumberFormat.NegativeSign, 2, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "C5", culture.NumberFormat.NegativeSign, 5, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "c33", culture.NumberFormat.NegativeSign, 33, CurrencyFormatter);
-                    RunStandardFormatToStringTests(s_random, "C99", culture.NumberFormat.NegativeSign, 99, CurrencyFormatter);
+                        // Decimal
+                        RunStandardFormatToStringTests(s_random, "D", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "d0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "D1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "d2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "D5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "d33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "D99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
 
-                    // Decimal
-                    RunStandardFormatToStringTests(s_random, "D", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "d0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "D1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "d2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "D5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "d33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "D99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
+                        // Exponential (note: negative precision means lower case e)
+                        RunStandardFormatToStringTests(s_random, "E", culture.NumberFormat.NegativeSign, 6, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "E0", culture.NumberFormat.NegativeSign, 0, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "E1", culture.NumberFormat.NegativeSign, 1, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "e2", culture.NumberFormat.NegativeSign, -2, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "E5", culture.NumberFormat.NegativeSign, 5, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "e33", culture.NumberFormat.NegativeSign, -33, ExponentialFormatter);
+                        RunStandardFormatToStringTests(s_random, "E99", culture.NumberFormat.NegativeSign, 99, ExponentialFormatter);
 
-                    // Exponential (note: negative precision means lower case e)
-                    RunStandardFormatToStringTests(s_random, "E", culture.NumberFormat.NegativeSign, 6, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "E0", culture.NumberFormat.NegativeSign, 0, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "E1", culture.NumberFormat.NegativeSign, 1, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "e2", culture.NumberFormat.NegativeSign, -2, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "E5", culture.NumberFormat.NegativeSign, 5, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "e33", culture.NumberFormat.NegativeSign, -33, ExponentialFormatter);
-                    RunStandardFormatToStringTests(s_random, "E99", culture.NumberFormat.NegativeSign, 99, ExponentialFormatter);
+                        // Fixed-Point
+                        RunStandardFormatToStringTests(s_random, "f", culture.NumberFormat.NegativeSign, culture.NumberFormat.NumberDecimalDigits, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "F0", culture.NumberFormat.NegativeSign, 0, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "f1", culture.NumberFormat.NegativeSign, 1, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "F2", culture.NumberFormat.NegativeSign, 2, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "f5", culture.NumberFormat.NegativeSign, 5, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "F33", culture.NumberFormat.NegativeSign, 33, FixedFormatter);
+                        RunStandardFormatToStringTests(s_random, "f99", culture.NumberFormat.NegativeSign, 99, FixedFormatter);
 
-                    // Fixed-Point
-                    RunStandardFormatToStringTests(s_random, "f", culture.NumberFormat.NegativeSign, culture.NumberFormat.NumberDecimalDigits, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "F0", culture.NumberFormat.NegativeSign, 0, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "f1", culture.NumberFormat.NegativeSign, 1, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "F2", culture.NumberFormat.NegativeSign, 2, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "f5", culture.NumberFormat.NegativeSign, 5, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "F33", culture.NumberFormat.NegativeSign, 33, FixedFormatter);
-                    RunStandardFormatToStringTests(s_random, "f99", culture.NumberFormat.NegativeSign, 99, FixedFormatter);
+                        // General
+                        RunStandardFormatToStringTests(s_random, "g", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "G0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "G1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "G2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "g5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "G33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "g99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
 
-                    // General
-                    RunStandardFormatToStringTests(s_random, "g", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "G0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "G1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "G2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "g5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "G33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "g99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
+                        // Number
+                        RunStandardFormatToStringTests(s_random, "n", culture.NumberFormat.NegativeSign, culture.NumberFormat.NumberDecimalDigits, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "N0", culture.NumberFormat.NegativeSign, 0, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "N1", culture.NumberFormat.NegativeSign, 1, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "N2", culture.NumberFormat.NegativeSign, 2, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "n5", culture.NumberFormat.NegativeSign, 5, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "N33", culture.NumberFormat.NegativeSign, 33, NumberFormatter);
+                        RunStandardFormatToStringTests(s_random, "n99", culture.NumberFormat.NegativeSign, 99, NumberFormatter);
 
-                    // Number
-                    RunStandardFormatToStringTests(s_random, "n", culture.NumberFormat.NegativeSign, culture.NumberFormat.NumberDecimalDigits, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "N0", culture.NumberFormat.NegativeSign, 0, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "N1", culture.NumberFormat.NegativeSign, 1, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "N2", culture.NumberFormat.NegativeSign, 2, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "n5", culture.NumberFormat.NegativeSign, 5, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "N33", culture.NumberFormat.NegativeSign, 33, NumberFormatter);
-                    RunStandardFormatToStringTests(s_random, "n99", culture.NumberFormat.NegativeSign, 99, NumberFormatter);
+                        // Percent
+                        RunStandardFormatToStringTests(s_random, "p", culture.NumberFormat.NegativeSign, culture.NumberFormat.PercentDecimalDigits, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "P0", culture.NumberFormat.NegativeSign, 0, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "P1", culture.NumberFormat.NegativeSign, 1, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "P2", culture.NumberFormat.NegativeSign, 2, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "p5", culture.NumberFormat.NegativeSign, 5, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "P33", culture.NumberFormat.NegativeSign, 33, PercentFormatter);
+                        RunStandardFormatToStringTests(s_random, "p99", culture.NumberFormat.NegativeSign, 99, PercentFormatter);
 
-                    // Percent
-                    RunStandardFormatToStringTests(s_random, "p", culture.NumberFormat.NegativeSign, culture.NumberFormat.PercentDecimalDigits, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "P0", culture.NumberFormat.NegativeSign, 0, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "P1", culture.NumberFormat.NegativeSign, 1, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "P2", culture.NumberFormat.NegativeSign, 2, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "p5", culture.NumberFormat.NegativeSign, 5, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "P33", culture.NumberFormat.NegativeSign, 33, PercentFormatter);
-                    RunStandardFormatToStringTests(s_random, "p99", culture.NumberFormat.NegativeSign, 99, PercentFormatter);
+                        // Hex
+                        RunStandardFormatToStringTests(s_random, "X", culture.NumberFormat.NegativeSign, 0, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "X0", culture.NumberFormat.NegativeSign, 0, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "x1", culture.NumberFormat.NegativeSign, -1, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "X2", culture.NumberFormat.NegativeSign, 2, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "x5", culture.NumberFormat.NegativeSign, -5, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "X33", culture.NumberFormat.NegativeSign, 33, HexFormatter);
+                        RunStandardFormatToStringTests(s_random, "x99", culture.NumberFormat.NegativeSign, -99, HexFormatter);
 
-                    // Hex
-                    RunStandardFormatToStringTests(s_random, "X", culture.NumberFormat.NegativeSign, 0, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "X0", culture.NumberFormat.NegativeSign, 0, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "x1", culture.NumberFormat.NegativeSign, -1, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "X2", culture.NumberFormat.NegativeSign, 2, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "x5", culture.NumberFormat.NegativeSign, -5, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "X33", culture.NumberFormat.NegativeSign, 33, HexFormatter);
-                    RunStandardFormatToStringTests(s_random, "x99", culture.NumberFormat.NegativeSign, -99, HexFormatter);
-
-                    // RoundTrip
-                    RunStandardFormatToStringTests(s_random, "R", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "R0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "r1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "R2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "r5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "R33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
-                    RunStandardFormatToStringTests(s_random, "r99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
+                        // RoundTrip
+                        RunStandardFormatToStringTests(s_random, "R", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "R0", culture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "r1", culture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "R2", culture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "r5", culture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "R33", culture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+                        RunStandardFormatToStringTests(s_random, "r99", culture.NumberFormat.NegativeSign, 99, DecimalFormatter);
+                    }
                 }
             }).Dispose();
         }

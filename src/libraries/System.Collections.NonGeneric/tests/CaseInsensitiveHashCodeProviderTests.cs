@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 #pragma warning disable 618 // obsolete types
 
@@ -39,7 +40,7 @@ namespace System.Collections.Tests
         [InlineData(5, 10, false)]
         public void Ctor_Empty_ChangeCurrentCulture_GetHashCodeCompare(object a, object b, bool expected)
         {
-            RemoteExecutor.Invoke((ra, rb, rexpected) =>
+            RemoteExecutorForUap.Invoke((ra, rb, rexpected) =>
             {
                 var cultureNames = new string[]
                 {
@@ -64,13 +65,14 @@ namespace System.Collections.Tests
                         continue;
                     }
 
-                    CultureInfo.CurrentCulture = newCulture;
-                    var provider = new CaseInsensitiveHashCodeProvider();
-                    Assert.Equal(provider.GetHashCode(ra), provider.GetHashCode(ra));
-                    Assert.Equal(provider.GetHashCode(rb), provider.GetHashCode(rb));
-                    Assert.Equal(expectedResult, provider.GetHashCode(ra) == provider.GetHashCode(rb));
+                    using (new ThreadCultureChange(newCulture))
+                    {
+                        var provider = new CaseInsensitiveHashCodeProvider();
+                        Assert.Equal(provider.GetHashCode(ra), provider.GetHashCode(ra));
+                        Assert.Equal(provider.GetHashCode(rb), provider.GetHashCode(rb));
+                        Assert.Equal(expectedResult, provider.GetHashCode(ra) == provider.GetHashCode(rb));
+                    }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }, a.ToString(), b.ToString(), expected.ToString()).Dispose();
         }
 
@@ -179,15 +181,18 @@ namespace System.Collections.Tests
         {
             // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
             // but rather U+0130.
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
-                Assert.False(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
-                Assert.True(CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("file") == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("FILE"));
+                using (new ThreadCultureChange("tr-TR"))
+                {
+                    Assert.False(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
+                    Assert.True(CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("file") == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode("FILE"));
+                }
 
-                CultureInfo.CurrentCulture = new CultureInfo("en-US");
-                Assert.True(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange("en-US"))
+                {
+                    Assert.True(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
+                }
             }).Dispose();
         }
     }

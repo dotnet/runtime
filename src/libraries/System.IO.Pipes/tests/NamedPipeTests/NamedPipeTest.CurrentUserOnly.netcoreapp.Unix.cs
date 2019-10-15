@@ -41,7 +41,7 @@ namespace System.IO.Pipes.Tests
                 Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
 
                 using (RemoteExecutor.Invoke(
-                    new Func<string, string, int>(ConnectClientFromRemoteInvoker),
+                    new Action<string, string>(ConnectClientFromRemoteInvoker),
                     pipeName,
                     clientPipeOptions == PipeOptions.CurrentUserOnly ? "true" : "false",
                     new RemoteInvokeOptions { RunAsSudo = true }))
@@ -55,7 +55,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        private static int ConnectClientFromRemoteInvoker(string pipeName, string isCurrentUserOnly)
+        private static void ConnectClientFromRemoteInvoker(string pipeName, string isCurrentUserOnly)
         {
             PipeOptions pipeOptions = bool.Parse(isCurrentUserOnly) ? PipeOptions.CurrentUserOnly : PipeOptions.None;
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, pipeOptions))
@@ -65,8 +65,6 @@ namespace System.IO.Pipes.Tests
                 else
                     client.Connect();
             }
-
-            return RemoteExecutor.SuccessExitCode;
         }
     }
 }

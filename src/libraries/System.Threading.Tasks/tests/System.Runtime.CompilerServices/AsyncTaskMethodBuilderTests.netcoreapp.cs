@@ -45,8 +45,6 @@ namespace System.Threading.Tasks.Tests
                     Assert.Contains("42", description);
                     Assert.Contains("stored data", description);
                 }
-
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

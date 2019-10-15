@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Common.Tests;
 using System.Linq;
+using System.Tests;
 using System.Text;
 
 using Xunit;
@@ -312,20 +312,19 @@ namespace System.PrivateUri.Tests
                 UriComponents.UserInfo,
             };
 
-            using (ThreadCultureChange helper = new ThreadCultureChange())
+            string[] results1 = new string[components.Length];
+            using (new ThreadCultureChange(_testedLocales[0]))
             {
-                string[] results1 = new string[components.Length];
-
-                helper.ChangeCultureInfo(_testedLocales[0]);
                 for (int i = 0; i < components.Length; i++)
                 {
                     results1[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
                 }
+            }
 
-                for (int j = 1; j < _testedLocales.Length; j++)
+            for (int j = 1; j < _testedLocales.Length; j++)
+            {
+                using (new ThreadCultureChange(_testedLocales[j]))
                 {
-                    helper.ChangeCultureInfo(_testedLocales[j]);
-
                     string[] results2 = new string[components.Length];
                     for (int i = 0; i < components.Length; i++)
                     {

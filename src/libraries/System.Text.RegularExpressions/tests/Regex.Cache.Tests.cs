@@ -46,7 +46,6 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(Regex.IsMatch("1", "1"));
                 Assert.True(Regex.IsMatch("2", "2")); // previous removed from cache
                 Assert.True(GetCachedItemsNum() == 1);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -63,7 +62,6 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(GetCachedItemsNum() == 1);
                 Regex.CacheSize = 0; // clear
                 Assert.True(GetCachedItemsNum() == 0);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -81,7 +79,6 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(GetCachedItemsNum() == 3);
                 Regex.CacheSize = 1;  // only 1 stays
                 Assert.True(GetCachedItemsNum() == 1);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -99,7 +96,6 @@ namespace System.Text.RegularExpressions.Tests
                 CultureInfo.CurrentCulture = CultureInfo.CurrentCulture.Equals(CultureInfo.GetCultureInfo("de-DE")) ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo("de-DE");
                 Assert.True(Regex.IsMatch("1", "1", RegexOptions.Multiline));
                 Assert.True(GetCachedItemsNum() == 3);
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -127,6 +123,7 @@ namespace System.Text.RegularExpressions.Tests
                         Assert.True(GetCachedItemsNum() == i + 1);
                     }
                 }
+
                 void Remove(int n)
                 {
                     for (int i = 0; i < original; i++)
@@ -135,7 +132,6 @@ namespace System.Text.RegularExpressions.Tests
                         Assert.True(GetCachedItemsNum() == Regex.CacheSize);
                     }
                 }
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

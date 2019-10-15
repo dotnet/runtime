@@ -414,7 +414,7 @@ namespace System.Threading.Tests
                 string mutexName = prefix + Guid.NewGuid().ToString("N");
                 string fileName = GetTestFilePath();
 
-                Func<string, string, int> otherProcess = (m, f) =>
+                Action<string, string> otherProcess = (m, f) =>
                 {
                     using (var mutex = Mutex.OpenExisting(m))
                     {
@@ -425,7 +425,6 @@ namespace System.Threading.Tests
 
                         IncrementValueInFileNTimes(mutex, f, 10);
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 };
 
                 using (var mutex = new Mutex(false, mutexName))

@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Tests;
 
 namespace System.Json.Tests
 {
@@ -274,12 +275,14 @@ namespace System.Json.Tests
         [InlineData("0.000000000000000000000000000011", 1.1E-29)]
         public void JsonValue_Parse_Double(string json, double expected)
         {
-            RemoteExecutor.Invoke((jsonInner, expectedInner) =>
+            RemoteExecutorForUap.Invoke((jsonInner, expectedInner) =>
             {
                 foreach (string culture in new[] { "en", "fr", "de" })
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo(culture);
-                    Assert.Equal(double.Parse(expectedInner, CultureInfo.InvariantCulture), (double)JsonValue.Parse(jsonInner));
+                    using (new ThreadCultureChange(culture))
+                    {
+                        Assert.Equal(double.Parse(expectedInner, CultureInfo.InvariantCulture), (double)JsonValue.Parse(jsonInner));
+                    }
                 }
             }, json, expected.ToString("R", CultureInfo.InvariantCulture)).Dispose();
         }
@@ -320,13 +323,15 @@ namespace System.Json.Tests
         [InlineData(1.123456789e-28)] // Values around the smallest positive decimal value
         public void JsonValue_Parse_Double_ViaJsonPrimitive(double number)
         {
-            RemoteExecutor.Invoke(numberText =>
+            RemoteExecutorForUap.Invoke(numberText =>
             {
                 double numberInner = double.Parse(numberText, CultureInfo.InvariantCulture);
                 foreach (string culture in new[] { "en", "fr", "de" })
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo(culture);
-                    Assert.Equal(numberInner, (double)JsonValue.Parse(new JsonPrimitive(numberInner).ToString()));
+                    using (new ThreadCultureChange(culture))
+                    {
+                        Assert.Equal(numberInner, (double)JsonValue.Parse(new JsonPrimitive(numberInner).ToString()));
+                    }
                 }
             }, number.ToString("R", CultureInfo.InvariantCulture)).Dispose();
         }

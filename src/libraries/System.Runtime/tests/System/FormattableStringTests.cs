@@ -20,17 +20,16 @@ namespace System.Tests
         [Fact]
         public static void Invariant_DutchCulture_FormatsDoubleBasedOnInvariantCulture()
         {
-            RemoteExecutor.Invoke(
-                () =>
+            RemoteExecutorForUap.Invoke(() =>
+            {
+                using (new ThreadCultureChange("nl"))
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo("nl"); // would be 123,456 in Dutch
-                    double d = 123.456;
+                    double d = 123.456; // would be 123,456 in Dutch
                     string expected = string.Format(CultureInfo.InvariantCulture, "Invariant culture is used {0}", d);
                     string actual = FormattableString.Invariant($"Invariant culture is used {d}");
                     Assert.Equal(expected, actual);
-
-                    return RemoteExecutor.SuccessExitCode;
-                }).Dispose();
+                }
+            }).Dispose();
         }
 
         [Fact]
@@ -45,15 +44,15 @@ namespace System.Tests
         [Fact]
         public static void IFormattableToString_UsesSuppliedFormatProvider()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutorForUap.Invoke(() =>
             {
-                CultureInfo.CurrentCulture = new CultureInfo("nl"); // would be 123,456 in Dutch
-                double d = 123.456;
-                string expected = string.Format(CultureInfo.InvariantCulture, "Invariant culture is used {0}", d);
-                string actual = ((IFormattable)((FormattableString)$"Invariant culture is used {d}")).ToString(null, CultureInfo.InvariantCulture);
-                Assert.Equal(expected, actual);
-
-                return RemoteExecutor.SuccessExitCode;
+                using (new ThreadCultureChange("nl"))
+                {
+                    double d = 123.456; // would be 123,456 in Dutch
+                    string expected = string.Format(CultureInfo.InvariantCulture, "Invariant culture is used {0}", d);
+                    string actual = ((IFormattable)((FormattableString)$"Invariant culture is used {d}")).ToString(null, CultureInfo.InvariantCulture);
+                    Assert.Equal(expected, actual);
+                }
             }).Dispose();
         }
 

@@ -137,8 +137,6 @@ public partial class ConsoleEncoding
                 // (assuming input isn't redirected).
                 Assert.NotSame(inReader, Console.In);
             }
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -178,8 +176,6 @@ public partial class ConsoleEncoding
 
             Assert.NotSame(errorWriter, Console.Error);
             Assert.NotSame(outWriter, Console.Out);
-
-            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
