@@ -1373,8 +1373,8 @@ namespace System
             return string.Create(3, character, (Span<char> chars, char c) =>
             {
                 chars[0] = '%';
-                chars[1] = UriHelper.s_hexUpperChars[(c & 0xf0) >> 4];
-                chars[2] = UriHelper.s_hexUpperChars[c & 0xf];
+                chars[1] = (char)UriHelper.HexUpperChars[(c & 0xf0) >> 4];
+                chars[2] = (char)UriHelper.HexUpperChars[c & 0xf];
             });
         }
 
@@ -1897,18 +1897,9 @@ namespace System
             return (index >= 0 && uriString[index] == ':');
         }
 
-        internal static unsafe string InternalEscapeString(string rawString)
-        {
-            if ((object)rawString == null)
-                return string.Empty;
-
-            int position = 0;
-            char[]? dest = UriHelper.EscapeString(rawString, 0, rawString.Length, null, ref position, true, '?', '#', '%');
-            if ((object?)dest == null)
-                return rawString;
-
-            return new string(dest, 0, position);
-        }
+        internal static string InternalEscapeString(string rawString) =>
+            rawString is null ? string.Empty :
+            UriHelper.EscapeString(rawString, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');
 
         //
         //  This method is called first to figure out the scheme or a simple file path
@@ -2469,11 +2460,7 @@ namespace System
                         flags |= Flags.E_HostNotCanonical;
                         if (NotAny(Flags.UserEscaped))
                         {
-                            int position = 0;
-                            char[]? dest = UriHelper.EscapeString(host, 0, host.Length, null, ref position, true, '?',
-                                '#', IsImplicitFile ? c_DummyChar : '%');
-                            if ((object?)dest != null)
-                                host = new string(dest, 0, position);
+                            host = UriHelper.EscapeString(host, checkExistingEscaped: !IsImplicitFile, UriHelper.UnreservedReservedTable, '?', '#');
                         }
                         else
                         {
@@ -2771,8 +2758,10 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                             {
-                                chars = UriHelper.EscapeString(_string, _info.Offset.User, _info.Offset.Host, chars,
-                                    ref count, true, '?', '#', '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                                chars = UriHelper.EscapeString(
+                                    _string.AsSpan(_info.Offset.User, _info.Offset.Host - _info.Offset.User),
+                                    chars, ref count,
+                                    checkExistingEscaped: true, '?', '#');
                             }
                             else
                             {
@@ -2938,8 +2927,12 @@ namespace System
                         case UriFormat.UriEscaped:
                             //Can Assert IsImplicitfile == false
                             if (NotAny(Flags.UserEscaped))
-                                chars = UriHelper.EscapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                    ref count, true, '#', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                            {
+                                chars = UriHelper.EscapeString(
+                                    _string.AsSpan(delimiterAwareIndex, _info.Offset.Fragment - delimiterAwareIndex),
+                                    chars, ref count,
+                                    checkExistingEscaped: true, '#');
+                            }
                             else
                             {
                                 UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
@@ -2991,8 +2984,12 @@ namespace System
                     {
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
-                                chars = UriHelper.EscapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                    ref count, true, c_DummyChar, c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                            {
+                                chars = UriHelper.EscapeString(
+                                    _string.AsSpan(delimiterAwareIndex, _info.Offset.End - delimiterAwareIndex),
+                                    chars, ref count,
+                                    checkExistingEscaped: true);
+                            }
                             else
                             {
                                 UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
@@ -4623,8 +4620,11 @@ namespace System
                             str = str.Remove(dosPathIdx + _info.Offset.Path - 1, 1);
                             str = str.Insert(dosPathIdx + _info.Offset.Path - 1, ":");
                         }
-                        dest = UriHelper.EscapeString(str, _info.Offset.Path, _info.Offset.Query, dest, ref end, true,
-                            '?', '#', IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+
+                        dest = UriHelper.EscapeString(
+                            str.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path),
+                            dest, ref end,
+                            checkExistingEscaped: !IsImplicitFile, '?', '#');
                     }
                     else
                     {
@@ -4636,8 +4636,7 @@ namespace System
                 // On Unix, escape '\\' in path of file uris to '%5C' canonical form.
                 if (!IsWindowsSystem && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
                 {
-                    string str = new string(dest, pos, end - pos);
-                    dest = UriHelper.EscapeString(str, 0, str.Length, dest, ref pos, true, '\\', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                    dest = UriHelper.EscapeString(new string(dest, pos, end - pos), dest, ref pos, checkExistingEscaped: true, '\\');
                     end = pos;
                 }
             }
@@ -4685,9 +4684,7 @@ namespace System
                 if (formatAs == UriFormat.UriEscaped && NotAny(Flags.UserEscaped) && InFact(Flags.E_PathNotCanonical))
                 {
                     //Note: Flags.UserEscaped check is solely based on trusting the user
-                    string srcString = new string(dest, pos, end - pos);
-                    dest = UriHelper.EscapeString(srcString, 0, end - pos, dest, ref pos, true, '?', '#',
-                        IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                    dest = UriHelper.EscapeString(new string(dest, pos, end - pos), dest, ref pos, checkExistingEscaped: !IsImplicitFile, '?', '#');
                     end = pos;
                 }
             }
@@ -5337,22 +5334,9 @@ namespace System
         }
 
         [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
-        protected static string EscapeString(string? str)
-        {
-            // This method just does not make sense as protected
-            // It should go public static asap
-
-            if (str == null)
-            {
-                return string.Empty;
-            }
-
-            int destStart = 0;
-            char[]? dest = UriHelper.EscapeString(str, 0, str.Length, null, ref destStart, true, '?', '#', '%');
-            if (dest == null)
-                return str;
-            return new string(dest, 0, destStart);
-        }
+        protected static string EscapeString(string? str) =>
+            str is null ? string.Empty :
+            UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');
 
         //
         // CheckSecurity
