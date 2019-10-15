@@ -3394,8 +3394,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     assert(tree->gtOper == GT_CAST);
 
     var_types fromType = tree->CastFromType();
-    var_types toType   = tree->gtCast.gtCastType;
-    GenTree*  op1      = tree->gtCast.CastOp();
+    var_types toType   = tree->AsCast()->gtCastType;
+    GenTree*  op1      = tree->AsCast()->CastOp();
 
     // force the fromType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())

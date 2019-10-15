@@ -44,7 +44,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
         }
 
         // assert that oper is unchanged and that it is still a GT_CAST node
-        noway_assert(tree->gtCast.CastOp() == oper);
+        noway_assert(tree->AsCast()->CastOp() == oper);
         noway_assert(tree->gtOper == GT_CAST);
     }
     result = fgMorphIntoHelperCall(tree, helper, gtNewCallArgs(oper));
@@ -137,7 +137,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
 
     /* The first sub-operand is the thing being cast */
 
-    GenTree* oper = tree->gtCast.CastOp();
+    GenTree* oper = tree->AsCast()->CastOp();
 
     if (fgGlobalMorph && (oper->gtOper == GT_ADDR))
     {
@@ -261,7 +261,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
 
 #ifdef _TARGET_ARM_
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && (oper->gtOper == GT_CAST) &&
-             !varTypeIsLong(oper->gtCast.CastOp()))
+             !varTypeIsLong(oper->AsCast()->CastOp()))
     {
         // optimization: conv.r4(conv.r8(?)) -> conv.r4(d)
         // except when the ultimate source is a long because there is no long-to-float helper, so it must be 2 step.
@@ -397,7 +397,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
             GenTree* andOp2 = oper->AsOp()->gtOp2;
 
             // Special case to the special case: AND with a casted int.
-            if ((andOp2->OperGet() == GT_CAST) && (andOp2->gtCast.CastOp()->OperGet() == GT_CNS_INT))
+            if ((andOp2->OperGet() == GT_CAST) && (andOp2->AsCast()->CastOp()->OperGet() == GT_CNS_INT))
             {
                 // gtFoldExprConst will deal with whether the cast is signed or
                 // unsigned, or overflow-sensitive.
@@ -512,7 +512,7 @@ OPTIMIZECAST:
     noway_assert(tree->gtOper == GT_CAST);
 
     /* Morph the operand */
-    tree->gtCast.CastOp() = oper = fgMorphTree(oper);
+    tree->AsCast()->CastOp() = oper = fgMorphTree(oper);
 
     /* Reset the call flag */
     tree->gtFlags &= ~GTF_CALL;
@@ -649,7 +649,7 @@ OPTIMIZECAST:
                     /* If oper is changed into a cast to TYP_INT, or to a GT_NOP, we may need to discard it */
                     if (oper->gtOper == GT_CAST && oper->CastToType() == genActualType(oper->CastFromType()))
                     {
-                        oper = oper->gtCast.CastOp();
+                        oper = oper->AsCast()->CastOp();
                     }
                     goto REMOVE_CAST;
                 }
@@ -681,7 +681,7 @@ OPTIMIZECAST:
                     return tree;
                 }
 
-                noway_assert(tree->gtCast.CastOp() == oper); // unchanged
+                noway_assert(tree->AsCast()->CastOp() == oper); // unchanged
             }
             break;
 
@@ -11017,14 +11017,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     {
                         // We see if we can force an int constant to change its signedness
                         GenTree* constOp;
-                        if (op1->gtCast.CastOp()->gtOper == GT_CNS_INT)
+                        if (op1->AsCast()->CastOp()->gtOper == GT_CNS_INT)
                             constOp = op1;
-                        else if (op2->gtCast.CastOp()->gtOper == GT_CNS_INT)
+                        else if (op2->AsCast()->CastOp()->gtOper == GT_CNS_INT)
                             constOp = op2;
                         else
                             goto NO_MUL_64RSLT;
 
-                        if (((unsigned)(constOp->gtCast.CastOp()->gtIntCon.gtIconVal) < (unsigned)(0x80000000)))
+                        if (((unsigned)(constOp->AsCast()->CastOp()->gtIntCon.gtIconVal) < (unsigned)(0x80000000)))
                             constOp->gtFlags ^= GTF_UNSIGNED;
                         else
                             goto NO_MUL_64RSLT;
@@ -11057,7 +11057,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                     // If the GT_MUL can be altogether folded away, we should do that.
 
-                    if ((op1->gtCast.CastOp()->OperKind() & op2->gtCast.CastOp()->OperKind() & GTK_CONST) &&
+                    if ((op1->AsCast()->CastOp()->OperKind() & op2->AsCast()->CastOp()->OperKind() & GTK_CONST) &&
                         opts.OptEnabled(CLFLG_CONSTANTFOLD))
                     {
                         tree->AsOp()->gtOp1 = op1 = gtFoldExprConst(op1);
@@ -11077,18 +11077,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     // And propagate the new flags. We don't want to CSE the casts because
                     // codegen expects GTF_MUL_64RSLT muls to have a certain layout.
 
-                    if (op1->gtCast.CastOp()->OperGet() != GT_NOP)
+                    if (op1->AsCast()->CastOp()->OperGet() != GT_NOP)
                     {
-                        op1->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op1->gtCast.CastOp());
+                        op1->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op1->AsCast()->CastOp());
                         op1->gtFlags &= ~GTF_ALL_EFFECT;
-                        op1->gtFlags |= (op1->gtCast.CastOp()->gtFlags & GTF_ALL_EFFECT);
+                        op1->gtFlags |= (op1->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
                     }
 
-                    if (op2->gtCast.CastOp()->OperGet() != GT_NOP)
+                    if (op2->AsCast()->CastOp()->OperGet() != GT_NOP)
                     {
-                        op2->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op2->gtCast.CastOp());
+                        op2->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op2->AsCast()->CastOp());
                         op2->gtFlags &= ~GTF_ALL_EFFECT;
-                        op2->gtFlags |= (op2->gtCast.CastOp()->gtFlags & GTF_ALL_EFFECT);
+                        op2->gtFlags |= (op2->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
                     }
 
                     op1->gtFlags |= GTF_DONT_CSE;
@@ -11941,7 +11941,7 @@ DONE_MORPHING_CHILDREN:
 
                     if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(effectiveOp1->TypeGet())))
                     {
-                        tree->AsOp()->gtOp2 = op2 = op2->gtCast.CastOp();
+                        tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
                     }
                 }
                 else if (op2->OperIsCompare() && varTypeIsByte(effectiveOp1->TypeGet()))
@@ -12309,7 +12309,7 @@ DONE_MORPHING_CHILDREN:
                 {
                     /* Simply make this into an integer comparison */
 
-                    tree->AsOp()->gtOp1 = op1->gtCast.CastOp();
+                    tree->AsOp()->gtOp1 = op1->AsCast()->CastOp();
                     tree->AsOp()->gtOp2 = gtNewIconNode((int)cns2->AsIntConCommon()->LngValue(), TYP_INT);
                 }
 
@@ -13241,7 +13241,7 @@ DONE_MORPHING_CHILDREN:
             }
             else if (op1->gtOper == GT_CAST)
             {
-                GenTree* casting = op1->gtCast.CastOp();
+                GenTree* casting = op1->AsCast()->CastOp();
                 if (casting->gtOper == GT_LCL_VAR || casting->gtOper == GT_CLS_VAR)
                 {
                     DEBUG_DESTROY_NODE(op1);
@@ -13738,7 +13738,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                 var_types cast;
                 var_types dstt;
 
-                srct = op2->gtCast.CastOp()->TypeGet();
+                srct = op2->AsCast()->CastOp()->TypeGet();
                 cast = (var_types)op2->CastToType();
                 dstt = op1->TypeGet();
 
@@ -13746,7 +13746,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
                 if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
                 {
-                    op2 = tree->gtOp2 = op2->gtCast.CastOp();
+                    op2 = tree->gtOp2 = op2->AsCast()->CastOp();
                 }
             }
 
