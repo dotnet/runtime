@@ -4,7 +4,7 @@
 
 /******************************************************************************
  * This file is auto-generated from a template file by the GenerateTests.csx  *
- * script in tests\src\JIT\HardwareIntrinsics.Arm\Shared. In order to make    *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
  * changes, please update the corresponding template and run according to the *
  * directions listed in the file.                                             *
  ******************************************************************************/
@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.Arm
     {
         private static void {TestName}()
         {
-            var test = new {TemplateName}UnaryOpTest__{TestName}();
+            var test = new AesBinaryOpTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -110,44 +110,52 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class {TemplateName}UnaryOpTest__{TestName}
+    public sealed unsafe class AesBinaryOpTest__{TestName}
     {
         private struct DataTable
         {
             private byte[] inArray1;
+            private byte[] inArray2;
             private byte[] outArray;
 
             private GCHandle inHandle1;
+            private GCHandle inHandle2;
             private GCHandle outHandle;
 
             private ulong alignment;
 
-            public DataTable({Op1BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
+            public DataTable({Op1BaseType}[] inArray1, {Op2BaseType}[] inArray2, {RetBaseType}[] outArray, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
 
                 this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
                 this.outArray = new byte[alignment * 2];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
                 this.alignment = (ulong)alignment;
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
             public void Dispose()
             {
                 inHandle1.Free();
+                inHandle2.Free();
                 outHandle.Free();
             }
 
@@ -160,67 +168,77 @@ namespace JIT.HardwareIntrinsics.Arm
         private struct TestStruct
         {
             public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario({TemplateName}UnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario(AesBinaryOpTest__{TestName} testClass)
             {
-                var result = {Isa}.{Method}(_fld1);
+                var result = {Isa}.{Method}(_fld1, _fld2);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load({TemplateName}UnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario_Load(AesBinaryOpTest__{TestName} testClass)
             {
                 fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
+                fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &_fld2)
                 {
                     var result = {Isa}.{Method}(
-                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1))
+                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
+                        {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2))
                     );
 
                     Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                    testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+                    testClass.ValidateResult(testClass._dataTable.outArrayPtr);
                 }
             }
         }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        
 
-        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
+        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[{InputSize}] {Input};
+        private static {Op2BaseType}[] _data2 = new {Op2BaseType}[{KeySize}] {Key};
+        private static {RetBaseType}[] _expectedRet = new {RetBaseType}[{ExpectedRetSize}] {ExpectedRet};
 
         private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
+        private static {Op2VectorType}<{Op2BaseType}> _clsVar2;
 
         private {Op1VectorType}<{Op1BaseType}> _fld1;
+        private {Op2VectorType}<{Op2BaseType}> _fld2;
 
         private DataTable _dataTable;
 
-        static {TemplateName}UnaryOpTest__{TestName}()
+        static AesBinaryOpTest__{TestName}()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _clsVar2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
         }
 
-        public {TemplateName}UnaryOpTest__{TestName}()
+        public AesBinaryOpTest__{TestName}()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+            _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
@@ -232,11 +250,12 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
             var result = {Isa}.{Method}(
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr)
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_Load()
@@ -244,37 +263,40 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
             var result = {Isa}.{Method}(
-                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr))
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>) })
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr)
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr)
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>) })
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>) })
                                      .Invoke(null, new object[] {
-                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr))
+                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                                        {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -282,11 +304,12 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
             var result = {Isa}.{Method}(
-                _clsVar1
+                _clsVar1,
+                _clsVar2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario_Load()
@@ -294,13 +317,15 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
 
             fixed ({Op1VectorType}<{Op1BaseType}>* pClsVar1 = &_clsVar1)
+            fixed ({Op2VectorType}<{Op2BaseType}>* pClsVar2 = &_clsVar2)
             {
                 var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pClsVar1))
+                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pClsVar1)),
+                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pClsVar2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_clsVar1, _dataTable.outArrayPtr);
+                ValidateResult(_dataTable.outArrayPtr);
             }
         }
 
@@ -308,49 +333,53 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
-            var result = {Isa}.{Method}(op1);
+            var left = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var right = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr);
+            var result = {Isa}.{Method}(left, right);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var op1 = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr));
-            var result = {Isa}.{Method}(op1);
+            var left = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr));
+            var right = {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr));
+            var result = {Isa}.{Method}(left, right);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new {TemplateName}UnaryOpTest__{TestName}();
-            var result = {Isa}.{Method}(test._fld1);
+            var test = new AesBinaryOpTest__{TestName}();
+            var result = {Isa}.{Method}(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new {TemplateName}UnaryOpTest__{TestName}();
+            var test = new AesBinaryOpTest__{TestName}();
 
             fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &test._fld1)
+            fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &test._fld2)
             {
                 var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1))
+                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
+                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(test._fld1, _dataTable.outArrayPtr);
+                ValidateResult(_dataTable.outArrayPtr);
             }
         }
 
@@ -358,10 +387,10 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld1);
+            var result = {Isa}.{Method}(_fld1, _fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario_Load()
@@ -369,13 +398,15 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
 
             fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
+            fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &_fld2)
             {
                 var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1))
+                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
+                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_fld1, _dataTable.outArrayPtr);
+                ValidateResult(_dataTable.outArrayPtr);
             }
         }
 
@@ -384,10 +415,10 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld1);
+            var result = {Isa}.{Method}(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario_Load()
@@ -396,13 +427,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var test = TestStruct.Create();
             var result = {Isa}.{Method}(
-                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(&test._fld1))
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(&test._fld1)),
+                {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(&test._fld2))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
@@ -440,38 +472,33 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* result, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray1, outArray, method);
+            ValidateResult(outArray, method);
         }
 
-        private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
-        {
-            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-
-            ValidateResult(inArray1, outArray, method);
-        }
-
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        
+        private void ValidateResult({RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
-            {TemplateValidationLogic}
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i] != _expectedRet[i] )
+                {
+                    succeeded = false;
+                } 
+            }
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op2VectorType}<{Op2BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  expectedRet: ({string.Join(", ", _expectedRet)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
