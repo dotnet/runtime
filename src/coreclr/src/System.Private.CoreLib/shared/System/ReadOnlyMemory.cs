@@ -217,7 +217,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                ref T refToReturn = ref Unsafe.AsRef<T>(null);
+                ref T refToReturn = ref Unsafe.NullRef<T>();
                 int lengthOfUnderlyingSpan = 0;
 
                 // Copy this field into a local so that it can't change out from under us mid-operation.
