@@ -942,7 +942,3 @@
 
 # Requires NativeLibrary implementation
 -nomethod System.Net.Tests.HttpWebRequestTest.ServicePoint_GetValue_ExpectedResult
-
-# Broken SafeWaitHandle test on finalization
-# https://github.com/dotnet/corefx/issues/41635#issuecomment-542409299
--nomethod SafeWaitHandleExtensionsTests.SafeWaitHandleExtensions_set
