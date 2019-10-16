@@ -4929,6 +4929,8 @@ stack_unaligned (MonoMethod *m, gpointer caller)
 	g_assert_not_reached ();
 }
 
+#ifndef DISABLE_JIT
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -5158,6 +5160,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	return code;
 }
+
+#endif
 
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
