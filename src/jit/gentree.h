@@ -5060,8 +5060,12 @@ public:
     enum
     {
         BlkOpKindInvalid,
+#ifndef _TARGET_X86_
         BlkOpKindHelper,
+#endif
+#ifdef _TARGET_XARCH_
         BlkOpKindRepInstr,
+#endif
         BlkOpKindUnroll,
     } gtBlkOpKind;
 

@@ -10908,15 +10908,19 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 switch (tree->AsBlk()->gtBlkOpKind)
                 {
+#ifdef _TARGET_XARCH_
                     case GenTreeBlk::BlkOpKindRepInstr:
                         printf(" (RepInstr)");
                         break;
+#endif
                     case GenTreeBlk::BlkOpKindUnroll:
                         printf(" (Unroll)");
                         break;
+#ifndef _TARGET_X86_
                     case GenTreeBlk::BlkOpKindHelper:
                         printf(" (Helper)");
                         break;
+#endif
                     default:
                         unreached();
                 }

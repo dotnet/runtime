@@ -914,6 +914,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
         bool isCopyBlk = varTypeIsStruct(blkNode->Data());
         switch (blkNode->gtBlkOpKind)
         {
+#ifndef _TARGET_X86_
             case GenTreeBlk::BlkOpKindHelper:
                 if (isCopyBlk)
                 {
@@ -924,7 +925,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                     killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
                 }
                 break;
-
+#endif
 #ifdef _TARGET_XARCH_
             case GenTreeBlk::BlkOpKindRepInstr:
                 if (isCopyBlk)
@@ -941,8 +942,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                     killMask = RBM_RDI | RBM_RCX;
                 }
                 break;
-#else
-            case GenTreeBlk::BlkOpKindRepInstr:
 #endif
             case GenTreeBlk::BlkOpKindUnroll:
             case GenTreeBlk::BlkOpKindInvalid:
