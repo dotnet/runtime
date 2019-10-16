@@ -2811,7 +2811,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
     if ((memBase != nullptr) && memBase->isContained() && (memBase->OperGet() == GT_CLS_VAR_ADDR))
     {
-        CORINFO_FIELD_HANDLE fldHnd = memBase->gtClsVar.gtClsVarHnd;
+        CORINFO_FIELD_HANDLE fldHnd = memBase->AsClsVar()->gtClsVarHnd;
 
         // Static always need relocs
         if (!jitStaticFldIsGlobAddr(fldHnd))
@@ -2935,7 +2935,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 
     if (addr->OperGet() == GT_CLS_VAR_ADDR)
     {
-        emitIns_R_C(ins, attr, dstReg, addr->gtClsVar.gtClsVarHnd, 0);
+        emitIns_R_C(ins, attr, dstReg, addr->AsClsVar()->gtClsVarHnd, 0);
         return;
     }
 
@@ -2981,12 +2981,12 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_C_I(ins, attr, addr->gtClsVar.gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
+            emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
         }
         else
         {
             assert(!data->isContained());
-            emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->GetRegNum(), 0);
+            emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, data->GetRegNum(), 0);
         }
         return;
     }
@@ -3204,13 +3204,13 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         {
                             // src is a class static variable
                             // dst is implicit - RDX:RAX
-                            emitIns_C(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0);
+                            emitIns_C(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0);
                         }
                         else
                         {
                             // src is a class static variable
                             // dst is a register
-                            emitIns_R_C(ins, attr, dst->GetRegNum(), memBase->gtClsVar.gtClsVarHnd, 0);
+                            emitIns_R_C(ins, attr, dst->GetRegNum(), memBase->AsClsVar()->gtClsVarHnd, 0);
                         }
                     }
                     else
@@ -3225,7 +3225,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
                             // src is an contained immediate
                             // dst is a class static variable
-                            emitIns_C_I(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0,
+                            emitIns_C_I(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0,
                                         (int)src->AsIntConCommon()->IconValue());
                         }
                         else
@@ -3234,7 +3234,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
                             // src is a register
                             // dst is a class static variable
-                            emitIns_C_R(ins, attr, memBase->gtClsVar.gtClsVarHnd, src->GetRegNum(), 0);
+                            emitIns_C_R(ins, attr, memBase->AsClsVar()->gtClsVarHnd, src->GetRegNum(), 0);
                         }
                     }
 

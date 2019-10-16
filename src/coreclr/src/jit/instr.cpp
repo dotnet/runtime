@@ -611,11 +611,11 @@ AGAIN:
 
             if (shfv)
             {
-                GetEmitter()->emitIns_C_I(ins, size, tree->gtClsVar.gtClsVarHnd, offs, shfv);
+                GetEmitter()->emitIns_C_I(ins, size, tree->AsClsVar()->gtClsVarHnd, offs, shfv);
             }
             else
             {
-                GetEmitter()->emitIns_C(ins, size, tree->gtClsVar.gtClsVarHnd, offs);
+                GetEmitter()->emitIns_C(ins, size, tree->AsClsVar()->gtClsVarHnd, offs);
             }
             return;
 
@@ -741,7 +741,7 @@ AGAIN:
             else
 #endif // CPU_LOAD_STORE_ARCH
             {
-                GetEmitter()->emitIns_C_R(ins, size, tree->gtClsVar.gtClsVarHnd, reg, offs);
+                GetEmitter()->emitIns_C_R(ins, size, tree->AsClsVar()->gtClsVarHnd, reg, offs);
             }
             return;
 
@@ -889,8 +889,8 @@ AGAIN:
 
 #if CPU_LOAD_STORE_ARCH
             assert(!"GT_CLS_VAR not supported in ARM backend");
-#else  // CPU_LOAD_STORE_ARCH
-            GetEmitter()->emitIns_R_C(ins, size, reg, tree->gtClsVar.gtClsVarHnd, offs);
+#else // CPU_LOAD_STORE_ARCH
+            GetEmitter()->emitIns_R_C(ins, size, reg, tree->AsClsVar()->gtClsVarHnd, offs);
 #endif // CPU_LOAD_STORE_ARCH
             return;
 
@@ -1105,7 +1105,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    GetEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->gtClsVar.gtClsVarHnd, 0, ival);
+                    GetEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->AsClsVar()->gtClsVarHnd, 0, ival);
                     return;
                 }
 
