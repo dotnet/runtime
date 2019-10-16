@@ -137,6 +137,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var provider = CreateServiceProvider(serviceCollection);
 
+            // Repeatedly resolve and re-check to ensure dynamically generated code properly initializes the values types.
             for (int i = 0; i < 100; i++)
             {
                 var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
