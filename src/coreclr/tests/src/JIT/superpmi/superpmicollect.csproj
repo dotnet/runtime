@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <CrossGenTest>false</CrossGenTest>
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/coreclr/issues/24633 -->
@@ -15,21 +14,38 @@
   <ItemGroup>
     <Compile Include="superpmicollect.cs" />
   </ItemGroup>
-  <!-- TestProjects file contains the relative paths to the test projects that are used by superpmicollect test. -->
-  <PropertyGroup>
-    <_TestProjectsFileName>TestProjects.txt</_TestProjectsFileName>
-  </PropertyGroup>
-  <!-- In order to avoid hard-coding of those paths in C# file we embed the file as an assembly resource. -->
+
   <ItemGroup>
-    <EmbeddedResource Include="$(_TestProjectsFileName)">
-      <LogicalName>TestProjects</LogicalName>
+    <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
+    <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
+    <_SpmiTestProjects Update="@(_SpmiTestProjects)">
+      <Properties>OutputPath=$(OutputPath)\%(FileName)</Properties>
+    </_SpmiTestProjects>
+  </ItemGroup>
+
+  <!-- This target builds the executables and test running scripts for the _SpmiTestProjects
+       to the output directory of the current project. -->
+  <Target Name="_BuildSpmiTestProjects" BeforeTargets="Build">
+    <MSBuild Projects="@(_SpmiTestProjects)" />
+  </Target>
+
+  <!-- _SpmiTestNamesFile contains the file names of the _SpmiTestProjects. -->
+  <PropertyGroup>
+    <_SpmiTestNamesFile>$(IntermediateOutputPath)\SpmiTestNames.txt</_SpmiTestNamesFile>
+  </PropertyGroup>
+
+  <!-- In order to avoid hard-coding of the _SpmiTestProjects names in a C# file
+       we will write them to a file and embed the file as an assembly resource. -->
+  <Target Name="_WriteSpmiTestNamesToFile" BeforeTargets="ResGen">
+    <ItemGroup>
+      <_SpmiTestNames Include="@(_SpmiTestProjects->'%(FileName)')" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_SpmiTestNamesFile)" Lines="@(_SpmiTestNames)" Overwrite="True" />
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(_SpmiTestNamesFile)">
+      <LogicalName>SpmiTestNames</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <!-- This target builds the executables and test running scripts for the TestProjects to output directory of the current project. -->
-  <Target Name="_BuildTestProjects" AfterTargets="Build">
-    <ReadLinesFromFile File="$(_TestProjectsFileName)">
-      <Output TaskParameter="Lines" ItemName="_TestProjectsToBuild" />
-    </ReadLinesFromFile>
-    <MSBuild Projects="@(_TestProjectsToBuild)" Properties="OutputPath=$(OutputPath)" />
-  </Target>
 </Project>
