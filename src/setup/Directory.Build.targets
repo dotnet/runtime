@@ -6,6 +6,9 @@
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 
+  <!-- Provide no-op BuildAndTest target to allow the managed libraries build to still use it. -->
+  <Target Name="BuildAndTest" />
+
   <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskFile)" />
   <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
   <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(LocalBuildToolsTaskFile)" />
@@ -128,12 +131,12 @@
 
     <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
       <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-      
+
       <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
       <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
-      
+
       <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-      
+
       <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
       <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
 

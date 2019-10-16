@@ -12,7 +12,7 @@
     insertion NuGet packages on each project. Bundle installers aren't inserted, so this is enough.
   -->
   <Target Name="Build" DependsOnTargets="GetSharedFrameworkProjects">
-    <MSBuild Projects="$(RepoRoot)signing\SignMsiFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignMsiFiles.proj" Targets="Build" />
     <MSBuild Projects="@(PkgprojProjectToBuild);@(SharedFrameworkProject)" Targets="GenerateVSInsertionNupkg" />
   </Target>
 

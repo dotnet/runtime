@@ -5,7 +5,7 @@ if "%~1"=="-help" goto help
 if "%~1"=="-?" goto help
 if "%~1"=="/?" goto help
 
-powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0eng\build.ps1" %*
+powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0eng\build.ps1" %* /p:Subset=libraries
 goto end
 
 :help

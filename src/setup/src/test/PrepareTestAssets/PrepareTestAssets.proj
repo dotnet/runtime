@@ -58,7 +58,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <TemplateNuGetConfigFile>$(ProjectDir)NuGet.config</TemplateNuGetConfigFile>
+      <TemplateNuGetConfigFile>$(RepoRoot)NuGet.config</TemplateNuGetConfigFile>
 
       <RestoreTestSourceConfigLines>@(RestoreTestSource -> '&lt;add key="%(Key)" value="%(Identity)" /&gt;', '%0A    ')</RestoreTestSourceConfigLines>
 

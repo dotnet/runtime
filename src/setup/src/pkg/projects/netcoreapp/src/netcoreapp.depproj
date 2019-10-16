@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Targets" Version="$(MicrosoftNETCoreTargetsPackageVersion)" />
@@ -77,6 +77,6 @@
       </FilesToPackage>
     </ItemGroup>
   </Target>
-  
+
   <Import Project="localnetcoreapp.override.targets" />
 </Project>

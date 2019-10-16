@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Directory.CreateDirectory(_cwdSdkBaseDir);
             Directory.CreateDirectory(_userSdkBaseDir);
             Directory.CreateDirectory(_exeSdkBaseDir);
-            
+
             // Trace messages used to identify from which folder the SDK was picked
             _exeSelectedMessage = $"Using .NET Core SDK dll=[{_exeSdkBaseDir}";
         }
@@ -370,6 +370,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void SdkLookup_Negative_Version()
         {
+            WriteEmptyGlobalJson();
             // Add a negative SDK version
             AddAvailableSdkVersions(_exeSdkBaseDir, "-1.-1.-1");
 
@@ -420,6 +421,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
         {
+            WriteEmptyGlobalJson();
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0", "9999.0.3-dummy.9", "9999.0.3-dummy.10");
 
@@ -567,6 +569,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData("latESTMajor")]
         public void It_allows_case_insensitive_roll_forward_policy_names(string rollForward)
         {
+            WriteEmptyGlobalJson();
             const string Requested = "9999.0.100";
 
             AddAvailableSdkVersions(_exeSdkBaseDir, Requested);
@@ -1245,7 +1248,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "setup", "src", "test", "Assets", "TestUtils",
                 "SDKLookup", "dotnet.runtimeconfig.json");
 
             foreach (string version in availableVersions)
@@ -1266,7 +1269,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private void CopyGlobalJson(string globalJsonFileName)
         {
             string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "setup", "src", "test", "Assets", "TestUtils",
                 "SDKLookup", globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);
@@ -1285,5 +1288,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
         }
+
+        private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
     }
 }

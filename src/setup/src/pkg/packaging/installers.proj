@@ -51,19 +51,19 @@
   </Target>
 
   <Target Name="EnsureSignedBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(RepoRoot)signing\SignBinaries.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignBinaries.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedMsiFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(RepoRoot)signing\SignMsiFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignMsiFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(RepoRoot)signing\SignBurnEngineFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignBurnEngineFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(RepoRoot)signing\SignBurnBundleFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignBurnBundleFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
@@ -89,7 +89,7 @@
     <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)"
           DestinationFolder="$(SharedHostPublishRoot)" />
 
-    <Copy SourceFiles="$(ProjectDir)THIRD-PARTY-NOTICES.TXT"
+    <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
 
     <Copy SourceFiles="$(ProjectDir)LICENSE.TXT"

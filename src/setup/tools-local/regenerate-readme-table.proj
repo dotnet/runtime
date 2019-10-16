@@ -39,11 +39,11 @@
     </ItemGroup>
 
     <RegenerateReadmeTable
-      ReadmeFile="$(RepoRoot)README.md"
+      ReadmeFile="$(SetupRoot)README.md"
       Branches="@(Branches)"
       Platforms="@(Platforms)" />
 
-    <Message Text="$(MSBuildProjectName) -> $(RepoRoot)README.md" Importance="High" />
+    <Message Text="$(MSBuildProjectName) -> $(SetupRoot)README.md" Importance="High" />
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />

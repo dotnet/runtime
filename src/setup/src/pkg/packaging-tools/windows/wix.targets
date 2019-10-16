@@ -160,7 +160,7 @@
     the bundle references.
   -->
   <Target Name="GetBundledMsiFiles">
-    <MSBuild Projects="$(RepoRoot)signing\SignMsiFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignMsiFiles.proj" Targets="Build" />
     <MSBuild Projects="@(BundleComponentReference)" Targets="Build" />
 
     <MSBuild Projects="@(BundleComponentReference)" Targets="GetOutputWixInstallerFile">

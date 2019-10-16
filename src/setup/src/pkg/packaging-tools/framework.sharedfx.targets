@@ -246,7 +246,7 @@
     generate shared frameworks in the Arcade SDK.
   -->
   <Target Name="BuildPkgProjectReferences">
-    <MSBuild Projects="$(RepoRoot)signing\SignBinaries.proj" Targets="Build" />
+    <MSBuild Projects="$(SetupRoot)signing\SignBinaries.proj" Targets="Build" />
     <MSBuild Projects="@(PkgProjectReference)" Targets="Build" />
   </Target>
 

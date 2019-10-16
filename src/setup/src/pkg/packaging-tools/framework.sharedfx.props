@@ -25,7 +25,7 @@
     <AddDotnetfeedProjectSource>false</AddDotnetfeedProjectSource>
     <RestoreAllBuildRids>false</RestoreAllBuildRids>
     <!-- Ensure only this repo's NuGet.config file is used. -->
-    <RestoreConfigFile>$(ProjectDir)NuGet.config</RestoreConfigFile>
+    <RestoreConfigFile>$(RepoRoot)NuGet.config</RestoreConfigFile>
     <!-- Use repo-restored packages for platforms and targets dependencies -->
     <RestoreFallbackFolders>$(PackagesDir)</RestoreFallbackFolders>
     <!-- Don't error due to lack of runtime-specific deps, we're referencing those directly -->

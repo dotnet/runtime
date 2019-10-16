@@ -7,7 +7,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
-    
+
     <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(RuntimeIdentifier)</PackageTargetRuntime>
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
@@ -58,7 +58,7 @@
     <!-- Pkgproj requires its depproj crossgen outputs to be signed.-->
     <OrderProjectReference
       Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
-      Include="$(RepoRoot)signing\SignBinaries.proj" />
+      Include="$(SetupRoot)signing\SignBinaries.proj" />
   </ItemGroup>
 
   <!-- In *.builds projects, the current phase's name is the same as the project name. -->

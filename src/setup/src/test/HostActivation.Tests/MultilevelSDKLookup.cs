@@ -453,6 +453,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
             }
 
+            WriteEmptyGlobalJson();
+
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
 
@@ -516,6 +518,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
             }
 
+            WriteEmptyGlobalJson();
+
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
                 registeredInstallLocationOverride.SetInstallLocation(_regDir, RepoDirectories.BuildArchitecture);
@@ -551,6 +555,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Multi-level lookup is only supported on Windows.
                 return;
             }
+
+            WriteEmptyGlobalJson();
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.0", "9999.0.3-dummy");
@@ -704,7 +710,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "setup", "src", "test", "Assets", "TestUtils",
                 "SDKLookup", "dotnet.runtimeconfig.json");
 
             foreach (string version in availableVersions)
@@ -725,10 +731,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private void SetGlobalJsonVersion(string globalJsonFileName)
         {
             string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "setup", "src", "test", "Assets", "TestUtils",
                 "SDKLookup", globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);
         }
+
+        private void WriteGlobalJson(string contents)
+        {
+            File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
+        }
+
+        private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
     }
 }
