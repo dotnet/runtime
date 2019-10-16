@@ -412,6 +412,8 @@ namespace System.Net.Test.Common
 
     public class SettingsFrame : Frame
     {
+        const int RfcDefaultDynamicTableSize = 4096;
+
         public List<SettingsEntry> Entries;
 
         public SettingsFrame(FrameFlags flags, SettingsEntry[] entries) :
@@ -460,6 +462,21 @@ namespace System.Net.Test.Common
         {
             return base.ToString() + $"\nEntry Count: {Entries.Count}";
         }
+
+        public uint GetSettingOrDefault(SettingId settingId, uint defaultValue)
+        {
+            foreach (SettingsEntry setting in Entries)
+            {
+                if (setting.SettingId == settingId)
+                {
+                    defaultValue = setting.Value;
+                }
+            }
+
+            return defaultValue;
+        }
+
+        public int GetHeaderTableSize() => (int)GetSettingOrDefault(SettingId.HeaderTableSize, RfcDefaultDynamicTableSize);
     }
 
     public class GoAwayFrame : Frame
