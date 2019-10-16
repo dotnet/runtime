@@ -129,7 +129,8 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
-	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle;
+	gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);

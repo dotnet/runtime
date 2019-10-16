@@ -301,7 +301,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 		return emit_xcompare (cfg, klass, etype, ins, ins);
 	}
-	case SN_get_Item:
+	case SN_get_Item: {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
@@ -338,6 +338,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		mini_type_to_eval_stack_type (cfg, etype, ins);
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+	}
 	case SN_ctor:
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
