@@ -28,11 +28,6 @@ namespace System.Tests
             });
         }
 
-        public static int GetByteLength(this Utf8String value)
-        {
-            return value.AsBytes().Length;
-        }
-
         public unsafe static bool IsNull(this Utf8Span span)
         {
             return Unsafe.AreSame(ref Unsafe.AsRef<byte>(null), ref MemoryMarshal.GetReference(span.Bytes));
@@ -135,7 +130,7 @@ namespace System.Tests
         /// <summary>
         /// Mimics returning a literal <see cref="Utf8String"/> instance.
         /// </summary>
-        public static unsafe Utf8String u8(string str)
+        public static Utf8String u8(string str)
         {
             if (str is null)
             {
@@ -171,16 +166,8 @@ namespace System.Tests
             Assert.True(memStream.TryGetBuffer(out ArraySegment<byte> buffer));
 
             // Now allocate a UTF-8 string instance and set this as the contents.
-            // We do it this way rather than go through a public ctor because we don't
-            // want the "control" part of our unit tests to depend on the code under test.
 
-            Utf8String newUtf8String = _utf8StringFactory.Value(buffer.Count);
-            fixed (byte* pNewUtf8String = newUtf8String)
-            {
-                buffer.AsSpan().CopyTo(new Span<byte>(pNewUtf8String, newUtf8String.GetByteLength()));
-            }
-
-            return newUtf8String;
+            return Utf8String.UnsafeCreateWithoutValidation(buffer);
         }
 
         public unsafe static Range GetRangeOfSubspan<T>(ReadOnlySpan<T> outerSpan, ReadOnlySpan<T> innerSpan)

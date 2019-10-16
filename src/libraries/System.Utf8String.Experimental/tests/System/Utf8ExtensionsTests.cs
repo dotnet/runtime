@@ -27,7 +27,7 @@ namespace System.Tests
             // Finally, a span wrapping data should become a span wrapping that same data.
 
             Utf8String theString = u8("Hello");
-            Assert.True(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in theString.GetPinnableReference()), 5) == ((ReadOnlySpan<Char8>)theString).AsBytes());
+            Assert.True(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in theString.GetPinnableReference()), 5) == (theString.AsMemory().Span).AsBytes());
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace System.Tests
             Utf8String theString = u8("Hello");
 
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in theString.GetPinnableReference()), ref Unsafe.AsRef(in theString.AsSpan().GetPinnableReference())));
-            Assert.Equal(5, theString.AsSpan().Bytes.Length);
+            Assert.Equal(5, theString.AsSpan().Length);
         }
 
         [Fact]

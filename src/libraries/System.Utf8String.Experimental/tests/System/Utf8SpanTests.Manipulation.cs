@@ -165,7 +165,7 @@ namespace System.Text.Tests
         {
             using BoundedUtf8Span boundedSpan = new BoundedUtf8Span(source.AsBytes());
             Utf8Span span = boundedSpan.Span;
-            int totalSpanLengthInBytes = span.Bytes.Length;
+            int totalSpanLengthInBytes = span.Length;
             source = null; // to avoid inadvertently using this for the remainder of the method
 
             // First, run the split with default options and make sure the ranges are equivalent

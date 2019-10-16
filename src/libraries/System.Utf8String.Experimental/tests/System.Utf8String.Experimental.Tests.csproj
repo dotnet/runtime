@@ -30,9 +30,12 @@
     <Compile Include="System\Utf8SpanTests.Searching.TestData.cs" />
     <Compile Include="System\Utf8SpanTests.TestData.cs" />
     <Compile Include="System\Utf8StringTests.cs" />
+    <Compile Include="System\Utf8StringTests.Comparison.cs" />
+    <Compile Include="System\Utf8StringTests.Conversion.cs" />
     <Compile Include="System\Utf8StringTests.Ctor.cs" />
+    <Compile Include="System\Utf8StringTests.Enumeration.cs" />
+    <Compile Include="System\Utf8StringTests.Manipulation.cs" />
     <Compile Include="System\Utf8StringTests.Searching.cs" />
-    <Compile Include="System\Utf8StringTests.Substring.cs" />
     <Compile Include="Xunit\SpanAssert.cs" />
     <Compile Include="System\Utf8TestUtilities.cs" />
   </ItemGroup>

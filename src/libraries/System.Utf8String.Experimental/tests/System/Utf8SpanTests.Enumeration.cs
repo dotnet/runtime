@@ -47,12 +47,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public static void RunesProperty_FromEmpty()
-        {
-            Assert.False(Utf8Span.Empty.Runes.GetEnumerator().MoveNext());
-        }
-
-        [Fact]
         public static void RunesProperty_FromData()
         {
             using BoundedUtf8Span boundedSpan = new BoundedUtf8Span("\U00000012\U00000123\U00001234\U00101234\U00000012\U00000123\U00001234\U00101234");
@@ -77,6 +71,12 @@ namespace System.Text.Tests
             Assert.True(runesEnumerator.MoveNext());
             Assert.Equal(new Rune(0x101234), runesEnumerator.Current);
             Assert.False(runesEnumerator.MoveNext());
+        }
+
+        [Fact]
+        public static void RunesProperty_FromEmpty()
+        {
+            Assert.False(Utf8Span.Empty.Runes.GetEnumerator().MoveNext());
         }
     }
 }
