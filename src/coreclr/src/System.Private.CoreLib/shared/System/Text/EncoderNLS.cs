@@ -201,8 +201,6 @@ namespace System.Text
             completed = (charsUsed == charCount)
                 && !this.HasState
                 && (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0);
-
-            // Our data thingys are now full, we can return
         }
 
         public Encoding Encoding

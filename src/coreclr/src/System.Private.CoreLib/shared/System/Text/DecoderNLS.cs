@@ -207,11 +207,13 @@ namespace System.Text
             charsUsed = _encoding.GetChars(bytes, byteCount, chars, charCount, this);
             bytesUsed = _bytesUsed;
 
-            // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
-            completed = (bytesUsed == byteCount) && (!flush || !this.HasState) &&
-                               (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0);
+            // Per MSDN, "The completed output parameter indicates whether all the data in the input
+            // buffer was converted and stored in the output buffer." That means we've successfully
+            // consumed all the input _and_ there's no pending state or fallback data remaining to be output.
 
-            // Our data thingy are now full, we can return
+            completed = (bytesUsed == byteCount)
+                && !this.HasState
+                && (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0);
         }
 
         public bool MustFlush => _mustFlush;
