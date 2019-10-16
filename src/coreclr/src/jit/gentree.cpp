@@ -1379,8 +1379,9 @@ AGAIN:
                         return false;
                     }
                     break;
+                case GT_BLK:
                 case GT_OBJ:
-                    if (op1->AsObj()->GetLayout() != op2->AsObj()->GetLayout())
+                    if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
                     {
                         return false;
                     }
@@ -2057,11 +2058,11 @@ AGAIN:
                         genTreeHashAdd(hash,
                                        static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtRuntimeLookup.gtHnd)));
                     break;
-
+                case GT_BLK:
                 case GT_OBJ:
                     hash =
                         genTreeHashAdd(hash,
-                                       static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->AsObj()->GetLayout())));
+                                       static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->AsBlk()->GetLayout())));
                     break;
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
@@ -2096,19 +2097,9 @@ AGAIN:
                     hash += static_cast<unsigned>(tree->gtAddrMode.Offset() << 3) + tree->gtAddrMode.gtScale;
                     break;
 
-                case GT_BLK:
                 case GT_STORE_BLK:
-                    hash += tree->AsBlk()->GetLayout()->GetSize();
-                    break;
-
-                case GT_OBJ:
                 case GT_STORE_OBJ:
-                    hash ^= PtrToUlong(tree->AsObj()->GetLayout());
-                    break;
-
-                case GT_DYN_BLK:
-                case GT_STORE_DYN_BLK:
-                    hash += gtHashValue(tree->AsDynBlk()->gtDynamicSize);
+                    hash ^= PtrToUlong(tree->AsBlk()->GetLayout());
                     break;
 
                 // For the ones below no extra argument matters for comparison.
