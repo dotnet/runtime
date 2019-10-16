@@ -138,6 +138,15 @@ namespace System.ConfigurationTests
             Assert.IsType<DummyCanConverter>(property.Converter);
         }
 
+        [Fact]
+        public void DescriptionValueIsExposed()
+        {
+            FooFailsValidator validator = new FooFailsValidator();
+            DummyCanConverter converter = new DummyCanConverter();
+            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertableClass), null, converter, validator, ConfigurationPropertyOptions.None, "bar");
+            Assert.Equal("bar", property.Description);
+        }
+
         [TypeConverter(typeof(DummyCantConverter))]
         public class MyUnconvertableClass
         {
