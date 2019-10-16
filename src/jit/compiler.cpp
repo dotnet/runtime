@@ -2352,6 +2352,11 @@ void Compiler::compSetProcessor()
         opts.setSupportedISA(InstructionSet_Vector128);
     }
 
+    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_AES) && JitConfig.EnableArm64Aes())
+    {
+        opts.setSupportedISA(InstructionSet_Aes);
+    }
+
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS) && JitConfig.EnableArm64Atomics())
     {
         opts.setSupportedISA(InstructionSet_Atomics);
