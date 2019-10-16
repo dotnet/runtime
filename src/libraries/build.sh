@@ -13,5 +13,4 @@ while [[ -h $source ]]; do
 done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
-"$scriptroot/eng/build.sh" $@
-exit $?
+"$scriptroot/../../build.sh" /p:Subset=libraries $@
