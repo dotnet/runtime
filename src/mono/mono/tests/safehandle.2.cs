@@ -55,13 +55,22 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_safe_handle_ref")]
 	public static extern void mono_safe_handle_ref2 (ref MyHandleNoCtor handle);
 
+	[DllImport ("libtest", EntryPoint="mono_safe_handle_ref_nomod")]
+	public static extern IntPtr mono_safe_handle_ref_nomod_in (in MyHandle handle);
+
+	[DllImport ("libtest", EntryPoint="mono_safe_handle_ref_nomod")]
+	public static extern IntPtr mono_safe_handle_ref_nomod_out (out MyHandle handle);
+
+	[DllImport ("libtest", EntryPoint="mono_safe_handle_ref_nomod")]
+	public static extern IntPtr mono_safe_handle_ref_nomod_ref (ref MyHandle handle);
+
 	public static int test_0_safehandle_ref_noctor ()
 	{
 		MyHandleNoCtor m = new MyHandleNoCtor ((IntPtr) 0xdead);
 
 		try {
 			mono_safe_handle_ref2 (ref m);
-		} catch (MissingMethodException e){
+		} catch (MissingMethodException) {
 			Console.WriteLine ("Good: got exception requried");
 			return 0;
 		}
@@ -72,6 +81,7 @@ public class Tests {
 	public static int test_0_safehandle_ref ()
 	{
 		MyHandle m = new MyHandle ((IntPtr) 0xdead);
+		MyHandle m_saved = m;
 
 		mono_safe_handle_ref (ref m);
 		
@@ -79,7 +89,47 @@ public class Tests {
 			Console.WriteLine ("test_0_safehandle_ref: fail; Expected 0x800d, got: {0:x}", m.DangerousGetHandle ());
 			return 1;
 		}
+
+		if (m == m_saved) {
+			Console.WriteLine ("test_0_safehandle_ref: fail; Expected new SafeHandle on return");
+			return 2;
+		}
+
 		Console.WriteLine ("test_0_safehandle_ref: pass");
+		return 0;
+	}
+
+	public static int test_0_safehandle_ref_nomod_in ()
+	{
+		MyHandle m = new MyHandle ((IntPtr) 0xdead);
+		IntPtr ret = mono_safe_handle_ref_nomod_in (in m);
+		return ret == (IntPtr) 0xdead ? 0 : 1;
+	}
+
+	public static int test_0_safehandle_ref_nomod_out ()
+	{
+		MyHandle m;
+		IntPtr ret = mono_safe_handle_ref_nomod_out (out m);
+		return ret == IntPtr.Zero ? 0 : 1;
+	}
+
+	public static int test_0_safehandle_ref_nomod_ref ()
+	{
+		MyHandle m = new MyHandle ((IntPtr) 0xdead);
+		MyHandle m_saved = m;
+		IntPtr ret = mono_safe_handle_ref_nomod_ref (ref m);
+		if (ret != (IntPtr) 0xdead) {
+			Console.WriteLine ("test_0_safehandle_ref_nomod_ref: fail; Expected 0xdead, got {0:x}", ret);
+			return 1;
+		}
+		if (m != m_saved) {
+			Console.WriteLine ("test_0_safehandle_ref_nomod_ref: fail; Expected same SafeHandle on input and output");
+			return 2;
+		}
+		if (m.DangerousGetHandle () != (IntPtr) 0xdead) {
+			Console.WriteLine ("test_0_safehandle_ref_nomod_ref: fail; Expected 0xdead, got {0:x}", m.DangerousGetHandle ());
+			return 3;
+		}
 		return 0;
 	}
 
@@ -105,12 +155,12 @@ public class Tests {
 	}
 	
 
-        [StructLayout (LayoutKind.Sequential)]
+	[StructLayout (LayoutKind.Sequential)]
 	public struct StringOnStruct {
 		public string a;
 	}
 
-        [StructLayout (LayoutKind.Sequential)]
+	[StructLayout (LayoutKind.Sequential)]
 	public struct StructTest {
 		public int a;
 		public SafeHandle handle1;
@@ -118,7 +168,7 @@ public class Tests {
 		public int b;
 	}
 
-        [StructLayout (LayoutKind.Sequential)]
+	[StructLayout (LayoutKind.Sequential)]
 	public struct StructTest1 {
 		public SafeHandle a;
 	}

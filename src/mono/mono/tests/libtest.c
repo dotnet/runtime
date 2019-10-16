@@ -2593,11 +2593,17 @@ LIBTEST_API void STDCALL
 mono_safe_handle_ref (void **handle)
 {
 	if (*handle != 0){
-		*handle = (void *) 0xbad;
+		*handle = (void *) 0x800d;
 		return;
 	}
 
-	*handle = (void *) 0x800d;
+	*handle = (void *) 0xbad;
+}
+
+LIBTEST_API void* STDCALL
+mono_safe_handle_ref_nomod (void **handle)
+{
+	return *handle;
 }
 
 LIBTEST_API double STDCALL
