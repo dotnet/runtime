@@ -155,7 +155,7 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountTyp
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
-	VallocInfo *info = valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL;
+	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
 	int res;
 
 	if (info) {

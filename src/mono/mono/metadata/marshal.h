@@ -550,9 +550,6 @@ mono_marshal_set_last_error_windows (int error);
 void 
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
-MonoObject*
-mono_object_isinst_icall (MonoObject *obj, MonoClass *klass);
-
 int
 mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
 	      MonoMarshalSpec *spec, int conv_arg, 
