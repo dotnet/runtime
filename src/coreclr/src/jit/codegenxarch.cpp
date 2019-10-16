@@ -2823,8 +2823,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
     assert(storeBlkNode->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-    if (storeBlkNode->OperIs(GT_STORE_OBJ) && storeBlkNode->OperIsCopyBlkOp() && !storeBlkNode->gtBlkOpGcUnsafe)
+    if (storeBlkNode->OperIs(GT_STORE_OBJ))
     {
+        assert(!storeBlkNode->gtBlkOpGcUnsafe);
+        assert(storeBlkNode->OperIsCopyBlkOp());
         assert(storeBlkNode->AsObj()->GetLayout()->HasGCPtr());
         genCodeForCpObj(storeBlkNode->AsObj());
         return;
@@ -2894,25 +2896,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 // Arguments:
 //    initBlkNode - The Block store for which we are generating code.
 //
-// Preconditions:
-//    On x64:
-//      The size of the buffers must be a constant and also less than INITBLK_STOS_LIMIT bytes.
-//      Any value larger than that, we'll use the helper even if both the fill byte and the
-//      size are integer constants.
-//  On x86:
-//      The size must either be a non-constant or less than INITBLK_STOS_LIMIT bytes.
-//
 void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
 {
-    // Make sure we got the arguments of the initblk/initobj operation in the right registers.
-    unsigned size    = initBlkNode->Size();
-    GenTree* dstAddr = initBlkNode->Addr();
-    GenTree* initVal = initBlkNode->Data();
-    if (initVal->OperIsInitVal())
-    {
-        initVal = initVal->gtGetOp1();
-    }
-
     genConsumeBlockOp(initBlkNode, REG_RDI, REG_RAX, REG_RCX);
     instGen(INS_r_stosb);
 }
@@ -2921,11 +2906,11 @@ void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
 // genCodeForInitBlkUnroll: Generate unrolled block initialization code.
 //
 // Arguments:
-//    node - the GT_STORE_BLK or GT_STORE_OBJ node to generate code for
+//    node - the GT_STORE_BLK node to generate code for
 //
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
-    assert(node->OperIs(GT_STORE_BLK, GT_STORE_OBJ));
+    assert(node->OperIs(GT_STORE_BLK));
 
     regNumber dstAddrBaseReg = genConsumeReg(node->Addr());
     unsigned  dstOffset      = 0;
@@ -3434,15 +3419,12 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 //     putArgNode  - the PutArgStk tree.
 //
 // Preconditions:
-//     The size argument of the PutArgStk (for structs) is a constant and is between
-//     CPBLK_UNROLL_LIMIT and CPBLK_MOVS_LIMIT bytes.
 //     m_stkArgVarNum must be set to the base var number, relative to which the by-val struct bits will go.
 //
 void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 {
     GenTree* srcAddr = putArgNode->gtGetOp1();
     assert(srcAddr->TypeGet() == TYP_STRUCT);
-    assert(putArgNode->getArgSize() > CPBLK_UNROLL_LIMIT);
 
     // Make sure we got the arguments of the cpblk operation in the right registers, and that
     // 'srcAddr' is contained as expected.
