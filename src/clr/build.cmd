@@ -374,7 +374,7 @@ REM ============================================================================
 @if defined _echo @echo on
 
 set EmptyCmd=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    %__ProjectDir%\eng\empty.csproj /v:diag /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
+    %__ProjectDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 
