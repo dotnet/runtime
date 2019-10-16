@@ -1953,14 +1953,25 @@ namespace Mono.Linker.Steps {
 
 			MarkInterfaceImplementations (type);
 
-			foreach (var method in type.Methods) {
-				if (method.IsFinalizer ())
-					MarkMethod (method);
-				else if (IsVirtualNeededByInstantiatedTypeDueToPreservedScope (method))
-					MarkMethod (method);
-			}
+			foreach (var method in GetRequiredMethodsForInstantiatedType (type))
+				MarkMethod (method);
 
 			DoAdditionalInstantiatedTypeProcessing (type);
+		}
+
+		/// <summary>
+		/// Collect methods that must be marked once a type is determined to be instantiated.
+		///
+		/// This method is virtual in order to give derived mark steps an opportunity to modify the collection of methods that are needed 
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		protected virtual IEnumerable<MethodDefinition> GetRequiredMethodsForInstantiatedType (TypeDefinition type)
+		{
+			foreach (var method in type.Methods) {
+				if (method.IsFinalizer () || IsVirtualNeededByInstantiatedTypeDueToPreservedScope (method))
+					yield return method;
+			}
 		}
 
 		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
