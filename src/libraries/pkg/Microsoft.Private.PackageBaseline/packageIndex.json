@@ -20,8 +20,21 @@
         "net45": "4.0.0.0"
       }
     },
+    "Microsoft.Bcl.AsyncInterfaces": {
+      "StableVersions": [
+        "1.0.0"
+      ],
+      "BaselineVersion": "1.0.0",
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "1.0.0.0": "1.0.0"
+      }
+    },
     "Microsoft.Bcl.HashCode": {
-      "BaselineVersion": "1.2.0",
+      "StableVersions": [
+        "1.0.0"
+      ],
+      "BaselineVersion": "1.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.0.0": "1.0.0"
