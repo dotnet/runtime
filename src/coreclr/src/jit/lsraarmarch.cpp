@@ -552,74 +552,69 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 #endif // FEATURE_ARG_SPLIT
 
 //------------------------------------------------------------------------
-// BuildBlockStore: Set the NodeInfo for a block store.
+// BuildBlockStore: Build the RefPositions for a block store node.
 //
 // Arguments:
-//    blkNode       - The block store node of interest
+//    blkNode - The block store node of interest
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
 int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree* dstAddr  = blkNode->Addr();
-    unsigned size     = blkNode->Size();
-    GenTree* source   = blkNode->Data();
-    int      srcCount = 0;
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
 
     GenTree* srcAddrOrFill = nullptr;
-    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
 
-    regMaskTP dstAddrRegMask        = RBM_NONE;
-    regMaskTP sourceRegMask         = RBM_NONE;
-    regMaskTP blkSizeRegMask        = RBM_NONE;
-    regMaskTP internalIntCandidates = RBM_NONE;
+    regMaskTP dstAddrRegMask = RBM_NONE;
+    regMaskTP srcRegMask     = RBM_NONE;
+    regMaskTP sizeRegMask    = RBM_NONE;
 
-    if (isInitBlk)
+    if (blkNode->OperIsInitBlkOp())
     {
-        GenTree* initVal = source;
-        if (initVal->OperIsInitVal())
+        if (src->OperIs(GT_INIT_VAL))
         {
-            assert(initVal->isContained());
-            initVal = initVal->gtGetOp1();
+            assert(src->isContained());
+            src = src->AsUnOp()->gtGetOp1();
         }
-        srcAddrOrFill = initVal;
 
-        if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
+        srcAddrOrFill = src;
+
+        switch (blkNode->gtBlkOpKind)
         {
-            // TODO-ARM-CQ: Currently we generate a helper call for every
-            // initblk we encounter.  Later on we should implement loop unrolling
-            // code sequences to improve CQ.
-            // For reference see the code in lsraxarch.cpp.
-            NYI_ARM("initblk loop unrolling is currently not implemented.");
-        }
-        else
-        {
-            assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
-            assert(!initVal->isContained());
-            // The helper follows the regular ABI.
-            dstAddrRegMask = RBM_ARG_0;
-            sourceRegMask  = RBM_ARG_1;
-            blkSizeRegMask = RBM_ARG_2;
+            case GenTreeBlk::BlkOpKindUnroll:
+                NYI_ARM("initblk loop unrolling is currently not implemented.");
+                break;
+
+            case GenTreeBlk::BlkOpKindHelper:
+                assert(!src->isContained());
+                dstAddrRegMask = RBM_ARG_0;
+                srcRegMask     = RBM_ARG_1;
+                sizeRegMask    = RBM_ARG_2;
+                break;
+
+            default:
+                unreached();
         }
     }
     else
     {
-        // CopyObj or CopyBlk
-        // Sources are src and dest and size if not constant.
-        if (source->gtOper == GT_IND)
+        if (src->OperIs(GT_IND))
         {
-            assert(source->isContained());
-            srcAddrOrFill = source->gtGetOp1();
+            assert(src->isContained());
+            srcAddrOrFill = src->AsIndir()->Addr();
             assert(!srcAddrOrFill->isContained());
         }
-        if (blkNode->OperGet() == GT_STORE_OBJ)
+
+        if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            // CopyObj
             // We don't need to materialize the struct size but we still need
             // a temporary register to perform the sequence of loads and stores.
             // We can't use the special Write Barrier registers, so exclude them from the mask
-            internalIntCandidates = allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
+            regMaskTP internalIntCandidates =
+                allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
             buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
             if (size >= 2 * REGSIZE_BYTES)
@@ -637,73 +632,70 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             // which is killed by a StoreObj (and thus needn't be reserved).
             if (srcAddrOrFill != nullptr)
             {
-                sourceRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
+                srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
             }
         }
         else
         {
-            // CopyBlk
-            if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
+            switch (blkNode->gtBlkOpKind)
             {
-                // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
-                // we should unroll the loop to improve CQ.
-                // For reference see the code in lsraxarch.cpp.
-
-                buildInternalIntRegisterDefForNode(blkNode);
-
-#ifdef _TARGET_ARM64_
-                if (size >= 2 * REGSIZE_BYTES)
-                {
-                    // We will use ldp/stp to reduce code size and improve performance
-                    // so we need to reserve an extra internal register
+                case GenTreeBlk::BlkOpKindUnroll:
                     buildInternalIntRegisterDefForNode(blkNode);
-                }
-#endif // _TARGET_ARM64_
-            }
-            else
-            {
-                assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
-                dstAddrRegMask = RBM_ARG_0;
-                // The srcAddr goes in arg1.
-                if (srcAddrOrFill != nullptr)
-                {
-                    sourceRegMask = RBM_ARG_1;
-                }
-                blkSizeRegMask = RBM_ARG_2;
+#ifdef _TARGET_ARM64_
+                    if (size >= 2 * REGSIZE_BYTES)
+                    {
+                        // We will use ldp/stp to reduce code size and improve performance
+                        // so we need to reserve an extra internal register
+                        buildInternalIntRegisterDefForNode(blkNode);
+                    }
+#endif
+                    break;
+
+                case GenTreeBlk::BlkOpKindHelper:
+                    dstAddrRegMask = RBM_ARG_0;
+                    if (srcAddrOrFill != nullptr)
+                    {
+                        srcRegMask = RBM_ARG_1;
+                    }
+                    sizeRegMask = RBM_ARG_2;
+                    break;
+
+                default:
+                    unreached();
             }
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (blkSizeRegMask != RBM_NONE))
+    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
     {
         // Reserve a temp register for the block size argument.
-        buildInternalIntRegisterDefForNode(blkNode, blkSizeRegMask);
+        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
     }
+
+    int useCount = 0;
 
     if (!dstAddr->isContained())
     {
-        srcCount++;
+        useCount++;
         BuildUse(dstAddr, dstAddrRegMask);
     }
 
     if ((srcAddrOrFill != nullptr) && !srcAddrOrFill->isContained())
     {
-        srcCount++;
-        BuildUse(srcAddrOrFill, sourceRegMask);
+        useCount++;
+        BuildUse(srcAddrOrFill, srcRegMask);
     }
 
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
-        // The block size argument is a third argument to GT_STORE_DYN_BLK
-        srcCount++;
-        GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
-        BuildUse(blockSize, blkSizeRegMask);
+        useCount++;
+        BuildUse(blkNode->AsDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
-    return srcCount;
+    return useCount;
 }
 
 //------------------------------------------------------------------------
