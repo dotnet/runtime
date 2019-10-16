@@ -70,6 +70,18 @@ namespace Internal.IL.Stubs
                         (byte)ILOpcode.ldarg_1, (byte)ILOpcode.ldarg_0,
                         (byte)ILOpcode.sub,
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "NullRef":
+                    return new ILStubMethodIL(method, new byte[]
+                    {
+                        (byte)ILOpcode.ldc_i4_0, (byte)ILOpcode.conv_u,
+                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "IsNullRef":
+                    return new ILStubMethodIL(method, new byte[]
+                    {
+                        (byte)ILOpcode.ldarg_0, 
+                        (byte)ILOpcode.ldc_i4_0, (byte)ILOpcode.conv_u,
+                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
+                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
 
             return null;
