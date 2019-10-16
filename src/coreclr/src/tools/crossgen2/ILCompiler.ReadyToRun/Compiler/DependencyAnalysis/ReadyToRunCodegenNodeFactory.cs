@@ -6,16 +6,15 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Win32Resources;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
-using ILCompiler.Win32Resources;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -23,6 +22,29 @@ namespace ILCompiler.DependencyAnalysis
     public interface IEETypeNode
     {
         TypeDesc Type { get; }
+    }
+
+    public struct NodeCache<TKey, TValue>
+    {
+        private Func<TKey, TValue> _creator;
+        private ConcurrentDictionary<TKey, TValue> _cache;
+
+        public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
+        {
+            _creator = creator;
+            _cache = new ConcurrentDictionary<TKey, TValue>(comparer);
+        }
+
+        public NodeCache(Func<TKey, TValue> creator)
+        {
+            _creator = creator;
+            _cache = new ConcurrentDictionary<TKey, TValue>();
+        }
+
+        public TValue GetOrAdd(TKey key)
+        {
+            return _cache.GetOrAdd(key, _creator);
+        }
     }
 
     // TODO-REFACTOR: merge with the ReadyToRunCodegen factory
@@ -130,34 +152,6 @@ namespace ILCompiler.DependencyAnalysis
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
 
-        protected struct NodeCache<TKey, TValue>
-        {
-            private Func<TKey, TValue> _creator;
-            private ConcurrentDictionary<TKey, TValue> _cache;
-
-            public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
-            {
-                _creator = creator;
-                _cache = new ConcurrentDictionary<TKey, TValue>(comparer);
-            }
-
-            public NodeCache(Func<TKey, TValue> creator)
-            {
-                _creator = creator;
-                _cache = new ConcurrentDictionary<TKey, TValue>();
-            }
-
-            public TValue GetOrAdd(TKey key)
-            {
-                return _cache.GetOrAdd(key, _creator);
-            }
-
-            public TValue GetOrAdd(TKey key, Func<TKey, TValue> creator)
-            {
-                return _cache.GetOrAdd(key, creator);
-            }
-        }
-
         protected struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
         {
             public readonly object Target;
@@ -205,10 +199,10 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    // To make the code future compatible to the composite R2R story
+    // do NOT attempt to pass and store _inputModule here
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
-        private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
-
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
@@ -223,16 +217,96 @@ namespace ILCompiler.DependencyAnalysis
                   nameMangler,
                   new ReadyToRunTableManager(context))
         {
-            // To make the code future compatible to the composite R2R story
-            // do NOT attempt to pass and store _inputModule here
-            _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
-
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
             AttributePresenceFilter = attributePresenceFilterNode;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
+
+            CreateNodeCaches();
+        }
+
+        private void CreateNodeCaches()
+        {
+            // Create node caches
+            _constructedHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>(CreateReadyToRunHelperCell);
+
+            _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
+
+            _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>(key =>
+            {
+                return new MethodWithGCInfo(key.Method.Method, key.SignatureContext);
+            });
+
+            _methodSignatures = new NodeCache<MethodFixupKey, MethodFixupSignature>(key =>
+            {
+                return new MethodFixupSignature(
+                    key.FixupKind,
+                    key.TypeAndMethod.Method,
+                    key.TypeAndMethod.SignatureContext,
+                    key.TypeAndMethod.IsUnboxingStub,
+                    key.TypeAndMethod.IsInstantiatingStub
+                );
+            });
+
+            _typeSignatures = new NodeCache<TypeFixupKey, TypeFixupSignature>(key =>
+            {
+                return new TypeFixupSignature(key.FixupKind, key.TypeDesc, InputModuleContext);
+            });
+
+            _dynamicHelperCellCache = new NodeCache<DynamicHelperCellKey, ISymbolNode>(key =>
+            {
+                return new DelayLoadHelperMethodImport(
+                    this,
+                    DispatchImports,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
+                    key.Method,
+                    useVirtualCall: false,
+                    useInstantiatingStub: true,
+                    MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        key.Method,
+                        signatureContext: key.SignatureContext,
+                        isUnboxingStub: key.IsUnboxingStub,
+                        isInstantiatingStub: key.IsInstantiatingStub),
+                    key.SignatureContext);
+            });
+
+            _copiedCorHeaders = new NodeCache<EcmaModule, CopiedCorHeaderNode>(module =>
+            {
+                return new CopiedCorHeaderNode(module);
+            });
+
+            _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
+            {
+                return new CopiedMetadataBlobNode(module);
+            });
+
+            _copiedMethodIL = new NodeCache<MethodDesc, CopiedMethodILNode>(method =>
+            {
+                return new CopiedMethodILNode((EcmaMethod)method);
+            });
+
+            _copiedFieldRvas = new NodeCache<EcmaField, CopiedFieldRvaNode>(ecmaField =>
+            {
+                return new CopiedFieldRvaNode(ecmaField);
+            });
+
+            _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
+            {
+                return new CopiedStrongNameSignatureNode(module);
+            });
+
+            _copiedManagedResources = new NodeCache<EcmaModule, CopiedManagedResourcesNode>(module =>
+            {
+                return new CopiedManagedResourcesNode(module);
+            });
+
+            _profileDataCountsNodes = new NodeCache<MethodWithGCInfo, ProfileDataNode>(method =>
+            {
+                return new ProfileDataNode(method, Target);
+            });
         }
 
         public SignatureContext InputModuleContext;
@@ -283,21 +357,64 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        private readonly Dictionary<ReadyToRunHelper, ISymbolNode> _constructedHelpers = new Dictionary<ReadyToRunHelper, ISymbolNode>();
+        private NodeCache<ReadyToRunHelper, ISymbolNode> _constructedHelpers;
 
         public ISymbolNode GetReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
-            if (!_constructedHelpers.TryGetValue(helperId, out ISymbolNode helperCell))
-            {
-                helperCell = CreateReadyToRunHelperCell(helperId);
-                _constructedHelpers.Add(helperId, helperCell);
-            }
-            return helperCell;
+            return _constructedHelpers.GetOrAdd(helperId);
         }
 
         private ISymbolNode CreateReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
             return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
+        }
+
+
+        private NodeCache<TypeAndMethod, IMethodNode> _importMethods;
+
+        private IMethodNode CreateMethodEntrypoint(TypeAndMethod key)
+        {
+            MethodWithToken method = key.Method;
+            bool isUnboxingStub = key.IsUnboxingStub;
+            bool isInstantiatingStub = key.IsInstantiatingStub;
+            bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
+            SignatureContext signatureContext = key.SignatureContext;
+            if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
+            {
+                if (isPrecodeImportRequired)
+                {
+                    return new PrecodeMethodImport(
+                        this,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        method,
+                        CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        isUnboxingStub,
+                        isInstantiatingStub,
+                        signatureContext);
+                }
+                else
+                {
+                    return new LocalMethodImport(
+                        this,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        method,
+                        CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        isUnboxingStub,
+                        isInstantiatingStub,
+                        signatureContext);
+                }
+            }
+            else
+            {
+                // First time we see a given external method - emit indirection cell and the import entry
+                return new ExternalMethodImport(
+                    this,
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                    method,
+                    isUnboxingStub,
+                    isInstantiatingStub,
+                    signatureContext);
+            }
         }
 
         public IMethodNode MethodEntrypoint(
@@ -307,55 +424,13 @@ namespace ILCompiler.DependencyAnalysis
             bool isPrecodeImportRequired,
             SignatureContext signatureContext)
         {
-            IMethodNode methodImport;
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
-            if (!_importMethods.TryGetValue(key, out methodImport))
-            {
-                if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
-                {
-                    if (isPrecodeImportRequired)
-                    {
-                        methodImport = new PrecodeMethodImport(
-                            this,
-                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                            method,
-                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
-                            isUnboxingStub,
-                            isInstantiatingStub,
-                            signatureContext);
-                    }
-                    else
-                    {
-                        methodImport = new LocalMethodImport(
-                            this,
-                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                            method,
-                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
-                            isUnboxingStub,
-                            isInstantiatingStub,
-                            signatureContext);
-                    }
-                }
-                else
-                {
-                    // First time we see a given external method - emit indirection cell and the import entry
-                    methodImport = new ExternalMethodImport(
-                        this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        method,
-                        isUnboxingStub,
-                        isInstantiatingStub,
-                        signatureContext);
-                }
-                _importMethods.Add(key, methodImport);
-            }
-
-            return methodImport;
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired, signatureContext);
+            return _importMethods.GetOrAdd(key);
         }
 
-        private readonly Dictionary<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new Dictionary<TypeAndMethod, MethodWithGCInfo>();
+        private NodeCache<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>();
 
-        private MethodWithGCInfo CreateMethodEntrypointNode(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
+        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
@@ -363,15 +438,11 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
                 new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
-                isUnboxingStub: false, isInstantiatingStub: false, isPrecodeImportRequired: false);
-            MethodWithGCInfo localMethodNode;
-            if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
-            {
-                localMethodNode = new MethodWithGCInfo(localMethod, signatureContext);
-                _localMethodCache.Add(localMethodKey, localMethodNode);
-            }
-
-            return localMethodNode;
+                isUnboxingStub: false,
+                isInstantiatingStub: false,
+                isPrecodeImportRequired: false,
+                signatureContext);
+            return _localMethodCache.GetOrAdd(localMethodKey);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -396,8 +467,34 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
-            new Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>();
+        private struct MethodFixupKey : IEquatable<MethodFixupKey>
+        {
+            public readonly ReadyToRunFixupKind FixupKind;
+            public readonly TypeAndMethod TypeAndMethod;
+
+            public MethodFixupKey(ReadyToRunFixupKind fixupKind, TypeAndMethod typeAndMethod)
+            {
+                FixupKind = fixupKind;
+                TypeAndMethod = typeAndMethod;
+            }
+
+            public bool Equals(MethodFixupKey other)
+            {
+                return FixupKind == other.FixupKind && TypeAndMethod.Equals(other.TypeAndMethod);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MethodFixupKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return FixupKind.GetHashCode() ^ TypeAndMethod.GetHashCode();
+            }
+        }
+
+        private NodeCache<MethodFixupKey, MethodFixupSignature> _methodSignatures;
 
         public MethodFixupSignature MethodSignature(
             ReadyToRunFixupKind fixupKind,
@@ -406,42 +503,48 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
-            Dictionary<TypeAndMethod, MethodFixupSignature> perFixupKindMap;
-            if (!_methodSignatures.TryGetValue(fixupKind, out perFixupKindMap))
-            {
-                perFixupKindMap = new Dictionary<TypeAndMethod, MethodFixupSignature>();
-                _methodSignatures.Add(fixupKind, perFixupKindMap);
-            }
-
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, false);
-            MethodFixupSignature signature;
-            if (!perFixupKindMap.TryGetValue(key, out signature))
-            {
-                signature = new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub);
-                perFixupKindMap.Add(key, signature);
-            }
-            return signature;
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, false, signatureContext);
+            return _methodSignatures.GetOrAdd(new MethodFixupKey(fixupKind, key));
         }
 
-        private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeDesc, TypeFixupSignature>> _typeSignatures =
-            new Dictionary<ReadyToRunFixupKind, Dictionary<TypeDesc, TypeFixupSignature>>();
+        private struct TypeFixupKey : IEquatable<TypeFixupKey>
+        {
+            public readonly ReadyToRunFixupKind FixupKind;
+            public readonly TypeDesc TypeDesc;
+            public readonly SignatureContext SignatureContext;
+            public TypeFixupKey(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
+            {
+                FixupKind = fixupKind;
+                TypeDesc = typeDesc;
+                SignatureContext = signatureContext;
+            }
+
+            public bool Equals(TypeFixupKey other)
+            {
+                return FixupKind == other.FixupKind 
+                    && TypeDesc == other.TypeDesc 
+                    && SignatureContext.Equals(other.SignatureContext);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is TypeFixupKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return FixupKind.GetHashCode()
+                    ^ (31 * TypeDesc.GetHashCode())
+                    ^ (23 * SignatureContext.GetHashCode());
+            }
+        }
+
+        private NodeCache<TypeFixupKey, TypeFixupSignature> _typeSignatures;
 
         public TypeFixupSignature TypeSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
         {
-            Dictionary<TypeDesc, TypeFixupSignature> perFixupKindMap;
-            if (!_typeSignatures.TryGetValue(fixupKind, out perFixupKindMap))
-            {
-                perFixupKindMap = new Dictionary<TypeDesc, TypeFixupSignature>();
-                _typeSignatures.Add(fixupKind, perFixupKindMap);
-            }
-
-            TypeFixupSignature signature;
-            if (!perFixupKindMap.TryGetValue(typeDesc, out signature))
-            {
-                signature = new TypeFixupSignature(fixupKind, typeDesc, signatureContext);
-                perFixupKindMap.Add(typeDesc, signature);
-            }
-            return signature;
+            TypeFixupKey fixupKey = new TypeFixupKey(fixupKind, typeDesc, signatureContext);
+            return _typeSignatures.GetOrAdd(fixupKey);
         }
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -675,75 +778,73 @@ namespace ILCompiler.DependencyAnalysis
                     InputModuleContext));
         }
 
-        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
+        struct DynamicHelperCellKey : IEquatable<DynamicHelperCellKey>
+        {
+            public readonly MethodWithToken Method;
+            public readonly bool IsUnboxingStub;
+            public readonly bool IsInstantiatingStub;
+            public readonly SignatureContext SignatureContext;
+
+            public DynamicHelperCellKey(MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
+            {
+                Method = method;
+                IsUnboxingStub = isUnboxingStub;
+                IsInstantiatingStub = isInstantiatingStub;
+                SignatureContext = signatureContext;
+            }
+
+            public bool Equals(DynamicHelperCellKey other)
+            {
+                return Method.Equals(other.Method)
+                    && IsUnboxingStub == other.IsUnboxingStub
+                    && IsInstantiatingStub == other.IsInstantiatingStub
+                    && SignatureContext.Equals(other.SignatureContext);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is DynamicHelperCellKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return Method.GetHashCode()
+                     ^ (IsUnboxingStub ? -0x80000000 : 0)
+                     ^ (IsInstantiatingStub ? -0x40000000 : 0) 
+                     ^ (31 * SignatureContext.GetHashCode());
+            }
+        }
+
+        private NodeCache<DynamicHelperCellKey, ISymbolNode> _dynamicHelperCellCache;
 
         public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext)
         {
-            ISymbolNode result;
-            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
-            {
-                result = new DelayLoadHelperMethodImport(
-                    this,
-                    DispatchImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
-                    methodWithToken,
-                    useVirtualCall: false,
-                    useInstantiatingStub: true,
-                    MethodSignature(
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
-                        methodWithToken,
-                        signatureContext: signatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: isInstantiatingStub),
-                    signatureContext);
-                _dynamicHelperCellCache.Add(methodWithToken, result);
-            }
-            return result;
+            DynamicHelperCellKey key = new DynamicHelperCellKey(methodWithToken, isUnboxingStub: false, isInstantiatingStub, signatureContext);
+            return _dynamicHelperCellCache.GetOrAdd(key);
         }
 
-        private Dictionary<EcmaModule, CopiedCorHeaderNode> _copiedCorHeaders = new Dictionary<EcmaModule, CopiedCorHeaderNode>();
+        private NodeCache<EcmaModule, CopiedCorHeaderNode> _copiedCorHeaders;
 
         public CopiedCorHeaderNode CopiedCorHeader(EcmaModule module)
         {
-            CopiedCorHeaderNode result;
-            if (!_copiedCorHeaders.TryGetValue(module, out result))
-            {
-                result = new CopiedCorHeaderNode(module);
-                _copiedCorHeaders.Add(module, result);
-            }
-
-            return result;
+            return _copiedCorHeaders.GetOrAdd(module);
         }
 
-        private Dictionary<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs = new Dictionary<EcmaModule, CopiedMetadataBlobNode>();
+        private NodeCache<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs;
 
         public CopiedMetadataBlobNode CopiedMetadataBlob(EcmaModule module)
         {
-            CopiedMetadataBlobNode result;
-            if (!_copiedMetadataBlobs.TryGetValue(module, out result))
-            {
-                result = new CopiedMetadataBlobNode(module);
-                _copiedMetadataBlobs.Add(module, result);
-            }
-
-            return result;
+            return _copiedMetadataBlobs.GetOrAdd(module);
         }
 
-        private Dictionary<MethodDesc, CopiedMethodILNode> _copiedMethodIL = new Dictionary<MethodDesc, CopiedMethodILNode>();
+        private NodeCache<MethodDesc, CopiedMethodILNode> _copiedMethodIL;
 
         public CopiedMethodILNode CopiedMethodIL(EcmaMethod method)
         {
-            CopiedMethodILNode result;
-            if (!_copiedMethodIL.TryGetValue(method, out result))
-            {
-                result = new CopiedMethodILNode(method);
-                _copiedMethodIL.Add(method, result);
-            }
-
-            return result;
+            return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private Dictionary<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas = new Dictionary<EcmaField, CopiedFieldRvaNode>();
+        private NodeCache<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -761,55 +862,28 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            CopiedFieldRvaNode result;
-            if (!_copiedFieldRvas.TryGetValue(ecmaField, out result))
-            {
-                result = new CopiedFieldRvaNode(ecmaField);
-                _copiedFieldRvas.Add(ecmaField, result);
-            }
-
-            return result;
+            return _copiedFieldRvas.GetOrAdd(ecmaField);
         }
 
-        private Dictionary<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures = new Dictionary<EcmaModule, CopiedStrongNameSignatureNode>();
+        private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;
 
         public CopiedStrongNameSignatureNode CopiedStrongNameSignature(EcmaModule module)
         {
-            CopiedStrongNameSignatureNode result;
-            if (!_copiedStrongNameSignatures.TryGetValue(module, out result))
-            {
-                result = new CopiedStrongNameSignatureNode(module);
-                _copiedStrongNameSignatures.Add(module, result);
-            }
-
-            return result;
+            return _copiedStrongNameSignatures.GetOrAdd(module);
         }
 
-        private Dictionary<EcmaModule, CopiedManagedResourcesNode> _copiedManagedResources = new Dictionary<EcmaModule, CopiedManagedResourcesNode>();
+        private NodeCache<EcmaModule, CopiedManagedResourcesNode> _copiedManagedResources;
 
         public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
         {
-            CopiedManagedResourcesNode result;
-            if (!_copiedManagedResources.TryGetValue(module, out result))
-            {
-                result = new CopiedManagedResourcesNode(module);
-                _copiedManagedResources.Add(module, result);
-            }
-
-            return result;
+            return _copiedManagedResources.GetOrAdd(module);
         }
 
-        private readonly Dictionary<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes = new Dictionary<MethodWithGCInfo, ProfileDataNode>();
+        private NodeCache<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes;
 
-        public ProfileDataNode ProfileDataNode(MethodWithGCInfo method)
+        public ProfileDataNode ProfileData(MethodWithGCInfo method)
         {
-            ProfileDataNode node;
-            if (!_profileDataCountsNodes.TryGetValue(method, out node))
-            {
-                node = new ProfileDataNode(method, Target);
-                _profileDataCountsNodes.Add(method, node);
-            }
-            return node;
+            return _profileDataCountsNodes.GetOrAdd(method);
         }
     }
 }
