@@ -5700,27 +5700,6 @@ add_generic_instances (MonoAotCompile *acfg)
 			}
 		}
 
-		/* Same for CompareExchange<T>/Exchange<T> */
-		{
-			MonoGenericContext ctx;
-			MonoType *args [16];
-			MonoMethod *m;
-			MonoClass *interlocked_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "Interlocked");
-			gpointer iter = NULL;
-
-			while ((m = mono_class_get_methods (interlocked_klass, &iter))) {
-				if ((m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && m->is_generic &&
-					(!strcmp (m->name, "CompareExchange_T") || !strcmp (m->name, "Exchange_T"))) {
-					ERROR_DECL (error);
-					memset (&ctx, 0, sizeof (ctx));
-					args [0] = object_type;
-					ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-					add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE));
-					g_assert (is_ok (error)); /* FIXME don't swallow the error */
-				}
-			}
-		}
-
 		/* object[] accessor wrappers. */
 		for (i = 1; i < 4; ++i) {
 			MonoClass *obj_array_class = mono_class_create_array (mono_defaults.object_class, i);
