@@ -133,13 +133,19 @@ fi
 
 # create a nupkg with runtime and System.Private.CoreLib
 if [ "$pack" = "true" ]; then
-  make nupkg || (Write-PipelineTelemetryError -c "nupkg" -e 1 "Error packing NuGet package" && exit 1)
+  if [ "$llvm" = "true" ]; then
+    make nupkg-llvm || (Write-PipelineTelemetryError -c "nupkg" -e 1 "Error packing NuGet package" && exit 1)
+  else
+    make nupkg || (Write-PipelineTelemetryError -c "nupkg" -e 1 "Error packing NuGet package" && exit 1)
+  fi
 fi
 
 # run all xunit tests
 if [ "$test" = "true" ]; then
-  make update-tests-corefx
-  for testdir in corefx/tests/extracted/*; do
-    ../scripts/ci/./run-step.sh --label=$(basename $testdir) --timeout=15m make run-tests-corefx-$(basename $testdir) || (Write-PipelineTelemetryError -c "tests" -e 1 "Error running tests from ${testdir}" && exit 1)
-  done
+  make update-tests-corefx || (Write-PipelineTelemetryError -c "tests-download" -e 1 "Error downloading tests" && exit 1)
+  if [ "$ci" = "true" ]; then
+    make run-tests-corefx USE_TIMEOUT=1 || (Write-PipelineTelemetryError -c "tests" -e 1 "Error running tests" && exit 1)
+  else
+    make run-tests-corefx
+  fi
 fi
