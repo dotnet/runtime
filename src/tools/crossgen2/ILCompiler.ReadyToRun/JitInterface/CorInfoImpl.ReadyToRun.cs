@@ -1889,7 +1889,7 @@ namespace Internal.JitInterface
             pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
             if (_profileDataNode == null)
             {
-                _profileDataNode = _compilation.NodeFactory.ProfileDataNode((MethodWithGCInfo)_methodCodeNode);
+                _profileDataNode = _compilation.NodeFactory.ProfileData((MethodWithGCInfo)_methodCodeNode);
             }
             return 0;
         }

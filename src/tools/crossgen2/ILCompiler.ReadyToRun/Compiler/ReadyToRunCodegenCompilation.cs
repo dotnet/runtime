@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.IL;
 using Internal.JitInterface;
@@ -183,11 +185,6 @@ namespace ILCompiler
         /// </summary>
         private readonly string _inputFilePath;
 
-        /// <summary>
-        /// JIT interface implementation.
-        /// </summary>
-        private readonly CorInfoImpl _corInfo;
-
         private bool _resilient;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
@@ -213,7 +210,6 @@ namespace ILCompiler
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
-            _corInfo = new CorInfoImpl(this, _jitConfigProvider);
         }
 
         public override void Compile(string outputFile)
@@ -248,27 +244,11 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
+                ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
                 foreach (DependencyNodeCore<NodeFactory> dependency in obj)
                 {
-                    var methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
-                    if (methodCodeNodeNeedingCode == null)
-                    {
-                        // To compute dependencies of the shadow method that tracks dictionary
-                        // dependencies we need to ensure there is code for the canonical method body.
-                        var dependencyMethod = (ShadowConcreteMethodNode)dependency;
-                        methodCodeNodeNeedingCode = (MethodWithGCInfo)dependencyMethod.CanonicalMethodNode;
-                    }
-
-                    // We might have already compiled this method.
-                    if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
-                        continue;
-
+                    MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
-                    if (!NodeFactory.CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false))
-                    {
-                        // Don't drill into methods defined outside of this version bubble
-                        continue;
-                    }
 
                     if (Logger.IsVerbose)
                     {
@@ -280,7 +260,8 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            _corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                            corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }
                     catch (TypeSystemException ex)

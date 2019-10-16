@@ -50,8 +50,6 @@ namespace ILCompiler
         {
             IMethodBodyNode methodBodyNode = obj as IMethodBodyNode;
             var methodNode = methodBodyNode as IMethodNode;
-            if (methodNode == null)
-                methodNode = obj as ShadowConcreteMethodNode;
 
             if (methodNode != null)
             {

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -102,20 +101,14 @@ namespace ILCompiler
             return VersionsWithType(method.OwningType);
         }
 
-        Dictionary<TypeDesc, bool> _containsTypeLayoutCache = new Dictionary<TypeDesc, bool>();
+        private ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
 
         /// <summary>
         /// If true, the type is fully contained in the current compilation group.
         /// </summary>
         public override bool ContainsTypeLayout(TypeDesc type)
         {
-            if (!_containsTypeLayoutCache.TryGetValue(type, out bool containsTypeLayout))
-            {
-                containsTypeLayout = ContainsTypeLayoutUncached(type);
-                _containsTypeLayoutCache[type] = containsTypeLayout;
-            }
-            
-            return containsTypeLayout;
+            return _containsTypeLayoutCache.GetOrAdd(type, ContainsTypeLayoutUncached);
         }
 
         private bool ContainsTypeLayoutUncached(TypeDesc type)
