@@ -250,33 +250,35 @@ namespace SuperPMICollection
             }
         }
 
-        // Run all the programs from the CoreCLR test binary drop we wish to run while collecting MC files.
-        private static void RunTestProgramsWhileCollecting()
+        private static string[] GetSpmiTestFullPaths()
         {
-            // Note: We previously used
-            //      JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
-            // but it doesn't currently run on x86 due to this issue: https://github.com/dotnet/coreclr/issues/6844.
-            var superPMICollectionTestProgramsList = new List<string>();
+            var spmiTestFullPaths = new List<string>();
 
-            using (var resourceStream = typeof(SuperPMICollectionClass).GetTypeInfo().Assembly.GetManifestResourceStream("TestProjects"))
+            using (var resourceStream = typeof(SuperPMICollectionClass).GetTypeInfo().Assembly.GetManifestResourceStream("SpmiTestNames"))
             using (var streamReader = new StreamReader(resourceStream))
             {
                 string currentDirectory = Directory.GetCurrentDirectory();
-                string csprojRelativePath;
-                while ((csprojRelativePath = streamReader.ReadLine()) != null)
+                string spmiTestName;
+                while ((spmiTestName = streamReader.ReadLine()) != null)
                 {
-                    string cmdFileName = Path.ChangeExtension(Path.GetFileName(csprojRelativePath), ".cmd");
-                    cmdFileName = Path.Combine(currentDirectory, cmdFileName);
-                    superPMICollectionTestProgramsList.Add(cmdFileName);
+                    string spmiTestFullPath = Path.Combine(currentDirectory, spmiTestName, Path.ChangeExtension(spmiTestName, ".cmd"));
+                    spmiTestFullPaths.Add(spmiTestFullPath);
                 }
             }
 
+            return spmiTestFullPaths.ToArray();
+        }
+
+        // Run all the programs from the CoreCLR test binary drop we wish to run while collecting MC files.
+        private static void RunTestProgramsWhileCollecting()
+        {
+
             // Run the tests
-            foreach (string testFullPath in superPMICollectionTestProgramsList)
+            foreach (string spmiTestPath in GetSpmiTestFullPaths())
             {
                 try
                 {
-                    RunTest(testFullPath);
+                    RunTest(spmiTestPath);
                 }
                 catch (SpmiException ex)
                 {
