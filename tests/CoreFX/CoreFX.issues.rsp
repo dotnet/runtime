@@ -71,6 +71,10 @@
 # https://github.com/dotnet/coreclr/issues/22414
 -nomethod System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
 
+# Failure in System.Text.Encoding.Tests due to bug fix in DecoderNLS.Convert
+# https://github.com/dotnet/coreclr/issues/27191
+-nomethod System.Text.Tests.DecoderConvert2.PosTest6
+
 # Timeout in System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
 # https://github.com/dotnet/coreclr/issues/18912
 -nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
