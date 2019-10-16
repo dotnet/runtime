@@ -85,7 +85,8 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-RootRepo="$DIR/../.."
+SetupRoot="$DIR/../.."
+RootRepo="$SetupRoot/../.."
 
 __bin_dir="$RootRepo/artifacts/bin"
 __build_arch=
@@ -180,7 +181,7 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     if ! [[ -n $ROOTFS_DIR ]]; then
-        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+        export ROOTFS_DIR="$SetupRoot/cross/rootfs/$__build_arch"
     fi
 fi
 
