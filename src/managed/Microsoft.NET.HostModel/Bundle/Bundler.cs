@@ -92,7 +92,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 return false;
             }
 
-            if (Path.GetExtension(fileRelativePath).ToLower().Equals(".pdb"))
+            if (Path.GetExtension(fileRelativePath).ToLowerInvariant().Equals(".pdb"))
             {
                 return EmbedPDBs;
             }
