@@ -891,6 +891,7 @@ namespace System.Net.Sockets
             SocketError err = Interop.Winsock.shutdown(handle, (int)how);
             if (err != SocketError.SocketError)
             {
+                handle.TrackShutdown(how);
                 return SocketError.Success;
             }
 
