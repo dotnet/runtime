@@ -3,6 +3,10 @@ setlocal EnableDelayedExpansion
 
 set "__ProjectDir=%~dp0"
 
+for /f %%i in ('git rev-parse --show-toplevel') do set __RepoRootDirRaw=%%i
+set "__RepoRootDir=%__RepoRootDirRaw:/=\%
+echo BUILD-PACKAGES: Repo root folder: %__RepoRootDir%
+
 set "__args=%*"
 set processedArgs=
 set unprocessedArgs=
@@ -34,7 +38,7 @@ if [!processedArgs!]==[] (
 :ArgsDone
 
 set logFile=%__ProjectDir%bin\Logs\build-packages.binlog
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%eng\common\build.ps1"^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
   -r -b -projects %__ProjectDir%src\.nuget\packages.builds^
   -verbosity minimal /bl:%logFile% /nodeReuse:false^
   /p:__BuildOS=Windows_NT^

@@ -35,7 +35,7 @@ set ghprbCommentBody=
 ::      __RepoRootDir       -- default: top-level directory of the cloned GIT repo
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __SourceDir         -- default: %__ProjectDir%\src\
-::      __PackagesDir       -- default: %__ProjectDir%\.packages\
+::      __PackagesDir       -- default: %__RepoRootDir%\.packages\
 ::      __RootBinDir        -- default: %__ProjectDir%\bin\
 ::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
@@ -48,6 +48,10 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 
+for /f %%i in ('git rev-parse --show-toplevel') do set __RepoRootDirRaw=%%i
+set "__RepoRootDir=%__RepoRootDirRaw:/=\%
+echo BUILD: Repo root folder: %__RepoRootDir%
+
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -55,14 +59,10 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%DotNetRestorePackagesPath%"
-if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\.packages"
+if [%__PackagesDir%]==[] set "__PackagesDir=%__RepoRootDir%\.packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
-
-for /f %%i in ('git rev-parse --show-toplevel') do set __RepoRootDirRaw=%%i
-set "__RepoRootDir=%__RepoRootDirRaw:/=\%
-echo BUILD: Repo root folder: %__RepoRootDir%
 
 set __BuildAll=
 
@@ -307,7 +307,8 @@ if /i %__BuildType% NEQ Release set __RestoreOptData=0
 
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__ArtifactsIntermediatesDir=%__ProjectDir%\artifacts\obj\"
+set "ArtifactsDir=%__ProjectDir%\artifacts"
+set "__ArtifactsIntermediatesDir=%ArtifactsDir%\obj\"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
@@ -870,7 +871,7 @@ if %__BuildPackages% EQU 1 (
 
     REM The conditions as to what to build are captured in the builds file.
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\build.ps1"^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
         -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^

@@ -2,7 +2,12 @@
 setlocal
 
 echo Installing dotnet using Arcade...
-set PS_DOTNET_INSTALL_SCRIPT=". %~dp0eng\configure-toolset.ps1; . %~dp0eng\common\tools.ps1; InitializeBuildTool"
+for /f %%i in ('git rev-parse --show-toplevel') do set __RepoRootDirRaw=%%i
+set "__RepoRootDir=%__RepoRootDirRaw:/=\%"
+
+echo Repo root folder: %__RepoRootDir%
+
+set PS_DOTNET_INSTALL_SCRIPT=". %__RepoRootDir%\eng\configure-toolset.ps1; . %__RepoRootDir%\eng\common\tools.ps1; InitializeBuildTool"
 echo running: powershell -NoProfile -ExecutionPolicy unrestricted -Command %PS_DOTNET_INSTALL_SCRIPT%
 powershell -NoProfile -ExecutionPolicy unrestricted -Command %PS_DOTNET_INSTALL_SCRIPT%
 if NOT [%ERRORLEVEL%] == [0] (
