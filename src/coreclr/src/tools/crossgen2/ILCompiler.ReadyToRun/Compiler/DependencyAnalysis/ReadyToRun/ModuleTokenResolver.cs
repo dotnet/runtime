@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -25,9 +25,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Reverse lookup table mapping external types to reference tokens in the input modules. The table
         /// gets lazily initialized as various tokens are resolved in CorInfoImpl.
         /// </summary>
-        private readonly Dictionary<EcmaType, ModuleToken> _typeToRefTokens = new Dictionary<EcmaType, ModuleToken>();
+        private readonly ConcurrentDictionary<EcmaType, ModuleToken> _typeToRefTokens = new ConcurrentDictionary<EcmaType, ModuleToken>();
 
-        private readonly Dictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new Dictionary<FieldDesc, ModuleToken>();
+        private readonly ConcurrentDictionary<FieldDesc, ModuleToken> _fieldToRefTokens = new ConcurrentDictionary<FieldDesc, ModuleToken>();
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
@@ -163,6 +163,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             _fieldToRefTokens[canonField] = token;
+
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
