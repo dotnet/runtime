@@ -31,7 +31,7 @@ namespace System.Text.Tests
             Assert.True(span.IsEmpty);
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in str.GetPinnableReference()), ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(0, span.Bytes.Length);
+            Assert.Equal(0, span.Length);
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Text.Tests
             Assert.False(span.IsEmpty);
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in str.GetPinnableReference()), ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in str.GetPinnableReference()), ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(6, span.Bytes.Length);
+            Assert.Equal(6, span.Length);
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace System.Text.Tests
             Assert.True(span.IsEmpty);
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(0, span.Bytes.Length);
+            Assert.Equal(0, span.Length);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace System.Text.Tests
             Assert.False(span.IsEmpty);
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in original.GetPinnableReference()), ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in original.GetPinnableReference()), ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(5, span.Bytes.Length);
+            Assert.Equal(5, span.Length);
         }
 
         [Fact]
@@ -109,7 +109,7 @@ namespace System.Text.Tests
             Assert.True(span.IsEmpty);
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.True(Unsafe.AreSame(ref MemoryMarshal.GetReference(original), ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(0, span.Bytes.Length);
+            Assert.Equal(0, span.Length);
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace System.Text.Tests
             Assert.True(span.IsEmpty);
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(0, span.Bytes.Length);
+            Assert.Equal(0, span.Length);
         }
     }
 }

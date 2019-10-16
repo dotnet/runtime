@@ -53,7 +53,7 @@ namespace System.Text.Tests
             Assert.True(span.IsEmpty);
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref Unsafe.AsRef(in span.GetPinnableReference())));
             Assert.Equal(IntPtr.Zero, (IntPtr)(void*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span.Bytes)));
-            Assert.Equal(0, span.Bytes.Length);
+            Assert.Equal(0, span.Length);
         }
 
         [Fact]
@@ -221,9 +221,9 @@ namespace System.Text.Tests
 
             // Now ensure the slice was correctly produced by comparing the references directly.
 
-            (int offset, int length) = range.GetOffsetAndLength(originalSpan.Bytes.Length);
+            (int offset, int length) = range.GetOffsetAndLength(originalSpan.Length);
             Assert.True(Unsafe.AreSame(ref startOfSlicedSpan, ref Unsafe.Add(ref startOfOriginalSpan, offset)));
-            Assert.Equal(length, slicedSpan.Bytes.Length);
+            Assert.Equal(length, slicedSpan.Length);
         }
 
         [Theory]

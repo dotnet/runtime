@@ -97,11 +97,14 @@ namespace System.Text.Tests
             }
             else if (searchTerm is ustring ustr)
             {
-                var asString = ustr.ToString();
-                if (asString.Length == 1)
+                var enumerator = ustr.Chars.GetEnumerator();
+                if (enumerator.MoveNext())
                 {
-                    parsed = asString[0];
-                    return true;
+                    parsed = enumerator.Current;
+                    if (!enumerator.MoveNext())
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -131,7 +134,7 @@ namespace System.Text.Tests
             else if (searchTerm is ustring ustr)
             {
                 if (Rune.DecodeFromUtf8(ustr.AsBytes(), out parsed, out int bytesConsumed) == OperationStatus.Done
-                    && bytesConsumed == ustr.GetByteLength())
+                    && bytesConsumed == ustr.Length)
                 {
                     return true;
                 }
@@ -158,10 +161,8 @@ namespace System.Text.Tests
             }
             else if (searchTerm is string str)
             {
-                ustring asUtf8 = new ustring(str);
-                if (asUtf8.ToString() == str) // make sure this round-trips properly
+                if (ustring.TryCreateFrom(str, out parsed))
                 {
-                    parsed = asUtf8;
                     return true;
                 }
             }
