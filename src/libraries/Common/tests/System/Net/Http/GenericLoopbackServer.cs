@@ -83,6 +83,9 @@ namespace System.Net.Test.Common
 
     public struct HttpHeaderData
     {
+        // http://httpwg.org/specs/rfc7541.html#rfc.section.4.1
+        public const int RfcOverhead = 32;
+
         public string Name { get; }
         public string Value { get; }
         public bool HuffmanEncoded { get; }
