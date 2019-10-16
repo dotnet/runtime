@@ -113,7 +113,7 @@ MONO_API const char*       mono_assembly_name_get_culture     (MonoAssemblyName 
 MONO_API uint16_t          mono_assembly_name_get_version     (MonoAssemblyName *aname,
 						      uint16_t *minor, uint16_t *build, uint16_t *revision);
 MONO_API mono_byte*        mono_assembly_name_get_pubkeytoken (MonoAssemblyName *aname);
-MONO_API void              mono_assembly_name_free            (MonoAssemblyName *aname);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_assembly_name_free   (MonoAssemblyName *aname);
 
 typedef struct {
 	const char *name;

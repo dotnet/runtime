@@ -15,6 +15,7 @@
 
 #include <emscripten.h>
 
+#include "mono/metadata/assembly-internals.h"
 
 static int log_level = 1;
 
@@ -413,7 +414,7 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 		return -1;
 	}
 
-	mono_assembly_name_free (aname);
+	mono_assembly_name_free_internal (aname);
 
 	MonoMethod *method = mono_get_method_checked (assembly->image, MONO_TOKEN_METHOD_DEF | method_token, NULL, NULL, error);
 	if (!method) {

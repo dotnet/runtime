@@ -2863,7 +2863,7 @@ mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage*
 			*status = new_status;
 		}
 	}
-	mono_assembly_name_free (&probed_aname);
+	mono_assembly_name_free_internal (&probed_aname);
 	return result_ass;
 }
 
@@ -2922,7 +2922,7 @@ mono_problematic_image_reprobe (MonoAssemblyLoadContext *alc, MonoImage *image, 
 	if (! (result_ass && new_status == MONO_IMAGE_OK)) {
 		*status = new_status;
 	}
-	mono_assembly_name_free (&probed_aname);
+	mono_assembly_name_free_internal (&probed_aname);
 	return result_ass;
 }
 /**
@@ -3188,20 +3188,12 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 }
 
 /**
- * mono_assembly_name_free:
+ * mono_assembly_name_free_internal:
  * \param aname assembly name to free
  * 
  * Frees the provided assembly name object.
  * (it does not frees the object itself, only the name members).
  */
-void
-mono_assembly_name_free (MonoAssemblyName *aname)
-{
-	MONO_ENTER_GC_UNSAFE;
-	mono_assembly_name_free_internal (aname);
-	MONO_EXIT_GC_UNSAFE;
-}
-
 void
 mono_assembly_name_free_internal (MonoAssemblyName *aname)
 {
@@ -3384,7 +3376,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 
 		/* the constant includes the ending NULL, hence the -1 */
 		if (strlen (token) != (MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)) {
-			mono_assembly_name_free (aname);
+			mono_assembly_name_free_internal (aname);
 			return FALSE;
 		}
 		lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
@@ -3396,7 +3388,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 		gboolean is_ecma = FALSE;
 		gchar *pkey = NULL;
 		if (strcmp (key, "null") == 0 || !parse_public_key (key, &pkey, &is_ecma)) {
-			mono_assembly_name_free (aname);
+			mono_assembly_name_free_internal (aname);
 			return FALSE;
 		}
 
@@ -3817,7 +3809,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 			fullpath = g_build_path (G_DIR_SEPARATOR_S, basepath, direntry, fullname, (const char*)NULL);
 		}
 
-		mono_assembly_name_free (&gac_aname);
+		mono_assembly_name_free_internal (&gac_aname);
 	}
 	
 	g_dir_close (dirhandle);
@@ -3890,14 +3882,14 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 	
 	res = mono_assembly_loaded_internal (alc, aname, FALSE);
 	if (res) {
-		mono_assembly_name_free (aname);
+		mono_assembly_name_free_internal (aname);
 		return res;
 	}
 
 	res = invoke_assembly_preload_hook (alc, aname, assemblies_path);
 	if (res) {
 		res->in_gac = FALSE;
-		mono_assembly_name_free (aname);
+		mono_assembly_name_free_internal (aname);
 		return res;
 	}
 
@@ -3919,7 +3911,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 	if (res) {
 		res->in_gac = TRUE;
 		g_free (fullname);
-		mono_assembly_name_free (aname);
+		mono_assembly_name_free_internal (aname);
 		return res;
 	}
 
@@ -3932,7 +3924,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 		res->in_gac = TRUE;
 #endif
 
-	mono_assembly_name_free (aname);
+	mono_assembly_name_free_internal (aname);
 
 	if (!res) {
 		res = mono_try_assembly_resolve (alc, name, NULL, FALSE, error);
@@ -4469,7 +4461,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	// A nonstandard preload hook may provide a special mscorlib assembly
 	aname = mono_assembly_name_new ("mscorlib.dll");
 	corlib = invoke_assembly_preload_hook (req.request.alc, aname, assemblies_path);
-	mono_assembly_name_free (aname);
+	mono_assembly_name_free_internal (aname);
 	g_free (aname);
 	if (corlib != NULL)
 		goto return_corlib_and_facades;
@@ -4914,7 +4906,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 
 	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *fname = (MonoAssemblyName *)tmp->data;
-		mono_assembly_name_free (fname);
+		mono_assembly_name_free_internal (fname);
 		g_free (fname);
 	}
 	g_slist_free (assembly->friend_assembly_names);

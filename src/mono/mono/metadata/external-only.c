@@ -19,6 +19,7 @@
 #include "class-init.h"
 #include "marshal.h"
 #include "object.h"
+#include "assembly-internals.h"
 #include "external-only.h"
 
 /**
@@ -322,4 +323,19 @@ mono_domain_set (MonoDomain *domain, gboolean force)
 
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_domain_set_internal_with_options (domain, TRUE));
 	return TRUE;
+}
+
+/**
+ * mono_assembly_name_free:
+ * \param aname assembly name to free
+ *
+ * Frees the provided assembly name object.
+ * (it does not frees the object itself, only the name members).
+ */
+void
+mono_assembly_name_free (MonoAssemblyName *aname)
+{
+	if (!aname)
+		return;
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_assembly_name_free_internal (aname));
 }
