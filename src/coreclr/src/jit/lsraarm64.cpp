@@ -1072,6 +1072,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         // must be handled within the case.
         switch (intrinsicId)
         {
+            case NI_Aes_Decrypt:
+            case NI_Aes_Encrypt:
+            {
+                assert((numArgs == 2) && (op1 != nullptr) && (op2 != nullptr));
+
+                buildUses = false;
+
+                tgtPrefUse = BuildUse(op1);
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(op2);
+
+                break;
+            }
+
             case NI_Sha1_HashUpdateChoose:
             case NI_Sha1_HashUpdateMajority:
             case NI_Sha1_HashUpdateParity:
