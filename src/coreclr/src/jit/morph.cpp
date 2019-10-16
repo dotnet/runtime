@@ -6359,10 +6359,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                     static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
                     static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                     tree->SetOper(GT_CLS_VAR);
-                    tree->gtClsVar.gtClsVarHnd = symHnd;
+                    tree->AsClsVar()->gtClsVarHnd = symHnd;
                     FieldSeqNode* fieldSeq =
                         fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                    tree->gtClsVar.gtFieldSeq = fieldSeq;
+                    tree->AsClsVar()->gtFieldSeq = fieldSeq;
                 }
 
                 return tree;
