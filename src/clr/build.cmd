@@ -307,7 +307,7 @@ if /i %__BuildType% NEQ Release set __RestoreOptData=0
 
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "ArtifactsDir=%__ProjectDir%\artifacts"
+set "ArtifactsDir=%__RepoRootDir%\artifacts"
 set "__ArtifactsIntermediatesDir=%ArtifactsDir%\obj\"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
@@ -373,10 +373,14 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    %__ProjectDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
+set EmptyCmd=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    %__ProjectDir%\eng\empty.csproj /v:diag /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+
+echo Running powershell on empty.csproj: %EmptyCmd%
+%EmptyCmd%
+
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
     exit /b !errorlevel!

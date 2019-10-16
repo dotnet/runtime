@@ -41,9 +41,12 @@
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
     <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetRemoteExecutorPackageVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19463.3</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksPackageVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Core-setup dependencies -->
     <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha1.19510.2</MicrosoftNETCoreAppVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
@@ -53,6 +56,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19466.8</MicrosoftNETCorePlatformsPackageVersion>
     <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19466.8</runtimenativeSystemIOPortsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha1.19477.7</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha1.19508.1</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha1.19501.13</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftWin32RegistryVersion>5.0.0-alpha1.19501.13</MicrosoftWin32RegistryVersion>
