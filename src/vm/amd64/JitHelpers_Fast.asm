@@ -27,6 +27,10 @@ EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
 
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN g_card_bundle_table:QWORD
+endif
+
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 EXTERN  g_sw_ww_table:QWORD
 EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
@@ -524,6 +528,16 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
     UpdateCardTable:
         mov     byte ptr [rcx + rax], 0FFh
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        mov     rax, 0F0F0F0F0F0F0F0F0h
+        shr     rcx, 0Ah
+        cmp     byte ptr [rcx + rax], 0FFh
+        jne     UpdateCardBundleTable
+        REPRET
+
+    UpdateCardBundleTable:
+        mov     byte ptr [rcx + rax], 0FFh
+endif
         ret
 
     align 16
@@ -571,6 +585,16 @@ else
 
     UpdateCardTable:
         mov     byte ptr [rcx + rax], 0FFh
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        mov     rax, 0F0F0F0F0F0F0F0F0h
+        shr     rcx, 0Ah
+        cmp     byte ptr [rcx + rax], 0FFh
+        jne     UpdateCardBundleTable
+        REPRET
+
+    UpdateCardBundleTable:
+        mov     byte ptr [rcx + rax], 0FFh
+endif
         ret
 
     align 16
@@ -706,6 +730,19 @@ endif
 
     UpdateCardTable:
         mov     byte ptr [rcx], 0FFh
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; check if we need to update the card bundle table
+        ; restore destination address from rdi - rdi has been incremented by 8 already
+        lea     rcx, [rdi-8]
+        shr     rcx, 15h
+        add     rcx, [g_card_bundle_table]
+        cmp     byte ptr [rcx], 0FFh
+        jne     UpdateCardBundleTable
+        REPRET
+
+    UpdateCardBundleTable:
+        mov     byte ptr [rcx], 0FFh
+endif
         ret
 
     align 16
