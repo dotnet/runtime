@@ -3445,21 +3445,19 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     if (blkOp->OperIs(GT_STORE_OBJ))
     {
+        assert(!blkOp->gtBlkOpGcUnsafe);
         assert(blkOp->OperIsCopyBlkOp());
         assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
         genCodeForCpObj(blkOp->AsObj());
         return;
     }
 
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        GetEmitter()->emitDisableGC();
-    }
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
     switch (blkOp->gtBlkOpKind)
     {
         case GenTreeBlk::BlkOpKindHelper:
+            assert(!blkOp->gtBlkOpGcUnsafe);
             if (isCopyBlk)
             {
                 genCodeForCpBlkHelper(blkOp);
@@ -3473,21 +3471,25 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
             {
+                if (blkOp->gtBlkOpGcUnsafe)
+                {
+                    GetEmitter()->emitDisableGC();
+                }
                 genCodeForCpBlkUnroll(blkOp);
+                if (blkOp->gtBlkOpGcUnsafe)
+                {
+                    GetEmitter()->emitEnableGC();
+                }
             }
             else
             {
+                assert(!blkOp->gtBlkOpGcUnsafe);
                 genCodeForInitBlkUnroll(blkOp);
             }
             break;
 
         default:
             unreached();
-    }
-
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        GetEmitter()->emitEnableGC();
     }
 }
 

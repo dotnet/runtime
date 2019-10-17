@@ -379,7 +379,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location)->AsObj();
                     objNode->ChangeOper(GT_STORE_OBJ);
                     objNode->SetData(value);
-                    comp->fgMorphUnsafeBlk(objNode);
                     storeBlk = objNode;
                 }
                 else
