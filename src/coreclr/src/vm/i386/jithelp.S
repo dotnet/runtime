@@ -638,15 +638,14 @@ NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
     PROLOG_BEG
     PROLOG_END
 
-    sub     esp, PAGE_SIZE         // esp points to some byte on the first unprobed page
-    or      esp, (PAGE_SIZE - 1)   // esp points to the **highest address** on the first unprobed page
+    and     esp, -PAGE_SIZE        // esp points to the **lowest address** on the last probed page
                                    // This is done to make the loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-    test    [esp], eax
-    sub     esp, PAGE_SIZE         // esp points to the highest address of the **next page** to probe
+    sub     esp, PAGE_SIZE         // esp points to the lowest address of the **next page** to probe
+    test    [esp], eax             // esp points to the lowest address on the **last probed** page
     cmp     esp, eax
-    jge     LOCAL_LABEL(ProbeLoop) // if esp >= eax, then we need to probe the page pointed to by esp.
+    jg      LOCAL_LABEL(ProbeLoop) // if esp > eax, then we need to probe at least one more page.
 
     EPILOG_BEG
     mov     esp, ebp
