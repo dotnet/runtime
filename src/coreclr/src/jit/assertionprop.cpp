@@ -1105,7 +1105,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
-                        assertion.op2.lconVal = op2->gtLngCon.gtLconVal;
+                        assertion.op2.lconVal = op2->AsLngCon()->gtLconVal;
                     }
                     else
                     {
@@ -1405,7 +1405,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         // overlapping gtIconVal.
         else if (tree->OperGet() == GT_CNS_LNG)
         {
-            *pConstant = tree->gtLngCon.gtLconVal;
+            *pConstant = tree->AsLngCon()->gtLconVal;
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }

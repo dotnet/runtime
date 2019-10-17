@@ -1292,7 +1292,7 @@ AGAIN:
 #if 0
             // TODO-CQ: Enable this in the future
         case GT_CNS_LNG:
-            if  (op1->gtLngCon.gtLconVal == op2->gtLngCon.gtLconVal)
+            if  (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
                 return true;
             break;
 
@@ -1979,7 +1979,7 @@ AGAIN:
                 add = tree->gtIntCon.gtIconVal;
                 break;
             case GT_CNS_LNG:
-                bits = (UINT64)tree->gtLngCon.gtLconVal;
+                bits = (UINT64)tree->AsLngCon()->gtLconVal;
 #ifdef _HOST_64BIT_
                 add = bits;
 #else // 32-bit host
@@ -6933,7 +6933,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             break;
 
         case GT_CNS_LNG:
-            copy = gtNewLconNode(tree->gtLngCon.gtLconVal);
+            copy = gtNewLconNode(tree->AsLngCon()->gtLconVal);
             break;
 
         case GT_LCL_VAR:
@@ -7097,7 +7097,7 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_CNS_LNG:
-                copy = gtNewLconNode(tree->gtLngCon.gtLconVal);
+                copy = gtNewLconNode(tree->AsLngCon()->gtLconVal);
                 goto DONE;
 
             case GT_CNS_DBL:
@@ -8076,7 +8076,7 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
                 break;
 
             case GT_CNS_LNG:
-                if (op1->gtLngCon.gtLconVal == op2->gtLngCon.gtLconVal)
+                if (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
                 {
                     return true;
                 }
@@ -10458,7 +10458,7 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_LNG:
-            printf(" 0x%016I64x", tree->gtLngCon.gtLconVal);
+            printf(" 0x%016I64x", tree->AsLngCon()->gtLconVal);
             break;
 
         case GT_CNS_DBL:
