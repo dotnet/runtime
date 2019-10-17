@@ -12,7 +12,7 @@ namespace System.Threading
         {
         }
 
-#if !FEATURE_APPX && !ENABLE_WINRT
+#if !FEATURE_APPX
         public static SynchronizationContext? Current => Thread.CurrentThread._synchronizationContext;
 #endif
 
