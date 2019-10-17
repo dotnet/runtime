@@ -41,7 +41,6 @@ namespace System.Globalization
 
         private static unsafe CultureInfo GetUserDefaultUICulture()
         {
-#if !ENABLE_WINRT
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
@@ -66,7 +65,6 @@ namespace System.Globalization
                     }
                 }
             }
-#endif
 
             return InitializeUserDefaultCulture();
         }

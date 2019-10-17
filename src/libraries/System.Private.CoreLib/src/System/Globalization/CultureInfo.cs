@@ -29,9 +29,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-#if ENABLE_WINRT
-using Internal.Runtime.Augments;
-#endif
 
 namespace System.Globalization
 {
@@ -392,13 +389,6 @@ namespace System.Globalization
         {
             get
             {
-#if ENABLE_WINRT
-                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-                if (callbacks != null && callbacks.IsAppxModel())
-                {
-                    return (CultureInfo)callbacks.GetUserDefaultCulture();
-                }
-#endif
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {
@@ -420,14 +410,6 @@ namespace System.Globalization
                     throw new ArgumentNullException(nameof(value));
                 }
 
-#if ENABLE_WINRT
-                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-                if (callbacks != null && callbacks.IsAppxModel())
-                {
-                    callbacks.SetGlobalDefaultCulture(value);
-                    return;
-                }
-#endif
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {
@@ -451,13 +433,6 @@ namespace System.Globalization
         {
             get
             {
-#if ENABLE_WINRT
-                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-                if (callbacks != null && callbacks.IsAppxModel())
-                {
-                    return (CultureInfo)callbacks.GetUserDefaultCulture();
-                }
-#endif
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {
@@ -480,14 +455,6 @@ namespace System.Globalization
 
                 CultureInfo.VerifyCultureName(value, true);
 
-#if ENABLE_WINRT
-                WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-                if (callbacks != null && callbacks.IsAppxModel())
-                {
-                    callbacks.SetGlobalDefaultCulture(value);
-                    return;
-                }
-#endif
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {

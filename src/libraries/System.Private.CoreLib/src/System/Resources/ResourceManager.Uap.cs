@@ -59,12 +59,7 @@ namespace System.Resources
         // we can do very little with WinRT in System.Private.CoreLib.
         internal static WindowsRuntimeResourceManagerBase GetWinRTResourceManager()
         {
-#if FEATURE_APPX
             Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, System.Runtime.WindowsRuntime", throwOnError: true)!;
-#else // ENABLE_WINRT
-            Assembly hiddenScopeAssembly = Assembly.Load(Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName);
-            Type WinRTResourceManagerType = hiddenScopeAssembly.GetType("System.Resources.WindowsRuntimeResourceManager", true);
-#endif
             return (WindowsRuntimeResourceManagerBase)Activator.CreateInstance(WinRTResourceManagerType, nonPublic: true)!;
         }
 
@@ -87,7 +82,6 @@ namespace System.Resources
             if (resourcesAssembly == typeof(object).Assembly) // We are not loading resources for System.Private.CoreLib
                 return false;
 
-#if FEATURE_APPX
             // Check to see if the assembly is under PLATFORM_RESOURCE_ROOTS. If it is, then we should use satellite assembly lookup for it.
             string? platformResourceRoots = (string?)AppContext.GetData("PLATFORM_RESOURCE_ROOTS");
             if (!string.IsNullOrEmpty(platformResourceRoots))
@@ -104,16 +98,6 @@ namespace System.Resources
                     }
                 }
             }
-#else // ENABLE_WINRT
-            foreach (var attrib in resourcesAssembly.GetCustomAttributes())
-            {
-                AssemblyMetadataAttribute? meta = attrib as AssemblyMetadataAttribute;
-                if (meta != null && meta.Key.Equals(".NETFrameworkAssembly"))
-                {
-                    return false;
-                }
-            }
-#endif
 
             return true;
         }
@@ -127,14 +111,8 @@ namespace System.Resources
             Debug.Assert(!_PRIInitialized); // Only this function writes to this member
             Debug.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
 
-#if FEATURE_APPX
             if (!ApplicationModel.IsUap)
                 return;
-#else // ENABLE_WINRT
-            Internal.Runtime.Augments.WinRTInteropCallbacks callbacks = Internal.Runtime.Augments.WinRTInterop.UnsafeCallbacks;
-            if (!(callbacks != null && callbacks.IsAppxModel()))
-                return;
-#endif
 
             Debug.Assert(MainAssembly != null);
             if (!ShouldUseUapResourceManagement(MainAssembly))
