@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private const string FrameworkName = ".NET Core";
-        private static string s_frameworkDescription;
+        private static string? s_frameworkDescription;
 
         public static string FrameworkDescription
         {
@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
             {
                 if (s_frameworkDescription == null)
                 {
-                    string versionString = (string)AppContext.GetData("FX_PRODUCT_VERSION");
+                    string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION");
 
                     if (versionString == null)
                     {

@@ -10,29 +10,18 @@ namespace System.Runtime.InteropServices
     {
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
-        private static string s_osPlatformName;
-        private static string s_osDescription;
+        private static string? s_osPlatformName;
+        private static string? s_osDescription;
         private static Architecture? s_osArch;
         private static Architecture? s_processArch;
 
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
-            string name = s_osPlatformName ?? (s_osPlatformName = Interop.Sys.GetUnixName());
+            string name = s_osPlatformName ??= Interop.Sys.GetUnixName();
             return osPlatform.Equals(name);
         }
 
-        public static string OSDescription
-        {
-            get
-            {
-                if (null == s_osDescription)
-                {
-                    s_osDescription = Interop.Sys.GetUnixVersion();
-                }
-
-                return s_osDescription;
-            }
-        }
+        public static string OSDescription => s_osDescription ??= Interop.Sys.GetUnixVersion();
 
         public static Architecture OSArchitecture
         {

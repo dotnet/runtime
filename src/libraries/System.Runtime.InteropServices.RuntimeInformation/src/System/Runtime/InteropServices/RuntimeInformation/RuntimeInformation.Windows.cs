@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string s_osDescription = null;
+        private static string? s_osDescription = null;
         private static readonly object s_osLock = new object();
         private static readonly object s_processLock = new object();
         private static Architecture? s_osArch = null;
@@ -19,18 +19,7 @@ namespace System.Runtime.InteropServices
             return OSPlatform.Windows == osPlatform;
         }
 
-        public static string OSDescription
-        {
-            get
-            {
-                if (null == s_osDescription)
-                {
-                    s_osDescription = Interop.NtDll.RtlGetVersion();
-                }
-
-                return s_osDescription;
-            }
-        }
+        public static string OSDescription => s_osDescription ??= Interop.NtDll.RtlGetVersion();
 
         public static Architecture OSArchitecture
         {
