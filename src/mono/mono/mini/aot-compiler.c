@@ -12027,7 +12027,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
 
 #ifdef TARGET_WIN32_MSVC
-#define AS_OPTIONS "-c -x assembler"
+#define AS_OPTIONS "--target=x86_64-pc-windows-msvc -c -x assembler"
 #elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)

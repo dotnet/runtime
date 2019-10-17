@@ -166,7 +166,7 @@
     </Target>
 
     <Target Name="_CheckLLVMPlatformSupport" Condition="'$(MONO_ENABLE_LLVM)' == 'true'">
-        <warning Text="LLVM only supported on x64 builds, disabling LLVM support." Condition="'$(Platform)' != 'x64'" />
+        <Message Importance="high" Text="LLVM only supported on x64 builds, disabling LLVM support." Condition="'$(Platform)' != 'x64'" />
         <PropertyGroup Condition="'$(Platform)' != 'x64'">
             <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
         </PropertyGroup>

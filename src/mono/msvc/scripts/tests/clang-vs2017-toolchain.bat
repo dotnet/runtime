@@ -55,7 +55,7 @@ SET VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswh
 
 ECHO Make sure to run this from a "x64 Native Tools Command Prompt for VS2017" command prompt.
 IF EXIST "%VSWHERE_TOOLS_BIN%" (
-	FOR /F "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -latest -property installationPath') DO (
+	FOR /F "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -version [15.0^,16.0] -property installationPath') DO (
 		ECHO Setup a "x64 Native Tools Command Prompt for VS2017" command prompt by using "%%a\VC\Auxiliary\Build\vcvars64.bat".
 	)
 )

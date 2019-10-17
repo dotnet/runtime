@@ -129,11 +129,11 @@ mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
 		break;
 	}
 	case MintOpShortBranch:
-		target = ip + * (short *)(ip + 1) - base;
+		target = (int)(ip + * (short *)(ip + 1) - base);
 		g_string_append_printf (str, " IR_%04x", target);
 		break;
 	case MintOpBranch:
-		target = ip + (gint32)READ32 (ip + 1) - base;
+		target = (int)(ip + (gint32)READ32 (ip + 1) - base);
 		g_string_append_printf (str, " IR_%04x", target);
 		break;
 	case MintOpSwitch: {

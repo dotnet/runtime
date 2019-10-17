@@ -6,7 +6,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "test.h"
 
 #if defined (G_OS_WIN32)
 #define EXTERNAL_SYMBOL "GetProcAddress"
@@ -22,6 +21,8 @@
 #include <wchar.h>
 #include <psapi.h>
 #endif
+
+#include "test.h"
 
 void G_MODULE_EXPORT
 dummy_test_export (void);

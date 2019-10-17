@@ -159,13 +159,13 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 
 		if (seq_point->next_len) {
 			// store next offset and skip it
-			seq_point->next_offset = ptr - buffer_ptr;
+			seq_point->next_offset = (int)(ptr - buffer_ptr);
 			for (i = 0; i < seq_point->next_len; ++i)
 				decode_var_int (ptr, &ptr);
 		}
 	}
 
-	return ptr - ptr0;
+	return (int)(ptr - ptr0);
 }
 
 gboolean
@@ -329,7 +329,7 @@ mono_seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 	memcpy (buffer, info_inflated.data, info_inflated.len);
 	buffer += info_inflated.len;
 
-	return buffer - buffer0;
+	return (int)(buffer - buffer0);
 }
 
 int
@@ -345,7 +345,7 @@ mono_seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy
 	(*info) = mono_seq_point_info_new (size, copy, buffer, has_debug_data, &info_size);
 	buffer += size;
 
-	return buffer - buffer0;
+	return (int)(buffer - buffer0);
 }
 
 /*

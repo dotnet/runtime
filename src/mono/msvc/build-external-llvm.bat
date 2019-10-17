@@ -13,14 +13,15 @@
 :: %7 VS platform (Win32/x64).
 :: %8 VS configuration (Debug/Release).
 :: %9 VS target.
-:: %10 MsBuild bin path, if used.
-:: %11 Force MSBuild (true/false), if used.
+:: %9 VS PlatformToolSet, if used.
+:: %10 Win SDK, if used.
+:: %11 MsBuild bin path, if used.
+:: %12 Force MSBuild (true/false), if used.
 :: --------------------------------------------------
 
 @echo off
 setlocal
 
-set TEMP_PATH=%PATH%
 set BUILD_RESULT=1
 
 set BUILD_EXTERNAL_LLVM_SCRIPT_PATH=%~dp0
@@ -49,6 +50,10 @@ shift
 set VS_CONFIGURATION=%~1
 shift
 set VS_TARGET=%~1
+shift
+set VS_PLATFORM_TOOL_SET=%~1
+shift
+set VS_WIN_SDK_VERSION=%~1
 shift
 set MSBUILD_BIN_PATH=%~1
 shift
@@ -97,6 +102,14 @@ if "%VS_TARGET%" == "" (
     set VS_TARGET=Build
 )
 
+if "%VS_PLATFORM_TOOL_SET%" == "" (
+    set VS_PLATFORM_TOOL_SET=v142
+)
+
+if "%VS_WIN_SDK_VERSION%" == "" (
+    set VS_WIN_SDK_VERSION=10.0
+)
+
 if "%FORCE_MSBUILD%" == "" (
     set FORCE_MSBUILD=false
 )
@@ -112,16 +125,36 @@ if /i "%VS_PLATFORM%" == "win32" (
     set LLVM_ARCH=i386
 )
 
-:: Check if executed from VS2015/VS2017 build environment.
+:: VS2017/VS2019 includes vswhere.exe that can be used to locate current VS installation.
+set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+set VS_COMMON_EXTENSION_TOOLS_PATHS=
+
+:: Check if executed from VS2015/VS2017/2019 build environment.
 if "%VisualStudioVersion%" == "14.0" (
+    if /i not "%VS_PLATFORM_TOOL_SET%" == "v140" (
+        echo VisualStudioVersion/PlatformToolchain missmatch, forcing msbuild.
+        set FORCE_MSBUILD=true
+    )
     goto ON_ENV_OK
 )
 
 if "%VisualStudioVersion%" == "15.0" (
+    if /i not "%VS_PLATFORM_TOOL_SET%" == "v141" (
+        echo VisualStudioVersion/PlatformToolchain missmatch, forcing msbuild.
+        set FORCE_MSBUILD=true
+    )
     goto ON_ENV_OK
 )
 
-:: Executed outside VS2015/VS2017 build environment, try to locate Visual Studio C/C++ compiler and linker.
+if "%VisualStudioVersion%" == "16.0" (
+    if /i not "%VS_PLATFORM_TOOL_SET%" == "v142" (
+        echo VisualStudioVersion/PlatformToolchain missmatch, forcing msbuild.
+        set FORCE_MSBUILD=true
+    )
+    goto ON_ENV_OK
+)
+
+:: Executed outside VS2015/VS2017/VS2019 build environment, try to locate Visual Studio C/C++ compiler and linker.
 call :FIND_PROGRAM "" "%CL_BIN_NAME%" CL_PATH
 if "%CL_PATH%" == "" (
     goto ON_ENV_WARNING
@@ -136,25 +169,45 @@ goto ON_ENV_OK
 
 :ON_ENV_WARNING
 
+set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+
+:: VS 2019.
+if exist "%VSWHERE_TOOLS_BIN%" (
+    echo For VS2019 builds, make sure to run this from within Visual Studio build or using "x86|x64 Native Tools Command Prompt for VS2019" command prompt.
+    for /f "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -property installationPath') do (
+        echo Setup a "x86|x64 Native Tools Command Prompt for VS2019" command prompt by using "%%a\VC\Auxiliary\Build\vcvars32.bat|vcvars64.bat".
+        goto ON_ENV_WARNING_DONE
+    )
+)
+
+:: VS 2017.
+if exist "%VSWHERE_TOOLS_BIN%" (
+    echo For VS2017 builds, make sure to run this from within Visual Studio build or using "x86|x64 Native Tools Command Prompt for VS2017" command prompt.
+    for /f "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -version [15.0^,16.0] -property installationPath') do (
+        echo Setup a "x86|x64 Native Tools Command Prompt for VS2017" command prompt by using "%%a\VC\Auxiliary\Build\vcvars32.bat|vcvars64.bat".
+        goto ON_ENV_WARNING_DONE
+    )
+)
+
 :: VS 2015.
 set VC_VARS_ALL_FILE=%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
 IF EXIST "%VC_VARS_ALL_FILE%" (
     echo For VS2015 builds, make sure to run this from within Visual Studio build or using "VS2015 x86|x64 Native Tools Command Prompt" command prompt.
-	echo Setup a "VS2015 x86|x64 Native Tools Command Prompt" command prompt by using "%VC_VARS_ALL_FILE% x86|amd64".
+    echo Setup a "VS2015 x86|x64 Native Tools Command Prompt" command prompt by using "%VC_VARS_ALL_FILE% x86|amd64".
+    goto ON_ENV_WARNING_DONE
 )
 
-:: VS 2017.
-set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-if exist "%VSWHERE_TOOLS_BIN%" (
-    echo For VS2017 builds, make sure to run this from within Visual Studio build or using "x86|x64 Native Tools Command Prompt for VS2017" command prompt.
-	for /f "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -latest -property installationPath') do (
-		echo Setup a "x86|x64 Native Tools Command Prompt for VS2017" command prompt by using "%%a\VC\Auxiliary\Build\vcvars32.bat|vcvars64.bat".
-	)
-)
+:ON_ENV_WARNING_DONE
 
 echo Could not detect Visual Studio build environment. You may experience build problems if wrong toolchain is auto detected.
 
 :ON_ENV_OK
+
+:: Append paths to VS installed common extension tools at end of PATH (Vs2017/VS2019).
+call :FIND_VS_COMMON_EXTENSION_TOOLS_PATHS VS_COMMON_EXTENSION_TOOLS_PATHS
+if not "%VS_COMMON_EXTENSION_TOOLS_PATHS%" == "" (
+    set "PATH=%PATH%;%VS_COMMON_EXTENSION_TOOLS_PATHS%"
+)
 
 :: Setup all cmake related generator, tools and variables.
 call :SETUP_CMAKE_ENVIRONMENT
@@ -214,10 +267,16 @@ set CC=%CL_BIN_NAME%
 set CXX=%CL_BIN_NAME%
 
 set CMAKE_GENERATOR_ARGS=
+set CMAKE_GENERATOR_TOOLSET=
 if /i "%CMAKE_GENERATOR%" == "ninja" (
     set CMAKE_GENERATOR_ARGS=-DCMAKE_BUILD_TYPE=%VS_CONFIGURATION%
 ) else (
     set CMAKE_GENERATOR_ARGS=-Thost=x64
+    set CMAKE_GENERATOR_TOOLSET=%VS_PLATFORM_TOOL_SET%
+)
+
+if not "%CMAKE_GENERATOR_ARCH%" == "" (
+    set CMAKE_GENERATOR_ARCH=-A %CMAKE_GENERATOR_ARCH%
 )
 
 :: Run cmake.
@@ -231,9 +290,12 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
 -DLLVM_TOOLS_TO_BUILD="opt;llc;llvm-config;llvm-dis;llvm-mc;llvm-as" ^
 -DLLVM_ENABLE_LIBXML2=Off ^
 -DCMAKE_SYSTEM_PROCESSOR="%LLVM_ARCH%" ^
+-D CMAKE_SYSTEM_VERSION=%VS_WIN_SDK_VERSION% ^
+%CMAKE_GENERATOR_TOOLSET% ^
 %LLVM_ADDITIONAL_CMAKE_ARGS% ^
 %CMAKE_GENERATOR_ARGS% ^
 -G "%CMAKE_GENERATOR%" ^
+%CMAKE_GENERATOR_ARCH% ^
 "%LLVM_DIR%"
 
 if not ERRORLEVEL == 0 (
@@ -311,11 +373,29 @@ goto ON_EXIT
     goto ON_EXIT
 
 :ON_EXIT
-    set PATH=%TEMP_PATH%
     exit /b %BUILD_RESULT%
 
 :: ##############################################################################################################################
 :: Functions
+
+:: --------------------------------------------------
+:: Locates PATHS to installed common extension tools.
+:: %1 Output, variable including paths.
+:: --------------------------------------------------
+:FIND_VS_COMMON_EXTENSION_TOOLS_PATHS
+
+set VS_COMMON_EXTENSION_PATH=
+if exist "%VSWHERE_TOOLS_BIN%" (
+    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -property installationPath') do (
+        set VS_COMMON_EXTENSION_PATH=%%a\Common7\IDE\CommonExtensions\Microsoft
+    )
+)
+
+if exist "%VS_COMMON_EXTENSION_PATH%" (
+    set "%~1=%VS_COMMON_EXTENSION_PATH%\TeamFoundation\Team Explorer\Git\cmd;%VS_COMMON_EXTENSION_PATH%\CMake\CMake\bin;%VS_COMMON_EXTENSION_PATH%\CMake\Ninja"
+)
+
+goto :EOF
 
 :: --------------------------------------------------
 :: Finds a program using environment.
@@ -373,14 +453,32 @@ if /i "%VS_TARGET%" == "build" (
     echo Using Visual Studio build generator.
 )
 
-:: Detect VS version to use right cmake generator.
-set CMAKE_GENERATOR=Visual Studio 14 2015
-if "%VisualStudioVersion%" == "15.0" (
-    set CMAKE_GENERATOR=Visual Studio 15 2017
+set CMAKE_GENERATOR_ARCH=
+
+:: Detect VS platform tool set to use matching cmake generator.
+if /i "%VS_PLATFORM_TOOL_SET%" == "v140" (
+    if /i "%VS_PLATFORM%" == "x64" (
+        set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
+    ) else (
+        set CMAKE_GENERATOR=Visual Studio 14 2015
+    )
 )
 
-if /i "%VS_PLATFORM%" == "x64" (
-    set CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64
+if /i "%VS_PLATFORM_TOOL_SET%" == "v141" (
+    if /i "%VS_PLATFORM%" == "x64" (
+        set CMAKE_GENERATOR=Visual Studio 15 2017 Win64
+    ) else (
+        set CMAKE_GENERATOR=Visual Studio 15 2017
+    )
+)
+
+if /i "%VS_PLATFORM_TOOL_SET%" == "v142" (
+    set CMAKE_GENERATOR=Visual Studio 16 2019
+    if /i "%VS_PLATFORM%" == "x64" (
+        set CMAKE_GENERATOR_ARCH=x64
+    ) else (
+        set CMAKE_GENERATOR_ARCH=Win32
+    )
 )
 
 set LLVM_BUILD_OUTPUT_DIR=%LLVM_BUILD_DIR%\%VS_CONFIGURATION%
@@ -394,6 +492,7 @@ if /i "%VS_TARGET%" == "build" (
     echo Using Ninja build generator.
 )
 
+set CMAKE_GENERATOR_ARCH=
 set CMAKE_GENERATOR=Ninja
 set LLVM_BUILD_OUTPUT_DIR=%LLVM_BUILD_DIR%
 

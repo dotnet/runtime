@@ -8,6 +8,9 @@ set CALLER_WD=%CD%
 :: Get path for current running script.
 set RUN_SETUP_VS_MSBUILD_ENV_SCRIPT_PATH=%~dp0
 
+:: VS2017/VS2019 includes vswhere.exe that can be used to locate current VS installation.
+set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+
 :: Visual Studio 2015 == 14.0
 if "%VisualStudioVersion%" == "14.0" (
     goto SETUP_VS_2015
@@ -18,25 +21,38 @@ if "%VisualStudioVersion%" == "15.0" (
     goto SETUP_VS_2017
 )
 
-:SETUP_VS_2015
+:: Visual Studio 2019 == 16.0
+if "%VisualStudioVersion%" == "16.0" (
+    goto SETUP_VS_2019
+)
 
-:SETUP_VS_2015_BUILD_TOOLS
+:SETUP_VS_2019
 
-:: Try to locate VS2015 build tools installation.
-set VS_2015_BUILD_TOOLS_CMD=%ProgramFiles(x86)%\Microsoft Visual C++ Build Tools\vcbuildtools_msbuild.bat
+:SETUP_VS_2019_BUILD_TOOLS
 
-:: Setup VS2015 VC development environment using build tools installation.
-call :setup_build_env "%VS_2015_BUILD_TOOLS_CMD%" "%CALLER_WD%" && (
+:: Try to locate VS2019 build tools installation.
+set VS_2019_BUILD_TOOLS_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\VsMSBuildCmd.bat
+
+:: Setup VS2019 VC development environment using build tools installation.
+call :setup_build_env "%VS_2019_BUILD_TOOLS_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v142
     goto ON_EXIT
 )
 
-:SETUP_VS_2015_VC
+:SETUP_VS_2019_VC
 
-:: Try to locate installed VS2015 VC environment.
-set VS_2015_DEV_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\Common7\Tools\VsMSBuildCmd.bat
+set VS_2019_DEV_CMD=
 
-:: Setup VS2015 VC development environment using VS installation.
-call :setup_build_env "%VS_2015_DEV_CMD%" "%CALLER_WD%" && (
+:: Try to locate installed VS2019 VC environment.
+if exist "%VSWHERE_TOOLS_BIN%" (
+    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -property installationPath') do (
+        set VS_2019_DEV_CMD=%%a\Common7\Tools\VsMSBuildCmd.bat
+    )
+)
+
+:: Setup VS2019 VC development environment using VS installation.
+call :setup_build_env "%VS_2019_DEV_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v142
     goto ON_EXIT
 )
 
@@ -49,24 +65,48 @@ set VS_2017_BUILD_TOOLS_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Bui
 
 :: Setup VS2017 VC development environment using build tools installation.
 call :setup_build_env "%VS_2017_BUILD_TOOLS_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v141
     goto ON_EXIT
 )
 
 :SETUP_VS_2017_VC
 
-:: VS2017 includes vswhere.exe that can be used to locate current VS2017 installation.
-set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
 set VS_2017_DEV_CMD=
 
 :: Try to locate installed VS2017 VC environment.
 if exist "%VSWHERE_TOOLS_BIN%" (
-    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -latest -property installationPath') do (
+    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -version [15.0^,16.0] -property installationPath') do (
         set VS_2017_DEV_CMD=%%a\Common7\Tools\VsMSBuildCmd.bat
     )
 )
 
 :: Setup VS2017 VC development environment using VS installation.
 call :setup_build_env "%VS_2017_DEV_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v141
+    goto ON_EXIT
+)
+
+:SETUP_VS_2015
+
+:SETUP_VS_2015_BUILD_TOOLS
+
+:: Try to locate VS2015 build tools installation.
+set VS_2015_BUILD_TOOLS_CMD=%ProgramFiles(x86)%\Microsoft Visual C++ Build Tools\vcbuildtools_msbuild.bat
+
+:: Setup VS2015 VC development environment using build tools installation.
+call :setup_build_env "%VS_2015_BUILD_TOOLS_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v140
+    goto ON_EXIT
+)
+
+:SETUP_VS_2015_VC
+
+:: Try to locate installed VS2015 VC environment.
+set VS_2015_DEV_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\Common7\Tools\VsMSBuildCmd.bat
+
+:: Setup VS2015 VC development environment using VS installation.
+call :setup_build_env "%VS_2015_DEV_CMD%" "%CALLER_WD%" && (
+    set VS_DEFAULT_PLATFORM_TOOL_SET=v140
     goto ON_EXIT
 )
 

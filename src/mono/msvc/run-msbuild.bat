@@ -39,8 +39,8 @@ if /i "%~1" == "debug" (
 )
 shift
 
-set "VS_ADDITIONAL_ARGUMENTS=/p:PlatformToolset=v140 /p:MONO_TARGET_GC=sgen"
-if /i not "%~1" == "" (
+set VS_ADDITIONAL_ARGUMENTS=
+if not "%~1" == "" (
     set VS_ADDITIONAL_ARGUMENTS=%~1
 )
 shift
@@ -59,6 +59,10 @@ call %RUN_MSBUILD_SCRIPT_PATH%setup-windows-env.bat
 
 :: Setup VS msbuild environment.
 call %RUN_MSBUILD_SCRIPT_PATH%setup-vs-msbuild-env.bat
+
+if "%VS_ADDITIONAL_ARGUMENTS%" == "" (
+    set "VS_ADDITIONAL_ARGUMENTS=/p:PlatformToolset=%VS_DEFAULT_PLATFORM_TOOL_SET% /p:MONO_TARGET_GC=sgen"
+)
 
 set VS_BUILD_ARGS=/p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% %VS_ADDITIONAL_ARGUMENTS% /t:%VS_TARGET% /m
 call msbuild.exe %VS_BUILD_ARGS% "%VS_BUILD_PROJ%" && (
