@@ -9659,40 +9659,6 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 }
 
 //------------------------------------------------------------------------
-// fgMorphUnsafeBlk: Convert a CopyObj with a dest on the stack to a GC Unsafe CopyBlk
-//
-// Arguments:
-//    dest - the GT_OBJ or GT_STORE_OBJ
-//
-// Assumptions:
-//    The destination must be known (by the caller) to be on the stack.
-//
-// Notes:
-//    If we have a CopyObj with a dest on the stack, and its size is small enough
-//    to be completely unrolled (i.e. between [16..64] bytes), we will convert it into a
-//    GC Unsafe CopyBlk that is non-interruptible.
-//    This is not supported for the JIT32_GCENCODER, in which case this method is a no-op.
-//
-void Compiler::fgMorphUnsafeBlk(GenTreeObj* dest)
-{
-#if defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
-    assert(dest->GetLayout()->HasGCPtr());
-    unsigned blockWidth = dest->GetLayout()->GetSize();
-#ifdef DEBUG
-    bool     destOnStack = false;
-    GenTree* destAddr    = dest->Addr();
-    assert(destAddr->IsLocalAddrExpr() != nullptr);
-#endif
-    if ((blockWidth >= (2 * TARGET_POINTER_SIZE)) && (blockWidth <= CPBLK_UNROLL_LIMIT))
-    {
-        genTreeOps newOper = (dest->gtOper == GT_OBJ) ? GT_BLK : GT_STORE_BLK;
-        dest->SetOper(newOper);
-        dest->AsBlk()->gtBlkOpGcUnsafe = true; // Mark as a GC unsafe copy block
-    }
-#endif // defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
-}
-
-//------------------------------------------------------------------------
 // fgMorphCopyBlock: Perform the Morphing of block copy
 //
 // Arguments:
@@ -9980,11 +9946,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // _TARGET_ARM_
 
-        if (dest->OperGet() == GT_OBJ && dest->AsBlk()->gtBlkOpGcUnsafe)
-        {
-            requiresCopyBlock = true;
-        }
-
         // Can't use field by field assignment if the src is a call.
         if (rhs->OperGet() == GT_CALL)
         {
@@ -10126,22 +10087,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             dest               = fgMorphBlockOperand(dest, asgType, blockWidth, isBlkReqd);
             asg->AsOp()->gtOp1 = dest;
             asg->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
-
-            // Note that the unrolling of CopyBlk is only implemented on some platforms.
-            // Currently that includes x64 and ARM but not x86: the code generation for this
-            // construct requires the ability to mark certain regions of the generated code
-            // as non-interruptible, and the GC encoding for the latter platform does not
-            // have this capability.
-
-            // If we have a CopyObj with a dest on the stack
-            // we will convert it into an GC Unsafe CopyBlk that is non-interruptible
-            // when its size is small enough to be completely unrolled (i.e. between [16..64] bytes).
-            // (This is not supported for the JIT32_GCENCODER, for which fgMorphUnsafeBlk is a no-op.)
-            //
-            if (destOnStack && (dest->OperGet() == GT_OBJ))
-            {
-                fgMorphUnsafeBlk(dest->AsObj());
-            }
 
             // Eliminate the "OBJ or BLK" node on the rhs.
             rhs                = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*!isBlkReqd*/);
