@@ -3,6 +3,7 @@
     <RootNamespace>System.Numerics</RootNamespace>
     <AssemblyName>System.Runtime.Numerics</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
