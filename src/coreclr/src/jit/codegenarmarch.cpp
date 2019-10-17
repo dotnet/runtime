@@ -1700,7 +1700,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
-        unsigned shiftByImm = (unsigned)shiftBy->gtIntCon.gtIconVal & (immWidth - 1);
+        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
 
         GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
     }

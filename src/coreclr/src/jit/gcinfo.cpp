@@ -247,7 +247,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
         return WBF_NoBarrier;
     }
 
-    if (assignVal->gtOper == GT_CNS_INT && assignVal->gtIntCon.gtIconVal == 0)
+    if (assignVal->gtOper == GT_CNS_INT && assignVal->AsIntCon()->gtIconVal == 0)
     {
         return WBF_NoBarrier;
     }
