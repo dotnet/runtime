@@ -784,15 +784,26 @@ namespace ILCompiler
                 return;
             }
 
-            if (!_compilationGroup.ContainsTypeLayout(baseType))
+            if (_compilationGroup.ContainsType(baseType))
             {
-                LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
-                if (type.RequiresAlign8())
+                if (_compilationGroup.ContainsTypeLayout(baseType))
                 {
-                    alignment = new LayoutInt(8);
+                    // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
+                    return;
                 }
-                baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }
+            else if (_compilationGroup.VersionsWithType(baseType))
+            {
+                // The baseType is in the current version bubble, but in a module different from the one that's currently being compiled
+                return;
+            }
+
+            LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
+            if (type.RequiresAlign8())
+            {
+                alignment = new LayoutInt(8);
+            }
+            baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
         }
 
         public static bool IsManagedSequentialType(TypeDesc type)
