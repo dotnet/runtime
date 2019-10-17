@@ -16,13 +16,7 @@ namespace System.Net
         {
             if (s_toServerStringFunc == null)
             {
-                BindingFlags flags = BindingFlags.Instance;
-#if uap
-                flags |= BindingFlags.Public;
-#else
-                flags |= BindingFlags.NonPublic;
-#endif
-                s_toServerStringFunc = (Func<Cookie, string>)typeof(Cookie).GetMethod("ToServerString", flags).CreateDelegate(typeof(Func<Cookie, string>));
+                s_toServerStringFunc = (Func<Cookie, string>)typeof(Cookie).GetMethod("ToServerString", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<Cookie, string>));
             }
 
             Debug.Assert(s_toServerStringFunc != null, "Reflection failed for Cookie.ToServerString().");
@@ -35,13 +29,7 @@ namespace System.Net
         {
             if (s_cloneFunc == null)
             {
-                BindingFlags flags = BindingFlags.Instance;
-#if uap
-                flags |= BindingFlags.Public;
-#else
-                flags |= BindingFlags.NonPublic;
-#endif
-                s_cloneFunc = (Func<Cookie, Cookie>)typeof(Cookie).GetMethod("Clone", flags).CreateDelegate(typeof(Func<Cookie, Cookie>));
+                s_cloneFunc = (Func<Cookie, Cookie>)typeof(Cookie).GetMethod("Clone", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<Cookie, Cookie>));
             }
 
             Debug.Assert(s_cloneFunc != null, "Reflection failed for Cookie.Clone().");
@@ -63,13 +51,7 @@ namespace System.Net
         {
             if (s_getVariantFunc == null)
             {
-                BindingFlags flags = BindingFlags.Instance;
-#if uap
-                flags |= BindingFlags.Public;
-#else
-                flags |= BindingFlags.NonPublic;
-#endif
-                s_getVariantFunc = (Func<Cookie, CookieVariant>)typeof(Cookie).GetProperty("Variant", flags).GetGetMethod(true).CreateDelegate(typeof(Func<Cookie, CookieVariant>));
+                s_getVariantFunc = (Func<Cookie, CookieVariant>)typeof(Cookie).GetProperty("Variant", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).CreateDelegate(typeof(Func<Cookie, CookieVariant>));
             }
 
             Debug.Assert(s_getVariantFunc != null, "Reflection failed for Cookie.Variant.");
@@ -87,13 +69,7 @@ namespace System.Net
         {
             if (s_internalAddFunc == null)
             {
-                BindingFlags flags = BindingFlags.Instance;
-#if uap
-                flags |= BindingFlags.Public;
-#else
-                flags |= BindingFlags.NonPublic;
-#endif
-                s_internalAddFunc = (Func<CookieCollection, Cookie, bool, int>)typeof(CookieCollection).GetMethod("InternalAdd", flags).CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>));
+                s_internalAddFunc = (Func<CookieCollection, Cookie, bool, int>)typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>));
             }
 
             Debug.Assert(s_internalAddFunc != null, "Reflection failed for CookieCollection.InternalAdd().");

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Media.Media3D.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class Matrix3DTests
     {
         [Fact]

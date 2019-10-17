@@ -16,10 +16,6 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public partial class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
-        // Windows 10 Version 1709 introduced the necessary APIs for the UAP version of
-        // ClientWebSocket.ConnectAsync to carry out mutual TLS authentication.
-        public static bool ClientCertificatesSupported => !PlatformDetection.IsUap;
-
         public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(WebSocketsSupported))]

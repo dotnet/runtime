@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Markup.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class XamlParseExceptionTests
     {
         private const int E_XAMLPARSEFAILED = unchecked((int)0x802B000A);

@@ -5,7 +5,5 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
-    <IsUAP>true</IsUAP>
-    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>

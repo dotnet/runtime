@@ -14,6 +14,7 @@
       <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
     </HarvestIncludePaths>
     <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
+    <HarvestIncludePaths Include="runtimes/win/lib/uap10.0.16299" />
 
     <!-- Since UAP and .NETCoreApp are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.

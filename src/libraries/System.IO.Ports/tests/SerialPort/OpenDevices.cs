@@ -13,7 +13,6 @@ namespace System.IO.Ports.Tests
     public class OpenDevices : PortsTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29756
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23294", TargetFrameworkMonikers.Uap)]
         public void OpenDevices01()
         {
             DosDevices dosDevices = new DosDevices();

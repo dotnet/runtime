@@ -218,7 +218,6 @@ namespace System.DirectoryServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "PNSE in UAP")]
         public void ObjectSecurity_Set_GetReturnsExpected()
         {
             var security = new ActiveDirectorySecurity();

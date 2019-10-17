@@ -8,7 +8,6 @@
       $(PackageConfigurations);
       _netfx;
       netcoreapp;
-      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

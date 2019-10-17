@@ -414,11 +414,7 @@ namespace System.Net.Http.Headers
         {
             try
             {
-#if uap
-                new MailAddress(value);
-#else
                 MailAddressParser.ParseAddress(value);
-#endif
                 return true;
             }
             catch (FormatException e)

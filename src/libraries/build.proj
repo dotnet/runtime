@@ -89,6 +89,4 @@
       <SolutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
     </ItemGroup>
   </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)restore\uap-tools.targets" />
 </Project>

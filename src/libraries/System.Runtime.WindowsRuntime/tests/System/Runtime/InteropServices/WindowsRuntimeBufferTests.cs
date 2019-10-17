@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.WindowsRuntime.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class WindowsRuntimeBufferTests
     {
         [Theory]

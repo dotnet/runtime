@@ -3,8 +3,7 @@
     <!-- shared configurations between shims and apicompat -->
     <BuildConfigurations>
       $(BuildConfigurations);
-      netcoreapp;
-      uap;
+      netcoreapp;;
     </BuildConfigurations>
   </PropertyGroup>
 
@@ -14,7 +13,6 @@
 
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
-    <IsUAP>true</IsUAP>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 

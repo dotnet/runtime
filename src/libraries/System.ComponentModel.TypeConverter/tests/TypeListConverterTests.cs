@@ -38,18 +38,15 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    ConvertTo_WithContext(new object[2, 3]
-                        {
-                            { typeof(char), "System.Char", null },   // the base class is not verifying if this type is not in the list
-                            { null, "(none)", CultureInfo.InvariantCulture }
-                        },
-                        TypeListConverterTests.s_converter);
-                }
-            }).Dispose();
+                ConvertTo_WithContext(new object[2, 3]
+                    {
+                        { typeof(char), "System.Char", null },   // the base class is not verifying if this type is not in the list
+                        { null, "(none)", CultureInfo.InvariantCulture }
+                    },
+                    TypeListConverterTests.s_converter);
+            }
         }
 
         [Fact]

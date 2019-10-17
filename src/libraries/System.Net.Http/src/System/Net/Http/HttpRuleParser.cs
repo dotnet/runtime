@@ -19,11 +19,7 @@ namespace System.Net.Http
         internal const int MaxInt32Digits = 10;
 
         // iso-8859-1, Western European (ISO)
-#if uap
-        internal static readonly Encoding DefaultHttpEncoding = Encoding.GetEncoding("iso-8859-1");
-#else
         internal static readonly Encoding DefaultHttpEncoding = Encoding.GetEncoding(28591);
-#endif
 
         private static bool[] CreateTokenChars()
         {

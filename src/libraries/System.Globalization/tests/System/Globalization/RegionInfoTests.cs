@@ -55,15 +55,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentRegion()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
-                    Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
-                    Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
-                }
-            }).Dispose();
+                RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
+                Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
+                Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
+            }
         }
 
         [Theory]
@@ -71,13 +68,10 @@ namespace System.Globalization.Tests
         [OuterLoop("May fail on machines with multiple language packs installed")] // https://github.com/dotnet/corefx/issues/39177
         public void DisplayName(string name, string expected)
         {
-            RemoteExecutorForUap.Invoke((string _name, string _expected) =>
+            using (new ThreadCultureChange(name))
             {
-                using (new ThreadCultureChange(_name))
-                {
-                    Assert.Equal(_expected, new RegionInfo(_name).DisplayName);
-                }
-            }, name, expected).Dispose();
+                Assert.Equal(expected, new RegionInfo(name).DisplayName);
+            }
         }
 
         [Theory]

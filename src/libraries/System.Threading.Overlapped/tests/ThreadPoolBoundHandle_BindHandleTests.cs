@@ -63,7 +63,6 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
-    [ActiveIssue(21066, TargetFrameworkMonikers.Uap)]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_ClosedSyncHandleAsHandle_ThrowsArgumentException()
     {
@@ -79,7 +78,6 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
-    [ActiveIssue(21066, TargetFrameworkMonikers.Uap)]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_ClosedAsyncHandleAsHandle_ThrowsArgumentException()
     {

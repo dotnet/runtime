@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base\BaseGetSetAttributes.cs" />
@@ -25,20 +25,12 @@
     <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\GetSetAttributesCommon.cs" />
     <Compile Include="File\Replace.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="FileSystemTest.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="FileSystemTest.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="File\AppendAsync.cs" />
-	<Compile Include="File\Move.netcoreapp.cs" />
+    <Compile Include="File\Move.netcoreapp.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
     <Compile Include="File\ReadWriteAllBytesAsync.cs" />
     <Compile Include="File\ReadWriteAllTextAsync.cs" />
-	<Compile Include="FileInfo\MoveTo.netcoreapp.cs" />
+    <Compile Include="FileInfo\MoveTo.netcoreapp.cs" />
     <Compile Include="FileStream\DisposeAsync.netcoreapp.cs" />
     <Compile Include="FileStream\ReadWriteSpan.netcoreapp.cs" />
     <Compile Include="Enumeration\ConstructionTests.netcoreapp.cs" />
@@ -55,6 +47,12 @@
     <Compile Include="Enumeration\MatchTypesTests.netcoreapp.cs" />
     <Compile Include="Enumeration\ExampleTests.netcoreapp.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="FileSystemTest.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="FileSystemTest.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
@@ -174,9 +172,5 @@
     <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
       <Link>Common\System\IO\PathFeatures.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="Windows" />
   </ItemGroup>
 </Project>

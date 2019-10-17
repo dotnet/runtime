@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <HaveDSA Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveDSA>
-    <HaveCertificateCreation Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveCertificateCreation>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true' and '$(TargetsUap)' != 'true'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
-    <DefineConstants Condition="'$(HaveCertificateCreation)' != 'true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
+    <DefineConstants>$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Cert.cs" />
@@ -37,8 +33,6 @@
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
     <Compile Include="ImportTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(HaveCertificateCreation)'=='true'">
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />

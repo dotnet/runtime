@@ -275,16 +275,13 @@ namespace System.Json.Tests
         [InlineData("0.000000000000000000000000000011", 1.1E-29)]
         public void JsonValue_Parse_Double(string json, double expected)
         {
-            RemoteExecutorForUap.Invoke((jsonInner, expectedInner) =>
+            foreach (string culture in new[] { "en", "fr", "de" })
             {
-                foreach (string culture in new[] { "en", "fr", "de" })
+                using (new ThreadCultureChange(culture))
                 {
-                    using (new ThreadCultureChange(culture))
-                    {
-                        Assert.Equal(double.Parse(expectedInner, CultureInfo.InvariantCulture), (double)JsonValue.Parse(jsonInner));
-                    }
+                    Assert.Equal(expected, (double)JsonValue.Parse(json));
                 }
-            }, json, expected.ToString("R", CultureInfo.InvariantCulture)).Dispose();
+            }
         }
 
         [Theory]
@@ -323,17 +320,13 @@ namespace System.Json.Tests
         [InlineData(1.123456789e-28)] // Values around the smallest positive decimal value
         public void JsonValue_Parse_Double_ViaJsonPrimitive(double number)
         {
-            RemoteExecutorForUap.Invoke(numberText =>
+            foreach (string culture in new[] { "en", "fr", "de" })
             {
-                double numberInner = double.Parse(numberText, CultureInfo.InvariantCulture);
-                foreach (string culture in new[] { "en", "fr", "de" })
+                using (new ThreadCultureChange(culture))
                 {
-                    using (new ThreadCultureChange(culture))
-                    {
-                        Assert.Equal(numberInner, (double)JsonValue.Parse(new JsonPrimitive(numberInner).ToString()));
-                    }
+                    Assert.Equal(number, (double)JsonValue.Parse(new JsonPrimitive(number).ToString()));
                 }
-            }, number.ToString("R", CultureInfo.InvariantCulture)).Dispose();
+            }
         }
 
         [Fact]

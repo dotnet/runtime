@@ -889,7 +889,7 @@ namespace System.Net.Sockets.Tests
                         Assert.True(
                             error is ObjectDisposedException ||
                             error is SocketException ||
-                            (error is SEHException && PlatformDetection.IsUap),
+                            (error is SEHException && PlatformDetection.IsInAppContainer),
                             error.ToString());
                     }
                 }
@@ -928,7 +928,7 @@ namespace System.Net.Sockets.Tests
                         Assert.True(
                             error is ObjectDisposedException ||
                             error is SocketException ||
-                            (error is SEHException && PlatformDetection.IsUap),
+                            (error is SEHException && PlatformDetection.IsInAppContainer),
                             error.ToString());
                     }
                 }

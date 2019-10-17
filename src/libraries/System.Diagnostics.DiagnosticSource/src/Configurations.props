@@ -11,7 +11,6 @@
       netcoreapp;
       netstandard;
       netfx;
-      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

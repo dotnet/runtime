@@ -29,7 +29,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(IsTypeVisibleFromCom_Windows_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void IsTypeVisibleFromCom_Windows_ReturnsExpected(Type value, bool expected)
         {
             Assert.Equal(expected, Marshal.IsTypeVisibleFromCom(value));

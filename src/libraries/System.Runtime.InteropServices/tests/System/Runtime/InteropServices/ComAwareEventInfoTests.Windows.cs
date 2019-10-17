@@ -10,7 +10,6 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
 #pragma warning disable 0618 // CompareEventInfo is marked as Obsolete.
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
     public partial class ComAwareEventInfoTests
     {
         [ComEventInterface(typeof(DispAttributeClass), typeof(int))]

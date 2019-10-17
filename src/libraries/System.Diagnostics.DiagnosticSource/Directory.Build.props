@@ -4,7 +4,5 @@
     <AssemblyVersion>4.0.4.0</AssemblyVersion>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
-    <IsUAP>true</IsUAP>
-    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>

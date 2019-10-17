@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public partial class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(ClientCertificatesSupported))]
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public void RemoteCertificateValidationCallback_Roundtrips()
         {
             using (var cws = new ClientWebSocket())
@@ -33,7 +33,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop("Connects to remote service")]
-        [ConditionalTheory(nameof(WebSocketsSupported), nameof(ClientCertificatesSupported))]
+        [ConditionalTheory(nameof(WebSocketsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure)
@@ -71,7 +71,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop("Connects to remote service")]
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(ClientCertificatesSupported))]
+        [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
             if (PlatformDetection.IsWindows7)

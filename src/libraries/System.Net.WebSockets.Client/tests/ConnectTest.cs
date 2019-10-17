@@ -26,17 +26,12 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ConnectAsync(server, cts.Token));
 
-                if (PlatformDetection.IsNetCore && !PlatformDetection.IsUap) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+                if (PlatformDetection.IsNetCore && !PlatformDetection.IsInAppContainer) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
                 {
                     Assert.Equal(errorCode, ex.WebSocketErrorCode);
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
-
-                // .NET Framework and UAP implmentations have different exception message from .NET Core.
-                if (!PlatformDetection.IsUap)
-                {
-                    Assert.Equal(exceptionMessage, ex.Message);
-                }
+                Assert.Equal(exceptionMessage, ex.Message);
             }
         }
 
@@ -247,7 +242,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
@@ -260,7 +254,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -308,7 +308,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(bool useSsl)
@@ -1001,7 +1000,6 @@ namespace System.Net.Tests
             Assert.Equal(HttpVersion.Version11, request.ProtocolVersion);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not allow HTTP/1.0 requests.")]
         [OuterLoop]
         [Theory]
         [InlineData(false)]
@@ -1258,7 +1256,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task GetResponseAsync_GetResponseStream_ContainsHost(bool useSsl)
@@ -1306,7 +1303,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task GetResponseAsync_PostRequestStream_ContainsData(bool useSsl)
@@ -1352,7 +1348,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(bool useSsl)
@@ -1392,7 +1387,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
@@ -1411,7 +1405,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(bool useSsl)
@@ -1511,7 +1504,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ResponseUri_GetResponseAsync_ExpectSameUri(bool useSsl)
@@ -1535,7 +1527,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleScenario_UseGETVerb_Success(bool useSsl)
@@ -1552,7 +1543,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleScenario_UsePOSTVerb_Success(bool useSsl)
@@ -1575,7 +1565,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(bool useSsl)
@@ -1608,7 +1597,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(MixedWebRequestParameters))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void GetResponseAsync_ParametersAreNotCachable_CreateNewClient(HttpWebRequestParameters requestParameters, bool connectionReusedParameter)
         {
             RemoteExecutor.Invoke(async (serializedParameters, connectionReusedString) =>
@@ -1658,7 +1646,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void GetResponseAsync_ParametersAreCachableButDifferent_CreateNewClient()
         {
             RemoteExecutor.Invoke(async () =>

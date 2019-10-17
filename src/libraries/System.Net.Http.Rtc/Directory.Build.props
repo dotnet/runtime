@@ -1,8 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <AssemblyVersion>4.0.4.0</AssemblyVersion>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsUAP>true</IsUAP>
-  </PropertyGroup>
-</Project>

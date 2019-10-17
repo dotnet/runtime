@@ -39,7 +39,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(AccessRule_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "FileSystemAccessRule is not supported on UAP")]
         public void AccessRule_Constructor(string sid, int accessMask, bool isInherited, int inheritanceFlags, int propagationFlags, int accessControlType)
         {
             IdentityReference identityReference = new SecurityIdentifier(sid);
@@ -60,7 +59,6 @@ namespace System.Security.AccessControl.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "FileSystemAccessRule is not supported on UAP")]
         public override void AccessRule_Constructor_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("identity", () => Constructor(null, 1, true, (InheritanceFlags)1, (PropagationFlags)1, (AccessControlType)0));

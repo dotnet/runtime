@@ -6,9 +6,7 @@
     <GenerateFullCoverageReport>true</GenerateFullCoverageReport>
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
-    <SerializeProjects Condition="'$(BuildingUAPVertical)' == 'true' or '$(Coverage)' == 'true'">true</SerializeProjects>
-    <TraversalBuildDependsOn Condition="'$(BuildingUAPVertical)' == 'true' and '$(BuildAllConfigurations)' != 'true'">MakeCommonResourcesPriFile;$(TraversalBuildDependsOn)</TraversalBuildDependsOn>
+    <SerializeProjects Condition="'$(Coverage)' == 'true'">true</SerializeProjects>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">

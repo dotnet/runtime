@@ -18,7 +18,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Tests would need to be rewritten due to behavior differences with WinRT")]
     public abstract class HttpClientHandler_Authentication_Test : HttpClientHandlerTestBase
     {
         private const string Username = "testusername";

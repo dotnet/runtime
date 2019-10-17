@@ -51,27 +51,20 @@ namespace System.ComponentModel.Tests
                 }
                 else
                 {
-                    RemoteExecutorForUap.Invoke((typeName, testString) =>
+                    using (new ThreadCultureChange(convertTest.RemoteInvokeCulture))
                     {
-                        // Deserialize the current test.
-                        TypeConverterTestBase testBase = (TypeConverterTestBase)Activator.CreateInstance(Type.GetType(typeName));
-                        ConvertTest test = ConvertTest.FromSerializedString(testString);
+                        Assert.Equal(convertTest.CanConvert, this.Converter.CanConvertTo(convertTest.Context, convertTest.DestinationType));
 
-                        using (new ThreadCultureChange(test.RemoteInvokeCulture))
+                        if (convertTest.CanConvert)
                         {
-                            Assert.Equal(test.CanConvert, testBase.Converter.CanConvertTo(test.Context, test.DestinationType));
-
-                            if (test.CanConvert)
-                            {
-                                object actual = testBase.Converter.ConvertTo(test.Context, test.Culture, test.Source, test.DestinationType);
-                                Assert.Equal(test.Expected, actual);
-                            }
-                            else
-                            {
-                                Assert.Throws<NotSupportedException>(() => testBase.Converter.ConvertTo(test.Context, test.Culture, test.Source, test.DestinationType));
-                            }
+                            object actual = this.Converter.ConvertTo(convertTest.Context, convertTest.Culture, convertTest.Source, convertTest.DestinationType);
+                            Assert.Equal(convertTest.Expected, actual);
                         }
-                    }, this.GetType().AssemblyQualifiedName, convertTest.GetSerializedString()).Dispose();
+                        else
+                        {
+                            Assert.Throws<NotSupportedException>(() => this.Converter.ConvertTo(convertTest.Context, convertTest.Culture, convertTest.Source, convertTest.DestinationType));
+                        }
+                    }
                 }
             });
         }
@@ -127,30 +120,23 @@ namespace System.ComponentModel.Tests
                 }
                 else
                 {
-                    RemoteExecutorForUap.Invoke((typeName, testString) =>
+                    using (new ThreadCultureChange(convertTest.RemoteInvokeCulture))
                     {
-                        // Deserialize the current test.
-                        TypeConverterTestBase testBase = (TypeConverterTestBase)Activator.CreateInstance(Type.GetType(typeName));
-                        ConvertTest test = ConvertTest.FromSerializedString(testString);
-
-                        using (new ThreadCultureChange(test.RemoteInvokeCulture))
+                        if (convertTest.Source != null)
                         {
-                            if (test.Source != null)
-                            {
-                                Assert.Equal(test.CanConvert, testBase.Converter.CanConvertFrom(test.Context, test.Source.GetType()));
-                            }
-
-                            if (test.NetCoreExceptionType == null)
-                            {
-                                object actual = testBase.Converter.ConvertFrom(test.Context, test.Culture, test.Source);
-                                Assert.Equal(test.Expected, actual);
-                            }
-                            else
-                            {
-                                AssertExtensions.Throws(test.NetCoreExceptionType, test.NetFrameworkExceptionType, () => testBase.Converter.ConvertFrom(test.Context, test.Culture, test.Source));
-                            }
+                            Assert.Equal(convertTest.CanConvert, this.Converter.CanConvertFrom(convertTest.Context, convertTest.Source.GetType()));
                         }
-                    }, this.GetType().AssemblyQualifiedName, convertTest.GetSerializedString()).Dispose();
+
+                        if (convertTest.NetCoreExceptionType == null)
+                        {
+                            object actual = this.Converter.ConvertFrom(convertTest.Context, convertTest.Culture, convertTest.Source);
+                            Assert.Equal(convertTest.Expected, actual);
+                        }
+                        else
+                        {
+                            AssertExtensions.Throws(convertTest.NetCoreExceptionType, convertTest.NetFrameworkExceptionType, () => this.Converter.ConvertFrom(convertTest.Context, convertTest.Culture, convertTest.Source));
+                        }
+                    }
                 }
             });
         }

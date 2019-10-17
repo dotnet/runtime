@@ -6,7 +6,6 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
-      uap;
       <!-- Use inbox facade on netfx -->
       _netfx;
     </BuildConfigurations>
