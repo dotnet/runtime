@@ -325,13 +325,23 @@ def generateClrallEvents(eventNodes,allTemplates):
             #remove trailing commas
             if len(line) > 0:
                 del line[-1]
-            if len(fnptypeline) > 0:
-                del fnptypeline[-1]
+
+        #add activity IDs
+        fnptypeline.append(lindent)
+        fnptypeline.append("LPCGUID ActivityId = nullptr,\n")
+        fnptypeline.append(lindent)
+        fnptypeline.append("LPCGUID RelatedActivityId = nullptr")
 
         fnptype.extend(fnptypeline)
         fnptype.append("\n)\n{\n")
         fnbody.append(lindent)
-        fnbody.append("ULONG status = EventPipeWriteEvent" + eventName + "(" + ''.join(line) + ");\n")
+
+        fnbody.append("ULONG status = EventPipeWriteEvent" + eventName + "(" + ''.join(line))
+        if len(line) > 0:
+            fnbody.append(",")
+
+        fnbody.append("ActivityId,RelatedActivityId);\n")
+
         fnbody.append(lindent)
         fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
         fnbody.append(lindent)
@@ -437,9 +447,10 @@ def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern):
                 fnptypeline.append(fnparam.name)
                 fnptypeline.append(",\n")
 
-            #remove trailing commas
-            if len(fnptypeline) > 0:
-                del fnptypeline[-1]
+        fnptypeline.append(lindent)
+        fnptypeline.append("LPCGUID ActivityId = nullptr,\n")
+        fnptypeline.append(lindent)
+        fnptypeline.append("LPCGUID RelatedActivityId = nullptr")
 
         writeevent.extend(fnptypeline)
         writeevent.append("\n);\n")

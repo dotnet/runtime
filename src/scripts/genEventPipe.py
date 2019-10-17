@@ -66,9 +66,10 @@ def generateMethodSignatureWrite(eventName, template, extern):
             sig_pieces.append(fnparam.name)
             sig_pieces.append(",\n")
 
-        if len(sig_pieces) > 0:
-            del sig_pieces[-1]
-
+    sig_pieces.append(lindent)
+    sig_pieces.append("LPCGUID ActivityId,\n")
+    sig_pieces.append(lindent)
+    sig_pieces.append("LPCGUID RelatedActivityId")
     sig_pieces.append(")")
     return ''.join(sig_pieces)
 
@@ -125,7 +126,7 @@ def generateClrEventPipeWriteEventsImpl(
             WriteEventImpl.append(
                 "    EventPipe::WriteEvent(*EventPipeEvent" +
                 eventName +
-                ", (BYTE*) nullptr, 0);\n")
+                ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
 
         WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
@@ -220,7 +221,7 @@ def generateWriteEventBody(template, providerName, eventName):
     }\n\n"""
 
     body = "    EventPipe::WriteEvent(*EventPipeEvent" + \
-        eventName + ", (BYTE *)buffer, (unsigned int)offset);\n"
+        eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
 
     footer = """
     if (!fixedBuffer)
