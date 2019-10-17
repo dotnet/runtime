@@ -848,7 +848,7 @@ namespace System.Globalization
                             CultureInfo ci;
 
                             if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                                ((ci = GetUserDefaultCulture()) != null) &&
+                                ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
                                 !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
                             {
                                 _sLocalizedDisplayName = NativeName;
@@ -1001,7 +1001,7 @@ namespace System.Globalization
                     CultureInfo ci;
 
                     if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                        ((ci = GetUserDefaultCulture()) != null) &&
+                        ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
                         !CultureInfo.DefaultThreadCurrentUICulture!.Name.Equals(ci.Name))
                     {
                         _sLocalizedLanguage = NativeLanguageName;
