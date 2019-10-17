@@ -165,7 +165,7 @@ namespace System.Text.Tests
             }
 
             Decoder decoder = Encoding.Unicode.GetDecoder();
-            VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, false, bytes.Length, chars.Length / 2, true, "006.1");
+            VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, false, bytes.Length, chars.Length / 2, false, "006.1");
             decoder.Reset();
             // There will be 1 byte left unconverted after previous statement, and set flush = false should left this 1 byte in the buffer.
             VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, true, bytes.Length, chars.Length / 2 + 1, true, "006.2");
@@ -272,6 +272,29 @@ namespace System.Text.Tests
             decoder.Reset();
             VerificationHelper(decoder, bytes, 0, 0, chars, 0, chars.Length, true, 0, 0, true, "010.2");
             decoder.Reset();
+        }
+
+        // PosTest11: Call Convert with UTF-8 data, testing that flushing performs proper replacement if needed
+        [Fact]
+        public void PosTest11()
+        {
+            byte[] bytes = new byte[]
+            {
+                0xC4, 0xB3, // U+0133 LATIN SMALL LIGATURE IJ
+                0xE2, 0x86, 0x98, // U+2198 SOUTH EAST ARROW
+                0xF0, 0x9F, 0x8E, 0xAE, // U+1F3AE VIDEO GAME
+                0xC2, // invalid sequence - no trailing byte
+            };
+            char[] chars = new char[32];
+            Decoder decoder = Encoding.UTF8.GetDecoder();
+
+            VerificationHelper(decoder, bytes, 0, 1, chars, 0, 10, false, 1, 0, false, "011.1"); // incomplete since still state in Decoder
+            VerificationHelper(decoder, bytes, 1, 2, chars, 0, 10, false, 2, 1, false, "011.2"); // incomplete since still state in Decoder
+            VerificationHelper(decoder, bytes, 3, 6, chars, 1, 1, false, 2, 1, false, "011.3"); // incomplete since not all bytes consumed
+            VerificationHelper(decoder, bytes, 5, 4, chars, 2, 10, false, 4, 2, true, "011.4"); // complete since all bytes consumed and no leftover state
+            VerificationHelper(decoder, bytes, 9, 1, chars, 4, 10, true, 1, 1, true, "011.5"); // complete since all bytes consumed and no leftover state
+
+            Assert.Equal("\u0133\u2198\U0001F3AE\ufffd", new string(chars, 0, 5));
         }
 
         private void VerificationHelper(Decoder decoder, byte[] bytes,
