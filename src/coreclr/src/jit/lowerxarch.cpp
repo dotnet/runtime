@@ -228,9 +228,23 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->AsIndir()->Addr()->ClearContained();
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ) && (!blkNode->AsObj()->GetLayout()->HasGCPtr() || blkNode->gtBlkOpGcUnsafe))
+        if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            blkNode->SetOper(GT_STORE_BLK);
+            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            {
+                blkNode->SetOper(GT_STORE_BLK);
+            }
+#ifndef JIT32_GCENCODER
+            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                // This is not supported for the JIT32_GCENCODER.
+                blkNode->SetOper(GT_STORE_BLK);
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
+#endif
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
