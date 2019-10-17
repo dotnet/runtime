@@ -15,7 +15,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP connection management behavior is different due to WinRT")]
     public abstract class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }

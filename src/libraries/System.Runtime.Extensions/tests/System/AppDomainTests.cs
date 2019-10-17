@@ -206,7 +206,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21410", TargetFrameworkMonikers.Uap)]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
@@ -256,7 +255,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
@@ -357,7 +355,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.Load(byte[])")]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -459,7 +456,6 @@ namespace System.Tests
 
 #pragma warning restore 618
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void GetAssemblies()
         {
             RemoteExecutor.Invoke(() => {
@@ -497,7 +493,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyLoad()
         {
             RemoteExecutor.Invoke(() => {
@@ -552,7 +547,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyResolve()
         {
             CopyTestAssemblies();
@@ -579,7 +573,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyResolve_RequestingAssembly()
         {
             CopyTestAssemblies();
@@ -672,7 +665,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "In UWP the resources always exist in the resources.pri file even if the assembly is not loaded")]
         public void ResourceResolve()
         {
             RemoteExecutor.Invoke(() => {

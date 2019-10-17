@@ -27,7 +27,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetForest_NullNameAndNotRootedDomain_ThrowsActiveDirectoryOperationException()
         {
             var context = new DirectoryContext(DirectoryContextType.Forest);
@@ -52,8 +51,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(DirectoryContextType.Forest, "\0")]
         [InlineData(DirectoryContextType.DirectoryServer, "server:port")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
-        public void GetForest_NonNullNameAndNotRootedDomain_NonUap(DirectoryContextType type, string name)
+        public void GetForest_NonNullNameAndNotRootedDomain(DirectoryContextType type, string name)
         {
             var context = new DirectoryContext(type, name);
             if (!PlatformDetection.IsDomainJoinedMachine)

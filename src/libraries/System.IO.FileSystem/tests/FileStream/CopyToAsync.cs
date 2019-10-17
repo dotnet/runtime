@@ -214,7 +214,6 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
-        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public async Task NamedPipeViaFileStream_AllDataCopied(bool useAsync, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;
@@ -253,7 +252,6 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Out of current directory operation.")]
         [Fact]
         public async Task NamedPipeViaFileStream_CancellationRequested_OperationCanceled()
         {

@@ -13,7 +13,6 @@ namespace System.Diagnostics.Tests
     {
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invokes
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void PriorityLevel_Roundtrips()
         {
             using (Barrier b = new Barrier(2))

@@ -17,7 +17,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "SslProtocols not supported on UAP")]
     public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }

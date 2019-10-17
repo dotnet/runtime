@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, cannot write to perf counters
     public class PerformanceDataTests : IClassFixture<PerformanceDataTestsFixture>
     {
         PerformanceDataTestsFixture _fixture = null;

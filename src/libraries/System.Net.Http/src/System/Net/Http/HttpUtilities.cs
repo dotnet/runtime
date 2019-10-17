@@ -10,12 +10,7 @@ namespace System.Net.Http
 {
     internal static class HttpUtilities
     {
-        internal static Version DefaultRequestVersion =>
-#if uap
-            HttpVersion.Version20;
-#else
-            HttpVersion.Version11;
-#endif
+        internal static Version DefaultRequestVersion => HttpVersion.Version11;
 
         internal static Version DefaultResponseVersion => HttpVersion.Version11;
 

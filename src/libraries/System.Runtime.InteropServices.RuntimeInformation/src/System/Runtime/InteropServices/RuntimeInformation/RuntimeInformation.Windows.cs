@@ -25,11 +25,7 @@ namespace System.Runtime.InteropServices
             {
                 if (null == s_osDescription)
                 {
-#if uap // all these are subject to WACK
-                    s_osDescription = "Microsoft Windows";
-#else
                     s_osDescription = Interop.NtDll.RtlGetVersion();
-#endif
                 }
 
                 return s_osDescription;

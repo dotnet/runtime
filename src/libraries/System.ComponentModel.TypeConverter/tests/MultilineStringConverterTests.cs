@@ -14,17 +14,14 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
-                {
-                    ConvertTo_WithContext(new object[1, 3]
-                        {
-                            { "any string", "(Text)", null }
-                        },
-                        new MultilineStringConverter());
-                }
-            }).Dispose();
+                ConvertTo_WithContext(new object[1, 3]
+                    {
+                        { "any string", "(Text)", null }
+                    },
+                    new MultilineStringConverter());
+            }
         }
     }
 }

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.DirectoryServices.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "DirectoryObjectSecurity is not supported.")]
     public class ActiveDirectorySecurityTests
     {
         [Fact]

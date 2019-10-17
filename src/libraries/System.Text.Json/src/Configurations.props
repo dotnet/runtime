@@ -3,7 +3,6 @@
     <PackageConfigurations>
       netstandard;
       netcoreapp3.0;
-      uap-Windows_NT;
       net461;
     </PackageConfigurations>
     <BuildConfigurations>

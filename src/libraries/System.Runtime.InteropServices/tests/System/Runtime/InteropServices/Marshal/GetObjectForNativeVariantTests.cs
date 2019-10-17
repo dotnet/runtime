@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Marshalling between VARIANT and Object is not supported in AppX")]
     public class GetObjectForNativeVariantTests
     {
         [StructLayout(LayoutKind.Sequential)]

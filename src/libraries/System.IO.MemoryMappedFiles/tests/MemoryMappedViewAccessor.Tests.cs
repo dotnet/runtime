@@ -78,7 +78,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
-            AssertExtensions.ThrowsIf<IOException>(PlatformDetection.IsUap && mapAccess == MemoryMappedFileAccess.ReadWriteExecute && viewAccess == MemoryMappedFileAccess.ReadWriteExecute,
+            AssertExtensions.ThrowsIf<IOException>(PlatformDetection.IsInAppContainer && mapAccess == MemoryMappedFileAccess.ReadWriteExecute && viewAccess == MemoryMappedFileAccess.ReadWriteExecute,
             () =>
             {
                 try
@@ -125,28 +125,12 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.ReadWriteExecute)]
         [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.ReadWriteExecute)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWriteExecute)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Windows API returns IO exception error code when viewAccess is ReadWriteExecute")]
         public void InvalidAccessLevels_ReadWrite_NonUwp(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => mmf.CreateViewAccessor(0, Capacity, viewAccess));
-            }
-        }
-
-        [Theory]
-        [InlineData(MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadWriteExecute)]
-        [InlineData(MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.ReadWriteExecute)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.ReadWriteExecute)]
-        [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWriteExecute)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap, "Windows API returns IO exception error code when viewAccess is ReadWriteExecute")]
-        public void InvalidAccessLevels_ReadWrite_Uwp(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
-        {
-            const int Capacity = 4096;
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
-            {
-                Assert.Throws<IOException>(() => mmf.CreateViewAccessor(0, Capacity, viewAccess));
             }
         }
 

@@ -42,15 +42,12 @@ namespace System.IO.Tests
         [Fact]
         public void NameReturnsUnknownForHandle()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite))
+            using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite))
-                using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
-                {
-                    Assert.Equal("[Unknown]", fsh.Name);
-                }
-            }).Dispose();
+                Assert.Equal("[Unknown]", fsh.Name);
+            }
         }
     }
 }

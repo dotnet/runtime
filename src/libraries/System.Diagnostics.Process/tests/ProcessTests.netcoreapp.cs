@@ -46,7 +46,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void StartProcessWithArgumentList()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
@@ -71,7 +70,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void StartProcessWithSameArgumentList()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
@@ -102,7 +100,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void BothArgumentCtorAndArgumentListSet()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName(), "arg3");
@@ -115,7 +112,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void BothArgumentSetAndArgumentListSet()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
@@ -129,17 +125,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        public void Kill_EntireProcessTree_ThrowsPlatformNotSupportedException()
-        {
-            var process = new Process();
-            Assert.Throws<PlatformNotSupportedException>(() => process.Kill(entireProcessTree: true));
-            Assert.Throws<PlatformNotSupportedException>(() => process.Kill(entireProcessTree: false));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void Kill_EntireProcessTree_True_ProcessNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -148,7 +133,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Currently, remote processes are only supported on Windows. If that changes, adjust accordingly.
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void Kill_EntireProcessTree_True_CalledByNonLocalProcess_ThrowsInvalidOperationException()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -170,7 +154,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void Kill_EntireProcessTree_True_CalledOnCallingProcess_ThrowsInvalidOperationException()
         {
             var process = Process.GetCurrentProcess();
@@ -178,7 +161,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException()
         {
             Process containingProcess = CreateProcess(() =>
@@ -225,7 +207,6 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void Kill_ExitedChildProcess_DoesNotThrow(bool killTree)
         {
             Process process = CreateProcess();
@@ -237,7 +218,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public async Task Kill_EntireProcessTree_False_OnlyRootProcessTerminated()
         {
             IReadOnlyList<Process> tree = CreateProcessTree();
@@ -271,7 +251,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public async Task Kill_EntireProcessTree_True_EntireTreeTerminated()
         {
             IReadOnlyList<Process> tree = CreateProcessTree();

@@ -13,7 +13,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP will send default credentials based on manifest settings")]
     [PlatformSpecific(TestPlatforms.Windows)]
     public abstract class DefaultCredentialsTest : HttpClientHandlerTestBase
     {

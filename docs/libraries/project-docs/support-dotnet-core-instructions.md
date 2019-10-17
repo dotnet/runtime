@@ -4,7 +4,7 @@ Want to make your libraries multi-platform? Want to see how much work is require
 
 ## How to Use Portability Analyzer
 
-To begin using the .NET Portability Analyzer, download the extension from the Visual Studio Gallery. You can configure it in Visual Studio via  *Tools* >> *Options* >> *.NET Portability Analyzer* and select your Target Platforms. For now, please use ASP.NET 5 as a proxy for all .NET Core 5-based platforms (e.g. [Windows 10 .NET UAP apps](http://blogs.windows.com/buildingapps/2015/03/02/a-first-look-at-the-windows-10-universal-app-platform/)). 
+To begin using the .NET Portability Analyzer, download the extension from the Visual Studio Gallery. You can configure it in Visual Studio via  *Tools* >> *Options* >> *.NET Portability Analyzer* and select your Target Platforms.
 
 ![](../images/portability_screenshot.png)
 

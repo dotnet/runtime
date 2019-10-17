@@ -168,7 +168,6 @@ namespace System.Threading.Threads.Tests
         [InlineData("MTAMain.exe", "SetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
-        [ActiveIssue(20766, TargetFrameworkMonikers.Uap)]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();
@@ -183,7 +182,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemoteExecutor is STA on UAP.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
@@ -324,7 +322,6 @@ namespace System.Threading.Threads.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public static void CurrentCultureTest_DifferentThread()
         {
             CultureInfo culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
@@ -1111,7 +1108,6 @@ namespace System.Threading.Threads.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "SetPrincipal doesn't work on UAP.")]
         public static void WindowsPrincipalPolicyTest_Windows()
         {
             RemoteExecutor.Invoke(() =>

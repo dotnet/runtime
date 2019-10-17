@@ -25,16 +25,10 @@ namespace System.Diagnostics
 
             if (s_processName == null)
             {
-#if uap
-                // In UAP getting process infos is not supported and the only way to get the process name is through Process.GetCurrentProcess.ProcessName:
-                // https://github.com/dotnet/corefx/blob/561f555830e4eaef1fa015796690915e6f4923da/src/System.Diagnostics.Process/src/System/Diagnostics/ProcessManager.Uap.cs#L82
-                s_processName = string.Empty;
-#else
                 using (var process = Process.GetCurrentProcess())
                 {
                     s_processName = process.ProcessName;
                 }
-#endif
             }
 
             return s_processName;

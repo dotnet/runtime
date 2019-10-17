@@ -1009,17 +1009,14 @@ namespace System.Data.Tests
         [Fact]
         public void DataSetSpecificCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("cs-CZ"))
             {
-                using (new ThreadCultureChange("cs-CZ"))
-                {
-                    var ds = new DataSet();
-                    ds.Locale = CultureInfo.GetCultureInfo(1033);
-                    var dt = ds.Tables.Add("machine");
-                    dt.Locale = ds.Locale;
-                    Assert.Same(dt, ds.Tables["MACHINE"]);
-                }
-            }).Dispose();
+                var ds = new DataSet();
+                ds.Locale = CultureInfo.GetCultureInfo(1033);
+                var dt = ds.Tables.Add("machine");
+                dt.Locale = ds.Locale;
+                Assert.Same(dt, ds.Tables["MACHINE"]);
+            }
         }
 
         [Fact]

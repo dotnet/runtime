@@ -49,7 +49,7 @@ the implementation without compat concerns in future releases.
 
 **Update pkg**
  - If changing the target framework
-    - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md#nuget)). Generally will be a combination of netcoreapp2.x, netfx46x, uap10.x, and/or `$(AllXamarinFrameworks)`.
+    - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md#nuget)). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
   - If assembly or package version is updated the package index needs to be updated by running
     `dotnet msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
 

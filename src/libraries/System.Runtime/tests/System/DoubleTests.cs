@@ -453,16 +453,13 @@ namespace System.Tests
         [Fact]
         public static void Test_ToString_NotNetFramework()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                foreach (object[] testdata in ToString_TestData_NotNetFramework())
                 {
-                    foreach (object[] testdata in ToString_TestData_NotNetFramework())
-                    {
-                        ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
-                    }
+                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
-            }).Dispose();
+            }
         }
 
         private static void ToString(double d, string format, IFormatProvider provider, string expected)

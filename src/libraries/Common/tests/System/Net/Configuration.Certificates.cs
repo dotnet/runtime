@@ -27,7 +27,7 @@ namespace System.Net.Test.Common
             static Certificates()
             {
                 Mutex mutex =
-                    PlatformDetection.IsUap ? new Mutex(initiallyOwned: false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate") : // UWP doesn't support Global mutexes
+                    PlatformDetection.IsInAppContainer ? new Mutex(initiallyOwned: false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate") : // UWP doesn't support Global mutexes
                     PlatformDetection.IsWindows ? new Mutex(initiallyOwned: false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate") :
                     null;
                 using (mutex)

@@ -13,7 +13,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "GetNativeVariantForObject() not supported on UWP")]
     public partial class GetNativeVariantForObjectTests
     {
         public static IEnumerable<object[]> GetNativeVariantForObject_RoundtrippingPrimitives_TestData()

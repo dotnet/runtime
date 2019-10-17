@@ -17,13 +17,6 @@ namespace System.Text.RegularExpressions.Tests
         /// <returns></returns>
         public static IEnumerable<object[]> TransformRegexOptions(string testDataMethodName, int regexOptionsArrayIndex)
         {
-            // On UWP the compiled feature isn't currently enabled,
-            // therefore we don't need the additional test data.
-            if (PlatformDetection.IsUap)
-            {
-                return Enumerable.Empty<object[]>();
-            }
-
             IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.Namespace == typeof(RegexCompilationHelper).Namespace);
             foreach (Type type in types)
             {

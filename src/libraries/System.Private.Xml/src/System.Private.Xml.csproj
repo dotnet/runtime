@@ -4,9 +4,8 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
-    <FeatureCompiledXsl Condition="'$(TargetGroup)' != 'uap'">true</FeatureCompiledXsl>
-    <DefineConstants Condition="'$(FeatureCompiledXsl)' == 'true'">$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
@@ -594,7 +593,7 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCompiledXsl)' == 'true'">
+  <ItemGroup>
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\IteratorDescriptor.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\OptimizerPatterns.cs" />
@@ -610,8 +609,6 @@
     <Compile Include="System\Xml\Xsl\IlGen\XmlIlVisitor.cs" />
     <Compile Include="System\Xml\Xsl\XmlIlGenerator.cs" />
     <Compile Include="System\Xml\Xsl\XmlILCommand.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Xml\Xsl\ISourceLineInfo.cs" />
     <Compile Include="System\Xml\Xsl\ListBase.cs" />
     <Compile Include="System\Xml\Xsl\Pair.cs" />

@@ -19,7 +19,6 @@ namespace System.Buffers.ArrayPool.Tests
         [Theory,
             InlineData(true),
             InlineData(false)]
-        [ActiveIssue(29866, TargetFrameworkMonikers.Uap)]
         public void BuffersAreCollectedWhenStale(bool trim)
         {
             RemoteInvokeWithTrimming((trimString) =>
@@ -144,7 +143,6 @@ namespace System.Buffers.ArrayPool.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(29866, TargetFrameworkMonikers.Uap)]
         public void PollingEventFires(bool trim)
         {
             RemoteInvokeWithTrimming((trimString) =>

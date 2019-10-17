@@ -84,8 +84,8 @@ namespace System.Xml.Tests
 
         static XsltApiTestCaseBase()
         {
-            // On uap access is denied to full path and the code below and related tests cannot run
-            if (!PlatformDetection.IsUap)
+            // In AppContainer access is denied to full path and the code below and related tests cannot run
+            if (!PlatformDetection.IsInAppContainer)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
 

@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security;
-using System.Text;
 using Microsoft.Win32;
 using Xunit;
 
@@ -22,7 +19,6 @@ namespace System
         //
 
         public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static bool IsUap => IsInAppContainer;
         public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
         public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
@@ -38,7 +34,8 @@ namespace System
         public static bool IsNotWindowsIoTCore => !IsWindowsIoTCore;
         public static bool IsNotWindowsHomeEdition => !IsWindowsHomeEdition;
         public static bool IsNotInAppContainer => !IsInAppContainer;
-        public static bool IsWinRTSupported => IsWindows && !IsWindows7;
+        public static bool IsWinRTSupported => IsWindows && IsNotWindows7;
+        public static bool IsWinUISupported => IsWinRTSupported && IsNotWindows8x && IsNotWindowsNanoServer && IsNotWindowsServerCore && IsNotWindowsIoTCore;
         public static bool IsNotWinRTSupported => !IsWinRTSupported;
         public static bool IsSoundPlaySupported => IsWindows && IsNotWindowsNanoServer;
 
@@ -61,10 +58,6 @@ namespace System
         // >= Windows 10 May 2019 Update (19H1)
         public static bool IsWindows10Version1903OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18362;
-
-        // Windows OneCoreUAP SKU doesn't have httpapi.dll
-        public static bool IsNotOneCoreUAP => !IsWindows ||
-            File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "httpapi.dll"));
 
         public static bool IsWindowsIoTCore
         {
@@ -145,7 +138,7 @@ namespace System
             {
                 value = (string)Registry.GetValue(key, "InstallationType", defaultValue: "");
             }
-            catch (Exception e) when (e is SecurityException || e is InvalidCastException || e is PlatformNotSupportedException /* UAP */)
+            catch (Exception e) when (e is SecurityException || e is InvalidCastException)
             {
             }
 

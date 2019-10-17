@@ -156,7 +156,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(ValidPathComponentNames))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing slash
         public void ValidExtendedPathWithTrailingSlash(string component)
         {
@@ -234,7 +233,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
@@ -258,7 +256,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsException()
         {
@@ -269,7 +266,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path with extended syntax succeeds
         public void ExtendedDirectoryLongerThanLegacyMaxPath_Succeeds()
         {
@@ -281,7 +277,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
@@ -372,7 +367,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(SimpleWhiteSpace))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // extended syntax with whitespace
         public void WindowsExtendedSyntaxWhiteSpace(string path)
         {
@@ -423,7 +417,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(ReservedDeviceNames))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // device name prefixes
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {
@@ -447,7 +440,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void CDriveCase()
         {
             DirectoryInfo dir = Create("c:\\");

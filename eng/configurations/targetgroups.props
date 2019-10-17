@@ -7,31 +7,6 @@
       <UWPCompatible>true</UWPCompatible>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="uap10.0.16299">
-      <TargetFramework>uap10.0.16299</TargetFramework>
-      <TargetFrameworkIdentifier>UAP</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>10.0.16299</TargetFrameworkVersion>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50</Imports>
-      <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="uapvnext">
-      <TargetFramework>$(UAPvNextTFM)</TargetFramework>
-      <TargetFrameworkIdentifier>$(UAPvNextTFI)</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>uap10.0.16299</Imports>
-      <CompatibleWith>netstandard2.1</CompatibleWith>
-    </TargetGroups>
-    <!-- uap is an alias for uapvNext any/coreclr runtime -->
-    <TargetGroups Include="uap">
-      <TargetFramework>$(UAPvNextTFM)</TargetFramework>
-      <TargetFrameworkIdentifier>$(UAPvNextTFI)</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>uapvnext</Imports>
-      <CompatibleWith>netstandard2.1</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <TargetFramework>netstandard1.0</TargetFramework>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;

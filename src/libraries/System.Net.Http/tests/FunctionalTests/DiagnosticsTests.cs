@@ -747,7 +747,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
@@ -1136,7 +1135,7 @@ namespace System.Net.Http.Functional.Tests
                         // Getting the Task first from the .SendAsync() call also tests
                         // that the exception comes from the async Task path.
                         Task t = handler.SendAsync(null);
-                        if (PlatformDetection.IsUap)
+                        if (PlatformDetection.IsInAppContainer)
                         {
                             await Assert.ThrowsAsync<HttpRequestException>(() => t);
                         }

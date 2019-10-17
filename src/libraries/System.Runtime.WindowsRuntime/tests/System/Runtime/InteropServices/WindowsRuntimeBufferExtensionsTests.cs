@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.WindowsRuntime.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class WindowsRuntimeBufferExtensionsTests
     {
         public static IEnumerable<object[]> AsBuffer_TestData()

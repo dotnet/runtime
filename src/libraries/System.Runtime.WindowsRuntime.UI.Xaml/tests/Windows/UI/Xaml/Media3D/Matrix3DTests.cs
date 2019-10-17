@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Media.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class MatrixTests
     {
         [Fact]

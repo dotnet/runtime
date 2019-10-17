@@ -27,19 +27,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        public void Ctor_ExpectedDefaultPropertyValues_UapPlatform()
-        {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
-            {
-                Assert.Null(handler.ServerCertificateCustomValidationCallback);
-                Assert.True(handler.CheckCertificateRevocationList);
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        public void Ctor_ExpectedDefaultValues_NotUapPlatform()
+        public void Ctor_ExpectedDefaultValues()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
@@ -86,7 +74,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
@@ -134,7 +121,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
@@ -318,7 +304,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP doesn't allow revocation checking to be turned off")]
         [OuterLoop("Uses external server")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
@@ -398,7 +383,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(30054, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
@@ -413,24 +397,7 @@ namespace System.Net.Http.Functional.Tests
 
             try
             {
-                if (PlatformDetection.IsUap)
-                {
-                    // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
-                    // the same process as the other tests. Each test needs to be isolated to its own process.
-                    // See dicussion: https://github.com/dotnet/corefx/issues/21945
-                    RemoteExecutor.Invoke((remoteUrl, remoteExpectedErrors, useSocketsHttpHandlerString, useHttp2String) =>
-                    {
-                        UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(
-                            remoteUrl,
-                            useSocketsHttpHandlerString,
-                            useHttp2String,
-                            (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
-                    }, url, expectedErrors.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
-                }
-                else
-                {
-                    await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), expectedErrors);
-                }
+                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), expectedErrors);
             }
             catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
                 e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
@@ -491,46 +458,38 @@ namespace System.Net.Http.Functional.Tests
 
                 // Validate the ChannelBinding object exists.
                 ChannelBinding channelBinding = content.ChannelBinding;
-                if (PlatformDetection.IsUap)
+                Assert.NotNull(channelBinding);
+
+                // Validate the ChannelBinding's validity.
+                if (BackendSupportsCustomCertificateHandling)
                 {
-                    // UAP currently doesn't expose channel binding information.
-                    Assert.Null(channelBinding);
+                    Assert.False(channelBinding.IsInvalid, "Expected valid binding");
+                    Assert.NotEqual(IntPtr.Zero, channelBinding.DangerousGetHandle());
+
+                    // Validate the ChannelBinding's description.
+                    string channelBindingDescription = channelBinding.ToString();
+                    Assert.NotNull(channelBindingDescription);
+                    Assert.NotEmpty(channelBindingDescription);
+                    Assert.True((channelBindingDescription.Length + 1) % 3 == 0, $"Unexpected length {channelBindingDescription.Length}");
+                    for (int i = 0; i < channelBindingDescription.Length; i++)
+                    {
+                        char c = channelBindingDescription[i];
+                        if (i % 3 == 2)
+                        {
+                            Assert.Equal(' ', c);
+                        }
+                        else
+                        {
+                            Assert.True((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'), $"Expected hex, got {c}");
+                        }
+                    }
                 }
                 else
                 {
-                    Assert.NotNull(channelBinding);
-
-                    // Validate the ChannelBinding's validity.
-                    if (BackendSupportsCustomCertificateHandling)
-                    {
-                        Assert.False(channelBinding.IsInvalid, "Expected valid binding");
-                        Assert.NotEqual(IntPtr.Zero, channelBinding.DangerousGetHandle());
-
-                        // Validate the ChannelBinding's description.
-                        string channelBindingDescription = channelBinding.ToString();
-                        Assert.NotNull(channelBindingDescription);
-                        Assert.NotEmpty(channelBindingDescription);
-                        Assert.True((channelBindingDescription.Length + 1) % 3 == 0, $"Unexpected length {channelBindingDescription.Length}");
-                        for (int i = 0; i < channelBindingDescription.Length; i++)
-                        {
-                            char c = channelBindingDescription[i];
-                            if (i % 3 == 2)
-                            {
-                                Assert.Equal(' ', c);
-                            }
-                            else
-                            {
-                                Assert.True((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'), $"Expected hex, got {c}");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Backend doesn't support getting the details to create the CBT.
-                        Assert.True(channelBinding.IsInvalid, "Expected invalid binding");
-                        Assert.Equal(IntPtr.Zero, channelBinding.DangerousGetHandle());
-                        Assert.Null(channelBinding.ToString());
-                    }
+                    // Backend doesn't support getting the details to create the CBT.
+                    Assert.True(channelBinding.IsInvalid, "Expected invalid binding");
+                    Assert.Equal(IntPtr.Zero, channelBinding.DangerousGetHandle());
+                    Assert.Null(channelBinding.ToString());
                 }
             }
         }

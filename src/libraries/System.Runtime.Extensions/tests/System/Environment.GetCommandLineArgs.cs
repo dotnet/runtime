@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/21413", TargetFrameworkMonikers.Uap)]
     public class GetCommandLineArgs
     {
         public static IEnumerable<object[]> GetCommandLineArgs_TestData()

@@ -31,7 +31,6 @@ namespace System.IO.Ports.Tests
         /// </summary>
         // This test requires access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
         // SetDcbFlag, however, that requires either changes to the public type (increasing its size) or to the test itself.
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23234", TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // depends on Windows implementation detail
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AbortOnErrorShouldBeClearedOnOpen()

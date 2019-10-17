@@ -37,53 +37,50 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunParseToStringTests(CultureInfo culture)
         {
-            RemoteExecutorForUap.Invoke((cultureName) =>
+            byte[] tempByteArray1 = new byte[0];
+            using (new ThreadCultureChange(culture))
             {
-                byte[] tempByteArray1 = new byte[0];
-                using (new ThreadCultureChange(cultureName))
+                //default style
+                VerifyDefaultParse(s_random);
+
+                //single NumberStyles
+                VerifyNumberStyles(NumberStyles.None, s_random);
+                VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
+                VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
+                VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
+                VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
+                VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
+                VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
+                VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
+                VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
+                VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
+                VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
+
+                //composite NumberStyles
+                VerifyNumberStyles(NumberStyles.Integer, s_random);
+                VerifyNumberStyles(NumberStyles.HexNumber, s_random);
+                VerifyNumberStyles(NumberStyles.Number, s_random);
+                VerifyNumberStyles(NumberStyles.Float, s_random);
+                VerifyNumberStyles(NumberStyles.Currency, s_random);
+                VerifyNumberStyles(NumberStyles.Any, s_random);
+
+                //invalid number style
+                // ******InvalidNumberStyles
+                NumberStyles invalid = (NumberStyles)0x7c00;
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
-                    //default style
-                    VerifyDefaultParse(s_random);
+                    BigInteger.Parse("1", invalid).ToString("d");
+                });
+                AssertExtensions.Throws<ArgumentException>(null, () =>
+                {
+                    BigInteger junk;
+                    BigInteger.TryParse("1", invalid, null, out junk);
+                    Assert.Equal("1", junk.ToString("d"));
+                });
 
-                    //single NumberStyles
-                    VerifyNumberStyles(NumberStyles.None, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
-                    VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
-
-                    //composite NumberStyles
-                    VerifyNumberStyles(NumberStyles.Integer, s_random);
-                    VerifyNumberStyles(NumberStyles.HexNumber, s_random);
-                    VerifyNumberStyles(NumberStyles.Number, s_random);
-                    VerifyNumberStyles(NumberStyles.Float, s_random);
-                    VerifyNumberStyles(NumberStyles.Currency, s_random);
-                    VerifyNumberStyles(NumberStyles.Any, s_random);
-
-                    //invalid number style
-                    // ******InvalidNumberStyles
-                    NumberStyles invalid = (NumberStyles)0x7c00;
-                    AssertExtensions.Throws<ArgumentException>(null, () =>
-                    {
-                        BigInteger.Parse("1", invalid).ToString("d");
-                    });
-                    AssertExtensions.Throws<ArgumentException>(null, () =>
-                    {
-                        BigInteger junk;
-                        BigInteger.TryParse("1", invalid, null, out junk);
-                        Assert.Equal("1", junk.ToString("d"));
-                    });
-
-                    //FormatProvider tests
-                    RunFormatProviderParseStrings();
-                }
-            }, culture.ToString()).Dispose();
+                //FormatProvider tests
+                RunFormatProviderParseStrings();
+            }
         }
 
         private static void RunFormatProviderParseStrings()

@@ -15,44 +15,38 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestCurrentCulturesAsync()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
+            var newCurrentUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
+            using (new ThreadCultureChange(newCurrentCulture, newCurrentUICulture))
             {
-                var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
-                var newCurrentUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
-                using (new ThreadCultureChange(newCurrentCulture, newCurrentUICulture))
+                Task t = Task.Run(() =>
                 {
-                    Task t = Task.Run(() =>
-                    {
-                        Assert.Equal(CultureInfo.CurrentCulture, newCurrentCulture);
-                        Assert.Equal(CultureInfo.CurrentUICulture, newCurrentUICulture);
-                    });
+                    Assert.Equal(CultureInfo.CurrentCulture, newCurrentCulture);
+                    Assert.Equal(CultureInfo.CurrentUICulture, newCurrentUICulture);
+                });
 
-                    ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
-                    t.Wait();
-                }
-            }).Dispose();
+                ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+                t.Wait();
+            }
         }
 
         [Fact]
         public void TestCurrentCulturesWithAwait()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
+            var newCurrentUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
+            using (new ThreadCultureChange(newCurrentCulture, newCurrentUICulture))
             {
-                var newCurrentCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
-                var newCurrentUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "en-US" : "ja-JP");
-                using (new ThreadCultureChange(newCurrentCulture, newCurrentUICulture))
+                MainAsync().Wait();
+
+                async Task MainAsync()
                 {
-                    MainAsync().Wait();
+                    await Task.Delay(1).ConfigureAwait(false);
 
-                    async Task MainAsync()
-                    {
-                        await Task.Delay(1).ConfigureAwait(false);
-
-                        Assert.Equal(CultureInfo.CurrentCulture, newCurrentCulture);
-                        Assert.Equal(CultureInfo.CurrentUICulture, newCurrentUICulture);
-                    }
+                    Assert.Equal(CultureInfo.CurrentCulture, newCurrentCulture);
+                    Assert.Equal(CultureInfo.CurrentUICulture, newCurrentUICulture);
                 }
-            }).Dispose();
+            }
         }
     }
 }

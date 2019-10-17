@@ -23,10 +23,9 @@ namespace System.Net.Http.Functional.Tests
         protected virtual bool UseSocketsHttpHandler => true;
         protected virtual bool UseHttp2 => false;
 
-        protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && !PlatformDetection.IsUap;
+        protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows;
         protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
         protected bool IsNetfxHandler => false;
-        protected bool IsUapHandler => PlatformDetection.IsWindows && PlatformDetection.IsUap;
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
@@ -72,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler;
 
-            if (PlatformDetection.IsUap || useSocketsHttpHandler)
+            if (PlatformDetection.IsInAppContainer || useSocketsHttpHandler)
             {
                 handler = new HttpClientHandler();
             }

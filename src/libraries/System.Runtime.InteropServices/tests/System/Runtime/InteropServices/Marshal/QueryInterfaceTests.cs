@@ -82,7 +82,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(QueryInterface_ValidInterface_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void QueryInterface_ValidInterface_Success(object o, string guid)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);

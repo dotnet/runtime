@@ -298,32 +298,29 @@ namespace System.Data.Tests
         [Fact]
         public void LocaleOnRootWithoutIsDataSet()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("fi-FI"))
             {
-                using (new ThreadCultureChange("fi-FI"))
-                {
-                    string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
-    <xs:element name='Root' msdata:Locale='ja-JP'>
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name='Child' type='xs:string' />
-            </xs:sequence>
-            <xs:attribute name='Attr' type='xs:integer' />
-        </xs:complexType>
-    </xs:element>
+                string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
+<xs:element name='Root' msdata:Locale='ja-JP'>
+    <xs:complexType>
+        <xs:sequence>
+            <xs:element name='Child' type='xs:string' />
+        </xs:sequence>
+        <xs:attribute name='Attr' type='xs:integer' />
+    </xs:complexType>
+</xs:element>
 </xs:schema>";
 
-                    var ds = new DataSet();
-                    ds.ReadXmlSchema(new StringReader(xs));
-                    DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
-                    Assert.Equal("fi-FI", ds.Locale.Name); // DataSet's Locale comes from current thread
-                    DataTable dt = ds.Tables[0];
-                    DataSetAssertion.AssertDataTable("dt", dt, "Root", 2, 0, 0, 0, 0, 0);
-                    Assert.Equal("ja-JP", dt.Locale.Name); // DataTable's Locale comes from msdata:Locale
-                    DataSetAssertion.AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
-                    DataSetAssertion.AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
-                }
-            }).Dispose();
+                var ds = new DataSet();
+                ds.ReadXmlSchema(new StringReader(xs));
+                DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
+                Assert.Equal("fi-FI", ds.Locale.Name); // DataSet's Locale comes from current thread
+                DataTable dt = ds.Tables[0];
+                DataSetAssertion.AssertDataTable("dt", dt, "Root", 2, 0, 0, 0, 0, 0);
+                Assert.Equal("ja-JP", dt.Locale.Name); // DataTable's Locale comes from msdata:Locale
+                DataSetAssertion.AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
+                DataSetAssertion.AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
+            }
         }
 
 

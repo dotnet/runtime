@@ -3,9 +3,8 @@
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
     <RootNamespace>System.Collections.Immutable</RootNamespace>
     <FileAlignment>512</FileAlignment>
-    <GenerateAppxPackageOnBuild>False</GenerateAppxPackageOnBuild>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
@@ -89,7 +88,7 @@
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0' or '$(TargetGroup)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\CoreLib\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
@@ -107,10 +106,10 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' or '$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' or '$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetGroup)' == 'netstandard'">
     <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>

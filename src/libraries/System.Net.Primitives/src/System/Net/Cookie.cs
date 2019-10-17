@@ -67,33 +67,9 @@ namespace System.Net
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        bool IsQuotedVersion = false;
+        internal bool IsQuotedVersion = false;
 
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        bool IsQuotedDomain = false;
+        internal bool IsQuotedDomain = false;
 
 #if DEBUG
         static Cookie()
@@ -241,20 +217,7 @@ namespace System.Net
                 }
             }
         }
-
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        bool InternalSetName(string value)
+        internal bool InternalSetName(string value)
         {
             if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1 || value[0] == ' ' || value[value.Length - 1] == ' ')
             {
@@ -286,19 +249,7 @@ namespace System.Net
             }
         }
 
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        Cookie Clone()
+        internal Cookie Clone()
         {
             Cookie clonedCookie = new Cookie(m_name, m_value);
 
@@ -703,19 +654,7 @@ namespace System.Net
             }
         }
 
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        CookieVariant Variant
+        internal CookieVariant Variant
         {
             get
             {
@@ -844,19 +783,7 @@ namespace System.Net
             }
         }
 
-        /*
-            TODO: #13607
-            VSO 449560
-            Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
-            block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
-            public, this is a temporary workaround till that happens.
-        */
-#if uap
-        public
-#else
-        internal
-#endif
-        string ToServerString()
+        internal string ToServerString()
         {
             string result = Name + EqualsLiteral + Value;
             if (m_comment != null && m_comment.Length > 0)
