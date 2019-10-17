@@ -5,7 +5,7 @@ rem This file invokes cmake and generates the build system for windows.
 set argC=0
 for %%x in (%*) do Set /A argC+=1
 
-if %argC% lss 3 GOTO :USAGE
+if %argC% lss 4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal
@@ -16,8 +16,9 @@ set "basePath=%basePath:"=%"
 if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
 
 set __SourceDir=%1
-set __VSVersion=%2
-set __Arch=%3
+set __IntermediatesDir=%2
+set __VSVersion=%3
+set __Arch=%4
 set __CmakeGenerator=Visual Studio
 
 if /i "%__NMakeMakefiles%" == "1" (
@@ -33,29 +34,19 @@ if /i "%__NMakeMakefiles%" == "1" (
 )
 
 :loop
-if [%4] == [] goto end_loop
-set __ExtraCmakeParams=%__ExtraCmakeParams% %4
+if [%5] == [] goto end_loop
+set __ExtraCmakeParams=%__ExtraCmakeParams% %5
 shift
 goto loop
 :end_loop
 
-if defined CMakePath goto DoGen
-
-:: Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& "%basePath%\set-cmake-path.ps1""') do %%a
-
-
-:DoGen
-"%CMakePath%" -DCMAKE_USER_MAKE_RULES_OVERRIDE= "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" %__SourceDir%
+"%CMakePath%" -DCMAKE_USER_MAKE_RULES_OVERRIDE= "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
 endlocal
-GOTO :DONE
+exit /B !errorlevel!
 
 :USAGE
   echo "Usage..."
-  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion>"
+  echo "gen-buildsys.cmd <path to top level CMakeLists.txt> <path to location for intermediate files> <VSVersion>"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the VSVersion to be used - VS2017 or VS2019"
   EXIT /B 1
-
-:DONE
-  EXIT /B 0
