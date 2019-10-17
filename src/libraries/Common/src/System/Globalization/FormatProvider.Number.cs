@@ -329,7 +329,7 @@ namespace System.Globalization
                 return null;
             }
 
-            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -346,7 +346,7 @@ namespace System.Globalization
                 number.sign = false;
                 string decSep;                  // Decimal separator from NumberFormatInfo.
                 string groupSep;                // Group separator from NumberFormatInfo.
-                string currSymbol = null;       // Currency symbol from NumberFormatInfo.
+                string? currSymbol = null;       // Currency symbol from NumberFormatInfo.
 
                 bool parsingCurrency = false;
                 if ((options & NumberStyles.AllowCurrencySymbol) != 0)
@@ -421,7 +421,7 @@ namespace System.Globalization
                             {
                                 if (bigNumber)
                                 {
-                                    sb.Append(ch);
+                                    sb!.Append(ch);
                                 }
                                 else
                                 {
@@ -463,7 +463,7 @@ namespace System.Globalization
                 bool negExp = false;
                 number.precision = digEnd;
                 if (bigNumber)
-                    sb.Append('\0');
+                    sb!.Append('\0');
                 else
                     dig[digEnd] = '\0';
                 if ((state & StateDigits) != 0)
@@ -902,8 +902,10 @@ namespace System.Globalization
                 return result;
             }
 
-            private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[] groupDigits, string sDecimal, string sGroup)
+            private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
             {
+                Debug.Assert(sGroup != null || groupDigits == null);
+
                 int digPos = number.scale;
                 char* dig = number.digits;
                 int digLength = wcslen(dig);
@@ -916,7 +918,7 @@ namespace System.Globalization
                         int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.
                         int groupSizeLen = groupDigits.Length;              // The length of groupDigits array.
                         int bufferSize = digPos;                            // The length of the result buffer string.
-                        int groupSeparatorLen = sGroup.Length;              // The length of the group separator string.
+                        int groupSeparatorLen = sGroup!.Length;              // The length of the group separator string.
                         int groupSize = 0;                                  // The current group size.
 
                         // Find out the size of the string buffer for the result.
