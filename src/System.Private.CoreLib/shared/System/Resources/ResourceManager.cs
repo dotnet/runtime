@@ -236,7 +236,7 @@ namespace System.Resources
         // security check in each constructor prevents it.
         private void CommonAssemblyInit()
         {
-#if FEATURE_APPX || ENABLE_WINRT
+#if FEATURE_APPX
             SetUapConfiguration();
 #endif
 
@@ -599,7 +599,7 @@ namespace System.Resources
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
 
-#if FEATURE_APPX || ENABLE_WINRT
+#if FEATURE_APPX
             if (_useUapResourceManagement)
             {
                 // Throws WinRT hresults.

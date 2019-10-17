@@ -102,10 +102,8 @@ internal static partial class Interop
                     char* lpString,
                     int cchStr);
 
-#if !ENABLE_WINRT
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern Interop.BOOL GetUserPreferredUILanguages(uint dwFlags, uint* pulNumLanguages, char* pwszLanguagesBuffer, uint* pcchLanguagesBuffer);
-#endif //!ENABLE_WINRT
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);
