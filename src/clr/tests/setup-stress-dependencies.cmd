@@ -4,6 +4,7 @@ setlocal
 set __ThisScriptShort=%0
 set __ThisScriptFull=%~f0
 set __ThisScriptPath=%~dp0
+set __RepoRootPath=%__ThisScriptPath%..\..\
 
 REM =========================================================================================
 REM ===
@@ -53,8 +54,8 @@ REM ===
 REM =========================================================================================
 
 set __DotNetCmd=%__ThisScriptPath%..\dotnet.cmd
-set __PackageDir=%__ThisScriptPath%..\.packages
-set __CsprojPath=%__ThisScriptPath%\src\Common\stress_dependencies\stress_dependencies.csproj
+set __PackageDir=%__RepoRootPath%..\.packages
+set __CsprojPath=%__ThisScriptPath%src\Common\stress_dependencies\stress_dependencies.csproj
 
 if not exist "%__DotNetCmd%" (
     echo dotnet.exe does not exist: %__DotNetCmd%

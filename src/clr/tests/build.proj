@@ -54,7 +54,7 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
+      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\..\..\.dotnet\</DotnetCliPath>
       <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
       <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
