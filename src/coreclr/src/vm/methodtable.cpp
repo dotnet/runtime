@@ -2432,7 +2432,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                     // those fields to be at their natural alignment.
 
                     LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldIndex, fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
+                        nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
                     return false;
                 }
 
@@ -2475,7 +2475,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // those fields to be at their natural alignment.
 
             LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                   nestingLevel * 5, "", fieldIndex, fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldSize));
+                   nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldSize));
             return false;
         }
 
@@ -2746,7 +2746,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             // those fields to be at their natural alignment.
 
             LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Native Field %d %s: offset %d (normalized %d), required alignment %d not at natural alignment; not enregistering struct\n",
-                nestingLevel * 5, "", fieldIndex, fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, pFieldMarshaler->AlignmentRequirement()));
+                nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, pFieldMarshaler->AlignmentRequirement()));
             return false;
         }
 
