@@ -2526,7 +2526,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 
     noway_assert(op2->isContained());
     noway_assert(op2->IsCnsIntOrI());
-    unsigned int index        = (unsigned int)op2->gtIntCon.gtIconVal;
+    unsigned int index        = (unsigned int)op2->AsIntCon()->gtIconVal;
     unsigned int byteShiftCnt = index * genTypeSize(baseType);
 
     // In general we shouldn't have an index greater than or equal to the length of the vector.
@@ -2623,7 +2623,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             bool ZeroOrSignExtnReqd = true;
             if (baseSize == 1)
             {
-                if ((op2->gtIntCon.gtIconVal % 2) == 1)
+                if ((op2->AsIntCon()->gtIconVal % 2) == 1)
                 {
                     // Right shift extracted word by 8-bits if index is odd if we are extracting a byte sized element.
                     inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_4BYTE, targetReg, 8);
