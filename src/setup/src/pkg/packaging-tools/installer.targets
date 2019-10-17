@@ -279,7 +279,7 @@
   -->
   <Target Name="GetCommonJsonProperties">
     <PropertyGroup>
-      <FullLicenseText>$([System.IO.File]::ReadAllText('$(ProjectDir)LICENSE.TXT').Replace('%0A', '\n').Replace('"', '\"'))</FullLicenseText>
+      <FullLicenseText>$([System.IO.File]::ReadAllText('$(RepoRoot)LICENSE').Replace('%0A', '\n').Replace('"', '\"'))</FullLicenseText>
     </PropertyGroup>
 
     <ItemGroup>
