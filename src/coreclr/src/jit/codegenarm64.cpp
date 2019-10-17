@@ -4974,7 +4974,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
     {
-        offs = treeNode->gtLclFld.gtLclOffs;
+        offs = treeNode->AsLclFld()->gtLclOffs;
     }
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
