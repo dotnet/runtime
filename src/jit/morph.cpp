@@ -5896,9 +5896,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    CORINFO_FIELD_HANDLE symHnd          = tree->gtField.gtFldHnd;
-    unsigned             fldOffset       = tree->gtField.gtFldOffset;
-    GenTree*             objRef          = tree->gtField.gtFldObj;
+    CORINFO_FIELD_HANDLE symHnd          = tree->AsField()->gtFldHnd;
+    unsigned             fldOffset       = tree->AsField()->gtFldOffset;
+    GenTree*             objRef          = tree->AsField()->gtFldObj;
     bool                 fieldMayOverlap = false;
     bool                 objIsLocal      = false;
 
@@ -5913,11 +5913,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
                  ((tree->gtFlags & GTF_GLOB_REF) != 0));
 
-    if (tree->gtField.gtFldMayOverlap)
+    if (tree->AsField()->gtFldMayOverlap)
     {
         fieldMayOverlap = true;
         // Reset the flag because we may reuse the node.
-        tree->gtField.gtFldMayOverlap = false;
+        tree->AsField()->gtFldMayOverlap = false;
     }
 
 #ifdef FEATURE_SIMD
@@ -5972,7 +5972,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                                   +----------+---------+
                                              |
                               +--------------+-------------+
-                              |   tree->gtField.gtFldObj   |
+                              |   tree->AsField()->gtFldObj   |
                               +--------------+-------------+
 
 
@@ -6082,7 +6082,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                     bool fieldHasChangeableOffset = false;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-                    fieldHasChangeableOffset = (tree->gtField.gtFieldLookup.addr != nullptr);
+                    fieldHasChangeableOffset = (tree->AsField()->gtFieldLookup.addr != nullptr);
 #endif
 
 #if CONSERVATIVE_NULL_CHECK_BYREF_CREATION
@@ -6161,12 +6161,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (tree->gtField.gtFieldLookup.addr != nullptr)
+        if (tree->AsField()->gtFieldLookup.addr != nullptr)
         {
             GenTree* offsetNode = nullptr;
-            if (tree->gtField.gtFieldLookup.accessType == IAT_PVALUE)
+            if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
             {
-                offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->gtField.gtFieldLookup.addr,
+                offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
                                                       GTF_ICON_FIELD_HDL, false);
             }
             else
@@ -10648,7 +10648,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
     GenTree* ret = nullptr;
     if (tree->OperGet() == GT_FIELD)
     {
-        GenTree* objRef = tree->gtField.gtFldObj;
+        GenTree* objRef = tree->AsField()->gtFldObj;
         if (objRef != nullptr)
         {
             GenTree* obj = nullptr;
@@ -10697,7 +10697,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
     if (ret != nullptr)
     {
         unsigned BaseTypeSize = genTypeSize(*pBaseTypeOut);
-        *indexOut             = tree->gtField.gtFldOffset / BaseTypeSize;
+        *indexOut             = tree->AsField()->gtFldOffset / BaseTypeSize;
     }
     return ret;
 }
