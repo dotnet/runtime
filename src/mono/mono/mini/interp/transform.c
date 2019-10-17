@@ -974,11 +974,26 @@ dump_mint_code (const guint16 *start, const guint16* end)
 {
 	const guint16 *p = start;
 	while (p < end) {
-		char *ins = mono_interp_dis_mintop (start, p);
+		char *ins = mono_interp_dis_mintop ((gint32)(p - start), TRUE, p + 1, *p);
 		g_print ("%s\n", ins);
 		g_free (ins);
 		p = mono_interp_dis_mintop_len (p);
 	}
+}
+
+static void
+dump_interp_inst (InterpInst *ins)
+{
+	char *descr = mono_interp_dis_mintop (ins->il_offset, FALSE, &ins->data [0], ins->opcode);
+	g_print ("%s", descr);
+	g_free (descr);
+}
+
+static void
+dump_interp_inst_newline (InterpInst *ins)
+{
+	dump_interp_inst (ins);
+	g_print ("\n");
 }
 
 /* For debug use */
@@ -4061,7 +4076,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
-				interp_add_ins (td, MINT_CONV_U8_I4);
+				interp_add_ins (td, MINT_CONV_I8_U4);
 #endif
 				break;
 			case STACK_TYPE_I8:
@@ -4244,7 +4259,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_LDC_I8);
 					WRITE64_INS (td->last_ins, 0, &ct);
 				} else {
-					interp_add_ins (td, MINT_CONV_U8_I4);
+					interp_add_ins (td, MINT_CONV_I8_U4);
 				}
 				break;
 			case STACK_TYPE_I8:
@@ -4257,7 +4272,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 4
-				interp_add_ins (td, MINT_CONV_U8_I4);
+				interp_add_ins (td, MINT_CONV_I8_U4);
 #endif
 				break;
 			default:
@@ -6321,6 +6336,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		for (int i = 0; i < size; i++)
 			*ip++ = ins->data [i];
 	}
+	mono_interp_stats.emitted_instructions++;
 	return ip;
 }
 
@@ -6458,6 +6474,223 @@ interp_local_deadce (TransformData *td, int *local_ref_count)
 	return needs_cprop;
 }
 
+#define INTERP_FOLD_UNOP(opcode,stack_type,field,op) \
+	case opcode: \
+		g_assert (sp->val.type == stack_type); \
+		result.type = stack_type; \
+		result.field = op sp->val.field; \
+		break;
+
+#define INTERP_FOLD_CONV(opcode,stack_type_dst,field_dst,stack_type_src,field_src,cast_type) \
+	case opcode: \
+		g_assert (sp->val.type == stack_type_src); \
+		result.type = stack_type_dst; \
+		result.field_dst = (cast_type)sp->val.field_src; \
+		break;
+
+static InterpInst*
+interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
+{
+	StackValue result;
+	// Decrement sp so it's easier to access top of the stack
+	sp--;
+	if (sp->val.type != STACK_VALUE_I4 && sp->val.type != STACK_VALUE_I8)
+		goto cfold_failed;
+
+	// Top of the stack is a constant
+	switch (ins->opcode) {
+		INTERP_FOLD_UNOP (MINT_ADD1_I4, STACK_VALUE_I4, i, 1+);
+		INTERP_FOLD_UNOP (MINT_ADD1_I8, STACK_VALUE_I8, l, 1+);
+		INTERP_FOLD_UNOP (MINT_SUB1_I4, STACK_VALUE_I4, i, -1+);
+		INTERP_FOLD_UNOP (MINT_SUB1_I8, STACK_VALUE_I8, l, -1+);
+		INTERP_FOLD_UNOP (MINT_NEG_I4, STACK_VALUE_I4, i, -);
+		INTERP_FOLD_UNOP (MINT_NEG_I8, STACK_VALUE_I8, l, -);
+		INTERP_FOLD_UNOP (MINT_NOT_I4, STACK_VALUE_I4, i, ~);
+		INTERP_FOLD_UNOP (MINT_NOT_I8, STACK_VALUE_I8, l, ~);
+		INTERP_FOLD_UNOP (MINT_CEQ0_I4, STACK_VALUE_I4, i, 0 ==);
+
+		INTERP_FOLD_CONV (MINT_CONV_I1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8);
+		INTERP_FOLD_CONV (MINT_CONV_I1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8);
+		INTERP_FOLD_CONV (MINT_CONV_U1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint8);
+		INTERP_FOLD_CONV (MINT_CONV_U1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint8);
+
+		INTERP_FOLD_CONV (MINT_CONV_I2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16);
+		INTERP_FOLD_CONV (MINT_CONV_I2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint16);
+		INTERP_FOLD_CONV (MINT_CONV_U2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint16);
+		INTERP_FOLD_CONV (MINT_CONV_U2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint16);
+
+		INTERP_FOLD_CONV (MINT_CONV_I4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
+		INTERP_FOLD_CONV (MINT_CONV_U4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
+
+		INTERP_FOLD_CONV (MINT_CONV_I8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint32);
+		INTERP_FOLD_CONV (MINT_CONV_I8_U4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint32);
+
+		default:
+			goto cfold_failed;
+	}
+
+	// We were able to compute the result of the ins instruction. We store the
+	// current value for the top of the stack and, if possible, try to replace the
+	// instructions that are part of this unary operation with a single LDC.
+	mono_interp_stats.constant_folds++;
+	if (sp->ins != NULL) {
+		interp_clear_ins (td, sp->ins);
+		mono_interp_stats.killed_instructions++;
+		if (result.type == STACK_VALUE_I4)
+			ins = interp_inst_replace_with_i4_const (td, ins, result.i);
+		else if (result.type == STACK_VALUE_I8)
+			ins = interp_inst_replace_with_i8_const (td, ins, result.l);
+		else
+			g_assert_not_reached ();
+		if (td->verbose_level) {
+			g_print ("Fold unop :\n\t");
+			dump_interp_inst_newline (ins);
+		}
+		sp->ins = ins;
+	}
+	sp->val = result;
+	return ins;
+
+cfold_failed:
+	sp->ins = NULL;
+	sp->val.type = STACK_VALUE_NONE;
+	return ins;
+}
+
+#define INTERP_FOLD_BINOP(opcode,stack_type,field,op) \
+	case opcode: \
+		g_assert (sp [0].val.type == stack_type && sp [1].val.type == stack_type); \
+		result.type = stack_type; \
+		result.field = sp [0].val.field op sp [1].val.field; \
+		break;
+
+#define INTERP_FOLD_BINOP_FULL(opcode,stack_type,field,op,cast_type,cond) \
+	case opcode: \
+		g_assert (sp [0].val.type == stack_type && sp [1].val.type == stack_type); \
+		if (!(cond)) goto cfold_failed; \
+		result.type = stack_type; \
+		result.field = (cast_type)sp [0].val.field op (cast_type)sp [1].val.field; \
+		break;
+
+#define INTERP_FOLD_SHIFTOP(opcode,stack_type,field,shift_op,cast_type) \
+	case opcode: \
+		g_assert (sp [1].val.type == STACK_VALUE_I4); \
+		result.type = stack_type; \
+		result.field = (cast_type)sp [0].val.field shift_op sp [1].val.i; \
+		break;
+
+#define INTERP_FOLD_RELOP(opcode,stack_type,field,relop,cast_type) \
+	case opcode: \
+		g_assert (sp [0].val.type == stack_type && sp [1].val.type == stack_type); \
+		result.type = STACK_VALUE_I4; \
+		result.field = (cast_type) sp [0].val.field relop (cast_type) sp [1].val.field; \
+		break;
+
+
+static InterpInst*
+interp_fold_binop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
+{
+	StackValue result;
+	// Decrement sp so it's easier to access top of the stack
+	sp -= 2;
+	if (sp [0].val.type != STACK_VALUE_I4 && sp [0].val.type != STACK_VALUE_I8)
+		goto cfold_failed;
+	if (sp [1].val.type != STACK_VALUE_I4 && sp [1].val.type != STACK_VALUE_I8)
+		goto cfold_failed;
+
+	// Top two values of the stack are constants
+	switch (ins->opcode) {
+		INTERP_FOLD_BINOP (MINT_ADD_I4, STACK_VALUE_I4, i, +);
+		INTERP_FOLD_BINOP (MINT_ADD_I8, STACK_VALUE_I8, l, +);
+		INTERP_FOLD_BINOP (MINT_SUB_I4, STACK_VALUE_I4, i, -);
+		INTERP_FOLD_BINOP (MINT_SUB_I8, STACK_VALUE_I8, l, -);
+		INTERP_FOLD_BINOP (MINT_MUL_I4, STACK_VALUE_I4, i, *);
+		INTERP_FOLD_BINOP (MINT_MUL_I8, STACK_VALUE_I8, l, *);
+
+		INTERP_FOLD_BINOP (MINT_AND_I4, STACK_VALUE_I4, i, &);
+		INTERP_FOLD_BINOP (MINT_AND_I8, STACK_VALUE_I8, l, &);
+		INTERP_FOLD_BINOP (MINT_OR_I4, STACK_VALUE_I4, i, |);
+		INTERP_FOLD_BINOP (MINT_OR_I8, STACK_VALUE_I8, l, |);
+		INTERP_FOLD_BINOP (MINT_XOR_I4, STACK_VALUE_I4, i, ^);
+		INTERP_FOLD_BINOP (MINT_XOR_I8, STACK_VALUE_I8, l, ^);
+
+		INTERP_FOLD_SHIFTOP (MINT_SHL_I4, STACK_VALUE_I4, i, <<, gint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHL_I8, STACK_VALUE_I8, l, <<, gint64);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_I4, STACK_VALUE_I4, i, >>, gint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_I8, STACK_VALUE_I8, l, >>, gint64);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I4, STACK_VALUE_I4, i, >>, guint32);
+		INTERP_FOLD_SHIFTOP (MINT_SHR_UN_I8, STACK_VALUE_I8, l, >>, guint64);
+
+		INTERP_FOLD_RELOP (MINT_CEQ_I4, STACK_VALUE_I4, i, ==, gint32);
+		INTERP_FOLD_RELOP (MINT_CEQ_I8, STACK_VALUE_I8, l, ==, gint64);
+		INTERP_FOLD_RELOP (MINT_CNE_I4, STACK_VALUE_I4, i, !=, gint32);
+		INTERP_FOLD_RELOP (MINT_CNE_I8, STACK_VALUE_I8, l, !=, gint64);
+
+		INTERP_FOLD_RELOP (MINT_CGT_I4, STACK_VALUE_I4, i, >, gint32);
+		INTERP_FOLD_RELOP (MINT_CGT_I8, STACK_VALUE_I8, l, >, gint64);
+		INTERP_FOLD_RELOP (MINT_CGT_UN_I4, STACK_VALUE_I4, i, >, guint32);
+		INTERP_FOLD_RELOP (MINT_CGT_UN_I8, STACK_VALUE_I8, l, >, guint64);
+
+		INTERP_FOLD_RELOP (MINT_CGE_I4, STACK_VALUE_I4, i, >=, gint32);
+		INTERP_FOLD_RELOP (MINT_CGE_I8, STACK_VALUE_I8, l, >=, gint64);
+		INTERP_FOLD_RELOP (MINT_CGE_UN_I4, STACK_VALUE_I4, i, >=, guint32);
+		INTERP_FOLD_RELOP (MINT_CGE_UN_I8, STACK_VALUE_I8, l, >=, guint64);
+
+		INTERP_FOLD_RELOP (MINT_CLT_I4, STACK_VALUE_I4, i, <, gint32);
+		INTERP_FOLD_RELOP (MINT_CLT_I8, STACK_VALUE_I8, l, <, gint64);
+		INTERP_FOLD_RELOP (MINT_CLT_UN_I4, STACK_VALUE_I4, i, <, guint32);
+		INTERP_FOLD_RELOP (MINT_CLT_UN_I8, STACK_VALUE_I8, l, <, guint64);
+
+		INTERP_FOLD_RELOP (MINT_CLE_I4, STACK_VALUE_I4, i, <=, gint32);
+		INTERP_FOLD_RELOP (MINT_CLE_I8, STACK_VALUE_I8, l, <=, gint64);
+		INTERP_FOLD_RELOP (MINT_CLE_UN_I4, STACK_VALUE_I4, i, <=, guint32);
+		INTERP_FOLD_RELOP (MINT_CLE_UN_I8, STACK_VALUE_I8, l, <=, guint64);
+
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_I4, STACK_VALUE_I4, i, /, gint32, sp [1].val.i != 0 && (sp [0].val.i != G_MININT32 || sp [1].val.i != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_I8, STACK_VALUE_I8, l, /, gint64, sp [1].val.l != 0 && (sp [0].val.l != G_MININT64 || sp [1].val.l != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I4, STACK_VALUE_I4, i, /, guint32, sp [1].val.i != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_DIV_UN_I8, STACK_VALUE_I8, l, /, guint64, sp [1].val.l != 0);
+
+		INTERP_FOLD_BINOP_FULL (MINT_REM_I4, STACK_VALUE_I4, i, %, gint32, sp [1].val.i != 0 && (sp [0].val.i != G_MININT32 || sp [1].val.i != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_REM_I8, STACK_VALUE_I8, l, %, gint64, sp [1].val.l != 0 && (sp [0].val.l != G_MININT64 || sp [1].val.l != -1));
+		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I4, STACK_VALUE_I4, i, %, guint32, sp [1].val.i != 0);
+		INTERP_FOLD_BINOP_FULL (MINT_REM_UN_I8, STACK_VALUE_I8, l, %, guint64, sp [1].val.l != 0);
+
+		default:
+			goto cfold_failed;
+	}
+
+	// We were able to compute the result of the ins instruction. We store the
+	// current value for the top of the stack and, if possible, try to replace the
+	// instructions that are part of this unary operation with a single LDC.
+	mono_interp_stats.constant_folds++;
+	if (sp [0].ins != NULL && sp [1].ins != NULL) {
+		interp_clear_ins (td, sp [0].ins);
+		interp_clear_ins (td, sp [1].ins);
+		mono_interp_stats.killed_instructions += 2;
+		if (result.type == STACK_VALUE_I4)
+			ins = interp_inst_replace_with_i4_const (td, ins, result.i);
+		else if (result.type == STACK_VALUE_I8)
+			ins = interp_inst_replace_with_i8_const (td, ins, result.l);
+		else
+			g_assert_not_reached ();
+		if (td->verbose_level) {
+			g_print ("Fold binop :\n\t");
+			dump_interp_inst_newline (ins);
+		}
+		sp [0].ins = ins;
+	} else {
+		sp [0].ins = NULL;
+	}
+	sp [0].val = result;
+	return ins;
+
+cfold_failed:
+	sp->ins = NULL;
+	sp->val.type = STACK_VALUE_NONE;
+	return ins;
+}
+
 static gboolean
 interp_local_equal (StackValue *locals, int local1, int local2)
 {
@@ -6513,8 +6746,10 @@ retry:
 		}
 		// The instruction pops some values then pushes some other
 		get_inst_stack_usage (td, ins, &pop, &push);
-		if (td->verbose_level)
-                        g_print ("IL_%x, sp %d, %s (pop %d, push %d)\n", ins->il_offset, sp - stack, mono_interp_opname (ins->opcode), pop, push);
+		if (td->verbose_level) {
+			dump_interp_inst (ins);
+			g_print (", sp %d, (pop %d, push %d)\n", sp - stack, pop, push);
+		}
 		if (MINT_IS_LDLOC (ins->opcode)) {
 			int replace_op = 0;
 			int loaded_local = ins->data [0];
@@ -6525,12 +6760,12 @@ retry:
 				if (ins->opcode - MINT_LDLOC_I1 == mt) {
 					if (mt == MINT_TYPE_I4)
 						replace_op = MINT_STLOC_NP_I4;
+					else if (mt == MINT_TYPE_I8)
+						replace_op = MINT_STLOC_NP_I8;
 					else if (mt == MINT_TYPE_O || mt == MINT_TYPE_P)
 						replace_op = MINT_STLOC_NP_O;
 					if (replace_op) {
 						int stored_local = prev_ins->data [0];
-						if (td->verbose_level)
-							g_print ("Add stloc.np : ldloc (off %p), stloc (off %p)\n", ins->il_offset, prev_ins->il_offset);
 						sp->ins = NULL;
 						if (sp->val.type == STACK_VALUE_NONE) {
 							// We know what local is on the stack now. Track it
@@ -6542,20 +6777,27 @@ retry:
 						interp_clear_ins (td, prev_ins);
 						ins->opcode = replace_op;
 						ins->data [0] = stored_local;
-						mono_interp_stats.stloc_nps++;
 						local_ref_count [loaded_local]--;
+						if (td->verbose_level) {
+							g_print ("Add stloc.np :\n\t");
+							dump_interp_inst_newline (ins);
+						}
+						mono_interp_stats.stloc_nps++;
+						mono_interp_stats.killed_instructions++;
 					}
 				}
 			} else if (locals [loaded_local].type == STACK_VALUE_LOCAL) {
 				g_assert (locals [loaded_local].type == STACK_VALUE_LOCAL);
 				g_assert (!(td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				// do copy propagation of the original source
-				if (td->verbose_level)
-					g_print ("cprop %d -> %d\n", loaded_local, locals [loaded_local].local);
 				mono_interp_stats.copy_propagations++;
 				local_ref_count [loaded_local]--;
 				ins->data [0] = locals [loaded_local].local;
 				local_ref_count [ins->data [0]]++;
+				if (td->verbose_level) {
+					g_print ("cprop loc %d -> loc %d :\n\t", loaded_local, locals [loaded_local].local);
+					dump_interp_inst_newline (ins);
+				}
 			} else if (locals [loaded_local].type == STACK_VALUE_I4 || locals [loaded_local].type == STACK_VALUE_I8) {
 				gboolean is_i4 = locals [loaded_local].type == STACK_VALUE_I4;
 				g_assert (!(td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT));
@@ -6567,8 +6809,10 @@ retry:
 				sp->val = locals [loaded_local];
 				local_ref_count [loaded_local]--;
 				mono_interp_stats.copy_propagations++;
-				if (td->verbose_level)
-					g_print ("cprop %d -> ct %d\n", loaded_local, is_i4 ? locals [loaded_local].i : locals [loaded_local].l);
+				if (td->verbose_level) {
+					g_print ("cprop loc %d -> ct :\n\t", loaded_local);
+					dump_interp_inst_newline (ins);
+				}
 				// FIXME this replace_op got ugly
 				replace_op = ins->opcode;
 			}
@@ -6601,9 +6845,6 @@ retry:
 					}
 
 					if (sp->ins) {
-						// Clear ldloc / stloc pair and replace it with movloc superinstruction
-						if (td->verbose_level)
-							g_print ("Add movloc : ldloc (off %p), stloc (off %p)\n", sp->ins->il_offset, ins->il_offset);
 						interp_clear_ins (td, sp->ins);
 						interp_clear_ins (td, ins);
 
@@ -6612,7 +6853,13 @@ retry:
 						ins->data [1] = dest_local;
 						if (vtsize)
 							ins->data [2] = vtsize;
+						// Clear ldloc / stloc pair and replace it with movloc superinstruction
+						if (td->verbose_level) {
+							g_print ("Add movloc (ldloc off %d) :\n\t", sp->ins->il_offset);
+							dump_interp_inst_newline (ins);
+						}
 						mono_interp_stats.movlocs++;
+						mono_interp_stats.killed_instructions++;
 					}
 				} else {
 					locals [dest_local].type = STACK_VALUE_NONE;
@@ -6738,6 +6985,11 @@ retry:
 			// branched code will expect a certain stack size.
 			for (StackContentInfo *sp_iter = stack; sp_iter < sp; sp_iter++)
 				sp_iter->ins = NULL;
+		} else if (MINT_IS_UNOP (ins->opcode)) {
+			ins = interp_fold_unop (td, sp, ins);
+		} else if (MINT_IS_BINOP (ins->opcode)) {
+			ins = interp_fold_binop (td, sp, ins);
+			sp--;
 		} else {
 			if (pop == MINT_POP_ALL)
 				pop = sp - stack;

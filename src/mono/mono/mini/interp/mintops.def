@@ -187,6 +187,7 @@ OPDEF(MINT_STLOC_P, "stloc.p", 2, Pop1, Push0, MintOpUShortInt)
 OPDEF(MINT_STLOC_VT, "stloc.vt", 4, Pop1, Push0, MintOpShortAndInt)
 
 OPDEF(MINT_STLOC_NP_I4, "stloc.np.i4", 2, Pop0, Push0, MintOpUShortInt)
+OPDEF(MINT_STLOC_NP_I8, "stloc.np.i8", 2, Pop0, Push0, MintOpUShortInt)
 OPDEF(MINT_STLOC_NP_O, "stloc.np.o", 2, Pop0, Push0, MintOpUShortInt)
 
 OPDEF(MINT_MOVLOC_1, "movloc.1", 3, Pop0, Push0, MintOpTwoShorts)
@@ -410,21 +411,16 @@ OPDEF(MINT_LDLEN_SPAN, "ldlen.span", 2, Pop1, Push1, MintOpShortInt)
 
 OPDEF(MINT_GETITEM_SPAN, "getitem.span", 4, Pop2, Push1, MintOpShortAndInt)
 
+/* binops */
 OPDEF(MINT_ADD_I4, "add.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_ADD_I8, "add.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_ADD_R4, "add.r4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_ADD_R8, "add.r8", 1, Pop2, Push1, MintOpNoArgs)
 
-OPDEF(MINT_ADD1_I4, "add1.i4", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_ADD1_I8, "add1.i8", 1, Pop1, Push1, MintOpNoArgs)
-
 OPDEF(MINT_SUB_I4, "sub.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SUB_I8, "sub.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SUB_R4, "sub.r4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SUB_R8, "sub.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_SUB1_I4, "sub1.i4", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_SUB1_I8, "sub1.i8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_MUL_I4, "mul.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_MUL_I8, "mul.i8", 1, Pop2, Push1, MintOpNoArgs)
@@ -457,14 +453,6 @@ OPDEF(MINT_SUB_OVF_I8, "sub.ovf.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SUB_OVF_UN_I4, "sub.ovf.un.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SUB_OVF_UN_I8, "sub.ovf.un.i8", 1, Pop2, Push1, MintOpNoArgs)
 
-OPDEF(MINT_NEG_I4, "neg.i4", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_NEG_I8, "neg.i8", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_NEG_R4, "neg.r4", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_NEG_R8, "neg.r8", 1, Pop1, Push1, MintOpNoArgs)
-
-OPDEF(MINT_NOT_I4, "not.i4", 1, Pop1, Push1, MintOpNoArgs)
-OPDEF(MINT_NOT_I8, "not.i8", 1, Pop1, Push1, MintOpNoArgs)
-
 OPDEF(MINT_AND_I4, "and.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_AND_I8, "and.i8", 1, Pop2, Push1, MintOpNoArgs)
 
@@ -488,6 +476,67 @@ OPDEF(MINT_SHL_I4, "shl.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SHL_I8, "shl.i8", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SHR_I4, "shr.i4", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_SHR_I8, "shr.i8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CEQ_I4, "ceq.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CEQ_I8, "ceq.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CEQ_R4, "ceq.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CEQ_R8, "ceq.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CNE_I4, "cne.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CNE_I8, "cne.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CNE_R4, "cne.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CNE_R8, "cne.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CGT_I4, "cgt.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_I8, "cgt.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_R4, "cgt.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_R8, "cgt.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CGE_I4, "cge.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGE_I8, "cge.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGE_R4, "cge.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGE_R8, "cge.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CGE_UN_I4, "cge.un.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGE_UN_I8, "cge.un.i8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CGT_UN_I4, "cgt.un.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_UN_I8, "cgt.un.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_UN_R4, "cgt.un.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CGT_UN_R8, "cgt.un.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CLT_I4, "clt.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_I8, "clt.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_R4, "clt.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_R8, "clt.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CLE_I4, "cle.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLE_I8, "cle.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLE_R4, "cle.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLE_R8, "cle.r8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CLE_UN_I4, "cle.un.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLE_UN_I8, "cle.un.i8", 1, Pop2, Push1, MintOpNoArgs)
+
+OPDEF(MINT_CLT_UN_I4, "clt.un.i4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_UN_I8, "clt.un.i8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_UN_R4, "clt.un.r4", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CLT_UN_R8, "clt.un.r8", 1, Pop2, Push1, MintOpNoArgs)
+/* binops end */
+
+/* unops */
+OPDEF(MINT_ADD1_I4, "add1.i4", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_ADD1_I8, "add1.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_SUB1_I4, "sub1.i4", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_SUB1_I8, "sub1.i8", 1, Pop1, Push1, MintOpNoArgs)
+
+OPDEF(MINT_NEG_I4, "neg.i4", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_NEG_I8, "neg.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_NEG_R4, "neg.r4", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_NEG_R8, "neg.r8", 1, Pop1, Push1, MintOpNoArgs)
+
+OPDEF(MINT_NOT_I4, "not.i4", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_NOT_I8, "not.i8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_R_UN_I4, "conv.r.un.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_R_UN_I8, "conv.r.un.i8", 1, Pop1, Push1, MintOpNoArgs)
@@ -533,11 +582,6 @@ OPDEF(MINT_CONV_R8_I4, "conv.r8.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_R8_I8, "conv.r8.i8", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_R8_R4, "conv.r8.r4", 1, Pop1, Push1, MintOpNoArgs)
 
-OPDEF(MINT_CONV_I4_I8_SP, "conv.i4.i8.sp", 1, Pop1, Push1, MintOpNoArgs) /* special for narrowing sp[-2] on 64 bits */
-OPDEF(MINT_CONV_I8_I4_SP, "conv.i8.i4.sp", 1, Pop1, Push1, MintOpNoArgs) /* special for widening sp[-2] on 64 bits */
-OPDEF(MINT_CONV_R8_R4_SP, "conv.r8.r4.sp", 1, Pop1, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CONV_U8_I4, "conv.u8.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_U8_R4, "conv.u8.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_U8_R8, "conv.u8.r8", 1, Pop1, Push1, MintOpNoArgs)
 
@@ -591,53 +635,12 @@ OPDEF(MINT_CONV_OVF_U8_I8, "conv.ovf.u8.i8", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 1, Pop1, Push1, MintOpNoArgs)
 
-OPDEF(MINT_CEQ_I4, "ceq.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CEQ_I8, "ceq.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CEQ_R4, "ceq.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CEQ_R8, "ceq.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CNE_I4, "cne.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CNE_I8, "cne.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CNE_R4, "cne.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CNE_R8, "cne.r8", 1, Pop2, Push1, MintOpNoArgs)
-
 OPDEF(MINT_CEQ0_I4, "ceq0.i4", 1, Pop1, Push1, MintOpNoArgs)
+/* unops end */
 
-OPDEF(MINT_CGT_I4, "cgt.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_I8, "cgt.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_R4, "cgt.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_R8, "cgt.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CGE_I4, "cge.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGE_I8, "cge.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGE_R4, "cge.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGE_R8, "cge.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CGE_UN_I4, "cge.un.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGE_UN_I8, "cge.un.i8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CGT_UN_I4, "cgt.un.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_UN_I8, "cgt.un.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_UN_R4, "cgt.un.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CGT_UN_R8, "cgt.un.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CLT_I4, "clt.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_I8, "clt.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_R4, "clt.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_R8, "clt.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CLE_I4, "cle.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLE_I8, "cle.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLE_R4, "cle.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLE_R8, "cle.r8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CLE_UN_I4, "cle.un.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLE_UN_I8, "cle.un.i8", 1, Pop2, Push1, MintOpNoArgs)
-
-OPDEF(MINT_CLT_UN_I4, "clt.un.i4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_UN_I8, "clt.un.i8", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_UN_R4, "clt.un.r4", 1, Pop2, Push1, MintOpNoArgs)
-OPDEF(MINT_CLT_UN_R8, "clt.un.r8", 1, Pop2, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_I4_I8_SP, "conv.i4.i8.sp", 1, Pop2, Push2, MintOpNoArgs) /* special for narrowing sp[-2] on 64 bits */
+OPDEF(MINT_CONV_I8_I4_SP, "conv.i8.i4.sp", 1, Pop2, Push2, MintOpNoArgs) /* special for widening sp[-2] on 64 bits */
+OPDEF(MINT_CONV_R8_R4_SP, "conv.r8.r4.sp", 1, Pop2, Push2, MintOpNoArgs)
 
 OPDEF(MINT_CKFINITE, "ckfinite", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_MKREFANY, "mkrefany", 2, Pop1, Push1, MintOpClassToken)

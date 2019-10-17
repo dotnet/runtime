@@ -83,71 +83,92 @@ mono_interp_dis_mintop_len (const guint16 *ip)
 	return ip + len;
 }
 
+/*
+ * ins_offset is the associated offset of this instruction
+ * native_offset indicates whether this instruction is part of the compacted
+ * instruction stream or is part of an InterpInst
+ * ip is the address where the arguments of the instruction are located
+ */
 char *
-mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
+mono_interp_dis_mintop (gint32 ins_offset, gboolean native_offset, const guint16 *ip, guint16 opcode)
 {
 	GString *str = g_string_new ("");
 	guint32 token;
 	int target;
 
-	g_string_append_printf (str, "IR_%04x: %-10s", (int)(ip - base), mono_interp_opname (*ip));
-	switch (mono_interp_opargtype [*ip]) {
+	if (native_offset)
+		g_string_append_printf (str, "IR_%04x: %-10s", ins_offset, mono_interp_opname (opcode));
+	else
+		g_string_append_printf (str, "IL_%04x: %-10s", ins_offset, mono_interp_opname (opcode));
+
+	switch (mono_interp_opargtype [opcode]) {
 	case MintOpNoArgs:
 		break;
 	case MintOpUShortInt:
-		g_string_append_printf (str, " %u", * (guint16 *)(ip + 1));
+		g_string_append_printf (str, " %u", *(guint16*)ip);
 		break;
 	case MintOpTwoShorts:
-		g_string_append_printf (str, " %u,%u", * (guint16 *)(ip + 1), * (guint16 *)(ip + 2));
+		g_string_append_printf (str, " %u,%u", *(guint16*)ip, *(guint16 *)(ip + 1));
 		break;
 	case MintOpShortAndInt:
-		g_string_append_printf (str, " %u,%u", * (guint16 *)(ip + 1), (guint32)READ32(ip + 2));
+		g_string_append_printf (str, " %u,%u", *(guint16*)ip, (guint32)READ32(ip + 1));
 		break;
 	case MintOpShortInt:
-		g_string_append_printf (str, " %d", * (short *)(ip + 1));
+		g_string_append_printf (str, " %d", *(gint16*)ip);
 		break;
 	case MintOpClassToken:
 	case MintOpMethodToken:
 	case MintOpFieldToken:
-		token = * (guint16 *)(ip + 1);
+		token = * (guint16 *) ip;
 		g_string_append_printf (str, " %u", token);
 		break;
 	case MintOpInt:
-		g_string_append_printf (str, " %d", (gint32)READ32 (ip + 1));
+		g_string_append_printf (str, " %d", (gint32)READ32 (ip));
 		break;
 	case MintOpLongInt:
-		g_string_append_printf (str, " %lld", (long long)READ64 (ip + 1));
+		g_string_append_printf (str, " %lld", (long long)READ64 (ip));
 		break;
 	case MintOpFloat: {
-		gint32 tmp = READ32 (ip + 1);
+		gint32 tmp = READ32 (ip);
 		g_string_append_printf (str, " %g", * (float *)&tmp);
 		break;
 	}
 	case MintOpDouble: {
-		gint64 tmp = READ64 (ip + 1);
+		gint64 tmp = READ64 (ip);
 		g_string_append_printf (str, " %g", * (double *)&tmp);
 		break;
 	}
 	case MintOpShortBranch:
-		target = (int)(ip + * (short *)(ip + 1) - base);
-		g_string_append_printf (str, " IR_%04x", target);
+		if (native_offset) {
+			target = ins_offset + *(gint16*)ip;
+			g_string_append_printf (str, " IR_%04x", target);
+		} else {
+			/* the target IL is already embedded in the instruction */
+			g_string_append_printf (str, " IL_%04x", *(gint16*)ip);
+		}
 		break;
 	case MintOpBranch:
-		target = (int)(ip + (gint32)READ32 (ip + 1) - base);
-		g_string_append_printf (str, " IR_%04x", target);
+		if (native_offset) {
+			target = ins_offset + (gint32)READ32 (ip);
+			g_string_append_printf (str, " IR_%04x", target);
+		} else {
+			g_string_append_printf (str, " IL_%04x", (gint32)READ32 (ip));
+		}
 		break;
 	case MintOpSwitch: {
-		const guint16 *p = ip + 1;
-		int sval = (gint32)READ32 (p);
+		int sval = (gint32)READ32 (ip);
 		int i;
-		p += 2;
 		g_string_append_printf (str, "(");
+		gint32 p = 2;
 		for (i = 0; i < sval; ++i) {
-			int offset;
 			if (i > 0)
 				g_string_append_printf (str, ", ");
-			offset = (gint32)READ32 (p);
-			g_string_append_printf (str, "IR_%04x", (int)(p + offset - base));
+			if (native_offset) {
+				int offset = (gint32)READ32 (ip + p);
+				g_string_append_printf (str, "IR_%04x", ins_offset + 1 + p + offset);
+			} else {
+				g_string_append_printf (str, "IL_%04x", (gint32)READ32 (ip + p));
+			}
 			p += 2;
 		}
 		g_string_append_printf (str, ")");

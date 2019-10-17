@@ -200,7 +200,9 @@ typedef struct {
 	gint32 stloc_nps;
 	gint32 movlocs;
 	gint32 copy_propagations;
+	gint32 constant_folds;
 	gint32 killed_instructions;
+	gint32 emitted_instructions;
 	gint32 added_pop_count;
 	gint32 inlined_methods;
 	gint32 inline_failures;
