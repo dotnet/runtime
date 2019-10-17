@@ -10,7 +10,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
 {
@@ -251,7 +250,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command WithUserProfile(string userprofile)
         {
             string userDir;
-            if (InternalAbstractions.RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 userDir = "USERPROFILE";
             }
@@ -383,7 +382,8 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 bool success = exitCode == 0;
                 string msgExpectedToFail = "";
 
-                if (fExpectedToFail) {
+                if (fExpectedToFail)
+                {
                     success = !success;
                     msgExpectedToFail = "failed as expected and ";
                 }

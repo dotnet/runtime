@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -19,7 +21,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// hash value embedded in default apphost executable in a place where the path to the app binary should be stored.
         /// </summary>
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
-        private readonly static byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
+        private static readonly byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
         /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
@@ -43,6 +45,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
 
             BinaryUtils.CopyFile(appHostSourceFilePath, appHostDestinationFilePath);
+
             bool appHostIsPEImage = false;
 
             void RewriteAppHost()
@@ -70,7 +73,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
 
             void UpdateResources()
-            { 
+            {
                 if (assemblyToCopyResorcesFrom != null && appHostIsPEImage)
                 {
                     if (ResourceUpdater.IsSupportedOS())
@@ -89,6 +92,24 @@ namespace Microsoft.NET.HostModel.AppHost
 
             try
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
+                    const int EINTR = 4;
+                    int chmodReturnCode = 0;
+
+                    do
+                    {
+                        chmodReturnCode = chmod(appHostDestinationFilePath, filePermissionOctal);
+                    }
+                    while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
+
+                    if (chmodReturnCode == -1)
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
+                    }
+                }
+
                 RetryUtil.RetryOnIOError(RewriteAppHost);
 
                 RetryUtil.RetryOnWin32Error(UpdateResources);
@@ -133,14 +154,14 @@ namespace Microsoft.NET.HostModel.AppHost
             };
 
             // Re-write the destination apphost with the proper contents.
-            RetryUtil.RetryOnIOError(() => 
+            RetryUtil.RetryOnIOError(() =>
                 BinaryUtils.SearchAndReplace(appHostPath,
                                              bundleHeaderPlaceholder,
-                                             BitConverter.GetBytes(bundleHeaderOffset), 
-                                             pad0s:false));
+                                             BitConverter.GetBytes(bundleHeaderOffset),
+                                             pad0s: false));
 
             // Memory-mapped write does not updating last write time
-            RetryUtil.RetryOnIOError(() => 
+            RetryUtil.RetryOnIOError(() =>
                 File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
         }
 
@@ -183,5 +204,8 @@ namespace Microsoft.NET.HostModel.AppHost
 
             return headerOffset != 0;
         }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chmod(string pathname, int mode);
     }
 }
