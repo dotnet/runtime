@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Diagnostics.TraceSourceTests
@@ -49,23 +52,27 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.NotNull(listener.Filter);
         }
 
-        [Fact]
-        public void TraceOutputOptionsTest()
+        [Theory]
+        [InlineData(TraceOptions.Callstack)]
+        [InlineData(TraceOptions.DateTime)]
+        [InlineData(TraceOptions.LogicalOperationStack)]
+        [InlineData(TraceOptions.None)]
+        [InlineData(TraceOptions.ProcessId)]
+        [InlineData(TraceOptions.ThreadId)]
+        [InlineData(TraceOptions.Timestamp)]
+        public void TraceOutputOptionsTest_Valid(TraceOptions options)
         {
             var listener = new TestTraceListener();
-            listener.TraceOutputOptions = TraceOptions.None;
+            listener.TraceOutputOptions = options;
+            Assert.Equal(options, listener.TraceOutputOptions);
+        }
 
-            // NOTE: TraceOptions includes values for 0x01 and 0x20 in .NET Framework 4.5, but not in CoreFX
-            // These assertions test for those missing values, and the exceptional condition that
-            // maintains compatibility with 4.5
-            var missingValue = (TraceOptions)0x01;
-            listener.TraceOutputOptions = missingValue;
-
-            missingValue = (TraceOptions)0x20;
-            listener.TraceOutputOptions = missingValue;
-
-            var badValue = (TraceOptions)0x80;
-            Assert.Throws<ArgumentOutOfRangeException>(() => listener.TraceOutputOptions = badValue);
+        [Theory]
+        [InlineData((TraceOptions)0x80)]
+        public void TraceOutputOptionsTest_Invalid(TraceOptions options)
+        {
+            var listener = new TestTraceListener();
+            Assert.Throws<ArgumentOutOfRangeException>(() => listener.TraceOutputOptions = options);
         }
 
         [Fact]
@@ -280,6 +287,7 @@ namespace System.Diagnostics.TraceSourceTests
         [InlineData(TraceOptions.Timestamp, 1)]
         [InlineData(TraceOptions.ProcessId | TraceOptions.ThreadId, 2)]
         [InlineData(TraceOptions.DateTime | TraceOptions.Timestamp, 2)]
+        [InlineData(TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.Callstack, 3)]
         public void WriteFooterTest(TraceOptions opts, int flagCount)
         {
             var cache = new TraceEventCache();
@@ -303,6 +311,100 @@ namespace System.Diagnostics.TraceSourceTests
             listener.TraceOutputOptions = opts;
             listener.TraceEvent(cache, "Source", TraceEventType.Critical, 1);
             Assert.Equal(expected, listener.WriteCount);
+        }
+
+        [Fact]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void WriteFooterTest_Callstack()
+        {
+            var cache = new TraceEventCache();
+            var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.Callstack };
+            listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+            listener.Flush();
+
+            Assert.Contains("Callstack=", listener.Output);
+            Assert.Contains(nameof(WriteFooterTest_Callstack), listener.Output);
+        }
+
+        [Fact]
+        public void WriteFooterTest_DateTime()
+        {
+            var cache = new TraceEventCache();
+            var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.DateTime };
+            listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+            listener.Flush();
+
+            Assert.Contains("DateTime=", listener.Output);
+            Assert.Contains(cache.DateTime.ToString("o"), listener.Output);
+        }
+
+        [Fact]
+        public void WriteFooterTest_LogicalOperationStack()
+        {
+            for (int i = 0; i <= 3; i++)
+            {
+                int[] items = Enumerable.Range(42, i).ToArray();
+
+                foreach (int item in items)
+                {
+                    Trace.CorrelationManager.LogicalOperationStack.Push(item.ToString());
+                }
+
+                try
+                {
+                    var cache = new TraceEventCache();
+                    var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.LogicalOperationStack };
+                    listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+                    listener.Flush();
+
+                    Assert.Contains("LogicalOperationStack=", listener.Output);
+                    Assert.Contains(string.Join(", ", items.Reverse()), listener.Output);
+                }
+                finally
+                {
+                    foreach (int _ in items)
+                    {
+                        Trace.CorrelationManager.LogicalOperationStack.Pop();
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void WriteFooterTest_ProcessId()
+        {
+            var cache = new TraceEventCache();
+            var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.ProcessId };
+            listener.TraceOutputOptions = TraceOptions.ProcessId;
+            listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+            listener.Flush();
+
+            Assert.Contains("ProcessId=", listener.Output);
+            Assert.Contains(cache.ProcessId.ToString(), listener.Output);
+        }
+
+        [Fact]
+        public void WriteFooterTest_ThreadId()
+        {
+            var cache = new TraceEventCache();
+            var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.ThreadId };
+            listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+            listener.Flush();
+
+            Assert.Contains("ThreadId=", listener.Output);
+            Assert.Contains(cache.ThreadId.ToString(), listener.Output);
+        }
+
+        [Fact]
+        public void WriteFooterTest_Timestamp()
+        {
+            var cache = new TraceEventCache();
+            var listener = new TestTextTraceListener() { TraceOutputOptions = TraceOptions.Timestamp };
+            listener.TraceEvent(cache, "Source", TraceEventType.Critical, 42);
+            listener.Flush();
+
+            Assert.Contains("Timestamp=", listener.Output);
+            Assert.Contains(cache.Timestamp.ToString(), listener.Output);
         }
     }
 }
