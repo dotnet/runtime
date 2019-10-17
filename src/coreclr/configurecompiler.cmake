@@ -32,7 +32,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         # CMAKE_HOST_SYSTEM_PROCESSOR returns the value of `uname -p` on host.
         if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL amd64)
             if(CLR_CMAKE_TARGET_ARCH STREQUAL "arm" OR CLR_CMAKE_TARGET_ARCH STREQUAL "armel")
-                if($ENV{CROSSCOMPILE} STREQUAL "1")
+                if(CMAKE_CROSSCOMPILING)
                     set(CLR_CMAKE_PLATFORM_UNIX_X86 1)
                 else()
                     set(CLR_CMAKE_PLATFORM_UNIX_AMD64 1)
@@ -67,6 +67,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_LINUX 1)
 
     # Detect Linux ID
+    set(LINUX_ID_FILE "/etc/os-release")
+    if(CMAKE_CROSSCOMPILING)
+        set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
+    endif()
+
+    execute_process(
+        COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
+        OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
             set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)

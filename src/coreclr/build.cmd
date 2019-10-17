@@ -475,17 +475,20 @@ if %__BuildCrossArchNative% EQU 1 (
     if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
     if defined __SkipConfigure goto SkipConfigureCrossBuild
 
-    pushd "%__CrossCompIntermediatesDir%"
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
     set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
+    
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
+        exit /b 1
+    )
     @if defined _echo @echo on
-    popd
 
 :SkipConfigureCrossBuild
-    if not exist "%__CrossCompIntermediatesDir%\install.vcxproj" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross-arch components build project!
+    if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
         exit /b 1
     )
 
@@ -498,18 +501,13 @@ if %__BuildCrossArchNative% EQU 1 (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!_MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-    call %__ProjectDir%\cmake_msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-      /p:PortableBuild=true /maxcpucount^
-      %__CrossCompIntermediatesDir%\install.vcxproj^
-      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__CrossArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+    REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details.
-        echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
         exit /b !errorlevel!
     )
 
@@ -561,15 +559,18 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! !___CrossBuildDefine! "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
+        exit /b 1
+    )
+    
     @if defined _echo @echo on
-    popd
 
 :SkipConfigure
-    if not exist "%__IntermediatesDir%\install.vcxproj" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
+    if not exist "%__IntermediatesDir%\CMakeCache.txt" (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
         exit /b 1
     )
 
@@ -584,15 +585,11 @@ if %__BuildNative% EQU 1 (
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-    call %__ProjectDir%\cmake_msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-      /p:PortableBuild=true /maxcpucount %__IntermediatesDir%\install.vcxproj^
-      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+    REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed. Refer to the build log files for details.
-        echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
         exit /b !errorlevel!
     )
 

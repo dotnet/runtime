@@ -105,32 +105,14 @@ else (WIN32)
           message(FATAL_ERROR "strip not found")
       endif()
 
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-      # Ensure that objcopy is present
-      if (CLR_UNIX_CROSS_BUILD AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-        if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-          find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-          find_program(OBJCOPY objcopy)
-        else()
-          clr_unknown_arch()
-        endif()
-      else()
-        find_program(OBJCOPY objcopy)
-      endif()
-
-      if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
-          message(FATAL_ERROR "objcopy not found")
-      endif()
-
-    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    endif()
 endif(WIN32)
 
 #----------------------------------------------------
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
+include(configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration

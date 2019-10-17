@@ -215,11 +215,9 @@ build_native()
     echo "Commencing build of $message for $__BuildOS.$__BuildArch.$__BuildType in $intermediatesForBuild"
 
     generator=""
-    buildFile="Makefile"
     buildTool="make"
     if [ $__UseNinja == 1 ]; then
         generator="ninja"
-        buildFile="build.ninja"
         if ! buildTool=$(command -v ninja || command -v ninja-build); then
            echo "Unable to locate ninja!" 1>&2
            exit 1
@@ -253,27 +251,35 @@ build_native()
             fi
         fi
 
-
-        pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
 
         scriptDir="$__ProjectRoot/src/pal/tools"
         if [[ $__GccBuild == 0 ]]; then
-            scan_build=
+            echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
+            source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
             if [[ $__StaticAnalyzer == 1 ]]; then
                 scan_build=scan-build
             fi
-            echo "Invoking \"$scriptDir/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion \"$__ClangMinorVersion\" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $scan_build $generator $extraCmakeArguments $__cmakeargs"
-            source "$scriptDir/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion "$__ClangMinorVersion" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $scan_build $generator "$extraCmakeArguments" "$__cmakeargs"
         else
-            echo "Invoking \"$scriptDir/gen-buildsys-gcc.sh\" \"$__ProjectRoot\" $__GccMajorVersion \"$__GccMinorVersion\" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
-            source "$scriptDir/gen-buildsys-gcc.sh" "$__ProjectRoot" "$__GccMajorVersion" "$__CGccMinorVersion" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+            echo "Invoking \"$scriptDir/find-gcc.sh\" $__GccMajorVersion \"$__GccMinorVersion\""
+            source "$scriptDir/find-gcc.sh" $__GccMajorVersion "$__GccMinorVersion"
         fi
-        popd
+        
+        if [[ -n "$__CodeCoverage" ]]; then
+            extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
+        fi
+
+        echo "Invoking \"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
+        source "$scriptDir/gen-buildsys.sh" "$__ProjectRoot" "$intermediatesForBuild" $platformArch $__BuildType $generator $scan_build "$extraCmakeArguments" "$__cmakeargs"
+    
+        if [ $? != 0  ]; then
+            echo "${__ErrMsgPrefix}Failed to generate $message build project!"
+            exit 1
+        fi
     fi
 
-    if [ ! -f "$intermediatesForBuild/$buildFile" ]; then
-        echo "${__ErrMsgPrefix}Failed to generate $message build project!"
+    if [ ! -f "$intermediatesForBuild/CMakeCache.txt" ]; then
+        echo "${__ErrMsgPrefix}Unable to find generated build files for $message project!"
         exit 1
     fi
 
@@ -284,22 +290,27 @@ build_native()
     fi
 
     # Check that the makefiles were created.
-    pushd "$intermediatesForBuild"
 
     if [ $__StaticAnalyzer == 1 ]; then
+        pushd "$intermediatesForBuild"
+
         buildTool="$SCAN_BUILD_COMMAND $buildTool"
+        echo "Executing $buildTool install -j $__NumProc"
+        $buildTool install -j $__NumProc
+
+        popd
+    else
+        echo "Executing cmake --build \"$intermediatesForBuild\" --target install -j $__NumProc"
+
+        cmake --build "$intermediatesForBuild" --target install -j $__NumProc
     fi
-
-    echo "Executing $buildTool install -j $__NumProc"
-
-    $buildTool install -j $__NumProc
+    
     local exit_code=$?
     if [ $exit_code != 0 ]; then
         echo "${__ErrMsgPrefix}Failed to build $message."
         exit $exit_code
     fi
 
-    popd
 }
 
 build_cross_architecture_components()
