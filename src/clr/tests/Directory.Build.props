@@ -16,7 +16,7 @@
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <PackagesDir>$(ProjectDir)..\.packages\</PackagesDir>
+    <PackagesDir>$(ProjectDir)..\..\..\.packages\</PackagesDir>
   </PropertyGroup>
 
   <!-- Common properties -->

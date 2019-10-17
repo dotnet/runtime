@@ -55,7 +55,7 @@
     <!-- Corefx dependencies -->
     <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19466.8</MicrosoftNETCorePlatformsPackageVersion>
     <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19466.8</runtimenativeSystemIOPortsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha1.19477.7</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha1.19508.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>5.0.0-alpha1.19508.1</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha1.19501.13</MicrosoftNETCoreTargetsPackageVersion>
