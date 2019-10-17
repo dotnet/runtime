@@ -1,7 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using FluentAssertions;
 using Xunit;
@@ -160,6 +166,42 @@ namespace Microsoft.NET.HostModel.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ItGeneratesExecutableImage()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+
+                chmod(sourceAppHostMock, Convert.ToInt32("444", 8)) // make it readonly: -r--r--r--
+                    .Should()
+                    .NotBe(-1);
+
+                GetLastError()
+                    .Should()
+                    .NotBe(4); // EINTR
+
+                GetFilePermissionValue(sourceAppHostMock)
+                    .Should()
+                    .Be(Convert.ToInt32("444", 8));
+
+                HostWriter.CreateAppHost(
+                    sourceAppHostMock,
+                    destinationFilePath,
+                    appBinaryFilePath,
+                    windowsGraphicalUserInterface: true);
+
+                GetFilePermissionValue(destinationFilePath)
+                    .Should()
+                    .Be(Convert.ToInt32("755", 8));
+            }
+
+            int GetLastError() => Marshal.GetLastWin32Error();
+        }
+
         private string PrepareAppHostMockFile(TestDirectory testDirectory, Action<byte[]> customize = null)
         {
             // For now we're testing the AppHost on Windows PE files only.
@@ -205,6 +247,64 @@ namespace Microsoft.NET.HostModel.Tests
             0, 0, 0, 2, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
             0, 112, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 3, 0, 96, 193, 0, 0, 24,
             0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0 };
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chmod(string pathname, int mode);
+
+        private static int GetFilePermissionValue(string path)
+        {
+            var modeValue = CoreFxFileStatusProvider.GetFileMode(path);
+
+            // st_mode is typically a 16-bits value, high 4 bits are filetype and low 12
+            // bits are permission. we will clear first 20 bits (a byte and a nibble) with
+            // the following mask:
+            modeValue &= 0x1ff;
+
+            modeValue
+                .Should()
+                .BeInRange(0, 511);
+
+            return modeValue;
+        }
+
+        private static class CoreFxFileStatusProvider
+        {
+            private static FieldInfo s_fileSystem_fileStatusField, s_fileStatus_fileStatusField, s_fileStatusModeField;
+
+            static CoreFxFileStatusProvider()
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    try
+                    {
+                        s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatusModeField = s_fileStatus_fileStatusField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Cannot setup _fileStatus via private reflection from CoreFX. Verify if the FileSystem._fileStatus._fileStatus.Mode chain is intact in CoreFX, otherwise adjust this implementation", ex);
+                    }
+                }
+            }
+
+            public static int GetFileMode(string path)
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(path);
+                    _ = fileInfo.IsReadOnly; // this is to implicitly initialize FileInfo -> FileSystem -> fielStatus instance
+
+                    return (int)s_fileStatusModeField.GetValue(
+                               s_fileStatus_fileStatusField.GetValue(
+                                   s_fileSystem_fileStatusField.GetValue(fileInfo)));
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Cannot get stat (2) st_mode via private reflection from CoreFX. Verify if the FileSystem._fileStatus.Initialize logic is exercised via FileInfo.IsReadOnly in CoreFX, otherwise adjust this implementation.", ex);
+                }
+            }
+        }
 
         private class TestDirectory : IDisposable
         {

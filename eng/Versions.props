@@ -28,6 +28,10 @@
     <MicrosoftDotNetBuildTasksFeedPackageVersion>5.0.0-beta.19515.2</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>5.0.0-beta.19515.2</MicrosoftDotNetBuildTasksPackagingPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19515.2</MicrosoftDotNetVersionToolsTasksPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>5.0.0-beta.19515.2</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <!-- Testing -->
+    <XUnitPackageVersion>2.4.1</XUnitPackageVersion>
+    <MicrosoftDotNetPlatformAbstractionsPackageVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsPackageVersion>
     <!-- sourcelink -->
     <MicrosoftSourceLinkVersion>1.0.0-beta2-19367-01</MicrosoftSourceLinkVersion>
     <!-- corefx -->
@@ -71,7 +75,6 @@
     <MicrosoftBuildFrameworkPackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildFrameworkPackageVersion>
     <MicrosoftBuildTasksCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildTasksCorePackageVersion>
     <MicrosoftBuildUtilitiesCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildUtilitiesCorePackageVersion>
-    <MicrosoftDotNetPlatformAbstractionsPackageVersion>1.1.1</MicrosoftDotNetPlatformAbstractionsPackageVersion>
     <NugetProjectModelPackageVersion>4.9.4</NugetProjectModelPackageVersion>
     <NugetPackagingPackageVersion>4.9.4</NugetPackagingPackageVersion>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
