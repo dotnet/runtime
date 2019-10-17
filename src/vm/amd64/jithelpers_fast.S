@@ -565,15 +565,14 @@ NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
 
     END_PROLOGUE
 
-        sub     rsp, PAGE_SIZE         // rsp points to some byte on the first unprobed page
-        or      rsp, (PAGE_SIZE - 1)   // rsp points to the **highest address** on the first unprobed page
+        and     rsp, -PAGE_SIZE        // rsp points to the **lowest address** on the last probed page
                                        // This is done to make the following loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-        test    dword ptr [rsp], eax
-        sub     rsp, PAGE_SIZE         // rsp points to the highest address of the **next page** to probe
+        sub     rsp, PAGE_SIZE         // rsp points to the lowest address of the **next page** to probe
+        test    dword ptr [rsp], eax   // rsp points to the lowest address on the **last probed** page
         cmp     rsp, r11
-        jge     LOCAL_LABEL(ProbeLoop) // if (rsp >= r11), then we need to probe the page pointed to by rsp.
+        jg      LOCAL_LABEL(ProbeLoop) // if (rsp > r11), then we need to probe at least one more page.
 
         RESET_FRAME_WITH_RBP
         ret

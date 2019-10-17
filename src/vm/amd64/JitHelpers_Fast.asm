@@ -1011,15 +1011,15 @@ LEAF_ENTRY JIT_StackProbe, _TEXT
         ;
         ; NOTE: this helper will probe at least one page below the one pointed by rsp.
 
-        lea     rax, [rsp - PAGE_SIZE] ; rax points to some byte on the first unprobed page
-        or      rax, (PAGE_SIZE - 1)   ; rax points to the **highest address** on the first unprobed page
+        mov     rax, rsp               ; rax points to some byte on the last probed page
+        and     rax, -PAGE_SIZE        ; rax points to the **lowest address** on the last probed page
                                        ; This is done to make the following loop end condition simpler.
 
 ProbeLoop:
-        test    dword ptr [rax], eax
-        sub     rax, PAGE_SIZE         ; rax points to the highest address of the **next page** to probe
+        sub     rax, PAGE_SIZE         ; rax points to the lowest address of the **next page** to probe
+        test    dword ptr [rax], eax   ; rax points to the lowest address on the **last probed** page
         cmp     rax, r11
-        jge     ProbeLoop              ; if (rax >= r11), then we need to probe the page pointed to by rax.
+        jg      ProbeLoop              ; If (rax > r11), then we need to probe at least one more page.
 
         ret
 
