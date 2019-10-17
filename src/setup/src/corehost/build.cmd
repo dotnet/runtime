@@ -4,9 +4,6 @@ setlocal
 :SetupArgs
 :: Initialize the args that will be passed to cmake
 set __nativeWindowsDir=%~dp0Windows
-set __binDir=%~dp0..\..\..\..\artifacts\bin
-set __objDir=%~dp0..\..\..\..\artifacts\obj
-set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
@@ -40,6 +37,7 @@ if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_L
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
+if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -87,6 +85,15 @@ set __VSVersion=15 2017
 call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 
 :SetupDirs
+
+if %__rootDir% == "" (
+    echo Root directory must be provided via the rootDir parameter.
+    exit /b 1
+)
+
+set __binDir=%__rootDir%\artifacts\bin
+set __objDir=%__rootDir%\artifacts\obj
+
 :: Setup to cmake the native components
 echo Commencing build of corehost
 echo.
@@ -136,8 +143,6 @@ goto :Failure
 :BuildNativeProj
 :: Build the project created by Cmake
 set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
-
-cd %__rootDir%
 
 SET __NativeBuildArgs=/t:rebuild
 if /i "%__IncrementalNativeBuild%" == "1" SET __NativeBuildArgs=
