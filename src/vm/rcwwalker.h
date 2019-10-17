@@ -46,7 +46,7 @@ public :
     static void OnEEShutdown();
 
     //
-    // Send out a AfterAddRef callback to notify Jupiter we've done a AddRef
+    // Send out a AddRefFromTrackerSource callback to notify Jupiter we've done a AddRef
     // We should do this *after* we made a AddRef because we should never
     // be in a state where reported refs > actual refs
     //
@@ -63,13 +63,13 @@ public :
         IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
         if (pJupiterObject)
         {
-            STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::AfterAddRef (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
-            pJupiterObject->AfterAddRef();
+            STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::AddRefFromTrackerSource (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
+            pJupiterObject->AddRefFromTrackerSource();
         }
     }
     
     //
-    // Send out BeforeRelease callback for every cached interface pointer
+    // Send out ReleaseFromTrackerSource callback for every cached interface pointer
     // This needs to be made before call Release because we should never be in a 
     // state that reported refs > actual refs 
     //
@@ -85,8 +85,8 @@ public :
         IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
         if (pJupiterObject)
         {
-            STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::BeforeRelease before Release (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
-            pJupiterObject->BeforeRelease();
+            STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::ReleaseFromTrackerSource before Release (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
+            pJupiterObject->ReleaseFromTrackerSource();
         }
     }
     
