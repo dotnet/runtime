@@ -625,7 +625,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 
     // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
     //
-    switch (treeNode->gtIntrinsic.gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
     {
         case CORINFO_INTRINSIC_Abs:
             genConsumeOperands(treeNode->AsOp());

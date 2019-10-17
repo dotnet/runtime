@@ -7502,12 +7502,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     if (opts.IsReadyToRun())
                     {
                         noway_assert(callInfo->kind == CORINFO_CALL);
-                        call->gtIntrinsic.gtEntryPoint = callInfo->codePointerLookup.constLookup;
+                        call->AsIntrinsic()->gtEntryPoint = callInfo->codePointerLookup.constLookup;
                     }
                     else
                     {
-                        call->gtIntrinsic.gtEntryPoint.addr       = nullptr;
-                        call->gtIntrinsic.gtEntryPoint.accessType = IAT_VALUE;
+                        call->AsIntrinsic()->gtEntryPoint.addr       = nullptr;
+                        call->AsIntrinsic()->gtEntryPoint.accessType = IAT_VALUE;
                     }
                 }
 #endif
@@ -19894,7 +19894,7 @@ bool Compiler::IsMathIntrinsic(CorInfoIntrinsics intrinsicId)
 
 bool Compiler::IsMathIntrinsic(GenTree* tree)
 {
-    return (tree->OperGet() == GT_INTRINSIC) && IsMathIntrinsic(tree->gtIntrinsic.gtIntrinsicId);
+    return (tree->OperGet() == GT_INTRINSIC) && IsMathIntrinsic(tree->AsIntrinsic()->gtIntrinsicId);
 }
 
 //------------------------------------------------------------------------
