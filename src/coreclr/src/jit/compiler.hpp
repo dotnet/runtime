@@ -1338,7 +1338,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
-        gtLngCon.gtLconVal = (INT64)(INT32)gtLngCon.gtLconVal;
+        AsLngCon()->gtLconVal = (INT64)(INT32)AsLngCon()->gtLconVal;
     }
 #endif // defined(_HOST_64BIT_) && !defined(_TARGET_64BIT_)
 
