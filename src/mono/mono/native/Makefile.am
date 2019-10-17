@@ -114,7 +114,7 @@ gss_sources = \
 
 if ENABLE_GSS
 macos_sources += $(gss_sources)
-
+linux_sources += $(gss_sources)
 ios_sources += $(gss_sources)
 endif
 
