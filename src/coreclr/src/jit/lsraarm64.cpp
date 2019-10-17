@@ -544,7 +544,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(size->isContained());
                 srcCount = 0;
 
-                size_t sizeVal = size->gtIntCon.gtIconVal;
+                size_t sizeVal = size->AsIntCon()->gtIconVal;
 
                 if (sizeVal != 0)
                 {

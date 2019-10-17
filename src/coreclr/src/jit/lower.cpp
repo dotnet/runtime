@@ -2284,7 +2284,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
-    arg1->gtIntCon.gtIconVal = tailCallHelperFlags;
+    arg1->AsIntCon()->gtIconVal = tailCallHelperFlags;
 
     // arg 2 == numberOfNewStackArgsWords
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 3);
@@ -2292,7 +2292,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     GenTree* arg2 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->gtOper == GT_CNS_INT);
 
-    arg2->gtIntCon.gtIconVal = nNewStkArgsWords;
+    arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
 
 #ifdef DEBUG
     // arg 3 == numberOfOldStackArgsWords
@@ -4630,7 +4630,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
         divMod->SetOper(newOper);
-        divisor->gtIntCon.SetIconValue(divisorValue);
+        divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
         return true;
     }
@@ -4788,7 +4788,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         return nullptr;
     }
 
-    ssize_t divisorValue = divisor->gtIntCon.IconValue();
+    ssize_t divisorValue = divisor->AsIntCon()->IconValue();
 
     if (divisorValue == -1 || divisorValue == 0)
     {
@@ -4970,7 +4970,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     if (isDiv)
     {
         // perform the division by right shifting the adjusted dividend
-        divisor->gtIntCon.SetIconValue(genLog2(absDivisorValue));
+        divisor->AsIntCon()->SetIconValue(genLog2(absDivisorValue));
 
         newDivMod = comp->gtNewOperNode(GT_RSH, type, adjustedDividend, divisor);
         ContainCheckShiftRotate(newDivMod->AsOp());
@@ -4987,7 +4987,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // divisor % dividend = dividend - divisor x (dividend / divisor)
         // divisor x (dividend / divisor) translates to (dividend >> log2(divisor)) << log2(divisor)
         // which simply discards the low log2(divisor) bits, that's just dividend & ~(divisor - 1)
-        divisor->gtIntCon.SetIconValue(~(absDivisorValue - 1));
+        divisor->AsIntCon()->SetIconValue(~(absDivisorValue - 1));
 
         newDivMod = comp->gtNewOperNode(GT_SUB, type,
                                         comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet()),
@@ -5617,7 +5617,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
     switch (tree1->OperGet())
     {
         case GT_CNS_INT:
-            return tree1->gtIntCon.gtIconVal == tree2->gtIntCon.gtIconVal &&
+            return tree1->AsIntCon()->gtIconVal == tree2->AsIntCon()->gtIconVal &&
                    tree1->IsIconHandle() == tree2->IsIconHandle();
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:

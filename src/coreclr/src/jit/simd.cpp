@@ -2139,7 +2139,7 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
     GenTree* op1IndexNode = op1Index->Index();
     GenTree* op2IndexNode = op2Index->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
-        op1IndexNode->gtIntCon.gtIconVal + 1 == op2IndexNode->gtIntCon.gtIconVal)
+        op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal)
     {
         if (op1ArrayRef->OperGet() == GT_FIELD && op2ArrayRef->OperGet() == GT_FIELD &&
             areFieldsParentsLocatedSame(op1ArrayRef, op2ArrayRef))
@@ -2240,7 +2240,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         assert(index->OperGet() == GT_CNS_INT);
 
         GenTree* checkIndexExpr = nullptr;
-        unsigned indexVal       = (unsigned)(index->gtIntCon.gtIconVal);
+        unsigned indexVal       = (unsigned)(index->AsIntCon()->gtIconVal);
         offset                  = indexVal * genTypeSize(tree->TypeGet());
         GenTree* arrayRef       = tree->AsIndex()->Arr();
 

@@ -7323,7 +7323,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             GenTree* cns1Tree = addr->AsOp()->gtOp1;
             if (!cns1Tree->IsIconHandle())
             {
-                if (!fgIsBigOffset(cns1Tree->gtIntCon.gtIconVal))
+                if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
                 {
                     // Op1 was an ordinary small constant
                     return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -7338,7 +7338,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                     // Is this an addition of a handle and constant
                     if (!cns2Tree->IsIconHandle())
                     {
-                        if (!fgIsBigOffset(cns2Tree->gtIntCon.gtIconVal))
+                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
                         {
                             // Op2 was an ordinary small constant
                             return false; // we can't have a null address
@@ -7357,7 +7357,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 // Is this an addition of a small constant
                 if (!cns2Tree->IsIconHandle())
                 {
-                    if (!fgIsBigOffset(cns2Tree->gtIntCon.gtIconVal))
+                    if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
                     {
                         // Op2 was an ordinary small constant
                         return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
@@ -7407,7 +7407,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         if (handleNode->OperGet() == GT_CNS_INT)
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
-            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->gtIntCon.gtCompileTimeHandle);
+            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
@@ -7443,7 +7443,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtCallArgs->GetNext()->GetNode();
         noway_assert(tokenNode->OperGet() == GT_CNS_INT);
-        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->gtIntCon.gtCompileTimeHandle);
+        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
 
     // Verify using the ldftnToken gives us all of what we used to get
@@ -9725,7 +9725,7 @@ void Compiler::fgSimpleLowering()
                     noway_assert(arrLen->ArrLenOffset() == OFFSETOF__CORINFO_Array__length ||
                                  arrLen->ArrLenOffset() == OFFSETOF__CORINFO_String__stringLen);
 
-                    if ((arr->gtOper == GT_CNS_INT) && (arr->gtIntCon.gtIconVal == 0))
+                    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
                     {
                         // If the array is NULL, then we should get a NULL reference
                         // exception when computing its length.  We need to maintain
@@ -21220,7 +21220,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 else
                 {
                     noway_assert((op1->gtOper == GT_CNS_INT) &&
-                                 ((op1->gtIntCon.gtIconVal == 0) || (op1->gtIntCon.gtIconVal == 1)));
+                                 ((op1->AsIntCon()->gtIconVal == 0) || (op1->AsIntCon()->gtIconVal == 1)));
                 }
                 break;
 
