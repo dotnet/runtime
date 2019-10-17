@@ -299,8 +299,8 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
     if (locationOp == GT_LCL_FLD)
     {
-        store->gtLclFld.gtLclOffs  = var->gtLclFld.gtLclOffs;
-        store->gtLclFld.gtFieldSeq = var->gtLclFld.gtFieldSeq;
+        store->AsLclFld()->gtLclOffs  = var->AsLclFld()->gtLclOffs;
+        store->AsLclFld()->gtFieldSeq = var->AsLclFld()->gtFieldSeq;
     }
 
     copyFlags(store, var, GTF_LIVENESS_MASK);

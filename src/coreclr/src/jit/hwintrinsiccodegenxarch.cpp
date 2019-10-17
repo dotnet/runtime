@@ -686,7 +686,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
                     GenTreeLclFld* lclField = op2->AsLclFld();
 
                     varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclFld.gtLclOffs;
+                    offset = lclField->AsLclFld()->gtLclOffs;
                     break;
                 }
 
@@ -853,7 +853,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                     GenTreeLclFld* lclField = op2->AsLclFld();
 
                     varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclFld.gtLclOffs;
+                    offset = lclField->AsLclFld()->gtLclOffs;
                     break;
                 }
 
@@ -1019,7 +1019,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
                     GenTreeLclFld* lclField = op2->AsLclFld();
 
                     varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclFld.gtLclOffs;
+                    offset = lclField->AsLclFld()->gtLclOffs;
                     break;
                 }
 
@@ -1146,7 +1146,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
                     GenTreeLclFld* lclField = op3->AsLclFld();
 
                     varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclFld.gtLclOffs;
+                    offset = lclField->AsLclFld()->gtLclOffs;
                     break;
                 }
 

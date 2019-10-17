@@ -584,7 +584,7 @@ AGAIN:
 
         case GT_LCL_FLD:
 
-            offs += tree->gtLclFld.gtLclOffs;
+            offs += tree->AsLclFld()->gtLclOffs;
             goto LCL;
 
         LCL:
@@ -691,7 +691,7 @@ AGAIN:
 
         case GT_LCL_FLD:
         case GT_STORE_LCL_FLD:
-            offs += tree->gtLclFld.gtLclOffs;
+            offs += tree->AsLclFld()->gtLclOffs;
             goto LCL;
 
         LCL:
@@ -840,7 +840,7 @@ AGAIN:
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_FLD:
-            offs += tree->gtLclFld.gtLclOffs;
+            offs += tree->AsLclFld()->gtLclOffs;
             goto LCL;
 
         LCL:
@@ -1133,7 +1133,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                     GenTreeLclFld* lclField = rmOp->AsLclFld();
 
                     varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclFld.gtLclOffs;
+                    offset = lclField->AsLclFld()->gtLclOffs;
                     break;
                 }
 
