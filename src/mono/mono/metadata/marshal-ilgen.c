@@ -59,8 +59,19 @@ enum {
 };
 #undef OPDEF
 
-#define IS_IN(t) ((t->attrs & PARAM_ATTRIBUTE_IN) || !(t->attrs & PARAM_ATTRIBUTE_OUT))
-#define IS_OUT(t) ((t->attrs & PARAM_ATTRIBUTE_OUT) || !(t->attrs & PARAM_ATTRIBUTE_IN))
+static gboolean
+is_in (const MonoType *t)
+{
+	const guint32 attrs = t->attrs;
+	return (attrs & PARAM_ATTRIBUTE_IN) || !(attrs & PARAM_ATTRIBUTE_OUT);
+}
+
+static gboolean
+is_out (const MonoType *t)
+{
+	const guint32 attrs = t->attrs;
+	return (attrs & PARAM_ATTRIBUTE_OUT) || !(attrs & PARAM_ATTRIBUTE_IN);
+}
 
 static GENERATE_GET_CLASS_WITH_CACHE (fixed_buffer_attribute, "System.Runtime.CompilerServices", "FixedBufferAttribute");
 static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
@@ -5148,7 +5159,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->byref) {
 			int old_handle_value_slot = mono_mb_add_local (mb, int_type);
 
-			if (!IS_IN (t)) {
+			if (!is_in (t)) {
 				mono_mb_emit_icon (mb, 0);
 				mono_mb_emit_stloc (mb, conv_arg);
 			} else {
@@ -5200,7 +5211,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (t->byref){
 			/* If there was SafeHandle on input we have to release the reference to it */
-			if (IS_IN (t)) {
+			if (is_in (t)) {
 				mono_mb_emit_ldloc (mb, dar_release_slot);
 				label_next = mono_mb_emit_branch (mb, CEE_BRFALSE);
 				mono_mb_emit_ldarg (mb, argnum);
@@ -5209,7 +5220,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_patch_branch (mb, label_next);
 			}
 
-			if (IS_OUT (t)) {
+			if (is_out (t)) {
 				ERROR_DECL (local_error);
 				MonoMethod *ctor;
 			
@@ -5217,7 +5228,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 * If the SafeHandle was marshalled on input we can skip the marshalling on
 				 * output if the handle value is identical.
 				 */
-				if (IS_IN (t)) {
+				if (is_in (t)) {
 					int old_handle_value_slot = dar_release_slot + 1;
 					mono_mb_emit_ldloc (mb, old_handle_value_slot);
 					mono_mb_emit_ldloc (mb, conv_arg);
@@ -5250,7 +5261,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldloc (mb, conv_arg);
 				mono_mb_emit_byte (mb, CEE_STIND_I);
 
-				if (IS_IN (t)) {
+				if (is_in (t)) {
 					mono_mb_patch_branch (mb, label_next);
 				}
 			}
