@@ -3621,7 +3621,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
 
-            node->gtCmpXchg.gtOpLocation->gtFlags |= GTF_DONT_CSE;
+            node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
             retNode = node;
             break;
         }
