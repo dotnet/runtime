@@ -1628,7 +1628,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_ARGPLACE:
-            structVal->gtArgPlace.gtArgPlaceClsHnd = structHnd;
+            structVal->AsArgPlace()->gtArgPlaceClsHnd = structHnd;
             break;
 
         case GT_INDEX:
