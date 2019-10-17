@@ -2098,7 +2098,7 @@ void Compiler::optAssertionGen(GenTree* tree)
 
         case GT_ARR_ELEM:
             // An array element reference can create a non-null assertion
-            assertionInfo = optCreateAssertion(tree->gtArrElem.gtArrObj, nullptr, OAK_NOT_EQUAL);
+            assertionInfo = optCreateAssertion(tree->AsArrElem()->gtArrObj, nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_CALL:

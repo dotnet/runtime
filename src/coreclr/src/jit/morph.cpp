@@ -14590,21 +14590,21 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         break;
 
         case GT_ARR_ELEM:
-            tree->gtArrElem.gtArrObj = fgMorphTree(tree->gtArrElem.gtArrObj);
+            tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);
 
             unsigned dim;
-            for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
+            for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
-                tree->gtArrElem.gtArrInds[dim] = fgMorphTree(tree->gtArrElem.gtArrInds[dim]);
+                tree->AsArrElem()->gtArrInds[dim] = fgMorphTree(tree->AsArrElem()->gtArrInds[dim]);
             }
 
             tree->gtFlags &= ~GTF_CALL;
 
-            tree->gtFlags |= tree->gtArrElem.gtArrObj->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsArrElem()->gtArrObj->gtFlags & GTF_ALL_EFFECT;
 
-            for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
+            for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
-                tree->gtFlags |= tree->gtArrElem.gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
+                tree->gtFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (fgGlobalMorph)

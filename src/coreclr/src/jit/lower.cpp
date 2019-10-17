@@ -5179,7 +5179,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 {
     // This will assert if we don't have an ArrElem node
     GenTreeArrElem*     arrElem = node->AsArrElem();
-    const unsigned char rank    = arrElem->gtArrElem.gtArrRank;
+    const unsigned char rank    = arrElem->gtArrRank;
 
     JITDUMP("Lowering ArrElem\n");
     JITDUMP("============\n");
@@ -5207,7 +5207,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
     for (unsigned char dim = 0; dim < rank; dim++)
     {
-        GenTree* indexNode = arrElem->gtArrElem.gtArrInds[dim];
+        GenTree* indexNode = arrElem->gtArrInds[dim];
 
         // Use the original arrObjNode on the 0th ArrIndex node, and clone it for subsequent ones.
         GenTree* idxArrObjNode;
@@ -5223,16 +5223,15 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
         // Next comes the GT_ARR_INDEX node.
         GenTreeArrIndex* arrMDIdx = new (comp, GT_ARR_INDEX)
-            GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank, arrElem->gtArrElem.gtArrElemType);
+            GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank, arrElem->gtArrElemType);
         arrMDIdx->gtFlags |= ((idxArrObjNode->gtFlags | indexNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrMDIdx);
 
         GenTree* offsArrObjNode = comp->gtClone(arrObjNode);
         BlockRange().InsertBefore(insertionPoint, offsArrObjNode);
 
-        GenTreeArrOffs* arrOffs =
-            new (comp, GT_ARR_OFFSET) GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank,
-                                                     arrElem->gtArrElem.gtArrElemType);
+        GenTreeArrOffs* arrOffs = new (comp, GT_ARR_OFFSET)
+            GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank, arrElem->gtArrElemType);
         arrOffs->gtFlags |= ((prevArrOffs->gtFlags | arrMDIdx->gtFlags | offsArrObjNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrOffs);
 
@@ -5241,8 +5240,8 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
     // Generate the LEA and make it reverse evaluation, because we want to evaluate the index expression before the
     // base.
-    unsigned scale  = arrElem->gtArrElem.gtArrElemSize;
-    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrElem.gtArrElemType, arrElem->gtArrElem.gtArrRank);
+    unsigned scale  = arrElem->gtArrElemSize;
+    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrElemType, arrElem->gtArrRank);
 
     GenTree* leaIndexNode = prevArrOffs;
     if (!jitIsScaleIndexMul(scale))
