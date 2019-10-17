@@ -17,6 +17,10 @@
   -->
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
+  <ItemGroup>
+    <SolutionBuildTargets Condition="'$(BuildTests)' == 'true'" Include="BuildTests" />
+  </ItemGroup>
+
   <Target Name="CheckSpecifiedSubsetValidity"
           DependsOnTargets="
             FindInvalidSpecifiedSubsetNames;

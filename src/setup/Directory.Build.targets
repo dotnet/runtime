@@ -6,8 +6,8 @@
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 
-  <!-- Provide no-op BuildAndTest target to allow the managed libraries build to still use it. -->
-  <Target Name="BuildAndTest" />
+  <!-- Provide no-op BuildTests target to allow the managed libraries build to still use it. -->
+  <Target Name="BuildTests" />
 
   <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskFile)" />
   <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
