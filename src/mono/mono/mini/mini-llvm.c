@@ -6888,7 +6888,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PCMPGTB: {
 			LLVMValueRef pcmp;
 			LLVMTypeRef retType;
-			int cmpOp;
+			LLVMIntPredicate cmpOp;
 
 			if (ins->opcode == OP_PCMPGTB)
 				cmpOp = LLVMIntSGT;
@@ -10705,29 +10705,27 @@ static MonoCPUFeatures cpu_features;
 
 MonoCPUFeatures mono_llvm_get_cpu_features (void)
 {
-	if (cpu_features == 0) {
-		CpuFeatureAliasFlag flags_map [] = {
+	static const CpuFeatureAliasFlag flags_map [] = {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-			{ "sse",	MONO_CPU_X86_SSE },
-			{ "sse2",	MONO_CPU_X86_SSE2 },
-			{ "pclmul",	MONO_CPU_X86_PCLMUL },
-			{ "aes",	MONO_CPU_X86_AES },
-			{ "sse2",	MONO_CPU_X86_SSE2 },
-			{ "sse3",	MONO_CPU_X86_SSE3 },
-			{ "ssse3",	MONO_CPU_X86_SSSE3 },
-			{ "sse4.1",	MONO_CPU_X86_SSE41 },
-			{ "sse4.2",	MONO_CPU_X86_SSE42 },
-			{ "popcnt",	MONO_CPU_X86_POPCNT },
-			{ "avx",	MONO_CPU_X86_AVX },
-			{ "avx2",	MONO_CPU_X86_AVX2 },
-			{ "fma",	MONO_CPU_X86_FMA },
-			{ "lzcnt",	MONO_CPU_X86_LZCNT },
-			{ "bmi",	MONO_CPU_X86_BMI1 },
-			{ "bmi2",	MONO_CPU_X86_BMI2 },
+		{ "sse",	MONO_CPU_X86_SSE },
+		{ "sse2",	MONO_CPU_X86_SSE2 },
+		{ "pclmul",	MONO_CPU_X86_PCLMUL },
+		{ "aes",	MONO_CPU_X86_AES },
+		{ "sse2",	MONO_CPU_X86_SSE2 },
+		{ "sse3",	MONO_CPU_X86_SSE3 },
+		{ "ssse3",	MONO_CPU_X86_SSSE3 },
+		{ "sse4.1",	MONO_CPU_X86_SSE41 },
+		{ "sse4.2",	MONO_CPU_X86_SSE42 },
+		{ "popcnt",	MONO_CPU_X86_POPCNT },
+		{ "avx",	MONO_CPU_X86_AVX },
+		{ "avx2",	MONO_CPU_X86_AVX2 },
+		{ "fma",	MONO_CPU_X86_FMA },
+		{ "lzcnt",	MONO_CPU_X86_LZCNT },
+		{ "bmi",	MONO_CPU_X86_BMI1 },
+		{ "bmi2",	MONO_CPU_X86_BMI2 },
 #endif
-		};
-		cpu_features = mono_llvm_check_cpu_features (flags_map, sizeof (flags_map) / sizeof (CpuFeatureAliasFlag));
-		cpu_features |= MONO_CPU_INITED;
-	}
+	};
+	if (!cpu_features)
+		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
 	return cpu_features;
 }

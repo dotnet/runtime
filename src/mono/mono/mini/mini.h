@@ -2846,6 +2846,8 @@ typedef enum {
 #endif
 } MonoCPUFeatures;
 
+G_ENUM_FUNCTIONS (MonoCPUFeatures)
+
 MonoCPUFeatures mini_get_cpu_features (MonoCompile* cfg);
 
 enum {

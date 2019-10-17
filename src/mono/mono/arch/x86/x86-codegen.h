@@ -1114,7 +1114,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 	} while (0)
 
 /*
- * Note: x86_clear_reg () chacnges the condition code!
+ * Note: x86_clear_reg () changes the condition code.
  */
 #define x86_clear_reg(inst,reg) x86_alu_reg_reg((inst), X86_XOR, (reg), (reg))
 
