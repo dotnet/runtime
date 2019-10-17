@@ -42,19 +42,19 @@ SVAL_IMPL_INIT(BOOL,            RCWWalker, s_bIsGlobalPeggingOn, TRUE);     // D
 
 #ifndef DACCESS_COMPILE
 
-// Our implementation of ICLRServices provided to Jupiter via IJupiterGCManager::SetCLRServices.
+// Our implementation of ICLRServices provided to Jupiter via IJupiterGCManager::SetReferenceTrackerHost.
 class CLRServicesImpl : public IUnknownCommon<ICLRServices>
 {
 private:
-    // flags for CollectGarbage(DWORD dwFlags)
+    // flags for DisconnectUnusedReferenceSources(DWORD dwFlags)
     enum {
         GC_FOR_APPX_SUSPEND = 0x00000001
     };
 public:
-    STDMETHOD(GarbageCollect)(DWORD dwFlags);
-    STDMETHOD(FinalizerThreadWait)();
-    STDMETHOD(DisconnectRCWsInCurrentApartment)();
-    STDMETHOD(CreateManagedReference)(IUnknown *pJupiterObject, ICCW **ppNewReference);
+    STDMETHOD(DisconnectUnusedReferenceSources)(DWORD dwFlags);
+    STDMETHOD(ReleaseDisconnectedReferenceSources)();
+    STDMETHOD(NotifyEndOfReferenceTrackingOnThread)();
+    STDMETHOD(GetTrackerTarget)(IUnknown *pJupiterObject, ICCW **ppNewReference);
     STDMETHOD(AddMemoryPressure)(UINT64 bytesAllocated);
     STDMETHOD(RemoveMemoryPressure)(UINT64 bytesAllocated);
 };
@@ -95,7 +95,7 @@ inline LONG RCWWalker_UnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionPoi
 // Release context-bound RCWs and Jupiter RCWs (which are free-threaded but context-bound)
 // in the current apartment
 //
-STDMETHODIMP CLRServicesImpl::DisconnectRCWsInCurrentApartment()
+STDMETHODIMP CLRServicesImpl::NotifyEndOfReferenceTrackingOnThread()
 {
     CONTRACTL
     {
@@ -114,7 +114,7 @@ STDMETHODIMP CLRServicesImpl::DisconnectRCWsInCurrentApartment()
     return hr;
 }
 
-STDMETHODIMP CLRServicesImpl::GarbageCollect(DWORD dwFlags)
+STDMETHODIMP CLRServicesImpl::DisconnectUnusedReferenceSources(DWORD dwFlags)
 {
     CONTRACTL
     {
@@ -175,7 +175,7 @@ STDMETHODIMP CLRServicesImpl::RemoveMemoryPressure(UINT64 bytesAllocated)
 }
 
 
-STDMETHODIMP CLRServicesImpl::FinalizerThreadWait()
+STDMETHODIMP CLRServicesImpl::ReleaseDisconnectedReferenceSources()
 {
     CONTRACTL
     {
@@ -215,7 +215,7 @@ STDMETHODIMP CLRServicesImpl::FinalizerThreadWait()
 //  ppNewReference  - The ICCW* for the proxy created
 //                    Jupiter will call ICCW to establish a jupiter reference
 //
-STDMETHODIMP CLRServicesImpl::CreateManagedReference(IUnknown *pTarget, ICCW **ppNewReference)
+STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewReference)
 {
     CONTRACTL
     {
@@ -400,7 +400,7 @@ void RCWWalker::OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject)
     if (!s_pGCManager)
     {
         SafeComHolderPreemp<IJupiterGCManager> pGCManager;
-        HRESULT hr = pJupiterObject->GetJupiterGCManager(&pGCManager);
+        HRESULT hr = pJupiterObject->GetReferenceTrackerManager(&pGCManager);
         if (SUCCEEDED(hr))
         {
             if (pGCManager == NULL)
@@ -432,8 +432,8 @@ void RCWWalker::OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject)
                 pCLRServicesImpl.SuppressRelease();
                 pCLRServices.SuppressRelease();
 
-                LOG((LF_INTEROP, LL_INFO100, "\t[RCW Walker] Calling IGCManager::SetCLRServices(0x%p)\n", (void *)pCLRServices));
-                pGCManager->SetCLRServices(pCLRServices);
+                LOG((LF_INTEROP, LL_INFO100, "\t[RCW Walker] Calling IGCManager::SetReferenceTrackerHost(0x%p)\n", (void *)pCLRServices));
+                pGCManager->SetReferenceTrackerHost(pCLRServices);
             }
         }
         else
@@ -468,23 +468,23 @@ void RCWWalker::AfterJupiterRCWCreated(RCW *pRCW)
           
     //
     // Notify Jupiter that we've created a new RCW for this Jupiter object
-    // To avoid surprises, we should notify them before we fire the first AfterAddRef
+    // To avoid surprises, we should notify them before we fire the first AddRefFromTrackerSource
     //
-    STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::Connect (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
-    pJupiterObject->Connect();
+    STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::ConnectFromTrackerSource (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
+    pJupiterObject->ConnectFromTrackerSource();
     
     //
-    // Send out AfterAddRef callbacks to notify Jupiter we've done AddRef for certain interfaces
+    // Send out AddRefFromTrackerSource callbacks to notify Jupiter we've done AddRef for certain interfaces
     // We should do this *after* we made a AddRef because we should never
     // be in a state where report refs > actual refs
     //
 
-    // Send out AfterAddRef for cached IUnknown
+    // Send out AddRefFromTrackerSource for cached IUnknown
     RCWWalker::AfterInterfaceAddRef(pRCW);
     
     if (!pRCW->IsURTAggregated())
     {        
-        // Send out AfterAddRef for cached IJupiterObject
+        // Send out AddRefFromTrackerSource for cached IJupiterObject
         RCWWalker::AfterInterfaceAddRef(pRCW);
     }
     
@@ -519,8 +519,8 @@ void RCWWalker::BeforeJupiterRCWDestroyed(RCW *pRCW)
     // We only call this inside GC, so don't need to switch to preemptive here
     // Ignore the failure as there is no way we can handle that failure during GC
     //
-    STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::Disconnect (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
-    pJupiterObject->Disconnect();
+    STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::DisconnectFromTrackerSource (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
+    pJupiterObject->DisconnectFromTrackerSource();
     
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::BeforeJupiterRCWDestroyed (RCW = 0x%p) ENDS   ----- \n", pRCW));
 }
@@ -611,9 +611,9 @@ void RCWWalker::WalkRCWs()
     //
     // Note: IGCManager should be free-threaded as it will be called on arbitary threads
     //
-    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::OnRCWWalkFinished on 0x%p, bWalkFailed = %d\n", s_pGCManager, bWalkFailed));        
+    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::FindTrackerTargetsCompleted on 0x%p, bWalkFailed = %d\n", s_pGCManager, bWalkFailed));
     _ASSERTE(s_pGCManager);
-    s_pGCManager->OnRCWWalkFinished(bWalkFailed);
+    s_pGCManager->FindTrackerTargetsCompleted(bWalkFailed);
         
     STRESS_LOG0 (LF_INTEROP, LL_INFO100, "[RCW Walker] RCW Walk finished\n");    
 }
@@ -661,17 +661,17 @@ public :
     }
 
     
-    STDMETHOD(OnFoundDependentWrapper)(ICCW *pUnk)
+    STDMETHOD(FoundTrackerTarget)(ICCW *pUnk)
     {
 #ifdef _DEBUG    
-        _ASSERTE(SUCCEEDED(m_hr) && W("Should not receive OnFoundDependentWrapper again if failed"));
+        _ASSERTE(SUCCEEDED(m_hr) && W("Should not receive FoundTrackerTarget again if failed"));
 #endif // _DEBUG
         _ASSERTE(pUnk != NULL);
         
         ComCallWrapper *pCCW = MapIUnknownToWrapper(pUnk);
         _ASSERTE(pCCW != NULL);
 
-        LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] IFindDependentWrappersCallback::OnFoundDependentWrapper being called: RCW 0x%p, CCW 0x%p\n", m_pRCW, pCCW));
+        LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] IFindDependentWrappersCallback::FoundTrackerTarget being called: RCW 0x%p, CCW 0x%p\n", m_pRCW, pCCW));
 
         //
         // Skip dependent handle creation if RCW/CCW points to the same managed object
@@ -772,13 +772,13 @@ HRESULT RCWWalker::WalkOneRCW(RCW *pRCW, RCWRefCache *pRCWRefCache)
 
     STRESS_LOG2 (LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Walking RCW 0x%p (Managed Object = 0x%p)\n", pRCW, OBJECTREFToObject(pRCW->GetExposedObject()));
     
-    LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Calling IJupiterObject::FindDependentWrappers\n", pRCW));
-    hr = pJupiterObject->FindDependentWrappers(&callback);
+    LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Calling IJupiterObject::FindTrackerTargets\n", pRCW));
+    hr = pJupiterObject->FindTrackerTargets(&callback);
 
 #ifdef _DEBUG
     if (FAILED(callback.GetHRESULT()))
     {
-        _ASSERTE(callback.GetHRESULT() == hr && W("FindDepedentWrappers should return the failed result from the callback method OnFoundDependentWrapper"));
+        _ASSERTE(callback.GetHRESULT() == hr && W("FindDepedentWrappers should return the failed result from the callback method FoundTrackerTarget"));
     }
 
     LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Total %d refs created for RCW 0x%p\n", callback.GetCreatedRefs(), pRCW));
@@ -920,12 +920,12 @@ void RCWWalker::OnGCStartedWorker()
     
     // 
     // Let Jupiter know we are about to walk RCWs so that they can lock their reference cache
-    // Note that Jupiter doesn't need to unpeg all CCWs at this point and they can do the pegging/unpegging in OnRCWWalkFinished
+    // Note that Jupiter doesn't need to unpeg all CCWs at this point and they can do the pegging/unpegging in FindTrackerTargetsCompleted
     //
     // Note: IGCManager should be free-threaded as it will be called on arbitary threads
     //
-    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::OnGCStarted on 0x%p\n", s_pGCManager));
-    s_pGCManager->OnGCStarted();   
+    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::ReferenceTrackingStarted on 0x%p\n", s_pGCManager));
+    s_pGCManager->ReferenceTrackingStarted();
     
     // From this point, jupiter decides whether a CCW should be pegged or not as global pegging flag is now off
     s_bIsGlobalPeggingOn = FALSE;
@@ -957,8 +957,8 @@ void RCWWalker::OnGCFinishedWorker()
     // Note: We can IJupiterGCManager from any thread and it is guaranteed by Jupiter
     //
     _ASSERTE(s_pGCManager);
-    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::OnGCFinished on 0x%p\n", s_pGCManager));        
-    s_pGCManager->OnGCFinished();
+    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::ReferenceTrackingCompleted on 0x%p\n", s_pGCManager));
+    s_pGCManager->ReferenceTrackingCompleted();
     
     s_bIsGlobalPeggingOn = TRUE;
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Global pegging flag is on\n"));    

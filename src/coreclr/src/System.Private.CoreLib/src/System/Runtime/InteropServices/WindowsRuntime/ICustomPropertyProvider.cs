@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // (such as the adapter code that addresses behavior differences between IBindableVector & List
     // as well as simplify forwarding code (except for IEnumerable)
     //
-    // 2. ICLRServices.CreateManagedReference will hand out ICCW* of a new instance of this object
+    // 2. ICLRServices.GetTrackerTarget will hand out ICCW* of a new instance of this object
     // and will hold the other object alive
     //
     //
