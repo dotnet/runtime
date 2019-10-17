@@ -1414,11 +1414,11 @@ AGAIN:
                     }
                     break;
                 case GT_LEA:
-                    if (op1->gtAddrMode.gtScale != op2->gtAddrMode.gtScale)
+                    if (op1->AsAddrMode()->gtScale != op2->AsAddrMode()->gtScale)
                     {
                         return false;
                     }
-                    if (op1->gtAddrMode.Offset() != op2->gtAddrMode.Offset())
+                    if (op1->AsAddrMode()->Offset() != op2->AsAddrMode()->Offset())
                     {
                         return false;
                     }
@@ -2094,7 +2094,7 @@ AGAIN:
                     hash += tree->gtIntrinsic.gtIntrinsicId;
                     break;
                 case GT_LEA:
-                    hash += static_cast<unsigned>(tree->gtAddrMode.Offset() << 3) + tree->gtAddrMode.gtScale;
+                    hash += static_cast<unsigned>(tree->AsAddrMode()->Offset() << 3) + tree->AsAddrMode()->gtScale;
                     break;
 
                 case GT_STORE_BLK:
