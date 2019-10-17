@@ -1583,6 +1583,9 @@ private:
     bool isRMWRegOper(GenTree* tree);
     int BuildMul(GenTree* tree);
     void SetContainsAVXFlags(unsigned sizeOfSIMDVector = 0);
+#endif // defined(_TARGET_XARCH_)
+
+#if defined(_TARGET_X86_)
     // Move the last use bit, if any, from 'fromTree' to 'toTree'; 'fromTree' must be contained.
     void CheckAndMoveRMWLastUse(GenTree* fromTree, GenTree* toTree)
     {
@@ -1593,19 +1596,16 @@ private:
         }
         // If 'fromTree' was a lclVar, it must be contained and 'toTree' must match.
         if (!fromTree->isContained() || (toTree == nullptr) || !toTree->OperIs(GT_LCL_VAR) ||
-            (toTree->AsLclVarCommon()->GetLclNum() != toTree->AsLclVarCommon()->GetLclNum()))
+            (fromTree->AsLclVarCommon()->GetLclNum() != toTree->AsLclVarCommon()->GetLclNum()))
         {
             assert(!"Unmatched RMW indirections");
             return;
         }
         // This is probably not necessary, but keeps things consistent.
         fromTree->gtFlags &= ~GTF_VAR_DEATH;
-        if (toTree != nullptr) // Just to be conservative
-        {
-            toTree->gtFlags |= GTF_VAR_DEATH;
-        }
+        toTree->gtFlags |= GTF_VAR_DEATH;
     }
-#endif // defined(_TARGET_XARCH_)
+#endif // _TARGET_X86_
 
 #ifdef FEATURE_SIMD
     int BuildSIMD(GenTreeSIMD* tree);
