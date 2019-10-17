@@ -1265,7 +1265,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 		MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, cinfo->sig_cookie.offset, sig_reg);
 	} else {
-		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, X86_ESP, cinfo->sig_cookie.offset, tmp_sig);
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, X86_ESP, cinfo->sig_cookie.offset, (gsize)tmp_sig);
 	}
 }
 
@@ -5114,7 +5114,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			g_assert (!cfg->compile_aot);
-			x86_mov_membase_imm (code, ins->inst_basereg, ins->inst_offset, (guint32)&ss_trampoline, 4);
+			x86_mov_membase_imm (code, ins->inst_basereg, ins->inst_offset, (gsize)&ss_trampoline, 4);
 		}
 
 		if (cfg->arch.bp_tramp_var) {
@@ -5123,7 +5123,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			g_assert (!cfg->compile_aot);
-			x86_mov_membase_imm (code, ins->inst_basereg, ins->inst_offset, (guint32)&bp_trampoline, 4);
+			x86_mov_membase_imm (code, ins->inst_basereg, ins->inst_offset, (gsize)&bp_trampoline, 4);
 		}
 	}
 
@@ -5466,7 +5466,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done)
-					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gsize)item->key);
 				item->jmp_code = code;
 				x86_branch8 (code, X86_CC_NE, 0, FALSE);
 				if (item->has_target_code)
@@ -5475,7 +5475,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
 			} else {
 				if (fail_tramp) {
-					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gsize)item->key);
 					item->jmp_code = code;
 					x86_branch8 (code, X86_CC_NE, 0, FALSE);
 					if (item->has_target_code)
@@ -5488,7 +5488,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				} else {
 					/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
-					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gsize)item->key);
 					item->jmp_code = code;
 					x86_branch8 (code, X86_CC_NE, 0, FALSE);
 #endif
@@ -5504,7 +5504,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				}
 			}
 		} else {
-			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gsize)item->key);
 			item->jmp_code = code;
 			if (x86_is_imm8 (imt_branch_distance (imt_entries, i, item->check_target_idx)))
 				x86_branch8 (code, X86_CC_GE, 0, FALSE);
