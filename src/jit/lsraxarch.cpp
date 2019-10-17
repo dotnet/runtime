@@ -2759,8 +2759,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             // Because 'source' is contained, we haven't yet determined its special register requirements, if any.
             // As it happens, the Shift or Rotate cases are the only ones with special requirements.
             assert(source->isContained() && source->OperIsRMWMemOp());
-            GenTree*      nonMemSource = nullptr;
-            GenTreeIndir* otherIndir   = nullptr;
 
             if (source->OperIsShiftOrRotate())
             {
@@ -2775,7 +2773,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 // Note that BuildShiftRotate (above) will handle the byte requirement as needed,
                 // but STOREIND isn't itself an RMW op, so we have to explicitly set it for that case.
 
-                GenTree* nonMemSource = nullptr;
+                GenTree*      nonMemSource = nullptr;
+                GenTreeIndir* otherIndir   = nullptr;
 
                 if (indirTree->AsStoreInd()->IsRMWDstOp1())
                 {
@@ -2794,7 +2793,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 {
                     srcCandidates = RBM_BYTE_REGS;
                 }
-#endif
                 if (otherIndir != nullptr)
                 {
                     // Any lclVars in the addressing mode of this indirection are contained.
@@ -2806,6 +2804,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                     GenTree* dstIndex = indirTree->Index();
                     CheckAndMoveRMWLastUse(index, dstIndex);
                 }
+#endif // _TARGET_X86_
+
                 srcCount += BuildBinaryUses(source->AsOp(), srcCandidates);
             }
         }
