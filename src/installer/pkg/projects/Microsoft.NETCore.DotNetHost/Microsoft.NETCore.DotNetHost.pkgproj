@@ -26,14 +26,14 @@
     <Copy SourceFiles="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)"
           DestinationFolder="$(PublishRootDir)" />
 
-    <Copy SourceFiles="$(ProjectDir)THIRD-PARTY-NOTICES.TXT"
+    <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(PublishRootDir)ThirdPartyNotices.txt" />
 
-    <Copy SourceFiles="$(ProjectDir)LICENSE.TXT"
+    <Copy SourceFiles="$(RepoRoot)LICENSE"
           DestinationFiles="$(PublishRootDir)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
-    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MSFT.txt"
+    <Copy SourceFiles="$(SetupRoot)resources/LICENSE-MSFT.txt"
           DestinationFiles="$(PublishRootDir)LICENSE.txt"
           Condition="'$(TargetsUnix)' != 'true'"/>
 

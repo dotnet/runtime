@@ -5,7 +5,7 @@
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
     <Message Importance="High" Text="Signing final packages" />
     <MSBuild
-      Projects="$(RepoRoot)signing\SignFinalPackages.proj"
+      Projects="$(SetupRoot)signing\SignFinalPackages.proj"
       Targets="Build"
       Properties="DownloadDirectory=$(DownloadDirectory)" />
   </Target>

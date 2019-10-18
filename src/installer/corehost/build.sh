@@ -58,9 +58,10 @@ init_rid_plat()
 
 usage()
 {
-    echo "Usage: $0 --configuration <configuration> --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
+    echo "Usage: $0 --rootdir <path> --configuration <configuration> --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
+    echo "  --rootdir <path>                  Path to the root of the repository. Required."
     echo "  --configuration <configuration>   Build configuration (Debug, Release)"
     echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, arm64, armel)"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
@@ -85,9 +86,6 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-RootRepo="$DIR/../.."
-
-__bin_dir="$RootRepo/artifacts/bin"
 __build_arch=
 __host_ver=
 __apphost_ver=
@@ -99,8 +97,6 @@ __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
 __cmake_defines=
-__baseIntermediateOutputPath="$RootRepo/artifacts/obj"
-__versionSourceFile="$__baseIntermediateOutputPath/_version.c"
 __cmake_bin_prefix=
 
 while [ "$1" != "" ]; do
@@ -148,11 +144,25 @@ while [ "$1" != "" ]; do
         --stripsymbols)
             __cmake_defines="${__cmake_defines} -DSTRIP_SYMBOLS=true"
             ;;
+        --rootdir)
+           shift
+           RootRepo=$1
+           ;;
         *)
         echo "Unknown argument to build.sh $1"; usage; exit 1
     esac
     shift
 done
+
+if [ "$RootRepo" == "" ]; then
+    usage
+fi
+
+SetupRoot="$RootRepo/src/setup"
+
+__bin_dir="$RootRepo/artifacts/bin"
+__baseIntermediateOutputPath="$RootRepo/artifacts/obj"
+__versionSourceFile="$__baseIntermediateOutputPath/_version.c"
 
 __cmake_defines="${__cmake_defines} -DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
@@ -180,7 +190,7 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     if ! [[ -n $ROOTFS_DIR ]]; then
-        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+        export ROOTFS_DIR="$SetupRoot/cross/rootfs/$__build_arch"
     fi
 fi
 
