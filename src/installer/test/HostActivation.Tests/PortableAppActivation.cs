@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.NET.HostModel.AppHost;
 using System;
+using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -240,7 +239,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Framework_Dependent_AppHost_Succeeds()
+        public void AppHost_FrameworkDependent_Succeeds()
         {
             var fixture = sharedTestState.PortableAppFixture_Published
                 .Copy();
@@ -248,27 +247,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
             // by creating the executable from apphost.exe
             var appExe = fixture.TestProject.AppExe;
-            var appDllName = Path.GetFileName(fixture.TestProject.AppDll);
-
-            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
-            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
-            string appDir = Path.GetDirectoryName(appExe);
-            string appDirHostExe = Path.Combine(appDir, hostExeName);
-
-            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
-            // overwrite app.exe and edit in place, because the file is opened as "write" for
-            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
-            // executing a file opened in "write" mode.
-            File.Copy(builtAppHost, appDirHostExe, true);
-            using (var sha256 = SHA256.Create())
-            {
-                // Replace the hash with the managed DLL name.
-                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
-                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                BinaryUtils.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName));
-            }
-            File.Copy(appDirHostExe, appExe, true);
-
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+ 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
 
@@ -300,7 +281,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Framework_Dependent_AppHost_From_Global_Location_Succeeds(bool useRegisteredLocation)
+        public void AppHost_FrameworkDependent_GlobalLocation_Succeeds(bool useRegisteredLocation)
         {
             var fixture = sharedTestState.PortableAppFixture_Published
                 .Copy();
@@ -308,26 +289,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
             // by creating the executable from apphost.exe
             var appExe = fixture.TestProject.AppExe;
-            var appDllName = Path.GetFileName(fixture.TestProject.AppDll);
-
-            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
-            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
-            string appDir = Path.GetDirectoryName(appExe);
-            string appDirHostExe = Path.Combine(appDir, hostExeName);
-
-            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
-            // overwrite app.exe and edit in place, because the file is opened as "write" for
-            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
-            // executing a file opened in "write" mode.
-            File.Copy(builtAppHost, appDirHostExe, true);
-            using (var sha256 = SHA256.Create())
-            {
-                // Replace the hash with the managed DLL name.
-                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
-                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                BinaryUtils.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName));
-            }
-            File.Copy(appDirHostExe, appExe, true);
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
@@ -385,6 +348,94 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdErrMatching($"Property TRUSTED_PLATFORM_ASSEMBLIES = .*[^{Path.PathSeparator}]$", System.Text.RegularExpressions.RegexOptions.Multiline);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // GUI app host is only supported on Windows.
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(invalidDotNet))
+            {
+                Directory.CreateDirectory(invalidDotNet);
+
+                string expectedErrorCode;
+                string expectedUrlQuery;
+                if (missingHostfxr)
+                {
+                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                    expectedUrlQuery = "missing_runtime=true";
+                }
+                else
+                {
+                    invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
+                        .Build()
+                        .BinPath;
+                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
+                }
+
+                Command command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(invalidDotNet)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command.WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
+                    .And.HaveStdErrContaining($"apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+            }
+        }
+
+        [Fact]
+        public void AppHost_GUI_FrameworkDependent_DisabledGUIErrors_DialogNotShown()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // GUI app host is only supported on Windows.
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+            
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(invalidDotNet))
+            {
+                Directory.CreateDirectory(invalidDotNet);
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(invalidDotNet)
+                    .MultilevelLookup(false)
+                    .EnvironmentVariable(Constants.DisableGuiErrors.EnvironmentVariable, "1")
+                    .Execute()
+                    .Should().Fail()
+                    .And.NotHaveStdErrContaining("Showing error dialog for application");
+            }
+        }
 
         private string MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
         {
@@ -437,15 +488,61 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return storeoutputDirectory;
         }
 
+#if WINDOWS
+        private delegate bool EnumThreadWindowsDelegate(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWindowsDelegate plfn, IntPtr lParam);
+
+        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 60000)
+        {
+            IntPtr windowHandle = IntPtr.Zero;
+            int timeRemaining = timeout;
+            while (timeRemaining > 0)
+            {
+                foreach (ProcessThread thread in process.Threads)
+                {
+                    // We take the last window we find. There really should only be one at most anyways.
+                    EnumThreadWindows(thread.Id,
+                        (hWnd, lParam) => {
+                            windowHandle = hWnd;
+                            return true;
+                        },
+                        IntPtr.Zero);
+                }
+
+                if (windowHandle != IntPtr.Zero)
+                {
+                    break;
+                }
+
+                System.Threading.Thread.Sleep(100);
+                timeRemaining -= 100;
+            }
+
+            // Do not fail if the window could be detected, sometimes the check is fragile and doesn't work.
+            // Not worth the trouble trying to figure out why (only happens rarely in the CI system).
+            // We will rely on product tracing in the failure case.
+            return windowHandle;
+        }
+#else
+        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 60000)
+        {
+            throw new PlatformNotSupportedException();
+        }
+#endif
+
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture PortableAppFixture_Built { get; }
             public TestProjectFixture PortableAppFixture_Published { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
+            public string BuiltAppHost { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
+                BuiltAppHost = Path.Combine(RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
 
                 PortableAppFixture_Built = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)

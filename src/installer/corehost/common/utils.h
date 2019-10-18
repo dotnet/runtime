@@ -16,8 +16,8 @@
 #else
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")
 #endif
-#define DOTNET_CORE_DOWNLOAD_RUNTIME_URL _X("https://aka.ms/dotnet-download-runtime")
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet-download")
+#define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
@@ -35,6 +35,7 @@ void remove_trailing_dir_seperator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl);
 const pal::char_t* get_arch();
+pal::string_t get_current_runtime_id(bool use_fallback);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool multilevel_lookup_enabled();
@@ -46,6 +47,10 @@ pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
 pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
+
+// Get a download URL for a specific framework and version
+// If no framework is specified, a download URL for the runtime is returned
+pal::string_t get_download_url(const pal::char_t *framework_name = nullptr, const pal::char_t *framework_version = nullptr);
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped

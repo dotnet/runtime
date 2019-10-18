@@ -14,6 +14,10 @@
 #include "cli/apphost/bundle/marker.h"
 #include "cli/apphost/bundle/runner.h"
 
+#if defined(_WIN32)
+#include "cli/apphost/apphost.windows.h"
+#endif
+
 #define CURHOST_TYPE    _X("apphost")
 #define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
 #define CURHOST_EXE
@@ -249,19 +253,6 @@ int exe_start(const int argc, const pal::char_t* argv[])
     return rc;
 }
 
-#if defined(_WIN32) && defined(FEATURE_APPHOST)
-pal::string_t g_buffered_errors;
-
-void buffering_trace_writer(const pal::char_t* message)
-{
-    // Add to buffer for later use.
-    g_buffered_errors.append(message).append(_X("\n"));
-    // Also write to stderr immediately
-    pal::err_fputs(message);
-}
-
-#endif
-
 #if defined(_WIN32)
 int __cdecl wmain(const int argc, const pal::char_t* argv[])
 #else
@@ -281,9 +272,8 @@ int main(const int argc, const pal::char_t* argv[])
     }
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
-    trace::verbose(_X("Redirecting errors to custom writer."));
     // Buffer errors to use them later.
-    trace::set_error_writer(buffering_trace_writer);
+    apphost::buffer_errors();
 #endif
 
     int exit_code = exe_start(argc, argv);
@@ -293,28 +283,7 @@ int main(const int argc, const pal::char_t* argv[])
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
     // No need to unregister the error writer since we're exiting anyway.
-    if (!g_buffered_errors.empty())
-    {
-        // If there are errors buffered, write them to the Windows Event Log.
-        pal::string_t executable_path;
-        pal::string_t executable_name;
-        if (pal::get_own_executable_path(&executable_path))
-        {
-            executable_name = get_filename(executable_path);
-        }
-
-        auto eventSource = ::RegisterEventSourceW(nullptr, _X(".NET Runtime"));
-        const DWORD traceErrorID = 1023; // Matches CoreCLR ERT_UnmanagedFailFast
-        pal::string_t message;
-        message.append(_X("Description: A .NET Core application failed.\n"));
-        message.append(_X("Application: ")).append(executable_name).append(_X("\n"));
-        message.append(_X("Path: ")).append(executable_path).append(_X("\n"));
-        message.append(_X("Message: ")).append(g_buffered_errors).append(_X("\n"));
-
-        LPCWSTR messages[] = {message.c_str()};
-        ::ReportEventW(eventSource, EVENTLOG_ERROR_TYPE, 0, traceErrorID, nullptr, 1, 0, messages, nullptr);
-        ::DeregisterEventSource(eventSource);
-    }
+    apphost::write_buffered_errors(exit_code);
 #endif
 
     return exit_code;
