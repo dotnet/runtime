@@ -154,11 +154,11 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ "$RepoRoot" == ""]; then
+if [ "$RootRepo" == "" ]; then
     usage
 fi
 
-SetupRoot="$RepoRoot/src/setup"
+SetupRoot="$RootRepo/src/setup"
 
 __bin_dir="$RootRepo/artifacts/bin"
 __baseIntermediateOutputPath="$RootRepo/artifacts/obj"
