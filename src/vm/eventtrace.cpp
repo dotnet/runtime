@@ -7540,3 +7540,11 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
     return false;
 }
 #endif // FEATURE_PERFTRACING
+
+#if defined(FEATURE_PAL)  && defined(FEATURE_PERFTRACING)
+// This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
+extern "C" bool XplatEventLoggerIsEnabled()
+{
+    return XplatEventLogger::IsEventLoggingEnabled();
+}
+#endif // FEATURE_PAL && FEATURE_PERFTRACING
