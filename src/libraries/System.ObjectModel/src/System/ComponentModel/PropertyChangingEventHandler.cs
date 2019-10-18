@@ -8,5 +8,5 @@ namespace System.ComponentModel
     /// Represents the method that will handle the <see langword='PropertyChanging'/>
     /// event raised when a property is changing on a component.
     /// </summary>
-    public delegate void PropertyChangingEventHandler(object sender, PropertyChangingEventArgs e);
+    public delegate void PropertyChangingEventHandler(object? sender, PropertyChangingEventArgs e);
 }

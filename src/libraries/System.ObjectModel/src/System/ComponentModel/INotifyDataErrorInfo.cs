@@ -10,8 +10,8 @@ namespace System.ComponentModel
     {
         bool HasErrors { get; }
 
-        IEnumerable GetErrors(string propertyName);
+        IEnumerable GetErrors(string? propertyName);
 
-        event EventHandler<DataErrorsChangedEventArgs> ErrorsChanged;
+        event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
     }
 }
