@@ -90,8 +90,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNaN(double d)
         {
-            long bits = BitConverter.DoubleToInt64Bits(d);
-            return (bits & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000;
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for NaN.
+
+            #pragma warning disable CS1718
+            return d != d;
+            #pragma warning restore CS1718
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
