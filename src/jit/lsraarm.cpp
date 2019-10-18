@@ -533,7 +533,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // and produces the flattened offset for this dimension.
             assert(dstCount == 1);
 
-            if (tree->gtArrOffs.gtOffset->isContained())
+            if (tree->AsArrOffs()->gtOffset->isContained())
             {
                 srcCount = 2;
             }

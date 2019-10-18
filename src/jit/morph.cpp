@@ -14559,14 +14559,14 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_ARR_OFFSET:
-            tree->gtArrOffs.gtOffset = fgMorphTree(tree->gtArrOffs.gtOffset);
-            tree->gtArrOffs.gtIndex  = fgMorphTree(tree->gtArrOffs.gtIndex);
-            tree->gtArrOffs.gtArrObj = fgMorphTree(tree->gtArrOffs.gtArrObj);
+            tree->AsArrOffs()->gtOffset = fgMorphTree(tree->AsArrOffs()->gtOffset);
+            tree->AsArrOffs()->gtIndex  = fgMorphTree(tree->AsArrOffs()->gtIndex);
+            tree->AsArrOffs()->gtArrObj = fgMorphTree(tree->AsArrOffs()->gtArrObj);
 
             tree->gtFlags &= ~GTF_CALL;
-            tree->gtFlags |= tree->gtArrOffs.gtOffset->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->gtArrOffs.gtIndex->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->gtArrOffs.gtArrObj->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsArrOffs()->gtOffset->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT;
             if (fgGlobalMorph)
             {
                 fgSetRngChkTarget(tree, false);
