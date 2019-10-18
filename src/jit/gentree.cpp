@@ -12340,7 +12340,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         }
 
         // We can't answer the equality comparison definitively at jit
-        // time, but can still simplfy the comparison.
+        // time, but can still simplify the comparison.
         //
         // Find out how we can compare the two handles.
         // NOTE: We're potentially passing NO_CLASS_HANDLE, but the runtime knows what to do with it here.

@@ -5,13 +5,6 @@
 // File: typehandle.inl
 //
 
-
-//
-
-//
-// ============================================================================
-
-
 #ifndef _TYPEHANDLE_INL_
 #define _TYPEHANDLE_INL_
 
@@ -283,6 +276,53 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
 }
 
+#ifndef CROSSGEN_COMPILE
+FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF o = NULL;
+
+    if (!IsTypeDesc())
+    {
+        o = AsMethodTable()->GetManagedClassObjectIfExists();
+    }
+    else
+    {
+        switch (AsTypeDesc()->GetInternalCorElementType())
+        {
+        case ELEMENT_TYPE_ARRAY:
+        case ELEMENT_TYPE_SZARRAY:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+            o = dac_cast<PTR_ParamTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();
+            break;
+
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+            o = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();
+            break;
+
+        case ELEMENT_TYPE_FNPTR:
+            // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
+            o = MscorlibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
+            break;
+
+        default:
+            _ASSERTE(!"Bad Element Type");
+            return NULL;
+        }
+    }
+
+    return o;
+}
+#endif // CROSSGEN_COMPILE
 
 #endif  // _TYPEHANDLE_INL_
-
