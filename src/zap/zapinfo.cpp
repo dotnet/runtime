@@ -441,7 +441,9 @@ void ZapInfo::CompileMethod()
     // Retrieve method attributes from EEJitInfo - the ZapInfo's version updates
     // some of the flags related to hardware intrinsics but we don't want that.
     DWORD methodAttribs = m_pEEJitInfo->getMethodAttribs(m_currentMethodHandle);
-    if (methodAttribs & CORINFO_FLG_AGGRESSIVE_OPT)
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation() && (methodAttribs & CORINFO_FLG_AGGRESSIVE_OPT))
     {
         // Skip methods marked with MethodImplOptions.AggressiveOptimization, they will be jitted instead. In the future,
         // consider letting the JIT determine whether aggressively optimized code can/should be pregenerated for the method
@@ -450,6 +452,7 @@ void ZapInfo::CompileMethod()
             m_zapper->Info(W("Skipped because of aggressive optimization flag\n"));
         return;
     }
+#endif
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     if (methodAttribs & CORINFO_FLG_JIT_INTRINSIC)
