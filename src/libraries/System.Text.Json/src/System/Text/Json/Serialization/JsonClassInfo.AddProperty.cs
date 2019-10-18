@@ -197,14 +197,17 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-        internal JsonPropertyInfo CreateRootObject(JsonSerializerOptions options)
+        /// <summary>
+        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
+        /// </summary>
+        internal static JsonPropertyInfo CreateRootProperty(Type type, JsonSerializerOptions options)
         {
             return CreateProperty(
-                declaredPropertyType: Type,
-                runtimePropertyType: Type,
-                implementedPropertyType: Type,
+                declaredPropertyType: type,
+                runtimePropertyType: type,
+                implementedPropertyType: type,
                 propertyInfo: null,
-                parentClassType: Type,
+                parentClassType: typeof(object), // a dummy value (not used)
                 converter: null,
                 options: options);
         }
