@@ -691,6 +691,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 {
 	guint32 iflags, flags;
 
+	if (method->wrapper_type)
+		return FALSE;
+
 	flags = mono_method_get_flags (method, &iflags);
 
 	if ((iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||

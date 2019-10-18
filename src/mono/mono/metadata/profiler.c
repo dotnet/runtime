@@ -428,10 +428,7 @@ MonoProfilerCoverageInfo *
 mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries)
 {
 	if (!mono_profiler_state.code_coverage)
-		return FALSE;
-
-	if (method->wrapper_type)
-		return FALSE;
+		return NULL;
 
 	if (!mono_profiler_coverage_instrumentation_enabled (method))
 		return NULL;
