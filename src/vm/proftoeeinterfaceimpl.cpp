@@ -8285,15 +8285,27 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         // with destructors.
         AVInRuntimeImplOkayHolder AVOkay;
 
+        DWORD asyncFlags = 0;
+        if (pThreadToSnapshot != pCurrentThread)
+        {
+            asyncFlags |= ALLOW_ASYNC_STACK_WALK;
+            if (!g_profControlBlock.fProfilerRequestedRuntimeSuspend)
+            {
+                // THREAD_IS_SUSPENDED signals to the stack walker that the
+                // thread is interrupted at an arbitrary point and to be careful
+                // not to cause a deadlock. If the profiler suspended the runtime,
+                // then we know the threads are at a safe place and we can walk all the threads.
+                asyncFlags |= THREAD_IS_SUSPENDED;
+            }
+        }
+
         hr = DoStackSnapshotHelper(
                  pThreadToSnapshot, 
                  &data, 
                  HANDLESKIPPEDFRAMES |
                      FUNCTIONSONLY |
                      NOTIFY_ON_U2M_TRANSITIONS |
-                     ((pThreadToSnapshot == pCurrentThread) ?
-                         0 : 
-                         ALLOW_ASYNC_STACK_WALK | THREAD_IS_SUSPENDED) |
+                     asyncFlags |
                      THREAD_EXECUTING_MANAGED_CODE |
                      PROFILER_DO_STACK_SNAPSHOT |
                      ALLOW_INVALID_OBJECTS, // stack walk logic should not look at objects - we could be in the middle of a gc.
