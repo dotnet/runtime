@@ -1332,7 +1332,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     else if (src->gtOper == GT_INDEX)
     {
         asgType = impNormStructType(structHnd);
-        assert(src->gtIndex.gtStructElemClass == structHnd);
+        assert(src->AsIndex()->gtStructElemClass == structHnd);
     }
     else if (src->gtOper == GT_MKREFANY)
     {
@@ -1633,9 +1633,9 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_INDEX:
             // This will be transformed to an OBJ later.
-            alreadyNormalized                    = true;
-            structVal->gtIndex.gtStructElemClass = structHnd;
-            structVal->gtIndex.gtIndElemSize     = info.compCompHnd->getClassSize(structHnd);
+            alreadyNormalized                       = true;
+            structVal->AsIndex()->gtStructElemClass = structHnd;
+            structVal->AsIndex()->gtIndElemSize     = info.compCompHnd->getClassSize(structHnd);
             break;
 
         case GT_FIELD:
@@ -11700,21 +11700,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // remember the element size
                     if (lclTyp == TYP_REF)
                     {
-                        op1->gtIndex.gtIndElemSize = TARGET_POINTER_SIZE;
+                        op1->AsIndex()->gtIndElemSize = TARGET_POINTER_SIZE;
                     }
                     else
                     {
                         // If ldElemClass is precisely a primitive type, use that, otherwise, preserve the struct type.
                         if (info.compCompHnd->getTypeForPrimitiveValueClass(ldelemClsHnd) == CORINFO_TYPE_UNDEF)
                         {
-                            op1->gtIndex.gtStructElemClass = ldelemClsHnd;
+                            op1->AsIndex()->gtStructElemClass = ldelemClsHnd;
                         }
-                        assert(lclTyp != TYP_STRUCT || op1->gtIndex.gtStructElemClass != nullptr);
+                        assert(lclTyp != TYP_STRUCT || op1->AsIndex()->gtStructElemClass != nullptr);
                         if (lclTyp == TYP_STRUCT)
                         {
-                            size                       = info.compCompHnd->getClassSize(ldelemClsHnd);
-                            op1->gtIndex.gtIndElemSize = size;
-                            op1->gtType                = lclTyp;
+                            size                          = info.compCompHnd->getClassSize(ldelemClsHnd);
+                            op1->AsIndex()->gtIndElemSize = size;
+                            op1->gtType                   = lclTyp;
                         }
                     }
 
@@ -11935,8 +11935,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     assert(stelemClsHnd != DUMMY_INIT(NULL));
 
-                    op1->gtIndex.gtStructElemClass = stelemClsHnd;
-                    op1->gtIndex.gtIndElemSize     = info.compCompHnd->getClassSize(stelemClsHnd);
+                    op1->AsIndex()->gtStructElemClass = stelemClsHnd;
+                    op1->AsIndex()->gtIndElemSize     = info.compCompHnd->getClassSize(stelemClsHnd);
                 }
                 if (varTypeIsStruct(op1))
                 {
