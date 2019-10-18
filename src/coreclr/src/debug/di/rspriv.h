@@ -5537,7 +5537,7 @@ private:
     RSSmartPtr<CordbNativeCode> m_nativeCode;
 
     // Metadata Token for the IL function. Scoped to m_module.
-    mdMethodDef              m_MDToken;
+    const mdMethodDef        m_MDToken;
 
     // EnC version number of this instance
     SIZE_T                   m_dwEnCVersionNumber; 

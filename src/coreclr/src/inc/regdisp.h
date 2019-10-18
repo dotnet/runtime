@@ -48,7 +48,7 @@ struct REGDISPLAY_BASE {
     TADDR ControlPC;
 };
 
-inline PCODE GetControlPC(REGDISPLAY_BASE *pRD) {
+inline PCODE GetControlPC(const REGDISPLAY_BASE *pRD) {
     LIMITED_METHOD_DAC_CONTRACT;
     return (PCODE)(pRD->ControlPC);
 }

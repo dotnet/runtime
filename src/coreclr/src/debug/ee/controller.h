@@ -140,15 +140,15 @@ private:
  *  FrameInfo m_activeFrame:   A FrameInfo
  *      describing the target frame.  This should always be valid after a
  *      call to GetStackInfo.
+ *
+ *  private:
+ *  bool m_activeFound:  Set to true if we found the target frame.
+ *  bool m_returnFound:  Set to true if we found the target's return frame.
  * 
  *  FrameInfo m_returnFrame:   A FrameInfo
  *      describing the frame above the target frame, if  target's
  *      return frame were found (call HasReturnFrame() to see if this is
  *      valid). Otherwise, this will be the same as m_activeFrame, above
- *
- * private:
- * bool m_activeFound:  Set to true if we found the target frame.
- * bool m_returnFound:  Set to true if we found the target's return frame.
  */
 class ControllerStackInfo
 {
@@ -165,7 +165,6 @@ public:
     bool                    m_targetFrameFound;
 
     FrameInfo               m_activeFrame;
-    FrameInfo               m_returnFrame;
 
     CorDebugChainReason     m_specialChainReason;
 
@@ -199,8 +198,9 @@ public:
     //bool ControllerStackInfo::HasReturnFrame()  Returns
     //      true if m_returnFrame is valid.  Returns false
     //      if m_returnFrame is set to m_activeFrame
-    bool HasReturnFrame() {LIMITED_METHOD_CONTRACT;  return m_returnFound; }
+    bool HasReturnFrame(bool allowUnmanaged = false) {LIMITED_METHOD_CONTRACT;  return m_returnFound && (allowUnmanaged || m_returnFrame.managed); }
 
+    FrameInfo& GetReturnFrame(bool allowUnmanaged = false) {LIMITED_METHOD_CONTRACT; return HasReturnFrame(allowUnmanaged) ? m_returnFrame : m_activeFrame; }
     // This function "undoes" an unwind, i.e. it takes the active frame (the current frame)
     // and sets it to be the return frame (the caller frame).  Currently it is only used by
     // the stepper to step out of an LCG method.  See DebuggerStepper::DetectHandleLCGMethods()
@@ -213,6 +213,7 @@ private:
 
     bool                    m_activeFound;
     bool                    m_returnFound;
+    FrameInfo               m_returnFrame;
 
     // A ridiculous flag that is targetting a very narrow fix at issue 650903
     // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
