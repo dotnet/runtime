@@ -90,6 +90,17 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
+            void RemoveSignatureIfMachO()
+            {
+                MachOUtils.RemoveSignature(appHostDestinationFilePath);
+            }
+
+            void SetLastWriteTime()
+            {
+                // Memory-mapped write does not updating last write time
+                File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
+            }
+
             try
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -114,8 +125,9 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 RetryUtil.RetryOnWin32Error(UpdateResources);
 
-                // Memory-mapped write does not updating last write time
-                RetryUtil.RetryOnIOError(() => File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow));
+                RetryUtil.RetryOnIOError(RemoveSignatureIfMachO);
+
+                RetryUtil.RetryOnIOError(SetLastWriteTime);
             }
             catch (Exception ex)
             {
