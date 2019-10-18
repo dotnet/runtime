@@ -86,8 +86,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNaN(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            return (bits & 0x7FFFFFFF) > 0x7F800000;
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for NaN.
+
+            #pragma warning disable CS1718
+            return f != f;
+            #pragma warning restore CS1718
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
