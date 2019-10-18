@@ -640,7 +640,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
             srcCount = 2;
-            if (!tree->gtArrOffs.gtOffset->isContained())
+            if (!tree->AsArrOffs()->gtOffset->isContained())
             {
                 BuildUse(tree->AsArrOffs()->gtOffset);
                 srcCount++;

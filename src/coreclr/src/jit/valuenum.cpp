@@ -9471,7 +9471,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_ARR_OFFSET:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->gtArrOffs.gtArrObj);
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrOffs()->gtArrObj);
                 break;
 
             case GT_DIV:
