@@ -49,6 +49,7 @@ CordbFunction::CordbFunction(CordbModule * m,
     m_methodSigParserCached = SigParser(NULL, 0);
 
     _ASSERTE(enCVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
+    _ASSERTE(TypeFromToken(m_MDToken) == mdtMethodDef);
 }
 
 

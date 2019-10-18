@@ -1550,7 +1550,8 @@ HRESULT CordbModule::GetFunctionFromToken(mdMethodDef token,
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
         // Check token is valid.
-        if ((token == mdMethodDefNil) || 
+        if ((token == mdMethodDefNil) ||
+            (TypeFromToken(token) != mdtMethodDef) ||
             (!GetMetaDataImporter()->IsValidToken(token)))
         {
             ThrowHR(E_INVALIDARG);

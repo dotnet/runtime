@@ -585,7 +585,7 @@ void FrameInfo::AssertValid()
 // Get the DJI associated w/ this frame. This is a convenience function.
 // This is recommended over using MethodDescs because DJI's are version-aware.
 //-----------------------------------------------------------------------------
-DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame()
+DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
 {
     CONTRACTL
     {
