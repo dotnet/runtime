@@ -409,7 +409,11 @@ namespace System.Security.Cryptography.Xml
             HashAlgorithm hashAlg = signatureDescription.CreateDigest();
             if (hashAlg == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
-            byte[] hashvalue = GetC14NDigest(hashAlg);
+
+            // Updates the HashAlgorithm's state for signing with the signature formatter below.
+            // The return value is not needed.
+            GetC14NDigest(hashAlg);
+
             AsymmetricSignatureFormatter asymmetricSignatureFormatter = signatureDescription.CreateFormatter(key);
 
             SignedXmlDebugLog.LogSigning(this, key, signatureDescription, hashAlg, asymmetricSignatureFormatter);
