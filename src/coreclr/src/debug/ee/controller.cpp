@@ -336,8 +336,8 @@ void ControllerStackInfo::GetStackInfo(
 
     if (result == SWA_DONE)
     {
-        _ASSERTE(!m_returnFound);
-        m_returnFrame = m_activeFrame;
+        _ASSERTE(!HasReturnFrame()); // We didn't find a managed return frame
+        _ASSERTE(HasReturnFrame(true)); // All threads have at least one unmanaged frame
     }
 }
 
@@ -418,14 +418,6 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
 
         if (i->m_activeFound )
         {
-            // We care if the current frame is unmanaged (in case a managed stepper is initiated
-            // on a thread currently in unmanaged code). But since we can't step-out to UM frames, 
-            // we can just skip them in the stack walk.
-            if (!pInfo->managed)
-            {
-                return SWA_CONTINUE;
-            }
-        
             if (pInfo->chainReason == CHAIN_CLASS_INIT)
                 i->m_specialChainReason = pInfo->chainReason;
 
@@ -439,7 +431,9 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
 
                 i->m_returnFound = true;
 
-                return SWA_ABORT;
+                // We care if the current frame is unmanaged
+                // Continue unless we found a managed return frame.
+                return pInfo->managed ? SWA_ABORT : SWA_CONTINUE;
             }
         }
         else
@@ -2483,10 +2477,10 @@ bool DebuggerController::MatchPatch(Thread *thread,
         // !!! This check should really be != , but there is some ambiguity about which frame is the parent frame
         // in the destination returned from Frame::TraceFrame, so this allows some slop there.
 
-        if (info.HasReturnFrame() && IsCloserToLeaf(info.m_returnFrame.fp, patch->fp))
+        if (info.HasReturnFrame() && IsCloserToLeaf(info.GetReturnFrame().fp, patch->fp))
         {
             LOG((LF_CORDB, LL_INFO10000, "Patch hit but frame not matched at %p (current=%p, patch=%p)\n",
-                patch->address, info.m_returnFrame.fp.GetSPValue(), patch->fp.GetSPValue()));
+                patch->address, info.GetReturnFrame().fp.GetSPValue(), patch->fp.GetSPValue()));
 
             return false;
         }
@@ -3761,14 +3755,14 @@ bool DebuggerController::DispatchTraceCall(Thread *thread,
                         _ASSERTE(info.HasReturnFrame());
 
                         // This check makes sure that we don't do this logic for inlined frames.
-                        if (info.m_returnFrame.md->IsILStub())
+                        if (info.GetReturnFrame().md->IsILStub())
                         {
                             // Make sure that the frame pointer of the active frame is actually
                             // the address of an exit frame.
                             _ASSERTE( (static_cast<Frame*>(info.m_activeFrame.fp.GetSPValue()))->GetFrameType()
                                       == Frame::TYPE_EXIT );
-                            _ASSERTE(!info.m_returnFrame.HasChainMarker());
-                            fpToCheck = info.m_returnFrame.fp;
+                            _ASSERTE(!info.GetReturnFrame().HasChainMarker());
+                            fpToCheck = info.GetReturnFrame().fp;
                         }
                     }
 
@@ -5094,14 +5088,14 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
         return false;
     }
 
-    FrameInfo *realFrame;
+    const FrameInfo *realFrame;
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fActiveFrameIsFunclet = info->m_activeFrame.IsNonFilterFuncletFrame();
 
     if (fActiveFrameIsFunclet)
     {
-        realFrame = &(info->m_returnFrame);
+        realFrame = &(info->GetReturnFrame());
     }
     else
 #endif // FEATURE_EH_FUNCLETS
@@ -5121,40 +5115,23 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    // There are two scenarios which make this function more complicated on WIN64.
+    // There are three scenarios which make this function more complicated on WIN64.
     // 1)  We initiate a step in the parent method or a funclet but end up stepping into another funclet closer to the leaf.
     //      a)  start in the parent method
     //      b)  start in a funclet
     // 2)  We initiate a step in a funclet but end up stepping out to the parent method or a funclet closer to the root.
     //      a) end up in the parent method
     //      b) end up in a funclet
+    // 3)  We initiate a step and then change stack allocation within the method or funclet
     // In both cases the range of the stepper should still be appropriate.
 
     bool fValidParentMethodFP = (m_fpParentMethod != LEAF_MOST_FRAME);
 
-    if (fActiveFrameIsFunclet)
+    // All scenarios have the same condition
+    if (fValidParentMethodFP && (m_fpParentMethod == info->GetReturnFrame(true).fp))
     {
-        // Scenario 1a
-        if (m_fp == info->m_returnFrame.fp)
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DS::IRA: returning TRUE\n"));
-            return true;
-        }
-        // Scenario 1b & 2b have the same condition
-        else if (fValidParentMethodFP && (m_fpParentMethod == info->m_returnFrame.fp))
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DS::IRA: returning TRUE\n"));
-            return true;
-        }
-    }
-    else
-    {
-        // Scenario 2a
-        if (fValidParentMethodFP && (m_fpParentMethod == info->m_activeFrame.fp))
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DS::IRA: returning TRUE\n"));
-            return true;
-        }
+        LOG((LF_CORDB,LL_INFO10000, "DS::IRA: (parent SP) returning TRUE\n"));
+        return true;
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -5225,7 +5202,7 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
 {
     LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Start DetectHandleInterceptors\n"));
     LOG((LF_CORDB,LL_INFO10000,"DS::DHI: active frame=0x%08x, has return frame=%d, return frame=0x%08x m_reason:%d\n",
-         info->m_activeFrame.frame, info->HasReturnFrame(), info->m_returnFrame.frame, m_reason));
+         info->m_activeFrame.frame, info->HasReturnFrame(), info->GetReturnFrame().frame, m_reason));
 
     // If this is a normal step, then we want to continue stepping, even if we
     // are in an interceptor.
@@ -5246,7 +5223,7 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
             if (!((CorDebugIntercept)info->m_activeFrame.frame->GetInterception() & Frame::Interception(m_rgfInterceptStop)))
             {
                 LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Stepping out b/c of excluded frame type:0x%x\n",
-                     info->m_returnFrame. frame->GetInterception()));
+                     info->m_activeFrame.frame->GetInterception()));
 
                 fAttemptStepOut = true;
             }
@@ -5260,14 +5237,14 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
 
         if ((m_reason == STEP_EXCEPTION_FILTER) ||
             (info->HasReturnFrame() &&
-            info->m_returnFrame.frame != NULL &&
-            info->m_returnFrame.frame != FRAME_TOP &&
-            info->m_returnFrame.frame->GetInterception() != Frame::INTERCEPTION_NONE))
+            info->GetReturnFrame().frame != NULL &&
+            info->GetReturnFrame().frame != FRAME_TOP &&
+            info->GetReturnFrame().frame->GetInterception() != Frame::INTERCEPTION_NONE))
         {
             if (m_reason == STEP_EXCEPTION_FILTER)
             {
                 // Exceptions raised inside of the EE by COMPlusThrow, FCThrow, etc will not
-                // insert an ExceptionFrame, and hence info->m_returnFrame.frame->GetInterception()
+                // insert an ExceptionFrame, and hence info->GetReturnFrame().frame->GetInterception()
                 // will not be accurate. Hence we use m_reason instead
 
                 if (!(Frame::INTERCEPTION_EXCEPTION & Frame::Interception(m_rgfInterceptStop)))
@@ -5276,10 +5253,10 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
                     fAttemptStepOut = true;
                 }
             }
-            else if (!(info->m_returnFrame.frame->GetInterception() & Frame::Interception(m_rgfInterceptStop)))
+            else if (!(info->GetReturnFrame().frame->GetInterception() & Frame::Interception(m_rgfInterceptStop)))
             {
                 LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Stepping out b/c of excluded return frame type:0x%x\n",
-                     info->m_returnFrame.frame->GetInterception()));
+                     info->GetReturnFrame().frame->GetInterception()));
 
                 fAttemptStepOut = true;
             }
@@ -5995,7 +5972,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
             AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                      ji,
                      offset,
-                     info->m_returnFrame.fp,
+                     info->GetReturnFrame().fp,
                      NULL);
             return true;
         }
@@ -6014,7 +5991,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
             AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                      ji,
                      offset,
-                     info->m_returnFrame.fp,
+                     info->GetReturnFrame().fp,
                      NULL);
             return true;
 
@@ -6032,7 +6009,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                          ji,
                          CodeRegionInfo::GetCodeRegionInfo(ji, info->m_activeFrame.md).AddressToOffset(walker.GetNextIP()),
-                         info->m_returnFrame.fp,
+                         info->GetReturnFrame().fp,
                          NULL);
                 return true;
             }
@@ -6044,7 +6021,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md, 
                                                          ji, 
                                                          offset, 
-                                                         info->m_returnFrame.fp, 
+                                                         info->GetReturnFrame().fp,
                                                          NULL);
                     return true;
                 }
@@ -6062,7 +6039,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                              ji,
                              offset,
-                             info->m_returnFrame.fp,
+                             info->GetReturnFrame().fp,
                              NULL);
 
                     LOG((LF_CORDB,LL_INFO10000,"DS0x%x m_reason=STEP_CALL 2\n",
@@ -6085,7 +6062,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                          ji,
                          offset,
-                         info->m_returnFrame.fp,
+                         info->GetReturnFrame().fp,
                          NULL);
 
                 LOG((LF_CORDB,LL_INFO10000,"DS 0x%x m_reason=STEP_CALL4\n",this));
@@ -6104,7 +6081,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                     ji,
                     offset,
-                    info->m_returnFrame.fp,
+                    info->GetReturnFrame().fp,
                     NULL);
                 return true;
             }
@@ -6198,31 +6175,31 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         _ASSERTE(info->HasReturnFrame());
         
 #ifdef _TARGET_ARM_
-        while (info->HasReturnFrame() && info->m_activeFrame.md != info->m_returnFrame.md)
+        while (info->HasReturnFrame() && info->m_activeFrame.md != info->GetReturnFrame().md)
         {
             StackTraceTicket ticket(info);
-            returnInfo.GetStackInfo(ticket, GetThread(), info->m_returnFrame.fp, NULL);
+            returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL);
             info = &returnInfo;
         }
         
         _ASSERTE(info->HasReturnFrame());
 #endif
 
-        _ASSERTE(info->m_activeFrame.md == info->m_returnFrame.md);
+        _ASSERTE(info->m_activeFrame.md == info->GetReturnFrame().md);
 
         if (m_eMode == cStepOut)
         {
             StackTraceTicket ticket(info);
-            returnInfo.GetStackInfo(ticket, GetThread(), info->m_returnFrame.fp, NULL);
+            returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL);
             info = &returnInfo;
         }
         else
         {
-            _ASSERTE(info->m_returnFrame.managed);
-            _ASSERTE(info->m_returnFrame.frame == NULL);
+            _ASSERTE(info->GetReturnFrame().managed);
+            _ASSERTE(info->GetReturnFrame().frame == NULL);
 
-            MethodDesc *md = info->m_returnFrame.md;
-            dji = info->m_returnFrame.GetJitInfoFromFrame();
+            MethodDesc *md = info->GetReturnFrame().md;
+            dji = info->GetReturnFrame().GetJitInfoFromFrame();
 
             // The return value of a catch funclet is the control PC to resume to.
             // The return value of a finally funclet has no meaning, so we need to check
@@ -6237,17 +6214,17 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
             {
                 SIZE_T reloffset = dji->m_codeRegionInfo.AddressToOffset((BYTE*)resumePC);
 
-                AddBindAndActivateNativeManagedPatch(info->m_returnFrame.md,
+                AddBindAndActivateNativeManagedPatch(info->GetReturnFrame().md,
                     dji,
                     reloffset,
-                    info->m_returnFrame.fp,
+                    info->GetReturnFrame().fp,
                     NULL);
 
                 LOG((LF_CORDB, LL_INFO10000,
                      "DS::TSO:normally managed code AddPatch"
                      " in %s::%s, offset 0x%x, m_reason=%d\n",
-                     info->m_returnFrame.md->m_pszDebugClassName,
-                     info->m_returnFrame.md->m_pszDebugMethodName,
+                     info->GetReturnFrame().md->m_pszDebugClassName,
+                     info->GetReturnFrame().md->m_pszDebugMethodName,
                      reloffset, m_reason));
 
                 // Do not set m_reason to STEP_RETURN here.  Logically, the funclet and the parent method are the
@@ -6290,7 +6267,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // not to report the managed frame that was at the same SP. However the unmanaged
         // frame might be used in the mixed-mode step out case so I don't suppress it
         // there.
-        returnInfo.GetStackInfo(ticket, GetThread(), info->m_returnFrame.fp, NULL, !(m_rgfMappingStop & STOP_UNMANAGED));
+        returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL, !(m_rgfMappingStop & STOP_UNMANAGED));
         info = &returnInfo;
 
 #ifdef _DEBUG
@@ -6354,7 +6331,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
                     dji,
                     reloffset,
-                    info->m_returnFrame.fp,
+                    info->GetReturnFrame().fp,
                     NULL);
 
                 LOG((LF_CORDB, LL_INFO10000,
@@ -6509,11 +6486,11 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 LOG((LF_CORDB, LL_INFO10000,
                  "DS::TSO: Setting unmanaged trace patch at 0x%x(%x)\n",
                      GetControlPC(&(info->m_activeFrame.registers)),
-                     info->m_returnFrame.fp.GetSPValue()));
+                     info->GetReturnFrame().fp.GetSPValue()));
 
 
                 AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)GetControlPC(&(info->m_activeFrame.registers)),
-                         info->m_returnFrame.fp,
+                         info->GetReturnFrame().fp,
                          FALSE,
                          TRACE_UNMANAGED);
 
@@ -6567,16 +6544,16 @@ void DebuggerStepper::StepOut(FramePointer fp, StackTraceTicket ticket)
     m_fp = info.m_activeFrame.fp;
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to remember the parent method frame pointer here so that we will recognize
-    // the range of the stepper as being valid when we return to the parent method.
-    if (info.m_activeFrame.IsNonFilterFuncletFrame())
+    // the range of the stepper as being valid when we return to the parent method or stackalloc.
+    if (info.HasReturnFrame(true))
     {
-        m_fpParentMethod = info.m_returnFrame.fp;
+        m_fpParentMethod = info.GetReturnFrame(true).fp;
     }
 #endif // FEATURE_EH_FUNCLETS
 
     m_eMode = cStepOut;
 
-    _ASSERTE((fp == LEAF_MOST_FRAME) || (info.m_activeFrame.md != NULL) || (info.m_returnFrame.md != NULL));
+    _ASSERTE((fp == LEAF_MOST_FRAME) || (info.m_activeFrame.md != NULL) || (info.GetReturnFrame().md != NULL));
 
     TrapStepOut(&info);
     EnableUnwind(m_fp);
@@ -6838,7 +6815,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     info.GetStackInfo(ticket, thread, fp, context);
 
     _ASSERTE((fp == LEAF_MOST_FRAME) || (info.m_activeFrame.md != NULL) ||
-             (info.m_returnFrame.md != NULL));
+             (info.GetReturnFrame().md != NULL));
 
     m_stepIn = in;
 
@@ -6906,10 +6883,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         m_fp = info.m_activeFrame.fp;
 #if defined(FEATURE_EH_FUNCLETS)
         // We need to remember the parent method frame pointer here so that we will recognize
-        // the range of the stepper as being valid when we return to the parent method.
-        if (info.m_activeFrame.IsNonFilterFuncletFrame())
+        // the range of the stepper as being valid when we return to the parent method or stackalloc.
+        if (info.HasReturnFrame(true))
         {
-            m_fpParentMethod = info.m_returnFrame.fp;
+            m_fpParentMethod = info.GetReturnFrame(true).fp;
         }
 #endif // FEATURE_EH_FUNCLETS
     }
@@ -7601,7 +7578,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
 #if !defined(FEATURE_EH_FUNCLETS)
             IsCloserToRoot(m_fpStepInto, csi.m_activeFrame.fp)
 #else
-            IsCloserToRoot(m_fpStepInto, (csi.m_activeFrame.IsNonFilterFuncletFrame() ? csi.m_returnFrame.fp : csi.m_activeFrame.fp))
+            IsCloserToRoot(m_fpStepInto, (csi.m_activeFrame.IsNonFilterFuncletFrame() ? csi.GetReturnFrame().fp : csi.m_activeFrame.fp))
 #endif // FEATURE_EH_FUNCLETS
            )
 
@@ -7818,7 +7795,7 @@ bool DebuggerJMCStepper::TrapStepInHelper(
         AddBindAndActivateNativeManagedPatch(pInfo->m_activeFrame.md,
                 dji,
                 offset,
-                pInfo->m_returnFrame.fp,
+                pInfo->GetReturnFrame().fp,
                 NULL);
     }
 
