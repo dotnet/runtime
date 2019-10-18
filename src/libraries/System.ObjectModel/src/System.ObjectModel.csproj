@@ -3,6 +3,7 @@
     <AssemblyName>System.ObjectModel</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\Generic\DebugView.cs" />

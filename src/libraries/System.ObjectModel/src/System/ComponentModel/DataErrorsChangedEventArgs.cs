@@ -13,7 +13,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DataErrorsChangedEventArgs'/>
         /// class.
         /// </summary>
-        public DataErrorsChangedEventArgs(string propertyName)
+        public DataErrorsChangedEventArgs(string? propertyName)
         {
             PropertyName = propertyName;
         }
@@ -21,6 +21,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Indicates the name of the property whose errors changed.
         /// </summary>
-        public virtual string PropertyName { get; }
+        public virtual string? PropertyName { get; }
     }
 }

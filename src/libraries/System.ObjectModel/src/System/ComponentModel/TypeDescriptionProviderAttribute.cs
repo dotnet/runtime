@@ -30,7 +30,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(type));
             }
 
-            TypeName = type.AssemblyQualifiedName;
+            TypeName = type.AssemblyQualifiedName!;
         }
 
         /// <summary>
