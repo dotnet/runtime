@@ -8236,6 +8236,8 @@ public:
     bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
     bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
     bool compHasBackwardJump;      // Does the method (or some inlinee) have a lexically backwards jump?
+    bool compSwitchedToOptimized;  // Codegen initially was Tier0 but jit switched to FullOpts
+    bool compSwitchedToMinOpts;    // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
@@ -8291,13 +8293,7 @@ public:
 
     struct Options
     {
-        JitFlags* jitFlags;  // all flags passed from the EE
-        unsigned  compFlags; // method attributes
-
-        codeOptimize compCodeOpt; // what type of code optimizations
-
-        bool compUseFCOMI;
-        bool compUseCMOV;
+        JitFlags* jitFlags; // all flags passed from the EE
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         uint64_t compSupportsISA;
@@ -8306,6 +8302,14 @@ public:
             compSupportsISA |= 1ULL << isa;
         }
 #endif
+
+        unsigned compFlags; // method attributes
+        unsigned instrCount;
+        unsigned lvRefCount;
+
+        codeOptimize compCodeOpt; // what type of code optimizations
+
+        bool compUseCMOV;
 
 // optimize maximally and/or favor speed over size?
 
@@ -8318,14 +8322,12 @@ public:
 // Maximun number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
-        bool     compMinOpts;
-        unsigned instrCount;
-        unsigned lvRefCount;
-        bool     compMinOptsIsSet;
+        bool compMinOpts;
+        bool compMinOptsIsSet;
 #ifdef DEBUG
-        bool compMinOptsIsUsed;
+        mutable bool compMinOptsIsUsed;
 
-        bool MinOpts()
+        bool MinOpts() const
         {
             assert(compMinOptsIsSet);
             compMinOptsIsUsed = true;
@@ -8336,7 +8338,7 @@ public:
             return compMinOptsIsSet;
         }
 #else  // !DEBUG
-        bool MinOpts()
+        bool MinOpts() const
         {
             return compMinOpts;
         }
@@ -8346,11 +8348,11 @@ public:
         }
 #endif // !DEBUG
 
-        bool OptimizationDisabled()
+        bool OptimizationDisabled() const
         {
             return MinOpts() || compDbgCode;
         }
-        bool OptimizationEnabled()
+        bool OptimizationEnabled() const
         {
             return !OptimizationDisabled();
         }
@@ -8621,7 +8623,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_FCOMI)                                                                  \
         STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(BB_PROFILE)                                                                 \

@@ -4327,6 +4327,9 @@ void Compiler::fgSwitchToOptimized()
 
     // Notify the VM of the change
     info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
+
+    // And leave a note for jit diagnostics too
+    compSwitchedToOptimized = true;
 }
 
 //------------------------------------------------------------------------
