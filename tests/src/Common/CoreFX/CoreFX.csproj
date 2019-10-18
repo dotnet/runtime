@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <!-- Microsoft.Private.CoreFx.OOB is a meta-package that contains references to most of what we need -->
-    <PackageReference Include="Microsoft.Private.CoreFx.OOB" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="Microsoft.Private.CoreFx.OOB" Version="$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)" />
 
     <!-- dotnet.exe -->
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreAppVersion)" />

@@ -56,13 +56,13 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.TypeExtensions">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime">
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Extensions">
       <Version>4.4.0-beta-24913-02</Version>
