@@ -1874,16 +1874,6 @@ public:
 
     DWORD GetIndexForFieldDesc(FieldDesc *pField);
 
-    BOOL IsMarshaledByRef()
-    {
-        return FALSE;
-    }
-
-    BOOL IsContextful()
-    {
-        return FALSE;
-    }
-    
     inline bool RequiresFatDispatchTokens()
     {
         LIMITED_METHOD_CONTRACT;

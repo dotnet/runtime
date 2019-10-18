@@ -739,7 +739,6 @@ FCFuncStart(gArrayFuncs)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
-    FCFuncElement("BlockCopy", Buffer::BlockCopy)
     FCFuncElement("IsPrimitiveTypeArray", Buffer::IsPrimitiveTypeArray)
 #ifdef _TARGET_ARM_
     FCFuncElement("Memcpy", FCallMemcpy)

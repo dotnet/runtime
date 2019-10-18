@@ -93,8 +93,6 @@ DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,              
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
-DEFINE_PROPERTY(ARRAY,              LENGTH,                 Length,                     Int)
-DEFINE_METHOD(ARRAY,                GET_RAW_ARRAY_DATA,     GetRawArrayData, IM_RetRefByte)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)                 
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
@@ -691,6 +689,7 @@ DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_SZ_ARRAY_DATA,   GetRawSzArrayData,  NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
 
 DEFINE_CLASS(JIT_HELPERS,           CompilerServices,       JitHelpers)
 DEFINE_METHOD(JIT_HELPERS,          ENUM_EQUALS,            EnumEquals, NoSig)
@@ -931,6 +930,7 @@ DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,      
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
+DEFINE_METHOD(BUFFER,               BLOCKCOPY,              BlockCopy,              SM_Array_Int_Array_Int_Int_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMARSHAL, WinRT,  WindowsRuntimeMarshal)

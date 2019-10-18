@@ -125,7 +125,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         m_asTAddr = dac_cast<TADDR>(aPtr);
-        // NormalizeUnsharedArrayMT();
         INDEBUGIMPL(Verify());
     }
 
@@ -133,7 +132,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         m_asTAddr = dac_cast<TADDR>(aMT); 
-        // NormalizeUnsharedArrayMT();
         INDEBUGIMPL(Verify());
     }
 
@@ -156,7 +154,6 @@ private:
     { 
         LIMITED_METHOD_DAC_CONTRACT;
         m_asTAddr = aTAddr;
-        // NormalizeUnsharedArrayMT();
         INDEBUGIMPL(Verify());
     }
 
@@ -481,11 +478,6 @@ public:
     // Also see IsArrayType()
     BOOL IsArray() const;
 
-    // See comment of IsArrayType() for the explanation of this method
-#if 0
-    void NormalizeUnsharedArrayMT();
-#endif
-
     // ARRAY or SZARRAY
     // Note that this does not imply that it is OK to call AsArray(). See IsArray()
     //
@@ -497,8 +489,7 @@ public:
     // still is an array type.
     //
     // @TODO: Change all the constructors of TypeHandle which take a MethodTable 
-    // to call NormalizeUnsharedArrayMT(). TypeHandle::Verify() can then enforce
-    // that IsArray() is fully correct.
+    // to call TypeHandle::Verify() that can then enforce that IsArray() is fully correct.
     BOOL IsArrayType() const;
 
     // VAR or MVAR

@@ -80,7 +80,6 @@ public:
     // BlockCopy
     // This method from one primitive array to another based
     //      upon an offset into each an a byte count.
-    static FCDECL5(VOID, BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, int dstOffset, int count);
     static FCDECL1(FC_BOOL_RET, IsPrimitiveTypeArray, ArrayBase *arrayUNSAFE);
 
     static void QCALLTYPE MemMove(void *dst, void *src, size_t length);

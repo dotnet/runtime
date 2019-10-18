@@ -26,6 +26,54 @@ namespace System
 {
     public static partial class Buffer
     {
+        // Copies from one primitive array to another primitive array without
+        // respecting types.  This calls memmove internally.  The count and
+        // offset parameters here are in bytes.  If you want to use traditional
+        // array element indices and counts, use Array.Copy.
+        public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
+        {
+            if (src == null)
+                throw new ArgumentNullException(nameof(src));
+            if (dst == null)
+                throw new ArgumentNullException(nameof(dst));
+
+            nuint uSrcLen = (nuint)src.LongLength;
+            if (src.GetType() != typeof(byte[]))
+            {
+                if (!IsPrimitiveTypeArray(src))
+                    throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
+                uSrcLen *= (nuint)src.GetElementSize();
+            }
+
+            nuint uDstLen = uSrcLen;
+            if (src != dst)
+            {
+                uDstLen = (nuint)dst.LongLength;
+                if (dst.GetType() != typeof(byte[]))
+                {
+                    if (!IsPrimitiveTypeArray(dst))
+                        throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
+                    uDstLen *= (nuint)dst.GetElementSize();
+                }
+            }
+
+            if (srcOffset < 0)
+                throw new ArgumentOutOfRangeException(nameof(srcOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            if (dstOffset < 0)
+                throw new ArgumentOutOfRangeException(nameof(dstOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+
+            nuint uCount = (nuint)count;
+            nuint uSrcOffset = (nuint)srcOffset;
+            nuint uDstOffset = (nuint)dstOffset;
+
+            if ((uSrcLen < uSrcOffset + uCount) || (uDstLen < uDstOffset + uCount))
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            Memmove(ref Unsafe.AddByteOffset(ref dst.GetRawArrayData(), uDstOffset), ref Unsafe.AddByteOffset(ref src.GetRawArrayData(), uSrcOffset), uCount);
+        }
+
         public static int ByteLength(Array array)
         {
             // Is the array present?
