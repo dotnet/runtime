@@ -1321,18 +1321,15 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     // Used later for a callback.
     CEEInfo ceeInf;
 
-    if (fIsDllUnloading)
-    {
-        ETW::EnumerationLog::ProcessShutdown();
-    }
-
-#ifdef FEATURE_PERFTRACING
     if (!fIsDllUnloading)
     {
+        ETW::EnumerationLog::ProcessShutdown();
+
+#ifdef FEATURE_PERFTRACING
         EventPipe::Shutdown();
         DiagnosticServer::Shutdown();
-    }
 #endif // FEATURE_PERFTRACING
+    }
 
 #if defined(FEATURE_COMINTEROP)
     // Get the current thread.
