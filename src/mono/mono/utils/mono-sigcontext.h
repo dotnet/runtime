@@ -555,8 +555,8 @@ typedef struct ucontext
 
 #include <ucontext.h>
 
-#define UCONTEXT_GREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.gregs)
-#define UCONTEXT_FREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.fpregs)
+#define UCONTEXT_GREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.__gregs)
+#define UCONTEXT_FREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.__fpregs)
 #define UCONTEXT_REG_PC(ctx) (UCONTEXT_GREGS ((ctx)) [REG_PC])
 #define UCONTEXT_REG_BP(ctx) (UCONTEXT_GREGS ((ctx)) [REG_S0])
 #define UCONTEXT_REG_SP(ctx) (UCONTEXT_GREGS ((ctx)) [REG_SP])

@@ -187,6 +187,7 @@ struct MonoLMF {
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 typedef struct {
+	guint8 *stack;
 } CallContext;
 
 enum {

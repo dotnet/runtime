@@ -702,6 +702,11 @@ case "$host" in
 		have_sys_zlib=no
 		zlib_msg="bundled zlib"
 		;;
+	# Use bundled zlib on RISC-V for now to make cross-compiling easier.
+	riscv*)
+		have_sys_zlib=no
+		zlib_msg="bundled zlib"
+		;;
 	*)
 		AC_CHECK_HEADER(zlib.h, [have_sys_zlib=yes], [have_sys_zlib=no])
 		if test x$have_sys_zlib = xyes; then
