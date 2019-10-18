@@ -117,6 +117,9 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             default_install_location.c_str(),
             dotnet_root_env_var_name.c_str(),
             self_registered_message.c_str());
+        trace::error(_X(""));
+        trace::error(_X("The .NET Core runtime can be found at:"));
+        trace::error(_X("  - %s"), get_download_url().c_str());
         return false;
     }
 

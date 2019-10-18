@@ -129,17 +129,8 @@ void deps_json_t::reconcile_libraries_with_targets(
 // Returns the RID determined (computed or fallback) for the platform the host is running on.
 pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallback_graph)
 {
-    
-    pal::string_t currentRid;
-    if (!pal::getenv(_X("DOTNET_RUNTIME_ID"), &currentRid))
-    {
-        currentRid = pal::get_current_os_rid_platform();
-        if (!currentRid.empty())
-        {
-            currentRid = currentRid + pal::string_t(_X("-")) + get_arch();
-        }
-    }
-    
+    pal::string_t currentRid = get_current_runtime_id(false /*use_fallback*/);
+
     trace::info(_X("HostRID is %s"), currentRid.empty()? _X("not available"): currentRid.c_str());
 
     // If the current RID is not present in the RID fallback graph, then the platform

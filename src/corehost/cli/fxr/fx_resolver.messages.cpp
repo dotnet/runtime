@@ -113,11 +113,11 @@ void fx_resolver_t::display_missing_framework_error(
     // Display the error message about missing FX.
     if (fx_version.length())
     {
-        trace::error(_X("The specified framework '%s', version '%s' was not found."), fx_name.c_str(), fx_version.c_str());
+        trace::error(_X("The framework '%s', version '%s' was not found."), fx_name.c_str(), fx_version.c_str());
     }
     else
     {
-        trace::error(_X("The specified framework '%s' was not found."), fx_name.c_str());
+        trace::error(_X("The framework '%s' was not found."), fx_name.c_str());
     }
 
     if (framework_infos.size())
@@ -133,11 +133,12 @@ void fx_resolver_t::display_missing_framework_error(
         trace::error(_X("  - No frameworks were found."));
     }
 
+    pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());
     trace::error(_X(""));
     trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
     trace::error(_X(""));
-    trace::error(_X("The .NET Core frameworks can be found at:"));
-    trace::error(_X("  - %s"), DOTNET_CORE_DOWNLOAD_URL);
+    trace::error(_X("The specified framework can be found at:"));
+    trace::error(_X("  - %s"), url.c_str());
 }
 
 void fx_resolver_t::display_incompatible_loaded_framework_error(
