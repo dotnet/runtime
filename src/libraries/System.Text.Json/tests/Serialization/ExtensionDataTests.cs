@@ -62,6 +62,42 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void MultipleExtensionPropertyIgnoredWhenNull()
+        {
+            var obj = new ClassWithMultipleDictionaries();
+            string actual = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"ActualDictionary\":null}", actual);
+
+            obj = new ClassWithMultipleDictionaries
+            {
+                ActualDictionary = new Dictionary<string, object>()
+            };
+            actual = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"ActualDictionary\":{}}", actual);
+
+            obj = new ClassWithMultipleDictionaries
+            {
+                MyOverflow = new Dictionary<string, object>
+                {
+                    { "test", "value" }
+                }
+            };
+            actual = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"ActualDictionary\":null,\"test\":\"value\"}", actual);
+
+            obj = new ClassWithMultipleDictionaries
+            {
+                ActualDictionary = new Dictionary<string, object>(),
+                MyOverflow = new Dictionary<string, object>
+                {
+                    { "test", "value" }
+                }
+            };
+            actual = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"ActualDictionary\":{},\"test\":\"value\"}", actual);
+        }
+
+        [Fact]
         public static void ExtensionPropertyAlreadyInstantiated()
         {
             Assert.NotNull(new ClassWithExtensionPropertyAlreadyInstantiated().MyOverflow);
@@ -511,6 +547,35 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void DeserializeIntoMultipleDictionaries()
+        {
+            ClassWithMultipleDictionaries obj;
+            string json;
+
+            // Baseline dictionary.
+            json = @"{""ActualDictionary"":{""Key"": {""Property0"":-1}},""MyDict"":{""Property1"":1}}";
+            obj = JsonSerializer.Deserialize<ClassWithMultipleDictionaries>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, ((JsonElement)obj.MyOverflow["MyDict"]).EnumerateObject().First().Value.GetInt32());
+            Assert.Equal(1, obj.ActualDictionary.Count);
+            Assert.Equal(-1, ((JsonElement)obj.ActualDictionary["Key"]).EnumerateObject().First().Value.GetInt32());
+
+            // Attempt to deserialize null into the dictionary and overflow property. This is also treated as a missing property.
+            json = @"{""ActualDictionary"":null,""MyOverflow"":null}";
+            obj = JsonSerializer.Deserialize<ClassWithMultipleDictionaries>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Null(obj.MyOverflow["MyOverflow"]);
+            Assert.Null(obj.ActualDictionary);
+
+            // Attempt to deserialize object into the dictionary and overflow property. This is also treated as a missing property.
+            json = @"{""ActualDictionary"":{},""MyOverflow"":{}}";
+            obj = JsonSerializer.Deserialize<ClassWithMultipleDictionaries>(json);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)obj.MyOverflow["MyOverflow"]).ValueKind);
+            Assert.Equal(0, obj.ActualDictionary.Count);
+        }
+
+        [Fact]
         public static void DeserializeIntoJsonElementProperty()
         {
             ClassWithExtensionPropertyAsJsonElement obj;
@@ -613,6 +678,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonExtensionData]
             public Dictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithMultipleDictionaries
+        {
+            [JsonExtensionData]
+            public Dictionary<string, object> MyOverflow { get; set; }
+
+            public Dictionary<string, object> ActualDictionary { get; set; }
         }
     }
 }
