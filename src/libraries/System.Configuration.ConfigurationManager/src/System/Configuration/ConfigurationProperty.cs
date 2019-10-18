@@ -22,7 +22,7 @@ namespace System.Configuration
         {
             object defaultValue = null;
 
-            ConstructorInit(name, type, ConfigurationPropertyOptions.None, null, null);
+            ConstructorInit(name, type, ConfigurationPropertyOptions.None, null, null, null);
 
             if (type == typeof(string))
             {
@@ -61,7 +61,7 @@ namespace System.Configuration
             ConfigurationPropertyOptions options,
             string description)
         {
-            ConstructorInit(name, type, options, validator, typeConverter);
+            ConstructorInit(name, type, options, validator, typeConverter, description);
 
             SetDefaultValue(defaultValue);
         }
@@ -147,19 +147,16 @@ namespace System.Configuration
                 info.PropertyType,
                 propertyAttribute.Options,
                 validator,
-                typeConverter);
+                typeConverter,
+                descriptionAttribute?.Description);
 
             // Figure out the default value
             InitDefaultValueFromTypeInfo(propertyAttribute, defaultValueAttribute);
-
-            // Get the description
-            if (!string.IsNullOrEmpty(descriptionAttribute?.Description))
-                Description = descriptionAttribute.Description;
         }
 
         public string Name { get; private set; }
 
-        public string Description { get; }
+        public string Description { get; private set; }
 
         internal string ProvidedName { get; private set; }
 
@@ -216,7 +213,8 @@ namespace System.Configuration
             Type type,
             ConfigurationPropertyOptions options,
             ConfigurationValidatorBase validator,
-            TypeConverter converter)
+            TypeConverter converter,
+            string description)
         {
             if (typeof(ConfigurationSection).IsAssignableFrom(type))
             {
@@ -237,6 +235,7 @@ namespace System.Configuration
             }
 
             Name = name;
+            Description = description;
             Type = type;
             _options = options;
             Validator = validator;
