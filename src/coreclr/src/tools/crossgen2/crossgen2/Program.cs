@@ -403,6 +403,9 @@ namespace ILCompiler
 
                 }
                 compilation.Compile(_outputFilePath);
+
+                if (_dgmlLogFileName != null)
+                    compilation.WriteDependencyLog(_dgmlLogFileName);
             }
 
             return 0;

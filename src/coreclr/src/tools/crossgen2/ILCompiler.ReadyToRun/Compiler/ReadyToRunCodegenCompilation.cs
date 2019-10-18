@@ -60,6 +60,7 @@ namespace ILCompiler
         }
 
         public abstract void Compile(string outputFileName);
+        public abstract void WriteDependencyLog(string outputFileName);
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
@@ -171,6 +172,7 @@ namespace ILCompiler
     public interface ICompilation
     {
         void Compile(string outputFileName);
+        void WriteDependencyLog(string outputFileName);
     }
 
     public sealed class ReadyToRunCodegenCompilation : Compilation
@@ -226,6 +228,15 @@ namespace ILCompiler
                     NodeFactory.SetMarkingComplete();
                     ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
                 }
+            }
+        }
+
+        public override void WriteDependencyLog(string outputFileName)
+        {
+            using (FileStream dgmlOutput = new FileStream(outputFileName, FileMode.Create))
+            {
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph, _nodeFactory);
+                dgmlOutput.Flush();
             }
         }
 
