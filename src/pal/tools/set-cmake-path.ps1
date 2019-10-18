@@ -61,6 +61,12 @@ function LocateCMake
 
 try {
   $cmakePath = LocateCMake
+  $version = [Version]$(& $cmakePath --version | Select-String -Pattern '\d+\.\d+\.\d+' | %{$_.Matches.Value})
+
+  if ($version -lt [Version]"3.14.0") {
+      Throw "This repository requires CMake 3.14. The newest version of CMake installed is $version. Please install CMake 3.14 or newer from http://www.cmake.org/download/ and ensure it is on your path."
+  }
+
   [System.Console]::WriteLine("set CMakePath=" + $cmakePath)
 
 }
