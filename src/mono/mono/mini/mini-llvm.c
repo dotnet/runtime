@@ -7371,15 +7371,26 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef cmp, mask [32], shuffle;
 			int nelems;
 
+			LLVMTypeRef srcelemt = LLVMGetElementType (LLVMTypeOf (lhs));
+
 			//%c = icmp sgt <16 x i8> %a0, %a1
-			if (LLVMGetElementType (LLVMTypeOf (lhs)) == LLVMDoubleType () || LLVMGetElementType (LLVMTypeOf (lhs)) == LLVMFloatType ())
+			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ())
 				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
 			else
 				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
 			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
-			t = LLVMVectorType (LLVMInt8Type (), nelems);
+
+			LLVMTypeRef elemt;
+			if (srcelemt == LLVMDoubleType ())
+				elemt = LLVMInt64Type ();
+			else if (srcelemt == LLVMFloatType ())
+				elemt = LLVMInt32Type ();
+			else
+				elemt = srcelemt;
+
+			t = LLVMVectorType (elemt, nelems);
 			cmp = LLVMBuildSExt (builder, cmp, t, "");
-			// cmp is a <16 x i8> vector, each element is either 0xff or 0
+			// cmp is a <nelems x elemt> vector, each element is either 0xff... or 0
 			int half = nelems / 2;
 			while (half >= 1) {
 				// AND the top and bottom halfes into the bottom half
