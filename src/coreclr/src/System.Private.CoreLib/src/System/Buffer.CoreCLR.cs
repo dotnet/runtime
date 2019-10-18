@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
@@ -17,14 +18,6 @@ namespace System
 {
     public partial class Buffer
     {
-        // Copies from one primitive array to another primitive array without
-        // respecting types.  This calls memmove internally.  The count and
-        // offset parameters here are in bytes.  If you want to use traditional
-        // array element indices and counts, use Array.Copy.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void BlockCopy(Array src, int srcOffset,
-            Array dst, int dstOffset, int count);
-
         // Returns a bool to indicate if the array is of primitive data types
         // or not.
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -5,13 +5,6 @@
 // File: typehandle.cpp
 //
 
-
-//
-
-//
-// ============================================================================
-
-
 #include "common.h"
 #include "class.h"
 #include "typehandle.h"
@@ -24,57 +17,6 @@
 #include "array.h"
 #ifdef FEATURE_PREJIT 
 #include "zapsig.h"
-#endif
-
-// This method is not being called by all the constructors of TypeHandle
-// because of the following reason. SystemDomain::LoadBaseSystemClasses() 
-// loads TYPE__OBJECT_ARRAY which causes the following issues:
-//
-// If mscorlib is JIT-compiled, Module::CreateArrayMethodTable calls
-// TypeString::AppendName() with a TypeHandle that wraps the MethodTable
-// being created.
-// If mscorlib is ngenned, Module::RestoreMethodTablePointer() needs 
-// a TypeHandle to call ClassLoader::EnsureLoaded().
-//
-
-#if 0
-
-void TypeHandle::NormalizeUnsharedArrayMT()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsNull() || IsTypeDesc())
-        return;
-
-    if (!AsMethodTable()->IsArray())
-        return;
-
-    // This is an array type with a unique unshared MethodTable.
-    // We know that there must exist an ArrayTypeDesc for it, and it
-    // must have been restored.
-    // Let's look it up and use it.
-
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-    TypeHandle elemType = AsMethodTable()->GetApproxArrayElementTypeHandle();
-    CorElementType kind = AsMethodTable()->GetInternalCorElementType();
-    unsigned rank = AsMethodTable()->GetRank();
-
-    // == FailIfNotLoadedOrNotRestored
-    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(  elemType, 
-                                                                kind,
-                                                                rank,
-                                                                ClassLoader::DontLoadTypes);
-    CONSISTENCY_CHECK(!arrayType.IsNull() && arrayType.IsArray()); 
-
-    //
-    // Update the current TypeHandle to use the ArrayTypeDesc
-    //
-    m_asPtr = arrayType.AsPtr();
-
-    INDEBUGIMPL(Verify());
-}
-
 #endif
 
 #ifdef _DEBUG_IMPL
@@ -1239,9 +1181,9 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
             case ELEMENT_TYPE_VAR:
             case ELEMENT_TYPE_MVAR:
                 return ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObject();
-                
-                // for this release a function pointer is mapped into an IntPtr. This result in a loss of information. Fix next release
+
             case ELEMENT_TYPE_FNPTR:
+                // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
                 return MscorlibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
                 
             default:
@@ -1250,80 +1192,29 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         }
     }
 }
-
-
-OBJECTREF TypeHandle::GetManagedClassObjectFast() const
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF o = NULL;
-
-    if (!IsTypeDesc()) {
-        o = AsMethodTable()->GetManagedClassObjectIfExists();
-    }
-    else 
-    {
-        switch(GetInternalCorElementType()) 
-        {
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_SZARRAY:
-            case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_PTR:
-                o = ((ParamTypeDesc*)AsTypeDesc())->GetManagedClassObjectFast();
-                break;
-
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_MVAR:
-                o = ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObjectFast();
-                break;
-
-            // for this release a function pointer is mapped into an IntPtr. This result in a loss of information. Fix next release
-            case ELEMENT_TYPE_FNPTR:
-                // because TheFnPtrClass() can throw we return NULL for now. That is not a major deal because it just means we will
-                // not take advantage of this optimization, but the case is rather rare. 
-                //o = TheFnPtrClass()->GetManagedClassObjectFast();
-                break;
-
-            default:
-                _ASSERTE(!"Bad Element Type");
-                return NULL;
-        }
-    }
-    return o;
-}
 #endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
-BOOL TypeHandle::IsByRef()  const
+BOOL TypeHandle::IsByRef() const
 { 
     LIMITED_METHOD_CONTRACT;
 
-    return(IsTypeDesc() && AsTypeDesc()->IsByRef());
-
+    return (IsTypeDesc() && AsTypeDesc()->IsByRef());
 }
 
-BOOL TypeHandle::IsByRefLike()  const
+BOOL TypeHandle::IsByRefLike() const
 { 
     LIMITED_METHOD_CONTRACT;
 
-    return(!IsTypeDesc() && AsMethodTable()->IsByRefLike());
-
+    return (!IsTypeDesc() && AsMethodTable()->IsByRefLike());
 }
 
-BOOL TypeHandle::IsPointer()  const
+BOOL TypeHandle::IsPointer() const
 { 
     LIMITED_METHOD_CONTRACT;
 
-    return(IsTypeDesc() && AsTypeDesc()->IsPointer());
-
+    return (IsTypeDesc() && AsTypeDesc()->IsPointer());
 }
 
 //

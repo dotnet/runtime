@@ -603,6 +603,8 @@ DEFINE_METASIG_T(IM(Int_RetReadOnlyRefT, i, Q(INATTRIBUTE) r(G(0))))
 
 DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 
+DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
+
 // Undefine macros in case we include the file again in the compilation unit
 
 #undef  DEFINE_METASIG

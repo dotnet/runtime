@@ -72,7 +72,6 @@
 //      VALUETYPE/BYREF HELPERS
 //      GENERICS HELPERS
 //      EXCEPTION HELPERS
-//      SECURITY HELPERS
 //      DEBUGGER/PROFILER HELPERS
 //      GC HELPERS
 //      INTEROP HELPERS
@@ -4092,33 +4091,6 @@ HCIMPL1(Object*, JIT_GetRuntimeMethodStub, CORINFO_METHOD_HANDLE method)
 }
 HCIMPLEND
 
-HCIMPL2(VOID, JIT_GetRuntimeTypeHandle, Object ** destPtr, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-
-    if (!typeHnd.IsTypeDesc())
-    {
-        // Most common... and fastest case
-        OBJECTREF typePtr = typeHnd.AsMethodTable()->GetManagedClassObjectIfExists();
-        if (typePtr != NULL)
-        {
-            SetObjectReference((OBJECTREF*) destPtr,
-                               typePtr);
-            return;
-        }
-    }
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    SetObjectReference((OBJECTREF*) destPtr,
-                       typeHnd.GetManagedClassObject());
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
 
 NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
 {
@@ -4131,6 +4103,9 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+        // Compensate for CORINFO_TOKENKIND_Ldtoken optimization done by CEEInfo::embedGenericHandle
+        if (!typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsArray())
+            typeHandle = ArrayBase::GetTypeHandle(typeHandle.AsMethodTable());
         refType = typeHandle.GetManagedClassObject();
         HELPER_METHOD_FRAME_END();
     }
@@ -5149,55 +5124,6 @@ HCIMPL2(void, JIT_ThrowClassAccessException, CORINFO_METHOD_HANDLE caller, CORIN
     HELPER_METHOD_FRAME_END();
 }
 HCIMPLEND;
-
-//========================================================================
-//
-//      SECURITY HELPERS
-//
-//========================================================================
-
-HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL4(void, JIT_MethodAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL3(void, JIT_FieldAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL3(void, JIT_ClassAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_Security_Prolog, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-HCIMPL1(void, JIT_VerificationRuntimeCheck, CORINFO_METHOD_HANDLE methHnd_)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
 
 //========================================================================
 //

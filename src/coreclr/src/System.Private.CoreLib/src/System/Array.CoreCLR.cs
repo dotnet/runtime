@@ -358,9 +358,6 @@ namespace System
         public extern int GetLowerBound(int dimension);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern ref byte GetRawArrayData();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

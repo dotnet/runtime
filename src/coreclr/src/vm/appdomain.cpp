@@ -2083,10 +2083,6 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pUtf8StringClass = MscorlibBinder::GetClass(CLASS__UTF8_STRING);
 #endif // FEATURE_UTF8STRING
 
-    // Used by Buffer::BlockCopy
-    g_pByteArrayMT = ClassLoader::LoadArrayTypeThrowing(
-        TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))).AsArray()->GetMethodTable();
-
 #ifndef CROSSGEN_COMPILE
     CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
 #endif

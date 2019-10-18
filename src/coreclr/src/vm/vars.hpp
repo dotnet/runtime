@@ -391,8 +391,6 @@ GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 
-GPTR_DECL(MethodTable,      g_pByteArrayMT);
-
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
