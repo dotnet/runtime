@@ -155,10 +155,10 @@ For Linux and macOS:
 The published tests are summarized in a `corefx-test-assets.xml` file that lives here:
 
 ```
-https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/$(MicrosoftPrivateCoreFxNETCoreAppVersion)/$(__BuildOS).$(__BuildArch)/$(_TargetGroup)/corefx-test-assets.xml
+https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)/$(__BuildOS).$(__BuildArch)/$(_TargetGroup)/corefx-test-assets.xml
 ```
 
-where `MicrosoftPrivateCoreFxNETCoreAppVersion` is defined in `eng\Versions.props`. For example:
+where `MicrosoftPrivateCoreFxNETCoreAppPackageVersion` is defined in `eng\Versions.props`. For example:
 
 ```
 https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview8.19326.15/Linux.arm64/netcoreapp/corefx-test-assets.xml       
