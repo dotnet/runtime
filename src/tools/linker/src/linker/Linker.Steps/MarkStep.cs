@@ -2302,11 +2302,19 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (iface);
 		}
 
+		bool HasManuallyTrackedDependency (MethodBody methodBody)
+		{
+			return PreserveDependencyLookupStep.HasPreserveDependencyAttribute (methodBody.Method);
+		}
+
 		//
 		// Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
 		//
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body)
 		{
+			if (HasManuallyTrackedDependency (body))
+				return;
+
 			var instructions = body.Instructions;
 
 			//
@@ -2331,10 +2339,11 @@ namespace Mono.Linker.Steps {
 				int first_arg_instr, second_arg_instr;
 				Instruction first_arg;
 
+				switch (methodCalledType.Name) {
 				//
 				// System.Type
 				//
-				if (methodCalledType.Name == "Type" && methodCalledType.Namespace == "System") {
+				case "Type" when methodCalledType.Namespace == "System":
 
 					switch (methodCalled.Name) {
 					//
@@ -2349,18 +2358,18 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// GetMethod (String)
-					// GetMethod (String, BindingFlags)
-					// GetMethod (String, Type[])
-					// GetMethod (String, Type[], ParameterModifier[])
-					// GetMethod (String, BindingFlags, Binder, Type[], ParameterModifier[])
-					// GetMethod (String, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
+					// GetMethod (string)
+					// GetMethod (string, BindingFlags)
+					// GetMethod (string, Type[])
+					// GetMethod (string, Type[], ParameterModifier[])
+					// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
+					// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
 					//
 					// TODO: .NET Core extensions
-					// GetMethod (String, int, Type[])
-					// GetMethod (String, int, Type[], ParameterModifier[]?)
-					// GetMethod (String, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
-					// GetMethod (String, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
+					// GetMethod (string, int, Type[])
+					// GetMethod (string, int, Type[], ParameterModifier[]?)
+					// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+					// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 					//
 					case "GetMethod":
 						if (!methodCalledDefinition.IsStatic)
@@ -2369,8 +2378,8 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// GetField (String)
-					// GetField (String, BindingFlags)
+					// GetField (string)
+					// GetField (string, BindingFlags)
 					//
 					case "GetField":
 						if (!methodCalledDefinition.IsStatic)
@@ -2379,8 +2388,8 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// GetEvent (String)
-					// GetEvent (String, BindingFlags)
+					// GetEvent (string)
+					// GetEvent (string, BindingFlags)
 					//
 					case "GetEvent":
 						if (!methodCalledDefinition.IsStatic)
@@ -2389,13 +2398,13 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// GetProperty (String)
-					// GetProperty (String, BindingFlags)
-					// GetProperty (String, Type)
-					// GetProperty (String, Type[])
-					// GetProperty (String, Type, Type[])
-					// GetProperty (String, Type, Type[], ParameterModifier[])
-					// GetProperty (String, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+					// GetProperty (string)
+					// GetProperty (string, BindingFlags)
+					// GetProperty (string, Type)
+					// GetProperty (string, Type[])
+					// GetProperty (string, Type, Type[])
+					// GetProperty (string, Type, Type[], ParameterModifier[])
+					// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
 					//
 					case "GetProperty":
 						if (!methodCalledDefinition.IsStatic)
@@ -2404,12 +2413,12 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// GetType (String)
-					// GetType (String, Boolean)
-					// GetType (String, Boolean, Boolean)
-					// GetType (String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
-					// GetType (String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
-					// GetType (String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
+					// GetType (string)
+					// GetType (string, Boolean)
+					// GetType (string, Boolean, Boolean)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
 					//
 					case "GetType":
 						if (!methodCalledDefinition.IsStatic)
@@ -2417,8 +2426,7 @@ namespace Mono.Linker.Steps {
 
 						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
 						if (first_arg_instr < 0) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2427,12 +2435,11 @@ namespace Mono.Linker.Steps {
 						//
 						first_arg = instructions [first_arg_instr];
 						if (first_arg.OpCode != OpCodes.Ldstr) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
+							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
 							continue;
 						}
 
-						TypeDefinition foundType = ResolveFullyQualifiedTypeName ((string) first_arg.Operand);
+						TypeDefinition foundType = ResolveFullyQualifiedTypeName ((string)first_arg.Operand);
 						if (foundType == null)
 							continue;
 
@@ -2446,13 +2453,12 @@ namespace Mono.Linker.Steps {
 						break;
 					}
 
-					continue;
-				}
+					break;
 
 				//
 				// System.Linq.Expressions.Expression
 				//
-				if (methodCalledType.Name == "Expression" && methodCalledType.Namespace == "System.Linq.Expressions") {
+				case "Expression" when methodCalledType.Namespace == "System.Linq.Expressions":
 					Instruction second_argument;
 					TypeDefinition declaringType;
 
@@ -2462,13 +2468,12 @@ namespace Mono.Linker.Steps {
 					switch (methodCalled.Name) {
 
 					//
-					// Call (Type, String, Type[], Expression[])
+					// static Call (Type, String, Type[], Expression[])
 					//
 					case "Call":
 						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 4);
 						if (first_arg_instr < 0) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2477,17 +2482,15 @@ namespace Mono.Linker.Steps {
 							first_arg_instr++;
 
 						declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr);
-						if (declaringType == null ) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+						if (declaringType == null) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 1st argument which cannot be analyzed");
 							continue;
 						}
 
 						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 3);
 						second_argument = instructions [second_arg_instr];
 						if (second_argument.OpCode != OpCodes.Ldstr) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2498,16 +2501,15 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// Field (Expression, Type, String)
-					// Property(Expression, Type, String)
+					// static Field (Expression, Type, String)
+					// static Property(Expression, Type, String)
 					//
 					case "Property":
 					case "Field":
 
 						second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 2);
 						if (second_arg_instr < 0) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 							continue;
 						}
 
@@ -2517,16 +2519,14 @@ namespace Mono.Linker.Steps {
 
 						declaringType = FindReflectionTypeForLookup (instructions, second_arg_instr);
 						if (declaringType == null) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 							continue;
 						}
 
 						var third_arg_inst = GetInstructionAtStackDepth (instructions, i - 1, 1);
 						var third_argument = instructions [third_arg_inst];
 						if (third_argument.OpCode != OpCodes.Ldstr) {
-							if (!HasManuallyTrackedDependency (body))
-								_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with the 3rd argument which cannot be analyzed");
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with the 3rd argument which cannot be analyzed");
 							continue;
 						}
 
@@ -2553,55 +2553,263 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// New (Type)
+					// static New (Type)
 					//
 					case "New":
-						// TODO: Same as Activator
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, 1);
+						if (first_arg_instr < 0) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+							continue;
+						}
+
+						first_arg = instructions [first_arg_instr];
+						if (first_arg.OpCode == OpCodes.Ldtoken)
+							first_arg_instr++;
+
+						declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr);
+						if (declaringType == null) {
+							_context.LogMessage (MessageImportance.Low, $"Expression call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+							continue;
+						}
+
+						MarkMethodsFromReflectionCall (declaringType, ".ctor", 0, BindingFlags.Instance, parametersCount: 0);
 						break;
 					}
 
-					continue;
-				}
+					break;
 
 				//
 				// System.Reflection.RuntimeReflectionExtensions
 				//
-				if (methodCalledType.Name == "RuntimeReflectionExtensions" && methodCalledType.Namespace == "System.Reflection") {
+				case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
 					switch (methodCalled.Name) {
 					//
-					// GetRuntimeField (this Type type, string name)
+					// static GetRuntimeField (this Type type, string name)
 					//
 					case "GetRuntimeField":
 						ProcessSystemTypeGetMemberLikeCall (System.Reflection.MemberTypes.Field, methodCalledDefinition, i - 1, thisExtension: true);
 						break;
 
 					//
-					// GetRuntimeMethod (this Type type, string name, Type[] parameters)
+					// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
 					//
 					case "GetRuntimeMethod":
 						ProcessSystemTypeGetMemberLikeCall (System.Reflection.MemberTypes.Method, methodCalledDefinition, i - 1, thisExtension: true);
 						break;
 
 					//
-					// GetRuntimeProperty(this Type type, string name)
+					// static GetRuntimeProperty (this Type type, string name)
 					//
 					case "GetRuntimeProperty":
 						ProcessSystemTypeGetMemberLikeCall (System.Reflection.MemberTypes.Property, methodCalledDefinition, i - 1, thisExtension: true);
 						break;
 
 					//
-					// GetRuntimeEvent(this Type type, string name)
+					// static GetRuntimeEvent (this Type type, string name)
 					//
 					case "GetRuntimeEvent":
 						ProcessSystemTypeGetMemberLikeCall (System.Reflection.MemberTypes.Event, methodCalledDefinition, i - 1, thisExtension: true);
 						break;
 					}
+
+					break;
+
+				//
+				// System.AppDomain
+				//
+				case "AppDomain" when methodCalledType.Namespace == "System":
+					//
+					// CreateInstance (string assemblyName, string typeName)
+					// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName)
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceFrom (string assemblyFile, string typeName)
+					// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					switch (methodCalled.Name) {
+					case "CreateInstance":
+					case "CreateInstanceAndUnwrap":
+					case "CreateInstanceFrom":
+					case "CreateInstanceFromAndUnwrap":
+						ProcessActivatorCallWithStrings (methodCalledDefinition, i - 1, methodCalled.Parameters.Count < 4);
+						break;
+					}
+
+					break;
+
+				//
+				// System.Reflection.Assembly
+				//
+				case "Assembly" when methodCalledType.Namespace == "System.Reflection":
+					//
+					// CreateInstance (string typeName)
+					// CreateInstance (string typeName, bool ignoreCase)
+					// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
+					//
+					if (methodCalled.Name == "CreateInstance") {
+						//
+						// TODO: This could be supported for `this` only calls
+						//
+						_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalled.FullName}' inside '{body.Method.FullName}' is not yet supported");
+						break;
+					}
+
+					break;
+
+				//
+				// System.Activator
+				//
+				case "Activator" when methodCalledType.Namespace == "System":
+					if (!methodCalledDefinition.IsStatic)
+						break;
+
+					switch (methodCalled.Name) {
+					//
+					// static CreateInstance (string assemblyName, string typeName)
+					// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+					// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
+					//
+					// static CreateInstance (System.Type type)
+					// static CreateInstance (System.Type type, bool nonPublic)
+					// static CreateInstance (System.Type type, params object?[]? args)
+					// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
+					// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
+					// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+					//
+					case "CreateInstance":
+						var parameters = methodCalled.Parameters;
+						if (parameters.Count < 1)
+							continue;
+
+						if (parameters [0].ParameterType.MetadataType == MetadataType.String) {
+							ProcessActivatorCallWithStrings (methodCalledDefinition, i - 1, parameters.Count < 4);
+							continue;
+						}
+
+						first_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count);
+						if (first_arg_instr < 0) {
+							_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalled.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+							continue;
+						}
+
+						if (parameters [0].ParameterType.IsTypeOf ("System", "Type")) {
+							declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr + 1);
+							if (declaringType == null) {
+								_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalled.FullName}' inside '{body.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
+								continue;
+							}
+
+							BindingFlags bindingFlags = BindingFlags.Instance;
+							int? parametersCount = null;
+
+							if (methodCalledDefinition.Parameters.Count == 1) {
+								parametersCount = 0;
+							} else {
+								second_arg_instr = GetInstructionAtStackDepth (instructions, i - 1, methodCalledDefinition.Parameters.Count - 1);
+								second_argument = instructions [second_arg_instr];
+								switch (second_argument.OpCode.Code) {
+								case Code.Ldc_I4_0 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
+									parametersCount = 0;
+									bindingFlags |= BindingFlags.Public;
+									break;
+								case Code.Ldc_I4_1 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
+									parametersCount = 0;
+									break;
+								case Code.Ldc_I4_S when parameters [1].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags"):
+									bindingFlags = (BindingFlags)(sbyte)second_argument.Operand;
+									break;
+								}
+							}
+
+							MarkMethodsFromReflectionCall (declaringType, ".ctor", 0, bindingFlags, parametersCount);
+							continue;
+						}
+
+						break;
+					//
+					// static T CreateInstance<T> ()
+					//
+					case "CreateInstance`1":
+						// Not sure it's worth implementing as we cannot expant T and simple cases can be rewritten
+						_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalled.FullName}' inside '{body.Method.FullName}' is not supported");
+						break;
+
+					//
+					// static CreateInstanceFrom (string assemblyFile, string typeName)
+					// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					case "CreateInstanceFrom":
+						ProcessActivatorCallWithStrings (methodCalledDefinition, i - 1, methodCalled.Parameters.Count < 4);
+						break;
+					}
+
+					break;
 				}
 			}
 
-			bool HasManuallyTrackedDependency (MethodBody methodBody)
+			//
+			// Handles static method calls in form of Create (string assemblyFile, string typeName, ......)
+			//
+			void ProcessActivatorCallWithStrings (MethodDefinition methodCalledDefinition, int startIndex, bool defaultCtorOnly)
 			{
-				return PreserveDependencyLookupStep.HasPreserveDependencyAttribute (methodBody.Method);
+				var parameters = methodCalledDefinition.Parameters;
+				if (parameters.Count < 2)
+					return;
+
+				if (parameters [0].ParameterType.MetadataType != MetadataType.String && parameters [1].ParameterType.MetadataType != MetadataType.String) {
+					_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' is not supported");
+					return;
+				}
+
+				var first_arg_instr = GetInstructionAtStackDepth (instructions, startIndex, methodCalledDefinition.Parameters.Count);
+				if (first_arg_instr < 0) {
+					_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+					return;
+				}
+
+				var first_arg = instructions [first_arg_instr];
+				if (first_arg.OpCode != OpCodes.Ldstr) {
+					_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' was detected with the 1st argument which cannot be analyzed");
+					return;
+				}
+
+				var second_arg_instr = GetInstructionAtStackDepth (instructions, startIndex, methodCalledDefinition.Parameters.Count - 1);
+				if (second_arg_instr < 0) {
+					_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+					return;
+				}
+
+				var second_arg = instructions [second_arg_instr];
+				if (second_arg.OpCode != OpCodes.Ldstr) {
+					_context.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' was detected with the 2nd argument which cannot be analyzed");
+					return;
+				}
+
+				string assembly_name = (string)first_arg.Operand;
+				if (!_context.Resolver.AssemblyCache.TryGetValue (assembly_name, out var assembly)) {
+					_context.Logger.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' references assembly '{assembly_name}' which could not be found");
+					return;
+				}
+
+				string type_name = (string)second_arg.Operand;
+				var declaringType = FindType (assembly, type_name);
+
+				if (declaringType == null) {
+					_context.Logger.LogMessage (MessageImportance.Low, $"Activator call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' references type '{type_name}' which could not be found");
+					return;
+				}
+
+				MarkMethodsFromReflectionCall (declaringType, ".ctor", 0, null, defaultCtorOnly ? 0 : (int?) null);
 			}
 
 			//
@@ -2614,18 +2822,17 @@ namespace Mono.Linker.Steps {
 					--first_instance_arg;
 
 				var first_arg_instr = GetInstructionAtStackDepth (instructions, startIndex, first_instance_arg);
-				if (first_arg_instr < 0 && !HasManuallyTrackedDependency (null)) {
-					if (!HasManuallyTrackedDependency (body))
-						_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
+				if (first_arg_instr < 0) {
+					_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' couldn't be decomposed");
 					return;
 				}
 
 				var first_arg = instructions [first_arg_instr];
-				BindingFlags bindingFlags= default;
+				BindingFlags? bindingFlags = default;
 				string name = default;
 
 				if (memberTypes == System.Reflection.MemberTypes.Constructor) {
-					if (first_arg.OpCode == OpCodes.Ldc_I4_S && methodCalledDefinition.Parameters.Count > 0 && methodCalledDefinition.Parameters [0].ParameterType.Name == "BindingFlags") {
+					if (first_arg.OpCode == OpCodes.Ldc_I4_S && methodCalledDefinition.Parameters.Count > 0 && methodCalledDefinition.Parameters [0].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags")) {
 						bindingFlags = (BindingFlags)(sbyte)first_arg.Operand;
 					}
 				} else {
@@ -2633,23 +2840,21 @@ namespace Mono.Linker.Steps {
 					// The next value must be string constant (we don't handle anything else)
 					//
 					if (first_arg.OpCode != OpCodes.Ldstr) {
-						if (!HasManuallyTrackedDependency (body))
-							_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
+						_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' was detected with argument which cannot be analyzed");
 						return;
 					}
 
 					name = (string)first_arg.Operand;
 
 					var pos_arg = instructions [first_arg_instr + 1];
-					if (pos_arg.OpCode == OpCodes.Ldc_I4_S && methodCalledDefinition.Parameters.Count > 1 && methodCalledDefinition.Parameters [1].ParameterType.Name == "BindingFlags") {
+					if (pos_arg.OpCode == OpCodes.Ldc_I4_S && methodCalledDefinition.Parameters.Count > 1 && methodCalledDefinition.Parameters [1].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags")) {
 						bindingFlags = (BindingFlags)(sbyte)pos_arg.Operand;
 					}
 				}
 
 				var declaringType = FindReflectionTypeForLookup (instructions, first_arg_instr - 1);
 				if (declaringType == null) {
-					if (!HasManuallyTrackedDependency (body))
-						_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' does not use detectable instance type extraction");
+					_context.LogMessage (MessageImportance.Low, $"Reflection call '{methodCalledDefinition.FullName}' inside '{body.Method.FullName}' does not use detectable instance type extraction");
 					return;
 				}
 
@@ -2845,7 +3050,7 @@ namespace Mono.Linker.Steps {
 		//
 		// arity == null for name match regardless of arity
 		//
-		void MarkMethodsFromReflectionCall (TypeDefinition declaringType, string name, int? arity, BindingFlags? bindingFlags)
+		void MarkMethodsFromReflectionCall (TypeDefinition declaringType, string name, int? arity, BindingFlags? bindingFlags, int? parametersCount = null)
 		{
 			foreach (var method in declaringType.Methods) {
 				var mname = method.Name;
@@ -2865,6 +3070,9 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
+					continue;
+
+				if (parametersCount != null && parametersCount != method.Parameters.Count)
 					continue;
 
 				Tracer.Push ($"Reflection-{method}");
