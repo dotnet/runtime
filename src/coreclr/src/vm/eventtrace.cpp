@@ -1135,6 +1135,7 @@ void BulkComLogger::FlushRcw()
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 #endif // !defined(FEATURE_PAL)
+    result |= EventPipeWriteEventGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
 
@@ -1224,6 +1225,7 @@ void BulkComLogger::FlushCcw()
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 #endif //!defined(FEATURE_PAL)
+    result |= EventPipeWriteEventGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
 
@@ -1428,6 +1430,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 #endif //!defined(FEATURE_PAL)
+    result |= EventPipeWriteEventGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 
     _ASSERTE(result == ERROR_SUCCESS);
 
