@@ -83,8 +83,8 @@ static gint64
 get_long_arg (InterpMethodArguments *margs, int idx)
 {
 	interp_pair p;
-	p.pair.lo = (gint32)margs->iargs [idx];
-	p.pair.hi = (gint32)margs->iargs [idx + 1];
+	p.pair.lo = (gint32)(gssize)margs->iargs [idx];
+	p.pair.hi = (gint32)(gssize)margs->iargs [idx + 1];
 	return p.l;
 }
 
