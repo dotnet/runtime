@@ -841,7 +841,6 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         PRECONDITION(pEEProf != NULL);
         PRECONDITION(pClsid != NULL);
         PRECONDITION(wszClsid != NULL);
-        PRECONDITION(wszProfilerDLL != NULL);
     }
     CONTRACTL_END;
 
