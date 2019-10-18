@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
-    <PackageLicenseFile>LICENSE.TXT</PackageLicenseFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Authors>Microsoft</Authors>
     <NugetLicenseFile>$(RepoRoot)$(PackageLicenseFile)</NugetLicenseFile>

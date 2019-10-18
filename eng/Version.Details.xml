@@ -123,7 +123,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>b47a997282b4d347cb079d26515ea4147e2ac548</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.SharedFramework.Sdk" Version="5.0.0-beta.19515.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" Version="5.0.0-beta.19517.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>a093b5b2bef24499239a2e9b4114db01fa19e446</Sha>
     </Dependency>

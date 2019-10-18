@@ -44,9 +44,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- ProjectDir needs to be set for build-tools and legacy usages. New usages should use RepoRoot -->
-    <ProjectDir>$(RepoRoot)</ProjectDir>
-    <SourceDir>$(RepoRoot)src/</SourceDir>
+    <SetupRoot>$(RepoRoot)</SetupRoot>
+    <!-- ProjectDir needs to be set for build-tools and legacy usages. New usages should use SetupRoot. -->
+    <ProjectDir>$(SetupRoot)</ProjectDir>
+    <SourceDir>$(SetupRoot)src/</SourceDir>
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ArtifactsBinDir)</BinDir>
