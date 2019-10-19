@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>System.Resources.Writer</AssemblyName>
     <RootNamespace>System.Resources</RootNamespace>
+    <Nullable>enable</Nullable>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

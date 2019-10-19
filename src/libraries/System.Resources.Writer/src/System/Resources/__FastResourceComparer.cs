@@ -14,7 +14,6 @@ namespace System.Resources
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 
-
         public int GetHashCode(string key)
         {
             return FastResourceComparer.HashFunction(key);
