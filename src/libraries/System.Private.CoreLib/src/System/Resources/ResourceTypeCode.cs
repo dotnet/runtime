@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Marker for types in .resources files
-**
-**
-===========================================================*/
-
 namespace System.Resources
 {
     /* An internal implementation detail for .resources files, describing
