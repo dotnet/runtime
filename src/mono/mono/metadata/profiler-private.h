@@ -158,7 +158,7 @@ mono_profiler_clauses_enabled (void)
 }
 
 #define _MONO_PROFILER_EVENT(name, ...) \
-	ICALL_DECL_EXPORT void mono_profiler_raise_ ## name (__VA_ARGS__);
+	ICALL_EXPORT void mono_profiler_raise_ ## name (__VA_ARGS__);
 #define MONO_PROFILER_EVENT_0(name, type) \
 	_MONO_PROFILER_EVENT(name, void)
 #define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
