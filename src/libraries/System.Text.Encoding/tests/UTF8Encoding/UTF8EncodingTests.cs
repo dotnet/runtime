@@ -102,8 +102,27 @@ namespace System.Text.Tests
         public void Clone(UTF8Encoding encoding)
         {
             UTF8Encoding clone = (UTF8Encoding)encoding.Clone();
+            Assert.False(clone.IsReadOnly);
             Assert.NotSame(encoding, clone);
             Assert.Equal(encoding, clone);
+        }
+
+        [Fact]
+        public void Clone_CanCloneUtf8SingletonAndSetFallbacks()
+        {
+            // The Encoding.UTF8 singleton is a sealed subclass of UTF8Encoding that has
+            // its own internal fast-track logic that might make assumptions about any
+            // configured replacement behavior. This test clones the singleton instance
+            // to ensure that we can properly set custom fallbacks and that they're
+            // honored by the Encoding.
+
+            UTF8Encoding clone = (UTF8Encoding)Encoding.UTF8.Clone();
+
+            clone.DecoderFallback = new DecoderReplacementFallback("[BAD]");
+            clone.EncoderFallback = new EncoderReplacementFallback("?");
+
+            Assert.Equal("ab[BAD]xy", clone.GetString(new byte[] { (byte)'a', (byte)'b', 0xC0, (byte)'x', (byte)'y' }));
+            Assert.Equal(new byte[] { (byte)'a', (byte)'?', (byte)'c' }, clone.GetBytes("a\ud800c"));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -149,6 +168,100 @@ namespace System.Text.Tests
             if (value is UTF8Encoding)
             {
                 Assert.Equal(expected, encoding.GetHashCode().Equals(value.GetHashCode()));
+            }
+        }
+
+        [Fact]
+        public void CustomSubclassMethodOverrides()
+        {
+            // Ensures that we don't inadvertently implement methods like UTF8Encoding.GetBytes(string)
+            // without accounting for the fact that a subclassed type may have overridden GetBytes(char[], int, int).
+
+            UTF8Encoding encoding = new CustomUTF8Encoding();
+
+            Assert.Equal(new byte[] { (byte)'!', (byte)'a', (byte)'!', (byte)'b', (byte)'!', (byte)'c', (byte)'!' }, encoding.GetBytes("abc"));
+            Assert.Equal("*a*b*c*".ToCharArray(), encoding.GetChars(new byte[] { (byte)'a', (byte)'b', (byte)'c' }));
+            Assert.Equal("~a~b~c~", encoding.GetString(new byte[] { (byte)'a', (byte)'b', (byte)'c' }));
+        }
+
+        /// <summary>
+        /// An Encoding which is not actually legitimate UTF-8, but which nevertheless
+        /// subclasses UTF8Encoding. A realistic scenario where one might do this would be to
+        /// support "wobbly" data (where the code points U+D800..DFFF are round-trippable).
+        /// </summary>
+        private class CustomUTF8Encoding : UTF8Encoding
+        {
+            public override int GetByteCount(string chars)
+            {
+                return chars.Length * 2 + 1;
+            }
+
+            public override int GetBytes(string chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+            {
+                // We'll narrow chars to bytes and surround each char with an exclamation point.
+
+                List<byte> builder = new List<byte>()
+                {
+                    (byte)'!'
+                };
+
+                foreach (char ch in chars.AsSpan(charIndex, charCount))
+                {
+                    builder.Add((byte)ch);
+                    builder.Add((byte)'!');
+                }
+
+                builder.CopyTo(bytes, byteIndex);
+                return builder.Count;
+            }
+
+            public override int GetCharCount(byte[] bytes, int index, int count)
+            {
+                return count * 2 + 1;
+            }
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+            {
+                // We'll widen bytes to chars and surround each char with an asterisk.
+
+                List<char> builder = new List<char>()
+                {
+                    '*'
+                };
+
+                foreach (byte b in bytes.AsSpan(byteIndex, byteCount))
+                {
+                    builder.Add((char)b);
+                    builder.Add('*');
+                }
+
+                builder.CopyTo(chars, charIndex);
+                return builder.Count;
+            }
+
+            public override string GetString(byte[] bytes, int byteIndex, int byteCount)
+            {
+                // We'll widen bytes to chars and surround each char with a tilde.
+
+                StringBuilder builder = new StringBuilder("~");
+
+                foreach (byte b in bytes.AsSpan(byteIndex, byteCount))
+                {
+                    builder.Append((char)b);
+                    builder.Append('~');
+                }
+
+                return builder.ToString();
+            }
+
+            public override int GetMaxByteCount(int charCount)
+            {
+                return charCount * 2 + 1;
+            }
+
+            public override int GetMaxCharCount(int byteCount)
+            {
+                return byteCount * 2 + 1;
             }
         }
     }
