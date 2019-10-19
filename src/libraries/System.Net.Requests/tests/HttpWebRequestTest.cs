@@ -732,17 +732,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        public void PreAuthenticate_SetAndGetBooleanResponse_ValuesMatch(Uri remoteServer)
-        {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            request.PreAuthenticate = true;
-            using (var response = (HttpWebResponse)request.GetResponse())
-            {
-                Assert.True(request.PreAuthenticate);
-            }
-        }
-
-        [Theory, MemberData(nameof(EchoServers))]
         public void Connection_NullOrWhiteSpace_ValuesMatch(Uri remoteServer)
         {
             const string Connection = "connect";
