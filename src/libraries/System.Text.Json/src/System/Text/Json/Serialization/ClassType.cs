@@ -23,8 +23,5 @@ namespace System.Text.Json
         Enumerable = 0x8,
         // IDictionary
         Dictionary = 0x10,
-        // Is deserialized by passing a IDictionary to its constructor
-        // i.e. immutable dictionaries, Hashtable, SortedList,
-        IDictionaryConstructible = 0x20,
     }
 }

@@ -125,21 +125,6 @@ namespace System.Text.Json
                 return;
             }
 
-            // A property that returns a type that is deserialized by passing an
-            // IDictionary to its constructor keeps the same stack frame.
-            if (jsonPropertyInfo.ClassType == ClassType.IDictionaryConstructible)
-            {
-                state.Current.IsIDictionaryConstructibleProperty = true;
-
-                bool endOfEnumerable = HandleDictionary(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
-                if (endOfEnumerable)
-                {
-                    state.Current.MoveToNextProperty = true;
-                }
-
-                return;
-            }
-
             // A property that returns an object.
             if (!obtainedValue)
             {

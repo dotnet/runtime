@@ -48,11 +48,7 @@
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\DefaultDerivedDictionaryConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\DefaultDerivedEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultArrayConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\DefaultICollectionConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\DefaultIDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultImmutableEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultImmutableDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\EnumConverterOptions.cs" />
@@ -87,7 +83,6 @@
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />

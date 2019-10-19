@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Tests
 
             UnsupportedDerivedTypesWrapper_IEnumerable wrapper = new UnsupportedDerivedTypesWrapper_IEnumerable
             {
-                IEnumerableWrapper = new StringIEnumerableWrapper() { "1", "2", "3" },
+                IEnumerableWrapper = new StringIEnumerableWrapper(new List<string> { "1", "2", "3" }),
             };
 
             // Without converter, we throw on deserialize.

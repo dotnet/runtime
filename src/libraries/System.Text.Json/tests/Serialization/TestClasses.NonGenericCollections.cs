@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Tests
         public HashtableWrapper MyHashtableWrapper { get; set; }
         public ArrayListWrapper MyArrayListWrapper { get; set; }
         public SortedListWrapper MySortedListWrapper { get; set; }
+        public StackWrapper MyStackWrapper { get; set; }
+        public QueueWrapper MyQueueWrapper { get; set; }
 
         public static readonly string s_json =
             @"{" +
@@ -22,7 +24,9 @@ namespace System.Text.Json.Serialization.Tests
             @"""MyIDictionaryWrapper"" : {""key"" : ""value""}," +
             @"""MyHashtableWrapper"" : {""key"" : ""value""}," +
             @"""MyArrayListWrapper"" : [""Hello""]," +
-            @"""MySortedListWrapper"" : {""key"" : ""value""}" +
+            @"""MySortedListWrapper"" : {""key"" : ""value""}," +
+            @"""MyStackWrapper"" : [""Hello""]," +
+            @"""MyQueueWrapper"" : [""Hello""]" +
             @"}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
@@ -34,6 +38,11 @@ namespace System.Text.Json.Serialization.Tests
             MyHashtableWrapper = new HashtableWrapper(new List<KeyValuePair<string, object>> { new KeyValuePair<string, object>("key", "value" ) });
             MyArrayListWrapper = new ArrayListWrapper() { "Hello" };
             MySortedListWrapper = new SortedListWrapper() { { "key", "value" } };
+            MyStackWrapper = new StackWrapper();
+            MyQueueWrapper = new QueueWrapper();
+
+            MyStackWrapper.Push("Hello");
+            MyQueueWrapper.Enqueue("Hello");
         }
 
         public void Verify()
@@ -43,6 +52,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("value", ((JsonElement)MyHashtableWrapper["key"]).GetString());
             Assert.Equal("Hello", ((JsonElement)MyArrayListWrapper[0]).GetString());
             Assert.Equal("value", ((JsonElement)MySortedListWrapper["key"]).GetString());
+            Assert.Equal("Hello", ((JsonElement)MyStackWrapper.Peek()).GetString());
+            Assert.Equal("Hello", ((JsonElement)MyQueueWrapper.Peek()).GetString());
         }
     }
 
