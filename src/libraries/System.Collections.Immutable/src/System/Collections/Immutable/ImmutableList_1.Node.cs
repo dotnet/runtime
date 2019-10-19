@@ -705,6 +705,22 @@ namespace System.Collections.Immutable
             internal int IndexOf(T item, IEqualityComparer<T> equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
 
             /// <summary>
+            /// Searches for the specified object and returns <c>true</c> if it is found, <c>false</c> otherwise.
+            /// </summary>
+            /// <param name="item">
+            /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
+            /// can be null for reference types.
+            /// </param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use for testing the match of two elements.
+            /// </param>
+            /// <returns>
+            /// <c>true</c> if it is found, <c>false</c> otherwise.
+            /// </returns>
+            [Pure]
+            internal bool Contains(T item, IEqualityComparer<T> equalityComparer) => Contains(this, item, equalityComparer);
+
+            /// <summary>
             /// Searches for the specified object and returns the zero-based index of the
             /// first occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
             /// that starts at the specified index and contains the specified number of elements.
@@ -1542,6 +1558,22 @@ namespace System.Collections.Immutable
             /// <param name="key">The leaf node's key.</param>
             /// <returns>The leaf node.</returns>
             private static Node CreateLeaf(T key) => new Node(key, left: EmptyNode, right: EmptyNode);
+
+            /// <summary>
+            /// Traverses the node tree looking for a node with the provided value. The provided node will be checked
+            /// then we will recursively check it's left and right nodes.
+            /// </summary>
+            /// <param name="node">
+            /// The node to check.
+            /// </param>
+            /// <param name="value">
+            /// The value to check for.
+            /// </param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use for testing the node and value.
+            /// </param>
+            /// <returns></returns>
+            private static bool Contains(Node node, T value, IEqualityComparer<T> equalityComparer) => !node.IsEmpty && (equalityComparer.Equals(value, node._key) || Contains(node._left, value, equalityComparer) || Contains(node._right, value, equalityComparer));
         }
     }
 }
