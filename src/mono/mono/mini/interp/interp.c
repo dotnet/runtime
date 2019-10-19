@@ -1481,6 +1481,7 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
  * runtime specifies that the implementation of the method is automatically
  * provided by the runtime and is primarily used for the methods of delegates.
  */
+#ifndef ENABLE_NETCORE
 static MONO_NEVER_INLINE MonoException*
 ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp, stackval *retval)
 {
@@ -1501,6 +1502,7 @@ ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, s
 			m_class_get_name_space (method->klass), m_class_get_name (method->klass),
 			method->name);
 }
+#endif
 
 #if DEBUG_INTERP
 static char*
@@ -3654,6 +3656,7 @@ common_vcall:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN) {
+#ifndef ENABLE_NETCORE
 			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [1]];
 			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 			stackval *retval;
@@ -3674,6 +3677,9 @@ common_vcall:
 				sp++;
 			}
 			ip += 3;
+#else
+			g_assert_not_reached ();
+#endif
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_RET)

@@ -1486,8 +1486,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_emit_ldelema (td, target_method->klass, check_class);
 			td->ip += 5;
 			return TRUE;
+#ifndef ENABLE_NETCORE
 		} else if (!strcmp (tm, "UnsafeMov") || !strcmp (tm, "UnsafeLoad")) {
 			*op = MINT_CALLRUN;
+#endif
 		} else if (!strcmp (tm, "Get")) {
 			interp_emit_ldelema (td, target_method->klass, NULL);
 			interp_emit_ldobj (td, m_class_get_element_class (target_method->klass));
@@ -2401,10 +2403,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		}
 
+#ifndef ENABLE_NETCORE
 		if (op == MINT_CALLRUN) {
 			td->last_ins->data [0] = get_data_item_index (td, target_method);
 			td->last_ins->data [1] = get_data_item_index (td, mono_method_signature_internal (target_method));
 		}
+#endif
 	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
@@ -6161,12 +6165,14 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 				*push = opcode == MINT_CALL || opcode == MINT_CALLVIRT || opcode == MINT_CALLVIRT_FAST;
 			break;
 		}
+#ifndef ENABLE_NETCORE
 		case MINT_CALLRUN: {
 			MonoMethodSignature *csignature = (MonoMethodSignature*) td->data_items [ins->data [1]];
 			*pop = csignature->param_count + csignature->hasthis;
 			*push = csignature->ret->type != MONO_TYPE_VOID;
 			break;
 		}
+#endif
 		case MINT_CALLI:
 		case MINT_CALLI_NAT:
 		case MINT_CALLI_NAT_FAST: {

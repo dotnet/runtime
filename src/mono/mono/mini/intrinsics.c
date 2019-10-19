@@ -1989,6 +1989,7 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 	return NULL;
 }
 
+#ifndef ENABLE_NETCORE
 MonoInst*
 mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -2003,6 +2004,7 @@ mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 
 	return NULL;
 }
+#endif
 
 MonoInst*
 mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)

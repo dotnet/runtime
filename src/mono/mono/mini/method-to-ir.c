@@ -7240,6 +7240,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
 				delegate_invoke = TRUE;
 
+#ifndef ENABLE_NETCORE
 			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
@@ -7250,6 +7251,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_tailcall_print ("missed tailcall intrins_sharable %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
+#endif
 
 			/*
 			 * Implement a workaround for the inherent races involved in locking:
