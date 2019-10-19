@@ -82,13 +82,12 @@ namespace System.Text.Json
                 }
                 else if (frame.IsProcessingEnumerable())
                 {
-                    // For enumerables add the index.
                     IList list = frame.TempEnumerableValues;
                     if (list == null && frame.ReturnValue != null)
                     {
+
                         list = (IList)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
                     }
-
                     if (list != null)
                     {
                         sb.Append(@"[");

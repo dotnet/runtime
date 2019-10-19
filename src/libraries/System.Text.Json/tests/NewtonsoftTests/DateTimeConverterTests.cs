@@ -27,7 +27,6 @@
 
 using System.Globalization;
 using Xunit;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Tests
 {

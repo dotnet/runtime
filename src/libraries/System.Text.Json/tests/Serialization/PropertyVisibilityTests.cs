@@ -154,15 +154,31 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }";
 
-            // Unsupported collections will throw by default.
+            // Unsupported collections will throw on deserialize by default.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithUnsupportedDictionary>(json));
+            
             // Using new options instance to prevent using previously cached metadata.
             JsonSerializerOptions options = new JsonSerializerOptions();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
+            string serialized = JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options);
+            
+            // Object keys are fine on serialization if the keys are strings.
+            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
+            Assert.Contains(@"""MyIDict"":null", serialized);
+            Assert.Contains(@"""MyDict"":null", serialized);
+
+            // Unsupported collections will throw on deserialize by default.
             options = new JsonSerializerOptions();
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
+            
             options = new JsonSerializerOptions();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
+            serialized = JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options);
+
+            // Object keys are fine on serialization if the keys are strings.
+            Assert.Contains(@"{""MyClass"":{", serialized);
+            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
+            Assert.Contains(@"""MyIDict"":null", serialized);
+            Assert.Contains(@"""MyDict"":null", serialized);
+            Assert.Contains("}}", serialized);
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();

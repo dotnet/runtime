@@ -654,7 +654,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated

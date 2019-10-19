@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
@@ -20,7 +19,6 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private readonly ConcurrentDictionary<Type, JsonPropertyInfo> _objectJsonProperties = new ConcurrentDictionary<Type, JsonPropertyInfo>();
         private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
         private MemberAccessor _memberAccessorStrategy;
         private JsonNamingPolicy _dictionayKeyPolicy;
@@ -351,24 +349,6 @@ namespace System.Text.Json
             };
         }
 
-        internal JsonPropertyInfo GetJsonPropertyInfoFromClassInfo(Type objectType, JsonSerializerOptions options)
-        {
-            if (!_objectJsonProperties.TryGetValue(objectType, out JsonPropertyInfo propertyInfo))
-            {
-                propertyInfo = JsonClassInfo.CreateProperty(
-                    objectType,
-                    objectType,
-                    objectType,
-                    propertyInfo: null,
-                    typeof(object),
-                    converter: null,
-                    options);
-                _objectJsonProperties[objectType] = propertyInfo;
-            }
-
-            return propertyInfo;
-        }
-
         internal bool CreateRangeDelegatesContainsKey(string key)
         {
             return s_createRangeDelegates.ContainsKey(key);
@@ -383,7 +363,6 @@ namespace System.Text.Json
         {
             return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
         }
-
 
         internal void VerifyMutable()
         {

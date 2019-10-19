@@ -91,10 +91,20 @@ namespace System.Text.Json
                 key = enumerator.Current.Key;
                 value = enumerator.Current.Value;
             }
-            else if (current.IsIDictionaryConstructible || current.IsIDictionaryConstructibleProperty)
+            else
             {
-                key = (string)((DictionaryEntry)current.CollectionEnumerator.Current).Key;
-                value = (TProperty?)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
+                if (((DictionaryEntry)current.CollectionEnumerator.Current).Key is string keyAsString)
+                {
+                    key = keyAsString;
+                    value = (TProperty?)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
+                }
+                else
+                {
+                    throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                        current.JsonPropertyInfo.DeclaredPropertyType,
+                        current.JsonPropertyInfo.ParentClassType,
+                        current.JsonPropertyInfo.PropertyInfo);
+                }
             }
 
             Debug.Assert(key != null);
