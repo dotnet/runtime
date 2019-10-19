@@ -3468,7 +3468,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_fld80_membase (code, X86_ESP, 2);
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
 			} else {
-				x86_fld80_mem (code, mn);
+				x86_fld80_mem (code, (gsize)&mn);
 			}
 			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 
@@ -4238,7 +4238,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_reg (code, X86_EDX, ptr);
 			x86_shift_reg_imm (code, X86_SHR, X86_EDX, card_table_shift);
 			if (card_table_mask)
-				x86_alu_reg_imm (code, X86_AND, X86_EDX, (int)card_table_mask);
+				x86_alu_reg_imm (code, X86_AND, X86_EDX, (gsize)card_table_mask);
 			x86_mov_membase_imm (code, X86_EDX, card_table, 1, 1);
 			if (card_table_nursery_check)
 				x86_patch (br, code);
@@ -5472,7 +5472,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				if (item->has_target_code)
 					x86_jump_code (code, item->value.target_code);
 				else
-					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
+					x86_jump_mem (code, (gsize)&vtable->vtable [item->value.vtable_slot]);
 			} else {
 				if (fail_tramp) {
 					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gsize)item->key);
@@ -5481,7 +5481,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					if (item->has_target_code)
 						x86_jump_code (code, item->value.target_code);
 					else
-						x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
+						x86_jump_mem (code, (gsize)&vtable->vtable [item->value.vtable_slot]);
 					x86_patch (item->jmp_code, code);
 					x86_jump_code (code, fail_tramp);
 					item->jmp_code = NULL;
@@ -5495,7 +5495,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					if (item->has_target_code)
 						x86_jump_code (code, item->value.target_code);
 					else
-						x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
+						x86_jump_mem (code, (gsize)&vtable->vtable [item->value.vtable_slot]);
 #if ENABLE_WRONG_METHOD_CHECK
 					x86_patch (item->jmp_code, code);
 					x86_breakpoint (code);
