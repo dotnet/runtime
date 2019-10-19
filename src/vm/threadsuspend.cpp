@@ -3764,6 +3764,8 @@ COR_PRF_SUSPEND_REASON GCSuspendReasonToProfSuspendReason(ThreadSuspend::SUSPEND
         return COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER;
     case ThreadSuspend::SUSPEND_FOR_GC_PREP:
         return COR_PRF_SUSPEND_FOR_GC_PREP;
+    case ThreadSuspend::SUSPEND_FOR_PROFILER:
+        return COR_PRF_SUSPEND_FOR_PROFILER;
     }
 }
 #endif // PROFILING_SUPPORTED

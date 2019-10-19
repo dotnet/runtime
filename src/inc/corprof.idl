@@ -708,6 +708,7 @@ typedef enum
     COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER     = 6,
     COR_PRF_SUSPEND_FOR_GC_PREP             = 7,
     COR_PRF_SUSPEND_FOR_REJIT               = 8,
+    COR_PRF_SUSPEND_FOR_PROFILER            = 9,
 } COR_PRF_SUSPEND_REASON;
 
 /*
@@ -1431,6 +1432,8 @@ interface ICorProfilerCallback : IUnknown
      *      the runtime is preparing for a GC.
      *  COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER
      *      the runtime is suspending for in-process debugging.
+     *  COR_PRF_SUSPEND_FOR_PROFILER
+     *      the runtime is suspending because of ICorProfilerInfo10::SuspendRuntime.
      *  COR_PRF_SUSPEND_OTHER
      *      the runtime is suspending for a reason other than those above.
      */
