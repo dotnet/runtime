@@ -4803,14 +4803,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 				return code;
 		}
 
-		const char *klass_name_space = m_class_get_name_space (method->klass);
-		const char *klass_name = m_class_get_name (method->klass);
-
-		gboolean interlocked = FALSE;
-		gboolean volatil = FALSE;
-		MonoMethodSignature *sig;
-
-
 		/* For ARRAY_ACCESSOR wrappers with reference types, use the <object> instantiation saved in corlib */
 		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_OTHER) {
 			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
