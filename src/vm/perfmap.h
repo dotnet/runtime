@@ -9,6 +9,7 @@
 
 #include "sstring.h"
 #include "fstream.h"
+#include "volatile.h"
 
 class PerfInfo;
 
@@ -16,6 +17,8 @@ class PerfInfo;
 class PerfMap
 {
 private:
+    static Volatile<bool> s_enabled;
+
     // The one and only PerfMap for the process.
     static PerfMap * s_Current;
 
