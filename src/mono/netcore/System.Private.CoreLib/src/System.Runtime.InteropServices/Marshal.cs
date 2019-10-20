@@ -46,9 +46,6 @@ namespace System.Runtime.InteropServices
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public extern static void StructureToPtr (object structure, IntPtr ptr, bool fDeleteOld);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		internal extern static int GetArrayElementSize (Type type);
-
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		extern unsafe static IntPtr BufferToBSTR (char* ptr, int slen);
 

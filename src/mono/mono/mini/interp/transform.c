@@ -1481,6 +1481,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_ARRAY_RANK;
 		} else if (!strcmp (tm, "get_Length")) {
 			*op = MINT_LDLEN;
+		} else if (!strcmp (tm, "GetElementSize")) {
+			*op = MINT_ARRAY_ELEMENT_SIZE;
 		} else if (!strcmp (tm, "Address")) {
 			MonoClass *check_class = readonly ? NULL : m_class_get_element_class (target_method->klass);
 			interp_emit_ldelema (td, target_method->klass, check_class);

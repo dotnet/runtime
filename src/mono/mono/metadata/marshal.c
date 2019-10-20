@@ -5621,20 +5621,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateIn
 	return mono_delegate_to_ftnptr_impl (delegate, error);
 }
 
-int
-ves_icall_System_Runtime_InteropServices_Marshal_GetArrayElementSize (MonoReflectionTypeHandle type_h, MonoError *error)
-{
-	MonoClass *eklass = mono_type_get_class_internal (MONO_HANDLE_GETVAL (type_h, type));
-
-	mono_class_init_internal (eklass);
-
-	if (m_class_has_references (eklass)) {
-		mono_error_set_argument (error, NULL, NULL);
-		return 0;
-	}
-	return mono_class_array_element_size (eklass);
-}
-
 MonoBoolean
 ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoReflectionTypeHandle type_h, MonoError *error)
 {

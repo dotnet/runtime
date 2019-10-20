@@ -465,9 +465,11 @@ namespace System
 			return ref Unsafe.As<RawData>(this).Data;
 		}
 
+		[Intrinsic]
 		internal int GetElementSize ()
 		{
-			return Marshal.GetArrayElementSize (GetType ());
+			ThrowHelper.ThrowNotSupportedException ();
+			return 0;
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]

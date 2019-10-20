@@ -5361,7 +5361,14 @@ common_vcall:
 		MINT_IN_CASE(MINT_ARRAY_RANK) {
 			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
-			sp [-1].data.i = m_class_get_rank (mono_object_class (sp [-1].data.p));
+			sp [-1].data.i = m_class_get_rank (mono_object_class (o));
+			ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ARRAY_ELEMENT_SIZE) {
+			MonoObject* const o = sp [-1].data.o;
+			NULL_CHECK (o);
+			sp [-1].data.i = mono_class_array_element_size (mono_object_class (o));
 			ip++;
 			MINT_IN_BREAK;
 		}
