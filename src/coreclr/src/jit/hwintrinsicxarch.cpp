@@ -1204,7 +1204,7 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
 
             // TODO - currently we use the BaseType to bring the type of the second argument
             // to the code generator. May encode the overload info in other way.
-            retNode->gtHWIntrinsic.gtSIMDBaseType = JITtype2varType(corType);
+            retNode->AsHWIntrinsic()->gtSIMDBaseType = JITtype2varType(corType);
             break;
 
         default:
