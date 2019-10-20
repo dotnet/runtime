@@ -10,15 +10,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   else()
     set(LLVM_PREFIX "llvm-")
   endif()
+
   function(locate_llvm_exec exec var)
-    find_program(EXEC_LOCATION
+    find_program(EXEC_LOCATION_${exec}
      NAMES
      "${LLVM_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
      "${LLVM_PREFIX}${exec}")
-    if (EXEC_LOCATION STREQUAL "EXEC_LOCATION-NOTFOUND")
+    if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
       message(FATAL_ERROR "Unable to find llvm tool for: ${exec}.")
     endif()
-    set(${var} ${EXEC_LOCATION} PARENT_SCOPE)
+    set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
   locate_llvm_exec(ar CMAKE_AR)
   locate_llvm_exec(link CMAKE_LINKER)
@@ -34,20 +35,20 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   endif()
 
   function(locate_gcc_exec exec var)
-    string(TOUPPER exec EXEC_UPPERCASE)
+    string(TOUPPER ${exec} EXEC_UPPERCASE)
     if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
       set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
       return()
     endif()
 
-    find_program(EXEC_LOCATION
+    find_program(EXEC_LOCATION_${exec}
       NAMES
       "${GCC_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
       "${GCC_PREFIX}${exec}")
-    if (EXEC_LOCATION STREQUAL "EXEC_LOCATION-NOTFOUND")
+    if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
       message(FATAL_ERROR "Unable to find gcc tool for: ${exec}.")
     endif()
-    set(${var} ${EXEC_LOCATION} PARENT_SCOPE)
+    set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
   locate_gcc_exec(ar CMAKE_AR)
   locate_gcc_exec(link CMAKE_LINKER)
