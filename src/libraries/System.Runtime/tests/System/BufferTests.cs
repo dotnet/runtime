@@ -40,11 +40,11 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("src", () => Buffer.BlockCopy(new string[3], 0, new byte[3], 0, 0)); // Src is not a byte array
             AssertExtensions.Throws<ArgumentException>("dst", "dest", () => Buffer.BlockCopy(new byte[3], 0, new string[3], 0, 0)); // Dst is not a byte array
 
-            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1)); // SrcOffset + count >= src.length
-            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 4, new byte[3], 0, 0)); // SrcOffset >= src.Length
+            AssertExtensions.Throws<ArgumentException>(null, () => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1)); // SrcOffset + count >= src.length
+            AssertExtensions.Throws<ArgumentException>(null, () => Buffer.BlockCopy(new byte[3], 4, new byte[3], 0, 0)); // SrcOffset >= src.Length
 
-            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1)); // DstOffset + count >= dst.Length
-            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0)); // DstOffset >= dst.Length
+            AssertExtensions.Throws<ArgumentException>(null, () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1)); // DstOffset + count >= dst.Length
+            AssertExtensions.Throws<ArgumentException>(null, () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0)); // DstOffset >= dst.Length
         }
 
         public static unsafe IEnumerable<object[]> ByteLength_TestData()
