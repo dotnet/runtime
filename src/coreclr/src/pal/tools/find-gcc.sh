@@ -6,7 +6,7 @@
 if [ $# -lt 2 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-gcc.sh <GccMajorVersion> <GccMinorVersion>"
+  echo "find-gcc.sh <GccMajorVersion> <GccMinorVersion>"
   echo "Specify the Gcc version to use, split into major and minor version"
   exit 1
 fi
