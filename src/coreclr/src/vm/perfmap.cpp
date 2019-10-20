@@ -22,6 +22,7 @@
 #define FMT_CODE_ADDR "%p"
 #endif
 
+Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 
@@ -51,6 +52,8 @@ void PerfMap::Initialize()
             s_ShowOptimizationTiers = true;
         }
 
+        s_enabled = true;
+
 #ifndef CROSSGEN_COMPILE
         char jitdumpPath[4096];
 
@@ -74,11 +77,11 @@ void PerfMap::Destroy()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current != nullptr)
+    if (s_enabled)
     {
+        s_enabled = false;
+        // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
         PAL_PerfJitDump_Finish();
-        delete s_Current;
-        s_Current = nullptr;
     }
 }
 
@@ -222,7 +225,7 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
 
 void PerfMap::LogImageLoad(PEFile * pFile)
 {
-    if (s_Current != nullptr)
+    if (s_enabled)
     {
         s_Current->LogImage(pFile);
     }
@@ -261,7 +264,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current == nullptr)
+    if (!s_enabled)
     {
         return;
     }
@@ -282,7 +285,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current == nullptr)
+    if (!s_enabled)
     {
         return;
     }
@@ -333,7 +336,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (s_Current == nullptr || s_Current->m_FileStream == nullptr)
+    if (!s_enabled || s_Current->m_FileStream == nullptr)
     {
         return;
     }
