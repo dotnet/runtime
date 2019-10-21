@@ -8533,14 +8533,14 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         CORINFO_CONST_LOOKUP addrInfo;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (tree->gtFptrVal.gtEntryPoint.addr != nullptr)
+        if (tree->AsFptrVal()->gtEntryPoint.addr != nullptr)
         {
-            addrInfo = tree->gtFptrVal.gtEntryPoint;
+            addrInfo = tree->AsFptrVal()->gtEntryPoint;
         }
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(tree->gtFptrVal.gtFptrMethod, &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod, &addrInfo);
         }
 
         // Refer to gtNewIconHandleNode() as the template for constructing a constant handle

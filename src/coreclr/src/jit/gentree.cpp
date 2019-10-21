@@ -7169,10 +7169,10 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_FTN_ADDR:
-                copy = new (this, oper) GenTreeFptrVal(tree->gtType, tree->gtFptrVal.gtFptrMethod);
+                copy = new (this, oper) GenTreeFptrVal(tree->gtType, tree->AsFptrVal()->gtFptrMethod);
 
 #ifdef FEATURE_READYTORUN_COMPILER
-                copy->gtFptrVal.gtEntryPoint = tree->gtFptrVal.gtEntryPoint;
+                copy->AsFptrVal()->gtEntryPoint = tree->AsFptrVal()->gtEntryPoint;
 #endif
                 goto DONE;
 
@@ -10672,7 +10672,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             const char* methodName;
             const char* className;
 
-            methodName = eeGetMethodName((CORINFO_METHOD_HANDLE)tree->gtFptrVal.gtFptrMethod, &className);
+            methodName = eeGetMethodName((CORINFO_METHOD_HANDLE)tree->AsFptrVal()->gtFptrMethod, &className);
             printf(" %s.%s\n", className, methodName);
         }
         break;
