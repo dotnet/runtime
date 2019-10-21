@@ -3627,9 +3627,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 				/* This does the return as well */
-				interp_add_ins (td, MINT_TRACE_EXIT);
-				if (ult->type == MONO_TYPE_VOID)
+				if (ult->type == MONO_TYPE_VOID) {
+					interp_add_ins (td, MINT_TRACE_EXIT_VOID);
 					vt_size = -1;
+				} else {
+					interp_add_ins (td, MINT_TRACE_EXIT);
+				}
 				WRITE32_INS (td->last_ins, 0, &vt_size);
 				++td->ip;
 			} else {

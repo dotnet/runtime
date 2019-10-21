@@ -951,10 +951,10 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		pid_t pid;
 		int status;
 		pid_t crashed_pid = getpid ();
-		gchar *output = NULL;
-		MonoStackHash hashes;
 
 #ifndef DISABLE_CRASH_REPORTING
+		gchar *output = NULL;
+		MonoStackHash hashes;
 		MonoStateMem merp_mem;
 		memset (&merp_mem, 0, sizeof (merp_mem));
 

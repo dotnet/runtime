@@ -201,6 +201,12 @@ stub_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *si
 	g_assert_not_reached ();
 }
 
+static void
+stub_free_context (gpointer context)
+{
+	g_assert_not_reached ();
+}
+
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
 
