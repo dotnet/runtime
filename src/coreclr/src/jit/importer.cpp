@@ -1466,7 +1466,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
     if (oper == GT_OBJ && willDeref)
     {
         assert(structVal->AsObj()->GetLayout()->GetClassHandle() == structHnd);
-        return (structVal->gtObj.Addr());
+        return (structVal->AsObj()->Addr());
     }
     else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
              structVal->OperIsSimdOrHWintrinsic())
