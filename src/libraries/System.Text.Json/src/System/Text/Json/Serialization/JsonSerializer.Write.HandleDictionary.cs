@@ -131,9 +131,10 @@ namespace System.Text.Json
                 key = polymorphicEnumerator.Current.Key;
                 value = (TProperty)polymorphicEnumerator.Current.Value;
             }
-            else if (current.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator)
+            else if (current.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator &&
+                iDictionaryEnumerator.Key is string keyAsString)
             {
-                key = (string)iDictionaryEnumerator.Key;
+                key = keyAsString;
                 value = (TProperty)iDictionaryEnumerator.Value;
             }
             else

@@ -126,6 +126,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type runtimePropertyType,
             Type elementType,
+            Type nullableUnderlyingType,
             JsonConverter converter,
             ClassType classType,
             JsonSerializerOptions options)
@@ -136,7 +137,7 @@ namespace System.Text.Json
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
                 collectionElementType : elementType,
-                Nullable.GetUnderlyingType(runtimePropertyType),
+                nullableUnderlyingType,
                 converter : converter,
                 classType : classType,
                 options);

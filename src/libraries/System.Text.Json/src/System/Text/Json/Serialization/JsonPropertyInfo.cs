@@ -185,7 +185,8 @@ namespace System.Text.Json
 
                 if (_dictionaryValuePropertyPolicy == null)
                 {
-                    //if ((_dictionaryValuePropertyPolicy = ElementClassInfo.PolicyProperty) == null)
+                    // Use the existing PolicyProperty if there is one.
+                    if ((_dictionaryValuePropertyPolicy = ElementClassInfo.PolicyProperty) == null)
                     {
                         Type dictionaryValueType = ElementType;
                         Debug.Assert(dictionaryValueType != null);
@@ -194,6 +195,7 @@ namespace System.Text.Json
                             declaredPropertyType : dictionaryValueType,
                             runtimePropertyType : dictionaryValueType,
                             elementType : null,
+                            nullableUnderlyingType : Nullable.GetUnderlyingType(dictionaryValueType),
                             converter: null,
                             ClassType.Dictionary,
                             Options);
@@ -248,9 +250,19 @@ namespace System.Text.Json
 
             if (writeStackFrame.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator)
             {
-                // Since IDictionaryEnumerator is not based on generics we can obtain the value directly.
-                key = (string)iDictionaryEnumerator.Key;
-                value = iDictionaryEnumerator.Value;
+                if (iDictionaryEnumerator.Key is string keyAsString)
+                {
+                    // Since IDictionaryEnumerator is not based on generics we can obtain the value directly.
+                    key = keyAsString;
+                    value = iDictionaryEnumerator.Value;
+                }
+                else
+                {
+                    throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                        writeStackFrame.JsonPropertyInfo.DeclaredPropertyType,
+                        writeStackFrame.JsonPropertyInfo.ParentClassType,
+                        writeStackFrame.JsonPropertyInfo.PropertyInfo);
+                }
             }
             else
             {
