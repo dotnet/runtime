@@ -23,7 +23,7 @@ namespace System.Tests
                 return false;
             }
 
-            return target == EnvironmentVariableTarget.Process || (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !PlatformDetection.IsUap);
+            return target == EnvironmentVariableTarget.Process || RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
 
         [Fact]
@@ -159,8 +159,7 @@ namespace System.Tests
             catch (SecurityException)
             {
                 shouldCleanUp = false;
-                Assert.True(target == EnvironmentVariableTarget.Machine || (target == EnvironmentVariableTarget.User && PlatformDetection.IsUap),
-                            "only machine target, or user when in uap, should have access issues");
+                Assert.True(target == EnvironmentVariableTarget.Machine, "only machine target should have access issues");
                 Assert.True(PlatformDetection.IsWindows, "and it should be Windows");
                 Assert.False(PlatformDetection.IsWindowsAndElevated, "and we shouldn't be elevated");
             }

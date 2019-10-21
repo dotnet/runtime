@@ -27,7 +27,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [MemberData(nameof(GetEndComSlot_TestData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetEndComSlot_Windows_ReturnsExpected(Type type, int expected)
         {
             Assert.Equal(expected, Marshal.GetEndComSlot(type));

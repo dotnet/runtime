@@ -11,7 +11,6 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),PLATFORM_WINDOWS=True</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants),PLATFORM_UAP=True</DefineConstants>
     <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <NoStdLib>true</NoStdLib>
@@ -19,7 +18,7 @@
     <RootNamespace />
     <!-- Disable this as it seems to break windows builds for now. -->
     <DocumentationFile />
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />
@@ -97,7 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Condition="'$(TargetGroup)' != 'uap'" Include="Microsoft.Win32.Registry" />
+    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

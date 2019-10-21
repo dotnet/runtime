@@ -18,12 +18,12 @@ namespace System.Resources
     {
         // Set this delegate to allow multi-targeting for .resources files.
         // not used by .NETCore since ResourceWriter doesn't support BinaryFormatted resources.
-        public Func<Type, string> TypeNameConverter { get; set; }
+        public Func<Type, string>? TypeNameConverter { get; set; }
 
         // Adds a resource of type Stream to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         // Doesn't close the Stream when done.
-        public void AddResource(string name, Stream value)
+        public void AddResource(string name, Stream? value)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -51,7 +51,7 @@ namespace System.Resources
 
         private void WriteData(BinaryWriter writer, object dataContext)
         {
-            byte[] data = dataContext as byte[];
+            byte[]? data = dataContext as byte[];
 
             Debug.Assert(data != null);
 

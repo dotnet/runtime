@@ -6,10 +6,7 @@ Imports System
 Imports System.Reflection
 Imports System.Text
 Imports System.Runtime.InteropServices
-
-#If Not PLATFORM_UAP Then
 Imports Microsoft.Win32
-#End If
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -320,9 +317,6 @@ Namespace Microsoft.VisualBasic
         '============================================================================
 
         Public Sub DeleteSetting(ByVal AppName As String, Optional ByVal Section As String = Nothing, Optional ByVal Key As String = Nothing)
-#If PLATFORM_UAP Then
-            Throw New PlatformNotSupportedException()
-#Else
             Dim AppSection As String
             Dim UserKey As RegistryKey
             Dim AppSectionKey As RegistryKey = Nothing
@@ -351,13 +345,9 @@ Namespace Microsoft.VisualBasic
                     AppSectionKey.Close()
                 End If
             End Try
-#End If
         End Sub
 
         Public Function GetAllSettings(ByVal AppName As String, ByVal Section As String) As String(,)
-#If PLATFORM_UAP Then
-            Throw New PlatformNotSupportedException()
-#Else
             Dim rk As RegistryKey
             Dim sAppSect As String
             Dim i As Integer
@@ -415,13 +405,9 @@ Namespace Microsoft.VisualBasic
             Finally
                 rk.Close()
             End Try
-#End If
         End Function
 
         Public Function GetSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, Optional ByVal [Default] As String = "") As String
-#If PLATFORM_UAP Then
-            Throw New PlatformNotSupportedException()
-#Else
             Dim rk As RegistryKey = Nothing
             Dim sAppSect As String
             Dim o As Object
@@ -458,13 +444,9 @@ Namespace Microsoft.VisualBasic
             Else
                 Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
             End If
-#End If
         End Function
 
         Public Sub SaveSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, ByVal Setting As String)
-#If PLATFORM_UAP Then
-            Throw New PlatformNotSupportedException()
-#Else
             Dim rk As RegistryKey
             Dim sIniSect As String
 
@@ -488,7 +470,6 @@ Namespace Microsoft.VisualBasic
             Finally
                 rk.Close()
             End Try
-#End If
         End Sub
 
         '============================================================================

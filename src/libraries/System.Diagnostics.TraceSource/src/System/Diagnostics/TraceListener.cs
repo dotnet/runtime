@@ -418,8 +418,31 @@ namespace System.Diagnostics
                 return;
 
             _indentLevel++;
+
             if (IsEnabled(TraceOptions.ProcessId))
                 WriteLine("ProcessId=" + eventCache.ProcessId);
+
+            if (IsEnabled(TraceOptions.LogicalOperationStack))
+            {
+                Write("LogicalOperationStack=");
+                Stack operationStack = eventCache.LogicalOperationStack;
+                bool first = true;
+                foreach (object obj in operationStack)
+                {
+                    if (!first)
+                    {
+                        Write(", ");
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+
+                    Write(obj.ToString());
+                }
+
+                WriteLine(string.Empty);
+            }
 
             if (IsEnabled(TraceOptions.ThreadId))
                 WriteLine("ThreadId=" + eventCache.ThreadId);
@@ -429,6 +452,9 @@ namespace System.Diagnostics
 
             if (IsEnabled(TraceOptions.Timestamp))
                 WriteLine("Timestamp=" + eventCache.Timestamp);
+
+            if (IsEnabled(TraceOptions.Callstack))
+                WriteLine("Callstack=" + eventCache.Callstack);
 
             _indentLevel--;
         }

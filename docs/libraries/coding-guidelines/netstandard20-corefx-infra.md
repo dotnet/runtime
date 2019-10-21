@@ -78,19 +78,5 @@ Provides compatibility between NETCore.App and libraries built against NETStanda
 ### End goal
 
 - CoreFx does not build any reference assemblies for NETStandard.
-- For every library in NETStandard.Library, the only configurations in CoreFx are framework-specific.  EG: NETCoreApp1.2, UAP10.1
+- For every library in NETStandard.Library, the only configurations in CoreFx are framework-specific.  EG: netcoreapp3.0, net472
 - For every library in NETCore.App but not in NETStandard.Library there must be a framework-specific configuration for NETCoreApp1.2.  Other configurations may exist to ship in a package, but those will not be built by folks building just NETCore.App.
-
-### Getting there (WIP)
-
-Folks still consume our current packages so we need to keep building those until we transition.
-
-1. Create a new NETCore.App package: Microsoft.Private.CoreFx.NETCore.App.  This will be an identity package with every ref that targets NETCore.App and runtime-specific packages that have all runtime impl's that apply to NETCore.App.
-2. Filter the content of Microsoft.Private.CoreFx.NETCore.App to just the things that are part of NETCore, and their closure.
-3. Transition tests to use Microsoft.Private.CoreFx.NETCore.App.
-4. Delete packages for things that are only part of Microsoft.Private.CoreFx.NETCore.App and don't ship independently.
-  - Delete configurations for libraries that are no longer used
-  - As packages are deleted we'll need to opt-in to Microsoft.Private.CoreFx.NETCore.App in some way.
-    - proposal:
-      - each CSProj is evaluated for layout path in the context of all of its build configurations.
-      - We'll determine applicability similar to how we do for pkgprojs to identify which config to binplace.

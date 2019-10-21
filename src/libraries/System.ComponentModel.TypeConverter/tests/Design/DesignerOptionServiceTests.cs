@@ -268,14 +268,11 @@ namespace System.ComponentModel.Design.Tests
         [Fact]
         public void DesignerOptionConverter_ConvertToString_ReturnsExpected()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
-                {
-                    TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
-                    Assert.Equal("(Collection)", converter.ConvertToString(null));
-                }
-            }).Dispose();
+                TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
+                Assert.Equal("(Collection)", converter.ConvertToString(null));
+            }
         }
 
         [Fact]

@@ -36,14 +36,14 @@ namespace System.Numerics
         public static int Compare(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public int CompareTo(long other) { throw null; }
         public int CompareTo(System.Numerics.BigInteger other) { throw null; }
-        public int CompareTo(object obj) { throw null; }
+        public int CompareTo(object? obj) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public int CompareTo(ulong other) { throw null; }
         public static System.Numerics.BigInteger Divide(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
         public static System.Numerics.BigInteger DivRem(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor, out System.Numerics.BigInteger remainder) { throw null; }
         public bool Equals(long other) { throw null; }
         public bool Equals(System.Numerics.BigInteger other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool Equals(ulong other) { throw null; }
         public int GetByteCount(bool isUnsigned = false) { throw null; }
@@ -144,25 +144,25 @@ namespace System.Numerics
         public static System.Numerics.BigInteger operator -(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger operator -(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger operator +(System.Numerics.BigInteger value) { throw null; }
-        public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
+        public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.BigInteger Parse(string value) { throw null; }
         public static System.Numerics.BigInteger Parse(string value, System.Globalization.NumberStyles style) { throw null; }
-        public static System.Numerics.BigInteger Parse(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
-        public static System.Numerics.BigInteger Parse(string value, System.IFormatProvider provider) { throw null; }
+        public static System.Numerics.BigInteger Parse(string value, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BigInteger Parse(string value, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger Pow(System.Numerics.BigInteger value, int exponent) { throw null; }
         public static System.Numerics.BigInteger Remainder(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public byte[] ToByteArray() { throw null; }
         public byte[] ToByteArray(bool isUnsigned = false, bool isBigEndian = false) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(System.IFormatProvider provider) { throw null; }
-        public string ToString(string format) { throw null; }
-        public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(string value, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(string? value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
     public partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable
@@ -192,7 +192,7 @@ namespace System.Numerics
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
         public bool Equals(System.Numerics.Complex value) { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public static System.Numerics.Complex Exp(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex FromPolarCoordinates(double magnitude, double phase) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -249,8 +249,8 @@ namespace System.Numerics
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(System.IFormatProvider provider) { throw null; }
-        public string ToString(string format) { throw null; }
-        public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
     }
 }

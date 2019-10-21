@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.ObjectModel
 {
@@ -11,14 +12,14 @@ namespace System.Collections.ObjectModel
     [DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
+    public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue> where TKey : notnull
     {
         private readonly IDictionary<TKey, TValue> m_dictionary; // Do not rename (binary serialization)
 
         [NonSerialized]
-        private KeyCollection _keys;
+        private KeyCollection? _keys;
         [NonSerialized]
-        private ValueCollection _values;
+        private ValueCollection? _values;
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
         {
@@ -41,9 +42,9 @@ namespace System.Collections.ObjectModel
 
         ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            return m_dictionary.TryGetValue(key, out value);
+            return m_dictionary.TryGetValue(key, out value!);
         }
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
@@ -115,7 +116,7 @@ namespace System.Collections.ObjectModel
             return key is TKey;
         }
 
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
@@ -132,8 +133,7 @@ namespace System.Collections.ObjectModel
 
         IDictionaryEnumerator IDictionary.GetEnumerator()
         {
-            IDictionary d = m_dictionary as IDictionary;
-            if (d != null)
+            if (m_dictionary is IDictionary d)
             {
                 return d.GetEnumerator();
             }
@@ -153,7 +153,7 @@ namespace System.Collections.ObjectModel
 
         ICollection IDictionary.Values => Values;
 
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get
             {
@@ -190,15 +190,13 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
-            KeyValuePair<TKey, TValue>[] pairs = array as KeyValuePair<TKey, TValue>[];
-            if (pairs != null)
+            if (array is KeyValuePair<TKey, TValue>[] pairs)
             {
                 m_dictionary.CopyTo(pairs, index);
             }
             else
             {
-                DictionaryEntry[] dictEntryArray = array as DictionaryEntry[];
-                if (dictEntryArray != null)
+                if (array is DictionaryEntry[] dictEntryArray)
                 {
                     foreach (var item in m_dictionary)
                     {
@@ -207,7 +205,7 @@ namespace System.Collections.ObjectModel
                 }
                 else
                 {
-                    object[] objects = array as object[];
+                    object[]? objects = array as object[];
                     if (objects == null)
                     {
                         throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
@@ -250,7 +248,7 @@ namespace System.Collections.ObjectModel
 
             public object Key => _enumerator.Current.Key;
 
-            public object Value => _enumerator.Current.Value;
+            public object? Value => _enumerator.Current.Value;
 
             public object Current => Entry;
 
@@ -396,15 +394,13 @@ namespace System.Collections.ObjectModel
             }
 
             // Easy out if the ICollection<T> implements the non-generic ICollection
-            ICollection nonGenericCollection = collection as ICollection;
-            if (nonGenericCollection != null)
+            if (collection is ICollection nonGenericCollection)
             {
                 nonGenericCollection.CopyTo(array, index);
                 return;
             }
 
-            T[] items = array as T[];
-            if (items != null)
+            if (array is T[] items)
             {
                 collection.CopyTo(items, index);
             }
@@ -412,7 +408,7 @@ namespace System.Collections.ObjectModel
             {
                 // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
-                object[] objects = array as object[];
+                object?[]? objects = array as object?[];
                 if (objects == null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));

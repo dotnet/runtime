@@ -38,7 +38,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(type));
             }
 
-            ConverterTypeName = type.AssemblyQualifiedName;
+            ConverterTypeName = type.AssemblyQualifiedName!;
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace System.ComponentModel
         /// </summary>
         public string ConverterTypeName { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return
                 obj is TypeConverterAttribute other &&

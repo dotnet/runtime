@@ -787,29 +787,23 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_SpecialUnicodeCharacters_enUS()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                    Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                }
-            }).Dispose();
+                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+            }
         }
 
         [Fact]
         public void Match_SpecialUnicodeCharacters_Invariant()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                    Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                    Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                    Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                }
-            }).Dispose();
+                Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM

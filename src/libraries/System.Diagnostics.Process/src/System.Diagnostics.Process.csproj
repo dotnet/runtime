@@ -2,11 +2,10 @@
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <RootNamespace>System.Diagnostics.Process</RootNamespace>
-    <AssemblyName>System.Diagnostics.Process</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
@@ -46,7 +45,7 @@
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.EnumProcessModules.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.EnumProcessModules.cs</Link>
     </Compile>
@@ -414,12 +413,7 @@
     <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
-    <Compile Include="System\Diagnostics\Process.Uap.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Uap.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Uap.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+  <ItemGroup>
     <Compile Include="System\Diagnostics\Process.NonUap.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
@@ -445,7 +439,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Condition="'$(TargetGroup)' != 'uap'" Include="Microsoft.Win32.Registry" />
+    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

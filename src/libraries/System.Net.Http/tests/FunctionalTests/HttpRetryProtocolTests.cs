@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     {
         private static readonly string s_simpleContent = "Hello World\r\n";
 
-        // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support.
+        // Retry logic is supported by SocketsHttpHandler, CurlHandler and netfx.  Only WinHttp does not support.
         private bool IsRetrySupported => !IsWinHttpHandler;
 
         public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
@@ -63,7 +63,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT HTTP stack doesn't support Expect: 100-continue")]
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {

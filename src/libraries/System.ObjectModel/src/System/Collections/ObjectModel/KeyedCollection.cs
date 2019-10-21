@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.ObjectModel
 {
@@ -11,12 +12,12 @@ namespace System.Collections.ObjectModel
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class KeyedCollection<TKey, TItem> : Collection<TItem>
+    public abstract class KeyedCollection<TKey, TItem> : Collection<TItem> where TKey: notnull
     {
         private const int DefaultThreshold = 0;
 
         private readonly IEqualityComparer<TKey> comparer; // Do not rename (binary serialization)
-        private Dictionary<TKey, TItem> dict; // Do not rename (binary serialization)
+        private Dictionary<TKey, TItem>? dict; // Do not rename (binary serialization)
         private int keyCount; // Do not rename (binary serialization)
         private readonly int threshold; // Do not rename (binary serialization)
 
@@ -24,11 +25,11 @@ namespace System.Collections.ObjectModel
         {
         }
 
-        protected KeyedCollection(IEqualityComparer<TKey> comparer) : this(comparer, DefaultThreshold)
+        protected KeyedCollection(IEqualityComparer<TKey>? comparer) : this(comparer, DefaultThreshold)
         {
         }
 
-        protected KeyedCollection(IEqualityComparer<TKey> comparer, int dictionaryCreationThreshold)
+        protected KeyedCollection(IEqualityComparer<TKey>? comparer, int dictionaryCreationThreshold)
             : base(new List<TItem>()) // Be explicit about the use of List<T> so we can foreach over
                                       // Items internally without enumerator allocations.
         {
@@ -60,7 +61,7 @@ namespace System.Collections.ObjectModel
             get
             {
                 TItem item;
-                if (TryGetValue(key, out item))
+                if (TryGetValue(key, out item!))
                 {
                     return item;
                 }
@@ -92,7 +93,7 @@ namespace System.Collections.ObjectModel
             return false;
         }
 
-        public bool TryGetValue(TKey key, out TItem item)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TItem item)
         {
             if (key == null)
             {
@@ -101,7 +102,7 @@ namespace System.Collections.ObjectModel
 
             if (dict != null)
             {
-                return dict.TryGetValue(key, out item);
+                return dict.TryGetValue(key, out item!);
             }
 
             foreach (TItem itemInItems in Items)
@@ -114,7 +115,7 @@ namespace System.Collections.ObjectModel
                 }
             }
 
-            item = default(TItem);
+            item = default(TItem)!;
             return false;
         }
 
@@ -126,7 +127,8 @@ namespace System.Collections.ObjectModel
                 return Items.Contains(item);
             }
 
-            if (dict.TryGetValue(key, out TItem itemInDict))
+            TItem itemInDict;
+            if (dict.TryGetValue(key, out itemInDict!))
             {
                 return EqualityComparer<TItem>.Default.Equals(itemInDict, item);
             }
@@ -143,7 +145,8 @@ namespace System.Collections.ObjectModel
 
             if (dict != null)
             {
-                return dict.TryGetValue(key, out TItem item) && Remove(item);
+                TItem item;
+                return dict.TryGetValue(key, out item!) && Remove(item);
             }
 
             for (int i = 0; i < Items.Count; i++)
@@ -158,7 +161,7 @@ namespace System.Collections.ObjectModel
             return false;
         }
 
-        protected IDictionary<TKey, TItem> Dictionary => dict;
+        protected IDictionary<TKey, TItem>? Dictionary => dict;
 
         protected void ChangeItemKey(TItem item, TKey newKey)
         {
@@ -249,7 +252,7 @@ namespace System.Collections.ObjectModel
             else if (keyCount == threshold)
             {
                 CreateDictionary();
-                dict.Add(key, item);
+                dict!.Add(key, item);
             }
             else
             {

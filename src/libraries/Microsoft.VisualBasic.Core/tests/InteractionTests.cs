@@ -140,7 +140,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void DeleteSetting()
         {
-            if (!PlatformDetection.IsUap)
+            if (!PlatformDetection.IsInAppContainer)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.DeleteSetting(AppName: "", Section: null, Key: null));
             }
@@ -209,7 +209,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void GetAllSettings()
         {
-            if (!PlatformDetection.IsUap)
+            if (!PlatformDetection.IsInAppContainer)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.GetAllSettings(AppName: "", Section: ""));
             }
@@ -223,7 +223,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void GetSetting()
         {
-            if (!PlatformDetection.IsUap)
+            if (!PlatformDetection.IsInAppContainer)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.GetSetting(AppName: "", Section: "", Key: "", Default: ""));
             }
@@ -305,7 +305,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void SaveSetting()
         {
-            if (!PlatformDetection.IsUap)
+            if (!PlatformDetection.IsInAppContainer)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.SaveSetting(AppName: "", Section: "", Key: "", Setting: ""));
 

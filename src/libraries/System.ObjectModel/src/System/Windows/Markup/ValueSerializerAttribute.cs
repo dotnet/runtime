@@ -16,8 +16,8 @@ namespace System.Windows.Markup
     [TypeForwardedFrom("WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public sealed class ValueSerializerAttribute : Attribute
     {
-        private Type _valueSerializerType;
-        private readonly string _valueSerializerTypeName;
+        private Type? _valueSerializerType;
+        private readonly string? _valueSerializerTypeName;
 
         /// <summary>
         /// Constructor for the ValueSerializerAttribute
@@ -49,7 +49,7 @@ namespace System.Windows.Markup
                     _valueSerializerType = Type.GetType(_valueSerializerTypeName);
                 }
 
-                return _valueSerializerType;
+                return _valueSerializerType!;
             }
         }
 
@@ -62,11 +62,11 @@ namespace System.Windows.Markup
             {
                 if (_valueSerializerType != null)
                 {
-                    return _valueSerializerType.AssemblyQualifiedName;
+                    return _valueSerializerType.AssemblyQualifiedName!;
                 }
                 else
                 {
-                    return _valueSerializerTypeName;
+                    return _valueSerializerTypeName!;
                 }
             }
         }

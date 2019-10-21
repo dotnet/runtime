@@ -1535,6 +1535,7 @@ namespace System.Net.Sockets
             Interop.Error err = Interop.Sys.Shutdown(handle, how);
             if (err == Interop.Error.SUCCESS)
             {
+                handle.TrackShutdown(how);
                 return SocketError.Success;
             }
 
@@ -1543,6 +1544,7 @@ namespace System.Net.Sockets
             // has reached the CLOSE state. Ignoring the error matches Winsock behavior.
             if (err == Interop.Error.ENOTCONN && (isConnected || isDisconnected))
             {
+                handle.TrackShutdown(how);
                 return SocketError.Success;
             }
 

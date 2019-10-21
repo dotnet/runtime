@@ -103,14 +103,14 @@ namespace System.Drawing
         /// Tests whether this <see cref='System.Drawing.SizeF'/> has zero width and height.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => width == 0 && height == 0;
+        public readonly bool IsEmpty => width == 0 && height == 0;
 
         /// <summary>
         /// Represents the horizontal component of this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
         public float Width
         {
-            get => width;
+            readonly get => width;
             set => width = value;
         }
 
@@ -119,7 +119,7 @@ namespace System.Drawing
         /// </summary>
         public float Height
         {
-            get => height;
+            readonly get => height;
             set => height = value;
         }
 
@@ -137,20 +137,20 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.SizeF'/>  with the same dimensions
         /// as this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override bool Equals(object? obj) => obj is SizeF && Equals((SizeF)obj);
+        public override readonly bool Equals(object? obj) => obj is SizeF && Equals((SizeF)obj);
 
-        public bool Equals(SizeF other) => this == other;
+        public readonly bool Equals(SizeF other) => this == other;
 
-        public override int GetHashCode() => HashCode.Combine(Width, Height);
+        public override readonly int GetHashCode() => HashCode.Combine(Width, Height);
 
-        public PointF ToPointF() => (PointF)this;
+        public readonly PointF ToPointF() => (PointF)this;
 
-        public Size ToSize() => Size.Truncate(this);
+        public readonly Size ToSize() => Size.Truncate(this);
 
         /// <summary>
         /// Creates a human-readable string that represents this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
+        public override readonly string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
 
         /// <summary>
         /// Multiplies <see cref="SizeF"/> by a <see cref="float"/> producing <see cref="SizeF"/>.

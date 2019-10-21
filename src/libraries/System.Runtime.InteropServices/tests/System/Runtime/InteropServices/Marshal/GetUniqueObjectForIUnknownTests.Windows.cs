@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(GetUniqueObjectForIUnknown_ComObject_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetUniqueObjectForIUnknown_ComObject_ReturnsExpected(object o)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);

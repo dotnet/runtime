@@ -179,6 +179,9 @@ namespace System.Diagnostics
                 if (IsEnabled(TraceOptions.Timestamp))
                     Write(eventCache.Timestamp.ToString(CultureInfo.InvariantCulture));
                 Write(Delimiter); // Use get_Delimiter
+
+                if (IsEnabled(TraceOptions.Callstack))
+                    WriteEscaped(eventCache.Callstack);
             }
             else
             {

@@ -72,7 +72,6 @@ public class WindowsIdentityTests
     }
 
     [Fact]
-    [ActiveIssue(31911, TargetFrameworkMonikers.Uap)]
     public static void CloneAndProperties()
     {
         TestUsingAccessToken((logonToken) =>

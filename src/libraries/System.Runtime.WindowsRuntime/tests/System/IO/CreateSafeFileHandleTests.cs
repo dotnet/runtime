@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class CreateSafeFileHandleTests
     {
         [Fact]
@@ -116,7 +117,7 @@ namespace System.IO
             Assert.Throws<NotSupportedException>(() => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, FileOptions.Encrypted));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFolder_Basic()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -129,7 +130,7 @@ namespace System.IO
             File.Delete(Path.Combine(folder.Path, filename));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFolder_SurfaceIOException()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -145,7 +146,7 @@ namespace System.IO
             File.Delete(Path.Combine(folder.Path, filename));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFolder_SurfaceNotFoundException()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -155,7 +156,7 @@ namespace System.IO
                 Assert.Throws<FileNotFoundException>(() => folder.CreateSafeFileHandle(filename, FileMode.Open)).Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFolder_FileStream()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -177,7 +178,7 @@ namespace System.IO
             File.Delete(Path.Combine(folder.Path, filename));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFile_Basic()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -191,7 +192,7 @@ namespace System.IO
             file.DeleteAsync().AsTask().Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFile_FileStream()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;
@@ -214,7 +215,7 @@ namespace System.IO
             file.DeleteAsync().AsTask().Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInAppContainer))]
         public void FromStorageFile_SurfaceIOException()
         {
             StorageFolder folder = ApplicationData.Current.TemporaryFolder;

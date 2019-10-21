@@ -533,13 +533,7 @@ namespace System.Net
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
-                    BindingFlags flags = BindingFlags.Instance;
-#if uap
-                    flags |= BindingFlags.Public;
-#else
-                    flags |= BindingFlags.NonPublic;
-#endif
-                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", flags);
+                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(method != null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
                     s_internalSetNameMethod = (Func<Cookie, string, bool>)Delegate.CreateDelegate(typeof(Func<Cookie, string, bool>), method);
                 }
@@ -557,13 +551,7 @@ namespace System.Net
                 if (s_isQuotedDomainField == null)
                 {
                     // TODO: #13607
-                    BindingFlags flags = BindingFlags.Instance;
-#if uap
-                    flags |= BindingFlags.Public;
-#else
-                    flags |= BindingFlags.NonPublic;
-#endif
-                    FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", flags);
+                    FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
                     s_isQuotedDomainField = field;
                 }
@@ -580,13 +568,7 @@ namespace System.Net
                 if (s_isQuotedVersionField == null)
                 {
                     // TODO: #13607
-                    BindingFlags flags = BindingFlags.Instance;
-#if uap
-                    flags |= BindingFlags.Public;
-#else
-                    flags |= BindingFlags.NonPublic;
-#endif
-                    FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", flags);
+                    FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
                     s_isQuotedVersionField = field;
                 }

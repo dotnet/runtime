@@ -14,7 +14,6 @@ namespace System.Net.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerWebSocketTests : IDisposable
     {
-        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
         public static bool IsNotWindows7 { get; } = !PlatformDetection.IsWindows7;
         public static bool IsNotWindows7AndIsWindowsImplementation => IsNotWindows7 && Helpers.IsWindowsImplementation;
 
@@ -36,7 +35,7 @@ namespace System.Net.Tests
             Client.Dispose();
         }
 
-        [ConditionalTheory(nameof(PartialMessagesSupported), nameof(IsNotWindows7))]
+        [ConditionalTheory(nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
@@ -86,7 +85,6 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => context.WebSocket.SendAsync(new ArraySegment<byte>(new byte[10]), WebSocketMessageType.Text, false, new CancellationToken()));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WebSocket partial send is not supported on UAP. (#22053)")]
         [ConditionalTheory(nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]

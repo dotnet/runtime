@@ -10,6 +10,16 @@ namespace System.Net.Test.Common
     public static class HPackEncoder
     {
         /// <summary>
+        /// Static table indexes are [0..61]. Indexes larger than this are dynamic indexes.
+        /// </summary>
+        public const int LargestStaticIndex = 61;
+
+        /// <summary>
+        /// Dynamic table indexes are [62..], with 62 being the most recently added entry. Indexes smaller than this are static indexes.
+        /// </summary>
+        public const int SmallestDynamicIndex = LargestStaticIndex + 1;
+
+        /// <summary>
         /// Encodes a dynamic table size update.
         /// </summary>
         /// <param name="newMaximumSize">The new maximum size of the dynamic table. This must be less than or equal to the connection's maximum table size setting, which defaults to 4096 bytes.</param>

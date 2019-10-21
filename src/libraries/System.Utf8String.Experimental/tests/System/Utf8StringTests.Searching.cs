@@ -3,95 +3,469 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
+using System.Text.Tests;
 using Xunit;
 
 using static System.Tests.Utf8TestUtilities;
 
+using ustring = System.Utf8String;
+
 namespace System.Tests
 {
+    /*
+     * Please keep these tests in sync with those in Utf8SpanTests.Searching.cs.
+     */
+
     public unsafe partial class Utf8StringTests
     {
+        public static IEnumerable<object[]> TryFindData_Char_Ordinal() => Utf8SpanTests.TryFindData_Char_Ordinal();
+
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public static void Contains_And_IndexOf_CharRune_Ordinal(Utf8String utf8String, Rune searchValue, int expectedIndex)
+        [MemberData(nameof(TryFindData_Char_Ordinal))]
+        public static void TryFind_Char_Ordinal(ustring source, char searchTerm, Range? expectedForwardMatch, Range? expectedBackwardMatch)
         {
-            // Contains
-
-            if (searchValue.IsBmp)
+            if (source is null)
             {
-                Assert.Equal(expectedIndex >= 0, utf8String.Contains((char)searchValue.Value));
+                return; // don't null ref
             }
-            Assert.Equal(expectedIndex >= 0, utf8String.Contains(searchValue));
 
-            // IndexOf
+            // First, search forward
 
-            if (searchValue.IsBmp)
+            bool wasFound = source.TryFind(searchTerm, out Range actualForwardMatch);
+            Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+            if (wasFound)
             {
-                Assert.Equal(expectedIndex, utf8String.IndexOf((char)searchValue.Value));
+                AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
             }
-            Assert.Equal(expectedIndex, utf8String.IndexOf(searchValue));
+
+            // Also check Contains / StartsWith / SplitOn
+
+            Assert.Equal(wasFound, source.Contains(searchTerm));
+            Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm));
+
+            (var before, var after) = source.SplitOn(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualForwardMatch.Start], before);
+                Assert.Equal(source[actualForwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
+
+            // Now search backward
+
+            wasFound = source.TryFindLast(searchTerm, out Range actualBackwardMatch);
+            Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+            if (wasFound)
+            {
+                AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+            }
+
+            // Also check EndsWith / SplitOnLast
+
+            Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm));
+
+            (before, after) = source.SplitOnLast(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualBackwardMatch.Start], before);
+                Assert.Equal(source[actualBackwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
         }
 
+        public static IEnumerable<object[]> TryFindData_Char_WithComparison() => Utf8SpanTests.TryFindData_Char_WithComparison();
+
         [Theory]
-        [MemberData(nameof(IndexOfTestData))]
-        public static void StartsWith_And_EndsWith_CharRune_Ordinal(Utf8String utf8String, Rune searchValue, int expectedIndex)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [MemberData(nameof(TryFindData_Char_WithComparison))]
+        public static void TryFind_Char_WithComparison(ustring source, char searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
         {
-            // StartsWith
-
-            if (searchValue.IsBmp)
+            if (source is null)
             {
-                Assert.Equal(expectedIndex == 0, utf8String.StartsWith((char)searchValue.Value));
+                return; // don't null ref
             }
-            Assert.Equal(expectedIndex == 0, utf8String.StartsWith(searchValue));
 
-            // EndsWith
-
-            bool endsWithExpectedValue = (expectedIndex >= 0) && (expectedIndex + searchValue.Utf8SequenceLength) == utf8String.Length;
-
-            if (searchValue.IsBmp)
+            RunOnDedicatedThread(() =>
             {
-                Assert.Equal(endsWithExpectedValue, utf8String.EndsWith((char)searchValue.Value));
+                if (currentCulture != null)
+                {
+                    CultureInfo.CurrentCulture = currentCulture;
+                }
+
+                // First, search forward
+
+                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                }
+
+                // Also check Contains / StartsWith / SplitOn
+
+                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                (var before, var after) = source.SplitOn(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualForwardMatch.Start], before);
+                    Assert.Equal(source[actualForwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+
+                // Now search backward
+
+                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                }
+
+                // Also check EndsWith / SplitOnLast
+
+                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                (before, after) = source.SplitOnLast(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualBackwardMatch.Start], before);
+                    Assert.Equal(source[actualBackwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+            });
+        }
+
+        public static IEnumerable<object[]> TryFindData_Rune_Ordinal() => Utf8SpanTests.TryFindData_Rune_Ordinal();
+
+        [Theory]
+        [MemberData(nameof(TryFindData_Rune_Ordinal))]
+        public static void TryFind_Rune_Ordinal(ustring source, Rune searchTerm, Range? expectedForwardMatch, Range? expectedBackwardMatch)
+        {
+            if (source is null)
+            {
+                return; // don't null ref
             }
-            Assert.Equal(endsWithExpectedValue, utf8String.EndsWith(searchValue));
+
+            // First, search forward
+
+            bool wasFound = source.TryFind(searchTerm, out Range actualForwardMatch);
+            Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+            if (wasFound)
+            {
+                AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+            }
+
+            // Also check Contains / StartsWith / SplitOn
+
+            Assert.Equal(wasFound, source.Contains(searchTerm));
+            Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm));
+
+            (var before, var after) = source.SplitOn(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualForwardMatch.Start], before);
+                Assert.Equal(source[actualForwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
+
+            // Now search backward
+
+            wasFound = source.TryFindLast(searchTerm, out Range actualBackwardMatch);
+            Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+            if (wasFound)
+            {
+                AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+            }
+
+            // Also check EndsWith / SplitOnLast
+
+            Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm));
+
+            (before, after) = source.SplitOnLast(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualBackwardMatch.Start], before);
+                Assert.Equal(source[actualBackwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
+        }
+
+        public static IEnumerable<object[]> TryFindData_Rune_WithComparison() => Utf8SpanTests.TryFindData_Rune_WithComparison();
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [MemberData(nameof(TryFindData_Rune_WithComparison))]
+        public static void TryFind_Rune_WithComparison(ustring source, Rune searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
+        {
+            if (source is null)
+            {
+                return; // don't null ref
+            }
+
+            RunOnDedicatedThread(() =>
+            {
+                if (currentCulture != null)
+                {
+                    CultureInfo.CurrentCulture = currentCulture;
+                }
+
+                // First, search forward
+
+                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                }
+
+                // Also check Contains / StartsWith / SplitOn
+
+                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                (var before, var after) = source.SplitOn(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualForwardMatch.Start], before);
+                    Assert.Equal(source[actualForwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+
+                // Now search backward
+
+                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                }
+
+                // Also check EndsWith / SplitOnLast
+
+                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                (before, after) = source.SplitOnLast(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualBackwardMatch.Start], before);
+                    Assert.Equal(source[actualBackwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+            });
+        }
+
+        public static IEnumerable<object[]> TryFindData_Utf8String_Ordinal() => Utf8SpanTests.TryFindData_Utf8Span_Ordinal();
+
+        [Theory]
+        [MemberData(nameof(TryFindData_Utf8String_Ordinal))]
+        public static void TryFind_Utf8String_Ordinal(ustring source, ustring searchTerm, Range? expectedForwardMatch, Range? expectedBackwardMatch)
+        {
+            if (source is null)
+            {
+                return; // don't null ref
+            }
+
+            // First, search forward
+
+            bool wasFound = source.TryFind(searchTerm, out Range actualForwardMatch);
+            Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+            if (wasFound)
+            {
+                AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+            }
+
+            // Also check Contains / StartsWith / SplitOn
+
+            Assert.Equal(wasFound, source.Contains(searchTerm));
+            Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm));
+
+            (var before, var after) = source.SplitOn(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualForwardMatch.Start], before);
+                Assert.Equal(source[actualForwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
+
+            // Now search backward
+
+            wasFound = source.TryFindLast(searchTerm, out Range actualBackwardMatch);
+            Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+            if (wasFound)
+            {
+                AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+            }
+
+            // Also check EndsWith / SplitOnLast
+
+            Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm));
+
+            (before, after) = source.SplitOnLast(searchTerm);
+            if (wasFound)
+            {
+                Assert.Equal(source[..actualBackwardMatch.Start], before);
+                Assert.Equal(source[actualBackwardMatch.End..], after);
+            }
+            else
+            {
+                Assert.Same(source, before); // check for reference equality
+                Assert.Null(after);
+            }
+        }
+
+        public static IEnumerable<object[]> TryFindData_Utf8String_WithComparison() => Utf8SpanTests.TryFindData_Utf8Span_WithComparison();
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [MemberData(nameof(TryFindData_Utf8String_WithComparison))]
+        public static void TryFind_Utf8String_WithComparison(ustring source, ustring searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
+        {
+            if (source is null)
+            {
+                return; // don't null ref
+            }
+
+            RunOnDedicatedThread(() =>
+            {
+                if (currentCulture != null)
+                {
+                    CultureInfo.CurrentCulture = currentCulture;
+                }
+
+                // First, search forward
+
+                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                }
+
+                // Also check Contains / StartsWith / SplitOn
+
+                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                (var before, var after) = source.SplitOn(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualForwardMatch.Start], before);
+                    Assert.Equal(source[actualForwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+
+                // Now search backward
+
+                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                if (wasFound)
+                {
+                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                }
+
+                // Also check EndsWith / SplitOnLast
+
+                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                (before, after) = source.SplitOnLast(searchTerm, comparison);
+                if (wasFound)
+                {
+                    Assert.Equal(source[..actualBackwardMatch.Start], before);
+                    Assert.Equal(source[actualBackwardMatch.End..], after);
+                }
+                else
+                {
+                    Assert.Same(source, before); // check for reference equality
+                    Assert.Null(after);
+                }
+            });
         }
 
         [Fact]
-        public static void Searching_StandaloneSurrogate_Fails()
+        public static void TryFind_WithNullUtf8String_Throws()
         {
-            Utf8String utf8String = u8("\ud800\udfff");
-
-            Assert.False(utf8String.Contains('\ud800'));
-            Assert.False(utf8String.Contains('\udfff'));
-
-            Assert.Equal(-1, utf8String.IndexOf('\ud800'));
-            Assert.Equal(-1, utf8String.IndexOf('\udfff'));
-
-            Assert.False(utf8String.StartsWith('\ud800'));
-            Assert.False(utf8String.StartsWith('\udfff'));
-
-            Assert.False(utf8String.EndsWith('\ud800'));
-            Assert.False(utf8String.EndsWith('\udfff'));
-        }
-
-        public static IEnumerable<object[]> IndexOfTestData
-        {
-            get
+            static void RunTest(Action action)
             {
-                yield return new object[] { Utf8String.Empty, default(Rune), -1 };
-                yield return new object[] { u8("Hello"), (Rune)'H', 0 };
-                yield return new object[] { u8("Hello"), (Rune)'h', -1 };
-                yield return new object[] { u8("Hello"), (Rune)'O', -1 };
-                yield return new object[] { u8("Hello"), (Rune)'o', 4 };
-                yield return new object[] { u8("Hello"), (Rune)'L', -1 };
-                yield return new object[] { u8("Hello"), (Rune)'l', 2 };
-                yield return new object[] { u8("\U00012345\U0010ABCD"), (Rune)0x00012345, 0 };
-                yield return new object[] { u8("\U00012345\U0010ABCD"), (Rune)0x0010ABCD, 4 };
-                yield return new object[] { u8("abc\ufffdef"), (Rune)'c', 2 };
-                yield return new object[] { u8("abc\ufffdef"), (Rune)'\ufffd', 3 };
-                yield return new object[] { u8("abc\ufffdef"), (Rune)'d', -1 };
-                yield return new object[] { u8("abc\ufffdef"), (Rune)'e', 6 };
+                var exception = Assert.Throws<ArgumentNullException>(action);
+                Assert.Equal("value", exception.ParamName);
             }
+
+            ustring str = u8("Hello!");
+            const ustring value = null;
+            const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+
+            // Run this test for a bunch of methods, not simply TryFind
+
+            RunTest(() => str.Contains(value));
+            RunTest(() => str.Contains(value, comparison));
+            RunTest(() => str.EndsWith(value));
+            RunTest(() => str.EndsWith(value, comparison));
+            RunTest(() => str.SplitOn(value));
+            RunTest(() => str.SplitOn(value, comparison));
+            RunTest(() => str.SplitOnLast(value));
+            RunTest(() => str.SplitOnLast(value, comparison));
+            RunTest(() => str.StartsWith(value));
+            RunTest(() => str.StartsWith(value, comparison));
+            RunTest(() => str.TryFind(value, out _));
+            RunTest(() => str.TryFind(value, comparison, out _));
+            RunTest(() => str.TryFindLast(value, out _));
+            RunTest(() => str.TryFindLast(value, comparison, out _));
         }
     }
 }

@@ -9,18 +9,17 @@ namespace System.Tests
     public class EnvironmentUserName
     {
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        public void UserNameIsHardCodedOnUap()
+        public void UserNameIsCorrect()
         {
-            Assert.Equal("Windows User", Environment.UserName);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        public void UserNameIsCorrectOnNonUap()
-        {
-            // Highly unlikely anyone is using user with this name
-            Assert.NotEqual("Windows User", Environment.UserName);
+            if (PlatformDetection.IsInAppContainer)
+            {
+                Assert.Equal("Windows User", Environment.UserName);
+            }
+            else
+            {
+                // Highly unlikely anyone is using user with this name
+                Assert.NotEqual("Windows User", Environment.UserName);
+            }
         }
 
         [Fact]
@@ -32,7 +31,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UserName_MatchesEnvironment_Windows()
         {

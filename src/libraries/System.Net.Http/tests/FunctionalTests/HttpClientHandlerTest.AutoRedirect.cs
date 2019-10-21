@@ -144,7 +144,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(30063, TargetFrameworkMonikers.Uap)] // fails due to TE header
         [Theory]
         [InlineData(300)]
         [InlineData(301)]
@@ -320,7 +319,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(32647, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
@@ -343,7 +341,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not currently supported on UAP")]
         [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(3, 2)]
@@ -448,7 +445,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Doesn't handle fragments according to https://tools.ietf.org/html/rfc7231#section-7.1.2")]
         [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
@@ -518,7 +514,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(32647, TargetFrameworkMonikers.Uap)]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external server")]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
@@ -538,7 +533,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(32647, TargetFrameworkMonikers.Uap)]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external server")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
@@ -586,9 +580,9 @@ namespace System.Net.Http.Functional.Tests
             credentialCache.Add(uri, "Basic", _credential);
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            if (PlatformDetection.IsUap)
+            if (PlatformDetection.IsInAppContainer)
             {
-                // UAP does not support CredentialCache for Credentials.
+                // UWP does not support CredentialCache for Credentials.
                 Assert.Throws<PlatformNotSupportedException>(() => handler.Credentials = credentialCache);
             }
             else
@@ -605,7 +599,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)

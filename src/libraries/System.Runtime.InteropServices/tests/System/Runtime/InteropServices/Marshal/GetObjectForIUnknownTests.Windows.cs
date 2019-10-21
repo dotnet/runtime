@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(GetObjectForIUnknown_ComObject_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetObjectForIUnknown_ComObject_ReturnsExpected(object o)
         {
             GetObjectForIUnknown_ValidPointer_ReturnsExpected(o);

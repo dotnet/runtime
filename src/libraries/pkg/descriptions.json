@@ -1072,13 +1072,6 @@
     ]
   },
   {
-    "Name": "System.Net.Http.Rtc",
-    "Description": "Provides the System.Net.Http.RtcRequestFactory class, which creates HTTP requests for use with the Real-Time-Communications (RTC) background notification infrastructure.",
-    "CommonTypes": [
-      "System.Net.Http.RtcRequestFactory"
-    ]
-  },
-  {
     "Name": "System.Net.Requests",
     "Description": "Provides older classes (such as HttpWebRequest and HttpWebResponse) for sending HTTP requests and receiving HTTP responses from a resource identified by a URI. Developers should prefer the classes in the System.Net.Http package.",
     "CommonTypes": [
@@ -1249,13 +1242,6 @@
       "System.Numerics.Tensors.CompressedSparseTensor<T>",
       "System.Numerics.Tensors.DenseTensor<T>",
       "System.Numerics.Tensors.SparseTensor<T>"
-    ]
-  },
-  {
-    "Name": "System.Numerics.Vectors.WindowsRuntime",
-    "Description": "Provides extension methods for converting between System.Numerics.Vector2 and Windows.Foundation.Point and Size.",
-    "CommonTypes": [
-      "System.Numerics.VectorExtensions"
     ]
   },
   {

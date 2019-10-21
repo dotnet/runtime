@@ -17,21 +17,18 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            var newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+            using (new ThreadCultureChange(newCulture))
             {
-                var newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                using (new ThreadCultureChange(newCulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                }
+                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+            }
 
-                newCulture = new CultureInfo("de-DE_phoneb");
-                using (new ThreadCultureChange(newCulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                    Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
-                }
-            }).Dispose();
+            newCulture = new CultureInfo("de-DE_phoneb");
+            using (new ThreadCultureChange(newCulture))
+            {
+                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+            }
         }
 
         [Fact]
@@ -43,25 +40,21 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            var newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+            using (new ThreadCultureChange(null, newUICulture))
             {
-                var newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                using (new ThreadCultureChange(null, newUICulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                }
+                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+            }
 
-                newUICulture = new CultureInfo("de-DE_phoneb");
-                using (new ThreadCultureChange(null, newUICulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                    Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
-                }
-            }).Dispose();
+            newUICulture = new CultureInfo("de-DE_phoneb");
+            using (new ThreadCultureChange(null, newUICulture))
+            {
+                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+            }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Thread cultures is not honored in UWP.")]
         public void DefaultThreadCurrentCulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -79,7 +72,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Thread cultures is not honored in UWP.")]
         public void DefaultThreadCurrentUICulture()
         {
             RemoteExecutor.Invoke(() =>

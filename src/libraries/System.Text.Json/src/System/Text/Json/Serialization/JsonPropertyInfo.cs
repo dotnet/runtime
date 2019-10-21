@@ -14,12 +14,8 @@ namespace System.Text.Json
     internal abstract class JsonPropertyInfo
     {
         // Cache the converters so they don't get created for every enumerable property.
-        private static readonly JsonEnumerableConverter s_jsonDerivedEnumerableConverter = new DefaultDerivedEnumerableConverter();
         private static readonly JsonEnumerableConverter s_jsonArrayConverter = new DefaultArrayConverter();
-        private static readonly JsonEnumerableConverter s_jsonICollectionConverter = new DefaultICollectionConverter();
         private static readonly JsonEnumerableConverter s_jsonImmutableEnumerableConverter = new DefaultImmutableEnumerableConverter();
-        private static readonly JsonDictionaryConverter s_jsonDerivedDictionaryConverter = new DefaultDerivedDictionaryConverter();
-        private static readonly JsonDictionaryConverter s_jsonIDictionaryConverter = new DefaultIDictionaryConverter();
         private static readonly JsonDictionaryConverter s_jsonImmutableDictionaryConverter = new DefaultImmutableDictionaryConverter();
 
         public static readonly JsonPropertyInfo s_missingProperty = GetMissingProperty();
@@ -31,6 +27,7 @@ namespace System.Text.Json
         private JsonPropertyInfo _dictionaryValuePropertyPolicy;
 
         public bool CanBeNull { get; private set; }
+        public bool IsImmutableArray { get; private set; }
 
         public ClassType ClassType;
 
@@ -56,13 +53,7 @@ namespace System.Text.Json
 
         public abstract IList CreateConverterList();
 
-        public abstract IEnumerable CreateDerivedEnumerableInstance(ref ReadStack state, JsonPropertyInfo collectionPropertyInfo, IList sourceList);
-
-        public abstract object CreateDerivedDictionaryInstance(ref ReadStack state, JsonPropertyInfo collectionPropertyInfo, IDictionary sourceDictionary);
-
-        public abstract IEnumerable CreateIEnumerableInstance(ref ReadStack state, Type parentType, IList sourceList);
-
-        public abstract IDictionary CreateIDictionaryInstance(ref ReadStack state, Type parentType, IDictionary sourceDictionary);
+        public abstract IDictionary CreateConverterDictionary();
 
         public abstract IEnumerable CreateImmutableCollectionInstance(ref ReadStack state, Type collectionType, string delegateKey, IList sourceList, JsonSerializerOptions options);
 
@@ -84,8 +75,6 @@ namespace System.Text.Json
         }
 
         public Type DeclaredPropertyType { get; private set; }
-
-        public Type ImplementedPropertyType { get; private set; }
 
         private void DeterminePropertyName()
         {
@@ -134,9 +123,7 @@ namespace System.Text.Json
 
         private void DetermineSerializationCapabilities()
         {
-            if (ClassType != ClassType.Enumerable &&
-                ClassType != ClassType.Dictionary &&
-                ClassType != ClassType.IDictionaryConstructible)
+            if ((ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
                 // We serialize if there is a getter + not ignoring readonly properties.
                 ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
@@ -164,54 +151,17 @@ namespace System.Text.Json
 
                             EnumerableConverter = s_jsonArrayConverter;
                         }
-                        else if (ClassType == ClassType.IDictionaryConstructible)
+                        else if (ClassType == ClassType.Dictionary && DefaultImmutableDictionaryConverter.IsImmutableDictionary(RuntimePropertyType))
                         {
-                            // Natively supported type.
-                            if (DeclaredPropertyType == ImplementedPropertyType)
-                            {
-                                if (RuntimePropertyType.FullName.StartsWith(JsonClassInfo.ImmutableNamespaceName))
-                                {
-                                    DefaultImmutableDictionaryConverter.RegisterImmutableDictionary(
-                                        RuntimePropertyType, JsonClassInfo.GetElementType(RuntimePropertyType, ParentClassType, PropertyInfo, Options), Options);
-
-                                    DictionaryConverter = s_jsonImmutableDictionaryConverter;
-                                }
-                                else if (JsonClassInfo.IsDeserializedByConstructingWithIDictionary(RuntimePropertyType))
-                                {
-                                    DictionaryConverter = s_jsonIDictionaryConverter;
-                                }
-                            }
-                            // Type that implements a type with ClassType IDictionaryConstructible.
-                            else
-                            {
-                                DictionaryConverter = s_jsonDerivedDictionaryConverter;
-                            }
+                            DefaultImmutableDictionaryConverter.RegisterImmutableDictionary(RuntimePropertyType, ElementType, Options);
+                            DictionaryConverter = s_jsonImmutableDictionaryConverter;
                         }
-                        else if (ClassType == ClassType.Enumerable)
+                        else if (ClassType == ClassType.Enumerable && DefaultImmutableEnumerableConverter.IsImmutableEnumerable(RuntimePropertyType, out bool isImmutableArray))
                         {
-                            // Else if it's an implementing type whose runtime type is not assignable to IList.
-                            if (DeclaredPropertyType != ImplementedPropertyType &&
-                                (!typeof(IList).IsAssignableFrom(RuntimePropertyType) ||
-                                ImplementedPropertyType == typeof(ArrayList) ||
-                                ImplementedPropertyType == typeof(IList)))
-                            {
-                                EnumerableConverter = s_jsonDerivedEnumerableConverter;
-                            }
-                            else if (JsonClassInfo.IsDeserializedByConstructingWithIList(RuntimePropertyType) ||
-                                (!typeof(IList).IsAssignableFrom(RuntimePropertyType) &&
-                                JsonClassInfo.HasConstructorThatTakesGenericIEnumerable(RuntimePropertyType, Options)))
-                            {
-                                EnumerableConverter = s_jsonICollectionConverter;
-                            }
-                            else if (RuntimePropertyType.IsGenericType &&
-                                RuntimePropertyType.FullName.StartsWith(JsonClassInfo.ImmutableNamespaceName) &&
-                                RuntimePropertyType.GetGenericArguments().Length == 1)
-                            {
-                                DefaultImmutableEnumerableConverter.RegisterImmutableCollection(RuntimePropertyType,
-                                    JsonClassInfo.GetElementType(RuntimePropertyType, ParentClassType, PropertyInfo, Options), Options);
-                                EnumerableConverter = s_jsonImmutableEnumerableConverter;
-                            }
+                            DefaultImmutableEnumerableConverter.RegisterImmutableCollection(RuntimePropertyType, ElementType, Options);
+                            EnumerableConverter = s_jsonImmutableEnumerableConverter;
 
+                            IsImmutableArray = isImmutableArray;
                         }
                     }
                 }
@@ -220,6 +170,8 @@ namespace System.Text.Json
 
         /// <summary>
         /// Return the JsonPropertyInfo for the TValue in IDictionary{string, TValue} when deserializing.
+        /// This only needs to contain the raw TValue and does not need converter, etc applied since it
+        /// is only used for "casting" reasons.
         /// </summary>
         /// <remarks>
         /// This should not be called during warm-up (initial creation of JsonPropertyInfos) to avoid recursive behavior
@@ -229,14 +181,23 @@ namespace System.Text.Json
         {
             get
             {
+                Debug.Assert(ClassType == ClassType.Dictionary);
+
                 if (_dictionaryValuePropertyPolicy == null)
                 {
-                    Debug.Assert(ClassType == ClassType.Dictionary || ClassType == ClassType.IDictionaryConstructible);
+                    //if ((_dictionaryValuePropertyPolicy = ElementClassInfo.PolicyProperty) == null)
+                    {
+                        Type dictionaryValueType = ElementType;
+                        Debug.Assert(dictionaryValueType != null);
 
-                    Type dictionaryValueType = ElementType;
-                    Debug.Assert(ElementType != null);
-
-                    _dictionaryValuePropertyPolicy = JsonClassInfo.CreateRootProperty(dictionaryValueType, Options);
+                        _dictionaryValuePropertyPolicy = JsonClassInfo.CreatePolicyProperty(
+                            declaredPropertyType : dictionaryValueType,
+                            runtimePropertyType : dictionaryValueType,
+                            elementType : null,
+                            converter: null,
+                            ClassType.Dictionary,
+                            Options);
+                    }
                 }
 
                 return _dictionaryValuePropertyPolicy;
@@ -256,9 +217,7 @@ namespace System.Text.Json
             {
                 if (_elementClassInfo == null && ElementType != null)
                 {
-                    Debug.Assert(ClassType == ClassType.Enumerable ||
-                        ClassType == ClassType.Dictionary ||
-                        ClassType == ClassType.IDictionaryConstructible);
+                    Debug.Assert(ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary);
 
                     _elementClassInfo = Options.GetOrAddClass(ElementType);
                 }
@@ -281,14 +240,11 @@ namespace System.Text.Json
             return (TAttribute)propertyInfo?.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
-        public abstract Type GetConcreteType(Type type);
-
         public abstract Type GetDictionaryConcreteType();
 
         public void GetDictionaryKeyAndValue(ref WriteStackFrame writeStackFrame, out string key, out object value)
         {
-            Debug.Assert(ClassType == ClassType.Dictionary ||
-                ClassType == ClassType.IDictionaryConstructible);
+            Debug.Assert(ClassType == ClassType.Dictionary);
 
             if (writeStackFrame.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator)
             {
@@ -323,52 +279,47 @@ namespace System.Text.Json
             Type parentClassType,
             Type declaredPropertyType,
             Type runtimePropertyType,
-            Type implementedPropertyType,
+            ClassType runtimeClassType,
             PropertyInfo propertyInfo,
             Type elementType,
             JsonConverter converter,
+            bool treatAsNullable,
             JsonSerializerOptions options)
         {
             ParentClassType = parentClassType;
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
-            ImplementedPropertyType = implementedPropertyType;
+            ClassType = runtimeClassType;
             PropertyInfo = propertyInfo;
             ElementType = elementType;
             Options = options;
-            IsNullableType = runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
-            CanBeNull = IsNullableType || !runtimePropertyType.IsValueType;
+            CanBeNull = treatAsNullable || !runtimePropertyType.IsValueType;
 
             if (converter != null)
             {
                 ConverterBase = converter;
 
                 HasInternalConverter = (converter.GetType().Assembly == GetType().Assembly);
-
-                // Avoid calling GetClassType since it will re-ask if there is a converter which is slow.
-                if (runtimePropertyType == typeof(object))
-                {
-                    ClassType = ClassType.Unknown;
-                }
-                else
-                {
-                    ClassType = ClassType.Value;
-                }
-            }
-            // Special case for immutable collections.
-            else if (declaredPropertyType != implementedPropertyType && !JsonClassInfo.IsNativelySupportedCollection(declaredPropertyType))
-            {
-                ClassType = JsonClassInfo.GetClassType(declaredPropertyType, options);
-            }
-            else
-            {
-                ClassType = JsonClassInfo.GetClassType(runtimePropertyType, options);
             }
         }
 
-        public bool IgnoreNullValues { get; private set; }
+        public abstract bool TryCreateEnumerableAddMethod(object target, out object addMethodDelegate);
 
-        public bool IsNullableType { get; private set; }
+        public abstract object CreateEnumerableAddMethod(MethodInfo addMethod, object target);
+
+        public abstract void AddObjectToEnumerableWithReflection(object addMethodDelegate, object value);
+
+        public abstract void AddObjectToParentEnumerable(object addMethodDelegate, object value);
+
+        public abstract void AddObjectToDictionary(object target, string key, object value);
+
+        public abstract void AddObjectToParentDictionary(object target, string key, object value);
+
+        public abstract bool CanPopulateDictionary(object target);
+
+        public abstract bool ParentDictionaryCanBePopulated(object target);
+
+        public bool IgnoreNullValues { get; private set; }
 
         public bool IsPropertyPolicy { get; protected set; }
 

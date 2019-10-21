@@ -22,7 +22,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetTypeFromCLSID_CLSIDExists_ReturnsExpected()
         {
             var guid = new Guid("927971f5-0939-11d1-8be1-00c04fd8d503");

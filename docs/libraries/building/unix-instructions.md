@@ -1,5 +1,6 @@
-Building CoreFX on FreeBSD, Linux and OS X
+Building CoreFX on Linux and OS X
 ==========================================
+
 ## Building
 
 1. Install the prerequisites ([Linux](#user-content-linux), [macOS](#user-content-macos))
@@ -77,7 +78,7 @@ There is one caveat: you must set the LANG in your shell to something other than
 ```sh
 export LANG=en_US.UTF-8
 ```
-Otherwise you may get errors like `PackagingException: File not found: '/home/dan/git/corefx/LICENSE.TXT'`. More info in [this issue](https://github.com/dotnet/corefx/issues/38608). It is possible this may occur on other distros, if LANG is set as above.
+Otherwise you may get errors like `PackagingException: File not found: '/home/dan/git/corefx/LICENSE'`. More info in [this issue](https://github.com/dotnet/corefx/issues/38608). It is possible this may occur on other distros, if LANG is set as above.
 
 We have not tested on WSL2 yet. If you try it out, we'd welcome an update.
 
@@ -130,3 +131,8 @@ If you see errors along the lines of `SendFailure (Error writing headers)` you m
 mozroots --import --sync
 ```
 
+---
+
+## FreeBSD
+
+Build instructions for FreeBSD can be found [here](freebsd-instructions.md).

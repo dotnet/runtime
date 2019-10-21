@@ -51,25 +51,28 @@ namespace System
     public static partial class Utf8Extensions
     {
         public static System.ReadOnlySpan<byte> AsBytes(this System.ReadOnlySpan<System.Char8> text) { throw null; }
-        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String text) { throw null; }
-        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String text, int start) { throw null; }
-        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String text, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String text) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String text, System.Index startIndex) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String text, int start) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String text, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String text, System.Range range) { throw null; }
-        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String text) { throw null; }
-        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String text, System.Index startIndex) { throw null; }
-        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String text, int start) { throw null; }
-        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String text, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String text, System.Range range) { throw null; }
+        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text) { throw null; }
+        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text, int start) { throw null; }
+        public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text, int start, int length) { throw null; }
+        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text) { throw null; }
+        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, System.Index startIndex) { throw null; }
+        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, int start) { throw null; }
+        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, int start, int length) { throw null; }
+        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, System.Range range) { throw null; }
+        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text) { throw null; }
+        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, System.Index startIndex) { throw null; }
+        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, int start) { throw null; }
+        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, int start, int length) { throw null; }
+        public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, System.Range range) { throw null; }
         public static System.Text.Utf8Span AsSpan(this System.Utf8String? text) { throw null; }
         public static System.Text.Utf8Span AsSpan(this System.Utf8String? text, int start) { throw null; }
         public static System.Text.Utf8Span AsSpan(this System.Utf8String? text, int start, int length) { throw null; }
         public static System.Utf8String ToUtf8String(this System.Text.Rune rune) { throw null; }
     }
-    public sealed partial class Utf8String : System.IEquatable<System.Utf8String>
+    public sealed partial class Utf8String : System.IComparable<System.Utf8String?>,
+#nullable disable
+        System.IEquatable<System.Utf8String>
+#nullable restore
     {
         public static readonly System.Utf8String Empty;
         [System.CLSCompliantAttribute(false)]
@@ -81,38 +84,185 @@ namespace System
         public Utf8String(System.ReadOnlySpan<byte> value) { }
         public Utf8String(System.ReadOnlySpan<char> value) { }
         public Utf8String(string value) { }
-        public System.Char8 this[int index] { get { throw null; } }
+        public ByteEnumerable Bytes { get { throw null; } }
+        public CharEnumerable Chars { get { throw null; } }
         public int Length { get { throw null; } }
+        public RuneEnumerable Runes { get { throw null; } }
         public static bool AreEquivalent(System.Utf8String? utf8Text, string? utf16Text) { throw null; }
         public static bool AreEquivalent(System.Text.Utf8Span utf8Text, System.ReadOnlySpan<char> utf16Text) { throw null; }
         public static bool AreEquivalent(System.ReadOnlySpan<byte> utf8Text, System.ReadOnlySpan<char> utf16Text) { throw null; }
+        public int CompareTo(System.Utf8String? other) { throw null; }
+        public int CompareTo(System.Utf8String? other, System.StringComparison comparison) { throw null; }
         public bool Contains(char value) { throw null; }
+        public bool Contains(char value, System.StringComparison comparison) { throw null; }
         public bool Contains(System.Text.Rune value) { throw null; }
+        public bool Contains(System.Text.Rune value, System.StringComparison comparison) { throw null; }
+        public bool Contains(System.Utf8String value) { throw null; }
+        public bool Contains(System.Utf8String value, System.StringComparison comparison) { throw null; }
+        public static System.Utf8String Create<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
+        public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<byte> buffer) { throw null; }
+        public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<char> buffer) { throw null; }
+        public static System.Utf8String CreateRelaxed<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
         public bool EndsWith(char value) { throw null; }
+        public bool EndsWith(char value, System.StringComparison comparison) { throw null; }
         public bool EndsWith(System.Text.Rune value) { throw null; }
+        public bool EndsWith(System.Text.Rune value, System.StringComparison comparison) { throw null; }
+        public bool EndsWith(System.Utf8String value) { throw null; }
+        public bool EndsWith(System.Utf8String value, System.StringComparison comparison) { throw null; }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Utf8String value) { throw null; }
-        public static bool Equals(System.Utf8String left, System.Utf8String right) { throw null; }
+        public static bool Equals(System.Utf8String? a, System.Utf8String? b, System.StringComparison comparison) { throw null; }
+        public static bool Equals(System.Utf8String? left, System.Utf8String? right) { throw null; }
+        public bool Equals(System.Utf8String? value) { throw null; }
+        public bool Equals(System.Utf8String? value, System.StringComparison comparison) { throw null; }
         public override int GetHashCode() { throw null; }
+        public int GetHashCode(System.StringComparison comparison) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly byte GetPinnableReference() { throw null; }
-        public int IndexOf(char value) { throw null; }
-        public int IndexOf(System.Text.Rune value) { throw null; }
-        public static bool IsNullOrEmpty(System.Utf8String value) { throw null; }
-        public static bool operator ==(System.Utf8String left, System.Utf8String right) { throw null; }
-        public static explicit operator System.ReadOnlySpan<byte>(System.Utf8String value) { throw null; }
-        public static implicit operator System.ReadOnlySpan<System.Char8>(System.Utf8String value) { throw null; }
-        public static implicit operator System.Text.Utf8Span(System.Utf8String value) { throw null; }
-        public static bool operator !=(System.Utf8String left, System.Utf8String right) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public System.Utf8String Slice(int startIndex, int length) { throw null; }
+        public static implicit operator System.Text.Utf8Span(System.Utf8String? value) { throw null; }
+        public bool IsAscii() { throw null; }
+        public bool IsNormalized(System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
+        public static bool IsNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] System.Utf8String? value) { throw null; }
+        public static bool IsNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] System.Utf8String? value) { throw null; }
+        public System.Utf8String Normalize(System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
+        public static bool operator !=(System.Utf8String? left, System.Utf8String? right) { throw null; }
+        public static bool operator ==(System.Utf8String? left, System.Utf8String? right) { throw null; }
+        public SplitResult Split(char separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Text.Rune separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Utf8String separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
+        public SplitOnResult SplitOn(char separator) { throw null; }
+        public SplitOnResult SplitOn(char separator, System.StringComparison comparisonType) { throw null; }
+        public SplitOnResult SplitOn(System.Text.Rune separator) { throw null; }
+        public SplitOnResult SplitOn(System.Text.Rune separator, System.StringComparison comparisonType) { throw null; }
+        public SplitOnResult SplitOn(System.Utf8String separator) { throw null; }
+        public SplitOnResult SplitOn(System.Utf8String separator, System.StringComparison comparisonType) { throw null; }
+        public SplitOnResult SplitOnLast(char separator) { throw null; }
+        public SplitOnResult SplitOnLast(char separator, System.StringComparison comparisonType) { throw null; }
+        public SplitOnResult SplitOnLast(System.Text.Rune separator) { throw null; }
+        public SplitOnResult SplitOnLast(System.Text.Rune separator, System.StringComparison comparisonType) { throw null; }
+        public SplitOnResult SplitOnLast(System.Utf8String separator) { throw null; }
+        public SplitOnResult SplitOnLast(System.Utf8String separator, System.StringComparison comparisonType) { throw null; }
         public bool StartsWith(char value) { throw null; }
+        public bool StartsWith(char value, System.StringComparison comparison) { throw null; }
         public bool StartsWith(System.Text.Rune value) { throw null; }
-        public System.Utf8String Substring(int startIndex) { throw null; }
-        public System.Utf8String Substring(int startIndex, int length) { throw null; }
+        public bool StartsWith(System.Text.Rune value, System.StringComparison comparison) { throw null; }
+        public bool StartsWith(System.Utf8String value) { throw null; }
+        public bool StartsWith(System.Utf8String value, System.StringComparison comparison) { throw null; }
+        public System.Utf8String this[System.Range range] { get { throw null; } }
         public byte[] ToByteArray() { throw null; }
-        public byte[] ToByteArray(int startIndex, int length) { throw null; }
+        public char[] ToCharArray() { throw null; }
+        public System.Utf8String ToLower(System.Globalization.CultureInfo culture) { throw null; }
+        public System.Utf8String ToLowerInvariant() { throw null; }
         public override string ToString() { throw null; }
+        public System.Utf8String ToUpper(System.Globalization.CultureInfo culture) { throw null; }
+        public System.Utf8String ToUpperInvariant() { throw null; }
+        public System.Utf8String Trim() { throw null; }
+        public System.Utf8String TrimEnd() { throw null; }
+        public System.Utf8String TrimStart() { throw null; }
+        public static bool TryCreateFrom(System.ReadOnlySpan<byte> buffer, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Utf8String? value) { throw null; }
+        public static bool TryCreateFrom(System.ReadOnlySpan<char> buffer, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Utf8String? value) { throw null; }
+        public bool TryFind(char value, out System.Range range) { throw null; }
+        public bool TryFind(char value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public bool TryFind(System.Text.Rune value, out System.Range range) { throw null; }
+        public bool TryFind(System.Text.Rune value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public bool TryFind(System.Utf8String value, out System.Range range) { throw null; }
+        public bool TryFind(System.Utf8String value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public bool TryFindLast(char value, out System.Range range) { throw null; }
+        public bool TryFindLast(char value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public bool TryFindLast(System.Text.Rune value, out System.Range range) { throw null; }
+        public bool TryFindLast(System.Text.Rune value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public bool TryFindLast(System.Utf8String value, out System.Range range) { throw null; }
+        public bool TryFindLast(System.Utf8String value, System.StringComparison comparisonType, out System.Range range) { throw null; }
+        public static System.Utf8String UnsafeCreateWithoutValidation(System.ReadOnlySpan<byte> utf8Contents) { throw null; }
+        public static System.Utf8String UnsafeCreateWithoutValidation<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
+        public readonly partial struct ByteEnumerable : System.Collections.Generic.IEnumerable<byte>
+        {
+            private readonly object _dummy;
+            public Enumerator GetEnumerator() { throw null; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            System.Collections.Generic.IEnumerator<byte> System.Collections.Generic.IEnumerable<byte>.GetEnumerator() { throw null; }
+            public struct Enumerator : System.Collections.Generic.IEnumerator<byte>
+            {
+                private readonly object _dummy;
+                private readonly int _dummyPrimitive;
+                public byte Current { get { throw null; } }
+                public bool MoveNext() { throw null; }
+                void System.IDisposable.Dispose() { }
+                object System.Collections.IEnumerator.Current { get { throw null; } }
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
+        public readonly partial struct CharEnumerable : System.Collections.Generic.IEnumerable<char>
+        {
+            private readonly object _dummy;
+            public Enumerator GetEnumerator() { throw null; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            System.Collections.Generic.IEnumerator<char> System.Collections.Generic.IEnumerable<char>.GetEnumerator() { throw null; }
+            public struct Enumerator : System.Collections.Generic.IEnumerator<char>
+            {
+                private readonly object _dummy;
+                private readonly int _dummyPrimitive;
+                public char Current { get { throw null; } }
+                public bool MoveNext() { throw null; }
+                void System.IDisposable.Dispose() { }
+                object System.Collections.IEnumerator.Current { get { throw null; } }
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
+        public readonly partial struct RuneEnumerable : System.Collections.Generic.IEnumerable<System.Text.Rune>
+        {
+            private readonly object _dummy;
+            public Enumerator GetEnumerator() { throw null; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            System.Collections.Generic.IEnumerator<System.Text.Rune> System.Collections.Generic.IEnumerable<System.Text.Rune>.GetEnumerator() { throw null; }
+            public struct Enumerator : System.Collections.Generic.IEnumerator<System.Text.Rune>
+            {
+                private readonly object _dummy;
+                private readonly int _dummyPrimitive;
+                public System.Text.Rune Current { get { throw null; } }
+                public bool MoveNext() { throw null; }
+                void System.IDisposable.Dispose() { }
+                object System.Collections.IEnumerator.Current { get { throw null; } }
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
+        public readonly struct SplitResult : System.Collections.Generic.IEnumerable<Utf8String?>
+        {
+            private readonly object _dummy;
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3, out System.Utf8String? item4) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3, out System.Utf8String? item4, out System.Utf8String? item5) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3, out System.Utf8String? item4, out System.Utf8String? item5, out System.Utf8String? item6) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3, out System.Utf8String? item4, out System.Utf8String? item5, out System.Utf8String? item6, out System.Utf8String? item7) { throw null; }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String? item1, out System.Utf8String? item2, out System.Utf8String? item3, out System.Utf8String? item4, out System.Utf8String? item5, out System.Utf8String? item6, out System.Utf8String? item7, out System.Utf8String? item8) { throw null; }
+            public Enumerator GetEnumerator() { throw null; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            System.Collections.Generic.IEnumerator<System.Utf8String?> System.Collections.Generic.IEnumerable<System.Utf8String?>.GetEnumerator() { throw null; }
+            public struct Enumerator : System.Collections.Generic.IEnumerator<System.Utf8String?>
+            {
+                private readonly object _dummy;
+                public System.Utf8String? Current { get { throw null; } }
+                public bool MoveNext() { throw null; }
+                void System.IDisposable.Dispose() { }
+                object? System.Collections.IEnumerator.Current { get { throw null; } }
+                void System.Collections.IEnumerator.Reset() { throw null; }
+            }
+        }
+        public readonly struct SplitOnResult
+        {
+            private readonly object _dummy;
+            public System.Utf8String? After { get { throw null; } }
+            public System.Utf8String Before { get { throw null; } }
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            public void Deconstruct(out System.Utf8String before, out System.Utf8String? after) { throw null; }
+        }
     }
     [System.FlagsAttribute]
     public enum Utf8StringSplitOptions
@@ -144,6 +294,7 @@ namespace System.Text
         public CharEnumerable Chars { get { throw null; } }
         public static System.Text.Utf8Span Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
         public RuneEnumerable Runes { get { throw null; } }
         public int CompareTo(System.Text.Utf8Span other) { throw null; }
         public int CompareTo(System.Text.Utf8Span other, System.StringComparison comparison) { throw null; }
@@ -202,6 +353,7 @@ namespace System.Text
         public System.Text.Utf8Span Trim() { throw null; }
         public System.Text.Utf8Span TrimEnd() { throw null; }
         public System.Text.Utf8Span TrimStart() { throw null; }
+        public byte[] ToByteArray() { throw null; }
         public char[] ToCharArray() { throw null; }
         public int ToChars(System.Span<char> destination) { throw null; }
         public System.Utf8String ToLower(System.Globalization.CultureInfo culture) { throw null; }

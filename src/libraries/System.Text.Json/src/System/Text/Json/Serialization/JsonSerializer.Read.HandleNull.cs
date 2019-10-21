@@ -8,7 +8,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static bool HandleNull(ref Utf8JsonReader reader, ref ReadStack state)
+        private static bool HandleNull(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
             if (state.Current.SkipProperty)
             {
@@ -82,7 +82,6 @@ namespace System.Text.Json
             JsonPropertyInfo elementPropertyInfo = jsonPropertyInfo.ElementClassInfo.PolicyProperty;
 
             // if elementPropertyInfo == null then this element doesn't need a converter (an object).
-
             if (elementPropertyInfo?.CanBeNull == false)
             {
                 // Allow a value type converter to return a null value representation.

@@ -37,6 +37,16 @@ namespace System.Net.Sockets
 #if DEBUG
         private InnerSafeCloseSocket _innerSocketCopy;
 #endif
+        private bool _hasShutdownSend;
+
+        internal void TrackShutdown(SocketShutdown how)
+        {
+            if (how == SocketShutdown.Send ||
+                how == SocketShutdown.Both)
+            {
+                _hasShutdownSend = true;
+            }
+        }
 
         public override bool IsInvalid
         {
@@ -171,6 +181,8 @@ namespace System.Net.Sockets
                 Dispose();
                 if (innerSocket != null)
                 {
+                    bool canceledOperations = false;
+
                     // Wait until it's safe.
                     SpinWait sw = new SpinWait();
                     while (!_released)
@@ -179,11 +191,18 @@ namespace System.Net.Sockets
                         // Try to make those on-going calls return.
                         // On Linux, TryUnblockSocket will unblock current operations but it doesn't prevent
                         // a new one from starting. So we must call TryUnblockSocket multiple times.
-                        abortive |= innerSocket.TryUnblockSocket(abortive);
+                        canceledOperations |= innerSocket.TryUnblockSocket(abortive, _hasShutdownSend);
                         sw.SpinOnce();
                     }
 
-                    abortive |= DoReleaseHandle();
+                    canceledOperations |= DoReleaseHandle();
+
+                    // In case we cancel operations, switch to an abortive close.
+                    // Unless the user requested a normal close using Socket.Shutdown.
+                    if (canceledOperations && !_hasShutdownSend)
+                    {
+                        abortive = true;
+                    }
 
                     innerSocket.Close(abortive);
                 }

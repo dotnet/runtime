@@ -102,23 +102,20 @@ namespace System.Text.Tests
         [Fact]
         public void GetEncoding_EncodingName()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                foreach (CodePageMapping map in s_mapping)
                 {
-                    foreach (CodePageMapping map in s_mapping)
-                    {
-                        Encoding encoding = Encoding.GetEncoding(map.Name);
+                    Encoding encoding = Encoding.GetEncoding(map.Name);
 
-                        string name = encoding.EncodingName;
+                    string name = encoding.EncodingName;
 
-                        Assert.NotNull(name);
-                        Assert.NotEqual(string.Empty, name);
+                    Assert.NotNull(name);
+                    Assert.NotEqual(string.Empty, name);
 
-                        Assert.All(name, ch => Assert.InRange(ch, 0, 127));
-                    }
+                    Assert.All(name, ch => Assert.InRange(ch, 0, 127));
                 }
-            }).Dispose();
+            }
         }
 
         [Fact]

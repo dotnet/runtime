@@ -102,14 +102,47 @@ namespace System.Text.Json.Serialization.Converters
             options.TryAddCreateRangeDelegate(delegateKey, createRangeDelegate);
         }
 
+        public static bool IsImmutableEnumerable(Type type, out bool IsImmutableArray)
+        {
+            if (!type.IsGenericType)
+            {
+                IsImmutableArray = false;
+                return false;
+            }
+
+            switch (type.GetGenericTypeDefinition().FullName)
+            {
+                case ImmutableArrayGenericTypeName:
+                    IsImmutableArray = true;
+                    return true;
+                case ImmutableListGenericTypeName:
+                case ImmutableListGenericInterfaceTypeName:
+                case ImmutableStackGenericTypeName:
+                case ImmutableStackGenericInterfaceTypeName:
+                case ImmutableQueueGenericTypeName:
+                case ImmutableQueueGenericInterfaceTypeName:
+                case ImmutableSortedSetGenericTypeName:
+                case ImmutableHashSetGenericTypeName:
+                case ImmutableSetGenericInterfaceTypeName:
+                    IsImmutableArray = false;
+                    return true;
+                default:
+                    IsImmutableArray = false;
+                    return false;
+            }
+        }
+
         public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
         {
             Type immutableCollectionType = state.Current.JsonPropertyInfo.RuntimePropertyType;
-            Type elementType = state.Current.GetElementType();
+
+            JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
+            Type elementType = elementClassInfo.Type;
 
             string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out _, out _);
 
-            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
+            JsonPropertyInfo propertyInfo = elementClassInfo.PolicyProperty ?? elementClassInfo.CreateRootProperty(options);
+            Debug.Assert(propertyInfo != null);
             return propertyInfo.CreateImmutableCollectionInstance(ref state, immutableCollectionType, delegateKey, sourceList, options);
         }
     }

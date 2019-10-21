@@ -10,7 +10,6 @@ namespace System.IO.IsolatedStorage.Tests
     public partial class HelperTests
     {
         [Fact]
-        [ActiveIssue(18940, TargetFrameworkMonikers.Uap)]
         public void GetDefaultIdentityAndHash()
         {
             object identity;
@@ -39,7 +38,6 @@ namespace System.IO.IsolatedStorage.Tests
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Roaming),
             InlineData(IsolatedStorageScope.Machine)
             ]
-        [ActiveIssue(18940, TargetFrameworkMonikers.Uap)]
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
             // Machine scope is behind a policy that isn't enabled by default

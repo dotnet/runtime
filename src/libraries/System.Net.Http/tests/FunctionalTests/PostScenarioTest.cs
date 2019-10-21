@@ -24,7 +24,6 @@ namespace System.Net.Http.Functional.Tests
 
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
@@ -128,7 +127,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT behaves differently and will use 'Content-Length' semantics")]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new StringContent(ExpectedContent),
@@ -162,7 +160,6 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
@@ -180,7 +177,6 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, false);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Configuration.Http.RemoteServer remoteServer)
@@ -191,7 +187,6 @@ namespace System.Net.Http.Functional.Tests
                 PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)

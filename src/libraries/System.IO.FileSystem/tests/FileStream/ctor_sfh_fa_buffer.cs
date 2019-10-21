@@ -23,7 +23,6 @@ namespace System.IO.Tests
         [Theory,
             InlineData(0),
             InlineData(-1)]
-        [ActiveIssue(31909, TargetFrameworkMonikers.Uap)]
         public void InvalidBufferSize_Throws(int size)
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
@@ -33,7 +32,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(31909, TargetFrameworkMonikers.Uap)]
         public void InvalidBufferSize_DoesNotCloseHandle()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))

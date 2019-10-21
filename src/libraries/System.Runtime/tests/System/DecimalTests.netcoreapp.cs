@@ -76,64 +76,61 @@ namespace System.Tests
         [Fact]
         public static void TryFormat()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+                foreach (object[] testdata in ToString_TestData())
                 {
-                    foreach (object[] testdata in ToString_TestData())
+                    decimal localI = (decimal)testdata[0];
+                    string localFormat = (string)testdata[1];
+                    IFormatProvider localProvider = (IFormatProvider)testdata[2];
+                    string localExpected = (string)testdata[3];
+
+                    try
                     {
-                        decimal localI = (decimal)testdata[0];
-                        string localFormat = (string)testdata[1];
-                        IFormatProvider localProvider = (IFormatProvider)testdata[2];
-                        string localExpected = (string)testdata[3];
+                        char[] actual;
+                        int charsWritten;
 
-                        try
+                        // Just right
+                        actual = new char[localExpected.Length];
+                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                        Assert.Equal(localExpected.Length, charsWritten);
+                        Assert.Equal(localExpected, new string(actual));
+
+                        // Longer than needed
+                        actual = new char[localExpected.Length + 1];
+                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                        Assert.Equal(localExpected.Length, charsWritten);
+                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
+
+                        // Too short
+                        if (localExpected.Length > 0)
                         {
-                            char[] actual;
-                            int charsWritten;
-
-                            // Just right
-                            actual = new char[localExpected.Length];
-                            Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(localExpected.Length, charsWritten);
-                            Assert.Equal(localExpected, new string(actual));
-
-                            // Longer than needed
-                            actual = new char[localExpected.Length + 1];
-                            Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(localExpected.Length, charsWritten);
-                            Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                            // Too short
-                            if (localExpected.Length > 0)
-                            {
-                                actual = new char[localExpected.Length - 1];
-                                Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                                Assert.Equal(0, charsWritten);
-                            }
-
-                            if (localFormat != null)
-                            {
-                                // Upper localFormat
-                                actual = new char[localExpected.Length];
-                                Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat.ToUpperInvariant(), localProvider));
-                                Assert.Equal(localExpected.Length, charsWritten);
-                                Assert.Equal(localExpected.ToUpperInvariant(), new string(actual));
-
-                                // Lower format
-                                actual = new char[localExpected.Length];
-                                Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat.ToLowerInvariant(), localProvider));
-                                Assert.Equal(localExpected.Length, charsWritten);
-                                Assert.Equal(localExpected.ToLowerInvariant(), new string(actual));
-                            }
+                            actual = new char[localExpected.Length - 1];
+                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                            Assert.Equal(0, charsWritten);
                         }
-                        catch (Exception exc)
+
+                        if (localFormat != null)
                         {
-                            throw new Exception($"Failed on `{localI}`, `{localFormat}`, `{localProvider}`, `{localExpected}`. {exc}");
+                            // Upper localFormat
+                            actual = new char[localExpected.Length];
+                            Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat.ToUpperInvariant(), localProvider));
+                            Assert.Equal(localExpected.Length, charsWritten);
+                            Assert.Equal(localExpected.ToUpperInvariant(), new string(actual));
+
+                            // Lower format
+                            actual = new char[localExpected.Length];
+                            Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat.ToLowerInvariant(), localProvider));
+                            Assert.Equal(localExpected.Length, charsWritten);
+                            Assert.Equal(localExpected.ToLowerInvariant(), new string(actual));
                         }
                     }
+                    catch (Exception exc)
+                    {
+                        throw new Exception($"Failed on `{localI}`, `{localFormat}`, `{localProvider}`, `{localExpected}`. {exc}");
+                    }
                 }
-            }).Dispose();
+            }
         }
     }
 }

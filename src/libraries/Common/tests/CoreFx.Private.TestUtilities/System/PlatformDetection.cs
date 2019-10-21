@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
-using Xunit;
 
 namespace System
 {
@@ -36,11 +33,6 @@ namespace System
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
 
-        // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
-        // ClientWebSocket.ReceiveAsync to consume partial message data as it arrives, without having to wait
-        // for "end of message" to be signaled.
-        public static bool ClientWebSocketPartialMessagesSupported => !IsUap || IsWindows10Version1709OrGreater;
-
         public static bool IsDrawingSupported
         {
             get
@@ -49,7 +41,7 @@ namespace System
                 if (IsWindows)
                 {
 #endif
-                    return IsNotWindowsNanoServer && IsNotWindowsServerCore && !IsUap;
+                    return IsNotWindowsNanoServer && IsNotWindowsServerCore;
 #if NETCOREAPP
                 }
                 else if (IsOSX)
@@ -72,7 +64,7 @@ namespace System
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
-        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsUap;
+        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer;
 
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
@@ -101,6 +93,7 @@ namespace System
         }
 
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
+        public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.

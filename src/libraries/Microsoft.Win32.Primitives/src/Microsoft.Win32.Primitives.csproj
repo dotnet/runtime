@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>Microsoft.Win32.Primitives</RootNamespace>
-    <AssemblyName>Microsoft.Win32.Primitives</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <ItemGroup>
     <Compile Include="System\ComponentModel\Win32Exception.cs" />
   </ItemGroup>
@@ -19,7 +16,7 @@
     </Compile>
     <Compile Include="System\ComponentModel\Win32Exception.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\ComponentModel\Win32Exception.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

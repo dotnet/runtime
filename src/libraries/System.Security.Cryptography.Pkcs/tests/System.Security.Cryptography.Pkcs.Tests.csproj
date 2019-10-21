@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!--
-      UAP fails when loading the src assembly:
-      Could not load file or assembly 'System.Security.Cryptography.Pkcs, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. 
-      The located assembly's manifest definition does not match the assembly reference. (0x80131040)
-    -->
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

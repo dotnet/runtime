@@ -13,7 +13,6 @@ using ReferencedClassLibNeutralIsSatellite;
 
 namespace System.Runtime.Loader.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP does not use satellite assemblies in most cases")]
     public class SatelliteAssembliesTestsFixture
     {
         public Dictionary<string, AssemblyLoadContext> contexts = new Dictionary<string, AssemblyLoadContext>();
@@ -48,7 +47,6 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP does not use satellite assemblies in most cases")]
     public class SatelliteAssembliesTests : IClassFixture<SatelliteAssembliesTestsFixture>
     {
         Dictionary<string, AssemblyLoadContext> contexts;

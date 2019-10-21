@@ -4,8 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <UWPCompatible Condition="'$(TargetGroup)' == 'uap'">true</UWPCompatible>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -177,8 +176,7 @@
       <Link>Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\FileSystem.Win32.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile.cs">
@@ -215,21 +213,6 @@
       <Link>Common\Interop\Windows\Interop.RtlNtStatusToDosError.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : UAP - Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' == 'true'">
-    <Compile Include="System\IO\FileSystem.WinRT.cs" />
-    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.WinRT.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile2.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs">
-      <Link>Common\Interop\Windows\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\IO\FileStatus.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />

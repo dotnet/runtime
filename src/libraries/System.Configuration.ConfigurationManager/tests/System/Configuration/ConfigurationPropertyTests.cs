@@ -138,6 +138,16 @@ namespace System.ConfigurationTests
             Assert.IsType<DummyCanConverter>(property.Converter);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have the fix #41873")]
+        public void DescriptionValueIsExposed()
+        {
+            FooFailsValidator validator = new FooFailsValidator();
+            DummyCanConverter converter = new DummyCanConverter();
+            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertableClass), null, converter, validator, ConfigurationPropertyOptions.None, "bar");
+            Assert.Equal("bar", property.Description);
+        }
+
         [TypeConverter(typeof(DummyCantConverter))]
         public class MyUnconvertableClass
         {

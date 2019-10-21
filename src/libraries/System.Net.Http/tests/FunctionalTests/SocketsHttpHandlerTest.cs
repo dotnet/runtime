@@ -1727,7 +1727,6 @@ namespace System.Net.Http.Functional.Tests
             public bool IsBypassed(Uri host) => true;
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [Fact]
         public async Task ProxyAuth_SameConnection_Succeeds()
         {

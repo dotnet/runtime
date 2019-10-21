@@ -30,15 +30,12 @@ namespace System.Net.Http
         private const byte UTF8PreambleByte2 = 0xBF;
         private const int UTF8PreambleFirst2Bytes = 0xEFBB;
 
-#if !uap
-        // UTF32 not supported on Phone
         private const int UTF32CodePage = 12000;
         private const int UTF32PreambleLength = 4;
         private const byte UTF32PreambleByte0 = 0xFF;
         private const byte UTF32PreambleByte1 = 0xFE;
         private const byte UTF32PreambleByte2 = 0x00;
         private const byte UTF32PreambleByte3 = 0x00;
-#endif
         private const int UTF32OrUnicodePreambleFirst2Bytes = 0xFFFE;
 
         private const int UnicodeCodePage = 1200;
@@ -61,14 +58,12 @@ namespace System.Net.Http
                 UTF8PreambleByte1,
                 UTF8PreambleByte2);
 
-#if !uap
             // UTF32 not supported on Phone
             AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32PreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
                 UTF32PreambleByte0,
                 UTF32PreambleByte1,
                 UTF32PreambleByte2,
                 UTF32PreambleByte3);
-#endif
 
             AssertEncodingConstants(Encoding.Unicode, UnicodeCodePage, UnicodePreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
                 UnicodePreambleByte0,
@@ -617,15 +612,12 @@ namespace System.Net.Http
                         && data[offset + 0] == UTF8PreambleByte0
                         && data[offset + 1] == UTF8PreambleByte1
                         && data[offset + 2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
-#if !uap
-                // UTF32 not supported on Phone
                 case UTF32CodePage:
                     return (dataLength >= UTF32PreambleLength
                         && data[offset + 0] == UTF32PreambleByte0
                         && data[offset + 1] == UTF32PreambleByte1
                         && data[offset + 2] == UTF32PreambleByte2
                         && data[offset + 3] == UTF32PreambleByte3) ? UTF32PreambleLength : 0;
-#endif
                 case UnicodeCodePage:
                     return (dataLength >= UnicodePreambleLength
                         && data[offset + 0] == UnicodePreambleByte0
@@ -666,7 +658,6 @@ namespace System.Net.Http
                         break;
 
                     case UTF32OrUnicodePreambleFirst2Bytes:
-#if !uap
                         // UTF32 not supported on Phone
                         if (dataLength >= UTF32PreambleLength && data[offset + 2] == UTF32PreambleByte2 && data[offset + 3] == UTF32PreambleByte3)
                         {
@@ -674,7 +665,6 @@ namespace System.Net.Http
                             preambleLength = UTF32PreambleLength;
                         }
                         else
-#endif
                         {
                             encoding = Encoding.Unicode;
                             preambleLength = UnicodePreambleLength;

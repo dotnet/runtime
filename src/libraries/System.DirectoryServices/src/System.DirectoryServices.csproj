@@ -3,12 +3,10 @@
     <AssemblyName>System.DirectoryServices</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649</NoWarn>
-    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
-    <UWPCompatible>false</UWPCompatible>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\DirectoryServices\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
     <Compile Include="System\DirectoryServices\AdsVLV.cs" />
@@ -148,7 +146,7 @@
     <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.NameResolution</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Dns.cs" />
@@ -40,8 +40,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
-    <Compile Include="System\Net\NameResolutionPal.Win32.cs" Condition="'$(TargetGroup)' != 'uap'" />
-    <Compile Include="System\Net\NameResolutionPal.Uap.cs" Condition="'$(TargetGroup)' == 'uap'" />
+    <Compile Include="System\Net\NameResolutionPal.Win32.cs" />
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -96,13 +95,13 @@
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
       <Link>Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">

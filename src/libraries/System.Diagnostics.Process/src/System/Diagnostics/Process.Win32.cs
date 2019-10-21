@@ -177,7 +177,7 @@ namespace System.Diagnostics
                 if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                 {
                     ThreadStart threadStart = new ThreadStart(ShellExecuteFunction);
-                    Thread executionThread = new Thread(threadStart);
+                    Thread executionThread = new Thread(threadStart) { IsBackground = true };
                     executionThread.SetApartmentState(ApartmentState.STA);
                     executionThread.Start();
                     executionThread.Join();

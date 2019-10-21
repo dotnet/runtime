@@ -31,7 +31,7 @@ Calling the script `build` attempts to build both the native and managed code.
 
 The build configurations are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. It defaults to `netcoreapp` but possible values include `netcoreapp`, `netfx` or `uap`. (msbuild property `TargetGroup`)
+- `-framework|-f` identifies the target framework for the build. It defaults to `netcoreapp` but possible values include `netcoreapp` or `netfx`. (msbuild property `TargetGroup`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `ConfigurationGroup`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
@@ -63,7 +63,6 @@ build -restore -build -buildtests -test
 ```
 build -framework netcoreapp
 build -framework netfx
-build -framework uap
 ```
 
 - Build only managed components and skip the native build
@@ -172,11 +171,6 @@ For libraries that have multiple build configurations the configurations will be
 - Build project for Linux for netcoreapp
 ```
 dotnet msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
-```
-
-- Build project for uap (not if trying to build on non-windows you also need to specify OSGroup=Windows_NT)
-```
-dotnet msbuild System.Net.NetworkInformation.csproj /p:TargetGroup=uap
 ```
 
 - Build release version of library
@@ -432,17 +426,6 @@ dotnet msbuild /t:BuildAndTest /p:Coverage=true
 If coverage succeeds, the individual report can be found at `$(TestPath)\report\index.htm`.
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
-
-### Building tests with UWP (Windows only)
-
-This will allow you to build and run against `uap`, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
-```cmd
-cd src\Microsoft.CSharp\tests
-dotnet msbuild /t:BuildAndTest /p:TargetGroup=uap
-```
-In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap.
-
-The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
 
 ## Testing with private CoreCLR bits
 

@@ -12,7 +12,6 @@ namespace System.Tests
 {
     public class UnloadingAndProcessExitTests : FileCleanupTestBase
     {
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23307", TargetFrameworkMonikers.Uap)]
         [Fact]
         public void UnloadingEventMustHappenBeforeProcessExitEvent()
         {

@@ -29,6 +29,20 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [ActiveIssue(33530, TestPlatforms.FreeBSD)]
+        public void NetworkAddressChanged_Add_DoesNotBlock()
+        {
+            // Register without unregistering.
+            // This should not block process exit. If it does, this test will pass
+            // but we would fail to exit test run at the end.
+            // We cannot test this via RemoteInvoke() as that calls Environment.Exit()
+            // and forces quit even when foreground threads are running.
+            NetworkChange.NetworkAddressChanged += _addressHandler;
+            {
+            };
+        }
+
+        [Fact]
+        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;

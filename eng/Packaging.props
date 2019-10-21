@@ -1,12 +1,12 @@
 <Project>
   <PropertyGroup>
     <PackageDescriptionFile>$(RepoRoot)pkg/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageLicenseFile>$(RepoRoot)LICENSE</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <RuntimeIdGraphDefinitionFile>$(RepoRoot)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl>https://github.com/dotnet/corefx</ProjectUrl>
-    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
+    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
@@ -79,6 +79,4 @@
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>
-
-  <Import Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(MSBuildThisFileDirectory)disableUap.targets" />
 </Project>

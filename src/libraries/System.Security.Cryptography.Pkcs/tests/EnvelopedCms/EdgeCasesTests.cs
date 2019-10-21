@@ -144,7 +144,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [ConditionalFact(nameof(SupportsRc4))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RC4 isn't available via CNG, and CNG is the only library available to UWP")]
         public static void Rc4AndCngWrappersDontMixTest()
         {
             //

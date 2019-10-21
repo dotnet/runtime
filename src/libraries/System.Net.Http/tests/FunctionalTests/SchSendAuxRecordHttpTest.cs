@@ -12,7 +12,6 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {
     [ActiveIssue(26539)]    // Flaky test
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "HttpsTestServer not compatible on UAP")]
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }

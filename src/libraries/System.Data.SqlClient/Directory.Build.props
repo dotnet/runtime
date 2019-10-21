@@ -3,6 +3,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.6.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>

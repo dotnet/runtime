@@ -137,6 +137,7 @@ Breaking Change Rules
 * Adding an interface implementation to a type
     This is acceptable because it will not adversely affect existing clients. Any changes which could be made to the type being changed in this situation, will have to work within the boundaries of acceptable changes defined here, in order for the new implementation to remain acceptable.
     Extreme caution is urged when adding interfaces that directly affect the ability of the designer or serializer to generate code or data, that cannot be consumed down-level. An example is the `ISerializable` interface.
+    Care should be taken when the interface (or one of the interfaces that this interface requires) has default interface implementations for other interface methods. The default implementation could conflict with other default implementations in a derived class.
 
 * Removing an interface implementation from a type when the interface is already implemented lower in the hierarchy
 
@@ -185,8 +186,17 @@ Breaking Change Rules
 
 * Change from `ref readonly` return to `ref` return (except for virtual methods or interfaces)
 
+* Adding an interface method with a default implementation to an interface
+
+    Note that care must be taken when adding a default implementation that has "update" semantic (e.g. adding `void AddAll(IEnumerable<T> items)` to `ICollection<T>`). If the interface is implemented by a struct, the default implementation is always executed on a boxed `this`: if the struct is not boxed, the runtime boxes it on users behalf. Changes done by the default interface method would be lost in that case. An example where this implicit boxing would happen are constrained calls (`void CallMethod<T, U>(ref T x) where T : struct, ICollection<U> { x.AddAll(...); }`
+
 &#10007; **Disallowed**
-* Adding an member to an interface
+* Adding an abstract method to an interface
+
+* Adding a default implementation of an _existing interface method_ (`IA.Foo`) on an _existing_ interface type (`IB`)
+
+    User code could already be providing a default interface method implementation for `IA.Foo` in another interface (`IU`). If a user type implements both `IU` and `IB`, this would result in the "diamond problem" and runtime/compiler would not be able to disambiguate the target of the interface call.
+    Note that this rule also applies to providing a default implementation for public interface methods on _non-public_ interfaces that are implemented by unsealed public types.
 
 * Adding an abstract member to a type when there _are accessible_ (`public` or `protected`) constructors and the type is not `sealed`
 

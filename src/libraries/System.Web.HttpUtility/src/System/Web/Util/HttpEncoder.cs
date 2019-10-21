@@ -31,7 +31,8 @@ namespace System.Web.Util
                 || c == '\u2028'
                 || c == '\u2029';
 
-        internal static string HtmlAttributeEncode(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? HtmlAttributeEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -50,7 +51,7 @@ namespace System.Web.Util
             return writer.ToString();
         }
 
-        internal static void HtmlAttributeEncode(string value, TextWriter output)
+        internal static void HtmlAttributeEncode(string? value, TextWriter output)
         {
             if (value == null)
             {
@@ -115,9 +116,10 @@ namespace System.Web.Util
             }
         }
 
-        internal static string HtmlDecode(string value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
+        [return: NotNullIfNotNull("value")]
+        internal static string? HtmlDecode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
 
-        internal static void HtmlDecode(string value, TextWriter output)
+        internal static void HtmlDecode(string? value, TextWriter output)
         {
             if (output == null)
             {
@@ -127,9 +129,10 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlDecode(value));
         }
 
-        internal static string HtmlEncode(string value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
+        [return: NotNullIfNotNull("value")]
+        internal static string? HtmlEncode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
 
-        internal static void HtmlEncode(string value, TextWriter output)
+        internal static void HtmlEncode(string? value, TextWriter output)
         {
             if (output == null)
             {
@@ -167,14 +170,14 @@ namespace System.Web.Util
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
-        internal static string JavaScriptStringEncode(string value)
+        internal static string JavaScriptStringEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
                 return string.Empty;
             }
 
-            StringBuilder b = null;
+            StringBuilder? b = null;
             int startIndex = 0;
             int count = 0;
             for (int i = 0; i < value.Length; i++)
@@ -245,7 +248,8 @@ namespace System.Web.Util
             return b.ToString();
         }
 
-        internal static byte[] UrlDecode(byte[] bytes, int offset, int count)
+        [return: NotNullIfNotNull("bytes")]
+        internal static byte[]? UrlDecode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
@@ -290,7 +294,8 @@ namespace System.Web.Util
             return decodedBytes;
         }
 
-        internal static string UrlDecode(byte[] bytes, int offset, int count, Encoding encoding)
+        [return: NotNullIfNotNull("bytes")]
+        internal static string? UrlDecode(byte[]? bytes, int offset, int count, Encoding encoding)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
@@ -352,7 +357,8 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        internal static string UrlDecode(string value, Encoding encoding)
+        [return: NotNullIfNotNull("value")]
+        internal static string? UrlDecode(string? value, Encoding encoding)
         {
             if (value == null)
             {
@@ -423,16 +429,18 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        internal static byte[] UrlEncode(byte[] bytes, int offset, int count, bool alwaysCreateNewReturnValue)
+        [return: NotNullIfNotNull("bytes")]
+        internal static byte[]? UrlEncode(byte[]? bytes, int offset, int count, bool alwaysCreateNewReturnValue)
         {
-            byte[] encoded = UrlEncode(bytes, offset, count);
+            byte[]? encoded = UrlEncode(bytes, offset, count);
 
             return (alwaysCreateNewReturnValue && (encoded != null) && (encoded == bytes))
                 ? (byte[])encoded.Clone()
                 : encoded;
         }
 
-        private static byte[] UrlEncode(byte[] bytes, int offset, int count)
+        [return: NotNullIfNotNull("bytes")]
+        private static byte[]? UrlEncode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
@@ -554,7 +562,8 @@ namespace System.Web.Util
         }
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(*).")]
-        internal static string UrlEncodeUnicode(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? UrlEncodeUnicode(string? value)
         {
             if (value == null)
             {
@@ -600,19 +609,19 @@ namespace System.Web.Util
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings",
             Justification = "Does not represent an entire URL, just a portion.")]
-        internal static string UrlPathEncode(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? UrlPathEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
 
-            string schemeAndAuthority;
-            string path;
-            string queryAndFragment;
-            bool isValidUrl = UriUtil.TrySplitUriForPathEncode(value, out schemeAndAuthority, out path, out queryAndFragment);
+            string? schemeAndAuthority;
+            string? path;
+            string? queryAndFragment;
 
-            if (!isValidUrl)
+            if (!UriUtil.TrySplitUriForPathEncode(value, out schemeAndAuthority, out path, out queryAndFragment))
             {
                 // If the value is not a valid url, we treat it as a relative url.
                 // We don't need to extract query string from the url since UrlPathEncode()
@@ -646,7 +655,7 @@ namespace System.Web.Util
             return HttpEncoderUtility.UrlEncodeSpaces(UrlEncodeNonAscii(value, Encoding.UTF8));
         }
 
-        private static bool ValidateUrlEncodingParameters(byte[] bytes, int offset, int count)
+        private static bool ValidateUrlEncodingParameters([NotNullWhen(true)] byte[]? bytes, int offset, int count)
         {
             if (bytes == null && count == 0)
             {
@@ -680,7 +689,7 @@ namespace System.Web.Util
 
             // Accumulate bytes for decoding into characters in a special array
             private int _numBytes;
-            private byte[] _byteBuffer;
+            private byte[]? _byteBuffer;
 
             // Encoding to convert chars to bytes
             private readonly Encoding _encoding;
@@ -689,6 +698,7 @@ namespace System.Web.Util
             {
                 if (_numBytes > 0)
                 {
+                    Debug.Assert(_byteBuffer != null);
                     _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
                     _numBytes = 0;
                 }

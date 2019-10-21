@@ -34,12 +34,12 @@ namespace System.Runtime.InteropServices
             return Equals(other._osPlatform);
         }
 
-        internal bool Equals(string other)
+        internal bool Equals(string? other)
         {
             return string.Equals(_osPlatform, other, StringComparison.Ordinal);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is OSPlatform && Equals((OSPlatform)obj);
         }

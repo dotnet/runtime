@@ -41,7 +41,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
             }
 
-            if (state.Current.KeyName == null && state.Current.IsProcessingDictionaryOrIDictionaryConstructible())
+            if (state.Current.KeyName == null && state.Current.IsProcessingDictionary())
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
                 return;
@@ -102,6 +102,7 @@ namespace System.Text.Json
                 Debug.Assert(current.CollectionEnumerator != null);
 
                 TConverter value;
+
                 if (current.CollectionEnumerator is IEnumerator<TConverter> enumerator)
                 {
                     // Avoid boxing for strongly-typed enumerators such as returned from IList<T>.

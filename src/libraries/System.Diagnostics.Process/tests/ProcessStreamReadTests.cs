@@ -93,7 +93,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Pipe doesn't work well on UAP")]
         async public Task TestAsyncOutputStream_CancelOutputRead()
         {
             // This test might have some false negatives due to possible race condition in System.Diagnostics.AsyncStreamReader.ReadBufferAsync
@@ -176,7 +175,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Pipe doesn't work well on UAP")]
         async public Task TestAsyncOutputStream_BeginCancelBeginOutputRead()
         {
             using (AnonymousPipeServerStream pipeWrite = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
@@ -383,7 +381,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "No simple way to perform this on uap using cmd.exe")]
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;

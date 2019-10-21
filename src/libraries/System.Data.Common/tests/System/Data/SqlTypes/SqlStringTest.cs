@@ -174,32 +174,29 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-AU"))
             {
-                using (new ThreadCultureChange("en-AU"))
-                {
-                    var one = new SqlString("First TestString");
+                var one = new SqlString("First TestString");
 
-                    // CompareInfo
-                    Assert.Equal(3081, one.CompareInfo.LCID);
+                // CompareInfo
+                Assert.Equal(3081, one.CompareInfo.LCID);
 
-                    // CultureInfo
-                    Assert.Equal(3081, one.CultureInfo.LCID);
+                // CultureInfo
+                Assert.Equal(3081, one.CultureInfo.LCID);
 
-                    // LCID
-                    Assert.Equal(3081, one.LCID);
+                // LCID
+                Assert.Equal(3081, one.LCID);
 
-                    // IsNull
-                    Assert.True(!one.IsNull);
-                    Assert.True(SqlString.Null.IsNull);
+                // IsNull
+                Assert.True(!one.IsNull);
+                Assert.True(SqlString.Null.IsNull);
 
-                    // SqlCompareOptions
-                    Assert.Equal("IgnoreCase, IgnoreKanaType, IgnoreWidth", one.SqlCompareOptions.ToString());
+                // SqlCompareOptions
+                Assert.Equal("IgnoreCase, IgnoreKanaType, IgnoreWidth", one.SqlCompareOptions.ToString());
 
-                    // Value
-                    Assert.Equal("First TestString", one.Value);
-                }
-            }).Dispose();
+                // Value
+                Assert.Equal("First TestString", one.Value);
+            }
         }
 
         // PUBLIC METHODS

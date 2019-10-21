@@ -127,8 +127,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Test needs to be rewritten to work on UAP due to WinRT differences")]
         [Theory]
+        [ActiveIssue(28805)]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
@@ -185,7 +185,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // [ActiveIssue(38547)]
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
@@ -248,7 +247,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "cancellation timing is different on UAP, sensitive to race conditions")]
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]
@@ -326,7 +324,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT stack can't set MaxConnectionsPerServer < 2")]
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
@@ -519,12 +516,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
-            if (IsUapHandler)
-            {
-                // HttpHandlerToFilter doesn't flow the token into the request body.
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

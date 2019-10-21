@@ -6,18 +6,16 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
-    <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
@@ -34,7 +32,7 @@
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
     <ReferenceFromRuntime Include="System.ObjectModel" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetsUap)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
@@ -45,7 +43,7 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\InternalHelpers.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />

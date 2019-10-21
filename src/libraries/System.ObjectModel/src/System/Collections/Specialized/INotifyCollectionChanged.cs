@@ -18,6 +18,6 @@ namespace System.Collections.Specialized
         /// <seealso cref="System.Collections.Specialized.NotifyCollectionChangedEventArgs" />
         /// containing data related to this event.
         /// </remarks>
-        event NotifyCollectionChangedEventHandler CollectionChanged;
+        event NotifyCollectionChangedEventHandler? CollectionChanged;
     }
 }

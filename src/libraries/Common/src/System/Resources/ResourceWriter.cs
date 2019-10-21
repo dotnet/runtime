@@ -2,17 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Class:  ResourceWriter
-**
-**
-**
-** Purpose: Default way to write strings to a CLR resource
-** file.
-**
-**
-===========================================================*/
+#nullable enable
 
 using System.IO;
 using System.Text;
@@ -49,10 +39,10 @@ namespace System.Resources
         private const string ResSetTypeName = "System.Resources.RuntimeResourceSet";
         private const int ResSetVersion = 2;
 
-        private SortedDictionary<string, object> _resourceList;
+        private SortedDictionary<string, object?>? _resourceList;
         private Stream _output;
-        private Dictionary<string, object> _caseInsensitiveDups;
-        private Dictionary<string, PrecannedResource> _preserializedData;
+        private Dictionary<string, object?> _caseInsensitiveDups;
+        private Dictionary<string, PrecannedResource>? _preserializedData;
 
         public
 #if RESOURCES_EXTENSIONS
@@ -65,8 +55,8 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(fileName));
 
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
-            _resourceList = new SortedDictionary<string, object>(FastResourceComparer.Default);
-            _caseInsensitiveDups = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
+            _caseInsensitiveDups = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         }
 
         public
@@ -82,14 +72,14 @@ namespace System.Resources
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
             _output = stream;
-            _resourceList = new SortedDictionary<string, object>(FastResourceComparer.Default);
-            _caseInsensitiveDups = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
+            _caseInsensitiveDups = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         }
 
         // Adds a string resource to the list of resources to be written to a file.
         // They aren't written until Generate() is called.
         //
-        public void AddResource(string name, string value)
+        public void AddResource(string name, string? value)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -105,7 +95,7 @@ namespace System.Resources
         // Adds a resource of type Object to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         //
-        public void AddResource(string name, object value)
+        public void AddResource(string name, object? value)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -130,7 +120,7 @@ namespace System.Resources
         // written to a file.  They aren't written until Generate() is called.
         // closeAfterWrite parameter indicates whether to close the stream when done.
         //
-        public void AddResource(string name, Stream value, bool closeAfterWrite = false)
+        public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -141,8 +131,10 @@ namespace System.Resources
             AddResourceInternal(name, value, closeAfterWrite);
         }
 
-        private void AddResourceInternal(string name, Stream value, bool closeAfterWrite)
+        private void AddResourceInternal(string name, Stream? value, bool closeAfterWrite)
         {
+            Debug.Assert(_resourceList != null);
+
             if (value == null)
             {
                 // Check for duplicate resources whose names vary only by case.
@@ -164,7 +156,7 @@ namespace System.Resources
         // Adds a named byte array as a resource to the list of resources to
         // be written to a file. They aren't written until Generate() is called.
         //
-        public void AddResource(string name, byte[] value)
+        public void AddResource(string name, byte[]? value)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -236,8 +228,8 @@ namespace System.Resources
                 }
             }
 
-            _output = null;
-            _caseInsensitiveDups = null;
+            _output = null!;
+            _caseInsensitiveDups = null!;
         }
 
         public void Dispose()
@@ -329,7 +321,7 @@ namespace System.Resources
                     names.Write(item.Key); // key
                     names.Write((int)data.Seek(0, SeekOrigin.Current)); // virtual offset of value.
 
-                    object value = item.Value;
+                    object? value = item.Value;
                     ResourceTypeCode typeCode = FindTypeCode(value, typeNames);
 
                     // Write out type code
@@ -441,7 +433,7 @@ namespace System.Resources
 
         // Finds the ResourceTypeCode for a type, or adds this type to the
         // types list.
-        private ResourceTypeCode FindTypeCode(object value, List<string> types)
+        private ResourceTypeCode FindTypeCode(object? value, List<string> types)
         {
             if (value == null)
                 return ResourceTypeCode.Null;
@@ -514,7 +506,7 @@ namespace System.Resources
             return (ResourceTypeCode)(typeIndex + ResourceTypeCode.StartOfUserTypes);
         }
 
-        private void WriteValue(ResourceTypeCode typeCode, object value, BinaryWriter writer)
+        private void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -524,75 +516,75 @@ namespace System.Resources
                     break;
 
                 case ResourceTypeCode.String:
-                    writer.Write((string)value);
+                    writer.Write((string)value!);
                     break;
 
                 case ResourceTypeCode.Boolean:
-                    writer.Write((bool)value);
+                    writer.Write((bool)value!);
                     break;
 
                 case ResourceTypeCode.Char:
-                    writer.Write((ushort)(char)value);
+                    writer.Write((ushort)(char)value!);
                     break;
 
                 case ResourceTypeCode.Byte:
-                    writer.Write((byte)value);
+                    writer.Write((byte)value!);
                     break;
 
                 case ResourceTypeCode.SByte:
-                    writer.Write((sbyte)value);
+                    writer.Write((sbyte)value!);
                     break;
 
                 case ResourceTypeCode.Int16:
-                    writer.Write((short)value);
+                    writer.Write((short)value!);
                     break;
 
                 case ResourceTypeCode.UInt16:
-                    writer.Write((ushort)value);
+                    writer.Write((ushort)value!);
                     break;
 
                 case ResourceTypeCode.Int32:
-                    writer.Write((int)value);
+                    writer.Write((int)value!);
                     break;
 
                 case ResourceTypeCode.UInt32:
-                    writer.Write((uint)value);
+                    writer.Write((uint)value!);
                     break;
 
                 case ResourceTypeCode.Int64:
-                    writer.Write((long)value);
+                    writer.Write((long)value!);
                     break;
 
                 case ResourceTypeCode.UInt64:
-                    writer.Write((ulong)value);
+                    writer.Write((ulong)value!);
                     break;
 
                 case ResourceTypeCode.Single:
-                    writer.Write((float)value);
+                    writer.Write((float)value!);
                     break;
 
                 case ResourceTypeCode.Double:
-                    writer.Write((double)value);
+                    writer.Write((double)value!);
                     break;
 
                 case ResourceTypeCode.Decimal:
-                    writer.Write((decimal)value);
+                    writer.Write((decimal)value!);
                     break;
 
                 case ResourceTypeCode.DateTime:
                     // Use DateTime's ToBinary & FromBinary.
-                    long data = ((DateTime)value).ToBinary();
+                    long data = ((DateTime)value!).ToBinary();
                     writer.Write(data);
                     break;
 
                 case ResourceTypeCode.TimeSpan:
-                    writer.Write(((TimeSpan)value).Ticks);
+                    writer.Write(((TimeSpan)value!).Ticks);
                     break;
 
                 // Special Types
                 case ResourceTypeCode.ByteArray:
                     {
-                        byte[] bytes = (byte[])value;
+                        byte[] bytes = (byte[])value!;
                         writer.Write(bytes.Length);
                         writer.Write(bytes, 0, bytes.Length);
                         break;
@@ -600,7 +592,7 @@ namespace System.Resources
 
                 case ResourceTypeCode.Stream:
                     {
-                        StreamWrapper sw = (StreamWrapper)value;
+                        StreamWrapper sw = (StreamWrapper)value!;
                         if (sw.Stream.GetType() == typeof(MemoryStream))
                         {
                             MemoryStream ms = (MemoryStream)sw.Stream;

@@ -9,7 +9,6 @@
       $(PackageConfigurations);
       netcoreapp;
       netfx;
-      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -14,7 +14,6 @@ namespace System.Diagnostics.Tests
     public partial class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8 is not supported on uap")]
         public void TestCustomStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
@@ -36,7 +35,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8 is not supported on uap")]
         public void TestMismatchedStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);

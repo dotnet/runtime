@@ -27,7 +27,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed class DictionaryDebugView<K, V>
+    internal sealed class DictionaryDebugView<K, V> where K: notnull
     {
         private readonly IDictionary<K, V> _dict;
 

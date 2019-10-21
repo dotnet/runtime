@@ -2156,145 +2156,139 @@ namespace System.Tests
         [Fact]
         public static void EndsWithMatchNonOrdinal_StringComparison()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            string s = "dabc";
+            string value = "aBc";
+            Assert.False(s.EndsWith(value, StringComparison.Ordinal));
+            Assert.True(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s.AsSpan();
+            ReadOnlySpan<char> spanValue = value.AsSpan();
+            Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
+            Assert.True(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+
+            using (new ThreadCultureChange("el-GR"))
             {
-                string s = "dabc";
-                string value = "aBc";
-                Assert.False(s.EndsWith(value, StringComparison.Ordinal));
-                Assert.True(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+                s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
+                value = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
 
-                ReadOnlySpan<char> span = s.AsSpan();
-                ReadOnlySpan<char> spanValue = value.AsSpan();
-                Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
-                Assert.True(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+                Assert.True(s.EndsWith(value, StringComparison.CurrentCulture));
+                Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                using (new ThreadCultureChange("el-GR"))
-                {
-                    s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
-                    value = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
+                span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
+                spanValue = value.AsSpan(); // \u03B1\u03B2\u03B3
 
-                    Assert.True(s.EndsWith(value, StringComparison.CurrentCulture));
-                    Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCulture));
+                Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
-                    span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
-                    spanValue = value.AsSpan(); // \u03B1\u03B2\u03B3
+                value = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
+                Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
+                Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCulture));
-                    Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
+                spanValue = value.AsSpan(); // \u03B1\u0392\u03B3
+                Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
+                Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
+            }
 
-                    value = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
-                    Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
-                    Assert.True(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
+            s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
+            value = "\u0069\u0073\u0073\u0049"; // issI
 
-                    spanValue = value.AsSpan(); // \u03B1\u0392\u03B3
-                    Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
-                    Assert.True(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
-                }
+            Assert.False(s.EndsWith(value, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCulture),
+                s.EndsWith(value, StringComparison.InvariantCulture));
+            Assert.Equal(
+                s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
-                value = "\u0069\u0073\u0073\u0049"; // issI
+            span = s.AsSpan(); // \u03B4i\u00DFI
+            spanValue = value.AsSpan(); // issI
 
-                Assert.False(s.EndsWith(value, StringComparison.Ordinal));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCulture),
-                    s.EndsWith(value, StringComparison.InvariantCulture));
-                Assert.Equal(
-                    s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
+            Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCulture),
+                span.EndsWith(spanValue, StringComparison.InvariantCulture));
+            Assert.Equal(
+                span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
 
-                span = s.AsSpan(); // \u03B4i\u00DFI
-                spanValue = value.AsSpan(); // issI
+            value = "\u0049\u0073\u0073\u0049"; // IssI
+            Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCulture),
-                    span.EndsWith(spanValue, StringComparison.InvariantCulture));
-                Assert.Equal(
-                    span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
-
-                value = "\u0049\u0073\u0073\u0049"; // IssI
-                Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
-                Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    s.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
-
-                spanValue = value.AsSpan(); // IssI
-                Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
-                Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
-            }).Dispose();
+            spanValue = value.AsSpan(); // IssI
+            Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().EndsWith(spanValue.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
         }
 
         [Fact]
         public static void EndsWithNoMatchNonOrdinal_StringComparison()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            string s = "dabc";
+            string value = "aDc";
+            Assert.False(s.EndsWith(value, StringComparison.Ordinal));
+            Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s.AsSpan();
+            ReadOnlySpan<char> spanValue = value.AsSpan();
+            Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
+            Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+
+            using (new ThreadCultureChange("el-GR"))
             {
-                string s = "dabc";
-                string value = "aDc";
-                Assert.False(s.EndsWith(value, StringComparison.Ordinal));
-                Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+                s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
+                value = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
 
-                ReadOnlySpan<char> span = s.AsSpan();
-                ReadOnlySpan<char> spanValue = value.AsSpan();
-                Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
-                Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+                Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
+                Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                using (new ThreadCultureChange("el-GR"))
-                {
-                    s = "\u03b4\u03b1\u03b2\u03b3"; // \u03B4\u03B1\u03B2\u03B3
-                    value = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
+                span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
+                spanValue = value.AsSpan(); // \u03B1\u03B4\u03B3
 
-                    Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
-                    Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
+                Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
 
-                    span = s.AsSpan(); // \u03B4\u03B1\u03B2\u03B3
-                    spanValue = value.AsSpan(); // \u03B1\u03B4\u03B3
+                value = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
+                Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
+                Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
-                    Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
+                spanValue = value.AsSpan(); // \u03B1\u0394\u03B3
+                Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
+                Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
+            }
 
-                    value = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
-                    Assert.False(s.EndsWith(value, StringComparison.CurrentCulture));
-                    Assert.False(s.EndsWith(value, StringComparison.CurrentCultureIgnoreCase));
+            s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
+            value = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
 
-                    spanValue = value.AsSpan(); // \u03B1\u0394\u03B3
-                    Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCulture));
-                    Assert.False(span.EndsWith(spanValue, StringComparison.CurrentCultureIgnoreCase));
-                }
+            Assert.False(s.EndsWith(value, StringComparison.Ordinal));
+            Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
+            Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                s = "\u03b4\u0069\u00df\u0049"; // \u03B4i\u00DFI
-                value = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
+            span = s.AsSpan(); // \u03B4i\u00DFI
+            spanValue = value.AsSpan(); // i\u03B4\u03B4I
 
-                Assert.False(s.EndsWith(value, StringComparison.Ordinal));
-                Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
-                Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
+            Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
+            Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
+            Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
 
-                span = s.AsSpan(); // \u03B4i\u00DFI
-                spanValue = value.AsSpan(); // i\u03B4\u03B4I
+            value = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
+            Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
+            Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
 
-                Assert.False(span.EndsWith(spanValue, StringComparison.Ordinal));
-                Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
-                Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
-
-                value = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
-                Assert.False(s.EndsWith(value, StringComparison.OrdinalIgnoreCase));
-                Assert.False(s.EndsWith(value, StringComparison.InvariantCulture));
-                Assert.False(s.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
-
-                spanValue = value.AsSpan(); // I\u03B4\u03B4I
-                Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
-                Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
-                Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
-            }).Dispose();
+            spanValue = value.AsSpan(); // I\u03B4\u03B4I
+            Assert.False(span.EndsWith(spanValue, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCulture));
+            Assert.False(span.EndsWith(spanValue, StringComparison.InvariantCultureIgnoreCase));
         }
 
         [Theory]
@@ -2538,18 +2532,14 @@ namespace System.Tests
         [MemberData(nameof(Equals_EncyclopaediaData))]
         public void Equals_Encyclopaedia_ReturnsExpected(StringComparison comparison, bool expected)
         {
-            RemoteExecutorForUap.Invoke((comparisonString, expectedString) =>
-            {
-                string source = "encyclop\u00e6dia";
-                string target = "encyclopaedia";
+            string source = "encyclop\u00e6dia";
+            string target = "encyclopaedia";
 
-                using (new ThreadCultureChange("se-SE"))
-                {
-                    StringComparison comparisonType = (StringComparison)Enum.Parse(typeof(StringComparison), comparisonString);
-                    Assert.Equal(bool.Parse(expectedString), string.Equals(source, target, comparisonType));
-                    Assert.Equal(bool.Parse(expectedString), source.AsSpan().Equals(target.AsSpan(), comparisonType));
-                }
-            }, comparison.ToString(), expected.ToString()).Dispose();
+            using (new ThreadCultureChange("se-SE"))
+            {
+                Assert.Equal(expected, string.Equals(source, target, comparison));
+                Assert.Equal(expected, source.AsSpan().Equals(target.AsSpan(), comparison));
+            }
         }
 
         [Theory]
@@ -2854,282 +2844,255 @@ namespace System.Tests
         [Fact]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("tr-TR"))
             {
-                using (new ThreadCultureChange("tr-TR"))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    string value = "\u0130";
-                    Assert.Equal(19, s.IndexOf(value));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                string value = "\u0130";
+                Assert.Equal(19, s.IndexOf(value));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                value = "\u0131";
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_TurkishI_InvariantCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    string value = "\u0130";
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                string value = "\u0130";
 
-                    Assert.Equal(19, s.IndexOf(value));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.IndexOf(value));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                value = "\u0131";
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_TurkishI_EnglishUSCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    string value = "\u0130";
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                string value = "\u0130";
 
-                    value = "\u0130";
-                    Assert.Equal(19, s.IndexOf(value));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                value = "\u0130";
+                Assert.Equal(19, s.IndexOf(value));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(19, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                value = "\u0131";
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("hu-HU"))
             {
-                using (new ThreadCultureChange("hu-HU"))
-                {
-                    string source = "dzsdzs";
-                    string target = "ddzs";
+                string source = "dzsdzs";
+                string target = "ddzs";
 
-                    /*
-                     There are differences between Windows and ICU regarding contractions.
-                     Windows has equal contraction collation weights, including case (target="Ddzs" same behavior as "ddzs").
-                     ICU has different contraction collation weights, depending on locale collation rules.
-                     If CurrentCultureIgnoreCase is specified, ICU will use 'secondary' collation rules
-                     which ignore the contraction collation weights (defined as 'tertiary' rules)
-                    */
-                    Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target));
-                    Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
+                /*
+                    There are differences between Windows and ICU regarding contractions.
+                    Windows has equal contraction collation weights, including case (target="Ddzs" same behavior as "ddzs").
+                    ICU has different contraction collation weights, depending on locale collation rules.
+                    If CurrentCultureIgnoreCase is specified, ICU will use 'secondary' collation rules
+                    which ignore the contraction collation weights (defined as 'tertiary' rules)
+                */
+                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target));
+                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
-                    Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
-                    ReadOnlySpan<char> span = source.AsSpan();
+                ReadOnlySpan<char> span = source.AsSpan();
 
-                    Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_HungarianDoubleCompression_InvariantCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    string source = "dzsdzs";
-                    string target = "ddzs";
+                string source = "dzsdzs";
+                string target = "ddzs";
 
-                    Assert.Equal(-1, source.IndexOf(target));
-                    Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
-                    Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, source.IndexOf(target));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
 
-                    ReadOnlySpan<char> span = source.AsSpan();
-                    Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                ReadOnlySpan<char> span = source.AsSpan();
+                Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_EnglishUSCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    string s = "Exhibit a\u0300\u00C0";
-                    string value = "\u00C0";
+                string s = "Exhibit a\u0300\u00C0";
+                string value = "\u00C0";
 
-                    Assert.Equal(10, s.IndexOf(value));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(10, s.IndexOf(value));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                    value = "a\u0300"; // this diacritic combines with preceding character
-                    Assert.Equal(8, s.IndexOf(value));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                value = "a\u0300"; // this diacritic combines with preceding character
+                Assert.Equal(8, s.IndexOf(value));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_InvariantCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    string s = "Exhibit a\u0300\u00C0";
-                    string value = "\u00C0";
+                string s = "Exhibit a\u0300\u00C0";
+                string value = "\u00C0";
 
-                    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                    Assert.Equal(10, s.IndexOf(value));
-                    Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                Assert.Equal(10, s.IndexOf(value));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "a\u0300"; // this diacritic combines with preceding character
-                    Assert.Equal(8, s.IndexOf(value));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                value = "a\u0300"; // this diacritic combines with preceding character
+                Assert.Equal(8, s.IndexOf(value));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_EnglishUSCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    string s = "Foo\u0400Bar";
-                    string value = "\u0400";
+                string s = "Foo\u0400Bar";
+                string value = "\u0400";
 
-                    Assert.Equal(3, s.IndexOf(value));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(3, s.IndexOf(value));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                    value = "bar";
-                    Assert.Equal(-1, s.IndexOf(value));
-                    Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(-1, s.IndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(4, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
+                value = "bar";
+                Assert.Equal(-1, s.IndexOf(value));
+                Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, s.IndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(4, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                    Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_InvariantCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    string s = "Foo\u0400Bar";
-                    string value = "\u0400";
+                string s = "Foo\u0400Bar";
+                string value = "\u0400";
 
-                    Assert.Equal(3, s.IndexOf(value));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(3, s.IndexOf(value));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                ReadOnlySpan<char> span = s.AsSpan();
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(3, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "bar";
-                    Assert.Equal(-1, s.IndexOf(value));
-                    Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                value = "bar";
+                Assert.Equal(-1, s.IndexOf(value));
+                Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                    Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
@@ -3809,7 +3772,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
@@ -4027,90 +3989,81 @@ namespace System.Tests
         [Fact]
         public static void LastIndexOf_TurkishI_TurkishCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("tr-TR"))
             {
-                using (new ThreadCultureChange("tr-TR"))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    string value = "\u0130";
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                ReadOnlySpan<char> span = s.AsSpan();
+                string value = "\u0130";
 
-                    Assert.Equal(19, s.LastIndexOf(value));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(19, s.LastIndexOf(value));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.Ordinal));
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.Ordinal));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
-                }
-            }).Dispose();
+                value = "\u0131";
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.Ordinal));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.Ordinal));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         [Fact]
         public static void LastIndexOf_TurkishI_InvariantCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    string value = "\u0130";
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                ReadOnlySpan<char> span = s.AsSpan();
+                string value = "\u0130";
 
-                    Assert.Equal(19, s.LastIndexOf(value));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.LastIndexOf(value));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                value = "\u0131";
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Fact]
         public static void LastIndexOf_TurkishI_EnglishUSCulture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    string s = "Turkish I \u0131s TROUBL\u0130NG!";
-                    ReadOnlySpan<char> span = s.AsSpan();
-                    string value = "\u0130";
+                string s = "Turkish I \u0131s TROUBL\u0130NG!";
+                ReadOnlySpan<char> span = s.AsSpan();
+                string value = "\u0130";
 
-                    Assert.Equal(19, s.LastIndexOf(value));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.LastIndexOf(value));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan()));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(19, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                    value = "\u0131";
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
-                    Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
-                    Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
-                }
-            }).Dispose();
+                value = "\u0131";
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+            }
         }
 
         [Theory]
@@ -5071,13 +5024,10 @@ namespace System.Tests
         [Fact]
         public static void Test_ToLower_Culture()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            foreach (object[] testdata in ToLower_Culture_TestData())
             {
-                foreach (object[] testdata in ToLower_Culture_TestData())
-                {
-                    ToLower_Culture((string)testdata[0], (string)testdata[1], (CultureInfo)testdata[2]);
-                }
-            }).Dispose();
+                ToLower_Culture((string)testdata[0], (string)testdata[1], (CultureInfo)testdata[2]);
+            }
         }
 
         private static void ToLower_Culture(string input, string expected, CultureInfo culture)
@@ -5609,17 +5559,14 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
-            RemoteExecutorForUap.Invoke((str, expectedString) =>
+            using (new ThreadCultureChange("tr-TR"))
             {
-                using (new ThreadCultureChange("tr-TR"))
-                {
-                    Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal), "Actual: " + str.ToUpper());
+                Assert.True(s.ToUpper().Equals(expected, StringComparison.Ordinal), "Actual: " + s.ToUpper());
 
-                    Span<char> destination = new char[str.Length];
-                    Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
-                    Assert.Equal(expectedString, destination.ToString());
-                }
-            }, s.ToString(), expected.ToString()).Dispose();
+                Span<char> destination = new char[s.Length];
+                Assert.Equal(s.Length, s.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expected, destination.ToString());
+            }
         }
 
         public static IEnumerable<object[]> ToUpper_TurkishI_EnglishUSCulture_MemberData() =>
@@ -5632,17 +5579,14 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_EnglishUSCulture_MemberData))]
         public static void ToUpper_TurkishI_EnglishUSCulture(string s, string expected)
         {
-            RemoteExecutorForUap.Invoke((str, expectedString) =>
+            using (new ThreadCultureChange("en-US"))
             {
-                using (new ThreadCultureChange("en-US"))
-                {
-                    Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal), "Actual: " + str.ToUpper());
+                Assert.True(s.ToUpper().Equals(expected, StringComparison.Ordinal), "Actual: " + s.ToUpper());
 
-                    Span<char> destination = new char[str.Length];
-                    Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
-                    Assert.Equal(expectedString, destination.ToString());
-                }
-            }, s.ToString(), expected.ToString()).Dispose();
+                Span<char> destination = new char[s.Length];
+                Assert.Equal(s.Length, s.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expected, destination.ToString());
+            }
         }
 
         public static IEnumerable<object[]> ToUpper_TurkishI_InvariantCulture_MemberData() =>
@@ -5655,17 +5599,14 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
-            RemoteExecutorForUap.Invoke((str, expectedString) =>
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                using (new ThreadCultureChange(CultureInfo.InvariantCulture))
-                {
-                    Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal));
+                Assert.True(s.ToUpper().Equals(expected, StringComparison.Ordinal));
 
-                    Span<char> destination = new char[str.Length];
-                    Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
-                    Assert.Equal(expectedString, destination.ToString());
-                }
-            }, s.ToString(), expected.ToString()).Dispose();
+                Span<char> destination = new char[s.Length];
+                Assert.Equal(s.Length, s.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expected, destination.ToString());
+            }
         }
 
         [Theory]
@@ -6742,43 +6683,26 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
-        public static void CompareTest(string aS1, string aS2, string aCultureName, bool aIgnoreCase, int aExpected)
+        public static void CompareTest(string s1, string s2, string cultureName, bool ignoreCase, int expected)
         {
-            const string nullPlaceholder = "<null>";
-            RemoteExecutorForUap.Invoke((string s1, string s2, string cultureName, string bIgnoreCase, string iExpected) => {
-                if (s1 == nullPlaceholder)
-                    s1 = null;
+            CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
+            CompareOptions ignoreCaseOption = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
 
-                if (s2 == nullPlaceholder)
-                    s2 = null;
+            Assert.Equal(expected, String.Compare(s1, s2, ignoreCase, ci));
+            Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase, ci));
+            Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ci, ignoreCaseOption));
 
-                if (cultureName == nullPlaceholder)
-                    cultureName = null;
+            Assert.Equal(expected, String.Compare(s1, s2, ci, ignoreCaseOption));
+            Assert.Equal(String.Compare(s1, s2, StringComparison.Ordinal), String.Compare(s1, s2, ci, CompareOptions.Ordinal));
+            Assert.Equal(String.Compare(s1, s2, StringComparison.OrdinalIgnoreCase), String.Compare(s1, s2, ci, CompareOptions.OrdinalIgnoreCase));
 
-                bool ignoreCase = bool.Parse(bIgnoreCase);
-                int expected = int.Parse(iExpected);
-
-                CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
-                CompareOptions ignoreCaseOption = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
-
-                Assert.Equal(expected, String.Compare(s1, s2, ignoreCase, ci));
-                Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase, ci));
-                Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ci, ignoreCaseOption));
-
-                Assert.Equal(expected, String.Compare(s1, s2, ci, ignoreCaseOption));
-                Assert.Equal(String.Compare(s1, s2, StringComparison.Ordinal), String.Compare(s1, s2, ci, CompareOptions.Ordinal));
-                Assert.Equal(String.Compare(s1, s2, StringComparison.OrdinalIgnoreCase), String.Compare(s1, s2, ci, CompareOptions.OrdinalIgnoreCase));
-
-                if (ci != null)
+            if (ci != null)
+            {
+                using (new ThreadCultureChange(ci))
                 {
-                    using (new ThreadCultureChange(ci))
-                    {
-                        Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase));
-                    }
+                    Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase));
                 }
-
-                return RemoteExecutor.SuccessExitCode;
-            }, aS1 ?? nullPlaceholder, aS2 ?? nullPlaceholder, aCultureName ?? nullPlaceholder, aIgnoreCase.ToString(), aExpected.ToString()).Dispose();
+            }
         }
 
         [Theory]
@@ -6985,145 +6909,139 @@ namespace System.Tests
         [Fact]
         public static void StartsWithMatchNonOrdinal_StringComparison()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            string s1 = "abcd";
+            string s2 = "aBc";
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.True(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            using (new ThreadCultureChange("el-GR"))
             {
-                string s1 = "abcd";
-                string s2 = "aBc";
-                Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
-                Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+                s1 = "\u03b1\u03b2\u03b3\u03b4";  // \u03B1\u03B2\u03B3\u03B4
+                s2 = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
 
-                ReadOnlySpan<char> span = s1.AsSpan();
-                ReadOnlySpan<char> value = s2.AsSpan();
-                Assert.False(span.StartsWith(value, StringComparison.Ordinal));
-                Assert.True(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
-
-                using (new ThreadCultureChange("el-GR"))
-                {
-                    s1 = "\u03b1\u03b2\u03b3\u03b4";  // \u03B1\u03B2\u03B3\u03B4
-                    s2 = "\u03b1\u03b2\u03b3"; // \u03B1\u03B2\u03B3
-
-                    Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-
-                    span = s1.AsSpan();
-                    value = s2.AsSpan();
-
-                    Assert.True(span.StartsWith(value, StringComparison.CurrentCulture));
-                    Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
-
-                    s2 = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
-                    Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-
-                    value = s2.AsSpan();
-                    Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
-                    Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
-                }
-
-                s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
-                s2 = "\u0069\u0073\u0073\u0049"; // issI
-
-                Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
-                    s1.StartsWith(s2, StringComparison.InvariantCulture));
-                Assert.Equal(
-                    s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
+                Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
                 span = s1.AsSpan();
                 value = s2.AsSpan();
 
-                Assert.False(span.StartsWith(value, StringComparison.Ordinal));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCulture),
-                    span.StartsWith(value, StringComparison.InvariantCulture));
-                Assert.Equal(
-                    span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+                Assert.True(span.StartsWith(value, StringComparison.CurrentCulture));
+                Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                s2 = "\u0049\u0073\u0073\u0049"; // IssI
-                Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
-                Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                s2 = "\u03b1\u0392\u03b3"; // \u03B1\u0392\u03B3
+                Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+                Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
                 value = s2.AsSpan();
-                Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
-                Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
-                // Different behavior depending on OS - True on Windows, False on Unix
-                Assert.Equal(
-                    span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                    span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
-            }).Dispose();
+                Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+                Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
+            s2 = "\u0069\u0073\u0073\u0049"; // issI
+
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
+                s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCulture),
+                span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+
+            s2 = "\u0049\u0073\u0073\u0049"; // IssI
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
         }
 
         [Fact]
         public static void StartsWithNoMatchNonOrdinal_StringComparison()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            string s1 = "abcd";
+            string s2 = "aDc";
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            using (new ThreadCultureChange("el-GR"))
             {
-                string s1 = "abcd";
-                string s2 = "aDc";
-                Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
-                Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+                s1 = "\u03b1\u03b2\u03b3\u03b4"; // \u03B1\u03B2\u03B3\u03B4
+                s2 = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
 
-                ReadOnlySpan<char> span = s1.AsSpan();
-                ReadOnlySpan<char> value = s2.AsSpan();
-                Assert.False(span.StartsWith(value, StringComparison.Ordinal));
-                Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
-
-                using (new ThreadCultureChange("el-GR"))
-                {
-                    s1 = "\u03b1\u03b2\u03b3\u03b4"; // \u03B1\u03B2\u03B3\u03B4
-                    s2 = "\u03b1\u03b4\u03b3"; // \u03B1\u03B4\u03B3
-
-                    Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-
-                    span = s1.AsSpan();
-                    value = s2.AsSpan();
-
-                    Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
-                    Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
-
-                    s2 = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
-                    Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-
-                    value = s2.AsSpan();
-                    Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
-                    Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
-                }
-
-                s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
-                s2 = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
-
-                Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
-                Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
-                Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+                Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
                 span = s1.AsSpan();
                 value = s2.AsSpan();
 
-                Assert.False(span.StartsWith(value, StringComparison.Ordinal));
-                Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
-                Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+                Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+                Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
 
-                s2 = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
-                Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
-                Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
-                Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                s2 = "\u03b1\u0394\u03b3"; // \u03B1\u0394\u03B3
+                Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+                Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
 
                 value = s2.AsSpan();
-                Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
-                Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
-                Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
-            }).Dispose();
+                Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+                Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            s1 = "\u0069\u00df\u0049\u03b4"; // i\u00DFI\u03B4
+            s2 = "\u0069\u03b4\u03b4\u0049"; // i\u03B4\u03B4I
+
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+
+            s2 = "\u0049\u03b4\u03b4\u0049"; // I\u03B4\u03B4I
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
         }
 
         // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).

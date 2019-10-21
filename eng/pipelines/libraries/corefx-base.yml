@@ -19,7 +19,7 @@ parameters:
   # Required: as part of the strategy matrix, the following variables should be defined
   #     _BuildConfig: Debug | Release
   #     _architecture: x64 | x86 | arm | arm64
-  #     _framework: (netcoreapp, netfx, uap, etc).
+  #     _framework: (netcoreapp, netfx).
   #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
 
   # Required: empty | innerloop | outerloop | all

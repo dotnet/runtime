@@ -445,7 +445,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
-        [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
         {
             SignedCms cms = new SignedCms();
@@ -699,7 +698,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void AddCounterSigner_DSA()
         {
             SignedCms cms = new SignedCms();
@@ -1026,7 +1024,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void EnsureExtraCertsAdded()
         {
             SignedCms cms = new SignedCms();

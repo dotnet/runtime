@@ -44,7 +44,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(QueryInterface_ValidComObjectInterface_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void QueryInterface_ValidComObjectInterface_Success(object o, string iidString)
         {
             QueryInterface_ValidInterface_Success(o, iidString);
@@ -83,7 +82,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(QueryInterface_NoSuchComObjectInterface_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void QueryInterface_NoSuchComObjectInterface_Success(object o, string iidString)
         {
             QueryInterface_NoSuchInterface_Success(o, iidString);

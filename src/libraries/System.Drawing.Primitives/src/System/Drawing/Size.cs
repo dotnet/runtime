@@ -123,14 +123,14 @@ namespace System.Drawing
         /// Tests whether this <see cref='System.Drawing.Size'/> has zero width and height.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => width == 0 && height == 0;
+        public readonly bool IsEmpty => width == 0 && height == 0;
 
         /// <summary>
         /// Represents the horizontal component of this <see cref='System.Drawing.Size'/>.
         /// </summary>
         public int Width
         {
-            get => width;
+            readonly get => width;
             set => width = value;
         }
 
@@ -139,7 +139,7 @@ namespace System.Drawing
         /// </summary>
         public int Height
         {
-            get => height;
+            readonly get => height;
             set => height = value;
         }
 
@@ -176,19 +176,19 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.Size'/>  with the same dimensions
         /// as this <see cref='System.Drawing.Size'/>.
         /// </summary>
-        public override bool Equals(object? obj) => obj is Size && Equals((Size)obj);
+        public override readonly bool Equals(object? obj) => obj is Size && Equals((Size)obj);
 
-        public bool Equals(Size other) => this == other;
+        public readonly bool Equals(Size other) => this == other;
 
         /// <summary>
         /// Returns a hash code.
         /// </summary>
-        public override int GetHashCode() => HashCode.Combine(Width, Height);
+        public override readonly int GetHashCode() => HashCode.Combine(Width, Height);
 
         /// <summary>
         /// Creates a human-readable string that represents this <see cref='System.Drawing.Size'/>.
         /// </summary>
-        public override string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
+        public override readonly string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
 
         /// <summary>
         /// Multiplies <see cref="Size"/> by an <see cref="int"/> producing <see cref="Size"/>.

@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      uap10.0.16299;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>
