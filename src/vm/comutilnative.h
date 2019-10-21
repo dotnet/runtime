@@ -64,25 +64,18 @@ public:
     static FCDECL0(UINT32, GetExceptionCount);
 };
 
-class MemoryNative
-{
-public:
-    static void QCALLTYPE Clear(void *dst, size_t length);
-    static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
-};
-
 //
 // Buffer
 //
-class Buffer {
+class Buffer
+{
 public:
-
-    // BlockCopy
-    // This method from one primitive array to another based
-    //      upon an offset into each an a byte count.
     static FCDECL1(FC_BOOL_RET, IsPrimitiveTypeArray, ArrayBase *arrayUNSAFE);
 
+    static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
+
     static void QCALLTYPE MemMove(void *dst, void *src, size_t length);
+    static void QCALLTYPE Clear(void *dst, size_t length);
 };
 
 #define MIN_GC_MEMORYPRESSURE_THRESHOLD 100000

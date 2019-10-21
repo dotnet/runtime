@@ -24,7 +24,7 @@ namespace System
                 return;
 
 #if AMD64 || ARM64
-            // The exact matrix on when RhZeroMemory is faster than InitBlockUnaligned is very complex. The factors to consider include
+            // The exact matrix on when ZeroMemory is faster than InitBlockUnaligned is very complex. The factors to consider include
             // type of hardware and memory aligment. This threshold was chosen as a good balance accross different configurations.
             if (byteLength > 768)
                 goto PInvoke;
@@ -336,7 +336,7 @@ namespace System
 #endif
 
         PInvoke:
-            RuntimeImports.RhZeroMemory(ref b, byteLength);
+            Buffer._ZeroMemory(ref b, byteLength);
         }
 
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)

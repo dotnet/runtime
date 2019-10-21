@@ -740,9 +740,8 @@ FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
     FCFuncElement("IsPrimitiveTypeArray", Buffer::IsPrimitiveTypeArray)
-#ifdef _TARGET_ARM_
-    FCFuncElement("Memcpy", FCallMemcpy)
-#endif
+    QCFuncElement("__ZeroMemory", Buffer::Clear)
+    FCFuncElement("BulkMoveWithWriteBarrier", Buffer::BulkMoveWithWriteBarrier)
     QCFuncElement("__Memmove", Buffer::MemMove)
 FCFuncEnd()
 
@@ -1109,11 +1108,6 @@ FCFuncStart(gRuntimeClassFuncs)
 FCFuncEnd()
 #endif // ifdef FEATURE_COMINTEROP
 
-FCFuncStart(gRuntimeImportsFuncs)
-    QCFuncElement("RhZeroMemory", MemoryNative::Clear)
-    FCFuncElement("RhBulkMoveWithWriteBarrier", MemoryNative::BulkMoveWithWriteBarrier)
-FCFuncEnd()
-
 FCFuncStart(gWeakReferenceFuncs)
     FCFuncElement("Create", WeakReferenceNative::Create)
     FCFuncElement("Finalize", WeakReferenceNative::Finalize)
@@ -1175,7 +1169,6 @@ FCFuncStart(gPalOleAut32Funcs)
     QCFuncElement("SysAllocStringByteLen", SysAllocStringByteLen)
     QCFuncElement("SysAllocStringLen", SysAllocStringLen)
     QCFuncElement("SysFreeString", SysFreeString)
-    QCFuncElement("SysStringLen", SysStringLen)
 FCFuncEnd()
 #endif
 
@@ -1299,7 +1292,6 @@ FCClassElement("RuntimeClass", "System.Runtime.InteropServices.WindowsRuntime", 
 #endif // FEATURE_COMINTEROP
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
-FCClassElement("RuntimeImports", "System.Runtime", gRuntimeImportsFuncs)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)

@@ -41,10 +41,8 @@ namespace System.Runtime.InteropServices
         // Win32 has the concept of Atoms, where a pointer can either be a pointer
         // or an int.  If it's less than 64K, this is guaranteed to NOT be a
         // pointer since the bottom 64K bytes are reserved in a process' page table.
-        // We should be careful about deallocating this stuff.  Extracted to
-        // a function to avoid C# problems with lack of support for IntPtr.
-        // We have 2 of these methods for slightly different semantics for NULL.
-        private static bool IsWin32Atom(IntPtr ptr)
+        // We should be careful about deallocating this stuff.
+        private static bool IsNullOrWin32Atom(IntPtr ptr)
         {
             const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
 
@@ -81,6 +79,53 @@ namespace System.Runtime.InteropServices
 
             buffer[nb] = 0;
             return nb;
+        }
+
+        // Returns number of bytes required to convert given string to Ansi string. The return value includes null terminator.
+        internal static unsafe int GetAnsiStringByteCount(ReadOnlySpan<char> chars)
+        {
+            int byteLength;
+
+            if (chars.Length == 0)
+            {
+                byteLength = 0;
+            }
+            else
+            {
+                fixed (char* pChars = chars)
+                {
+                    byteLength = Interop.Kernel32.WideCharToMultiByte(
+                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, IntPtr.Zero, IntPtr.Zero);
+                    if (byteLength <= 0)
+                        throw new ArgumentException();
+                }
+            }
+
+            return checked(byteLength + 1);
+        }
+
+        // Converts given string to Ansi string. The destination buffer must be large enough to hold the converted value, including null terminator.
+        internal static unsafe void GetAnsiStringBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            int byteLength;
+
+            if (chars.Length == 0)
+            {
+                byteLength = 0;
+            }
+            else
+            {
+                fixed (char* pChars = chars)
+                fixed (byte* pBytes = bytes)
+                {
+                    byteLength = Interop.Kernel32.WideCharToMultiByte(
+                       Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                    if (byteLength <= 0)
+                        throw new ArgumentException();
+                }
+            }
+
+            bytes[byteLength] = 0;
         }
     }
 }

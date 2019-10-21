@@ -23,26 +23,31 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsPrimitiveTypeArray(Array array);
 
-        // This method has a slightly different behavior on arm and other platforms.
-        // On arm this method behaves like memcpy and does not handle overlapping buffers.
-        // While on other platforms it behaves like memmove and handles overlapping buffers.
-        // This behavioral difference is unfortunate but intentional because
-        // 1. This method is given access to other internal dlls and this close to release we do not want to change it.
-        // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
-#if ARM
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
+        {
+            fixed (byte* bytePointer = &b)
+            {
+                __ZeroMemory(bytePointer, byteLength);
+            }
+        }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern unsafe void __ZeroMemory(void* b, nuint byteLength);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void Memcpy(byte* dest, byte* src, int len);
-#else // ARM
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static extern void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
+
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
             Debug.Assert(len >= 0, "Negative length in memcpy!");
             Memmove(dest, src, (nuint)len);
         }
-#endif // ARM
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
