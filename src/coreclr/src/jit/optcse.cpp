@@ -2381,7 +2381,7 @@ public:
 
                     ssaVarDsc->m_vnPair        = val->gtVNPair;
                     ssaVarDsc->m_defLoc.m_blk  = blk;
-                    ssaVarDsc->m_defLoc.m_tree = asg;
+                    ssaVarDsc->m_defLoc.m_tree = asg->AsOp()->gtOp1;
                 }
 
                 /* Create a reference to the CSE temp */
