@@ -9612,16 +9612,16 @@ int cSsaNumIR(Compiler* comp, GenTree* tree)
 {
     int chars = 0;
 
-    if (tree->gtLclVarCommon.HasSsaName())
+    if (tree->AsLclVarCommon()->HasSsaName())
     {
         if (tree->gtFlags & GTF_VAR_USEASG)
         {
             assert(tree->gtFlags & GTF_VAR_DEF);
-            chars += printf("<u:%d><d:%d>", tree->gtLclVarCommon.GetSsaNum(), comp->GetSsaNumForLocalVarDef(tree));
+            chars += printf("<u:%d><d:%d>", tree->AsLclVarCommon()->GetSsaNum(), comp->GetSsaNumForLocalVarDef(tree));
         }
         else
         {
-            chars += printf("<%s:%d>", (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->gtLclVarCommon.GetSsaNum());
+            chars += printf("<%s:%d>", (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->AsLclVarCommon()->GetSsaNum());
         }
     }
 
@@ -9722,7 +9722,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
-            lclNum = tree->gtLclVarCommon.GetLclNum();
+            lclNum = tree->AsLclVarCommon()->GetLclNum();
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {
@@ -9786,7 +9786,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_FLD:
 
-            lclNum = tree->gtLclVarCommon.GetLclNum();
+            lclNum = tree->AsLclVarCommon()->GetLclNum();
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {

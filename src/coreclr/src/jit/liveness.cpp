@@ -1470,7 +1470,7 @@ VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tr
                 // fgGetHandlerLiveVars(compCurBB), but seems excessive
                 //
                 assert(VarSetOps::IsEmptyIntersection(this, newLiveSet, varBits) || opts.compDbgCode ||
-                       lvaTable[tree->gtLclVarCommon.GetLclNum()].lvAddrExposed ||
+                       lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvAddrExposed ||
                        (compCurBB != nullptr && ehBlockHasExnFlowDsc(compCurBB)));
                 VarSetOps::UnionD(this, newLiveSet, varBits);
             }
@@ -1756,7 +1756,7 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 //    `true` if the local var node corresponds to a dead store; `false` otherwise.
 bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
 {
-    unsigned lclNum = lclVarNode->gtLclVarCommon.GetLclNum();
+    unsigned lclNum = lclVarNode->AsLclVarCommon()->GetLclNum();
 
     assert(lclNum < lvaCount);
     LclVarDsc& varDsc = lvaTable[lclNum];
@@ -1815,7 +1815,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
-                LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.GetLclNum()];
+                LclVarDsc* varDsc = &lvaTable[tree->AsLclVarCommon()->GetLclNum()];
 
                 bool doAgain = false;
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))

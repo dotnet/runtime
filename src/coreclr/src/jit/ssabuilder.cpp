@@ -117,7 +117,7 @@ void Compiler::fgResetForSsa()
             {
                 if (tree->IsLocal())
                 {
-                    tree->gtLclVarCommon.SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
                     continue;
                 }
             }
@@ -665,7 +665,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 
         GenTree* phiLhs = tree->AsOp()->gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
-        if (phiLhs->gtLclVarCommon.GetLclNum() == lclNum)
+        if (phiLhs->AsLclVarCommon()->GetLclNum() == lclNum)
         {
             return tree->AsOp()->gtOp2;
         }
@@ -983,11 +983,11 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
         return;
     }
 
-    unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
+    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
     // Is this a variable we exclude from SSA?
     if (!m_pCompiler->lvaInSsa(lclNum))
     {
-        tree->gtLclVarCommon.SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+        tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
         return;
     }
 
@@ -1036,7 +1036,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
             }
             else
             {
-                tree->gtLclVarCommon.SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
                 return;
             }
         }

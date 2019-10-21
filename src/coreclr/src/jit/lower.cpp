@@ -506,7 +506,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(node->gtOper == GT_SWITCH);
     GenTree* temp = node->AsOp()->gtOp1;
     assert(temp->gtOper == GT_LCL_VAR);
-    unsigned  tempLclNum  = temp->gtLclVarCommon.GetLclNum();
+    unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
     BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
@@ -4055,7 +4055,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     unsigned lclNum;
     if (thisPtr->IsLocal())
     {
-        lclNum = thisPtr->gtLclVarCommon.GetLclNum();
+        lclNum = thisPtr->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -5620,7 +5620,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
                    tree1->IsIconHandle() == tree2->IsIconHandle();
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
-            return tree1->gtLclVarCommon.GetLclNum() == tree2->gtLclVarCommon.GetLclNum();
+            return tree1->AsLclVarCommon()->GetLclNum() == tree2->AsLclVarCommon()->GetLclNum();
         case GT_CLS_VAR_ADDR:
             return tree1->AsClsVar()->gtClsVarHnd == tree2->AsClsVar()->gtClsVarHnd;
         default:

@@ -573,7 +573,7 @@ void Compiler::optFoldNullCheck(GenTree* tree)
                                 {
                                     GenTree* additionNode = defRHS->gtGetOp2();
                                     if ((additionNode->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
-                                        (additionNode->gtGetOp1()->gtLclVarCommon.GetLclNum() == nullCheckLclNum))
+                                        (additionNode->gtGetOp1()->AsLclVarCommon()->GetLclNum() == nullCheckLclNum))
                                     {
                                         GenTree* offset = additionNode->gtGetOp2();
                                         if (offset->IsCnsIntOrI())
