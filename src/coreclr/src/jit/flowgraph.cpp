@@ -24401,9 +24401,9 @@ void Compiler::fgRemoveEmptyTry()
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
                 {
-                    const unsigned nestLevel = expr->gtVal.gtVal1;
+                    const unsigned nestLevel = expr->AsVal()->gtVal1;
                     assert(nestLevel > 0);
-                    expr->gtVal.gtVal1 = nestLevel - 1;
+                    expr->AsVal()->gtVal1 = nestLevel - 1;
                 }
             }
 #endif // !FEATURE_EH_FUNCLETS

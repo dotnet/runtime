@@ -7905,7 +7905,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     if (jmpEpilog && lastNode->gtOper == GT_JMP)
     {
-        methHnd = (CORINFO_METHOD_HANDLE)lastNode->gtVal.gtVal1;
+        methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
         compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
     }
 
@@ -8420,7 +8420,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use
             // the same descriptor with some minor adjustments.
-            CORINFO_METHOD_HANDLE methHnd = (CORINFO_METHOD_HANDLE)jmpNode->gtVal.gtVal1;
+            CORINFO_METHOD_HANDLE methHnd = (CORINFO_METHOD_HANDLE)jmpNode->AsVal()->gtVal1;
 
             CORINFO_CONST_LOOKUP addrInfo;
             compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
