@@ -10708,13 +10708,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_IL_OFFSET:
             printf(" IL offset: ");
-            if (tree->gtILOffset.gtStmtILoffsx == BAD_IL_OFFSET)
+            if (tree->AsILOffset()->gtStmtILoffsx == BAD_IL_OFFSET)
             {
                 printf("???");
             }
             else
             {
-                printf("0x%x", jitGetILoffs(tree->gtILOffset.gtStmtILoffsx));
+                printf("0x%x", jitGetILoffs(tree->AsILOffset()->gtStmtILoffsx));
             }
             break;
 

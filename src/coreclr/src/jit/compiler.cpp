@@ -10040,13 +10040,13 @@ int cLeafIR(Compiler* comp, GenTree* tree)
 
         case GT_IL_OFFSET:
 
-            if (tree->gtILOffset.gtStmtILoffsx == BAD_IL_OFFSET)
+            if (tree->AsILOffset()->gtStmtILoffsx == BAD_IL_OFFSET)
             {
                 chars += printf("?");
             }
             else
             {
-                chars += printf("0x%x", jitGetILoffs(tree->gtILOffset.gtStmtILoffsx));
+                chars += printf("0x%x", jitGetILoffs(tree->AsILOffset()->gtStmtILoffsx));
             }
             break;
 
