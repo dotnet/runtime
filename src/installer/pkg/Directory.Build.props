@@ -10,7 +10,7 @@
     <PackageLicenseFile>$(RepoRoot)LICENSE</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE</LicenseUrl>
-    <PackageDescriptionFile>$(ProjectDir)src/pkg/projects/descriptions.json</PackageDescriptionFile>
+    <PackageDescriptionFile>$(SetupRoot)src/pkg/projects/descriptions.json</PackageDescriptionFile>
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
@@ -34,7 +34,7 @@
     -->
     <DebToolBinDir>$(BinDir)dotnet-deb-tool\</DebToolBinDir>
     <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\netcoreapp3.0\dotnet-deb-tool.dll</DebtoolAssemblyFile>
-    <DotnetDebToolSourceDir>$(ProjectDir)tools-local/setuptools/dotnet-deb-tool/</DotnetDebToolSourceDir>
+    <DotnetDebToolSourceDir>$(SetupRoot)tools-local/setuptools/dotnet-deb-tool/</DotnetDebToolSourceDir>
 
     <IsDebianBasedDistro
       Condition="

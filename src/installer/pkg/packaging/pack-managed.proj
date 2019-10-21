@@ -12,7 +12,7 @@
     packages are used in other parts of the build, so this can't wait for Arcade's Pack stage.
   -->
   <Target Name="Build">
-    <MSBuild Projects="$(SetupRoot)signing\SignBinaries.proj" Targets="Build" />
+    <MSBuild Projects="$(SigningToolsDir)\SignBinaries.proj" Targets="Build" />
 
     <ItemGroup>
       <ManagedProject Include="$(SetupRoot)src\managed\**\*.csproj" />
