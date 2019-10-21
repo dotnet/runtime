@@ -203,20 +203,20 @@ namespace System.Text.Json
                     {
                         ElementType = elementType;
                         AddItemToObject = addMethod;
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType, converter: null, ClassType, options);
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType, nullableUnderlyingType, converter: null, ClassType, options);
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(PolicyProperty.RuntimePropertyType);
                     }
                     break;
                 case ClassType.Value:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, converter, ClassType, options);
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
                     }
                     break;
                 case ClassType.Unknown:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, converter, ClassType, options);
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
                         PropertyCache = new Dictionary<string, JsonPropertyInfo>();
                         PropertyCacheArray = Array.Empty<JsonPropertyInfo>();
                     }
