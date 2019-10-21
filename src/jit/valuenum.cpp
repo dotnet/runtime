@@ -6883,7 +6883,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_FTN_ADDR:
                 // Use the value of the function pointer (actually, a method handle.)
                 tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->gtFptrVal.gtFptrMethod), GTF_ICON_METHOD_HDL));
+                    vnStore->VNForHandle(ssize_t(tree->AsFptrVal()->gtFptrMethod), GTF_ICON_METHOD_HDL));
                 break;
 
             // This group passes through a value from a child node.
