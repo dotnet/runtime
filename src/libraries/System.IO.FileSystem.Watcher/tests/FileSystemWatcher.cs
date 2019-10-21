@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 
@@ -264,6 +260,32 @@ namespace System.IO.Tests
                 new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose();
                 Thread.Sleep(WaitForExpectedEventTimeout);
             }
+        }
+
+        [Fact]
+        public void DroppedWatcher_Collectible()
+        {
+            WeakReference watcher = CreateEnabledWatcher(TestDirectory);
+            File.Create(GetTestFilePath()).Dispose();
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                GC.Collect();
+                return !watcher.IsAlive;
+            }, LongWaitTimeout));
+
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference CreateEnabledWatcher(string path)
+        {
+            var fsw = new FileSystemWatcher(path);
+            fsw.Created += (s, e) => { };
+            fsw.Deleted += (s, e) => { };
+            fsw.Changed += (s, e) => { };
+            fsw.Renamed += (s, e) => { };
+            fsw.Error += (s, e) => { };
+            fsw.EnableRaisingEvents = true;
+            return new WeakReference(fsw);
         }
     }
 }

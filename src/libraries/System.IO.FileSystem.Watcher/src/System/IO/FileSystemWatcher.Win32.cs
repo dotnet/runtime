@@ -51,8 +51,19 @@ namespace System.IO
                 // Store all state, including a preallocated overlapped, into the state object that'll be
                 // passed from iteration to iteration during the lifetime of the operation.  The buffer will be pinned
                 // from now until the end of the operation.
-                state = new AsyncReadState(session, buffer, _directoryHandle, ThreadPoolBoundHandle.BindHandle(_directoryHandle));
-                unsafe { state.PreAllocatedOverlapped = new PreAllocatedOverlapped(ReadDirectoryChangesCallback, state, buffer); }
+                state = new AsyncReadState(session, buffer, _directoryHandle, ThreadPoolBoundHandle.BindHandle(_directoryHandle), this);
+                unsafe
+                {
+                    state.PreAllocatedOverlapped = new PreAllocatedOverlapped((errorCode, numBytes, overlappedPointer) =>
+                    {
+                        AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
+                        state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                        if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher watcher))
+                        {
+                            watcher.ReadDirectoryChangesCallback(errorCode, numBytes, state);
+                        }
+                    }, state, buffer);
+                }
             }
             catch
             {
@@ -191,9 +202,8 @@ namespace System.IO
         }
 
         /// <summary>Callback invoked when an asynchronous read on the directory handle completes.</summary>
-        private unsafe void ReadDirectoryChangesCallback(uint errorCode, uint numBytes, NativeOverlapped* overlappedPointer)
+        private void ReadDirectoryChangesCallback(uint errorCode, uint numBytes, AsyncReadState state)
         {
-            AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
             try
             {
                 if (IsHandleInvalid(state.DirectoryHandle))
@@ -232,11 +242,7 @@ namespace System.IO
             }
             finally
             {
-                // Clean up state associated with this one iteration
-                state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
-
-                // Then call Monitor again to either start the next iteration or
-                // clean up the whole operation.
+                // Call Monitor again to either start the next iteration or clean up the whole operation.
                 Monitor(state);
             }
         }
@@ -338,7 +344,7 @@ namespace System.IO
         /// </summary>
         private sealed class AsyncReadState
         {
-            internal AsyncReadState(int session, byte[] buffer, SafeFileHandle handle, ThreadPoolBoundHandle binding)
+            internal AsyncReadState(int session, byte[] buffer, SafeFileHandle handle, ThreadPoolBoundHandle binding, FileSystemWatcher parent)
             {
                 Debug.Assert(buffer != null);
                 Debug.Assert(buffer.Length > 0);
@@ -349,13 +355,15 @@ namespace System.IO
                 Buffer = buffer;
                 DirectoryHandle = handle;
                 ThreadPoolBinding = binding;
+                WeakWatcher = new WeakReference<FileSystemWatcher>(parent);
             }
 
-            internal int Session { get; private set; }
-            internal byte[] Buffer { get; private set; }
-            internal SafeFileHandle DirectoryHandle { get; private set; }
-            internal ThreadPoolBoundHandle ThreadPoolBinding { get; private set; }
-            internal PreAllocatedOverlapped PreAllocatedOverlapped { get; set; }
+            internal int Session { get; }
+            internal byte[] Buffer { get; }
+            internal SafeFileHandle DirectoryHandle { get; }
+            internal ThreadPoolBoundHandle ThreadPoolBinding { get; }
+            internal PreAllocatedOverlapped PreAllocatedOverlapped { get; set;  }
+            internal WeakReference<FileSystemWatcher> WeakWatcher { get; }
         }
     }
 }
