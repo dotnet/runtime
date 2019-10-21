@@ -10,8 +10,6 @@
       netcoreapp2.1;
       netcoreapp2.1-Unix;
       netcoreapp2.1-Windows_NT;
-      uap10.0.16299-Windows_NT;
-      uap-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)

@@ -32,7 +32,7 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// CollectionChanged event (per <see cref="INotifyCollectionChanged" />).
         /// </summary>
-        event NotifyCollectionChangedEventHandler INotifyCollectionChanged.CollectionChanged
+        event NotifyCollectionChangedEventHandler? INotifyCollectionChanged.CollectionChanged
         {
             add => CollectionChanged += value;
             remove => CollectionChanged -= value;
@@ -45,7 +45,7 @@ namespace System.Collections.ObjectModel
         /// see <seealso cref="INotifyCollectionChanged"/>
         /// </remarks>
         [field: NonSerialized]
-        protected virtual event NotifyCollectionChangedEventHandler CollectionChanged;
+        protected virtual event NotifyCollectionChangedEventHandler? CollectionChanged;
 
         /// <summary>
         /// raise CollectionChanged event to any listeners
@@ -58,7 +58,7 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// PropertyChanged event (per <see cref="INotifyPropertyChanged" />).
         /// </summary>
-        event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
+        event PropertyChangedEventHandler? INotifyPropertyChanged.PropertyChanged
         {
             add => PropertyChanged += value;
             remove => PropertyChanged -= value;
@@ -71,7 +71,7 @@ namespace System.Collections.ObjectModel
         /// see <seealso cref="INotifyPropertyChanged"/>
         /// </remarks>
         [field: NonSerialized]
-        protected virtual event PropertyChangedEventHandler PropertyChanged;
+        protected virtual event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
         /// raise PropertyChanged event to any listeners
@@ -81,12 +81,12 @@ namespace System.Collections.ObjectModel
             PropertyChanged?.Invoke(this, args);
         }
 
-        private void HandleCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void HandleCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             OnCollectionChanged(e);
         }
 
-        private void HandlePropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             OnPropertyChanged(e);
         }

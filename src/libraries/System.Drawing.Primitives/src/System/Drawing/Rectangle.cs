@@ -56,7 +56,7 @@ namespace System.Drawing
         [Browsable(false)]
         public Point Location
         {
-            get => new Point(X, Y);
+            readonly get => new Point(X, Y);
             set
             {
                 X = value.X;
@@ -70,7 +70,7 @@ namespace System.Drawing
         [Browsable(false)]
         public Size Size
         {
-            get => new Size(Width, Height);
+            readonly get => new Size(Width, Height);
             set
             {
                 Width = value.Width;
@@ -84,7 +84,7 @@ namespace System.Drawing
         /// </summary>
         public int X
         {
-            get => x;
+            readonly get => x;
             set => x = value;
         }
 
@@ -94,7 +94,7 @@ namespace System.Drawing
         /// </summary>
         public int Y
         {
-            get => y;
+            readonly get => y;
             set => y = value;
         }
 
@@ -103,7 +103,7 @@ namespace System.Drawing
         /// </summary>
         public int Width
         {
-            get => width;
+            readonly get => width;
             set => width = value;
         }
 
@@ -112,7 +112,7 @@ namespace System.Drawing
         /// </summary>
         public int Height
         {
-            get => height;
+            readonly get => height;
             set => height = value;
         }
 
@@ -121,43 +121,43 @@ namespace System.Drawing
         /// <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
         [Browsable(false)]
-        public int Left => X;
+        public readonly int Left => X;
 
         /// <summary>
         /// Gets the y-coordinate of the upper-left corner of the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/>.
         /// </summary>
         [Browsable(false)]
-        public int Top => Y;
+        public readonly int Top => Y;
 
         /// <summary>
         /// Gets the x-coordinate of the lower-right corner of the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/>.
         /// </summary>
         [Browsable(false)]
-        public int Right => unchecked(X + Width);
+        public readonly int Right => unchecked(X + Width);
 
         /// <summary>
         /// Gets the y-coordinate of the lower-right corner of the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/>.
         /// </summary>
         [Browsable(false)]
-        public int Bottom => unchecked(Y + Height);
+        public readonly int Bottom => unchecked(Y + Height);
 
         /// <summary>
         /// Tests whether this <see cref='System.Drawing.Rectangle'/> has a <see cref='System.Drawing.Rectangle.Width'/>
         /// or a <see cref='System.Drawing.Rectangle.Height'/> of 0.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => height == 0 && width == 0 && x == 0 && y == 0;
+        public readonly bool IsEmpty => height == 0 && width == 0 && x == 0 && y == 0;
 
         /// <summary>
         /// Tests whether <paramref name="obj"/> is a <see cref='System.Drawing.Rectangle'/> with the same location
         /// and size of this Rectangle.
         /// </summary>
-        public override bool Equals(object? obj) => obj is Rectangle && Equals((Rectangle)obj);
+        public override readonly bool Equals(object? obj) => obj is Rectangle && Equals((Rectangle)obj);
 
-        public bool Equals(Rectangle other) => this == other;
+        public readonly bool Equals(Rectangle other) => this == other;
 
         /// <summary>
         /// Tests whether two <see cref='System.Drawing.Rectangle'/> objects have equal location and size.
@@ -219,19 +219,19 @@ namespace System.Drawing
         /// Determines if the specified point is contained within the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(int x, int y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
+        public readonly bool Contains(int x, int y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
 
         /// <summary>
         /// Determines if the specified point is contained within the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(Point pt) => Contains(pt.X, pt.Y);
+        public readonly bool Contains(Point pt) => Contains(pt.X, pt.Y);
 
         /// <summary>
         /// Determines if the rectangular region represented by <paramref name="rect"/> is entirely contained within the
         /// rectangular region represented by this <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(Rectangle rect) =>
+        public readonly bool Contains(Rectangle rect) =>
             (X <= rect.X) && (rect.X + rect.Width <= X + Width) &&
             (Y <= rect.Y) && (rect.Y + rect.Height <= Y + Height);
 
@@ -302,7 +302,7 @@ namespace System.Drawing
         /// <summary>
         /// Determines if this rectangle intersects with rect.
         /// </summary>
-        public bool IntersectsWith(Rectangle rect) =>
+        public readonly bool IntersectsWith(Rectangle rect) =>
             (rect.X < X + Width) && (X < rect.X + rect.Width) &&
             (rect.Y < Y + Height) && (Y < rect.Y + rect.Height);
 
@@ -339,7 +339,7 @@ namespace System.Drawing
         /// <summary>
         /// Converts the attributes of this <see cref='System.Drawing.Rectangle'/> to a human readable string.
         /// </summary>
-        public override string ToString() =>
+        public override readonly string ToString() =>
             "{X=" + X.ToString() + ",Y=" + Y.ToString() +
             ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
     }

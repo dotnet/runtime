@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
             }
 
-            if (state.Current.KeyName == null && state.Current.IsProcessingDictionaryOrIDictionaryConstructible())
+            if (state.Current.KeyName == null && state.Current.IsProcessingDictionary())
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType);
                 return;

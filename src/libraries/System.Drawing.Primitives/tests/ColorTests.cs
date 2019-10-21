@@ -12,7 +12,7 @@ namespace System.Drawing.Primitives.Tests
 {
     public partial class ColorTests
     {
-        public static bool SupportsReadingUpdatedSystemColors => PlatformDetection.IsWindows && !PlatformDetection.IsUap && PlatformDetection.IsNotWindowsNanoServer;
+        public static bool SupportsReadingUpdatedSystemColors => PlatformDetection.IsWindows && !PlatformDetection.IsInAppContainer && PlatformDetection.IsNotWindowsNanoServer;
 
         public static readonly IEnumerable<object[]> NamedArgbValues =
             new[]

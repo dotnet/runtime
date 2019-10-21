@@ -2,9 +2,8 @@
   <PropertyGroup>
     <AssemblyName>System.IO.Pipes</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
@@ -147,7 +146,7 @@
     <Compile Include="System\IO\Pipes\ReadWriteCompletionSource.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.cs">
       <Link>Common\Interop\Windows\Interop.CreateNamedPipeClient.cs</Link>
     </Compile>
@@ -155,16 +154,6 @@
       <Link>Common\CoreLib\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
     </Compile>
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
-  </ItemGroup>
-  <!-- Windows : UAP - Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'uap'">
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.CreateNamedPipeClient.Uap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs">
-      <Link>Common\Interop\Windows\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs</Link>
-    </Compile>
-    <Compile Include="System\IO\Pipes\NamedPipeServerStream.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />

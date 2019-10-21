@@ -387,7 +387,7 @@ namespace System.Net.Http.HPack
             if (_state != State.Ready)
             {
                 // Incomplete header block
-                throw new HPackDecodingException();
+                throw new HPackDecodingException(SR.net_http_hpack_unexpected_end);
             }
         }
 
@@ -474,7 +474,7 @@ namespace System.Net.Http.HPack
             catch (IndexOutOfRangeException)
             {
                 // Header index out of range.
-                throw new HPackDecodingException();
+                throw new HPackDecodingException(SR.Format(SR.net_http_hpack_invalid_index, index));
             }
         }
 

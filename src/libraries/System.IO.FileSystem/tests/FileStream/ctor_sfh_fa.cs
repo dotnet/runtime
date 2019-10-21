@@ -24,7 +24,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(31909, TargetFrameworkMonikers.Uap)]
         public void InvalidAccess_Throws()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
@@ -34,7 +33,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(31909, TargetFrameworkMonikers.Uap)]
         public void InvalidAccess_DoesNotCloseHandle()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))

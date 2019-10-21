@@ -12,6 +12,10 @@ using ustring = System.Utf8String;
 
 namespace System.Text.Tests
 {
+    /*
+     * Please keep these tests in sync with those in Utf8StringTests.Searching.cs.
+     */
+
     public unsafe partial class Utf8SpanTests
     {
         [Theory]
@@ -29,7 +33,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
             }
 
             // Also check Contains / StartsWith / SplitOn
@@ -56,7 +60,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
             }
 
             // Also check EndsWith / SplitOnLast
@@ -99,7 +103,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
                 }
 
                 // Also check Contains / StartsWith / SplitOn
@@ -126,7 +130,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
                 }
 
                 // Also check EndsWith / SplitOnLast
@@ -162,7 +166,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
             }
 
             // Also check Contains / StartsWith / SplitOn
@@ -189,7 +193,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
             }
 
             // Also check EndsWith / SplitOnLast
@@ -232,7 +236,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
                 }
 
                 // Also check Contains / StartsWith / SplitOn
@@ -259,7 +263,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
                 }
 
                 // Also check EndsWith / SplitOnLast
@@ -295,7 +299,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
             }
 
             // Also check Contains / StartsWith / SplitOn
@@ -322,7 +326,7 @@ namespace System.Text.Tests
 
             if (wasFound)
             {
-                AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
             }
 
             // Also check EndsWith / SplitOnLast
@@ -365,7 +369,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedForwardMatch.Value, actualForwardMatch);
                 }
 
                 // Also check Contains / StartsWith / SplitOn
@@ -392,7 +396,7 @@ namespace System.Text.Tests
 
                 if (wasFound)
                 {
-                    AssertRangesEqual(searchSpan.Bytes.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    AssertRangesEqual(searchSpan.Length, expectedBackwardMatch.Value, actualBackwardMatch);
                 }
 
                 // Also check EndsWith / SplitOnLast

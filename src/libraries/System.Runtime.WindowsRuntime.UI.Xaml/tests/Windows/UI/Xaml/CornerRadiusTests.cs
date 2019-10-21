@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class CornerRadiusTests
     {
         [Fact]

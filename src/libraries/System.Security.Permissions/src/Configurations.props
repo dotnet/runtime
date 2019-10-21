@@ -2,7 +2,6 @@
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp3.0;
-      uap;
       netstandard;
       net461;
     </PackageConfigurations>

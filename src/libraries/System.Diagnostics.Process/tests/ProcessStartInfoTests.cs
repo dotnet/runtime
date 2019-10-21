@@ -20,7 +20,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
     public partial class ProcessStartInfoTests : ProcessTestBase
     {
         [Fact]
@@ -198,7 +197,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue(29865, TargetFrameworkMonikers.Uap)]
         public void TestSetEnvironmentOnChildProcess()
         {
             const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
@@ -219,7 +217,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void TestEnvironmentOfChildProcess()
         {
             const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -267,25 +264,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap, "Only UAP blocks setting ShellExecute to true")]
-        public void UseShellExecute_GetSetWindows_Success_Uap()
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            Assert.False(psi.UseShellExecute);
-
-            // Calling the setter
-            Assert.Throws<PlatformNotSupportedException>(() => { psi.UseShellExecute = true; });
-            psi.UseShellExecute = false;
-
-            // Calling the getter
-            Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        public void TestUseShellExecuteProperty_SetAndGet_NotUapOrNetFX()
+        public void TestUseShellExecuteProperty_SetAndGet()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             Assert.False(psi.UseShellExecute);
@@ -301,7 +281,6 @@ namespace System.Diagnostics.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void TestUseShellExecuteProperty_Redirects_NotSupported(int std)
         {
             Process p = CreateProcessLong();
@@ -506,7 +485,6 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano does not support these verbs
         [PlatformSpecific(TestPlatforms.Windows)]  // Test case is specific to Windows
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void Verbs_GetWithExeExtension_ReturnsExpected()
         {
             var psi = new ProcessStartInfo { FileName = $"{Process.GetCurrentProcess().ProcessName}.exe" };
@@ -927,7 +905,6 @@ namespace System.Diagnostics.Tests
 
         [Fact(Skip = "Manual test")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void StartInfo_WebPage()
         {
             ProcessStartInfo info = new ProcessStartInfo
@@ -946,7 +923,6 @@ namespace System.Diagnostics.Tests
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WaitForInputIdle, ProcessName, and MainWindowTitle are not supported on UAP")]
         public void StartInfo_NotepadWithContent(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".txt";
@@ -983,8 +959,6 @@ namespace System.Diagnostics.Tests
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/corefx/issues/20388
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        // We don't have the ability yet for UseShellExecute in UAP
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20204", TargetFrameworkMonikers.Uap)]
         public void StartInfo_TextFile_ShellExecute()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
@@ -1009,7 +983,7 @@ namespace System.Diagnostics.Tests
                     process.WaitForInputIdle(); // Give the file a chance to load
                     Assert.Equal("notepad", process.ProcessName);
 
-                    if (PlatformDetection.IsUap)
+                    if (PlatformDetection.IsInAppContainer)
                     {
                         Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
                     }
@@ -1094,7 +1068,7 @@ namespace System.Diagnostics.Tests
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
-                if (   !PlatformDetection.IsUap // https://github.com/dotnet/corefx/issues/20204
+                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/corefx/issues/20204
                     && !PlatformDetection.IsWindowsNanoServer // By design
                     && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);

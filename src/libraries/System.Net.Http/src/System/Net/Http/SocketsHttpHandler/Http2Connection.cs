@@ -108,7 +108,7 @@ namespace System.Net.Http
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _headerBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
-            _hpackDecoder = new HPackDecoder(maxDynamicTableSize: 0, maxResponseHeadersLength: pool.Settings._maxResponseHeadersLength * 1024);
+            _hpackDecoder = new HPackDecoder(maxResponseHeadersLength: pool.Settings._maxResponseHeadersLength * 1024);
 
             _httpStreams = new Dictionary<int, Http2Stream>();
 
@@ -130,7 +130,7 @@ namespace System.Net.Http
         public async ValueTask SetupAsync()
         {
             _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
-                FrameHeader.Size + (FrameHeader.SettingLength * 2) +
+                FrameHeader.Size + FrameHeader.SettingLength +
                 FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
             // Send connection preface
@@ -138,16 +138,10 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
             // Send SETTINGS frame
-            WriteFrameHeader(new FrameHeader(FrameHeader.SettingLength * 2, FrameType.Settings, FrameFlags.None, 0));
+            WriteFrameHeader(new FrameHeader(FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, 0));
 
-            // First setting: Disable push promise
+            // Disable push promise
             BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
-            _outgoingBuffer.Commit(2);
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
-            _outgoingBuffer.Commit(4);
-
-            // Second setting: Set header table size to 0 to disable dynamic header compression
-            BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.HeaderTableSize);
             _outgoingBuffer.Commit(2);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
             _outgoingBuffer.Commit(4);

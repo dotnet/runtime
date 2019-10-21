@@ -273,6 +273,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -302,7 +303,7 @@ namespace System.Numerics
         }
 
 
-        internal static bool TryValidateParseStyleInteger(NumberStyles style, out ArgumentException e)
+        internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
         {
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
@@ -322,7 +323,7 @@ namespace System.Numerics
             return true;
         }
 
-        internal static bool TryParseBigInteger(string value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static bool TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (value == null)
             {
@@ -338,7 +339,7 @@ namespace System.Numerics
             unsafe
             {
                 result = BigInteger.Zero;
-                ArgumentException e;
+                ArgumentException? e;
                 if (!TryValidateParseStyleInteger(style, out e))
                     throw e; // TryParse still throws ArgumentException on invalid NumberStyles
 
@@ -376,7 +377,7 @@ namespace System.Numerics
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
         {
-            ArgumentException e;
+            ArgumentException? e;
             if (!TryValidateParseStyleInteger(style, out e))
                 throw e;
 
@@ -503,12 +504,12 @@ namespace System.Numerics
             return (char)0; // Custom format
         }
 
-        private static string FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static string? FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(format == 'x' || format == 'X');
 
             // Get the bytes that make up the BigInteger.
-            byte[] arrayToReturnToPool = null;
+            byte[]? arrayToReturnToPool = null;
             Span<byte> bits = stackalloc byte[64]; // arbitrary threshold
             if (!value.TryWriteOrCountBytes(bits, out int bytesWrittenOrNeeded))
             {
@@ -587,9 +588,9 @@ namespace System.Numerics
             }
         }
 
-        internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
+        internal static string FormatBigInteger(BigInteger value, string? format, NumberFormatInfo info)
         {
-            return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _);
+            return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _)!;
         }
 
         internal static bool TryFormatBigInteger(BigInteger value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
@@ -598,9 +599,9 @@ namespace System.Numerics
             return spanSuccess;
         }
 
-        private static string FormatBigInteger(
+        private static string? FormatBigInteger(
             bool targetSpan, BigInteger value,
-            string formatString, ReadOnlySpan<char> formatSpan,
+            string? formatString, ReadOnlySpan<char> formatSpan,
             NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);

@@ -24,8 +24,10 @@ We use GitHub [labels](https://github.com/dotnet/corefx/labels) on our issues in
   * [documentation](https://github.com/dotnet/corefx/labels/documentation): Issues related to documentation (e.g. incorrect documentation, enhancement requests).
   * [question](https://github.com/dotnet/corefx/labels/question): Questions about the product, source code, etc.
 * **Other**:
+  * [easy](https://github.com/dotnet/corefx/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3Aeasy%20no%3Aassignee) - Good for starting contributors.
   * [up-for-grabs](https://github.com/dotnet/corefx/labels/up-for-grabs): Small sections of work which we believe are well scoped.  These sorts of issues are a good place to start if you are new.  Anyone is free to work on these issues.
   * [needs more info](https://github.com/dotnet/corefx/labels/needs%20more%20info): Issues which need more information to be actionable.  Usually this will be because we can't reproduce a reported bug.  We'll close these issues after a little bit if we haven't gotten actionable information, but we welcome folks who have acquired more information to reopen the issue.
+ * [wishlist](https://github.com/dotnet/corefx/issues?q=is%3Aissue+is%3Aopen+label%3Awishlist) - Issues on top of our backlog we won't likely get to. Warning: Might not be easy.
 
 In addition to the above, we have a handful of other labels we use to help classify our issues.  Some of these tag cross cutting concerns (e.g. [tenet-performance](https://github.com/dotnet/corefx/labels/tenet-performance)), whereas others are used to help us track additional work needed before closing an issue (e.g. [api-needs-exposed](https://github.com/dotnet/corefx/labels/api-needs-exposed)).
 

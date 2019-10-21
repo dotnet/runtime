@@ -129,7 +129,7 @@ namespace System.Net.Http.Functional.Tests
             FieldInfo socketsHttpHandlerField = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.NonPublic | BindingFlags.Instance);
             if (socketsHttpHandlerField == null)
             {
-                // Not using .NET Core implementation, i.e. could be .NET Framework or UAP.
+                // Not using .NET Core implementation, i.e. could be .NET Framework.
                 return;
             }
 

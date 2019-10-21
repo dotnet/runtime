@@ -31,7 +31,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData("\0")]
         [InlineData("[")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
         public void GetDomainController_InvalidName(string name)
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, name);
@@ -43,7 +42,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
         public void GetDomainController_InvalidIPV6()
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, "[::1]:port");
@@ -114,7 +112,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void FindAll_NoSuchName_ReturnsEmpty()
         {
             // Domain joined machines can have entries in the DomainController.
@@ -128,7 +125,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
         public void FindAll_NullName_ThrowsActiveDirectoryOperationException()
         {
             var context = new DirectoryContext(DirectoryContextType.Domain);

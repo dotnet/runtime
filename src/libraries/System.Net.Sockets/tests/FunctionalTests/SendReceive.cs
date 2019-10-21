@@ -889,7 +889,7 @@ namespace System.Net.Sockets.Tests
                         Assert.True(
                             error is ObjectDisposedException ||
                             error is SocketException ||
-                            (error is SEHException && PlatformDetection.IsUap),
+                            (error is SEHException && PlatformDetection.IsInAppContainer),
                             error.ToString());
                     }
                 }
@@ -928,7 +928,7 @@ namespace System.Net.Sockets.Tests
                         Assert.True(
                             error is ObjectDisposedException ||
                             error is SocketException ||
-                            (error is SEHException && PlatformDetection.IsUap),
+                            (error is SEHException && PlatformDetection.IsInAppContainer),
                             error.ToString());
                     }
                 }
@@ -1103,6 +1103,42 @@ namespace System.Net.Sockets.Tests
                         }
                         Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                     }
+                }
+            }, maxAttempts: 10);
+        }
+
+        [Fact]
+        public async Task TcpPeerReceivesFinOnShutdownWithPendingData()
+        {
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the send is started, no data is sent.
+            int msDelay = 100;
+            byte[] hugeBuffer = new byte[100_000_000];
+            byte[] receiveBuffer = new byte[1024];
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                using (socket1)
+                using (socket2)
+                {
+                    // socket1: send a huge amount of data, then Shutdown and Dispose before the peer starts reading.
+                    Task sendTask = SendAsync(socket1, hugeBuffer);
+                    // Wait a little so the operation is started.
+                    await Task.Delay(msDelay);
+                    msDelay *= 2;
+                    socket1.Shutdown(SocketShutdown.Both);
+                    socket1.Dispose();
+
+                    // socket2: read until FIN.
+                    int receivedTotal = 0;
+                    int received;
+                    do
+                    {
+                        received = await ReceiveAsync(socket2, receiveBuffer);
+                        receivedTotal += received;
+                    } while (received != 0);
+
+                    Assert.NotEqual(0, receivedTotal);
                 }
             }, maxAttempts: 10);
         }

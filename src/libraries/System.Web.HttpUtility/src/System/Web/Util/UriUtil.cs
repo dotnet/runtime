@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Web.Util
 {
     internal static class UriUtil
@@ -11,7 +13,7 @@ namespace System.Web.Util
         // Just extracts the query string and fragment from the input path by splitting on the separator characters.
         // Doesn't perform any validation as to whether the input represents a valid URL.
         // Concatenating the pieces back together will form the original input string.
-        private static void ExtractQueryAndFragment(string input, out string path, out string queryAndFragment)
+        private static void ExtractQueryAndFragment(string input, out string path, out string? queryAndFragment)
         {
             int queryFragmentSeparatorPos = input.IndexOfAny(s_queryFragmentSeparators);
             if (queryFragmentSeparatorPos != -1)
@@ -30,7 +32,7 @@ namespace System.Web.Util
         // Attempts to split a URI into its constituent pieces.
         // Even if this method returns true, one or more of the out parameters might contain a null or empty string, e.g. if there is no query / fragment.
         // Concatenating the pieces back together will form the original input string.
-        internal static bool TrySplitUriForPathEncode(string input, out string schemeAndAuthority, out string path, out string queryAndFragment)
+        internal static bool TrySplitUriForPathEncode(string input, [NotNullWhen(true)] out string? schemeAndAuthority, [NotNullWhen(true)] out string? path, out string? queryAndFragment)
         {
             // Strip off ?query and #fragment if they exist, since we're not going to look at them
             string inputWithoutQueryFragment;
@@ -39,8 +41,7 @@ namespace System.Web.Util
             // Use Uri class to parse the url into authority and path, use that to help decide
             // where to split the string. Do not rebuild the url from the Uri instance, as that
             // might have subtle changes from the original string (for example, see below about "://").
-            Uri uri;
-            if (Uri.TryCreate(inputWithoutQueryFragment, UriKind.Absolute, out uri))
+            if (Uri.TryCreate(inputWithoutQueryFragment, UriKind.Absolute, out Uri? uri))
             {
                 string authority = uri.Authority; // e.g. "foo:81" in "http://foo:81/bar"
                 if (!string.IsNullOrEmpty(authority))

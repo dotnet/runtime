@@ -15,7 +15,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Ping class not supported on UWP. See dotnet/corefx #19583")]
     public class PingTest
     {
         public readonly ITestOutputHelper _output;
@@ -196,7 +195,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public void SendPingWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -210,7 +208,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();

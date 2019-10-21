@@ -240,7 +240,6 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
-#if !uap
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
@@ -267,7 +266,6 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing) { }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-#endif
     public partial class StreamContent : System.Net.Http.HttpContent
     {
         public StreamContent(System.IO.Stream content) { }

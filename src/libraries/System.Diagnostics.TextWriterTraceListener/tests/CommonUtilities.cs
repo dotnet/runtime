@@ -95,6 +95,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                 builder.Append(delimiter);
                 builder.Append(cache.Timestamp.ToString(CultureInfo.InvariantCulture));
                 builder.Append(delimiter);
+                builder.Append(EscapedString(cache.Callstack));
             }
             else
             {

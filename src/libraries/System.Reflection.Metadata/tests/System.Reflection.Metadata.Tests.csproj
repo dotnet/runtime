@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
+    <NoWarn>436</NoWarn> <!-- Type conflicts on "Interop" due to InternalsVisibleTo access -->
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

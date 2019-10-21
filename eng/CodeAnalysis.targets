@@ -1,9 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <!-- Need to keep in sync with Tools.props file. -->
-    <AnalyzerPropsFile>$(ToolSetCommonDirectory)Tools.Analyzers.props</AnalyzerPropsFile>
-  </PropertyGroup>
-
   <Import Condition="Exists($(AnalyzerPropsFile)) AND '$(EnableAnalyzers)' == 'true'" Project="$(AnalyzerPropsFile)" />
 
   <!-- This target is executed when building a project and EnableAnalyzers property is set to true. 

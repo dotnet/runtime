@@ -811,9 +811,9 @@ namespace System.Net.Sockets
         {
             internal static readonly AwaitableSocketAsyncEventArgs Reserved = new AwaitableSocketAsyncEventArgs() { _continuation = null };
             /// <summary>Sentinel object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
-            private static readonly Action<object> s_completedSentinel = new Action<object>(state => throw new Exception(nameof(s_completedSentinel)));
+            private static readonly Action<object> s_completedSentinel = new Action<object>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_completedSentinel))));
             /// <summary>Sentinel object used to indicate that the instance is available for use.</summary>
-            private static readonly Action<object> s_availableSentinel = new Action<object>(state => throw new Exception(nameof(s_availableSentinel)));
+            private static readonly Action<object> s_availableSentinel = new Action<object>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_availableSentinel))));
             /// <summary>
             /// <see cref="s_availableSentinel"/> if the object is available for use, after GetResult has been called on a previous use.
             /// null if the operation has not completed.

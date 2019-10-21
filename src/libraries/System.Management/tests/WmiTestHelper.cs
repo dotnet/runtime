@@ -15,7 +15,7 @@ namespace System.Management.Tests
                                             PlatformDetection.IsNotArmNorArm64Process &&
                                             PlatformDetection.IsNotWindowsNanoServer &&
                                             PlatformDetection.IsNotWindowsIoTCore &&
-                                            !PlatformDetection.IsUap;
+                                            !PlatformDetection.IsInAppContainer;
         private static readonly string s_systemDriveId = Path.GetPathRoot(Environment.GetEnvironmentVariable("SystemDrive"));
 
         // Use the environment variable below to do manual runs against remote boxes: just ensure that the credentials running the tests have

@@ -23,11 +23,11 @@ namespace System.Text.Json
                 return;
             }
 
-            Debug.Assert(state.Current.ReturnValue != default || state.Current.TempDictionaryValues != default);
-            Debug.Assert(state.Current.JsonClassInfo != default);
+            Debug.Assert(state.Current.ReturnValue != null || state.Current.TempDictionaryValues != null);
+            Debug.Assert(state.Current.JsonClassInfo != null);
 
-            bool isProcessingDictObject = state.Current.IsProcessingDictionaryOrIDictionaryConstructibleObject();
-            if ((isProcessingDictObject || state.Current.IsProcessingDictionaryOrIDictionaryConstructibleProperty()) &&
+            bool isProcessingDictObject = state.Current.IsProcessingObject(ClassType.Dictionary);
+            if ((isProcessingDictObject || state.Current.IsProcessingProperty(ClassType.Dictionary)) &&
                 state.Current.JsonClassInfo.DataExtensionProperty != state.Current.JsonPropertyInfo)
             {
                 if (isProcessingDictObject)

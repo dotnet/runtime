@@ -16,7 +16,6 @@ namespace System.Net.Http.Functional.Tests
 
         public IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalUrl_UsesIdnaEncoding_Success(string hostname)

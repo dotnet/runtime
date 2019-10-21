@@ -60,7 +60,7 @@ namespace System.Drawing
         [Browsable(false)]
         public PointF Location
         {
-            get => new PointF(X, Y);
+            readonly get => new PointF(X, Y);
             set
             {
                 X = value.X;
@@ -74,7 +74,7 @@ namespace System.Drawing
         [Browsable(false)]
         public SizeF Size
         {
-            get => new SizeF(Width, Height);
+            readonly get => new SizeF(Width, Height);
             set
             {
                 Width = value.Width;
@@ -88,7 +88,7 @@ namespace System.Drawing
         /// </summary>
         public float X
         {
-            get => x;
+            readonly get => x;
             set => x = value;
         }
 
@@ -98,7 +98,7 @@ namespace System.Drawing
         /// </summary>
         public float Y
         {
-            get => y;
+            readonly get => y;
             set => y = value;
         }
 
@@ -107,7 +107,7 @@ namespace System.Drawing
         /// </summary>
         public float Width
         {
-            get => width;
+            readonly get => width;
             set => width = value;
         }
 
@@ -116,7 +116,7 @@ namespace System.Drawing
         /// </summary>
         public float Height
         {
-            get => height;
+            readonly get => height;
             set => height = value;
         }
 
@@ -125,42 +125,42 @@ namespace System.Drawing
         /// <see cref='System.Drawing.RectangleF'/> .
         /// </summary>
         [Browsable(false)]
-        public float Left => X;
+        public readonly float Left => X;
 
         /// <summary>
         /// Gets the y-coordinate of the upper-left corner of the rectangular region defined by this
         /// <see cref='System.Drawing.RectangleF'/>.
         /// </summary>
         [Browsable(false)]
-        public float Top => Y;
+        public readonly float Top => Y;
 
         /// <summary>
         /// Gets the x-coordinate of the lower-right corner of the rectangular region defined by this
         /// <see cref='System.Drawing.RectangleF'/>.
         /// </summary>
         [Browsable(false)]
-        public float Right => X + Width;
+        public readonly float Right => X + Width;
 
         /// <summary>
         /// Gets the y-coordinate of the lower-right corner of the rectangular region defined by this
         /// <see cref='System.Drawing.RectangleF'/>.
         /// </summary>
         [Browsable(false)]
-        public float Bottom => Y + Height;
+        public readonly float Bottom => Y + Height;
 
         /// <summary>
         /// Tests whether this <see cref='System.Drawing.RectangleF'/> has a <see cref='System.Drawing.RectangleF.Width'/> or a <see cref='System.Drawing.RectangleF.Height'/> of 0.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => (Width <= 0) || (Height <= 0);
+        public readonly bool IsEmpty => (Width <= 0) || (Height <= 0);
 
         /// <summary>
         /// Tests whether <paramref name="obj"/> is a <see cref='System.Drawing.RectangleF'/> with the same location and
         /// size of this <see cref='System.Drawing.RectangleF'/>.
         /// </summary>
-        public override bool Equals(object? obj) => obj is RectangleF && Equals((RectangleF)obj);
+        public override readonly bool Equals(object? obj) => obj is RectangleF && Equals((RectangleF)obj);
 
-        public bool Equals(RectangleF other) => this == other;
+        public readonly bool Equals(RectangleF other) => this == other;
 
         /// <summary>
         /// Tests whether two <see cref='System.Drawing.RectangleF'/> objects have equal location and size.
@@ -177,25 +177,25 @@ namespace System.Drawing
         /// Determines if the specified point is contained within the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(float x, float y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
+        public readonly bool Contains(float x, float y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
 
         /// <summary>
         /// Determines if the specified point is contained within the rectangular region defined by this
         /// <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(PointF pt) => Contains(pt.X, pt.Y);
+        public readonly bool Contains(PointF pt) => Contains(pt.X, pt.Y);
 
         /// <summary>
         /// Determines if the rectangular region represented by <paramref name="rect"/> is entirely contained within
         /// the rectangular region represented by this <see cref='System.Drawing.Rectangle'/> .
         /// </summary>
-        public bool Contains(RectangleF rect) =>
+        public readonly bool Contains(RectangleF rect) =>
             (X <= rect.X) && (rect.X + rect.Width <= X + Width) && (Y <= rect.Y) && (rect.Y + rect.Height <= Y + Height);
 
         /// <summary>
         /// Gets the hash code for this <see cref='System.Drawing.RectangleF'/>.
         /// </summary>
-        public override int GetHashCode() => HashCode.Combine(X, Y, Width, Height);
+        public override readonly int GetHashCode() => HashCode.Combine(X, Y, Width, Height);
 
         /// <summary>
         /// Inflates this <see cref='System.Drawing.Rectangle'/> by the specified amount.
@@ -298,7 +298,7 @@ namespace System.Drawing
         /// Converts the <see cref='System.Drawing.RectangleF.Location'/> and <see cref='System.Drawing.RectangleF.Size'/>
         /// of this <see cref='System.Drawing.RectangleF'/> to a human-readable string.
         /// </summary>
-        public override string ToString() =>
+        public override readonly string ToString() =>
             "{X=" + X.ToString() + ",Y=" + Y.ToString() +
             ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
     }

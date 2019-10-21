@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Windows.UI.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class ColorTests
     {
         [Fact]
@@ -73,6 +74,7 @@ namespace Windows.UI.Tests
         }
 
         [Theory]
+        [ActiveIssue(41849)]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(Color color, string format, IFormatProvider formatProvider, string expected)
         {

@@ -18,6 +18,7 @@
 
   <!-- Enable the repo-restored analyzers -->
   <PropertyGroup>
+    <AnalyzerPropsFile>$(ToolSetCommonDirectory)Tools.Analyzers.props</AnalyzerPropsFile>
     <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
   </PropertyGroup>
   

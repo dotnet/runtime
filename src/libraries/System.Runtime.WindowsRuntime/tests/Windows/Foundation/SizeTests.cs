@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Windows.Foundation.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class SizeTests
     {
         [Fact]

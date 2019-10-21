@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class LayoutCycleExceptionTests
     {
         private const int E_LAYOUTCYCLE = unchecked((int)0x802B0014);

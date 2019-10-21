@@ -13,7 +13,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyChangingEventArgs'/>
         /// class.
         /// </summary>
-        public PropertyChangingEventArgs(string propertyName)
+        public PropertyChangingEventArgs(string? propertyName)
         {
             PropertyName = propertyName;
         }
@@ -21,6 +21,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Indicates the name of the property that is changing.
         /// </summary>
-        public virtual string PropertyName { get; }
+        public virtual string? PropertyName { get; }
     }
 }

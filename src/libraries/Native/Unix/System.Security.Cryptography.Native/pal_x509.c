@@ -321,7 +321,7 @@ int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)
 
 const char* CryptoNative_X509VerifyCertErrorString(X509VerifyStatusCode n)
 {
-    return X509_verify_cert_error_string(n);
+    return X509_verify_cert_error_string((long)n);
 }
 
 void CryptoNative_X509CrlDestroy(X509_CRL* a)

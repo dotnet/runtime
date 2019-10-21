@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Automation.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class ElementNotAvailableExceptionTests
     {
         private const int E_ELEMENTNOTAVAILABLE = unchecked((int)0x802B001F);

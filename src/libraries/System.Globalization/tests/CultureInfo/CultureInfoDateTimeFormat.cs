@@ -37,16 +37,13 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestSettingThreadCultures()
         {
-            RemoteExecutorForUap.Invoke(() =>
+            var culture = new CultureInfo("ja-JP");
+            using (new ThreadCultureChange(culture))
             {
-                var culture = new CultureInfo("ja-JP");
-                using (new ThreadCultureChange(culture))
-                {
-                    var dt = new DateTime(2014, 3, 14, 3, 14, 0);
-                    Assert.Equal(dt.ToString(), dt.ToString(culture));
-                    Assert.Equal(dt.ToString(), dt.ToString(culture.DateTimeFormat));
-                }
-            }).Dispose();
+                var dt = new DateTime(2014, 3, 14, 3, 14, 0);
+                Assert.Equal(dt.ToString(), dt.ToString(culture));
+                Assert.Equal(dt.ToString(), dt.ToString(culture.DateTimeFormat));
+            }
         }
 
         [Fact]

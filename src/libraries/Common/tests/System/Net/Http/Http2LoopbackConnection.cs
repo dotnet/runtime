@@ -295,14 +295,7 @@ namespace System.Net.Test.Common
 
         public async Task<int> ReadRequestHeaderAsync()
         {
-            // Receive HEADERS frame for request.
-            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
-            if (frame == null)
-            {
-                throw new IOException("Failed to read Headers frame.");
-            }
-            Assert.Equal(FrameType.Headers, frame.Type);
-            Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
+            HeadersFrame frame = await ReadRequestHeaderFrameAsync();
             return frame.StreamId;
         }
 

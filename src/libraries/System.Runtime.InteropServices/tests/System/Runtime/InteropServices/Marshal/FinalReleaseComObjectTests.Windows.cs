@@ -10,7 +10,6 @@ namespace System.Runtime.InteropServices.Tests
     public partial class FinalReleaseComObjectTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void FinalReleaseComObject_ValidComObject_Success()
         {
             var comObject = new ComImportObject();

@@ -1154,5 +1154,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringICollectionWrapper>(@"[""1"", ""2""]"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringToStringIDictionaryWrapper>(@"{""Key"":""key"",""Value"":""value""}"));
         }
+
+        [Fact]
+        public static void Read_HigherOrderCollectionInheritance_Works()
+        {
+            const string json = "[\"test\"]";
+            Assert.Equal("test", JsonSerializer.Deserialize<string[]>(json)[0]);
+            Assert.Equal("test", JsonSerializer.Deserialize<List<string>>(json).First());
+            Assert.Equal("test", JsonSerializer.Deserialize<StringListWrapper>(json).First());
+            Assert.Equal("test", JsonSerializer.Deserialize<GenericListWrapper<string>>(json).First());
+            Assert.Equal("test", JsonSerializer.Deserialize<MyMyList<string>>(json).First());
+            Assert.Equal("test", JsonSerializer.Deserialize<MyListString>(json).First());
+        }
     }
 }

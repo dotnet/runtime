@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Windows.UI.Xaml.Media.Animation.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class RepeatBehaviorTests
     {
         [Fact]

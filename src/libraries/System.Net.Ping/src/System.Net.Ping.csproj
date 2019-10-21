@@ -3,10 +3,7 @@
     <AssemblyName>System.Net.Ping</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <NoWarn>$(NoWarn);414</NoWarn>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
@@ -84,11 +81,8 @@
       <Link>Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'uap'">
-    <Compile Include="System\Net\NetworkInformation\Ping.Windows.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- System.Net Common -->

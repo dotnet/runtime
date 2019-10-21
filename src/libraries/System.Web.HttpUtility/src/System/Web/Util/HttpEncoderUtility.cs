@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Web.Util
 {
@@ -48,6 +49,7 @@ namespace System.Web.Util
         }
 
         //  Helper to encode spaces only
-        internal static string UrlEncodeSpaces(string str) => str != null && str.Contains(' ') ? str.Replace(" ", "%20") : str;
+        [return: NotNullIfNotNull("str")]
+        internal static string? UrlEncodeSpaces(string? str) => str != null && str.Contains(' ') ? str.Replace(" ", "%20") : str;
     }
 }

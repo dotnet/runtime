@@ -9,18 +9,17 @@ namespace System.Tests
     public class EnvironmentUserDomainName
     {
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        public void UserDomainNameIsHardCodedOnUap()
+        public void UserDomainNameIsCorrect()
         {
-            Assert.Equal("Windows Domain", Environment.UserDomainName);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        public void UserDomainNameIsCorrectOnNonUap()
-        {
-            // Highly unlikely anyone is using domain with this name
-            Assert.NotEqual("Windows Domain", Environment.UserDomainName);
+            if (PlatformDetection.IsInAppContainer)
+            {
+                Assert.Equal("Windows Domain", Environment.UserDomainName);
+            }
+            else
+            {
+                // Highly unlikely anyone is using domain with this name
+                Assert.NotEqual("Windows Domain", Environment.UserDomainName);
+            }
         }
 
         [Fact]
@@ -39,7 +38,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UserDomainName_MatchesEnvironment_Windows()
         {

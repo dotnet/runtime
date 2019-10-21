@@ -10,7 +10,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private static bool IsLocalDBEnvironmentSet() => DataTestUtility.IsLocalDBInstalled();
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // No Registry support on UAP
         [ConditionalFact(nameof(IsLocalDBEnvironmentSet))]
         public static void LocalDBConnectionTest()
         {
@@ -20,7 +19,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             OpenConnection(builder.ConnectionString);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // No Registry support on UAP
         [ConditionalFact(nameof(IsLocalDBEnvironmentSet))]
         public static void LocalDBMarsTest()
         {
@@ -31,7 +29,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             OpenConnection(builder.ConnectionString);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // No Registry support on UAP
         [ConditionalFact(nameof(IsLocalDBEnvironmentSet))]
         public static void InvalidDBTest()
         {

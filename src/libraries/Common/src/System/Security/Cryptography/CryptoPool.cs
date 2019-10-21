@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
 
             if (!clearWholeArray && clearSize != 0)
             {
-#if uap || NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP || NETSTANDARD2_1
                 CryptographicOperations.ZeroMemory(array.AsSpan(0, clearSize));
 #else
                 Array.Clear(array, 0, clearSize);

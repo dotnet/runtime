@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <Language>C#</Language>
+  </PropertyGroup>
+
+  <!-- Import PackageReferences containing analyzers -->
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
+
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
+
+  <Target Name="GenerateAnalyzersPropsFile"
+          AfterTargets="ResolveLockFileAnalyzers">
+
+    <SaveItems Condition="'@(Analyzer)' != ''"
+               ItemName="ResolvedAnalyzer"
+               Items="@(Analyzer)"
+               File="$(AnalyzerPropsFile)" />
+  </Target>
+</Project>

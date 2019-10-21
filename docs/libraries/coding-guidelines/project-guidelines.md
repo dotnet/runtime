@@ -4,11 +4,10 @@ once before you can iterate and work on a given library project.
 
 ## Behind the scenes with build.cmd/sh
 
-- Setup tools (currently done in init-tools but will later be a boot-strap script in run.cmd/sh)
+- Setup tools (currently done in restore in build.cmd/sh)
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildConfiguration)`
  - Netstandard Library - Copy to `bin\ref\netstandard`
- - UAP - Copy to `bin\runtime\$(BuildConfiguration)`
  - NetFx targeting pack - Copy to `bin\ref\netfx`
 - Build targeting pack
  - Build src\ref.builds which builds all references assembly projects. For reference assembly project information see [ref](#ref)
@@ -16,7 +15,6 @@ once before you can iterate and work on a given library project.
  - Build src\src.builds which builds all the source library projects. For source library project information see [src](#src).
 - Sign product
  - Build src\sign.proj
-//**CONSIDER**: We should make this as part of the src.builds file instead of a separate project file.
 
 ## Behind the scenes with build-test.cmd/sh
 - build-test.cmd cannot be ran successfully until build.cmd has been ran at least once for a `BuildConfiguration`.
@@ -30,7 +28,7 @@ once before you can iterate and work on a given library project.
 # Build Pivots
 Below is a list of all the various options we pivot the project builds on:
 
-- **Target Frameworks:** NetFx (aka Desktop), netstandard (aka dotnet/Portable), NETCoreApp (aka .NET Core), UAP (aka UWP/Store/netcore50)
+- **Target Frameworks:** NetFx (aka Desktop), netstandard (aka dotnet/Portable), NETCoreApp (aka .NET Core)
 - **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, Mono
 - **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
@@ -39,7 +37,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(TargetGroup) -> netstandard | netcoreapp | netfx | uap`
+- `$(TargetGroup) -> netstandard | netcoreapp | netfx`
 //**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
@@ -82,7 +80,6 @@ All supported targets with unique windows/unix build for netcoreapp:
     netcoreapp-Windows_NT;
     netcoreapp-Unix;
     netfx-Windows_NT;
-    uap-Windows_NT;
   </BuildConfigurations>
 <PropertyGroup>
 ```
@@ -125,7 +122,6 @@ Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tool
 ## Supported full build configurations
 - .NET Core latest on current OS (default) -> `netcoreapp-[RunningOS]`
 - .NET Framework latest -> `netfx-Windows_NT`
-- UAP F5 -> `uap-Windows_NT`
 
 ## Project configurations for VS
 For each unique configuration needed for a given library project a configuration entry separated by a ';' should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
@@ -133,7 +129,7 @@ For each unique configuration needed for a given library project a configuration
 `$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)|$(Platform`
 - Note that the majority of managed projects, currently all in corefx, $(Platform) is overridden to be AnyCPU.
 
-`<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>`
+`<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>`
 
 ####*Examples*
 Project configurations with a unique implementation on Unix and Windows
@@ -142,7 +138,7 @@ Project configurations with a unique implementation on Unix and Windows
 ```
 Project configurations that are unique for a few different target frameworks and runtimes
 ```xml
-<Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+<Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
 ```
 
 ## Updating Configurations
@@ -246,7 +242,6 @@ Each source file should use the following guidelines
   - `.CoreCLR.cs` - implementation specific to CoreCLR runtime
   - `.Win32.cs` - implementation based on [Win32](https://en.wikipedia.org/wiki/Windows_API)
   - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
-  - `.Uap.cs` - implementation specific to UAP, also known as [UWP](https://en.wikipedia.org/wiki/Universal_Windows_Platform)
 
 ## Define naming convention
 As mentioned in [Conventions for forked code](conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:

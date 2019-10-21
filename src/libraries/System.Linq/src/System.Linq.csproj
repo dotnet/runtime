@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Linq</AssemblyName>
     <RootNamespace>System.Linq</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -10,7 +10,7 @@
       <TargetGroup>netcoreapp</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'"> <!-- Optimize for speed -->
+  <ItemGroup> <!-- Optimize for speed -->
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
@@ -33,15 +33,7 @@
       <Link>System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'"> <!-- Optimize for size -->
-    <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
-    <Compile Include="System\Linq\Take.SizeOpt.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs">
-      <Link>System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>

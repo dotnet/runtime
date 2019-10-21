@@ -17,7 +17,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinHttpHandler not supported on UAP")]
     public class ServerCertificateTest
     {
         private readonly ITestOutputHelper _output;

@@ -33,16 +33,16 @@ namespace System.Text.Tests
 
             // Normalize to byte arrays which are too small, expect -1 (failure)
 
-            Assert.Equal(-1, utf8Source.Normalize(new byte[utf8Normalized.GetByteLength() - 1], normalizationForm));
+            Assert.Equal(-1, utf8Source.Normalize(new byte[utf8Normalized.Length - 1], normalizationForm));
 
             // Normalize to byte arrays which are the correct length, expect success,
             // then compare buffer contents for ordinal equality.
 
-            foreach (int bufferLength in new int[] { utf8Normalized.GetByteLength() /* just right */, utf8Normalized.GetByteLength() + 1 /* with extra room */})
+            foreach (int bufferLength in new int[] { utf8Normalized.Length /* just right */, utf8Normalized.Length + 1 /* with extra room */})
             {
                 byte[] dest = new byte[bufferLength];
-                Assert.Equal(utf8Normalized.GetByteLength(), utf8Source.Normalize(dest, normalizationForm));
-                Utf8Span normalizedSpan = Utf8Span.UnsafeCreateWithoutValidation(dest[..utf8Normalized.GetByteLength()]);
+                Assert.Equal(utf8Normalized.Length, utf8Source.Normalize(dest, normalizationForm));
+                Utf8Span normalizedSpan = Utf8Span.UnsafeCreateWithoutValidation(dest[..utf8Normalized.Length]);
                 Assert.True(utf8Normalized.AsSpan() == normalizedSpan); // ordinal equality
                 Assert.True(normalizedSpan.IsNormalized(normalizationForm));
             }
@@ -75,9 +75,9 @@ namespace System.Text.Tests
 
                 // Next, try the non-allocating APIs with too small a buffer
 
-                if (expectedUtf8.GetByteLength() > 0)
+                if (expectedUtf8.Length > 0)
                 {
-                    byte[] bufferTooSmall = new byte[expectedUtf8.GetByteLength() - 1];
+                    byte[] bufferTooSmall = new byte[expectedUtf8.Length - 1];
 
                     if (culture is null)
                     {
@@ -91,17 +91,17 @@ namespace System.Text.Tests
 
                 // Then the non-allocating APIs with a properly sized buffer
 
-                foreach (int bufferSize in new[] { expectedUtf8.GetByteLength(), expectedUtf8.GetByteLength() + 1 })
+                foreach (int bufferSize in new[] { expectedUtf8.Length, expectedUtf8.Length + 1 })
                 {
-                    byte[] buffer = new byte[expectedUtf8.GetByteLength()];
+                    byte[] buffer = new byte[expectedUtf8.Length];
 
                     if (culture is null)
                     {
-                        Assert.Equal(expectedUtf8.GetByteLength(), inputSpan.ToLowerInvariant(buffer));
+                        Assert.Equal(expectedUtf8.Length, inputSpan.ToLowerInvariant(buffer));
                     }
                     else
                     {
-                        Assert.Equal(expectedUtf8.GetByteLength(), inputSpan.ToLower(buffer, culture));
+                        Assert.Equal(expectedUtf8.Length, inputSpan.ToLower(buffer, culture));
                     }
 
                     Assert.True(expectedUtf8.AsBytes().SequenceEqual(buffer));
@@ -141,9 +141,9 @@ namespace System.Text.Tests
 
                 // Next, try the non-allocating APIs with too small a buffer
 
-                if (expectedUtf8.GetByteLength() > 0)
+                if (expectedUtf8.Length > 0)
                 {
-                    byte[] bufferTooSmall = new byte[expectedUtf8.GetByteLength() - 1];
+                    byte[] bufferTooSmall = new byte[expectedUtf8.Length - 1];
 
                     if (culture is null)
                     {
@@ -157,17 +157,17 @@ namespace System.Text.Tests
 
                 // Then the non-allocating APIs with a properly sized buffer
 
-                foreach (int bufferSize in new[] { expectedUtf8.GetByteLength(), expectedUtf8.GetByteLength() + 1 })
+                foreach (int bufferSize in new[] { expectedUtf8.Length, expectedUtf8.Length + 1 })
                 {
-                    byte[] buffer = new byte[expectedUtf8.GetByteLength()];
+                    byte[] buffer = new byte[expectedUtf8.Length];
 
                     if (culture is null)
                     {
-                        Assert.Equal(expectedUtf8.GetByteLength(), inputSpan.ToUpperInvariant(buffer));
+                        Assert.Equal(expectedUtf8.Length, inputSpan.ToUpperInvariant(buffer));
                     }
                     else
                     {
-                        Assert.Equal(expectedUtf8.GetByteLength(), inputSpan.ToUpper(buffer, culture));
+                        Assert.Equal(expectedUtf8.Length, inputSpan.ToUpper(buffer, culture));
                     }
 
                     Assert.True(expectedUtf8.AsBytes().SequenceEqual(buffer));

@@ -3,8 +3,6 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' AND ('$(ConfigurationGroup)' == 'Debug' OR '$(Coverage)' == 'true')">true</SwapNativeForIL>
-    <!-- uap10.0.16299 is missing IL -->
-    <SwapNativeForIL Condition="'$(TargetFramework)'=='uap10.0.16299'">false</SwapNativeForIL>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -15,11 +13,6 @@
     <!-- Non-shipping packages do not produce stable versions. -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-rc2.19462.14</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-rc2.19462.14</MicrosoftPrivateCorefxNETCoreAppVersion>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'uap10.0.16299'">
-    <!-- Following is version used in release/uwp6.0 -->
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-b-uwp6-25707-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

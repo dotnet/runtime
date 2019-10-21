@@ -2,8 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Caching</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
-    <UWPCompatible>false</UWPCompatible>
     <Configurations>netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

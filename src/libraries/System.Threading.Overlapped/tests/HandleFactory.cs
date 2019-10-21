@@ -26,9 +26,7 @@ internal static partial class HandleFactory
 
     private static unsafe Win32Handle CreateHandle(bool async, string fileName)
     {
-        Win32Handle handle;
-#if !uap
-        handle = DllImport.CreateFile(
+        Win32Handle handle = DllImport.CreateFile(
             fileName,
             DllImport.FileAccess.GenericWrite,
             DllImport.FileShare.Write,
@@ -36,21 +34,6 @@ internal static partial class HandleFactory
             DllImport.CreationDisposition.CreateAlways,
             async ? DllImport.FileAttributes.Overlapped : DllImport.FileAttributes.Normal,
             IntPtr.Zero);
-#else
-        var p = new DllImport.CREATEFILE2_EXTENDED_PARAMETERS();
-        p.dwSize = (uint)sizeof(DllImport.CREATEFILE2_EXTENDED_PARAMETERS);
-        p.dwFileAttributes = DllImport.FileAttributes.Normal;
-        p.dwFileFlags = async ? DllImport.FileAttributes.Overlapped : DllImport.FileAttributes.Normal;
-        p.dwSecurityQosFlags = (uint)0;
-        p.lpSecurityAttributes = IntPtr.Zero;
-        p.hTemplateFile = IntPtr.Zero;
-        handle = DllImport.CreateFile2(
-            fileName,
-            DllImport.FileAccess.GenericWrite,
-            DllImport.FileShare.Write,
-            DllImport.CreationDisposition.CreateAlways,
-            &p);
-#endif
 
         if (!handle.IsInvalid)
         {

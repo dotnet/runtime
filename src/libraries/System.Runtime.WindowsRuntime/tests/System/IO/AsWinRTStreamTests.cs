@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
     public class AsWinRTStreamTests
     {
         [Fact]

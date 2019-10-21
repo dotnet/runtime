@@ -4,13 +4,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
     <NoWarn>$(NoWarn);8073;CA1810</NoWarn>
-    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
-    <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\DirectoryServices\AccountManagement\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\interopt.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\PrincipalSearcher.cs" />
@@ -100,7 +98,7 @@
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -120,7 +118,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
     <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
 </Project>

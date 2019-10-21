@@ -31,7 +31,7 @@ namespace System.Text.Json
                 // Nothing to do for typeof(object)
                 if (runtimeType != typeof(object))
                 {
-                    jsonPropertyInfo = jsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, runtimeType, options);
+                    jsonPropertyInfo = jsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, runtimeType, options);
                 }
             }
         }

@@ -10,6 +10,7 @@
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)Common\src\CoreLib\CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true'">

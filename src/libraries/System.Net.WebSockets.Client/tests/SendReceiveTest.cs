@@ -28,8 +28,6 @@ namespace System.Net.WebSockets.Client.Tests
         protected abstract Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken);
         protected abstract Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken);
 
-        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
-
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external servers")]
@@ -70,7 +68,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(WebSocketsSupported), nameof(PartialMessagesSupported)), MemberData(nameof(EchoServers))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
             var rand = new Random();
@@ -411,7 +409,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
 
-                if (PlatformDetection.IsUap)
+                if (PlatformDetection.IsInAppContainer)
                 {
                     const uint WININET_E_CONNECTION_ABORTED = 0x80072EFE;
 
@@ -464,12 +462,7 @@ namespace System.Net.WebSockets.Client.Tests
                 // Now do a receive to get the payload.
                 var receiveBuffer = new byte[1];
                 t = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer), ctsDefault.Token);
-
-                // Skip synchronous completion check on UAP since it uses WinRT APIs underneath.
-                if (!PlatformDetection.IsUap)
-                {
-                    Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-                }
+                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
 
                 r = await t;
                 Assert.Equal(WebSocketMessageType.Binary, r.MessageType);

@@ -75,5 +75,30 @@ namespace System.Text.Json.Serialization.Tests
 
             public string NonIndexerProp { get; set; }
         }
+
+        [Fact]
+        public static void WritePolymorhicSimple()
+        {
+            string json = JsonSerializer.Serialize(new { Prop = (object)new[] { 0 } });
+            Assert.Equal(@"{""Prop"":[0]}", json);
+        }
+
+        [Fact]
+        public static void WritePolymorphicDifferentAttributes()
+        {
+            string json = JsonSerializer.Serialize(new Polymorphic());
+            Assert.Equal(@"{""P1"":"""",""p_3"":""""}", json);
+        }
+
+        private class Polymorphic
+        {
+            public object P1 => "";
+
+            [JsonIgnore]
+            public object P2 => "";
+
+            [JsonPropertyName("p_3")]
+            public object P3 => "";
+        }
     }
 }

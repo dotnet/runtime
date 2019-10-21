@@ -1415,7 +1415,15 @@ namespace System.Xml.Serialization
         internal void WhileBegin()
         {
             WhileState whileState = new WhileState(this);
-            Br(whileState.CondLabel);
+            // ECMA-335 III.1.7.5 states that code blocks after unconditional
+            // branch which could only be reached by backward branch are assumed
+            // to have empty stack on the entrance.
+            //
+            // Since we don't have control over the current stack contents here
+            // we have to generate conditional branch here instead of
+            // Br(whileState.CondLabel) to make the IL verifiable.
+            Ldc(true);
+            Brtrue(whileState.CondLabel);
             MarkLabel(whileState.StartLabel);
             _whileStack.Push(whileState);
         }

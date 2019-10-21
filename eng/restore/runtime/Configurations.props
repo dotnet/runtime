@@ -5,8 +5,6 @@
       netcoreapp3.0-Unix;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
-      uap10.0.16299;
-      uap;
       mono;
     </BuildConfigurations>
   </PropertyGroup>

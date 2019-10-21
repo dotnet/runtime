@@ -10,7 +10,6 @@ namespace System.Runtime.InteropServices.Tests
     public partial class CreateWrapperOfTypeTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void CreateWrapperOfType_SameType_ReturnsSameInstance()
         {
             var comObject = new ComImportObject();
@@ -29,7 +28,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(GenericSubComImportObject<string>))]
         [InlineData(typeof(GenericSubComImportObject<>))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void CreateWrapperOfType_InvalidComObjectType_ThrowsArgumentException(Type t)
         {
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.CreateWrapperOfType(new ComImportObject(), t));

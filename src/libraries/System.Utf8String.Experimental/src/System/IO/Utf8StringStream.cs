@@ -25,14 +25,14 @@ namespace System.IO
 
         public override bool CanWrite => false;
 
-        public override long Length => _content.AsBytes().Length;
+        public override long Length => _content.Length;
 
         public override long Position
         {
             get => _position;
             set
             {
-                if ((ulong)value > (uint)_content.AsBytes().Length)
+                if ((ulong)value > (uint)_content.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -84,7 +84,7 @@ namespace System.IO
         public override int ReadByte()
         {
             int position = _position;
-            if ((uint)position >= (uint)_content.AsBytes().Length)
+            if ((uint)position >= (uint)_content.Length)
             {
                 return -1;
             }
@@ -103,13 +103,13 @@ namespace System.IO
                     offset += _position;
                     break;
                 case SeekOrigin.End:
-                    offset += _content.AsBytes().Length;
+                    offset += _content.Length;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(origin));
             }
 
-            if ((ulong)offset > (uint)_content.AsBytes().Length)
+            if ((ulong)offset > (uint)_content.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }

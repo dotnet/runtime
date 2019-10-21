@@ -59,11 +59,14 @@ namespace System.Text.Json.Serialization.Converters
         public override object CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options)
         {
             Type immutableCollectionType = state.Current.JsonPropertyInfo.RuntimePropertyType;
-            Type elementType = state.Current.GetElementType();
+
+            JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
+            Type elementType = elementClassInfo.Type;
 
             string delegateKey = DefaultImmutableEnumerableConverter.GetDelegateKey(immutableCollectionType, elementType, out _, out _);
 
-            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementType, options);
+            JsonPropertyInfo propertyInfo = elementClassInfo.PolicyProperty ?? elementClassInfo.CreateRootProperty(options);
+            Debug.Assert(propertyInfo != null);
             return propertyInfo.CreateImmutableDictionaryInstance(ref state, immutableCollectionType, delegateKey, sourceDictionary, options);
         }
     }

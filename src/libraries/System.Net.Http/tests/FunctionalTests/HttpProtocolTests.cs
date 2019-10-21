@@ -20,7 +20,6 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap does not support 1.0")]
         [Fact]
         public async Task GetAsync_RequestVersion10_Success()
         {
@@ -207,7 +206,6 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap ignores response version if not 1.0 or 1.1")]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -246,7 +244,6 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap ignores response version if not 1.0 or 1.1")]
         [Theory]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
@@ -405,7 +402,7 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/X.Y.Z 200 OK";
 
             // Only pass on .NET Core Windows & SocketsHttpHandler.
-            if (PlatformDetection.IsNetCore && !PlatformDetection.IsUap && PlatformDetection.IsWindows)
+            if (PlatformDetection.IsNetCore && !PlatformDetection.IsInAppContainer && PlatformDetection.IsWindows)
             {
                 yield return "HTTP/0.1 200 OK";
                 yield return "HTTP/3.5 200 OK";
@@ -427,17 +424,13 @@ namespace System.Net.Http.Functional.Tests
                 yield return "HTTP/1.1  ";
             }
 
-            // Skip these test cases on UAP since the behavior is different.
-            if (!PlatformDetection.IsUap)
-            {
-                yield return "HTTP/1.1 200OK";
-                yield return "HTTP/1.1 20c";
-                yield return "HTTP/1.1 23";
-                yield return "HTTP/1.1 2bc";
-            }
+            yield return "HTTP/1.1 200OK";
+            yield return "HTTP/1.1 20c";
+            yield return "HTTP/1.1 23";
+            yield return "HTTP/1.1 2bc";
 
-            // Skip these test cases on UAP & CurlHandler since the behavior is different.
-            if (!PlatformDetection.IsUap && PlatformDetection.IsWindows)
+            // Skip these test cases on CurlHandler since the behavior is different.
+            if (PlatformDetection.IsWindows)
             {
                 yield return "NOTHTTP/1.1";
                 yield return "HTTP 1.1 200 OK";
@@ -603,7 +596,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("get", "GET")]
         [InlineData("head", "HEAD")]

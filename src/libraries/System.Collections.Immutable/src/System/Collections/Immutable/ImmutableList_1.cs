@@ -812,7 +812,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        public bool Contains(T value) => this.IndexOf(value) >= 0;
+        public bool Contains(T value) => _root.Contains(value, EqualityComparer<T>.Default);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.

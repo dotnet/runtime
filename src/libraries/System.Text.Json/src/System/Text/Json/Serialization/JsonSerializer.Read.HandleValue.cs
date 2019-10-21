@@ -20,11 +20,11 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
-                jsonPropertyInfo = JsonClassInfo.CreateRootProperty(state.Current.JsonClassInfo.Type, options);
+                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
             }
             else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
+                jsonPropertyInfo = state.Current.JsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
 
             jsonPropertyInfo.Read(tokenType, ref state, ref reader);

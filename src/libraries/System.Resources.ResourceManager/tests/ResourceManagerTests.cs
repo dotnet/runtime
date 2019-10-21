@@ -81,7 +81,6 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP build not configured correctly for culture fallback")]
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -146,7 +145,6 @@ namespace System.Resources.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP does not use satellite assemblies in most cases")]
         public static void GetString_ExpectEvents()
         {
             RemoteExecutor.Invoke(() =>
@@ -207,7 +205,6 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishResourceData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "When getting resources from PRI file the casing doesn't matter, if it is there it will always find and return the resource")]
         public static void IgnoreCase(string key, string expectedValue)
         {
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
@@ -270,7 +267,6 @@ namespace System.Resources.Tests
             yield return new object[] { "Icon", new Icon("icon.ico") };
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
@@ -280,7 +276,6 @@ namespace System.Resources.Tests
             Assert.Equal(GetImageData(expectedValue), GetImageData(manager.GetObject(key, new CultureInfo("en-US"))));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images_ResourceSet(string key, object expectedValue)
@@ -314,7 +309,6 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetObject(key));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)

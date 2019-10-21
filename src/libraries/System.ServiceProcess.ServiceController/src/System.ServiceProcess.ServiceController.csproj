@@ -6,8 +6,6 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
-    <UWPCompatible>false</UWPCompatible>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) OR ('$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true')">

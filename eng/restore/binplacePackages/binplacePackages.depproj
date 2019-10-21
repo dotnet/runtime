@@ -4,7 +4,7 @@
     <BinPlaceRuntime>true</BinPlaceRuntime>
     <NETStandardVersion Condition="$(TargetFramework.StartsWith('netstandard'))">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
+    <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
   </PropertyGroup>
 
     <!-- Ref binplacing for all configurations -->
@@ -28,15 +28,14 @@
 
   <!-- This is to make sure that nothing unintended gets restored for netcoreapp. -->
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
-    <!-- runtime dependency: System.Data.SqlClient uap10.0.16299 -->
     <!-- runtime dependency: System.Diagnostics.PerformanceCounters netcoreapp2.0,net461 -->
-    <PackageReference Include="System.Memory" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetFramework)' == 'uap10.0.16299' OR '$(TargetsNetfx)' == 'true' OR ('$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &gt;= 1.1)" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' OR '$(TargetsNetfx)' == 'true'" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetsNetfx)' == 'true' OR '$(TargetsNetStandard)' == 'true'" />
+    <PackageReference Include="System.Memory" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &gt;= 1.1)" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' or '$(TargetsNetfx)' == 'true'" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' OR '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>

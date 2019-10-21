@@ -11,7 +11,13 @@ trigger:
   paths:
     exclude:
     - Documentation/*
-    - /*.md
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 pr:
   branches:
@@ -21,7 +27,13 @@ pr:
   paths:
     exclude:
     - Documentation/*
-    - /*.md
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 resources:
   containers:
