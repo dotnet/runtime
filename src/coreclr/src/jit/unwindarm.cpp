@@ -2479,7 +2479,7 @@ void DumpUnwindInfo(Compiler*         comp,
                 DumpOpsize(4, 32);
             }
         }
-        else if ((b1 & 0xF7) == 0xF0)
+        else if ((b1 >= 0xF0) && (b1 <= 0xF4))
         {
             // F0-F4
             x = b1 & 0x7;
