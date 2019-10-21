@@ -1592,9 +1592,9 @@ AGAIN:
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
-            return Compare(op1->gtDynBlk.Addr(), op2->gtDynBlk.Addr()) &&
-                   Compare(op1->gtDynBlk.Data(), op2->gtDynBlk.Data()) &&
-                   Compare(op1->gtDynBlk.gtDynamicSize, op2->gtDynBlk.gtDynamicSize);
+            return Compare(op1->AsDynBlk()->Addr(), op2->AsDynBlk()->Addr()) &&
+                   Compare(op1->AsDynBlk()->Data(), op2->AsDynBlk()->Data()) &&
+                   Compare(op1->AsDynBlk()->gtDynamicSize, op2->AsDynBlk()->gtDynamicSize);
 
         default:
             assert(!"unexpected operator");
@@ -1843,17 +1843,17 @@ AGAIN:
             break;
 
         case GT_STORE_DYN_BLK:
-            if (gtHasRef(tree->gtDynBlk.Data(), lclNum, defOnly))
+            if (gtHasRef(tree->AsDynBlk()->Data(), lclNum, defOnly))
             {
                 return true;
             }
             __fallthrough;
         case GT_DYN_BLK:
-            if (gtHasRef(tree->gtDynBlk.Addr(), lclNum, defOnly))
+            if (gtHasRef(tree->AsDynBlk()->Addr(), lclNum, defOnly))
             {
                 return true;
             }
-            if (gtHasRef(tree->gtDynBlk.gtDynamicSize, lclNum, defOnly))
+            if (gtHasRef(tree->AsDynBlk()->gtDynamicSize, lclNum, defOnly))
             {
                 return true;
             }
@@ -2253,11 +2253,11 @@ AGAIN:
             break;
 
         case GT_STORE_DYN_BLK:
-            hash = genTreeHashAdd(hash, gtHashValue(tree->gtDynBlk.Data()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Data()));
             __fallthrough;
         case GT_DYN_BLK:
-            hash = genTreeHashAdd(hash, gtHashValue(tree->gtDynBlk.Addr()));
-            hash = genTreeHashAdd(hash, gtHashValue(tree->gtDynBlk.gtDynamicSize));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Addr()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->gtDynamicSize));
             break;
 
         default:
@@ -4476,19 +4476,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
         {
-            level  = gtSetEvalOrder(tree->gtDynBlk.Addr());
-            costEx = tree->gtDynBlk.Addr()->GetCostEx();
-            costSz = tree->gtDynBlk.Addr()->GetCostSz();
+            level  = gtSetEvalOrder(tree->AsDynBlk()->Addr());
+            costEx = tree->AsDynBlk()->Addr()->GetCostEx();
+            costSz = tree->AsDynBlk()->Addr()->GetCostSz();
 
             if (oper == GT_STORE_DYN_BLK)
             {
-                lvl2  = gtSetEvalOrder(tree->gtDynBlk.Data());
+                lvl2  = gtSetEvalOrder(tree->AsDynBlk()->Data());
                 level = max(level, lvl2);
-                costEx += tree->gtDynBlk.Data()->GetCostEx();
-                costSz += tree->gtDynBlk.Data()->GetCostSz();
+                costEx += tree->AsDynBlk()->Data()->GetCostEx();
+                costSz += tree->AsDynBlk()->Data()->GetCostSz();
             }
 
-            unsigned sizeLevel = gtSetEvalOrder(tree->gtDynBlk.gtDynamicSize);
+            unsigned sizeLevel = gtSetEvalOrder(tree->AsDynBlk()->gtDynamicSize);
 
             // Determine whether the size node should be evaluated first.
             // We would like to do this if the sizeLevel is larger than the current level,
@@ -4523,8 +4523,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
             }
             level = max(level, sizeLevel);
-            costEx += tree->gtDynBlk.gtDynamicSize->GetCostEx();
-            costSz += tree->gtDynBlk.gtDynamicSize->GetCostSz();
+            costEx += tree->AsDynBlk()->gtDynamicSize->GetCostEx();
+            costSz += tree->AsDynBlk()->gtDynamicSize->GetCostSz();
         }
         break;
 
@@ -4802,17 +4802,17 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
-            if (this == parent->gtDynBlk.gtOp1)
+            if (this == parent->AsDynBlk()->gtOp1)
             {
-                return &(parent->gtDynBlk.gtOp1);
+                return &(parent->AsDynBlk()->gtOp1);
             }
-            if (this == parent->gtDynBlk.gtOp2)
+            if (this == parent->AsDynBlk()->gtOp2)
             {
-                return &(parent->gtDynBlk.gtOp2);
+                return &(parent->AsDynBlk()->gtOp2);
             }
-            if (this == parent->gtDynBlk.gtDynamicSize)
+            if (this == parent->AsDynBlk()->gtDynamicSize)
             {
-                return &(parent->gtDynBlk.gtDynamicSize);
+                return &(parent->AsDynBlk()->gtDynamicSize);
             }
             break;
 
@@ -7559,8 +7559,8 @@ GenTree* Compiler::gtCloneExpr(
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
             copy = new (this, oper)
-                GenTreeDynBlk(gtCloneExpr(tree->gtDynBlk.Addr(), addFlags, deepVarNum, deepVarVal),
-                              gtCloneExpr(tree->gtDynBlk.gtDynamicSize, addFlags, deepVarNum, deepVarVal));
+                GenTreeDynBlk(gtCloneExpr(tree->AsDynBlk()->Addr(), addFlags, deepVarNum, deepVarVal),
+                              gtCloneExpr(tree->AsDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
         default:
@@ -11320,12 +11320,12 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (!topOnly)
             {
-                if (tree->gtDynBlk.Data() != nullptr)
+                if (tree->AsDynBlk()->Data() != nullptr)
                 {
-                    gtDispChild(tree->gtDynBlk.Data(), indentStack, IIArc, nullptr, topOnly);
+                    gtDispChild(tree->AsDynBlk()->Data(), indentStack, IIArc, nullptr, topOnly);
                 }
-                gtDispChild(tree->gtDynBlk.Addr(), indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->gtDynBlk.gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
+                gtDispChild(tree->AsDynBlk()->Addr(), indentStack, IIArc, nullptr, topOnly);
+                gtDispChild(tree->AsDynBlk()->gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
             }
             break;
 
