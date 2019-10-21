@@ -29,7 +29,7 @@ namespace System.Text.Json
             }
             else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
+                jsonPropertyInfo = state.Current.JsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
 
             // Verify that we have a valid enumerable.

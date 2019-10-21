@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -26,6 +27,9 @@ namespace System.Text.Json
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
         public volatile Dictionary<string, JsonPropertyInfo> PropertyCache;
+
+        // Serializable runtime/polymorphic properties, keyed on property and runtime type.
+        public ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo> RuntimePropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.

@@ -24,7 +24,7 @@ namespace System.Text.Json
             }
             else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
+                jsonPropertyInfo = state.Current.JsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
 
             jsonPropertyInfo.Read(tokenType, ref state, ref reader);
