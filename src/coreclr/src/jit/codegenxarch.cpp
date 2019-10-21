@@ -1955,8 +1955,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
 
             unsigned finallyNesting;
-            finallyNesting = treeNode->gtVal.gtVal1;
-            noway_assert(treeNode->gtVal.gtVal1 < compiler->compHndBBtabCount);
+            finallyNesting = treeNode->AsVal()->gtVal1;
+            noway_assert(treeNode->AsVal()->gtVal1 < compiler->compHndBBtabCount);
             noway_assert(finallyNesting < compiler->compHndBBtabCount);
 
             // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
