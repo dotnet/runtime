@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Console;
@@ -339,13 +340,13 @@ namespace Microsoft.Extensions.Logging.Test
         public void WriteAllLevelsDisabledColors_LogsNoColors()
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { DisableColors = true});
+            var t = SetUp(new ConsoleLoggerOptions { DisableColors = true });
             var logger = t.Logger;
             var sink = t.Sink;
 
             int levelSequence;
             // Act
-            for (levelSequence = (int) LogLevel.Trace; levelSequence < (int) LogLevel.None; levelSequence++)
+            for (levelSequence = (int)LogLevel.Trace; levelSequence < (int)LogLevel.None; levelSequence++)
             {
                 logger.Log((LogLevel)levelSequence, 0, _state, null, _defaultFormatter);
             }
@@ -364,7 +365,7 @@ namespace Microsoft.Extensions.Logging.Test
         public void WriteCore_LogsCorrectTimestamp(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyyMMddHHmmss ", Format = format});
+            var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", Format = format, UseUtcTimestamp = false });
             var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
@@ -379,15 +380,61 @@ namespace Microsoft.Extensions.Logging.Test
                 case ConsoleLoggerFormat.Default:
                 {
                     Assert.Equal(3, sink.Writes.Count);
-                    Assert.Matches("^\\d{14}\\s$", sink.Writes[0].Message);
                     Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
                 }
                 break;
                 case ConsoleLoggerFormat.Systemd:
                 {
                     Assert.Single(sink.Writes);
-                    Assert.Matches("^<\\d>\\d{14}\\s[^\\s]", sink.Writes[0].Message);
                     Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                    Assert.True(regexMatch.Success);
+                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                    Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_LogsCorrectTimestampInUtc(ConsoleLoggerFormat format, LogLevel level)
+        {
+            // Arrange
+            var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", Format = format, UseUtcTimestamp = true });
+            var levelPrefix = t.GetLevelPrefix(level);
+            var logger = t.Logger;
+            var sink = t.Sink;
+            var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
+
+            // Act
+            logger.Log(level, 0, _state, ex, _defaultFormatter);
+
+            // Assert
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(3, sink.Writes.Count);
+                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                    Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                    Assert.True(regexMatch.Success);
+                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                    Assert.Equal(DateTimeOffset.UtcNow.Offset, parsedDateTime.Offset);
                 }
                 break;
                 default:
@@ -623,7 +670,7 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
                     Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
                 }
-                    break;
+                break;
                 case ConsoleLoggerFormat.Systemd:
                 {
                     // Assert
@@ -634,7 +681,7 @@ namespace Microsoft.Extensions.Logging.Test
                     Assert.Null(write.BackgroundColor);
                     Assert.Null(write.ForegroundColor);
                 }
-                    break;
+                break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
@@ -1011,7 +1058,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             // Act & Assert
             Assert.Null(logger.Options.TimestampFormat);
-            monitor.Set(new ConsoleLoggerOptions() { TimestampFormat = "yyyyMMddHHmmss"});
+            monitor.Set(new ConsoleLoggerOptions() { TimestampFormat = "yyyyMMddHHmmss" });
             Assert.Equal("yyyyMMddHHmmss", logger.Options.TimestampFormat);
         }
 
@@ -1087,8 +1134,22 @@ namespace Microsoft.Extensions.Logging.Test
 
             // Act & Assert
             Assert.Equal(LogLevel.None, logger.Options.LogToStandardErrorThreshold);
-            monitor.Set(new ConsoleLoggerOptions() { LogToStandardErrorThreshold = LogLevel.Error});
+            monitor.Set(new ConsoleLoggerOptions() { LogToStandardErrorThreshold = LogLevel.Error });
             Assert.Equal(LogLevel.Error, logger.Options.LogToStandardErrorThreshold);
+        }
+
+        [Fact]
+        public void ConsoleLoggerOptions_UseUtcTimestamp_IsAppliedToLoggers()
+        {
+            // Arrange
+            var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
+            var loggerProvider = new ConsoleLoggerProvider(monitor);
+            var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
+
+            // Act & Assert
+            Assert.False(logger.Options.UseUtcTimestamp);
+            monitor.Set(new ConsoleLoggerOptions() { UseUtcTimestamp = true });
+            Assert.True(logger.Options.UseUtcTimestamp);
         }
 
         [Fact]
@@ -1114,7 +1175,7 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 var data = new TheoryData<ConsoleLoggerFormat, LogLevel>();
                 foreach (ConsoleLoggerFormat format in Enum.GetValues(typeof(ConsoleLoggerFormat)))
-                {    
+                {
                     foreach (LogLevel level in Enum.GetValues(typeof(LogLevel)))
                     {
                         if (level == LogLevel.None)
