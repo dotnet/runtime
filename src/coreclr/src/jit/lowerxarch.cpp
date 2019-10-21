@@ -142,6 +142,8 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
+    TryCreateAddrMode(blkNode->Addr(), false);
+
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
@@ -226,6 +228,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
+
+            TryCreateAddrMode(src->AsIndir()->Addr(), false);
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -2799,17 +2803,15 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 //                              intrinsic node.
 //
 //  Arguments:
-//     node  - The hardware intrinsic node
-//     pAddr - The "parent" pointer to the address operand, so that we can update the operand
-//             of the parent as needed.
+//     node - The hardware intrinsic node
+//     addr - The address node to try contain
 //
-void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree** pAddr)
+void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr)
 {
-    assert(((*pAddr)->TypeGet() == TYP_I_IMPL) || ((*pAddr)->TypeGet() == TYP_BYREF));
-    TryCreateAddrMode(LIR::Use(BlockRange(), pAddr, node), true);
-    GenTree* addr = *pAddr;
-    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR) ||
-         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp)) || (addr->OperGet() == GT_LEA)) &&
+    assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
+    TryCreateAddrMode(addr, true);
+    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LEA) ||
+         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
         IsSafeToContainMem(node, addr))
     {
         MakeSrcContained(node, addr);
@@ -2861,11 +2863,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (category)
         {
             case HW_Category_MemoryLoad:
-            {
-                GenTree** pAddr = &node->gtOp1;
-                ContainCheckHWIntrinsicAddr(node, pAddr);
+                ContainCheckHWIntrinsicAddr(node, node->gtGetOp1());
                 break;
-            }
+
             case HW_Category_SimpleSIMD:
             case HW_Category_SIMDScalar:
             case HW_Category_Scalar:
@@ -2916,15 +2916,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
-                    {
                         if (!varTypeIsSIMD(op1->gtType))
                         {
-                            GenTree** pAddr = &node->gtOp1;
-                            ContainCheckHWIntrinsicAddr(node, pAddr);
+                            ContainCheckHWIntrinsicAddr(node, node->gtGetOp1());
                             return;
                         }
                         break;
-                    }
 
                     default:
                     {
@@ -2963,23 +2960,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (category)
             {
                 case HW_Category_MemoryLoad:
-                {
-                    GenTree** pAddr = nullptr;
                     if ((intrinsicId == NI_AVX_MaskLoad) || (intrinsicId == NI_AVX2_MaskLoad))
                     {
-                        pAddr = &node->AsOp()->gtOp1;
+                        ContainCheckHWIntrinsicAddr(node, node->gtGetOp1());
                     }
                     else
                     {
-                        pAddr = &node->AsOp()->gtOp2;
+                        ContainCheckHWIntrinsicAddr(node, node->gtGetOp2());
                     }
-                    ContainCheckHWIntrinsicAddr(node, pAddr);
                     break;
-                }
+
                 case HW_Category_MemoryStore:
-                {
-                    GenTree** pAddr = &node->gtOp1;
-                    ContainCheckHWIntrinsicAddr(node, pAddr);
+                    ContainCheckHWIntrinsicAddr(node, node->gtGetOp1());
 
                     if (((intrinsicId == NI_SSE_Store) || (intrinsicId == NI_SSE2_Store)) && op2->OperIsHWIntrinsic() &&
                         ((op2->AsHWIntrinsic()->gtHWIntrinsicId == NI_AVX_ExtractVector128) ||
@@ -2989,7 +2981,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         MakeSrcContained(node, op2);
                     }
                     break;
-                }
+
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
@@ -3170,11 +3162,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (category)
             {
                 case HW_Category_MemoryStore:
-                {
-                    GenTree** pAddr = &node->AsOp()->gtOp1->AsOp()->gtOp1;
-                    ContainCheckHWIntrinsicAddr(node, pAddr);
+                    ContainCheckHWIntrinsicAddr(node, node->gtGetOp1()->AsOp()->gtGetOp1());
                     break;
-                }
+
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
