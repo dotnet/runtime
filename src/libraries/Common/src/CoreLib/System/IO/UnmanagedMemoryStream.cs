@@ -8,6 +8,13 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.IO
 {
     /*
@@ -620,7 +627,7 @@ namespace System.IO
             {
                 unsafe
                 {
-                    Buffer.ZeroMemory(_mem + len, value - len);
+                    Buffer.ZeroMemory(_mem + len, (nuint)(value - len));
                 }
             }
             Interlocked.Exchange(ref _length, value);
@@ -690,7 +697,7 @@ namespace System.IO
                 // zero any memory in the middle.
                 if (pos > len)
                 {
-                    Buffer.ZeroMemory(_mem + len, pos - len);
+                    Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
                 }
 
                 // set length after zeroing memory to avoid race condition of accessing unzeroed memory
@@ -831,7 +838,7 @@ namespace System.IO
                     {
                         unsafe
                         {
-                            Buffer.ZeroMemory(_mem + len, pos - len);
+                            Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
                         }
                     }
 

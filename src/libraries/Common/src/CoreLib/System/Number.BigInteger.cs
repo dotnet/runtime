@@ -806,7 +806,7 @@ namespace System
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
 
                 // Zero out result internal blocks.
-                Buffer.ZeroMemory((byte*)(result.GetBlocksPointer()), maxResultLength * sizeof(uint));
+                Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), (uint)maxResultLength * sizeof(uint));
 
                 int smallIndex = 0;
                 int resultStartIndex = 0;
@@ -1122,7 +1122,7 @@ namespace System
                 var result = new BigInteger(0);
                 Multiply(ref this, ref value, ref result);
 
-                Buffer.Memcpy((byte*)(GetBlocksPointer()), (byte*)(result.GetBlocksPointer()), (result._length) * sizeof(uint));
+                Buffer.Memcpy((byte*)GetBlocksPointer(), (byte*)result.GetBlocksPointer(), result._length * sizeof(uint));
                 _length = result._length;
             }
 
@@ -1189,7 +1189,7 @@ namespace System
             public void SetValue(ref BigInteger rhs)
             {
                 int rhsLength = rhs._length;
-                Buffer.Memcpy((byte*)(GetBlocksPointer()), (byte*)(rhs.GetBlocksPointer()), rhsLength * sizeof(uint));
+                Buffer.Memcpy((byte*)GetBlocksPointer(), (byte*)rhs.GetBlocksPointer(), rhsLength * sizeof(uint));
                 _length = rhsLength;
             }
 
@@ -1229,7 +1229,7 @@ namespace System
                     _length += (int)(blocksToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)(GetBlocksPointer()), blocksToShift * sizeof(uint));
+                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
                 }
                 else
                 {
@@ -1262,7 +1262,7 @@ namespace System
                     _blocks[writeIndex - 1] = block << (int)(remainingBitsToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)(GetBlocksPointer()), blocksToShift * sizeof(uint));
+                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
 
                     // Check if the terminating block has no set bits
                     if (_blocks[_length - 1] == 0)
