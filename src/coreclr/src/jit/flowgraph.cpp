@@ -18873,8 +18873,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
             // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->gtBoundsChk.gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->gtBoundsChk.gtArrLen, isLIR);
+            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
+            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
             break;
 
         case GT_STORE_DYN_BLK:
