@@ -52,14 +52,14 @@ namespace System.Drawing
         /// Gets a value indicating whether this <see cref='System.Drawing.Point'/> is empty.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => x == 0 && y == 0;
+        public readonly bool IsEmpty => x == 0 && y == 0;
 
         /// <summary>
         /// Gets the x-coordinate of this <see cref='System.Drawing.Point'/>.
         /// </summary>
         public int X
         {
-            get => x;
+            readonly get => x;
             set => x = value;
         }
 
@@ -68,7 +68,7 @@ namespace System.Drawing
         /// </summary>
         public int Y
         {
-            get => y;
+            readonly get => y;
             set => y = value;
         }
 
@@ -135,14 +135,14 @@ namespace System.Drawing
         /// Specifies whether this <see cref='System.Drawing.Point'/> contains the same coordinates as the specified
         /// <see cref='object'/>.
         /// </summary>
-        public override bool Equals(object? obj) => obj is Point && Equals((Point)obj);
+        public override readonly bool Equals(object? obj) => obj is Point && Equals((Point)obj);
 
-        public bool Equals(Point other) => this == other;
+        public readonly bool Equals(Point other) => this == other;
 
         /// <summary>
         /// Returns a hash code.
         /// </summary>
-        public override int GetHashCode() => HashCode.Combine(X, Y);
+        public override readonly int GetHashCode() => HashCode.Combine(X, Y);
 
         /// <summary>
         /// Translates this <see cref='System.Drawing.Point'/> by the specified amount.
@@ -164,7 +164,7 @@ namespace System.Drawing
         /// <summary>
         /// Converts this <see cref='System.Drawing.Point'/> to a human readable string.
         /// </summary>
-        public override string ToString() => "{X=" + X.ToString() + ",Y=" + Y.ToString() + "}";
+        public override readonly string ToString() => "{X=" + X.ToString() + ",Y=" + Y.ToString() + "}";
 
         private static short HighInt16(int n) => unchecked((short)((n >> 16) & 0xffff));
 
