@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
+            if (IsNullOrWin32Atom(ptr))
             {
                 return null;
             }
@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string? PtrToStringUni(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
+            if (IsNullOrWin32Atom(ptr))
             {
                 return null;
             }
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string? PtrToStringUTF8(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
+            if (IsNullOrWin32Atom(ptr))
             {
                 return null;
             }
@@ -915,13 +915,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
 
-        public static void ZeroFreeBSTR(IntPtr s)
+        public static unsafe void ZeroFreeBSTR(IntPtr s)
         {
             if (s == IntPtr.Zero)
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)SysStringByteLen(s));
+            Buffer.ZeroMemory((byte*)s, SysStringByteLen(s));
             FreeBSTR(s);
         }
 
@@ -936,7 +936,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)(string.wcslen((char*)s) * 2));
+            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeCoTaskMem(s);
         }
 
@@ -946,7 +946,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)string.strlen((byte*)s));
+            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
             FreeCoTaskMem(s);
         }
 
@@ -956,7 +956,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)string.strlen((byte*)s));
+            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
             FreeHGlobal(s);
         }
 
@@ -966,7 +966,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)(string.wcslen((char*)s) * 2));
+            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeHGlobal(s);
         }
 

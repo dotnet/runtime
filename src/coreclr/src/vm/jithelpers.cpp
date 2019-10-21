@@ -5563,31 +5563,6 @@ EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
 //========================================================================
 //
-//      JIT HELPERS IMPLEMENTED AS FCALLS
-//
-//========================================================================
-
-#ifdef _TARGET_ARM_
-// This function is used from the FCallMemcpy for GC polling
-EXTERN_C VOID FCallMemCpy_GCPoll()
-{
-    FC_INNER_PROLOG(FCallMemcpy);
- 
-    Thread  *thread = GetThread();
-    // CommonTripThread does this check, but doing this to avoid raising the frames
-    if (thread->CatchAtSafePointOpportunistic()) 
-    {
-        HELPER_METHOD_FRAME_BEGIN_0();
-        CommonTripThread();
-        HELPER_METHOD_FRAME_END();
-    }
- 
-    FC_INNER_EPILOG();
-}
-#endif // _TARGET_ARM_
-
-//========================================================================
-//
 //      JIT HELPERS INITIALIZATION
 //
 //========================================================================

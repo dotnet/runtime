@@ -115,13 +115,6 @@ namespace System
             Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
         }
 
-        // This is currently used by System.IO.UnmanagedMemoryStream
-        internal static unsafe void ZeroMemory(byte* dest, long len)
-        {
-            Debug.Assert((ulong)(len) == (nuint)(len));
-            ZeroMemory(dest, (nuint)(len));
-        }
-
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal static unsafe void ZeroMemory(byte* dest, nuint len)
         {
@@ -338,16 +331,10 @@ namespace System
             else
             {
                 // Non-blittable memmove
-
-                // Try to avoid calling RhBulkMoveWithWriteBarrier if we can get away
-                // with a no-op.
-                if (!Unsafe.AreSame(ref destination, ref source) && elementCount != 0)
-                {
-                    RuntimeImports.RhBulkMoveWithWriteBarrier(
-                        ref Unsafe.As<T, byte>(ref destination),
-                        ref Unsafe.As<T, byte>(ref source),
-                        elementCount * (nuint)Unsafe.SizeOf<T>());
-                }
+                BulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)Unsafe.SizeOf<T>());
             }
         }
 

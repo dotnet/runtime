@@ -1366,6 +1366,4 @@ inline size_t GetARMInstructionLength(PBYTE pInstr)
     return GetARMInstructionLength(*(WORD*)pInstr);
 }
 
-EXTERN_C void FCallMemcpy(BYTE* dest, BYTE* src, int len);
-
 #endif // __cgencpu_h__

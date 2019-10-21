@@ -275,7 +275,7 @@ namespace System.Runtime.InteropServices
 
         public static void FreeHGlobal(IntPtr hglobal)
         {
-            if (!IsWin32Atom(hglobal))
+            if (!IsNullOrWin32Atom(hglobal))
             {
                 if (IntPtr.Zero != Interop.Kernel32.LocalFree(hglobal))
                 {
@@ -419,7 +419,7 @@ namespace System.Runtime.InteropServices
 
         public static void FreeCoTaskMem(IntPtr ptr)
         {
-            if (!IsWin32Atom(ptr))
+            if (!IsNullOrWin32Atom(ptr))
             {
                 Interop.Ole32.CoTaskMemFree(ptr);
             }
@@ -448,7 +448,7 @@ namespace System.Runtime.InteropServices
 
         public static void FreeBSTR(IntPtr ptr)
         {
-            if (!IsWin32Atom(ptr))
+            if (!IsNullOrWin32Atom(ptr))
             {
                 Interop.OleAut32.SysFreeString(ptr);
             }
@@ -459,12 +459,6 @@ namespace System.Runtime.InteropServices
             if (s is null)
             {
                 return IntPtr.Zero;
-            }
-
-            // Overflow checking
-            if (s.Length + 1 < s.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(s));
             }
 
             IntPtr bstr = Interop.OleAut32.SysAllocStringLen(s, s.Length);
@@ -478,7 +472,12 @@ namespace System.Runtime.InteropServices
 
         public static string PtrToStringBSTR(IntPtr ptr)
         {
-            return PtrToStringUni(ptr, (int)Interop.OleAut32.SysStringLen(ptr));
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }
 
 #if FEATURE_COMINTEROP
