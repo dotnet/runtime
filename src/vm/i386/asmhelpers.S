@@ -1205,14 +1205,196 @@ NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
 NESTED_END BackPatchWorkerAsmStub, _TEXT
 
 NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
+    push    esi
+    push    edi
+
+    //
+    // Push in reverse order the fields of ProfilePlatformSpecificData
+    //
+    push    dword ptr [esp+8]   // EIP of the managed code that we return to.	-- struct ip field
+    push    ebp                 // Methods are always EBP framed
+    add     dword ptr [esp], 8  // Skip past the return IP, straight to the stack args that were passed to our caller
+                                // Skip past saved EBP value: 4 bytes
+                                //   - plus return address from caller's caller: 4 bytes   
+                                //
+                                // Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack 
+                                // grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                                // the return address from caller's caller which is Foo() in this example.
+                                //
+                                // ProfileEnterNaked()
+                                // Bar()
+                                // Foo()
+                                //
+                                // [ESP] is now the ESP of caller's caller pointing to the arguments to the caller.
+
+    push    ecx                 //                                                  -- struct ecx field
+    push    edx                 //                                                  -- struct edx field
+    push    eax                 //                                                  -- struct eax field
+    push    0                   // Create buffer space in the structure             -- struct floatingPointValuePresent field
+    push    0                   // Create buffer space in the structure             -- struct floatBuffer field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer2 field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer1 field
+    push    0                   // Create buffer space in the structure             -- struct functionId field
+
+    mov     edx, esp            // the address of the Platform structure
+    mov     ecx, [esp+52]       // The functionIDOrClientID parameter that was pushed to FunctionEnter
+                                // Skip past ProfilePlatformSpecificData we pushed: 40 bytes
+                                //   - plus saved edi, esi : 8 bytes   
+                                //   - plus return address from caller: 4 bytes   
+
+    #define STACK_ALIGN_PADDING 12
+    sub     esp, STACK_ALIGN_PADDING
+
+    CHECK_STACK_ALIGNMENT
+    call    C_FUNC(ProfileEnter)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef  STACK_ALIGN_PADDING
+
+    add     esp, 20             // Remove buffer space
+    pop     eax
+    pop     edx
+    pop     ecx
+    add     esp, 8              // Remove buffer space
+    pop     edi
+    pop     esi
     ret
 NESTED_END ProfileEnterNaked, _TEXT
 
 NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
+    push    ecx                 // We do not strictly need to save ECX, however
+                                // emitNoGChelper(CORINFO_HELP_PROF_FCN_LEAVE) returns true in the JITcompiler
+    push    edx                 // Return value may be in EAX:EDX
+
+    //
+    // Push in reverse order the fields of ProfilePlatformSpecificData
+    //
+    push    dword ptr [esp+8]   // EIP of the managed code that we return to.	-- struct ip field
+    push    ebp                 // Methods are always EBP framed
+    add     dword ptr [esp], 8  // Skip past the return IP, straight to the stack args that were passed to our caller
+                                // Skip past saved EBP value: 4 bytes
+                                //   - plus return address from caller's caller: 4 bytes   
+                                //
+                                // Assuming Foo() calls Bar(), and Bar() calls ProfileLeaveNaked() as illustrated (stack 
+                                // grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                                // the return address from caller's caller which is Foo() in this example.
+                                //
+                                // ProfileLeaveNaked()
+                                // Bar()
+                                // Foo()
+                                //
+                                // [ESP] is now the ESP of caller's caller pointing to the arguments to the caller.
+
+    push    ecx                 //                                                  -- struct ecx field
+    push    edx                 //                                                  -- struct edx field
+    push    eax                 //                                                  -- struct eax field
+
+    // Check if we need to save off any floating point registers
+    fstsw   ax           
+    and     ax, 3800h           // Check the top-of-fp-stack bits
+    cmp     ax, 0               // If non-zero, we have something to save
+    jnz     LOCAL_LABEL(SaveFPReg)
+
+    push    0                   // Create buffer space in the structure             -- struct floatingPointValuePresent field
+    push    0                   // Create buffer space in the structure             -- struct floatBuffer field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer2 field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer1 field
+    jmp     LOCAL_LABEL(Continue)
+
+LOCAL_LABEL(SaveFPReg):
+    push    1                   // mark that a float value is present               -- struct floatingPointValuePresent field
+    sub     esp, 4              // Make room for the FP value                      
+    fst     dword ptr [esp]     // Copy the FP value to the buffer as a float       -- struct floatBuffer field
+    sub     esp, 8              // Make room for the FP value
+    fstp    qword ptr [esp]     // Copy FP values to the buffer as a double         -- struct doubleBuffer1 and doubleBuffer2 fields
+
+LOCAL_LABEL(Continue):
+    push    0                   // Create buffer space in the structure             -- struct functionId field
+
+    mov     edx, esp            // the address of the Platform structure
+    mov     ecx, [esp+52]       // The clientData that was pushed to FunctionEnter
+                                // Skip past ProfilePlatformSpecificData we pushed: 40 bytes
+                                //   - plus saved edx, ecx : 8 bytes   
+                                //   - plus return address from caller: 4 bytes   
+
+    #define STACK_ALIGN_PADDING 12
+    sub     esp, STACK_ALIGN_PADDING
+
+    CHECK_STACK_ALIGNMENT
+    call    C_FUNC(ProfileLeave)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef  STACK_ALIGN_PADDING
+
+    //
+    // Now see if we have to restore and floating point registers
+    //
+
+    cmp     dword ptr [esp + 16], 0
+    jz      NoRestore
+
+    fld     qword ptr [esp + 4]
+
+NoRestore:
+
+    add     esp, 20             // Remove buffer space
+    pop     eax
+    add     esp, 16             // Remove buffer space
+    pop     edx
+    pop     ecx
     ret
 NESTED_END ProfileLeaveNaked, _TEXT
 
 NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
+    push    ecx
+    push    edx
+
+    //
+    // Push in reverse order the fields of ProfilePlatformSpecificData
+    //
+    push    dword ptr [esp+8]   // EIP of the managed code that we return to.	-- struct ip field
+    push    ebp                 // Methods are always EBP framed
+    add     dword ptr [esp], 8  // Skip past the return IP, straight to the stack args that were passed to our caller
+                                // Skip past saved EBP value: 4 bytes
+                                //   - plus return address from caller's caller: 4 bytes   
+                                //
+                                // Assuming Foo() calls Bar(), and Bar() calls ProfileTailcallNaked() as illustrated (stack 
+                                // grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                                // the return address from caller's caller which is Foo() in this example.
+                                //
+                                // ProfileTailcallNaked()
+                                // Bar()
+                                // Foo()
+                                //
+                                // [ESP] is now the ESP of caller's caller pointing to the arguments to the caller.
+
+    push    ecx                 //                                                  -- struct ecx field
+    push    edx                 //                                                  -- struct edx field
+    push    eax                 //                                                  -- struct eax field
+    push    0                   // Create buffer space in the structure             -- struct floatingPointValuePresent field
+    push    0                   // Create buffer space in the structure             -- struct floatBuffer field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer2 field
+    push    0                   // Create buffer space in the structure             -- struct doubleBuffer1 field
+    push    0                   // Create buffer space in the structure             -- struct functionId field
+
+    mov     edx, esp            // the address of the Platform structure
+    mov     ecx, [esp+52]       // The clientData that was pushed to FunctionEnter
+                                // Skip past ProfilePlatformSpecificData we pushed: 40 bytes
+                                //   - plus saved edx, ecx : 8 bytes   
+                                //   - plus return address from caller: 4 bytes   
+
+    #define STACK_ALIGN_PADDING 12
+    sub     esp, STACK_ALIGN_PADDING
+
+    CHECK_STACK_ALIGNMENT
+    call    C_FUNC(ProfileTailcall)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef  STACK_ALIGN_PADDING
+
+    add     esp, 40             // Remove buffer space
+    pop     edx
+    pop     ecx
     ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
