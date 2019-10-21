@@ -96,42 +96,50 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max, MonoError *error)
+ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max)
 {
+	ERROR_DECL (error);
 	g_unsupported_api ("GetProcessWorkingSetSize");
 	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
 	SetLastError (ERROR_NOT_SUPPORTED);
+	mono_error_set_pending_exception (error);
 	return FALSE;
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max, MonoError *error)
+ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max)
 {
+	ERROR_DECL (error);
 	g_unsupported_api ("SetProcessWorkingSetSize");
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
 	SetLastError (ERROR_NOT_SUPPORTED);
+	mono_error_set_pending_exception (error);
 	return FALSE;
 }
 
 gint32
-ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle, MonoError *error)
+ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 {
 	// FIXME GetPriorityClass is supported for UWP. Use finer grained #if.
 
+	ERROR_DECL (error);
 	g_unsupported_api ("GetPriorityClass");
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetPriorityClass");
 	SetLastError (ERROR_NOT_SUPPORTED);
+	mono_error_set_pending_exception (error);
 	return FALSE;
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass, MonoError *error)
+ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass)
 {
 	// FIXME SetPriorityClass is supported for UWP. Use finer grained #if.
 
+	ERROR_DECL (error);
 	g_unsupported_api ("SetPriorityClass");
 	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "SetPriorityClass");
 	SetLastError (ERROR_NOT_SUPPORTED);
+	mono_error_set_pending_exception (error);
 	return FALSE;
 }
 
