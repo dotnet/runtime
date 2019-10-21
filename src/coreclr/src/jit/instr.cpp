@@ -480,7 +480,7 @@ void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
     assert(tree && (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_VAR_ADDR || tree->gtOper == GT_STORE_LCL_VAR));
-    assert(tree->gtLclVarCommon.GetLclNum() < compiler->lvaCount);
+    assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
 
@@ -588,7 +588,7 @@ AGAIN:
             goto LCL;
 
         LCL:
-            varNum = tree->gtLclVarCommon.GetLclNum();
+            varNum = tree->AsLclVarCommon()->GetLclNum();
             assert(varNum < compiler->lvaCount);
 
             if (shfv)
@@ -696,7 +696,7 @@ AGAIN:
 
         LCL:
 
-            varNum = tree->gtLclVarCommon.GetLclNum();
+            varNum = tree->AsLclVarCommon()->GetLclNum();
             assert(varNum < compiler->lvaCount);
 
 #if CPU_LOAD_STORE_ARCH
@@ -844,7 +844,7 @@ AGAIN:
             goto LCL;
 
         LCL:
-            varNum = tree->gtLclVarCommon.GetLclNum();
+            varNum = tree->AsLclVarCommon()->GetLclNum();
             assert(varNum < compiler->lvaCount);
 
 #ifdef _TARGET_ARM_

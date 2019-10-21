@@ -37,7 +37,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
             {
                 continue;
             }
-            unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
+            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
             if (!lvaInSsa(lclNum))
             {
                 continue;
@@ -277,7 +277,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         }
 #endif
 
-        tree->gtLclVarCommon.SetLclNum(newLclNum);
+        tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
         gtUpdateSideEffects(stmt, tree);
 #ifdef DEBUG
@@ -354,7 +354,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             //
             if (optIsSsaLocal(tree) && (tree->gtFlags & GTF_VAR_DEF))
             {
-                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->gtLclVarCommon.GetLclNum()].lvVarIndex);
+                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvVarIndex);
             }
         }
 
@@ -366,7 +366,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 continue;
             }
 
-            unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
+            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
             // As we encounter a definition add it to the stack as a live definition.
             if (tree->gtFlags & GTF_VAR_DEF)

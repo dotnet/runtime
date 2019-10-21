@@ -850,7 +850,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             else if (op1->OperIsLocalAddr())
             {
                 unsigned offset = (op1->OperGet() == GT_LCL_FLD_ADDR) ? op1->AsLclFld()->gtLclOffs : 0;
-                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->gtLclVarCommon.GetLclNum(),
+                GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->AsLclVarCommon()->GetLclNum(),
                                           offset);
             }
             else
@@ -2454,7 +2454,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             // There are three parts to the total offset here:
             // {offset of local} + {offset of SIMD Vector field (lclFld only)} + {offset of element within SIMD vector}.
             bool     isEBPbased;
-            unsigned varNum = op1->gtLclVarCommon.GetLclNum();
+            unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
             if (op1->OperGet() == GT_LCL_FLD)
             {
@@ -2911,7 +2911,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
     unsigned offs   = 0;
-    unsigned varNum = treeNode->gtLclVarCommon.GetLclNum();
+    unsigned varNum = treeNode->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
@@ -2953,7 +2953,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 
     regNumber targetReg = treeNode->GetRegNum();
     unsigned  offs      = 0;
-    unsigned  varNum    = treeNode->gtLclVarCommon.GetLclNum();
+    unsigned  varNum    = treeNode->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     if (treeNode->OperGet() == GT_LCL_FLD)

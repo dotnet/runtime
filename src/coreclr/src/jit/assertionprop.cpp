@@ -31,7 +31,7 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
         GenTree*  op1  = tree->AsOp()->gtOp1;
         Compiler* comp = data->compiler;
 
-        if ((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.GetLclNum() == comp->optAddCopyLclNum))
+        if ((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == comp->optAddCopyLclNum))
         {
             comp->optAddCopyAsgnNode = tree;
             return WALK_ABORT;
@@ -450,7 +450,7 @@ void Compiler::optAddCopies()
             GenTree* op1  = tree->AsOp()->gtOp1;
 
             noway_assert(tree && op1 && tree->OperIs(GT_ASG) && (op1->gtOper == GT_LCL_VAR) &&
-                         (op1->gtLclVarCommon.GetLclNum() == lclNum));
+                         (op1->AsLclVarCommon()->GetLclNum() == lclNum));
 
             /* Assign the old expression into the new temp */
 
@@ -886,7 +886,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             goto DONE_ASSERTION; // Don't make an assertion
         }
 
-        unsigned lclNum = op1->gtLclVarCommon.GetLclNum();
+        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
         noway_assert(lclNum < lvaCount);
         LclVarDsc* lclVar = &lvaTable[lclNum];
 
@@ -965,7 +965,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_LCL_VAR)
     {
-        unsigned lclNum = op1->gtLclVarCommon.GetLclNum();
+        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
         noway_assert(lclNum < lvaCount);
         LclVarDsc* lclVar = &lvaTable[lclNum];
 
@@ -1138,7 +1138,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    unsigned lclNum2 = op2->gtLclVarCommon.GetLclNum();
+                    unsigned lclNum2 = op2->AsLclVarCommon()->GetLclNum();
                     noway_assert(lclNum2 < lvaCount);
                     LclVarDsc* lclVar2 = &lvaTable[lclNum2];
 
@@ -1278,7 +1278,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         //
         if (op1->gtOper == GT_LCL_VAR)
         {
-            unsigned lclNum = op1->gtLclVarCommon.GetLclNum();
+            unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
             noway_assert(lclNum < lvaCount);
 
             //  If the local variable is not in SSA then bail
@@ -2593,7 +2593,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
                                             GenTree*      tree,
                                             Statement* stmt DEBUGARG(AssertionIndex index))
 {
-    unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
+    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
     if (lclNumIsCSE(lclNum))
     {
@@ -2787,7 +2787,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
 
     noway_assert(op1.lcl.lclNum != op2.lcl.lclNum);
 
-    unsigned lclNum = tree->gtLclVarCommon.GetLclNum();
+    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
     // Make sure one of the lclNum of the assertion matches with that of the tree.
     if (op1.lcl.lclNum != lclNum && op2.lcl.lclNum != lclNum)
@@ -2825,8 +2825,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
         return nullptr;
     }
 
-    tree->gtLclVarCommon.SetSsaNum(copySsaNum);
-    tree->gtLclVarCommon.SetLclNum(copyLclNum);
+    tree->AsLclVarCommon()->SetSsaNum(copySsaNum);
+    tree->AsLclVarCommon()->SetLclNum(copyLclNum);
 
 #ifdef DEBUG
     if (verbose)
@@ -2900,8 +2900,8 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree*
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        else if (curAssertion->op1.lcl.lclNum == tree->gtLclVarCommon.GetLclNum() &&
-                 tree->gtType == lvaTable[tree->gtLclVarCommon.GetLclNum()].lvType)
+        else if (curAssertion->op1.lcl.lclNum == tree->AsLclVarCommon()->GetLclNum() &&
+                 tree->gtType == lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvType)
         {
             // If local assertion prop just, perform constant prop.
             if (optLocalAssertionProp)
@@ -3326,7 +3326,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     }
 
     // Find an equal or not equal assertion about op1 var.
-    unsigned lclNum = op1->gtLclVarCommon.GetLclNum();
+    unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 
@@ -3425,7 +3425,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     AssertionIndex index = optAssertionIsSubrange(lcl, fromType, toType, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
-        LclVarDsc* varDsc = &lvaTable[lcl->gtLclVarCommon.GetLclNum()];
+        LclVarDsc* varDsc = &lvaTable[lcl->AsLclVarCommon()->GetLclNum()];
         if (varDsc->lvNormalizeOnLoad() || varTypeIsLong(varDsc->TypeGet()))
         {
             // For normalize on load variables it must be a narrowing cast to remove
