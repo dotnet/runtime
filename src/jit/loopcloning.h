@@ -194,9 +194,9 @@ struct LcMdArrayOptInfo : public LcOptInfo
             index->rank = arrElem->gtArrRank;
             for (unsigned i = 0; i < dim; ++i)
             {
-                index->indLcls.Push(arrElem->gtArrInds[i]->gtLclVarCommon.GetLclNum());
+                index->indLcls.Push(arrElem->gtArrInds[i]->AsLclVarCommon()->GetLclNum());
             }
-            index->arrLcl = arrElem->gtArrObj->gtLclVarCommon.GetLclNum();
+            index->arrLcl = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
         }
         return index;
     }

@@ -136,7 +136,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         // local vars and param uses
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-            lclNum = tree->gtLclVarCommon.GetLclNum();
+            lclNum = tree->AsLclVarCommon()->GetLclNum();
 
             if (pState->isUnderIndir)
             {
@@ -258,7 +258,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
 
                     if ((isLocVar || isLocFld) && tree->AsOp()->gtOp2)
                     {
-                        lclNum               = tree->AsOp()->gtOp1->gtLclVarCommon.GetLclNum();
+                        lclNum               = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
                         newState.lvAssignDef = lclNum;
                         newState.isAssignSrc = true;
                     }
