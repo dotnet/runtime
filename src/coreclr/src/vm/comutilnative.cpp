@@ -685,7 +685,7 @@ void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKi
     END_QCALL;
 }
 
-void QCALLTYPE MemoryNative::Clear(void *dst, size_t length)
+void QCALLTYPE Buffer::Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
 
@@ -714,11 +714,12 @@ void QCALLTYPE MemoryNative::Clear(void *dst, size_t length)
     memset(dst, 0, length);
 }
 
-FCIMPL3(VOID, MemoryNative::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
 {
     FCALL_CONTRACT;
 
-    InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+    if (dst != src && byteCount != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
 
     FC_GC_POLL();
 }

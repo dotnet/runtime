@@ -6653,10 +6653,6 @@ EXTERN_C void JIT_WriteBarrier_Debug();
 EXTERN_C void JIT_WriteBarrier_Debug_End();
 #endif
 
-#ifdef _TARGET_ARM_
-EXTERN_C void FCallMemcpy_End();
-#endif
-
 #ifdef VSD_STUB_CAN_THROW_AV
 //Return TRUE if pContext->Pc is in VirtualStub
 BOOL IsIPinVirtualStub(PCODE f_IP)
@@ -6715,10 +6711,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
-#endif
-
-#ifdef _TARGET_ARM_
-    CHECK_RANGE(FCallMemcpy)
 #endif
 
     return false;
