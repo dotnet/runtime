@@ -1583,113 +1583,102 @@ static size_t GetCacheSizeFromCpuId()
 
         DWORD maxCpuId = getcpuid(0, buffer);
 
-        if (dwBuffer[1] == 'uneG') 
+        if (memcmp(buffer + 4, "GenuineIntel", 12) == 0)
         {
-            if (dwBuffer[3] == 'Ieni') 
+            /*
+            //The following lines are commented because the OS API  on Windows 2003 SP1 is not returning the Cache Relation information on x86.
+            //Once the OS API (LH and above) is updated with this information, we should start using the OS API to get the cache enumeration by
+            //uncommenting the lines below.
+
+            maxSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
+            */
+            maxSize = 0;
+            if (maxCpuId >= 2)         // cpuid support for cache size determination is available
             {
-                if (dwBuffer[2] == 'letn') 
+                maxSize = GetIntelDeterministicCacheEnum();          // try to use use deterministic cache size enumeration
+                if (!maxSize)
+                {                    // deterministic enumeration failed, fallback to legacy enumeration using descriptor values
+                    maxSize = GetIntelDescriptorValuesCache();
+                }
+            }
+
+            // TODO: Currently GetLogicalCpuCountFromOS() and GetLogicalCpuCountFallback() are broken on
+            // multi-core processor, but we never call into those two functions since we don't halve the
+            // gen0size when it's prescott and above processor. We keep the old version here for earlier
+            // generation system(Northwood based), perf data suggests on those systems, halve gen0 size
+            // still boost the performance(ex:Biztalk boosts about 17%). So on earlier systems(Northwood)
+            // based, we still go ahead and halve gen0 size.  The logic in GetLogicalCpuCountFromOS()
+            // and GetLogicalCpuCountFallback() works fine for those earlier generation systems.
+            // If it's a Prescott and above processor or Multi-core, perf data suggests not to halve gen0
+            // size at all gives us overall better performance.
+            // This is going to be fixed with a new version in orcas time frame.
+            if (maxCpuId >= 2 && !((maxCpuId > 3) && (maxCpuId < 0x80000000)))
+            {
+                DWORD logicalProcessorCount = GetLogicalCpuCountFromOS(); //try to obtain HT enumeration from OS API
+
+                if (!logicalProcessorCount)
                 {
-                    /*
-                    //The following lines are commented because the OS API  on Windows 2003 SP1 is not returning the Cache Relation information on x86. 
-                    //Once the OS API (LH and above) is updated with this information, we should start using the OS API to get the cache enumeration by
-                    //uncommenting the lines below.
+                    logicalProcessorCount = GetLogicalCpuCountFallback();    // OS API failed, Fallback to HT enumeration using CPUID
+                }
 
-                    maxSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
-                    */
-                    maxSize = 0;
-                    if (maxCpuId >= 2)         // cpuid support for cache size determination is available
-                    {
-                        maxSize = GetIntelDeterministicCacheEnum();          // try to use use deterministic cache size enumeration
-                        if (!maxSize)
-                        {                    // deterministic enumeration failed, fallback to legacy enumeration using descriptor values            
-                            maxSize = GetIntelDescriptorValuesCache();   
-                        }   
-                    }
-
-                    // TODO: Currently GetLogicalCpuCountFromOS() and GetLogicalCpuCountFallback() are broken on 
-                    // multi-core processor, but we never call into those two functions since we don't halve the
-                    // gen0size when it's prescott and above processor. We keep the old version here for earlier
-                    // generation system(Northwood based), perf data suggests on those systems, halve gen0 size 
-                    // still boost the performance(ex:Biztalk boosts about 17%). So on earlier systems(Northwood) 
-                    // based, we still go ahead and halve gen0 size.  The logic in GetLogicalCpuCountFromOS() 
-                    // and GetLogicalCpuCountFallback() works fine for those earlier generation systems. 
-                    // If it's a Prescott and above processor or Multi-core, perf data suggests not to halve gen0 
-                    // size at all gives us overall better performance. 
-                    // This is going to be fixed with a new version in orcas time frame.
-                    if (maxCpuId >= 2 && !((maxCpuId > 3) && (maxCpuId < 0x80000000)))
-                    {
-                        DWORD logicalProcessorCount = GetLogicalCpuCountFromOS(); //try to obtain HT enumeration from OS API
-
-                        if (!logicalProcessorCount)
-                        {
-                            logicalProcessorCount = GetLogicalCpuCountFallback();    // OS API failed, Fallback to HT enumeration using CPUID
-                        }
-
-                        if (logicalProcessorCount)
-                        {
-                            maxSize = maxSize / logicalProcessorCount;
-                        }
-                    }
+                if (logicalProcessorCount)
+                {
+                    maxSize = maxSize / logicalProcessorCount;
                 }
             }
         }
+        else if (memcmp(buffer + 4, "AuthenticAMD", 12) == 0)
+        {
+            if (getcpuid(0x80000000, buffer) >= 0x80000006)
+            {
+                getcpuid(0x80000006, buffer);
 
-        else if (dwBuffer[1] == 'htuA') {
-            if (dwBuffer[3] == 'itne') {
-                if (dwBuffer[2] == 'DMAc') {
+                DWORD dwL2CacheBits = dwBuffer[2];
+                DWORD dwL3CacheBits = dwBuffer[3];
 
-                    if (getcpuid(0x80000000, buffer) >= 0x80000006)
+                maxSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
+
+                getcpuid(0x1, buffer);
+                DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
+                DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
+                DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
+
+                if (dwFamily >= 0x10)
+                {
+                    BOOL bSkipAMDL3 = FALSE;
+
+                    if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
                     {
-                        getcpuid(0x80000006, buffer);
+                        // check model
+                        DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
+                        DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
+                        DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
 
-                        DWORD dwL2CacheBits = dwBuffer[2];
-                        DWORD dwL3CacheBits = dwBuffer[3];
-
-                        maxSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-                                
-                        getcpuid(0x1, buffer);
-                        DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
-                        DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
-                        DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-                        if (dwFamily >= 0x10)
+                        switch (dwModel)
                         {
-                            BOOL bSkipAMDL3 = FALSE;
+                            case 0x2:
+                                // 65nm parts do not benefit from larger Gen0
+                                bSkipAMDL3 = TRUE;
+                                break;
 
-                            if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
-                            {
-                                // check model
-                                DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
-                                DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
-                                DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
-
-                                switch (dwModel)
-                                {
-                                    case 0x2:
-                                        // 65nm parts do not benefit from larger Gen0
-                                        bSkipAMDL3 = TRUE;
-                                        break;
-
-                                    case 0x4:
-                                    default:
-                                        bSkipAMDL3 = FALSE;
-                                }
-                            }
-
-                            if (!bSkipAMDL3)
-                            {
-                                // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                                // from increased gen0 size, taking L3 into account
-                                getcpuid(0x80000008, buffer);
-                                DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
-
-                                DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                                // L3 is shared between cores
-                                dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                                maxSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                                    // L1 is too small to worry about, so ignore it
-                            }
+                            case 0x4:
+                            default:
+                                bSkipAMDL3 = FALSE;
                         }
+                    }
+
+                    if (!bSkipAMDL3)
+                    {
+                        // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
+                        // from increased gen0 size, taking L3 into account
+                        getcpuid(0x80000008, buffer);
+                        DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
+
+                        DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
+                        // L3 is shared between cores
+                        dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
+                        maxSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
+                                                            // L1 is too small to worry about, so ignore it
                     }
                 }
             }
