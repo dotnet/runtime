@@ -32,7 +32,7 @@
       <DebPackageVersion>$(HostPackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <DebFile>$(SharedHostInstallerFile)</DebFile>
-      <ManPagesDir>$(ProjectDir)Documentation/manpages</ManPagesDir>
+      <ManPagesDir>$(SetupRoot)Documentation/manpages</ManPagesDir>
       <ConfigJsonName>dotnet-sharedhost-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>

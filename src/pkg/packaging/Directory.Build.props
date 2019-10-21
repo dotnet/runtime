@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
-    <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+    <PackagingRoot>$(SetupRoot)src/pkg/packaging/</PackagingRoot>
 
     <!-- The runtime package is distro-independent. (Runtime-deps packages vary per distro.) -->
     <BuildRuntimeDebs>$(BuildDistroIndependentInstallers)</BuildRuntimeDebs>

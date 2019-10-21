@@ -51,19 +51,19 @@
   </Target>
 
   <Target Name="EnsureSignedBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(SetupRoot)signing\SignBinaries.proj" Targets="Build" />
+    <MSBuild Projects="$(SigningToolsDir)\SignBinaries.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedMsiFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(SetupRoot)signing\SignMsiFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SigningToolsDir)\SignMsiFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(SetupRoot)signing\SignBurnEngineFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SigningToolsDir)\SignBurnEngineFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(SetupRoot)signing\SignBurnBundleFiles.proj" Targets="Build" />
+    <MSBuild Projects="$(SigningToolsDir)\SignBurnBundleFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
@@ -96,7 +96,7 @@
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
-    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MSFT.txt"
+    <Copy SourceFiles="$(SetupRoot)resources/LICENSE-MSFT.txt"
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' != 'true'"/>
 
@@ -157,7 +157,7 @@
 
   <Target Name="GenerateVersionBadge">
     <PropertyGroup>
-      <templateSvg>$(ProjectDir)resources/images/version_badge.svg</templateSvg>
+      <templateSvg>$(SetupRoot)resources/images/version_badge.svg</templateSvg>
     </PropertyGroup>
 
     <MakeDir  Condition="!Exists('$(BaseOutputRootPath)')" Directories="$(BaseOutputRootPath)" />

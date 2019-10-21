@@ -45,9 +45,9 @@
 
   <PropertyGroup>
     <SetupRoot>$(RepoRoot)</SetupRoot>
-    <!-- ProjectDir needs to be set for build-tools and legacy usages. New usages should use SetupRoot. -->
-    <ProjectDir>$(SetupRoot)</ProjectDir>
     <SourceDir>$(SetupRoot)src/</SourceDir>
+    <SigningToolsDir>$(SetupRoot)eng\signing\</SigningToolsDir>
+    <LicenseFile>$(RepoRoot)LICENSE</LicenseFile>
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ArtifactsBinDir)</BinDir>

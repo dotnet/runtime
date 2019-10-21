@@ -1,11 +1,6 @@
 <Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
-  <PropertyGroup>
-    <SigningToolsDir>$(SetupRoot)signing\</SigningToolsDir>
-    <LicenseFile>$(RepoRoot)LICENSE</LicenseFile>
-  </PropertyGroup>
-
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
@@ -63,7 +58,7 @@
     <!-- Pkgproj requires its depproj crossgen outputs to be signed.-->
     <OrderProjectReference
       Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
-      Include="$(SetupRoot)signing\SignBinaries.proj" />
+      Include="$(SigningToolsDir)\SignBinaries.proj" />
   </ItemGroup>
 
   <!-- In *.builds projects, the current phase's name is the same as the project name. -->

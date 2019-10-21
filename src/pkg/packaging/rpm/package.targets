@@ -27,7 +27,7 @@
       <RpmPackageVersion>$(HostPackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <RpmFile>$(SharedHostInstallerFile)</RpmFile>
-      <ManPagesDir>$(ProjectDir)Documentation/manpages</ManPagesDir>
+      <ManPagesDir>$(SetupRoot)Documentation/manpages</ManPagesDir>
       <ConfigJsonName>dotnet-sharedhost-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
