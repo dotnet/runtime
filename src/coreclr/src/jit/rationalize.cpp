@@ -472,7 +472,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
             storeBlk->gtFlags |=
                 (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED | GTF_DONT_CSE));
-            storeBlk->gtBlk.Data() = value;
+            storeBlk->AsBlk()->Data() = value;
 
             // Remove the block node from its current position and replace the assignment node with it
             // (now in its store form).
