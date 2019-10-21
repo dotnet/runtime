@@ -12354,7 +12354,7 @@ DONE_MORPHING_CHILDREN:
                         // Keep the old ValueNumber for 'tree' as the new expr
                         // will still compute the same value as before
                         tree->SetOper(oper, GenTree::PRESERVE_VN);
-                        cns2->gtIntCon.gtIconVal = 0;
+                        cns2->AsIntCon()->gtIconVal = 0;
 
                         // vnStore is null before the ValueNumber phase has run
                         if (vnStore != nullptr)
