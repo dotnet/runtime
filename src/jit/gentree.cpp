@@ -1999,7 +1999,7 @@ AGAIN:
                 break;
 
             case GT_JMP:
-                add = tree->gtVal.gtVal1;
+                add = tree->AsVal()->gtVal1;
                 break;
 
             default:
@@ -7188,7 +7188,7 @@ GenTree* Compiler::gtCloneExpr(
             case GT_END_LFIN:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_JMP:
-                copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->gtVal.gtVal1);
+                copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
             default:
@@ -10652,7 +10652,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             const char* methodName;
             const char* className;
 
-            methodName = eeGetMethodName((CORINFO_METHOD_HANDLE)tree->gtVal.gtVal1, &className);
+            methodName = eeGetMethodName((CORINFO_METHOD_HANDLE)tree->AsVal()->gtVal1, &className);
             printf(" %s.%s\n", className, methodName);
         }
         break;
@@ -10681,7 +10681,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
 #if !defined(FEATURE_EH_FUNCLETS)
         case GT_END_LFIN:
-            printf(" endNstLvl=%d", tree->gtVal.gtVal1);
+            printf(" endNstLvl=%d", tree->AsVal()->gtVal1);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
