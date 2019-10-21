@@ -53,12 +53,12 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            bool result = false;
-            int bytesRead = 0;
+            int result;
+            int bytesRead;
 
             try
             {
-                result = ReadFile(handle, buffer, size, out bytesRead, IntPtr.Zero);
+                result = Interop.Kernel32.ReadFile(handle, buffer, size, out bytesRead, IntPtr.Zero);
             }
             catch
             {
@@ -66,7 +66,7 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            if (!result || bytesRead != size)
+            if (result == 0 || bytesRead != size)
             {
                 // We used to throw here, but this is where we land if the FileStream was
                 // opened with useAsync: true, which is currently the default on .NET Core.
@@ -78,15 +78,5 @@ namespace System.Reflection.Internal
 
             return true;
         }
-
-        [DllImport(@"kernel32.dll", EntryPoint = "ReadFile", ExactSpelling = true, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool ReadFile(
-             SafeHandle fileHandle,
-             byte* buffer,
-             int byteCount,
-             out int bytesRead,
-             IntPtr overlapped
-        );
     }
 }
