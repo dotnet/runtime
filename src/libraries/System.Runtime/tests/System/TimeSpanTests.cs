@@ -493,6 +493,22 @@ namespace System.Tests
             Assert.Equal(expected, TimeSpan.FromTicks(value));
         }
 
+        public static IEnumerable<object[]> TotalSeconds_ExactRepresentation_TestData()
+        {
+            yield return new object[] { new TimeSpan(0, 0, 0, 0, 0) };
+            yield return new object[] { new TimeSpan(0, 0, 0, 1, 0) };
+            yield return new object[] { new TimeSpan(0, 0, 0, 1, 100) };
+            yield return new object[] { new TimeSpan(0, 0, 0, 0, -100) };
+            yield return new object[] { new TimeSpan(0, 0, 0, 0, 34967800) };
+        }
+
+        [Theory]
+        [MemberData(nameof(TotalSeconds_ExactRepresentation_TestData))]
+        public static void TotalSeconds_ExactRepresentation(TimeSpan value)
+        {
+            Assert.Equal(value, TimeSpan.FromSeconds(value.TotalSeconds));
+        }
+
         public static IEnumerable<object[]> Negate_TestData()
         {
             yield return new object[] { new TimeSpan(0, 0, 0), new TimeSpan(0, 0, 0) };
