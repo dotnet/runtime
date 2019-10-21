@@ -1995,7 +1995,7 @@ AGAIN:
 #endif
                 break;
             case GT_CNS_STR:
-                add = tree->gtStrCon.gtSconCPX;
+                add = tree->AsStrCon()->gtSconCPX;
                 break;
 
             case GT_JMP:
@@ -7108,7 +7108,7 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_CNS_STR:
-                copy = gtNewSconNode(tree->gtStrCon.gtSconCPX, tree->gtStrCon.gtScpHnd);
+                copy = gtNewSconNode(tree->AsStrCon()->gtSconCPX, tree->AsStrCon()->gtScpHnd);
                 goto DONE;
 
             case GT_LCL_VAR:
@@ -8085,7 +8085,7 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
                 break;
 
             case GT_CNS_STR:
-                if (op1->gtStrCon.gtSconCPX == op2->gtStrCon.gtSconCPX)
+                if (op1->AsStrCon()->gtSconCPX == op2->AsStrCon()->gtSconCPX)
                 {
                     return true;
                 }

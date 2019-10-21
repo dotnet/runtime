@@ -8464,7 +8464,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 
     if (compCurBB->bbJumpKind == BBJ_THROW)
     {
-        CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->gtStrCon.gtScpHnd);
+        CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
         {
             // For un-important blocks, we want to construct the string lazily
@@ -8472,12 +8472,12 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
             GenTreeCall::Use* args;
             if (helper == CORINFO_HELP_STRCNS_CURRENT_MODULE)
             {
-                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->gtStrCon.gtSconCPX), TYP_INT));
+                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT));
             }
             else
             {
-                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->gtStrCon.gtSconCPX), TYP_INT),
-                                     gtNewIconEmbScpHndNode(tree->gtStrCon.gtScpHnd));
+                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT),
+                                     gtNewIconEmbScpHndNode(tree->AsStrCon()->gtScpHnd));
             }
 
             tree = gtNewHelperCallNode(helper, TYP_REF, args);
@@ -8485,11 +8485,11 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         }
     }
 
-    assert(tree->gtStrCon.gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->gtStrCon.gtScpHnd));
+    assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
 
     LPVOID         pValue;
     InfoAccessType iat =
-        info.compCompHnd->constructStringLiteral(tree->gtStrCon.gtScpHnd, tree->gtStrCon.gtSconCPX, &pValue);
+        info.compCompHnd->constructStringLiteral(tree->AsStrCon()->gtScpHnd, tree->AsStrCon()->gtSconCPX, &pValue);
 
     tree = gtNewStringLiteralNode(iat, pValue);
 
