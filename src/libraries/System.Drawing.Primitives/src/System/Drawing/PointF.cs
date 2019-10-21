@@ -33,14 +33,14 @@ namespace System.Drawing
         /// Gets a value indicating whether this <see cref='System.Drawing.PointF'/> is empty.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => x == 0f && y == 0f;
+        public readonly bool IsEmpty => x == 0f && y == 0f;
 
         /// <summary>
         /// Gets the x-coordinate of this <see cref='System.Drawing.PointF'/>.
         /// </summary>
         public float X
         {
-            get => x;
+            readonly get => x;
             set => x = value;
         }
 
@@ -49,7 +49,7 @@ namespace System.Drawing
         /// </summary>
         public float Y
         {
-            get => y;
+            readonly get => y;
             set => y = value;
         }
 
@@ -107,12 +107,12 @@ namespace System.Drawing
         /// </summary>
         public static PointF Subtract(PointF pt, SizeF sz) => new PointF(pt.X - sz.Width, pt.Y - sz.Height);
 
-        public override bool Equals(object? obj) => obj is PointF && Equals((PointF)obj);
+        public override readonly bool Equals(object? obj) => obj is PointF && Equals((PointF)obj);
 
-        public bool Equals(PointF other) => this == other;
+        public readonly bool Equals(PointF other) => this == other;
 
-        public override int GetHashCode() => HashCode.Combine(X, Y);
+        public override readonly int GetHashCode() => HashCode.Combine(X.GetHashCode(), Y.GetHashCode());
 
-        public override string ToString() => "{X=" + x.ToString() + ", Y=" + y.ToString() + "}";
+        public override readonly string ToString() => "{X=" + x.ToString() + ", Y=" + y.ToString() + "}";
     }
 }
