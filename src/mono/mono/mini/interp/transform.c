@@ -1073,62 +1073,68 @@ interp_ins_is_ldc (InterpInst *ins)
 }
 
 static gint32
-interp_ldc_i4_get_const (InterpInst *ins)
+interp_get_const_from_ldc_i4 (InterpInst *ins)
 {
 	switch (ins->opcode) {
-		case MINT_LDC_I4_M1: return -1;
-		case MINT_LDC_I4_0: return 0;
-		case MINT_LDC_I4_1: return 1;
-		case MINT_LDC_I4_2: return 2;
-		case MINT_LDC_I4_3: return 3;
-		case MINT_LDC_I4_4: return 4;
-		case MINT_LDC_I4_5: return 5;
-		case MINT_LDC_I4_6: return 6;
-		case MINT_LDC_I4_7: return 7;
-		case MINT_LDC_I4_8: return 8;
-		case MINT_LDC_I4_S: return (gint32)(gint8)ins->data [0];
-		case MINT_LDC_I4: return READ32 (&ins->data [0]);
-		default:
-			g_assert_not_reached ();
+	case MINT_LDC_I4_M1: return -1;
+	case MINT_LDC_I4_0: return 0;
+	case MINT_LDC_I4_1: return 1;
+	case MINT_LDC_I4_2: return 2;
+	case MINT_LDC_I4_3: return 3;
+	case MINT_LDC_I4_4: return 4;
+	case MINT_LDC_I4_5: return 5;
+	case MINT_LDC_I4_6: return 6;
+	case MINT_LDC_I4_7: return 7;
+	case MINT_LDC_I4_8: return 8;
+	case MINT_LDC_I4_S: return (gint32)(gint8)ins->data [0];
+	case MINT_LDC_I4: return READ32 (&ins->data [0]);
+	default:
+		g_assert_not_reached ();
 	}
 }
 
+/* If ins is not null, it will replace it with the ldc */
 static InterpInst*
-interp_inst_replace_with_i4_const (TransformData *td, InterpInst *ins, gint32 ct)
+interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct)
 {
+	int opcode;
 	switch (ct) {
-		case -1: ins->opcode = MINT_LDC_I4_M1; break;
-		case 0: ins->opcode = MINT_LDC_I4_0; break;
-		case 1: ins->opcode = MINT_LDC_I4_1; break;
-		case 2: ins->opcode = MINT_LDC_I4_2; break;
-		case 3: ins->opcode = MINT_LDC_I4_3; break;
-		case 4: ins->opcode = MINT_LDC_I4_4; break;
-		case 5: ins->opcode = MINT_LDC_I4_5; break;
-		case 6: ins->opcode = MINT_LDC_I4_6; break;
-		case 7: ins->opcode = MINT_LDC_I4_7; break;
-		case 8: ins->opcode = MINT_LDC_I4_8; break;
-		default: {
-			int size = mono_interp_oplen [ins->opcode];
-			if (ct >= -128 && ct <= 127 ) {
-				if (size < 2) {
-					ins = interp_insert_ins (td, ins, MINT_LDC_I4_S);
-					interp_clear_ins (td, ins->prev);
-				} else {
-					ins->opcode = MINT_LDC_I4_S;
-				}
-				ins->data [0] = (gint8)ct;
-			} else {
-				if (size < 3) {
-					ins = interp_insert_ins (td, ins, MINT_LDC_I4);
-					interp_clear_ins (td, ins->prev);
-				} else {
-					ins->opcode = MINT_LDC_I4;
-				}
-				WRITE32_INS (ins, 0, &ct);
-			}
-			break;
-		}
+	case -1: opcode = MINT_LDC_I4_M1; break;
+	case 0: opcode = MINT_LDC_I4_0; break;
+	case 1: opcode = MINT_LDC_I4_1; break;
+	case 2: opcode = MINT_LDC_I4_2; break;
+	case 3: opcode = MINT_LDC_I4_3; break;
+	case 4: opcode = MINT_LDC_I4_4; break;
+	case 5: opcode = MINT_LDC_I4_5; break;
+	case 6: opcode = MINT_LDC_I4_6; break;
+	case 7: opcode = MINT_LDC_I4_7; break;
+	case 8: opcode = MINT_LDC_I4_8; break;
+	default:
+		if (ct >= -128 && ct <= 127)
+			opcode = MINT_LDC_I4_S;
+		else
+			opcode = MINT_LDC_I4;
+		break;
 	}
+
+	int new_size = mono_interp_oplen [opcode];
+
+	if (ins == NULL)
+		ins = interp_add_ins (td, opcode);
+
+	int ins_size = mono_interp_oplen [ins->opcode];
+	if (ins_size < new_size) {
+		// We can't replace the passed instruction, discard it and emit a new one
+		ins = interp_insert_ins (td, ins, opcode);
+		interp_clear_ins (td, ins->prev);
+	} else {
+		ins->opcode = opcode;
+	}
+
+	if (new_size == 2)
+		ins->data [0] = (gint8)ct;
+	else if (new_size == 3)
+		WRITE32_INS (ins, 0, &ct);
 
 	return ins;
 }
@@ -3047,6 +3053,54 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 	}
 }
 
+static gboolean
+interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
+{
+	if (mt >= MINT_TYPE_I1 && mt <= MINT_TYPE_I4
+#if SIZEOF_VOID_P == 4
+		|| mt == MINT_TYPE_P
+#endif
+		) {
+		gint32 val;
+		switch (mt) {
+		case MINT_TYPE_I1:
+			val = *(gint8*)field_addr;
+			break;
+		case MINT_TYPE_U1:
+			val = *(guint8*)field_addr;
+			break;
+		case MINT_TYPE_I2:
+			val = *(gint16*)field_addr;
+			break;
+		case MINT_TYPE_U2:
+			val = *(guint16*)field_addr;
+			break;
+		default:
+			val = *(gint32*)field_addr;
+		}
+		interp_get_ldc_i4_from_const (td, NULL, val);
+	} else if (mt == MINT_TYPE_I8
+#if SIZEOF_VOID_P == 8
+		|| mt == MINT_TYPE_P
+#endif
+		) {
+		gint64 val = *(gint64*)field_addr;
+		interp_add_ins (td, MINT_LDC_I8);
+		WRITE64_INS (td->last_ins, 0, &val);
+	} else if (mt == MINT_TYPE_R4) {
+		float val = *(float*)field_addr;
+		interp_add_ins (td, MINT_LDC_R4);
+		WRITE32_INS (td->last_ins, 0, &val);
+	} else if (mt == MINT_TYPE_R8) {
+		double val = *(double*)field_addr;
+		interp_add_ins (td, MINT_LDC_R8);
+		WRITE64_INS (td->last_ins, 0, &val);
+	} else {
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
@@ -3083,13 +3137,20 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 		}
 	} else {
-		if (is_load)
+		gpointer field_addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+		if (is_load) {
+			MonoType *ftype = mono_field_get_type_internal (field);
+			if (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY && vtable->initialized) {
+				if (interp_emit_load_const (td, field_addr, mt))
+					return;
+			}
 			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDSFLD_VT : (MINT_LDSFLD_I1 + mt - MINT_TYPE_I1));
-		else
+		} else {
 			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
+		}
 
 		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+		td->last_ins->data [1] = get_data_item_index (td, (char*)field_addr);
 
 		if (mt == MINT_TYPE_VT) {
 			int size = mono_class_value_size (field_class, NULL);
@@ -4193,7 +4254,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I4: {
 				if (interp_ins_is_ldc (td->last_ins) && (inlining || !td->is_bb_start [in_offset])) {
-					gint64 ct = interp_ldc_i4_get_const (td->last_ins);
+					gint64 ct = interp_get_const_from_ldc_i4 (td->last_ins);
 					interp_clear_ins (td, td->last_ins);
 
 					interp_add_ins (td, MINT_LDC_I8);
@@ -4262,7 +4323,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_I4:
 				if (interp_ins_is_ldc (td->last_ins) && (inlining || !td->is_bb_start [in_offset])) {
-					gint64 ct = (guint32)interp_ldc_i4_get_const (td->last_ins);
+					gint64 ct = (guint32)interp_get_const_from_ldc_i4 (td->last_ins);
 					interp_clear_ins (td, td->last_ins);
 
 					interp_add_ins (td, MINT_LDC_I8);
@@ -6548,7 +6609,7 @@ interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 		interp_clear_ins (td, sp->ins);
 		mono_interp_stats.killed_instructions++;
 		if (result.type == STACK_VALUE_I4)
-			ins = interp_inst_replace_with_i4_const (td, ins, result.i);
+			ins = interp_get_ldc_i4_from_const (td, ins, result.i);
 		else if (result.type == STACK_VALUE_I8)
 			ins = interp_inst_replace_with_i8_const (td, ins, result.l);
 		else
@@ -6680,7 +6741,7 @@ interp_fold_binop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 		interp_clear_ins (td, sp [1].ins);
 		mono_interp_stats.killed_instructions += 2;
 		if (result.type == STACK_VALUE_I4)
-			ins = interp_inst_replace_with_i4_const (td, ins, result.i);
+			ins = interp_get_ldc_i4_from_const (td, ins, result.i);
 		else if (result.type == STACK_VALUE_I8)
 			ins = interp_inst_replace_with_i8_const (td, ins, result.l);
 		else
@@ -6813,7 +6874,7 @@ retry:
 				gboolean is_i4 = locals [loaded_local].type == STACK_VALUE_I4;
 				g_assert (!(td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				if (is_i4)
-					ins = interp_inst_replace_with_i4_const (td, ins, locals [loaded_local].i);
+					ins = interp_get_ldc_i4_from_const (td, ins, locals [loaded_local].i);
 				else
 					ins = interp_inst_replace_with_i8_const (td, ins, locals [loaded_local].l);
 				sp->ins = ins;
@@ -6894,7 +6955,7 @@ retry:
 				val.l = READ64 (&ins->data [0]);
 			} else {
 				val.type = STACK_VALUE_I4;
-				val.i = interp_ldc_i4_get_const (ins);
+				val.i = interp_get_const_from_ldc_i4 (ins);
 			}
 
 			if (prev_ins && prev_ins->opcode == MINT_POP &&
