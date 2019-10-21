@@ -4931,6 +4931,11 @@ struct GenTreeAddrMode : public GenTreeOp
         return gtOp1;
     }
 
+    void SetBase(GenTree* base)
+    {
+        gtOp1 = base;
+    }
+
     // Second operand is scaled index value
     bool HasIndex() const
     {
@@ -4941,9 +4946,29 @@ struct GenTreeAddrMode : public GenTreeOp
         return gtOp2;
     }
 
+    void SetIndex(GenTree* index)
+    {
+        gtOp2 = index;
+    }
+
+    unsigned GetScale() const
+    {
+        return gtScale;
+    }
+
+    void SetScale(unsigned scale)
+    {
+        gtScale = scale;
+    }
+
     int Offset()
     {
         return static_cast<int>(gtOffset);
+    }
+
+    void SetOffset(int offset)
+    {
+        gtOffset = offset;
     }
 
     unsigned gtScale; // The scale factor
