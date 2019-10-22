@@ -1152,9 +1152,13 @@ namespace System.Text
 
         public StringBuilder Append(char value)
         {
-            if (m_ChunkLength < m_ChunkChars.Length)
+            int nextCharIndex = m_ChunkLength;
+            char[] chars = m_ChunkChars;
+
+            if ((uint)chars.Length > (uint)nextCharIndex)
             {
-                m_ChunkChars[m_ChunkLength++] = value;
+                chars[nextCharIndex] = value;
+                m_ChunkLength++;
             }
             else
             {
