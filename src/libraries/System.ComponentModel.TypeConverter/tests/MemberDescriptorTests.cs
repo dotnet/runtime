@@ -10,6 +10,11 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
+
+    // Mutable static comparision in the implementation
+    [Collection("NoParallelTests")]
     public class MemberDescriptorTests
     {
         [Theory]
@@ -308,7 +313,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [ActiveIssue(40948)]
         public void AttributeArray_SetGetAttributesAndModify_DoesCopy()
         {
             var attribute1 = new MockAttribute1();
