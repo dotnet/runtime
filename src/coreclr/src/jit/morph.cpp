@@ -1243,7 +1243,6 @@ void fgArgInfo::EvalToTmp(fgArgTabEntry* curArgTabEntry, unsigned tmpNum, GenTre
 
 void fgArgInfo::ArgsComplete()
 {
-    bool hasStackArgs    = false;
     bool hasStructRegArg = false;
 
     for (unsigned curInx = 0; curInx < argCount; curInx++)
@@ -1254,7 +1253,7 @@ void fgArgInfo::ArgsComplete()
 
         if (curArgTabEntry->GetRegNum() == REG_STK)
         {
-            hasStackArgs = true;
+            assert(hasStackArgs == true);
 #if !FEATURE_FIXED_OUT_ARGS
             // On x86 we use push instructions to pass arguments:
             //   The non-register arguments are evaluated and pushed in order
@@ -1267,7 +1266,7 @@ void fgArgInfo::ArgsComplete()
         else if (curArgTabEntry->IsSplit())
         {
             hasStructRegArg = true;
-            hasStackArgs    = true;
+            assert(hasStackArgs == true);
         }
 #endif       // FEATURE_ARG_SPLIT
         else // we have a register argument, next we look for a struct type.
