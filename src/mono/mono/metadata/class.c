@@ -6253,7 +6253,17 @@ mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError 
 		return method;
 
 	klass = method->klass;
-	if (mono_class_is_ginst (klass)) {
+	if (mono_class_is_gtd (klass)) {
+		/* If we get a GTD like Foo`2 replace look instead at its instantiation with its own generic params: Foo`2<!0, !1>. */
+		/* In particular we want generic_inst to be initialized to <!0,
+		 * !1> so that we can inflate parent classes correctly as we go
+		 * up the class hierarchy. */
+		MonoType *ty = mono_class_gtd_get_canonical_inst (klass);
+		g_assert (ty->type == MONO_TYPE_GENERICINST);
+		MonoGenericClass *gklass = ty->data.generic_class;
+		generic_inst = mono_generic_class_get_context (gklass);
+		klass = gklass->container_class;
+	} else if (mono_class_is_ginst (klass)) {
 		generic_inst = mono_class_get_context (klass);
 		klass = mono_class_get_generic_class (klass)->container_class;
 	}
@@ -6301,6 +6311,10 @@ retry:
 			generic_inst = parent_inst;
 		}
 	} else {
+		/* When we get here, possibly after a retry, if generic_inst is
+		 * set, then the class is must be a gtd */
+		g_assert (generic_inst == NULL || mono_class_is_gtd (klass));
+
 		klass = m_class_get_parent (klass);
 		if (!klass)
 			return method;
@@ -6320,6 +6334,7 @@ retry:
 	if (generic_inst) {
 		klass = mono_class_inflate_generic_class_checked (klass, generic_inst, error);
 		return_val_if_nok (error, NULL);
+		generic_inst = NULL;
 	}
 
 	if (klass == method->klass)
