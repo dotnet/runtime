@@ -311,16 +311,21 @@ namespace System.Drawing
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
             logFont = new SafeNativeMethods.LOGFONT();
 
-            if (!type.IsValueType)
-            {
-                // Only works with non value types
-                Marshal.StructureToPtr(lf, new IntPtr(&logFont), fDeleteOld: false);
-            }
-            else
+            try
             {
                 GCHandle handle = GCHandle.Alloc(lf, GCHandleType.Pinned);
                 Buffer.MemoryCopy((byte*)handle.AddrOfPinnedObject(), &logFont, nativeSize, nativeSize);
                 handle.Free();
+            }
+            catch (ArgumentException)
+            {
+                // If the type isn't blittable it won't be able to be pinned with GCHandle. Try
+                // to use the marshaller to copy the "native" representation instead.
+                //
+                // This happens for classes or structs that have reference types as members.
+                // Marshal.StructureToPtr() will *not* work with blittable structs (which are
+                // handled in the try block above).
+                Marshal.StructureToPtr(lf, new IntPtr(&logFont), fDeleteOld: false);
             }
 
             return FromLogFontInternal(ref logFont, hdc);

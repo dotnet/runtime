@@ -711,6 +711,56 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FromLogFont_UnblittableStruct()
+        {
+            const byte OUT_TT_ONLY_PRECIS = 7;
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    var logFont = new UnblittableLOGFONT
+                    {
+                        lfOutPrecision = OUT_TT_ONLY_PRECIS
+                    };
+
+                    using (Font font = Font.FromLogFont(logFont))
+                    {
+                        Assert.NotNull(font);
+                        Assert.NotEmpty(font.Name);
+                    }
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [Serializable()]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct UnblittableLOGFONT
+        {
+            public int lfHeight;
+            public int lfWidth;
+            public int lfEscapement;
+            public int lfOrientation;
+            public int lfWeight;
+            public byte lfItalic;
+            public byte lfUnderline;
+            public byte lfStrikeOut;
+            public byte lfCharSet;
+            public byte lfOutPrecision;
+            public byte lfClipPrecision;
+            public byte lfQuality;
+            public byte lfPitchAndFamily;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string lfFaceName;
+        }
+
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(GraphicsUnit.Document)]
         [InlineData(GraphicsUnit.Inch)]
