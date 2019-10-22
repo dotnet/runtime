@@ -908,14 +908,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
-    
-    ICLRPrivBinder* pBinder = GetHostBinder();
-    
-    // If no binder was explicitly set, check if parent assembly has a binder.
-    if (pBinder == nullptr)
-    {
-        pBinder = GetBindingContextFromParentAssembly(pDomain);
-    }
 
     DomainAssembly* pAssembly = nullptr;
     if (CanUseWithBindingCache())
@@ -1494,8 +1486,6 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        // Host binder based assembly spec's cannot currently be safely inserted into caches.
-        PRECONDITION(pSpec->GetHostBinder() == nullptr);
         POSTCONDITION(UnsafeContains(this, pSpec));
         POSTCONDITION(UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1582,8 +1572,6 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        // Host binder based assembly spec's cannot currently be safely inserted into caches.
-        PRECONDITION(pSpec->GetHostBinder() == nullptr);
         POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pFile)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -1672,8 +1660,6 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        // Host binder based assembly spec's cannot currently be safely inserted into caches.
-        PRECONDITION(pSpec->GetHostBinder() == nullptr);
         DISABLED(POSTCONDITION(UnsafeContains(this, pSpec))); //<TODO>@todo: Getting violations here - StoreExceptions could happen anywhere so this is possibly too aggressive.</TODO>
         INJECT_FAULT(COMPlusThrowOM(););
     }

@@ -5029,8 +5029,7 @@ AppDomain::BindHostedPrivAssembly(
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(
     AssemblySpec *         pSpec, 
-    BOOL                   fThrowOnFileNotFound, 
-    BOOL                   fUseHostBinderIfAvailable)
+    BOOL                   fThrowOnFileNotFound)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5065,7 +5064,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 goto EndTry2; // Goto end of try block.
 
             PTR_CLRPrivAssemblyWinRT assem = dac_cast<PTR_CLRPrivAssemblyWinRT>(pAssembly->GetHostAssembly());
-            assem->SetFallbackBinder(pSpec->GetHostBinder());
+            assem->SetFallbackBinder(pSpec->GetFallbackLoadContextBinderForRequestingAssembly());
 EndTry2:;
         }
         // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions 

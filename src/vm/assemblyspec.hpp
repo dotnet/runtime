@@ -281,19 +281,6 @@ class AssemblySpec  : public BaseAssemblySpec
         STATIC_CONTRACT_LIMITED_METHOD;
         return HasUniqueIdentity(); 
     }
-
-    inline ICLRPrivBinder *GetHostBinder() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pHostBinder;
-    }
-
-    inline void SetHostBinder(ICLRPrivBinder *pHostBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pHostBinder = pHostBinder;
-    }
-
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7
