@@ -700,6 +700,12 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
+#if READYTORUN
+                if (!isMethodDefinedInCoreLib())
+                {
+                    throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
+                }
+#endif
 #if !READYTORUN
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
@@ -3015,6 +3021,17 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool isMethodDefinedInCoreLib()
+        {
+            TypeDesc owningType = MethodBeingCompiled.OwningType;
+            MetadataType owningMetadataType = owningType as MetadataType;
+            if (owningMetadataType == null)
+            {
+                return false;
+            }
+            return owningMetadataType.Module == _compilation.TypeSystemContext.SystemModule;
+        }
+
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
@@ -3028,8 +3045,12 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
-            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
+            if ((_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
                 || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
+#if READYTORUN
+                && isMethodDefinedInCoreLib()
+#endif
+               )
             {
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
