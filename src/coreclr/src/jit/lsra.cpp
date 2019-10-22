@@ -6719,50 +6719,41 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             // to know what they are here.
             var_types typ;
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (refType == RefTypeUpperVectorSave)
+            GenTree* treeNode = refPosition->treeNode;
+            if (treeNode == nullptr)
             {
-                typ = LargeVectorSaveType;
+                assert(RefTypeIsUse(refType));
+                treeNode = interval->firstRefPosition->treeNode;
             }
-            else
-#endif // !FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            {
-                GenTree* treeNode = refPosition->treeNode;
-                if (treeNode == nullptr)
-                {
-                    assert(RefTypeIsUse(refType));
-                    treeNode = interval->firstRefPosition->treeNode;
-                }
-                assert(treeNode != nullptr);
+            assert(treeNode != nullptr);
 
-                // In case of multi-reg call nodes, we need to use the type
-                // of the return register given by multiRegIdx of the refposition.
-                if (treeNode->IsMultiRegCall())
-                {
-                    ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
-                    typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
-                }
+            // In case of multi-reg call nodes, we need to use the type
+            // of the return register given by multiRegIdx of the refposition.
+            if (treeNode->IsMultiRegCall())
+            {
+                ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
+                typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
+            }
 #if FEATURE_ARG_SPLIT
-                else if (treeNode->OperIsPutArgSplit())
-                {
-                    typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
-                }
+            else if (treeNode->OperIsPutArgSplit())
+            {
+                typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
+            }
 #if !defined(_TARGET_64BIT_)
-                else if (treeNode->OperIsPutArgReg())
-                {
-                    // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
-                    // However when they get spilled, they should be treated as separated int registers.
-                    var_types typNode = treeNode->TypeGet();
-                    typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
-                }
+            else if (treeNode->OperIsPutArgReg())
+            {
+                // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
+                // However when they get spilled, they should be treated as separated int registers.
+                var_types typNode = treeNode->TypeGet();
+                typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
+            }
 #endif // !_TARGET_64BIT_
 #endif // FEATURE_ARG_SPLIT
-                else
-                {
-                    typ = treeNode->TypeGet();
-                }
-                typ = RegSet::tmpNormalizeType(typ);
+            else
+            {
+                typ = treeNode->TypeGet();
             }
+            typ = RegSet::tmpNormalizeType(typ);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
