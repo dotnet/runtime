@@ -201,62 +201,22 @@ namespace System.Text.Json
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     {
-                        // Add a single property that maps to the class type so we can have policies applied.
                         ElementType = elementType;
                         AddItemToObject = addMethod;
-
-                        // A policy property is not a real property on a type; instead it leverages the existing converter
-                        // logic and generic support to avoid boxing. It is used with values types, elements from collections and
-                        // dictionaries, and collections themselves. Typically it would represent a CLR type such as System.String.
-                        PolicyProperty = CreateProperty(
-                            declaredPropertyType: type,
-                            runtimePropertyType: runtimeType,
-                            propertyInfo: null, // Not a real property so this is null.
-                            parentClassType: typeof(object),
-                            collectionElementType: elementType,
-                            nullableUnderlyingType,
-                            converter: null,
-                            ClassType,
-                            options);
-
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType, nullableUnderlyingType, converter: null, ClassType, options);
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(PolicyProperty.RuntimePropertyType);
                     }
                     break;
                 case ClassType.Value:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-
-                        // Add a single property that maps to the class type so we can have policies applied.
-                        //AddPolicyPropertyForValue(type, options);
-                        PolicyProperty = CreateProperty(
-                            declaredPropertyType: type,
-                            runtimePropertyType: runtimeType,
-                            propertyInfo: null, // Not a real property so this is null.
-                            parentClassType: typeof(object),
-                            collectionElementType: null,
-                            nullableUnderlyingType,
-                            converter,
-                            ClassType,
-                            options);
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
                     }
                     break;
                 case ClassType.Unknown:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-
-                        // Add a single property that maps to the class type so we can have policies applied.
-                        //AddPolicyPropertyForValue(type, options);
-                        PolicyProperty = CreateProperty(
-                            declaredPropertyType: type,
-                            runtimePropertyType: runtimeType,
-                            propertyInfo: null, // Not a real property so this is null.
-                            parentClassType: typeof(object),
-                            collectionElementType: null,
-                            nullableUnderlyingType,
-                            converter,
-                            ClassType,
-                            options);
-
+                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
                         PropertyCache = new Dictionary<string, JsonPropertyInfo>();
                         PropertyCacheArray = Array.Empty<JsonPropertyInfo>();
                     }

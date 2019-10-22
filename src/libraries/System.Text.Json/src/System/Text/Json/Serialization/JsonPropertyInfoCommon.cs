@@ -111,7 +111,7 @@ namespace System.Text.Json
         {
             if (_elementPropertyInfo == null && ElementClassInfo.PolicyProperty == null)
             {
-                _elementPropertyInfo = ElementClassInfo.CreateRootObject(Options);
+                _elementPropertyInfo = ElementClassInfo.CreateRootProperty(Options);
             }
         }
 

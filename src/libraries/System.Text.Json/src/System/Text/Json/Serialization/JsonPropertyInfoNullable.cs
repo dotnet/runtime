@@ -162,5 +162,21 @@ namespace System.Text.Json
         {
             return typeof(Dictionary<string, TProperty?>);
         }
+
+        public override void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object value)
+        {
+            if (writeStackFrame.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty?>> genericEnumerator)
+            {
+                key = genericEnumerator.Current.Key;
+                value = genericEnumerator.Current.Value;
+            }
+            else
+            {
+                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                    writeStackFrame.JsonPropertyInfo.DeclaredPropertyType,
+                    writeStackFrame.JsonPropertyInfo.ParentClassType,
+                    writeStackFrame.JsonPropertyInfo.PropertyInfo);
+            }
+        }
     }
 }
