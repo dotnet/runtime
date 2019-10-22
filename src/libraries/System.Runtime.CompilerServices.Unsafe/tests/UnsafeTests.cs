@@ -822,6 +822,116 @@ namespace System.Runtime.CompilerServices
 
             Assert.Throws<InvalidCastException>(() => Unsafe.Unbox<bool>(box));
         }
+
+        [Fact]
+        public static void SkipInit()
+        {
+            // Validate that calling with primitive types works.
+
+            Unsafe.SkipInit(out sbyte sbyteValue);
+            Unsafe.SkipInit(out byte byteValue);
+            Unsafe.SkipInit(out short shortValue);
+            Unsafe.SkipInit(out ushort ushortValue);
+            Unsafe.SkipInit(out int intValue);
+            Unsafe.SkipInit(out uint uintValue);
+            Unsafe.SkipInit(out long longValue);
+            Unsafe.SkipInit(out ulong ulongValue);
+            Unsafe.SkipInit(out float floatValue);
+            Unsafe.SkipInit(out double doubleValue);
+
+            // Validate that calling on user-defined unmanaged structs works.
+            
+            Unsafe.SkipInit(out Byte4 byte4Value);
+            Unsafe.SkipInit(out Byte4Short2 byte4Short2Value);
+            Unsafe.SkipInit(out Byte512 byte512Value);
+            Unsafe.SkipInit(out Int32Double int32DoubleValue);
+
+            // Validates that calling on a struct works and the reference type is still zeroed.
+
+            Unsafe.SkipInit(out StringInt32 stringInt32Value);
+            Assert.Null(stringInt32Value.String);
+
+            // Validates that calling on a reference type works and it is zeroed.
+
+            Unsafe.SkipInit(out string stringValue);
+            Assert.Null(stringValue);
+        }
+
+        [Fact]
+        public static void SkipInit_PreservesPrevious()
+        {
+            // Validate that calling on already initialized types preserves the previous value.
+
+            sbyte sbyteValue = 1;
+            Unsafe.SkipInit(out sbyteValue);
+            Assert.Equal<sbyte>(1, sbyteValue);
+
+            byte byteValue = 2;
+            Unsafe.SkipInit(out byteValue);
+            Assert.Equal<byte>(2, byteValue);
+
+            short shortValue = 3;
+            Unsafe.SkipInit(out shortValue);
+            Assert.Equal<short>(3, shortValue);
+
+            ushort ushortValue = 4;
+            Unsafe.SkipInit(out ushortValue);
+            Assert.Equal<ushort>(4, ushortValue);
+
+            int intValue = 5;
+            Unsafe.SkipInit(out intValue);
+            Assert.Equal<int>(5, intValue);
+
+            uint uintValue = 6;
+            Unsafe.SkipInit(out uintValue);
+            Assert.Equal<uint>(6, uintValue);
+
+            long longValue = 7;
+            Unsafe.SkipInit(out longValue);
+            Assert.Equal<long>(7, longValue);
+
+            ulong ulongValue = 8;
+            Unsafe.SkipInit(out ulongValue);
+            Assert.Equal<ulong>(8, ulongValue);
+
+            float floatValue = 9;
+            Unsafe.SkipInit(out floatValue);
+            Assert.Equal<float>(9, floatValue);
+
+            double doubleValue = 10;
+            Unsafe.SkipInit(out doubleValue);
+            Assert.Equal<double>(10, doubleValue);
+
+            Byte4 byte4Value = new Byte4 { B0 = 11, B1 = 12, B2 = 13, B3 = 14 };
+            Unsafe.SkipInit(out byte4Value);
+            Assert.Equal<byte>(11, byte4Value.B0);
+            Assert.Equal<byte>(12, byte4Value.B1);
+            Assert.Equal<byte>(13, byte4Value.B2);
+            Assert.Equal<byte>(14, byte4Value.B3);
+
+            Byte4Short2 byte4Short2Value = new Byte4Short2 { B0 = 15, B1 = 16, B2 = 17, B3 = 18, S4 = 19, S6 = 20 };
+            Unsafe.SkipInit(out byte4Short2Value);
+            Assert.Equal<byte>(15, byte4Short2Value.B0);
+            Assert.Equal<byte>(16, byte4Short2Value.B1);
+            Assert.Equal<byte>(17, byte4Short2Value.B2);
+            Assert.Equal<byte>(18, byte4Short2Value.B3);
+            Assert.Equal<short>(19, byte4Short2Value.S4);
+            Assert.Equal<short>(20, byte4Short2Value.S6);
+
+            Int32Double int32DoubleValue = new Int32Double { Int32 = 21, Double = 22 };
+            Unsafe.SkipInit(out int32DoubleValue);
+            Assert.Equal<int>(21, int32DoubleValue.Int32);
+            Assert.Equal<double>(22, int32DoubleValue.Double);
+
+            StringInt32 stringInt32Value = new StringInt32 { String = "23", Int32 = 24 };
+            Unsafe.SkipInit(out stringInt32Value);
+            Assert.Equal("23", stringInt32Value.String);
+            Assert.Equal<int>(24, stringInt32Value.Int32);
+
+            string stringValue = "25";
+            Unsafe.SkipInit(out stringValue);
+            Assert.Equal("25", stringValue);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -891,5 +1001,11 @@ namespace System.Runtime.CompilerServices
 
             return aligned;
         }
+    }
+
+    public struct StringInt32
+    {
+        public string String;
+        public int Int32;
     }
 }

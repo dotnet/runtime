@@ -6,12 +6,12 @@
 
 .assembly System.Runtime.CompilerServices.Unsafe
 {
-  .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                                    63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 ) 
+  //  .custom instance void [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 )
 
   .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = ( 01 00 07 34 2E 30 2E 30 2E 30 00 00 )             // ...4.0.0.0..
   .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = ( 01 00 07 34 2E 30 2E 30 2E 30 00 00 )             // ...4.0.0.0..
@@ -29,7 +29,7 @@
     01 00 0b 53 65 72 76 69 63 65 61 62 6c 65 04 54
     72 75 65 00 00
   ) // "Serviceable", "True"
-  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyCopyrightAttribute::.ctor(string) = ( 01 00 2F C2 A9 20 4D 69 63 72 6F 73 6F 66 74 20   // ../.. Microsoft 
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyCopyrightAttribute::.ctor(string) = ( 01 00 2F C2 A9 20 4D 69 63 72 6F 73 6F 66 74 20   // ../.. Microsoft
                                                                                         43 6F 72 70 6F 72 61 74 69 6F 6E 2E 20 20 41 6C   // Corporation.  Al
                                                                                         6C 20 72 69 67 68 74 73 20 72 65 73 65 72 76 65   // l rights reserve
                                                                                         64 2E 00 00 )                                     // d...
@@ -71,22 +71,22 @@
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
-        ldarg.0        
+        ldarg.0
         unaligned. 0x1
         ldobj !!T
         ret
   } // end of method Unsafe::ReadUnaligned
-  
+
   .method public hidebysig static !!T ReadUnaligned<T>(uint8& source) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
-        ldarg.0        
+        ldarg.0
         unaligned. 0x1
         ldobj !!T
         ret
   } // end of method Unsafe::ReadUnaligned
-  
+
   .method public hidebysig static void Write<T>(void* destination,
                                                  !!T 'value') cil managed aggressiveinlining
   {
@@ -116,7 +116,7 @@
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
         ldarg.0
-        ldarg.1        
+        ldarg.1
         unaligned. 0x01
         stobj !!T
         ret
@@ -154,6 +154,13 @@
         conv.u
         ret
   } // end of method Unsafe::AsPointer
+
+  .method public hidebysig static void SkipInit<T> ([out] !!T& 'value') cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 0
+        ret
+  } // end of method Unsafe::SkipInit
 
   .method public hidebysig static int32 SizeOf<T>() cil managed aggressiveinlining
   {
@@ -429,7 +436,7 @@
         ldarg.0
         ldarg.1
         ceq
-        ret 
+        ret
   } // end of method Unsafe::AreSame
 
   .method public hidebysig static bool IsAddressGreaterThan<T>(!!T& left, !!T& right) cil managed aggressiveinlining
@@ -439,7 +446,7 @@
         ldarg.0
         ldarg.1
         cgt.un
-        ret 
+        ret
   } // end of method Unsafe::IsAddressGreaterThan
 
   .method public hidebysig static bool IsAddressLessThan<T>(!!T& left, !!T& right) cil managed aggressiveinlining
@@ -449,7 +456,7 @@
         ldarg.0
         ldarg.1
         clt.un
-        ret 
+        ret
   } // end of method Unsafe::IsAddressLessThan
 
 } // end of class System.Runtime.CompilerServices.Unsafe
@@ -460,7 +467,7 @@
   .custom instance void [CORE_ASSEMBLY]System.AttributeUsageAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.AttributeTargets) = ( 01 00 6C 00 00 00 02 00 54 02 0D 41 6C 6C 6F 77   // ..l.....T..Allow
                                                                                                                                      4D 75 6C 74 69 70 6C 65 00 54 02 09 49 6E 68 65   // Multiple.T..Inhe
                                                                                                                                      72 69 74 65 64 00 )                               // rited.
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
         .maxstack 1
@@ -476,8 +483,8 @@
 .class private auto ansi sealed beforefieldinit System.Runtime.CompilerServices.IsReadOnlyAttribute
        extends [CORE_ASSEMBLY]System.Attribute
 {
-  .method public hidebysig specialname rtspecialname 
-          instance void .ctor () cil managed 
+  .method public hidebysig specialname rtspecialname
+          instance void .ctor () cil managed
   {
         .maxstack 1
         ldarg.0
