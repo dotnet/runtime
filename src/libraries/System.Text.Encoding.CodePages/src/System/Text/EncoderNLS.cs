@@ -30,7 +30,7 @@ namespace System.Text
         internal bool m_throwOnOverflow;
         internal int m_charsUsed;
         internal EncoderFallback m_fallback;
-        internal EncoderFallbackBuffer m_fallbackBuffer;
+        internal EncoderFallbackBuffer? m_fallbackBuffer;
 
         internal EncoderNLS(EncodingNLS encoding)
         {
@@ -71,13 +71,6 @@ namespace System.Text
 
                 return m_fallbackBuffer;
             }
-        }
-
-        // This one is used when deserializing (like UTF7Encoding.Encoder)
-        internal EncoderNLS()
-        {
-            m_encoding = null;
-            Reset();
         }
 
         public override void Reset()

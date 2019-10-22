@@ -20,7 +20,7 @@ namespace System.Text
             get { return s_singleton; }
         }
 
-        public override Encoding GetEncoding(int codepage)
+        public override Encoding? GetEncoding(int codepage)
         {
             if (codepage < 0 || codepage > 65535)
                 return null;
@@ -35,7 +35,7 @@ namespace System.Text
                     null;
             }
 
-            Encoding result = null;
+            Encoding? result = null;
 
             _cacheLock.EnterUpgradeableReadLock();
             try
@@ -63,8 +63,7 @@ namespace System.Text
                 _cacheLock.EnterWriteLock();
                 try
                 {
-                    Encoding cachedEncoding;
-                    if (_encodings.TryGetValue(codepage, out cachedEncoding))
+                    if (_encodings.TryGetValue(codepage, out Encoding? cachedEncoding))
                         return cachedEncoding;
 
                     _encodings.Add(codepage, result);
@@ -82,7 +81,7 @@ namespace System.Text
             return result;
         }
 
-        public override Encoding GetEncoding(string name)
+        public override Encoding? GetEncoding(string name)
         {
             int codepage = EncodingTable.GetCodePageFromName(name);
             if (codepage == 0)
@@ -130,9 +129,9 @@ namespace System.Text
         private const int ISO_8859_8I = 38598;
         private const int ISO_8859_8_Visual = 28598;
 
-        private static Encoding GetEncodingRare(int codepage)
+        private static Encoding? GetEncodingRare(int codepage)
         {
-            Encoding result = null;
+            Encoding? result = null;
 
             switch (codepage)
             {

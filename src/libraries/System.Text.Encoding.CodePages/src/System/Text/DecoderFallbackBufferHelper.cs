@@ -11,9 +11,10 @@ namespace System.Text
         // Internal items to help us figure out what we're doing as far as error messages, etc.
         // These help us with our performance and messages internally
         internal unsafe byte* byteStart;
-        internal unsafe char* charEnd; private readonly DecoderFallbackBuffer _fallbackBuffer;
+        internal unsafe char* charEnd;
+        private readonly DecoderFallbackBuffer? _fallbackBuffer;
 
-        public DecoderFallbackBufferHelper(DecoderFallbackBuffer fallbackBuffer)
+        public DecoderFallbackBufferHelper(DecoderFallbackBuffer? fallbackBuffer)
         {
             _fallbackBuffer = fallbackBuffer;
             byteStart = null;
@@ -22,8 +23,9 @@ namespace System.Text
 
         internal unsafe void InternalReset()
         {
+            Debug.Assert(_fallbackBuffer != null);
             byteStart = null;
-            _fallbackBuffer.Reset();
+            _fallbackBuffer!.Reset();
         }
 
         internal void InternalInitialize(byte* _byteStart, char* _charEnd)
@@ -43,9 +45,10 @@ namespace System.Text
         internal bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(_fallbackBuffer != null);
 
             // See if there's a fallback character and we have an output buffer then copy our string.
-            if (_fallbackBuffer.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
+            if (_fallbackBuffer!.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
             {
                 // Copy the chars to our output
                 char ch;
@@ -93,14 +96,15 @@ namespace System.Text
         }
 
         // This version just counts the fallback and doesn't actually copy anything.
-        internal unsafe int InternalFallback(byte[] bytes, byte* pBytes)
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
+        internal unsafe int InternalFallback(byte[] bytes, byte* pBytes)
         {
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(_fallbackBuffer != null);
 
             // See if there's a fallback character and we have an output buffer then copy our string.
-            if (_fallbackBuffer.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
+            if (_fallbackBuffer!.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
             {
                 int count = 0;
 

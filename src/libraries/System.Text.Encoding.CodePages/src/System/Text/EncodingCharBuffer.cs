@@ -13,14 +13,14 @@ namespace System.Text
         private readonly unsafe char* _charEnd;
         private int _charCountResult = 0;
         private readonly EncodingNLS _enc;
-        private readonly DecoderNLS _decoder;
+        private readonly DecoderNLS? _decoder;
         private readonly unsafe byte* _byteStart;
         private readonly unsafe byte* _byteEnd;
         private unsafe byte* _bytes;
         private readonly DecoderFallbackBuffer _fallbackBuffer;
         private DecoderFallbackBufferHelper _fallbackBufferHelper;
 
-        internal unsafe EncodingCharBuffer(EncodingNLS enc, DecoderNLS decoder, char* charStart, int charCount, byte* byteStart, int byteCount)
+        internal unsafe EncodingCharBuffer(EncodingNLS enc, DecoderNLS? decoder, char* charStart, int charCount, byte* byteStart, int byteCount)
         {
             _enc = enc;
             _decoder = decoder;

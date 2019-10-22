@@ -128,19 +128,19 @@ namespace System.Text
             return s1.Length - length;
         }
 
-        internal static string GetWebNameFromCodePage(int codePage)
+        internal static string? GetWebNameFromCodePage(int codePage)
         {
             return GetNameFromCodePage(codePage, s_webNames, s_webNameIndices, s_codePageToWebNameCache);
         }
 
-        internal static string GetEnglishNameFromCodePage(int codePage)
+        internal static string? GetEnglishNameFromCodePage(int codePage)
         {
             return GetNameFromCodePage(codePage, s_englishNames, s_englishNameIndices, s_codePageToEnglishNameCache);
         }
 
-        private static string GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
+        private static string? GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
         {
-            string name;
+            string? name;
 
             Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
             Debug.Assert(indices[indices.Length - 1] == names.Length);
@@ -166,8 +166,7 @@ namespace System.Text
                             s_cacheLock.EnterWriteLock();
                             try
                             {
-                                string cachedName;
-                                if (cache.TryGetValue(codePage, out cachedName))
+                                if (cache.TryGetValue(codePage, out string? cachedName))
                                 {
                                     return cachedName;
                                 }

@@ -17,8 +17,8 @@ namespace System.Text
     internal class InternalEncoderBestFitFallback : EncoderFallback
     {
         // Our variables
-        internal BaseCodePageEncoding encoding = null;
-        internal char[] arrayBestFit = null;
+        internal BaseCodePageEncoding encoding;
+        internal char[]? arrayBestFit;
 
         internal InternalEncoderBestFitFallback(BaseCodePageEncoding _encoding)
         {
@@ -26,34 +26,16 @@ namespace System.Text
             encoding = _encoding;
         }
 
-        public override EncoderFallbackBuffer CreateFallbackBuffer()
-        {
-            return new InternalEncoderBestFitFallbackBuffer(this);
-        }
+        public override EncoderFallbackBuffer CreateFallbackBuffer() =>
+            new InternalEncoderBestFitFallbackBuffer(this);
 
         // Maximum number of characters that this instance of this fallback could return
-        public override int MaxCharCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int MaxCharCount => 1;
 
-        public override bool Equals(object value)
-        {
-            InternalEncoderBestFitFallback that = value as InternalEncoderBestFitFallback;
-            if (that != null)
-            {
-                return (encoding.CodePage == that.encoding.CodePage);
-            }
-            return (false);
-        }
+        public override bool Equals(object? value) =>
+            value is InternalEncoderBestFitFallback that && encoding.CodePage == that.encoding.CodePage;
 
-        public override int GetHashCode()
-        {
-            return encoding.CodePage;
-        }
+        public override int GetHashCode() => encoding.CodePage;
     }
 
     internal sealed class InternalEncoderBestFitFallbackBuffer : EncoderFallbackBuffer
@@ -65,7 +47,7 @@ namespace System.Text
         private int _iSize;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object s_InternalSyncObject;
+        private static object? s_InternalSyncObject;
         private static object InternalSyncObject
         {
             get
@@ -73,7 +55,7 @@ namespace System.Text
                 if (s_InternalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<object>(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
                 }
                 return s_InternalSyncObject;
             }
@@ -187,7 +169,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            int highBound = _oFallback.arrayBestFit.Length;
+            int highBound = _oFallback.arrayBestFit!.Length;
             int index;
 
             // Binary search the array

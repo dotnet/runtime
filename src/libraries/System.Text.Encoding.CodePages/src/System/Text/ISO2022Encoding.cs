@@ -221,7 +221,7 @@ namespace System.Text
         }
 
         // GetByteCount
-        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS? baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(count >= 0, "[ISO2022Encoding.GetByteCount]count is negative");
@@ -232,7 +232,7 @@ namespace System.Text
         }
 
         public override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS baseEncoder)
+                                                byte* bytes, int byteCount, EncoderNLS? baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(chars != null, "[ISO2022Encoding.GetBytes]chars is null");
@@ -243,7 +243,7 @@ namespace System.Text
             Debug.Assert(EncoderFallback != null, "[ISO2022Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Fix our encoder
-            ISO2022Encoder encoder = (ISO2022Encoder)baseEncoder;
+            ISO2022Encoder? encoder = (ISO2022Encoder?)baseEncoder;
 
             // Our return value
             int iCount = 0;
@@ -272,7 +272,7 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
             Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharCount]bytes is null");
@@ -283,7 +283,7 @@ namespace System.Text
         }
 
         public override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+                                                char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(bytes != null, "[ISO2022Encoding.GetChars]bytes is null");
@@ -291,7 +291,7 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[ISO2022Encoding.GetChars]charCount is negative");
 
             // Fix our decoder
-            ISO2022Decoder decoder = (ISO2022Decoder)baseDecoder;
+            ISO2022Decoder? decoder = (ISO2022Decoder?)baseDecoder;
             int iCount = 0;
 
             switch (CodePage)
@@ -354,7 +354,7 @@ namespace System.Text
         // that technique, but the decoder will process them.
         //
         private unsafe int GetBytesCP5022xJP(char* chars, int charCount,
-                                                  byte* bytes, int byteCount, ISO2022Encoder encoder)
+                                                  byte* bytes, int byteCount, ISO2022Encoder? encoder)
         {
             // prepare our helpers
             EncodingByteBuffer buffer = new EncodingByteBuffer(this, encoder, bytes, byteCount, chars, charCount);
@@ -595,7 +595,7 @@ namespace System.Text
         // well.  So basically we just ignore <ESC>$)C when decoding.
         //
         private unsafe int GetBytesCP50225KR(char* chars, int charCount,
-                                                    byte* bytes, int byteCount, ISO2022Encoder encoder)
+                                                    byte* bytes, int byteCount, ISO2022Encoder? encoder)
         {
             // prepare our helpers
             EncodingByteBuffer buffer = new EncodingByteBuffer(this, encoder, bytes, byteCount, chars, charCount);
@@ -744,7 +744,7 @@ namespace System.Text
         // This encoding is designed for transmission by e-mail and news.  No bytes should have high bit set.
         // (all bytes <= 0x7f)
         private unsafe int GetBytesCP52936(char* chars, int charCount,
-                                           byte* bytes, int byteCount, ISO2022Encoder encoder)
+                                           byte* bytes, int byteCount, ISO2022Encoder? encoder)
         {
             // prepare our helpers
             EncodingByteBuffer buffer = new EncodingByteBuffer(this, encoder, bytes, byteCount, chars, charCount);
@@ -877,7 +877,7 @@ namespace System.Text
         }
 
         private unsafe int GetCharsCP5022xJP(byte* bytes, int byteCount,
-                                                  char* chars, int charCount, ISO2022Decoder decoder)
+                                                  char* chars, int charCount, ISO2022Decoder? decoder)
         {
             // Get our info.
             EncodingCharBuffer buffer = new EncodingCharBuffer(this, decoder, chars, charCount, bytes, byteCount);
@@ -1202,7 +1202,7 @@ namespace System.Text
         // Note that in DBCS mode mlang passed through ' ', '\t' and '\n' as SBCS characters
         // probably to allow mailer formatting without too much extra work.
         private unsafe int GetCharsCP50225KR(byte* bytes, int byteCount,
-                                                   char* chars, int charCount, ISO2022Decoder decoder)
+                                                   char* chars, int charCount, ISO2022Decoder? decoder)
         {
             // Get our info.
             EncodingCharBuffer buffer = new EncodingCharBuffer(this, decoder, chars, charCount, bytes, byteCount);
@@ -1439,7 +1439,7 @@ namespace System.Text
         // This encoding is designed for transmission by e-mail and news.  No bytes should have high bit set.
         // (all bytes <= 0x7f)
         private unsafe int GetCharsCP52936(byte* bytes, int byteCount,
-                                                char* chars, int charCount, ISO2022Decoder decoder)
+                                                char* chars, int charCount, ISO2022Decoder? decoder)
         {
             Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetCharsCP52936]count >=0");
             Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharsCP52936]bytes!=null");
@@ -1498,8 +1498,7 @@ namespace System.Text
                         }
 
                         // Stick it in decoder
-                        if (decoder != null)
-                            decoder.ClearMustFlush();
+                        decoder.ClearMustFlush();
 
                         if (chars != null)
                         {
@@ -1576,8 +1575,7 @@ namespace System.Text
                             break;
                         }
 
-                        if (decoder != null)
-                            decoder.ClearMustFlush();
+                        decoder.ClearMustFlush();
 
                         // Stick it in decoder
                         if (chars != null)
@@ -1824,7 +1822,7 @@ namespace System.Text
 
         internal class ISO2022Decoder : System.Text.DecoderNLS
         {
-            internal byte[] bytesLeftOver;
+            internal byte[] bytesLeftOver = null!; // initialized by base calling Reset
             internal int bytesLeftOverCount;
             internal ISO2022Modes currentMode;
             internal ISO2022Modes shiftInOutMode;

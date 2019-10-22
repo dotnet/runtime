@@ -28,19 +28,12 @@ namespace System.Text
         internal bool m_throwOnOverflow;
         internal int m_bytesUsed;
         internal DecoderFallback m_fallback;
-        internal DecoderFallbackBuffer m_fallbackBuffer;
+        internal DecoderFallbackBuffer? m_fallbackBuffer;
 
         internal DecoderNLS(EncodingNLS encoding)
         {
             m_encoding = encoding;
             m_fallback = m_encoding.DecoderFallback;
-            Reset();
-        }
-
-        // This is used by our child deserializers
-        internal DecoderNLS()
-        {
-            m_encoding = null;
             Reset();
         }
 

@@ -131,7 +131,7 @@ namespace System.Text
             base.LoadManagedCodePage();
 
             // Point to our new data sections
-            byte* pNativeMemory = (byte*)safeNativeMemoryHandle.DangerousGetHandle();
+            byte* pNativeMemory = (byte*)safeNativeMemoryHandle!.DangerousGetHandle();
             mapUnicodeTo4BytesFlags = pNativeMemory + 65536 * 2 * 2;
             map4BytesToUnicode = (char*)(pNativeMemory + 65536 * 2 * 2 + 0x10000 / 8);
 
@@ -203,14 +203,14 @@ namespace System.Text
         }
 
         // GetByteCount
-        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
+        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS? encoder)
         {
             // Just call GetBytes() with null bytes
             return GetBytes(chars, count, null, 0, encoder);
         }
 
         public override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS encoder)
+                                                byte* bytes, int byteCount, EncoderNLS? encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null bytes as a count
@@ -389,14 +389,14 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             // Just call GetChars() with null chars to count
             return GetChars(bytes, count, null, 0, baseDecoder);
         }
 
         public override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+                                                char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null chars as a count
@@ -406,7 +406,7 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[GB18030Encoding.GetChars]charCount is negative");
 
             // Fix our decoder
-            GB18030Decoder decoder = (GB18030Decoder)baseDecoder;
+            GB18030Decoder? decoder = (GB18030Decoder?)baseDecoder;
 
             // Get our info.
             EncodingCharBuffer buffer = new EncodingCharBuffer(this, decoder, chars, charCount, bytes, byteCount);
