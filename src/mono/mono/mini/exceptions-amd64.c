@@ -867,12 +867,14 @@ prepare_for_guard_pages (MonoContext *mctx)
 }
 
 static void
-altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, gboolean stack_ovf)
+altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 {
 	MonoContext mctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	gboolean stack_ovf = (flags & 1) != 0;
+	gboolean nullref = (flags & 2) != 0;
 
-	if (!ji)
+	if (!ji || (!stack_ovf && !nullref))
 		mono_handle_native_crash ("SIGSEGV", ctx, NULL);
 
 	mctx = *ctx;
@@ -894,6 +896,10 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	gpointer *sp;
 	int frame_size;
 	MonoContext *copied_ctx;
+	gboolean nullref = TRUE;
+
+	if (!mono_is_addr_implicit_null_check (fault_addr))
+		nullref = FALSE;
 
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
@@ -920,7 +926,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
 	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(copied_ctx);
 	UCONTEXT_REG_RSI (sigctx) = (guint64)exc;
-	UCONTEXT_REG_RDX (sigctx) = stack_ovf;
+	UCONTEXT_REG_RDX (sigctx) = (stack_ovf ? 1 : 0) | (nullref ? 2 : 0);
 #endif
 }
 
