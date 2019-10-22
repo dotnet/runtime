@@ -144,8 +144,6 @@ namespace System.Threading
 			}
 		}
 
-		internal SynchronizationContext SynchronizationContext { get; set; }
-
 		public ThreadState ThreadState => GetState (this);
 
 		void Create (ThreadStart start) => SetStartHelper ((Delegate) start, 0); // 0 will setup Thread with default stackSize

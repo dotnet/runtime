@@ -24,11 +24,6 @@ namespace System
                 return new NotImplementedException();
             }
         }
-
-        internal static Exception ByDesignWithMessage(string message)
-        {
-            return new NotImplementedException(message);
-        }
     }
 }
 

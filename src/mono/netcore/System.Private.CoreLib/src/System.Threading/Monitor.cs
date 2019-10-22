@@ -172,7 +172,7 @@ namespace System.Threading
 			return Monitor_test_owner (obj);
 		}
 		
-		public static long LockContentionCount
+		public extern static long LockContentionCount
 		{
 			[MethodImplAttribute (MethodImplOptions.InternalCall)]
 			get;
