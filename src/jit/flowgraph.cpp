@@ -9854,39 +9854,6 @@ void Compiler::fgSimpleLowering()
 #endif
 }
 
-VARSET_VALRET_TP Compiler::fgGetVarBits(GenTree* tree)
-{
-    VARSET_TP varBits(VarSetOps::MakeEmpty(this));
-
-    assert(tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD);
-
-    unsigned int lclNum = tree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc*   varDsc = lvaTable + lclNum;
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(this, varBits, varDsc->lvVarIndex);
-    }
-    // We have to check type of root tree, not Local Var descriptor because
-    // for legacy backend we promote TYP_STRUCT to TYP_INT if it is an unused or
-    // independently promoted non-argument struct local.
-    // For more details see Compiler::raAssignVars() method.
-    else if (tree->gtType == TYP_STRUCT && varDsc->lvPromoted)
-    {
-        assert(varDsc->lvType == TYP_STRUCT);
-        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
-        {
-            noway_assert(lvaTable[i].lvIsStructField);
-            if (lvaTable[i].lvTracked)
-            {
-                unsigned varIndex = lvaTable[i].lvVarIndex;
-                noway_assert(varIndex < lvaTrackedCount);
-                VarSetOps::AddElemD(this, varBits, varIndex);
-            }
-        }
-    }
-    return varBits;
-}
-
 /*****************************************************************************
  *
  *  Find and remove any basic blocks that are useless (e.g. they have not been

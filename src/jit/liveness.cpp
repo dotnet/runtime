@@ -1425,60 +1425,6 @@ void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
 #endif // DEBUG
 }
 
-/*****************************************************************************
- * For updating liveset during traversal AFTER fgComputeLife has completed
- */
-
-VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tree)
-{
-    VARSET_TP newLiveSet(VarSetOps::MakeCopy(this, liveSet));
-    assert(fgLocalVarLivenessDone == true);
-    GenTree* lclVarTree = tree; // After the tests below, "lclVarTree" will be the local variable.
-    if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD ||
-        (lclVarTree = fgIsIndirOfAddrOfLocal(tree)) != nullptr)
-    {
-        const VARSET_TP& varBits(fgGetVarBits(lclVarTree));
-
-        if (!VarSetOps::IsEmpty(this, varBits))
-        {
-            if (tree->gtFlags & GTF_VAR_DEATH)
-            {
-                // We'd like to be able to assert the following, however if we are walking
-                // through a qmark/colon tree, we may encounter multiple last-use nodes.
-                // assert (VarSetOps::IsSubset(this, varBits, newLiveSet));
-
-                // We maintain the invariant that if the lclVarTree is a promoted struct, but the
-                // the lookup fails, then all the field vars (i.e., "varBits") are dying.
-                VARSET_TP* deadVarBits = nullptr;
-                if (varTypeIsStruct(lclVarTree) && LookupPromotedStructDeathVars(lclVarTree, &deadVarBits))
-                {
-                    VarSetOps::DiffD(this, newLiveSet, *deadVarBits);
-                }
-                else
-                {
-                    VarSetOps::DiffD(this, newLiveSet, varBits);
-                }
-            }
-            else if ((tree->gtFlags & GTF_VAR_DEF) != 0 && (tree->gtFlags & GTF_VAR_USEASG) == 0)
-            {
-                assert(tree == lclVarTree); // LDOBJ case should only be a use.
-
-                // This shouldn't be in newLiveSet, unless this is debug code, in which
-                // case we keep vars live everywhere, OR it is address-exposed, OR this block
-                // is part of a try block, in which case it may be live at the handler
-                // Could add a check that, if it's in the newLiveSet, that it's also in
-                // fgGetHandlerLiveVars(compCurBB), but seems excessive
-                //
-                assert(VarSetOps::IsEmptyIntersection(this, newLiveSet, varBits) || opts.compDbgCode ||
-                       lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvAddrExposed ||
-                       (compCurBB != nullptr && ehBlockHasExnFlowDsc(compCurBB)));
-                VarSetOps::UnionD(this, newLiveSet, varBits);
-            }
-        }
-    }
-    return newLiveSet;
-}
-
 //------------------------------------------------------------------------
 // Compiler::fgComputeLifeCall: compute the changes to local var liveness
 //                              due to a GT_CALL node.
