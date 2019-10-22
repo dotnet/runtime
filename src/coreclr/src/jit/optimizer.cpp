@@ -8919,8 +8919,8 @@ void Compiler::optOptimizeBools()
                 continue;
             }
 
-            noway_assert(t1->gtOper == GT_EQ || t1->gtOper == GT_NE && t1->AsOp()->gtOp1 == c1);
-            noway_assert(t2->gtOper == GT_EQ || t2->gtOper == GT_NE && t2->AsOp()->gtOp1 == c2);
+            noway_assert(t1->OperIs(GT_EQ, GT_NE) && t1->AsOp()->gtOp1 == c1);
+            noway_assert(t2->OperIs(GT_EQ, GT_NE) && t2->AsOp()->gtOp1 == c2);
 
             // Leave out floats where the bit-representation is more complicated
             // - there are two representations for 0.
