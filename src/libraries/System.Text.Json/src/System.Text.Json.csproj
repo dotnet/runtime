@@ -189,6 +189,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   <ItemGroup>
