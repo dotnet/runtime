@@ -1370,8 +1370,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     if (oper == GT_MUL_LONG)
     {
         // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
-        gtMultiRegOp.gtOtherReg = REG_NA;
-        gtMultiRegOp.ClearOtherRegFlags();
+        AsMultiRegOp()->gtOtherReg = REG_NA;
+        AsMultiRegOp()->ClearOtherRegFlags();
     }
 #endif
 
