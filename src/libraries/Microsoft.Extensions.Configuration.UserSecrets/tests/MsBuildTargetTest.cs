@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
         [Theory]
         [InlineData(".csproj", ".cs")]
-        [InlineData(".fsproj", ".fs")]
+        [InlineData(".fsproj", ".fs", Skip = "https://github.com/aspnet/AspNetCore/issues/13303")]
         public void GeneratesAssemblyAttributeFile(string projectExt, string sourceExt)
         {
             var testTfm = typeof(MsBuildTargetTest).Assembly
