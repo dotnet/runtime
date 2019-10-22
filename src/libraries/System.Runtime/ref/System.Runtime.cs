@@ -7184,6 +7184,11 @@ namespace System.Runtime.InteropServices
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    public sealed partial class SuppressGCTransitionAttribute : System.Attribute
+    {
+        public SuppressGCTransitionAttribute() { }
+    }
 }
 namespace System.Runtime.Remoting
 {
