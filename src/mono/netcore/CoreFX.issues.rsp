@@ -942,3 +942,10 @@
 
 # Requires NativeLibrary implementation
 -nomethod System.Net.Tests.HttpWebRequestTest.ServicePoint_GetValue_ExpectedResult
+
+# Remove once we get https://github.com/dotnet/corefx/pull/41924 through Arcade
+-nomethod System.Tests.BufferTests.BlockCopy_Invalid
+# Remove once we get https://github.com/dotnet/corefx/pull/41851 through Arcade
+-nomethod System.Text.Tests.DecoderConvert2.PosTest6
+# Remove once we get https://github.com/dotnet/corefx/pull/41926 through Arcade
+-nomethod System.Security.Cryptography.DeriveBytesTests.PasswordDeriveBytesTests.GetBytes_ZeroLength

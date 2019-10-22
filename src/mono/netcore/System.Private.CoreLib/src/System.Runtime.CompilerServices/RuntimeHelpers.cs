@@ -65,10 +65,6 @@ namespace System.Runtime.CompilerServices
 			return SufficientExecutionStack ();
 		}
 
-		public static void ExecuteCodeWithGuaranteedCleanup (TryCode code, CleanupCode backoutCode, Object userData)
-		{
-		}
-
 		public static void PrepareDelegate (Delegate d)
 		{
 		}

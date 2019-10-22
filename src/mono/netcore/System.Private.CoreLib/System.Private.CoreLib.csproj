@@ -239,7 +239,6 @@
       <Compile Include="src\System.Reflection.Metadata\AssemblyExtensions.cs" />
       <Compile Include="src\System.Resources\ManifestBasedResourceGroveler.cs" />
       <Compile Include="src\System.Runtime\GCSettings.cs" />
-      <Compile Include="src\System.Runtime\RuntimeImports.cs" />
       <Compile Include="src\System.Runtime.CompilerServices\DependentHandle.cs" />
       <Compile Include="src\System.Runtime.CompilerServices\JitHelpers.cs" />
       <Compile Include="src\System.Runtime.CompilerServices\RuntimeHelpers.cs" />
