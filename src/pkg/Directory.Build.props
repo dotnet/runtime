@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageLicenseFile>$(RepoRoot)LICENSE</PackageLicenseFile>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE</LicenseUrl>
+    <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</LicenseUrl>
     <PackageDescriptionFile>$(SetupRoot)src/pkg/projects/descriptions.json</PackageDescriptionFile>
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>

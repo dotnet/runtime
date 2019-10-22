@@ -47,7 +47,7 @@
     <SetupRoot>$(RepoRoot)</SetupRoot>
     <SourceDir>$(SetupRoot)src/</SourceDir>
     <SigningToolsDir>$(SetupRoot)eng\signing\</SigningToolsDir>
-    <LicenseFile>$(RepoRoot)LICENSE</LicenseFile>
+    <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ArtifactsBinDir)</BinDir>
