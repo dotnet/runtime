@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Asn1
         /// <seealso cref="ReadEncodedValue"/>
         public ReadOnlyMemory<byte> PeekEncodedValue()
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out int bytesRead);
+            ReadTagAndLength(out int? length, out int bytesRead);
 
             if (length == null)
             {
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Asn1
         /// <seealso cref="PeekEncodedValue"/>
         public ReadOnlyMemory<byte> PeekContentBytes()
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out int bytesRead);
+            ReadTagAndLength(out int? length, out int bytesRead);
 
             if (length == null)
             {
