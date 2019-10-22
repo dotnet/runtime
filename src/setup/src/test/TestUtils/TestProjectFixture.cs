@@ -98,9 +98,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string.Join(
                 Environment.NewLine,
                 "<Project>",
-                "<!-- We need some way to discover the root of the repo to find TestProjects.props from our test asset projects that are called from our tests.",
-                " This is the first way that I thought of to find the root from a directory under artifacts/ -->",
-                $"  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),.gitignore))\\src\\setup\\TestProjects.{type}\" />",
+                $"  <Import Project=\"{RepoDirProvider.TestProjectsMSBuildFilesFolder}/TestProjects.{type}\" />",
                 "</Project>"));
 
         private void EnsureFileWithContent(string path, string content)
