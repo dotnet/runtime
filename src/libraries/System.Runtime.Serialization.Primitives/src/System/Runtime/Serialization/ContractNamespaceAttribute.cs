@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
             ContractNamespace = contractNamespace;
         }
 
-        public string ClrNamespace { get; set; }
+        public string? ClrNamespace { get; set; }
 
         public string ContractNamespace { get; }
     }

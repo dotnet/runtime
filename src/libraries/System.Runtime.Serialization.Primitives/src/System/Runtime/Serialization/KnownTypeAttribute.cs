@@ -17,8 +17,8 @@ namespace System.Runtime.Serialization
             MethodName = methodName;
         }
 
-        public string MethodName { get; }
+        public string? MethodName { get; }
 
-        public Type Type { get; }
+        public Type? Type { get; }
     }
 }

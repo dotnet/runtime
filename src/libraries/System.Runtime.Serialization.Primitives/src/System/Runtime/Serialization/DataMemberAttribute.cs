@@ -7,7 +7,7 @@ namespace System.Runtime.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public sealed class DataMemberAttribute : Attribute
     {
-        private string _name;
+        private string? _name;
         private bool _isNameSetExplicitly;
         private int _order = -1;
 
@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-        public string Name
+        public string? Name
         {
             get => _name;
             set
