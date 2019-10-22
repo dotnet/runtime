@@ -389,15 +389,6 @@ namespace System.Globalization
         {
             get
             {
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                {
-                    CultureInfo? culture = GetCultureInfoForUserPreferredLanguageInAppX();
-                    if (culture != null)
-                        return culture;
-                }
-#endif
-
                 return s_currentThreadCulture ??
                     s_DefaultThreadCurrentCulture ??
                     s_userDefaultCulture ??
@@ -409,17 +400,6 @@ namespace System.Globalization
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                {
-                    if (SetCultureInfoForUserPreferredLanguageInAppX(value))
-                    {
-                        // successfully set the culture, otherwise fallback to legacy path
-                        return;
-                    }
-                }
-#endif
 
                 if (s_asyncLocalCurrentCulture == null)
                 {
@@ -433,15 +413,6 @@ namespace System.Globalization
         {
             get
             {
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                {
-                    CultureInfo? culture = GetCultureInfoForUserPreferredLanguageInAppX();
-                    if (culture != null)
-                        return culture;
-                }
-#endif
-
                 return s_currentThreadUICulture ??
                     s_DefaultThreadCurrentUICulture ??
                     UserDefaultUICulture;
@@ -454,17 +425,6 @@ namespace System.Globalization
                 }
 
                 CultureInfo.VerifyCultureName(value, true);
-
-#if FEATURE_APPX
-                if (ApplicationModel.IsUap)
-                {
-                    if (SetCultureInfoForUserPreferredLanguageInAppX(value))
-                    {
-                        // successfully set the culture, otherwise fallback to legacy path
-                        return;
-                    }
-                }
-#endif
 
                 if (s_asyncLocalCurrentUICulture == null)
                 {

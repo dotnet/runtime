@@ -203,11 +203,6 @@ namespace System.Reflection
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.Load(byte[], ...)"));
-#endif
-
             SerializationInfo.ThrowIfDeserializationInProgress("AllowAssembliesFromByteArrays",
                 ref s_cachedSerializationSwitch);
 
@@ -219,11 +214,6 @@ namespace System.Reflection
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFile"));
-#endif
 
             if (PathInternal.IsPartiallyQualified(path))
             {

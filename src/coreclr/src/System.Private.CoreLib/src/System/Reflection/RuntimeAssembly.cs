@@ -318,16 +318,6 @@ namespace System.Reflection
 
         internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
         {
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-            {
-                if (assemblyRef.CodeBase != null)
-                {
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFrom"));
-                }
-            }
-#endif
-
             assemblyRef = (AssemblyName)assemblyRef.Clone();
             if (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)
             {
