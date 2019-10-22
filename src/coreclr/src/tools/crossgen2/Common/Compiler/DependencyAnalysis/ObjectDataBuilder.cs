@@ -15,9 +15,13 @@ namespace ILCompiler.DependencyAnalysis
         : Internal.Runtime.ITargetBinaryWriter
 #endif
     {
-        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly)
+        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly) : this(factory.Target, relocsOnly)
         {
-            _target = factory.Target;
+        }
+
+        public ObjectDataBuilder(TargetDetails target, bool relocsOnly)
+        {
+            _target = target;
             _data = new ArrayBuilder<byte>();
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
