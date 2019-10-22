@@ -317,7 +317,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // If there is a host binder then use it to bind the assembly.
             if (isWinRT)
             {
-                pAssemblyHolder = pDomain->BindAssemblySpec(&spec, TRUE, FALSE);
+                pAssemblyHolder = pDomain->BindAssemblySpec(&spec, TRUE);
             }
             else
             {
@@ -531,7 +531,7 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
 
         AssemblySpec mscorlib;
         mscorlib.InitializeSpec(SystemDomain::SystemFile());
-        GetAppDomain()->BindAssemblySpec(&mscorlib,TRUE,FALSE);
+        GetAppDomain()->BindAssemblySpec(&mscorlib,TRUE);
 
         if (!IsReadyToRunCompilation() && !SystemDomain::SystemFile()->HasNativeImage())
         {
@@ -7178,8 +7178,7 @@ void ReportMissingDependency(Exception * e)
 
 PEAssembly *CompilationDomain::BindAssemblySpec(
     AssemblySpec *pSpec,
-    BOOL fThrowOnFileNotFound,
-    BOOL fUseHostBinderIfAvailable)
+    BOOL fThrowOnFileNotFound)
 {
     PEAssembly *pFile = NULL;
     //
@@ -7194,8 +7193,7 @@ PEAssembly *CompilationDomain::BindAssemblySpec(
         //
         pFile = AppDomain::BindAssemblySpec(
             pSpec,
-            fThrowOnFileNotFound,
-            fUseHostBinderIfAvailable);
+            fThrowOnFileNotFound);
     }
     EX_HOOK
     {
