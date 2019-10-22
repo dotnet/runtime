@@ -92,7 +92,7 @@
     <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
 
-    <Copy SourceFiles="$(RepoRoot)LICENSE"
+    <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
