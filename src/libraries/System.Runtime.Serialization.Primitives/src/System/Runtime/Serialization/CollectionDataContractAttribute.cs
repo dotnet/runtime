@@ -7,11 +7,11 @@ namespace System.Runtime.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
     public sealed class CollectionDataContractAttribute : Attribute
     {
-        private string _name;
-        private string _ns;
-        private string _itemName;
-        private string _keyName;
-        private string _valueName;
+        private string? _name;
+        private string? _ns;
+        private string? _itemName;
+        private string? _keyName;
+        private string? _valueName;
         private bool _isReference;
         private bool _isNameSetExplicitly;
         private bool _isNamespaceSetExplicitly;
@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-        public string Namespace
+        public string? Namespace
         {
             get => _ns;
             set
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
 
         public bool IsNamespaceSetExplicitly => _isNamespaceSetExplicitly;
 
-        public string Name
+        public string? Name
         {
             get => _name;
             set
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
 
         public bool IsNameSetExplicitly => _isNameSetExplicitly;
 
-        public string ItemName
+        public string? ItemName
         {
             get => _itemName;
             set
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
 
         public bool IsItemNameSetExplicitly => _isItemNameSetExplicitly;
 
-        public string KeyName
+        public string? KeyName
         {
             get => _keyName;
             set
@@ -84,7 +84,7 @@ namespace System.Runtime.Serialization
 
         public bool IsReferenceSetExplicitly => _isReferenceSetExplicitly;
 
-        public string ValueName
+        public string? ValueName
         {
             get => _valueName;
             set

@@ -7,8 +7,8 @@ namespace System.Runtime.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum, Inherited = false, AllowMultiple = false)]
     public sealed class DataContractAttribute : Attribute
     {
-        private string _name;
-        private string _ns;
+        private string? _name;
+        private string? _ns;
         private bool _isNameSetExplicitly;
         private bool _isNamespaceSetExplicitly;
         private bool _isReference;
@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
 
         public bool IsReferenceSetExplicitly => _isReferenceSetExplicitly;
 
-        public string Namespace
+        public string? Namespace
         {
             get => _ns;
             set
@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
 
         public bool IsNamespaceSetExplicitly => _isNamespaceSetExplicitly;
 
-        public string Name
+        public string? Name
         {
             get => _name;
             set
