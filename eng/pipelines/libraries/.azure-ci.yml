@@ -13,7 +13,7 @@ trigger:
     - Documentation/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
-    - LICENSE
+    - LICENSE.TXT
     - PATENTS.TXT
     - README.md
     - SECURITY.md
@@ -29,7 +29,7 @@ pr:
     - Documentation/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
-    - LICENSE
+    - LICENSE.TXT
     - PATENTS.TXT
     - README.md
     - SECURITY.md
