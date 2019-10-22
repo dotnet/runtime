@@ -103,8 +103,7 @@ namespace System.Net.Http
             // situations.  Either a derived stream overrides this anyway, so the implementation won't be used,
             // or it's being called as part of HttpContent.SerializeToStreamAsync, which means custom
             // content is explicitly choosing to make a synchronous call as part of an asynchronous method.
-            ValidateBufferArgs(buffer, offset, count);
-            WriteAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+            WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         public sealed override void WriteByte(byte value) =>
