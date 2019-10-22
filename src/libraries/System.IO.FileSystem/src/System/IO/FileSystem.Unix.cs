@@ -169,6 +169,7 @@ namespace System.IO
                     if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
                     {
                         CopyFile(sourceFullPath, destFullPath, overwrite);
+                        DeleteFile(sourceFullPath);
                     }
                     else
                     {
