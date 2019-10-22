@@ -115,7 +115,7 @@ stages:
           -TsaProjectName "DEVDIV"
           -TsaNotificationEmail "$(TsaNotificationEmail)"
           -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
-          -TsaBugAreaPath "DevDiv\NET\NET Core"
+          -TsaBugAreaPath "DevDiv\NET Core"
           -TsaIterationPath "DevDiv"
           -TsaRepositoryName "CoreFX"
           -TsaCodebaseName "CoreFX"
