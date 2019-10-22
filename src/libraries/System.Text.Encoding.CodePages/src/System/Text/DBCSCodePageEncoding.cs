@@ -74,7 +74,7 @@ namespace System.Text
         {
             Debug.Assert(m_codePageHeader?.Length > 0);
 
-            fixed (byte* pBytes = &m_codePageHeader[0])
+            fixed (byte* pBytes = &m_codePageHeader![0])
             {
                 CodePageHeader* pCodePage = (CodePageHeader*)pBytes;
 
@@ -212,7 +212,7 @@ namespace System.Text
         }
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object s_InternalSyncObject;
+        private static object? s_InternalSyncObject;
         private static object InternalSyncObject
         {
             get
@@ -220,7 +220,7 @@ namespace System.Text
                 if (s_InternalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<object>(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
                 }
                 return s_InternalSyncObject;
             }
@@ -505,7 +505,7 @@ namespace System.Text
         // GetByteCount
         // Note: We start by assuming that the output will be the same as count.  Having
         // an encoder or fallback may change that assumption
-        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
+        public override unsafe int GetByteCount(char* chars, int count, EncoderNLS? encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(count >= 0, "[DBCSCodePageEncoding.GetByteCount]count is negative");
@@ -532,7 +532,7 @@ namespace System.Text
             char* charEnd = chars + count;
 
             // For fallback we will need a fallback buffer
-            EncoderFallbackBuffer fallbackBuffer = null;
+            EncoderFallbackBuffer? fallbackBuffer = null;
 
             EncoderFallbackBufferHelper fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
 
@@ -545,7 +545,7 @@ namespace System.Text
 
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
-                fallbackBuffer = encoder.FallbackBuffer;
+                fallbackBuffer = encoder!.FallbackBuffer;
                 fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
                 fallbackHelper.InternalInitialize(chars, charEnd, encoder, false);
                 // This will fallback a pair if *chars is a low surrogate
@@ -577,7 +577,7 @@ namespace System.Text
                     {
                         // Initialize the buffer
                         if (encoder == null)
-                            fallbackBuffer = EncoderFallback.CreateFallbackBuffer();
+                            fallbackBuffer = EncoderFallback!.CreateFallbackBuffer();
                         else
                             fallbackBuffer = encoder.FallbackBuffer;
 
@@ -601,7 +601,7 @@ namespace System.Text
         }
 
         public override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS encoder)
+                                                byte* bytes, int byteCount, EncoderNLS? encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetBytes]bytes is null");
@@ -615,7 +615,7 @@ namespace System.Text
             CheckMemorySection();
 
             // For fallback we will need a fallback buffer
-            EncoderFallbackBuffer fallbackBuffer = null;
+            EncoderFallbackBuffer? fallbackBuffer = null;
 
             // prepare our end
             char* charEnd = chars + charCount;
@@ -680,7 +680,7 @@ namespace System.Text
                         // Initialize the buffer
                         Debug.Assert(encoder == null,
                             "[DBCSCodePageEncoding.GetBytes]Expected delayed create fallback only if no encoder.");
-                        fallbackBuffer = EncoderFallback.CreateFallbackBuffer();
+                        fallbackBuffer = EncoderFallback!.CreateFallbackBuffer();
                         fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
                         fallbackHelper.InternalInitialize(charEnd - charCount, charEnd, encoder, true);
                     }
@@ -750,7 +750,7 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
             Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetCharCount]bytes is null");
@@ -759,10 +759,10 @@ namespace System.Text
             CheckMemorySection();
 
             // Fix our decoder
-            DBCSDecoder decoder = (DBCSDecoder)baseDecoder;
+            DBCSDecoder? decoder = (DBCSDecoder?)baseDecoder;
 
             // Get our fallback
-            DecoderFallbackBuffer fallbackBuffer = null;
+            DecoderFallbackBuffer? fallbackBuffer = null;
 
             // We'll need to know where the end is
             byte* byteEnd = bytes + count;
@@ -882,11 +882,9 @@ namespace System.Text
 
                     // Do fallback
                     charCount--;    // Get rid of preallocated extra char
-                    byte[] byteBuffer = null;
-                    if (iBytes < 0x100)
-                        byteBuffer = new byte[] { unchecked((byte)iBytes) };
-                    else
-                        byteBuffer = new byte[] { unchecked((byte)(iBytes >> 8)), unchecked((byte)iBytes) };
+                    byte[] byteBuffer = iBytes < 0x100 ?
+                        new byte[] { unchecked((byte)iBytes) } :
+                        new byte[] { unchecked((byte)(iBytes >> 8)), unchecked((byte)iBytes) };
                     charCount += fallbackHelper.InternalFallback(byteBuffer, bytes);
                 }
             }
@@ -901,7 +899,7 @@ namespace System.Text
         }
 
         public override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+                                                char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetChars]bytes is null");
@@ -912,7 +910,7 @@ namespace System.Text
             CheckMemorySection();
 
             // Fix our decoder
-            DBCSDecoder decoder = (DBCSDecoder)baseDecoder;
+            DBCSDecoder? decoder = (DBCSDecoder?)baseDecoder;
 
             // We'll need to know where the end is
             byte* byteStart = bytes;
@@ -922,7 +920,7 @@ namespace System.Text
             bool bUsedDecoder = false;
 
             // Get our fallback
-            DecoderFallbackBuffer fallbackBuffer = null;
+            DecoderFallbackBuffer? fallbackBuffer = null;
 
             // Shouldn't have anything in fallback buffer for GetChars
             Debug.Assert(decoder == null || !decoder.m_throwOnOverflow ||
@@ -1044,11 +1042,9 @@ namespace System.Text
                     }
 
                     // Do fallback
-                    byte[] byteBuffer = null;
-                    if (iBytes < 0x100)
-                        byteBuffer = new byte[] { unchecked((byte)iBytes) };
-                    else
-                        byteBuffer = new byte[] { unchecked((byte)(iBytes >> 8)), unchecked((byte)iBytes) };
+                    byte[] byteBuffer = iBytes < 0x100 ?
+                        new byte[] { unchecked((byte)iBytes) } :
+                        new byte[] { unchecked((byte)(iBytes >> 8)), unchecked((byte)iBytes) };
                     if (!fallbackHelper.InternalFallback(byteBuffer, bytes, ref chars))
                     {
                         // May or may not throw, but we didn't get these byte(s)

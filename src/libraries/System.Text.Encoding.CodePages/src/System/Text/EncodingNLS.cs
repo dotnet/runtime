@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Resources;
 using System.Threading;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text
 {
@@ -22,8 +23,8 @@ namespace System.Text
     // as well because they should have the same behavior.
     internal abstract class EncodingNLS : Encoding
     {
-        private string _encodingName;
-        private string _webName;
+        private string? _encodingName;
+        private string? _webName;
 
         protected EncodingNLS(int codePage) : base(codePage)
         {
@@ -34,10 +35,10 @@ namespace System.Text
         {
         }
 
-        public unsafe abstract int GetByteCount(char* chars, int count, EncoderNLS encoder);
-        public unsafe abstract int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS encoder);
-        public unsafe abstract int GetCharCount(byte* bytes, int count, DecoderNLS decoder);
-        public unsafe abstract int GetChars(byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS decoder);
+        public unsafe abstract int GetByteCount(char* chars, int count, EncoderNLS? encoder);
+        public unsafe abstract int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? encoder);
+        public unsafe abstract int GetCharCount(byte* bytes, int count, DecoderNLS? decoder);
+        public unsafe abstract int GetChars(byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS? decoder);
 
         // Returns the number of bytes required to encode a range of characters in
         // a character array.
@@ -312,7 +313,7 @@ namespace System.Text
             return new EncoderNLS(this);
         }
 
-        internal void ThrowBytesOverflow(EncoderNLS encoder, bool nothingEncoded)
+        internal void ThrowBytesOverflow(EncoderNLS? encoder, bool nothingEncoded)
         {
             if (encoder == null || encoder.m_throwOnOverflow || nothingEncoded)
             {
@@ -327,7 +328,7 @@ namespace System.Text
             encoder.ClearMustFlush();
         }
 
-        internal void ThrowCharsOverflow(DecoderNLS decoder, bool nothingDecoded)
+        internal void ThrowCharsOverflow(DecoderNLS? decoder, bool nothingDecoded)
         {
             if (decoder == null || decoder.m_throwOnOverflow || nothingDecoded)
             {
@@ -343,6 +344,7 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
+        [DoesNotReturn]
         internal void ThrowBytesOverflow()
         {
             // Special message to include fallback type in case fallback's GetMaxCharCount is broken
@@ -350,6 +352,7 @@ namespace System.Text
             throw new ArgumentException(SR.Format(SR.Argument_EncodingConversionOverflowBytes, EncodingName, EncoderFallback.GetType()), "bytes");
         }
 
+        [DoesNotReturn]
         internal void ThrowCharsOverflow()
         {
             // Special message to include fallback type in case fallback's GetMaxCharCount is broken
@@ -389,7 +392,7 @@ namespace System.Text
             }
         }
 
-        private static string GetLocalizedEncodingNameResource(int codePage) =>
+        private static string? GetLocalizedEncodingNameResource(int codePage) =>
             codePage switch
             {
                 37 => SR.Globalization_cp_37,

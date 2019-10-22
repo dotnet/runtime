@@ -51,8 +51,8 @@ namespace System.Text
         protected int iExtraBytes = 0;
 
         // Our private unicode-to-bytes best-fit-array, and vice versa.
-        protected char[] arrayUnicodeBestFit = null;
-        protected char[] arrayBytesBestFit = null;
+        protected char[]? arrayUnicodeBestFit;
+        protected char[]? arrayBytesBestFit;
 
         internal BaseCodePageEncoding(int codepage)
             : this(codepage, codepage)
@@ -60,9 +60,11 @@ namespace System.Text
         }
 
         internal BaseCodePageEncoding(int codepage, int dataCodePage)
-            : base(codepage, new InternalEncoderBestFitFallback(null), new InternalDecoderBestFitFallback(null))
+            : base(codepage, new InternalEncoderBestFitFallback(null!), new InternalDecoderBestFitFallback(null!)) // pass in null but then immediately set values to this
         {
-            SetFallbackEncoding();
+            ((InternalEncoderBestFitFallback)EncoderFallback).encoding = this;
+            ((InternalDecoderBestFitFallback)DecoderFallback).encoding = this;
+
             // Remember number of code pages that we'll be using the table for.
             dataTableCodePage = dataCodePage;
             LoadCodePageTables();
@@ -79,13 +81,6 @@ namespace System.Text
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        // Just a helper as we cannot use 'this' when calling 'base(...)'
-        private void SetFallbackEncoding()
-        {
-            (EncoderFallback as InternalEncoderBestFitFallback).encoding = this;
-            (DecoderFallback as InternalDecoderBestFitFallback).encoding = this;
         }
 
         //
@@ -154,7 +149,7 @@ namespace System.Text
         protected int m_dataSize;
 
         // Safe handle wrapper around section map view
-        protected SafeAllocHHandle safeNativeMemoryHandle = null;
+        protected SafeAllocHHandle? safeNativeMemoryHandle;
 
         internal static Stream GetEncodingDataStream(string tableName)
         {
@@ -163,7 +158,7 @@ namespace System.Text
             // NOTE: We must reflect on a public type that is exposed in the contract here
             // (i.e. CodePagesEncodingProvider), otherwise we will not get a reference to
             // the right assembly.
-            Stream stream = typeof(CodePagesEncodingProvider).GetTypeInfo().Assembly.GetManifestResourceStream(tableName);
+            Stream? stream = typeof(CodePagesEncodingProvider).GetTypeInfo().Assembly.GetManifestResourceStream(tableName);
 
             if (stream == null)
             {
@@ -222,7 +217,7 @@ namespace System.Text
                             // Found it!
                             long position = s_codePagesEncodingDataStream.Position;
                             s_codePagesEncodingDataStream.Seek((long)pCodePageIndex->Offset, SeekOrigin.Begin);
-                            s_codePagesEncodingDataStream.Read(m_codePageHeader, 0, m_codePageHeader.Length);
+                            s_codePagesEncodingDataStream.Read(m_codePageHeader, 0, m_codePageHeader!.Length);
                             m_firstDataWordOffset = (int)s_codePagesEncodingDataStream.Position; // stream now pointing to the codepage data
 
                             if (i == codePagesCount - 1) // last codepage
@@ -315,7 +310,7 @@ namespace System.Text
             Debug.Assert(arrayUnicodeBestFit != null, "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
 
             // Normally we don't have any best fit data.
-            return arrayUnicodeBestFit;
+            return arrayUnicodeBestFit!;
         }
 
         internal char[] GetBestFitBytesToUnicodeData()
@@ -326,7 +321,7 @@ namespace System.Text
             Debug.Assert(arrayBytesBestFit != null, "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
 
             // Normally we don't have any best fit data.
-            return arrayBytesBestFit;
+            return arrayBytesBestFit!;
         }
 
         // During the AppDomain shutdown the Encoding class may have already finalized, making the memory section

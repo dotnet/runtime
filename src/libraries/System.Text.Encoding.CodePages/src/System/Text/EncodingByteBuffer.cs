@@ -16,11 +16,11 @@ namespace System.Text
         private readonly unsafe char* _charEnd;
         private int _byteCountResult = 0;
         private readonly EncodingNLS _enc;
-        private readonly EncoderNLS _encoder;
+        private readonly EncoderNLS? _encoder;
         internal EncoderFallbackBuffer fallbackBuffer;
         internal EncoderFallbackBufferHelper fallbackBufferHelper;
 
-        internal unsafe EncodingByteBuffer(EncodingNLS inEncoding, EncoderNLS inEncoder, byte* inByteStart, int inByteCount, char* inCharStart, int inCharCount)
+        internal unsafe EncodingByteBuffer(EncodingNLS inEncoding, EncoderNLS? inEncoder, byte* inByteStart, int inByteCount, char* inCharStart, int inCharCount)
         {
             _enc = inEncoding;
             _encoder = inEncoder;

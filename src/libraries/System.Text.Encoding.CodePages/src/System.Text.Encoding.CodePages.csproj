@@ -4,8 +4,10 @@
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
     <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -29,6 +31,9 @@
     <Compile Include="System\Text\ISO2022Encoding.cs" />
     <Compile Include="System\Text\ISCIIEncoding.cs" />
     <Compile Include="System\Text\SBCSCodePageEncoding.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netcoreapp'">
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
