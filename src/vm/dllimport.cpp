@@ -269,13 +269,6 @@ public:
         STANDARD_VM_CONTRACT;
 
         pInfo->MarshalHiddenLengthArgument(&m_slIL, SF_IsForwardStub(m_dwStubFlags), isForReturnArray);
-
-        if (SF_IsReverseStub(m_dwStubFlags))
-        {
-            // Hidden length arguments appear explicitly in the native signature
-            // however, they are not in the managed signature.
-            m_slIL.AdjustTargetStackDeltaForExtraParam();
-        }
     }
 
     void MarshalFactoryReturn()
@@ -507,15 +500,6 @@ public:
         // add the extra arg to the unmanaged signature
         LocalDesc locDescNative(ELEMENT_TYPE_I4);
         pcs->SetStubTargetArgType(&locDescNative, false);
-
-        if (SF_IsReverseStub(m_dwStubFlags))
-        {
-            // reverse the effect of SetStubTargetArgType on the stack delta
-            // (the LCID argument is explicitly passed from unmanaged but does not
-            // show up in the managed signature in any way)
-            m_slIL.AdjustTargetStackDeltaForExtraParam();
-        }
-
     }
 
     void SwapStubSignatures(MethodDesc* pStubMD)
@@ -747,17 +731,6 @@ public:
             m_slIL.GetStubReturnType(&managedReturnType);
         }
 #endif // FEATURE_COMINTEROP
-
-        if (SF_IsHRESULTSwapping(m_dwStubFlags) && SF_IsReverseStub(m_dwStubFlags))
-        {
-            m_slIL.AdjustTargetStackDeltaForReverseInteropHRESULTSwapping();
-        }
-
-        if (SF_IsForwardCOMStub(m_dwStubFlags))
-        {
-            // Compensate for the 'this' parameter.
-            m_slIL.AdjustTargetStackDeltaForExtraParam();
-        }
 
         // Don't touch target signatures from this point on otherwise it messes up the
         // cache in ILStubState::GetStubTargetMethodSig.
@@ -1539,13 +1512,9 @@ public:
 
         ILStubState::BeginEmit(dwStubFlags);
 
-        if (SF_IsWinRTStaticStub(dwStubFlags))
+        if (!SF_IsWinRTStaticStub(dwStubFlags))
         {
             // we are not loading 'this' because the target is static
-            m_slIL.AdjustTargetStackDeltaForExtraParam();
-        }
-        else
-        {
             // load this
             m_slIL.GetDispatchCodeStream()->EmitLoadThis();
         }
@@ -1574,7 +1543,6 @@ public:
 
         // expect one additional argument - pointer to a location that receives the created instance
         DWORD dwRetValArgNum = pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
-        m_slIL.AdjustTargetStackDeltaForExtraParam();
 
         // convert 'this' to an interface pointer corresponding to the default interface of this class
         pcsUnmarshal->EmitLoadThis();
@@ -1845,50 +1813,6 @@ ILCodeStream* NDirectStubLinker::GetExceptionCleanupCodeStream()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pcsExceptionCleanup;
-}
-
-void NDirectStubLinker::AdjustTargetStackDeltaForExtraParam()
-{
-    LIMITED_METHOD_CONTRACT;
-    //
-    // Compensate for the extra parameter.
-    //
-    m_iTargetStackDelta++;
-}
-
-void NDirectStubLinker::AdjustTargetStackDeltaForReverseInteropHRESULTSwapping()
-{
-    WRAPPER_NO_CONTRACT;
-    //
-    // In the case of reverse pinvoke, we build up the 'target'
-    // signature as if it were normal forward pinvoke and then
-    // switch that signature (representing the native sig) with
-    // the stub's sig (representing the managed sig).  However,
-    // as a side-effect, our calcualted target stack delta is 
-    // wrong.  
-    //
-    // The only way that we support a different stack delta is
-    // through hresult swapping.  So this code "undoes" the 
-    // deltas that would have been applied in that case.  
-    //
-
-    if (StubHasVoidReturnType())
-    {
-        //
-        // If the managed return type is void, undo the HRESULT 
-        // return type added to our target sig for HRESULT swapping.
-        // No extra argument will have been added because it makes
-        // no sense to add an extra byref void argument.
-        //
-        m_iTargetStackDelta--;
-    }
-    else
-    {
-        //
-        // no longer pop the extra byref argument from the stack
-        //
-        m_iTargetStackDelta++;
-    }
 }
 
 void NDirectStubLinker::SetInteropParamExceptionInfo(UINT resID, UINT paramIdx)

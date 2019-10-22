@@ -469,8 +469,6 @@ public:
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
     void    GetCleanupFinallyOffsets(ILStubEHClause * pClause);
-    void    AdjustTargetStackDeltaForReverseInteropHRESULTSwapping();
-    void    AdjustTargetStackDeltaForExtraParam();
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
