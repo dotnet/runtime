@@ -2,10 +2,12 @@
   <!--
     This file is imported by the test projects from the artifacts dir or the src/tests dir. It
     provides basic info needed for restore and build with the vanilla SDK.
+    Since this file doesn't include the Arcade SDK, we need to find the root eng folder
+    in a different manner than using the $(RepositoryEngineeringDir) variable.
   -->
 
-  <Import Project="eng\Versions.props" />
-  <Import Project="src\test\Assets\TestProjects\MNADeprecationWorkaround.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Versions.props" />
+  <Import Project="Assets\TestProjects\MNADeprecationWorkaround.props" />
 
   <PropertyGroup>
     <!--

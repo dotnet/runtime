@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string.Join(
                 Environment.NewLine,
                 "<Project>",
-                $"  <Import Project=\"$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.{type}))\\TestProjects.{type}\" />",
+                $"  <Import Project=\"{RepoDirProvider.TestProjectsMSBuildFilesFolder}/TestProjects.{type}\" />",
                 "</Project>"));
 
         private void EnsureFileWithContent(string path, string content)
