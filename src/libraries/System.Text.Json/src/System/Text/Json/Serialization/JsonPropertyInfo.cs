@@ -24,6 +24,8 @@ namespace System.Text.Json
         private JsonClassInfo _runtimeClassInfo;
         private JsonClassInfo _declaredTypeClassInfo;
 
+        private JsonPropertyInfo _dictionaryValuePropertyPolicy;
+
         public bool CanBeNull { get; private set; }
         public bool IsImmutableArray { get; private set; }
 
@@ -167,6 +169,44 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Return the JsonPropertyInfo for the TValue in IDictionary{string, TValue} when deserializing.
+        /// This only needs to contain the raw TValue and does not need converter, etc applied since it
+        /// is only used for "casting" reasons.
+        /// </summary>
+        /// <remarks>
+        /// This should not be called during warm-up (initial creation of JsonPropertyInfos) to avoid recursive behavior
+        /// which could result in a StackOverflowException.
+        /// </remarks>
+        public JsonPropertyInfo DictionaryValuePropertyPolicy
+        {
+            get
+            {
+                Debug.Assert(ClassType == ClassType.Dictionary);
+
+                if (_dictionaryValuePropertyPolicy == null)
+                {
+                    // Use the existing PolicyProperty if there is one.
+                    if ((_dictionaryValuePropertyPolicy = ElementClassInfo.PolicyProperty) == null)
+                    {
+                        Type dictionaryValueType = ElementType;
+                        Debug.Assert(dictionaryValueType != null);
+
+                        _dictionaryValuePropertyPolicy = JsonClassInfo.CreatePolicyProperty(
+                            declaredPropertyType : dictionaryValueType,
+                            runtimePropertyType : dictionaryValueType,
+                            elementType : null,
+                            nullableUnderlyingType : Nullable.GetUnderlyingType(dictionaryValueType),
+                            converter: null,
+                            ClassType.Dictionary,
+                            Options);
+                    }
+                }
+
+                return _dictionaryValuePropertyPolicy;
+            }
+        }
+
+        /// <summary>
         /// Return the JsonClassInfo for the element type, or null if the property is not an enumerable or dictionary.
         /// </summary>
         /// <remarks>
@@ -179,8 +219,7 @@ namespace System.Text.Json
             {
                 if (_elementClassInfo == null && ElementType != null)
                 {
-                    Debug.Assert(ClassType == ClassType.Enumerable ||
-                        ClassType == ClassType.Dictionary);
+                    Debug.Assert(ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary);
 
                     _elementClassInfo = Options.GetOrAddClass(ElementType);
                 }
@@ -204,6 +243,35 @@ namespace System.Text.Json
         }
 
         public abstract Type GetDictionaryConcreteType();
+
+        public void GetDictionaryKeyAndValue(ref WriteStackFrame writeStackFrame, out string key, out object value)
+        {
+            Debug.Assert(ClassType == ClassType.Dictionary);
+
+            if (writeStackFrame.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator)
+            {
+                if (iDictionaryEnumerator.Key is string keyAsString)
+                {
+                    // Since IDictionaryEnumerator is not based on generics we can obtain the value directly.
+                    key = keyAsString;
+                    value = iDictionaryEnumerator.Value;
+                }
+                else
+                {
+                    throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                        writeStackFrame.JsonPropertyInfo.DeclaredPropertyType,
+                        writeStackFrame.JsonPropertyInfo.ParentClassType,
+                        writeStackFrame.JsonPropertyInfo.PropertyInfo);
+                }
+            }
+            else
+            {
+                // Forward to the generic dictionary.
+                DictionaryValuePropertyPolicy.GetDictionaryKeyAndValueFromGenericDictionary(ref writeStackFrame, out key, out value);
+            }
+        }
+
+        public abstract void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object value);
 
         public virtual void GetPolicies()
         {

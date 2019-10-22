@@ -41,14 +41,11 @@ namespace System.Text.Json
                     return true;
                 }
 
-                if (enumerable is IDictionary dictionary)
-                {
-                    state.Current.CollectionEnumerator = dictionary.GetEnumerator();
-                }
-                else
-                {
-                    state.Current.CollectionEnumerator = enumerable.GetEnumerator();
-                }
+                // Let the dictionary return the default IEnumerator from its IEnumerable.GetEnumerator().
+                // For IDictionary-derived classes this is normally be IDictionaryEnumerator.
+                // For IDictionary<TKey, TVale>-derived classes this is normally IDictionaryEnumerator as well
+                // but may be IEnumerable<KeyValuePair<TKey, TValue>> if the dictionary only supports generics.
+                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
 
                 if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                 {
@@ -58,28 +55,35 @@ namespace System.Text.Json
 
             if (state.Current.CollectionEnumerator.MoveNext())
             {
+                // A dictionary should not have a null KeyValuePair.
+                Debug.Assert(state.Current.CollectionEnumerator.Current != null);
+
+                bool obtainedValues = false;
+                string key = default;
+                object value = default;
+
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
-                    object currentValue = ((IDictionaryEnumerator)state.Current.CollectionEnumerator).Entry.Value;
-                    GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
+                    jsonPropertyInfo.GetDictionaryKeyAndValue(ref state.Current, out key, out value);
+                    GetRuntimeClassInfo(value, ref elementClassInfo, options);
+                    obtainedValues = true;
                 }
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
                     elementClassInfo.PolicyProperty.WriteDictionary(ref state, writer);
                 }
-                else if (state.Current.CollectionEnumerator.Current == null)
-                {
-                    writer.WriteNull(jsonPropertyInfo.Name);
-                }
                 else
                 {
+                    if (!obtainedValues)
+                    {
+                        jsonPropertyInfo.GetDictionaryKeyAndValue(ref state.Current, out key, out value);
+                    }
+
                     // An object or another enumerator requires a new stack frame.
-                    var enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
-                    object value = enumerator.Value;
                     state.Push(elementClassInfo, value);
-                    state.Current.KeyName = (string)enumerator.Key;
+                    state.Current.KeyName = key;
                 }
 
                 return false;
@@ -127,20 +131,18 @@ namespace System.Text.Json
                 key = polymorphicEnumerator.Current.Key;
                 value = (TProperty)polymorphicEnumerator.Current.Value;
             }
+            else if (current.CollectionEnumerator is IDictionaryEnumerator iDictionaryEnumerator &&
+                iDictionaryEnumerator.Key is string keyAsString)
+            {
+                key = keyAsString;
+                value = (TProperty)iDictionaryEnumerator.Value;
+            }
             else
             {
-                if (((DictionaryEntry)current.CollectionEnumerator.Current).Key is string keyAsString)
-                {
-                    key = keyAsString;
-                    value = (TProperty)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
-                }
-                else
-                {
-                    throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                        current.JsonPropertyInfo.DeclaredPropertyType,
-                        current.JsonPropertyInfo.ParentClassType,
-                        current.JsonPropertyInfo.PropertyInfo);
-                }
+                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
+                    current.JsonPropertyInfo.DeclaredPropertyType,
+                    current.JsonPropertyInfo.ParentClassType,
+                    current.JsonPropertyInfo.PropertyInfo);
             }
 
             if (value == null)

@@ -883,13 +883,23 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HashtableFail()
+        public static void Hashtable()
         {
-            {
-                IDictionary ht = new Hashtable();
-                ht.Add("Key", "Value");
-                Assert.Equal(@"{""Key"":""Value""}", JsonSerializer.Serialize(ht));
-            }
+            const string Json = @"{""Key"":""Value""}";
+
+            IDictionary ht = new Hashtable();
+            ht.Add("Key", "Value");
+            string json = JsonSerializer.Serialize(ht);
+
+            Assert.Equal(Json, json);
+
+            ht = JsonSerializer.Deserialize<IDictionary>(json);
+            Assert.IsType<JsonElement>(ht["Key"]);
+            Assert.Equal("Value", ((JsonElement)ht["Key"]).GetString());
+
+            // Verify round-tripped JSON.
+            json = JsonSerializer.Serialize(ht);
+            Assert.Equal(Json, json);
         }
 
         [Fact]
@@ -1495,6 +1505,253 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, Dictionary<string, string>> StringDictVals { get; set; }
             public Dictionary<string, Dictionary<string, object>> ObjectDictVals { get; set; }
             public Dictionary<string, SimpleClassWithDictionaries> ClassVals { get; set; }
+        }
+
+        public class DictionaryThatOnlyImplementsIDictionaryOfStringTValue<TValue> : IDictionary<string, TValue>
+        {
+            IDictionary<string, TValue> _inner = new Dictionary<string, TValue>();
+
+            public TValue this[string key]
+            {
+                get
+                {
+                    return _inner[key];
+                }
+                set
+                {
+                    _inner[key] = value;
+                }
+            }
+
+            public ICollection<string> Keys => _inner.Keys;
+
+            public ICollection<TValue> Values => _inner.Values;
+
+            public int Count => _inner.Count;
+
+            public bool IsReadOnly => _inner.IsReadOnly;
+
+            public void Add(string key, TValue value)
+            {
+                _inner.Add(key, value);
+            }
+
+            public void Add(KeyValuePair<string, TValue> item)
+            {
+                _inner.Add(item);
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Contains(KeyValuePair<string, TValue> item)
+            {
+                return _inner.Contains(item);
+            }
+
+            public bool ContainsKey(string key)
+            {
+                return _inner.ContainsKey(key);
+            }
+
+            public void CopyTo(KeyValuePair<string, TValue>[] array, int arrayIndex)
+            {
+                // CopyTo should not be called.
+                throw new NotImplementedException();
+            }
+
+            public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator()
+            {
+                // Don't return results directly from _inner since that will return an enumerator that returns
+                // IDictionaryEnumerator which should not require.
+                foreach (KeyValuePair<string, TValue> keyValuePair in _inner)
+                {
+                    yield return keyValuePair;
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public bool Remove(string key)
+            {
+                // Remove should not be called.
+                throw new NotImplementedException();
+            }
+
+            public bool Remove(KeyValuePair<string, TValue> item)
+            {
+                // Remove should not be called.
+                throw new NotImplementedException();
+            }
+
+            public bool TryGetValue(string key, out TValue value)
+            {
+                return _inner.TryGetValue(key, out value);
+            }
+        }
+
+        [Fact]
+        public static void DictionaryOfTOnlyWithStringTValueAsInt()
+        {
+            const string Json = @"{""One"":1,""Two"":2}";
+
+            DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int> dictionary;
+
+            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int>>(Json);
+            Assert.Equal(1, dictionary["One"]);
+            Assert.Equal(2, dictionary["Two"]);
+
+            string json = JsonSerializer.Serialize(dictionary);
+            Assert.Equal(Json, json);
+        }
+
+        [Fact]
+        public static void DictionaryOfTOnlyWithStringTValueAsPoco()
+        {
+            const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
+
+            DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco> dictionary;
+
+            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>>(Json);
+            Assert.Equal(1, dictionary["One"].Id);
+            Assert.Equal(2, dictionary["Two"].Id);
+
+            string json = JsonSerializer.Serialize(dictionary);
+            Assert.Equal(Json, json);
+        }
+
+        public class DictionaryThatOnlyImplementsIDictionaryOfStringPoco : DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>
+        {
+        }
+
+        [Fact]
+        public static void DictionaryOfTOnlyWithStringPoco()
+        {
+            const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
+
+            DictionaryThatOnlyImplementsIDictionaryOfStringPoco dictionary;
+
+            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringPoco>(Json);
+            Assert.Equal(1, dictionary["One"].Id);
+            Assert.Equal(2, dictionary["Two"].Id);
+
+            string json = JsonSerializer.Serialize(dictionary);
+            Assert.Equal(Json, json);
+        }
+
+        public class DictionaryThatHasIncomatibleEnumerator<TValue> : IDictionary<string, TValue>
+        {
+            IDictionary<string, TValue> _inner = new Dictionary<string, TValue>();
+
+            public TValue this[string key]
+            {
+                get
+                {
+                    return _inner[key];
+                }
+                set
+                {
+                    _inner[key] = value;
+                }
+            }
+
+            public ICollection<string> Keys => _inner.Keys;
+
+            public ICollection<TValue> Values => _inner.Values;
+
+            public int Count => _inner.Count;
+
+            public bool IsReadOnly => _inner.IsReadOnly;
+
+            public void Add(string key, TValue value)
+            {
+                _inner.Add(key, value);
+            }
+
+            public void Add(KeyValuePair<string, TValue> item)
+            {
+                _inner.Add(item);
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Contains(KeyValuePair<string, TValue> item)
+            {
+                return _inner.Contains(item);
+            }
+
+            public bool ContainsKey(string key)
+            {
+                return _inner.ContainsKey(key);
+            }
+
+            public void CopyTo(KeyValuePair<string, TValue>[] array, int arrayIndex)
+            {
+                // CopyTo should not be called.
+                throw new NotImplementedException();
+            }
+
+            public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator()
+            {
+                // The generic GetEnumerator() should not be called for this test.
+                throw new NotImplementedException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                // Create an incompatible converter.
+                return new int[] {100,200 }.GetEnumerator();
+            }
+
+            public bool Remove(string key)
+            {
+                // Remove should not be called.
+                throw new NotImplementedException();
+            }
+
+            public bool Remove(KeyValuePair<string, TValue> item)
+            {
+                // Remove should not be called.
+                throw new NotImplementedException();
+            }
+
+            public bool TryGetValue(string key, out TValue value)
+            {
+                return _inner.TryGetValue(key, out value);
+            }
+        }
+
+        [Fact]
+        public static void VerifyDictionaryThatHasIncomatibleEnumeratorWithInt()
+        {
+            const string Json = @"{""One"":1,""Two"":2}";
+
+            DictionaryThatHasIncomatibleEnumerator<int> dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator<int>>(Json);
+            Assert.Equal(1, dictionary["One"]);
+            Assert.Equal(2, dictionary["Two"]);
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+        }
+
+
+        [Fact]
+        public static void VerifyDictionaryThatHasIncomatibleEnumeratorWithPoco()
+        {
+            const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
+
+            DictionaryThatHasIncomatibleEnumerator<Poco> dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator<Poco>>(Json);
+            Assert.Equal(1, dictionary["One"].Id);
+            Assert.Equal(2, dictionary["Two"].Id);
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
         }
     }
 }

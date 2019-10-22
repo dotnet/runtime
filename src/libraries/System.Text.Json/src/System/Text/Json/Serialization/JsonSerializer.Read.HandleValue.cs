@@ -20,7 +20,7 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootObject(options);
+                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
             }
             else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
             {
