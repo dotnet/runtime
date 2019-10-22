@@ -522,8 +522,8 @@ build_native_projects()
             echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
             source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
         else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" $__GccMajorVersion \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" $__GccMajorVersion "$__GccMinorVersion"
+            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
+            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
         fi
 
         if [[ -n "$__CodeCoverage" ]]; then
