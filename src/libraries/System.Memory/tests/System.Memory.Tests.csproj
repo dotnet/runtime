@@ -46,6 +46,9 @@
     <Compile Include="BuffersExtensions\BuffersExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EncodingExtensions\EncodingExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Span\AsSpan.cs" />
     <Compile Include="Span\Fill.cs" />
     <Compile Include="Span\Clear.cs" />

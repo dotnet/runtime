@@ -30,6 +30,7 @@
     <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="System\Runtime\InteropServices\SequenceMarshal.cs" />
+    <Compile Include="System\Text\EncodingExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->

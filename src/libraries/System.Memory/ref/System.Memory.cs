@@ -645,6 +645,21 @@ namespace System.Runtime.InteropServices
 }
 namespace System.Text
 {
+    public static partial class EncodingExtensions
+    {
+        public static void Convert(this System.Text.Decoder decoder, in System.Buffers.ReadOnlySequence<byte> bytes, System.Buffers.IBufferWriter<char> writer, bool flush, out long charsUsed, out bool completed) { throw null; }
+        public static void Convert(this System.Text.Decoder decoder, System.ReadOnlySpan<byte> bytes, System.Buffers.IBufferWriter<char> writer, bool flush, out long charsUsed, out bool completed) { throw null; }
+        public static void Convert(this System.Text.Encoder encoder, in System.Buffers.ReadOnlySequence<char> chars, System.Buffers.IBufferWriter<byte> writer, bool flush, out long bytesUsed, out bool completed) { throw null; }
+        public static void Convert(this System.Text.Encoder encoder, System.ReadOnlySpan<char> chars, System.Buffers.IBufferWriter<byte> writer, bool flush, out long bytesUsed, out bool completed) { throw null; }
+        public static byte[] GetBytes(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<char> chars) { throw null; }
+        public static long GetBytes(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<char> chars, System.Buffers.IBufferWriter<byte> writer) { throw null; }
+        public static int GetBytes(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<char> chars, System.Span<byte> bytes) { throw null; }
+        public static long GetBytes(this System.Text.Encoding encoding, System.ReadOnlySpan<char> chars, System.Buffers.IBufferWriter<byte> writer) { throw null; }
+        public static long GetChars(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<byte> bytes, System.Buffers.IBufferWriter<char> writer) { throw null; }
+        public static int GetChars(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<byte> bytes, System.Span<char> chars) { throw null; }
+        public static long GetChars(this System.Text.Encoding encoding, System.ReadOnlySpan<byte> bytes, System.Buffers.IBufferWriter<char> writer) { throw null; }
+        public static string GetString(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<byte> bytes) { throw null; }
+    }
     public ref partial struct SpanRuneEnumerator
     {
         private object _dummy;
