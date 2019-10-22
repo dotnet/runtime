@@ -29,7 +29,6 @@ protected:
     LPCWSTR                     m_wszCodeBase;         // URL to the code
     LPCSTR                      m_szWinRtTypeNamespace;
     LPCSTR                      m_szWinRtTypeClassName;
-    ICLRPrivBinder             *m_pHostBinder;
     int                         m_ownedFlags;
     ICLRPrivBinder             *m_pBindingContext;
 

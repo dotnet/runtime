@@ -2097,8 +2097,7 @@ public:
     // static binding goes through this path.
     virtual PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
-        BOOL fThrowOnFileNotFound,
-        BOOL fUseHostBinderIfAvailable = TRUE) DAC_EMPTY_RET(NULL);
+        BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
 
     HRESULT BindAssemblySpecForHostedBinder(
         AssemblySpec *   pSpec, 
