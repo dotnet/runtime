@@ -13,6 +13,7 @@ syntax: glob
 *.userosscache
 *.sln.docstates
 *.swp
+launchSettings.json
 
 # Build results
 [Dd]ebug/
