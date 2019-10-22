@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal.Windows
         private static void ReencodeIfUsingIndefiniteLengthEncodingOnOuterStructure(ref byte[] encodedContent)
         {
             AsnReader reader = new AsnReader(encodedContent, AsnEncodingRules.BER);
-            Asn1Tag tag = reader.ReadTagAndLength(out int? contentsLength, out int _);
+            reader.ReadTagAndLength(out int? contentsLength, out int _);
 
             if (contentsLength != null)
             {

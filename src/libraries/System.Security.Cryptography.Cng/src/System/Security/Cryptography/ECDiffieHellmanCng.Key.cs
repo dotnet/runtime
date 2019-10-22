@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
                         Debug.Fail($"Unknown algorithm {alg}");
                         throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                     }
-                    CngKey key = _core.GetOrGenerateKey(keySize, alg);
+                    _core.GetOrGenerateKey(keySize, alg);
                     ForceSetKeySize(keySize);
                 }
             }
