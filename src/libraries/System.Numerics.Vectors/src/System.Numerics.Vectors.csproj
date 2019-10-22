@@ -20,12 +20,12 @@
     <Compile Include="System\Numerics\Matrix4x4.cs" />
     <Compile Include="System\Numerics\Plane.cs" />
     <Compile Include="System\Numerics\Quaternion.cs" />
-    <Compile Include="System\Numerics\Vector2.cs" />
-    <Compile Include="System\Numerics\Vector2_Intrinsics.cs" />
-    <Compile Include="System\Numerics\Vector3.cs" />
-    <Compile Include="System\Numerics\Vector3_Intrinsics.cs" />
-    <Compile Include="System\Numerics\Vector4.cs" />
-    <Compile Include="System\Numerics\Vector4_Intrinsics.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector2.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector2_Intrinsics.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector3.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector3_Intrinsics.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector4.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector4_Intrinsics.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(HasIntrinsics)' == 'true'">
     <Compile Include="System\Numerics\VectorMath.cs" />
