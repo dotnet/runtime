@@ -79,7 +79,7 @@ static size_t pending_suspends;
 
 static mono_mutex_t join_mutex;
 
-#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & THREAD_STATE_MASK)
+#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state.state)
 
 /*warn at 50 ms*/
 #define SLEEP_DURATION_BEFORE_WARNING (50)

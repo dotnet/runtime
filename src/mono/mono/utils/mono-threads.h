@@ -147,17 +147,21 @@ enum {
 
 	STATE_MAX				= 0x09,
 
-	THREAD_STATE_MASK			= 0x007F,
-	THREAD_SUSPEND_COUNT_MASK	= 0xFF00,
-	THREAD_SUSPEND_COUNT_SHIFT	= 8,
-	THREAD_SUSPEND_COUNT_MAX	= 0xFF,
-
-	THREAD_SUSPEND_NO_SAFEPOINTS_MASK          = 0x0080,
-	THREAD_SUSPEND_NO_SAFEPOINTS_SHIFT = 7,
+	THREAD_SUSPEND_COUNT_MAX		= 0xFF,
 
 	SELF_SUSPEND_STATE_INDEX = 0,
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
+
+typedef union {
+	int32_t raw;
+	struct {
+		int32_t state : 7;
+		int32_t no_safepoints : 1;
+		int32_t suspend_count : 8;
+		int32_t zeros : 16; /* must be 0 */
+	};
+} MonoThreadStateMachine;
 
 /*
  * These flags control how the rest of the runtime will see and interact with
@@ -189,7 +193,7 @@ typedef struct _MonoThreadInfo {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
 	MonoNativeThreadHandle native_handle; /* Valid on mach, android and Windows */
-	int thread_state;
+	MonoThreadStateMachine thread_state;
 
 	/*
 	 * Must not be changed directly, and especially not by other threads. Use

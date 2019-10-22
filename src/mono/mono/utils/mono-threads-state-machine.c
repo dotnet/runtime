@@ -18,19 +18,25 @@
 static int
 get_thread_state (int thread_state)
 {
-	return thread_state & THREAD_STATE_MASK;
+	MonoThreadStateMachine state;
+	state.raw = thread_state;
+	return state.state;
 }
 
 static int
 get_thread_suspend_count (int thread_state)
 {
-	return (thread_state & THREAD_SUSPEND_COUNT_MASK) >> THREAD_SUSPEND_COUNT_SHIFT;
+	MonoThreadStateMachine state;
+	state.raw = thread_state;
+	return state.suspend_count;
 }
 
 static gboolean
 get_thread_no_safepoints (int thread_state)
 {
-	return (thread_state & THREAD_SUSPEND_NO_SAFEPOINTS_MASK) >> THREAD_SUSPEND_NO_SAFEPOINTS_SHIFT;
+	MonoThreadStateMachine state;
+	state.raw = thread_state;
+	return state.no_safepoints;
 }
 
 static int
@@ -40,7 +46,21 @@ build_thread_state (int thread_state, int suspend_count, gboolean no_safepoints)
 	g_assert (thread_state >= 0 && thread_state <= STATE_MAX);
 	no_safepoints = !!no_safepoints; // ensure it's 0 or 1
 
-	return thread_state | (suspend_count << THREAD_SUSPEND_COUNT_SHIFT) | (no_safepoints << THREAD_SUSPEND_NO_SAFEPOINTS_SHIFT);
+	MonoThreadStateMachine state;
+	/* want a predictable value for the unused bits so that
+	 * thread_state_cas doesn't fail for spurious reasons.
+	 */
+	state.raw = 0; 
+	state.state = thread_state;
+	state.no_safepoints = no_safepoints;
+	state.suspend_count = suspend_count;
+	return state.raw;
+}
+
+static int
+thread_state_cas (MonoThreadStateMachine *state, int new_raw, int old_raw)
+{
+	return mono_atomic_cas_i32 (&state->raw, new_raw, old_raw);
 }
 
 static const char*
@@ -63,12 +83,25 @@ state_name (int state)
 	return state_names [get_thread_state (state)];
 }
 
-#define UNWRAP_THREAD_STATE(RAW,CUR,COUNT,BLK,INFO) do {	\
-	RAW = (INFO)->thread_state;	\
-	CUR = get_thread_state (RAW);	\
-	COUNT = get_thread_suspend_count (RAW);	\
-	BLK = get_thread_no_safepoints (RAW);	\
-} while (0)
+static void
+unwrap_thread_state (MonoThreadInfo* info,
+		     int *raw,
+		     int *cur,
+		     int *count,
+		     int *blk)
+{
+	MonoThreadStateMachine state;
+	state.raw = mono_atomic_load_i32 (&info->thread_state.raw);
+	/* read once from info and then read from state so we unpack
+	 * consistently */
+	*raw = state.raw;
+	*cur = state.state;
+	*count = state.suspend_count;
+	*blk = state.no_safepoints;
+}
+
+#define UNWRAP_THREAD_STATE(RAW,CUR,COUNT,BLK,INFO) \
+	unwrap_thread_state ((INFO), &(RAW), &(CUR), &(COUNT), &(BLK))
 
 static void
 check_thread_state (MonoThreadInfo* info)
@@ -164,7 +197,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ATTACH", info, raw_state, STATE_RUNNING, FALSE, 0);
 		break;
@@ -195,7 +228,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, STATE_DETACHED, raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, STATE_DETACHED, raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DETACH", info, raw_state, STATE_DETACHED, FALSE, 0);
 		return TRUE;
@@ -240,7 +273,7 @@ retry_state_change:
 	case STATE_RUNNING: //Post an async suspend request
 		if (!(suspend_count == 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, 1, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, 1, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, no_safepoints, 1);
 		return ReqSuspendInitSuspendRunning; //This is the first async suspend request against the target
@@ -253,7 +286,7 @@ retry_state_change:
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count + 1, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count + 1, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, cur_state, no_safepoints, 1);
 		return ReqSuspendAlreadySuspended; //Thread is already suspended so we don't need to wait it to suspend
@@ -263,7 +296,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SUSPEND_REQUESTED, 1, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING_SUSPEND_REQUESTED, 1, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, STATE_BLOCKING_SUSPEND_REQUESTED, no_safepoints, 1);
 		return ReqSuspendInitSuspendBlocking; //A thread in the blocking state has its state saved so we can treat it as suspended.
@@ -277,7 +310,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count + 1, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count + 1, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, cur_state, no_safepoints, 1);
 		return ReqSuspendAlreadySuspendedBlocking;
@@ -375,7 +408,7 @@ retry_state_change:
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in ASYNS_SUSPEND_REQUESTED with STATE_POLL");
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("STATE_POLL", info, raw_state, STATE_SELF_SUSPENDED, no_safepoints, 0);
 		return SelfSuspendNotifyAndWait; //Caller should notify suspend initiator and wait for resume
@@ -447,12 +480,12 @@ retry_state_change:
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (suspend_count > 1) {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, no_safepoints, -1);
 			return ResumeOk; //Resume worked and there's nothing for the caller to do.
 		} else {
-			if (mono_atomic_cas_i32 (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_BLOCKING, no_safepoints, -1);
 			return ResumeOk; // Resume worked, back in blocking, nothing for the caller to do.
@@ -463,12 +496,12 @@ retry_state_change:
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (suspend_count > 1) {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, no_safepoints, -1);
 			return ResumeOk; // Resume worked, there's nothing else for the caller to do.
 		} else {
-			if (mono_atomic_cas_i32 (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_BLOCKING, no_safepoints, -1);
 			return ResumeInitAsyncResume; // Resume worked and caller must do async resume, thread resumes in BLOCKING
@@ -481,13 +514,13 @@ retry_state_change:
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (suspend_count > 1) {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
 					goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, cur_state, no_safepoints, -1);
 
 			return ResumeOk; //Resume worked and there's nothing for the caller to do.
 		} else {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, 0, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, 0, no_safepoints), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_RUNNING, no_safepoints, -1);
 
@@ -538,7 +571,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 1", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SUSPEND_REQUESTED, suspend_count, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING_SUSPEND_REQUESTED, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("PULSE", info, raw_state, STATE_BLOCKING_SUSPEND_REQUESTED, no_safepoints, -1);
 		return PulseInitAsyncPulse; // Pulse worked and caller must do async pulse, thread pulses in BLOCKING
@@ -598,11 +631,11 @@ retry_state_change:
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (suspend_count > 1) {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, cur_state, no_safepoints, -1);
 		} else {
-			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, 0, no_safepoints), raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, 0, no_safepoints), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, no_safepoints, -1);
 		}
@@ -648,7 +681,7 @@ retry_state_change:
 		/* Don't expect to see no_safepoints, ever, with async */
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in ASYNC_SUSPEND_REQUESTED with FINISH_ASYNC_SUSPEND");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, FALSE, 0, "");
 		return TRUE; //Async suspend worked, now wait for resume
@@ -657,7 +690,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_ASYNC_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING_ASYNC_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_BLOCKING_ASYNC_SUSPENDED, FALSE, 0, "");
 		return TRUE; //Async suspend of blocking thread worked, now wait for resume
@@ -701,7 +734,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in state RUNNING with DO_BLOCKING");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING, suspend_count, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DO_BLOCKING", info, raw_state, STATE_BLOCKING, no_safepoints, 0);
 		return DoBlockingContinue;
@@ -748,7 +781,7 @@ retry_state_change:
 			mono_fatal_with_history ("%s suspend_count = %d, but should be == 0", func, suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_sigsafe ("DONE_BLOCKING", info, raw_state, STATE_RUNNING, no_safepoints, 0, func);
 		return DoneBlockingOk;
@@ -757,7 +790,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count, no_safepoints), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_with_func ("DONE_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, no_safepoints, 0, func);
 		return DoneBlockingWait;
@@ -820,7 +853,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d,  but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count, FALSE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_sigsafe ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, FALSE, 0, func);
 		return AbortBlockingOk;
@@ -829,7 +862,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, FALSE, 0, func);
 		return AbortBlockingWait;
@@ -871,7 +904,7 @@ retry_state_change:
 		/* Maybe revisit this.  But for now, don't allow nesting. */
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE with BEGIN_NO_SAFEPOINTS.  Can't nest no safepointing regions");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count, TRUE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count, TRUE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_with_func ("BEGIN_NO_SAFEPOINTS", info, raw_state, cur_state, TRUE, 0, func);
 		return;
@@ -917,7 +950,7 @@ retry_state_change:
 	case STATE_ASYNC_SUSPEND_REQUESTED:
 		if (!no_safepoints)
 			mono_fatal_with_history ("no_safepoints = FALSE, but should be TRUE with END_NO_SAFEPOINTS.  Unbalanced no safepointing region");
-		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count, FALSE), raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change_with_func ("END_NO_SAFEPOINTS", info, raw_state, cur_state, TRUE, 0, func);
 		return;
@@ -944,7 +977,7 @@ STATE_BLOCKING_SUSPEND_REQUESTED:
 gboolean
 mono_thread_info_is_running (MonoThreadInfo *info)
 {
-	switch (get_thread_state (info->thread_state)) {
+	switch (mono_thread_info_current_state (info)) {
 	case STATE_RUNNING:
 	case STATE_ASYNC_SUSPEND_REQUESTED:
 	case STATE_BLOCKING_SUSPEND_REQUESTED:
@@ -960,7 +993,7 @@ mono_thread_info_is_running (MonoThreadInfo *info)
 gboolean
 mono_thread_info_is_live (MonoThreadInfo *info)
 {
-	switch (get_thread_state (info->thread_state)) {
+	switch (mono_thread_info_current_state (info)) {
 	case STATE_STARTING:
 	case STATE_DETACHED:
 		return FALSE;
@@ -971,13 +1004,13 @@ mono_thread_info_is_live (MonoThreadInfo *info)
 int
 mono_thread_info_suspend_count (MonoThreadInfo *info)
 {
-	return get_thread_suspend_count (info->thread_state);
+	return info->thread_state.suspend_count;
 }
 
 int
 mono_thread_info_current_state (MonoThreadInfo *info)
 {
-	return get_thread_state (info->thread_state);
+	return info->thread_state.state;
 }
 
 const char*
@@ -1006,5 +1039,5 @@ mono_thread_is_gc_unsafe_mode (void)
 gboolean
 mono_thread_info_will_not_safepoint (MonoThreadInfo *info)
 {
-	return get_thread_no_safepoints (info->thread_state);
+	return info->thread_state.no_safepoints;
 }
