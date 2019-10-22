@@ -273,7 +273,7 @@ namespace System.Threading
 
             public static bool operator !=(Counts lhs, Counts rhs) => lhs._asLong != rhs._asLong;
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 return obj is Counts counts && this._asLong == counts._asLong;
             }
