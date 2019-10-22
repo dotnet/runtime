@@ -26,9 +26,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class GCRefMapBuilder
     {
         /// <summary>
-        /// Node factory to use
+        /// TargetDetails to use
         /// </summary>
-        private readonly NodeFactory _factory;
+        private readonly TargetDetails _target;
 
         /// <summary>
         /// Pending value, not yet written out
@@ -56,14 +56,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly TransitionBlock _transitionBlock;
 
-        public GCRefMapBuilder(NodeFactory factory, bool relocsOnly)
+        public GCRefMapBuilder(TargetDetails target, bool relocsOnly)
         {
-            _factory = factory;
+            _target = target;
             _pendingByte = 0;
             _bits = 0;
             _pos = 0;
-            Builder = new ObjectDataBuilder(factory, relocsOnly);
-            _transitionBlock = TransitionBlock.FromTarget(factory.Target);
+            Builder = new ObjectDataBuilder(target, relocsOnly);
+            _transitionBlock = TransitionBlock.FromTarget(target);
         }
 
         public void GetCallRefMap(MethodDesc method)
@@ -106,31 +106,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Encode the ref map
             uint nStackSlots;
-            if (_factory.Target.Architecture == TargetArchitecture.X86)
+            if (_target.Architecture == TargetArchitecture.X86)
             {
                 uint cbStackPop = argit.CbStackPop();
-                WriteStackPop(cbStackPop / (uint)_factory.Target.PointerSize);
+                WriteStackPop(cbStackPop / (uint)_target.PointerSize);
 
-                nStackSlots = (uint)(nStackBytes / _factory.Target.PointerSize + _transitionBlock.NumArgumentRegisters);
+                nStackSlots = (uint)(nStackBytes / _target.PointerSize + _transitionBlock.NumArgumentRegisters);
             }
             else
             {
-                nStackSlots = (uint)((transitionBlock.SizeOfTransitionBlock + nStackBytes - _transitionBlock.OffsetOfFirstGCRefMapSlot) / _factory.Target.PointerSize);
+                nStackSlots = (uint)((transitionBlock.SizeOfTransitionBlock + nStackBytes - _transitionBlock.OffsetOfFirstGCRefMapSlot) / _target.PointerSize);
             }
 
             for (uint pos = 0; pos < nStackSlots; pos++)
             {
                 int ofs;
 
-                if (_factory.Target.Architecture == TargetArchitecture.X86)
+                if (_target.Architecture == TargetArchitecture.X86)
                 {
                     ofs = (int)(pos < _transitionBlock.NumArgumentRegisters ?
-                        _transitionBlock.OffsetOfArgumentRegisters + _transitionBlock.SizeOfArgumentRegisters - (pos + 1) * _factory.Target.PointerSize :
-                        _transitionBlock.OffsetOfArgs + (pos - _transitionBlock.NumArgumentRegisters) * _factory.Target.PointerSize);
+                        _transitionBlock.OffsetOfArgumentRegisters + _transitionBlock.SizeOfArgumentRegisters - (pos + 1) * _target.PointerSize :
+                        _transitionBlock.OffsetOfArgs + (pos - _transitionBlock.NumArgumentRegisters) * _target.PointerSize);
                 }
                 else
                 {
-                    ofs = (int)(_transitionBlock.OffsetOfFirstGCRefMapSlot + pos * _factory.Target.PointerSize);
+                    ofs = (int)(_transitionBlock.OffsetOfFirstGCRefMapSlot + pos * _target.PointerSize);
                 }
 
                 CORCOMPILE_GCREFMAP_TOKENS token = fakeStack[ofs];

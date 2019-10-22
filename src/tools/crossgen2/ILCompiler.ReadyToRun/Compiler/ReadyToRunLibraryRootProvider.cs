@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
@@ -135,7 +137,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types 
+        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types
         /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
         /// even a stubbed out throwing implementation.
         /// </summary>
@@ -157,11 +159,21 @@ namespace ILCompiler
 
         private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
         {
-            MetadataType defType = type as MetadataType;
+            DefType defType = type as DefType;
 
             if (defType != null)
             {
                 defType.ComputeTypeContainsGCPointers();
+                if (defType.InstanceFieldSize.IsIndeterminate)
+                {
+                    //
+                    // If a method's signature refers to a type with an indeterminate size,
+                    // the compilation will eventually fail when we generate the GCRefMap.
+                    //
+                    // Therefore we need to avoid adding these method into the graph
+                    //
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
             }
         }
 
