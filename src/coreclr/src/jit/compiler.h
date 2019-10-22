@@ -4476,27 +4476,6 @@ public:
                            bool*            doAgain,
                            bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
-    // For updating liveset during traversal AFTER fgComputeLife has completed
-    VARSET_VALRET_TP fgGetVarBits(GenTree* tree);
-    VARSET_VALRET_TP fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tree);
-
-    // Returns the set of live variables after endTree,
-    // assuming that liveSet is the set of live variables BEFORE tree.
-    // Requires that fgComputeLife has completed, and that tree is in the same
-    // statement as endTree, and that it comes before endTree in execution order
-
-    VARSET_VALRET_TP fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tree, GenTree* endTree)
-    {
-        VARSET_TP newLiveSet(VarSetOps::MakeCopy(this, liveSet));
-        while (tree != nullptr && tree != endTree->gtNext)
-        {
-            VarSetOps::AssignNoCopy(this, newLiveSet, fgUpdateLiveSet(newLiveSet, tree));
-            tree = tree->gtNext;
-        }
-        assert(tree == endTree->gtNext);
-        return newLiveSet;
-    }
-
     void fgInterBlockLocalVarLiveness();
 
     // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
