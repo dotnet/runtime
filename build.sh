@@ -268,8 +268,8 @@ build_native()
                 scan_build=scan-build
             fi
         else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" $__GccMajorVersion \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" $__GccMajorVersion "$__GccMinorVersion"
+            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
+            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
         fi
         
         if [[ -n "$__CodeCoverage" ]]; then
