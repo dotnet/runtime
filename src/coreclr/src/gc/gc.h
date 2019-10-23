@@ -70,6 +70,9 @@ enum gc_reason
     reason_lowmemory_host = 11,
     reason_pm_full_gc = 12, // provisional mode requested to trigger full GC
     reason_lowmemory_host_blocking = 13,
+    reason_bgc_tuning_soh = 14,
+    reason_bgc_tuning_loh = 15,
+    reason_bgc_stepping = 16,
     reason_max
 };
 
