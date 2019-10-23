@@ -1,6 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
+      netcoreapp;
       netstandard2.1;
       netstandard;
     </BuildConfigurations>
