@@ -10,6 +10,13 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class WriteValueTests
     {
         [Fact]
+        public static void NullWriterThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+        }
+
+        [Fact]
         public static void CanWriteValueToJsonArray()
         {
             using MemoryStream memoryStream = new MemoryStream();
