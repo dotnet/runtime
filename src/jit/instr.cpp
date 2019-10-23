@@ -1112,13 +1112,14 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     GetEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
                     return;
