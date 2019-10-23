@@ -3731,6 +3731,7 @@ needs_extra_arg (EmitContext *ctx, MonoMethod *method)
 	case MONO_WRAPPER_ALLOC:
 	case MONO_WRAPPER_CASTCLASS:
 	case MONO_WRAPPER_WRITE_BARRIER:
+	case MONO_WRAPPER_NATIVE_TO_MANAGED:
 		return FALSE;
 	case MONO_WRAPPER_STELEMREF:
 		if (info->subtype != WRAPPER_SUBTYPE_VIRTUAL_STELEMREF)
