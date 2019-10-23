@@ -479,13 +479,14 @@ void CodeGen::genHWIntrinsic_R_RM(
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     emit->emitIns_R_A(ins, attr, reg, memIndir);
                     return;
@@ -664,13 +665,14 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     emit->emitIns_SIMD_R_R_A(ins, attr, targetReg, op1Reg, memIndir);
                     return;
@@ -831,13 +833,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     emit->emitIns_SIMD_R_R_A_I(ins, simdSize, targetReg, op1Reg, memIndir, ival);
                     return;
@@ -997,13 +1000,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     emit->emitIns_SIMD_R_R_A_R(ins, simdSize, targetReg, op1Reg, op3Reg, memIndir);
                     return;
@@ -1124,13 +1128,14 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 
                 default:
                 {
+                    GenTreeIndir load = indirForm(op3->TypeGet(), addr);
+
                     if (memIndir == nullptr)
                     {
                         // This is the HW intrinsic load case.
                         // Until we improve the handling of addressing modes in the emitter, we'll create a
                         // temporary GT_IND to generate code with.
-                        GenTreeIndir load = indirForm(op3->TypeGet(), addr);
-                        memIndir          = &load;
+                        memIndir = &load;
                     }
                     emit->emitIns_SIMD_R_R_R_A(ins, attr, targetReg, op1Reg, op2Reg, memIndir);
                     return;
