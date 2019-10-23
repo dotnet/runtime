@@ -2284,7 +2284,10 @@ namespace Mono.Linker.Steps {
 			if (Annotations.IsMarked (iface))
 				return false;
 
-			if (Annotations.IsMarked (resolvedInterfaceType) && !Annotations.IsMarked (iface))
+			if (Annotations.IsMarked (resolvedInterfaceType))
+				return true;
+
+			if (!_context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces))
 				return true;
 
 			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,

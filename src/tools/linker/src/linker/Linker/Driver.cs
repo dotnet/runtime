@@ -402,6 +402,9 @@ namespace Mono.Linker {
 						case "unreachablebodies":
 							context.DisabledOptimizations |= CodeOptimizations.UnreachableBodies;
 							break;
+						case "unusedinterfaces":
+							context.DisabledOptimizations |= CodeOptimizations.UnusedInterfaces;
+							break;
 						}
 					}
 				}
@@ -584,7 +587,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --disable-opt <name>      Disable one of the default optimizations");
 			Console.WriteLine ("                              beforefieldinit: Unused static fields are removed if there is no static ctor");
 			Console.WriteLine ("                              overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
-			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but can never be entered are converted to throws");
+			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but not executed are converted to throws");
+			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("  --enable-opt <name>       Enable one of the non-default optimizations");
 			Console.WriteLine ("                              clearinitlocals: Remove initlocals");
 			Console.WriteLine ("  --exclude-feature <name>  Any code which has a feature <name> in linked assemblies will be removed");
