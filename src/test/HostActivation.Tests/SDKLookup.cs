@@ -1251,7 +1251,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string dummyRuntimeConfig = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
                 "SDKLookup", "dotnet.runtimeconfig.json");
 
             foreach (string version in availableVersions)
@@ -1272,7 +1272,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private void CopyGlobalJson(string globalJsonFileName)
         {
             string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
+            string srcFile = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
                 "SDKLookup", globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);

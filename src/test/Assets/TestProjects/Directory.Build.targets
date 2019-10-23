@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), TestProjects.targets))\TestProjects.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\TestUtils\TestProjects.targets" />
 
   <!--
     Some known framework references are downstream of Core-Setup and don't exist with the build's

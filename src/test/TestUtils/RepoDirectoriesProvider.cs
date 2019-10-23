@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string BuildArchitecture { get; }
         public string TargetRID { get; }
         public string MicrosoftNETCoreAppVersion { get; }
-        public string TestProjectsMSBuildFilesFolder { get; }
+        public string TestAssetsFolder { get; }
         public string Configuration { get; }
         public string RepoRoot { get; }
         public string BaseArtifactsFolder { get; }
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             BuildRID = GetTestContextVariable("BUILDRID");
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");
             MicrosoftNETCoreAppVersion = microsoftNETCoreAppVersion ?? GetTestContextVariable("MNA_VERSION");
-            TestProjectsMSBuildFilesFolder = GetTestContextVariable("TEST_PROJECTS_PROPS_TARGETS_FOLDER");
+            TestAssetsFolder = GetTestContextVariable("TEST_ASSETS");
 
             Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
             string osPlatformConfig = $"{BuildRID}.{Configuration}";
