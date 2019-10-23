@@ -84,13 +84,15 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 {
 	const guint16 *result = (const guint16 *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
+#if FALSE
 	for (int i = 0; i < (size / sizeof (guint16)) - 1; ++i) {
 		if (method_name (intrinsics [i])[0] > method_name (intrinsics [i + 1])[0]) {
 			printf ("%s %s\n",method_name (intrinsics [i]), method_name (intrinsics [i + 1]));
 			g_assert_not_reached ();
 		}
 	}
-
+#endif
+	
 	if (result == NULL)
 		return -1;
 	else
