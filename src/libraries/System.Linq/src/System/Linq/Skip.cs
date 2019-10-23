@@ -120,12 +120,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (count <= 0)
-            {
-                return source.Skip(0);
-            }
-
-            return SkipLastIterator(source, count);
+            return count <= 0 ?
+                source.Skip(0) :
+                SkipLastEnumerableFactory(source, count);
         }
 
         private static IEnumerable<TSource> SkipLastIterator<TSource>(IEnumerable<TSource> source, int count)
