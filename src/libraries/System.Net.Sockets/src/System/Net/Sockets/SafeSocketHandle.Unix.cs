@@ -185,228 +185,142 @@ namespace System.Net.Sockets
             IsDisconnected = true;
         }
 
-        internal static unsafe SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
-        {
-            return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
-        }
-
-        internal static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
-        {
-            SocketError errorCode;
-            socket = CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out errorCode));
-            return errorCode;
-        }
-
-        internal static unsafe SocketError Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeSocketHandle socket)
-        {
-            SocketError errorCode;
-            socket = CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize, out errorCode));
-            return errorCode;
-        }
-
-        private bool DoReleaseHandle()
+        /// <returns>Returns whether operations were canceled.</returns>
+        private bool OnHandleClose()
         {
             // If we've aborted async operations, return true to cause an abortive close.
             return _asyncContext?.StopAndAbort() ?? false;
         }
 
-        internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
+        /// <returns>Returns whether operations were canceled.</returns>
+        private unsafe bool TryUnblockSocket(bool abortive)
         {
-            private Interop.Error CloseHandle(IntPtr handle)
+            // Calling 'close' on a socket that has pending blocking calls (e.g. recv, send, accept, ...)
+            // may block indefinitely. This is a best-effort attempt to not get blocked and make those operations return.
+            // We need to ensure we keep the expected TCP behavior that is observed by the socket peer (FIN vs RST close).
+            // What we do here isn't specified by POSIX and doesn't work on all OSes.
+            // On Linux this works well.
+            // On OSX, TCP connections will be closed with a FIN close instead of an abortive RST close.
+            // And, pending TCP connect operations and UDP receive are not abortable.
+
+            // Unless we're doing an abortive close, don't touch sockets which don't have the CLOEXEC flag set.
+            // These may be shared with other processes and we want to avoid disconnecting them.
+            if (!abortive)
             {
-                Interop.Error errorCode = Interop.Error.SUCCESS;
-                bool remappedError = false;
-
-                if (Interop.Sys.Close(handle) != 0)
+                int fdFlags = Interop.Sys.Fcntl.GetFD(handle);
+                if (fdFlags == 0)
                 {
-                    errorCode = Interop.Sys.GetLastError();
-                    if (errorCode == Interop.Error.ECONNRESET)
-                    {
-                        // Some Unix platforms (e.g. FreeBSD) non-compliantly return ECONNRESET from close().
-                        // For our purposes, we want to ignore such a "failure" and treat it as success.
-                        // In such a case, the file descriptor was still closed and there's no corrective
-                        // action to take.
-                        errorCode = Interop.Error.SUCCESS;
-                        remappedError = true;
-                    }
+                    return false;
                 }
-
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Info(this, remappedError ?
-                        $"handle:{handle}, close():ECONNRESET, but treating it as SUCCESS" :
-                        $"handle:{handle}, close():{errorCode}");
-                }
-
-#if DEBUG
-                _closeSocketHandle = handle;
-                _closeSocketResult = SocketPal.GetSocketErrorForErrorCode(errorCode);
-#endif
-
-                return errorCode;
             }
 
-            private unsafe SocketError InnerReleaseHandle()
+            int type = 0;
+            int optLen = sizeof(int);
+            Interop.Error err = Interop.Sys.GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
+            if (err == Interop.Error.SUCCESS)
             {
-                Interop.Error errorCode = Interop.Error.SUCCESS;
-
-                // If _abortive was set to false in Close, it's safe to block here, which means
-                // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
-                // case we need to do some recovery.
-                if (!_abortive)
+                // For TCP (SocketType.Stream), perform an abortive close.
+                // Unless the user requested a normal close using Socket.Shutdown.
+                if (type == (int)SocketType.Stream && !_hasShutdownSend)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
+                    Interop.Sys.Disconnect(handle);
+                }
+                else
+                {
+                    Interop.Sys.Shutdown(handle, SocketShutdown.Both);
+                }
+            }
 
-                    // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
+            return true;
+        }
+
+        private unsafe SocketError DoCloseHandle(bool abortive)
+        {
+            Interop.Error errorCode = Interop.Error.SUCCESS;
+
+            // If abortive is not set, we're not running on the finalizer thread, so it's safe to block here.
+            // We can honor the linger options set on the socket.  It also means closesocket() might return
+            // EWOULDBLOCK, in which case we need to do some recovery.
+            if (!abortive)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
+
+                // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
+                errorCode = CloseHandle(handle);
+                if (errorCode != Interop.Error.EWOULDBLOCK)
+                {
+                    return SocketPal.GetSocketErrorForErrorCode(errorCode);
+                }
+
+                // The socket must be non-blocking with a linger timeout set.
+                // We have to set the socket to blocking.
+                if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0) == 0)
+                {
+                    // The socket successfully made blocking; retry the close().
+                    return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
+                }
+
+                // The socket could not be made blocking; fall through to the regular abortive close.
+            }
+
+            // By default or if the non-abortive path failed, set linger timeout to zero to get an abortive close (RST).
+            var linger = new Interop.Sys.LingerOption
+            {
+                OnOff = 1,
+                Seconds = 0
+            };
+
+            errorCode = Interop.Sys.SetLingerOption(handle, &linger);
+#if DEBUG
+            _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
+#endif
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
+
+            switch (errorCode)
+            {
+                case Interop.Error.SUCCESS:
+                case Interop.Error.EINVAL:
+                case Interop.Error.ENOPROTOOPT:
                     errorCode = CloseHandle(handle);
-                    if (errorCode != Interop.Error.EWOULDBLOCK)
-                    {
-                        return SocketPal.GetSocketErrorForErrorCode(errorCode);
-                    }
+                    break;
 
-                    // The socket must be non-blocking with a linger timeout set.
-                    // We have to set the socket to blocking.
-                    if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0) == 0)
-                    {
-                        // The socket successfully made blocking; retry the close().
-                        return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
-                    }
+                // For other errors, it's too dangerous to try closesocket() - it might block!
+            }
 
-                    // The socket could not be made blocking; fall through to the regular abortive close.
-                }
+            return SocketPal.GetSocketErrorForErrorCode(errorCode);
+        }
 
-                // By default or if the non-abortive path failed, set linger timeout to zero to get an abortive close (RST).
-                var linger = new Interop.Sys.LingerOption
+        private Interop.Error CloseHandle(IntPtr handle)
+        {
+            Interop.Error errorCode = Interop.Error.SUCCESS;
+            bool remappedError = false;
+
+            if (Interop.Sys.Close(handle) != 0)
+            {
+                errorCode = Interop.Sys.GetLastError();
+                if (errorCode == Interop.Error.ECONNRESET)
                 {
-                    OnOff = 1,
-                    Seconds = 0
-                };
+                    // Some Unix platforms (e.g. FreeBSD) non-compliantly return ECONNRESET from close().
+                    // For our purposes, we want to ignore such a "failure" and treat it as success.
+                    // In such a case, the file descriptor was still closed and there's no corrective
+                    // action to take.
+                    errorCode = Interop.Error.SUCCESS;
+                    remappedError = true;
+                }
+            }
 
-                errorCode = Interop.Sys.SetLingerOption(handle, &linger);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(this, remappedError ?
+                    $"handle:{handle}, close():ECONNRESET, but treating it as SUCCESS" :
+                    $"handle:{handle}, close():{errorCode}");
+            }
+
 #if DEBUG
-                _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
+            _closeSocketResult = SocketPal.GetSocketErrorForErrorCode(errorCode);
 #endif
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
-                switch (errorCode)
-                {
-                    case Interop.Error.SUCCESS:
-                    case Interop.Error.EINVAL:
-                    case Interop.Error.ENOPROTOOPT:
-                        errorCode = CloseHandle(handle);
-                        break;
-
-                    // For other errors, it's too dangerous to try closesocket() - it might block!
-                }
-
-                return SocketPal.GetSocketErrorForErrorCode(errorCode);
-            }
-
-            internal static InnerSafeCloseSocket CreateSocket(IntPtr fileDescriptor)
-            {
-                var res = new InnerSafeCloseSocket();
-                res.SetHandle(fileDescriptor);
-                return res;
-            }
-
-            internal static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SocketError errorCode)
-            {
-                IntPtr fd;
-                Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
-                if (error == Interop.Error.SUCCESS)
-                {
-                    Debug.Assert(fd != (IntPtr)(-1), "fd should not be -1");
-
-                    errorCode = SocketError.Success;
-
-                    // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
-                    // This fails on raw sockets so we just let them be in default state.
-                    if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
-                    {
-                        int on = 1;
-                        error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
-                        if (error != Interop.Error.SUCCESS)
-                        {
-                            Interop.Sys.Close(fd);
-                            fd = (IntPtr)(-1);
-                            errorCode = SocketPal.GetSocketErrorForErrorCode(error);
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.Assert(fd == (IntPtr)(-1), $"Unexpected fd: {fd}");
-
-                    errorCode = SocketPal.GetSocketErrorForErrorCode(error);
-                }
-
-                var res = new InnerSafeCloseSocket();
-                res.SetHandle(fd);
-                return res;
-            }
-
-            internal static unsafe InnerSafeCloseSocket Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressLen, out SocketError errorCode)
-            {
-                IntPtr acceptedFd;
-                if (!socketHandle.IsNonBlocking)
-                {
-                    errorCode = socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, out acceptedFd);
-                }
-                else
-                {
-                    bool completed = SocketPal.TryCompleteAccept(socketHandle, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
-                    if (!completed)
-                    {
-                        errorCode = SocketError.WouldBlock;
-                    }
-                }
-
-                var res = new InnerSafeCloseSocket();
-                res.SetHandle(acceptedFd);
-                return res;
-            }
-
-            /// <returns>Returns whether operations were canceled.</returns>
-            internal unsafe bool TryUnblockSocket(bool abortive, bool hasShutdownSend)
-            {
-                // Calling 'close' on a socket that has pending blocking calls (e.g. recv, send, accept, ...)
-                // may block indefinitely. This is a best-effort attempt to not get blocked and make those operations return.
-                // We need to ensure we keep the expected TCP behavior that is observed by the socket peer (FIN vs RST close).
-                // What we do here isn't specified by POSIX and doesn't work on all OSes.
-                // On Linux this works well.
-                // On OSX, TCP connections will be closed with a FIN close instead of an abortive RST close.
-                // And, pending TCP connect operations and UDP receive are not abortable.
-
-                // Unless we're doing an abortive close, don't touch sockets which don't have the CLOEXEC flag set.
-                // These may be shared with other processes and we want to avoid disconnecting them.
-                if (!abortive)
-                {
-                    int fdFlags = Interop.Sys.Fcntl.GetFD(this);
-                    if (fdFlags == 0)
-                    {
-                        return false;
-                    }
-                }
-
-                int type = 0;
-                int optLen = sizeof(int);
-                Interop.Error err = Interop.Sys.GetSockOpt(this, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
-                if (err == Interop.Error.SUCCESS)
-                {
-                    // For TCP (SocketType.Stream), perform an abortive close.
-                    // Unless the user requested a normal close using Socket.Shutdown.
-                    if (type == (int)SocketType.Stream && !hasShutdownSend)
-                    {
-                        Interop.Sys.Disconnect(this);
-                    }
-                    else
-                    {
-                        Interop.Sys.Shutdown(this, SocketShutdown.Both);
-                    }
-                }
-
-                return true;
-            }
+            return errorCode;
         }
     }
 

@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Disconnect")]
-        internal static extern unsafe Error Disconnect(SafeHandle socket);
+        internal static extern unsafe Error Disconnect(IntPtr socket);
     }
 }

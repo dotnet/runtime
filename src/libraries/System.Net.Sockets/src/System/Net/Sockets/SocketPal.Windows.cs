@@ -41,7 +41,11 @@ namespace System.Net.Sockets
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
-            socket = SafeSocketHandle.CreateWSASocket(addressFamily, socketType, protocolType);
+            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED | Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);;
+
+            socket = new SafeSocketHandle(handle, ownsHandle: true);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
@@ -99,9 +103,13 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Accept(SafeSocketHandle handle, byte[] buffer, ref int nameLen, out SafeSocketHandle socket)
+        public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressSize, out SafeSocketHandle socket)
         {
-            socket = SafeSocketHandle.Accept(handle, buffer, ref nameLen);
+            IntPtr handle = Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize);
+
+            socket = new SafeSocketHandle(handle, ownsHandle: true);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
@@ -215,7 +223,7 @@ namespace System.Net.Sockets
             fixed (byte* postPinnedBuffer = postBuffer)
             {
                 bool success = TransmitFileHelper(handle, fileHandle, null, preBuffer, postBuffer, flags);
-                return (success ? SocketError.Success : SocketPal.GetLastSocketError());
+                return (success ? SocketError.Success : GetLastSocketError());
             }
         }
 
