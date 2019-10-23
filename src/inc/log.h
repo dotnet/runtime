@@ -52,6 +52,7 @@ enum {
 
 #define LOG(x)
 #define LOG2(x)
+#define LOGALWAYS(x)
 
 #define InitializeLogging()
 #define InitLogging()
@@ -89,6 +90,8 @@ bool Logging2On(DWORD facility, DWORD level);
 #define LOG(x)      do { if (LoggingEnabled()) { LogSpew x; } } while (0)
 
 #define LOG2(x)     do { if (LoggingEnabled()) { LogSpew2 x; } } while (0)
+
+#define LOGALWAYS(x)   LogSpewAlways x
 
 #endif
 
