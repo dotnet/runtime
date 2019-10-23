@@ -575,6 +575,11 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
 	}
+	else if (!strcmp (cmethod->name, "SkipInit")) {
+ 		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	}
 #endif
 
 	return NULL;
