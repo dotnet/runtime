@@ -1284,21 +1284,6 @@ namespace System
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool TryCopyTo(char* src, int length, Span<char> destination, out int charsWritten)
-        {
-            if (new ReadOnlySpan<char>(src, length).TryCopyTo(destination))
-            {
-                charsWritten = length;
-                return true;
-            }
-            else
-            {
-                charsWritten = 0;
-                return false;
-            }
-        }
-
         private static unsafe void Int64ToNumber(long input, ref NumberBuffer number)
         {
             ulong value = (ulong)input;
