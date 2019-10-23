@@ -788,7 +788,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         }
                     }, this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
                 }
-                if (exception != null) AddException(exception);
             }
         }
 
