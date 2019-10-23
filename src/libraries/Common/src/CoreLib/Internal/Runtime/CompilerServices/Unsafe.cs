@@ -422,5 +422,18 @@ namespace Internal.Runtime.CompilerServices
             // ceq
             // ret
         }
+
+        /// <summary>
+        /// Bypasses definite assignment rules by taking advantage of <c>out</c> semantics.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SkipInit<T>(out T value)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ret
+        }
     }
 }
