@@ -79,6 +79,37 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(2, 2)]
+        [InlineData(2, 3)]
+        [InlineData(2, 4)]
+        [InlineData(2, 5)]
+        public void Select_SocketAlreadyClosed_AllSocketsClosableAfterException(int socketsPerType, int indexToDispose)
+        {
+            KeyValuePair<Socket, Socket>[] socketPairs = Enumerable.Range(0, socketsPerType * 3).Select(_ => CreateConnectedSockets()).ToArray();
+            try
+            {
+                Socket[] reads = socketPairs.Take(socketsPerType).Select(p => p.Key).ToArray();
+                Socket[] writes = socketPairs.Skip(socketsPerType).Take(socketsPerType).Select(p => p.Key).ToArray();
+                Socket[] errors = socketPairs.Skip(socketsPerType * 2).Take(socketsPerType).Select(p => p.Key).ToArray();
+
+                socketPairs[indexToDispose].Key.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => Socket.Select(reads, writes, errors, 1_000));
+
+                for (int i = 0; i < socketPairs.Length; i++)
+                {
+                    Assert.Equal(i == indexToDispose, socketPairs[i].Key.SafeHandle.IsClosed);
+                }
+            }
+            finally
+            {
+                DisposeSockets(socketPairs);
+            }
+        }
+
         [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [Fact]
         public void Select_ReadError_NoneReady_ManySockets()
@@ -236,7 +267,10 @@ namespace System.Net.Sockets.Tests
             foreach (var pair in sockets)
             {
                 pair.Key.Dispose();
+                Assert.True(pair.Key.SafeHandle.IsClosed);
+
                 pair.Value.Dispose();
+                Assert.True(pair.Value.SafeHandle.IsClosed);
             }
         }
 
