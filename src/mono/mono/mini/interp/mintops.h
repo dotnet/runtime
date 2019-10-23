@@ -64,6 +64,9 @@ typedef enum {
 #define MINT_IS_LDC_I4(op) ((op) >= MINT_LDC_I4_M1 && (op) <= MINT_LDC_I4)
 #define MINT_IS_UNOP(op) ((op) >= MINT_ADD1_I4 && (op) <= MINT_CEQ0_I4)
 #define MINT_IS_BINOP(op) ((op) >= MINT_ADD_I4 && (op) <= MINT_CLT_UN_R8)
+#define MINT_IS_LDLOCFLD(op) ((op) >= MINT_LDLOCFLD_I1 && (op) <= MINT_LDLOCFLD_P)
+#define MINT_IS_LOCUNOP(op) ((op) >= MINT_LOCADD1_I4 && (op) <= MINT_LOCSUB1_I8)
+
 
 #define MINT_POP_ALL	-2
 #define MINT_VAR_PUSH	-1
