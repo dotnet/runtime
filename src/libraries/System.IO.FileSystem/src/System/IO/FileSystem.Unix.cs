@@ -287,7 +287,7 @@ namespace System.IO
             int count = stackDir.Count;
             if (count == 0 && !somepathexists)
             {
-                string root = Directory.InternalGetDirectoryRoot(fullPath);
+                string root = Path.GetPathRoot(fullPath);
                 if (!DirectoryExists(root))
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);

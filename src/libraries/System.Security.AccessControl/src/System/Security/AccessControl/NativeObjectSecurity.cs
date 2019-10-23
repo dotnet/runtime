@@ -281,9 +281,7 @@ nameof(name));
                         }
                         else if (error == Interop.Errors.ERROR_INVALID_NAME)
                         {
-                            exception = new ArgumentException(
-                                 SR.Argument_InvalidName,
-nameof(name));
+                            exception = new ArgumentException(SR.Argument_InvalidName, nameof(name));
                         }
                         else if (error == Interop.Errors.ERROR_INVALID_HANDLE)
                         {

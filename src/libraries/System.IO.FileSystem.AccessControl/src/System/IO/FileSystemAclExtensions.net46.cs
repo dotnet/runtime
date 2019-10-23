@@ -8,6 +8,17 @@ namespace System.IO
 {
     public static class FileSystemAclExtensions
     {
+        public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
+        {
+            if (directoryInfo == null)
+                throw new ArgumentNullException(nameof(directoryInfo));
+
+            if (directorySecurity == null)
+                throw new ArgumentNullException(nameof(directorySecurity));
+
+            directoryInfo.Create(directorySecurity);
+        }
+
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
             return directoryInfo.GetAccessControl();

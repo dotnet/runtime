@@ -227,15 +227,9 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             string fullPath = Path.GetFullPath(path);
-            string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath.AsSpan()));
+            string root = Path.GetPathRoot(fullPath);
 
             return root;
-        }
-
-        internal static string InternalGetDirectoryRoot(string path)
-        {
-            if (path == null) return null;
-            return path.Substring(0, PathInternal.GetRootLength(path.AsSpan()));
         }
 
         public static string GetCurrentDirectory() => Environment.CurrentDirectory;
