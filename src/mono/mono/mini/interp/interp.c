@@ -5433,83 +5433,44 @@ common_vcall:
 				THROW_EX (ex, ip);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDELEM_I1) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_U1) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_I2) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_U2) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_I4) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_U4) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_I8)  /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_I)  /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_R4) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_R8) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_REF) /* fall through */
+
+#define LDELEM(datamem,elemtype) do { \
+	sp--; \
+	MonoArray *o = (MonoArray*)sp [-1].data.p; \
+	NULL_CHECK (o); \
+	gint32 aindex = sp [0].data.i; \
+	if (aindex >= mono_array_length_internal (o)) \
+		THROW_EX (mono_get_exception_index_out_of_range (), ip); \
+	sp [-1].data.datamem = mono_array_get_fast (o, elemtype, aindex); \
+	ip++; \
+} while (0)
+		MINT_IN_CASE(MINT_LDELEM_I1) LDELEM(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_U1) LDELEM(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_I2) LDELEM(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_U2) LDELEM(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_I4) LDELEM(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_U4) LDELEM(i, guint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_I8) LDELEM(l, guint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_I)  LDELEM(nati, mono_i); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_R4) LDELEM(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_R8) LDELEM(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDELEM_REF) LDELEM(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_VT) {
-			MonoArray *o;
-			mono_u aindex;
-
-			sp -= 2;
-
-			o = (MonoArray*)sp [0].data.p;
+			sp--;
+			MonoArray *o = (MonoArray*)sp [-1].data.p;
 			NULL_CHECK (o);
-
-			aindex = sp [1].data.i;
+			mono_u aindex = sp [0].data.i;
 			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
-			/*
-			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
-			 */
-			switch (*ip) {
-			case MINT_LDELEM_I1:
-				sp [0].data.i = mono_array_get_fast (o, gint8, aindex);
-				break;
-			case MINT_LDELEM_U1:
-				sp [0].data.i = mono_array_get_fast (o, guint8, aindex);
-				break;
-			case MINT_LDELEM_I2:
-				sp [0].data.i = mono_array_get_fast (o, gint16, aindex);
-				break;
-			case MINT_LDELEM_U2:
-				sp [0].data.i = mono_array_get_fast (o, guint16, aindex);
-				break;
-			case MINT_LDELEM_I:
-				sp [0].data.nati = mono_array_get_fast (o, mono_i, aindex);
-				break;
-			case MINT_LDELEM_I4:
-				sp [0].data.i = mono_array_get_fast (o, gint32, aindex);
-				break;
-			case MINT_LDELEM_U4:
-				sp [0].data.i = mono_array_get_fast (o, guint32, aindex);
-				break;
-			case MINT_LDELEM_I8:
-				sp [0].data.l = mono_array_get_fast (o, guint64, aindex);
-				break;
-			case MINT_LDELEM_R4:
-				sp [0].data.f_r4 = mono_array_get_fast (o, float, aindex);
-				break;
-			case MINT_LDELEM_R8:
-				sp [0].data.f = mono_array_get_fast (o, double, aindex);
-				break;
-			case MINT_LDELEM_REF:
-				sp [0].data.p = mono_array_get_fast (o, gpointer, aindex);
-				break;
-			case MINT_LDELEM_VT: {
-				int const i32 = READ32 (ip + 1);
-				char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
-				sp [0].data.vt = vt_sp;
-				// Copying to vtstack. No wbarrier needed
-				memcpy (sp [0].data.vt, src_addr, i32);
-				vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
-				ip += 2;
-				break;
-			}
-			default:
-				ves_abort();
-			}
+			int i32 = READ32 (ip + 1);
+			char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
+			sp [-1].data.vt = vt_sp;
+			// Copying to vtstack. No wbarrier needed
+			memcpy (sp [-1].data.vt, src_addr, i32);
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 
-			++ip;
-			++sp;
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STELEM_I)  /* fall through */
