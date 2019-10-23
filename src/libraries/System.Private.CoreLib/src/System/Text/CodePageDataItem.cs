@@ -6,7 +6,6 @@ namespace System.Text
 {
     internal class CodePageDataItem
     {
-        public int CodePage { get; }
         public int UIFamilyCodePage { get; }
         public string WebName { get; }
         public string HeaderName { get; }
@@ -15,7 +14,6 @@ namespace System.Text
         public uint Flags { get; }
 
         internal CodePageDataItem(
-            int codePage,
             int uiFamilyCodePage,
             string webName,
             string headerName,
@@ -23,7 +21,6 @@ namespace System.Text
             string displayName,
             uint flags)
         {
-            CodePage = codePage;
             UIFamilyCodePage = uiFamilyCodePage;
             WebName = webName;
             HeaderName = headerName;

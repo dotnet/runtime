@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Text
 {
     public partial class StringBuilder
@@ -136,6 +138,25 @@ namespace System.Text
                 currentSrc = currentSrc.m_ChunkPrevious;
             }
             while (currentSrc != null);
+        }
+
+        /// <summary>
+        /// Gets the chunk corresponding to the logical byte index in this builder.
+        /// </summary>
+        /// <param name="byteIndex">The logical byte index in this builder.</param>
+        private StringBuilder FindChunkForByte(int byteIndex)
+        {
+            Debug.Assert(0 <= byteIndex && byteIndex <= Length * sizeof(char));
+
+            StringBuilder result = this;
+            while (result.m_ChunkOffset * sizeof(char) > byteIndex)
+            {
+                Debug.Assert(result.m_ChunkPrevious != null);
+                result = result.m_ChunkPrevious;
+            }
+
+            Debug.Assert(result != null);
+            return result;
         }
     }
 }
