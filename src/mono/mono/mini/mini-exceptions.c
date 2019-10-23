@@ -2218,7 +2218,7 @@ typedef enum {
  * return \c MONO_FIRST_PASS_CALLBACK_TO_NATIVE).
  */
 static MonoFirstPassResult
-handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoJitInfo **out_prev_ji, MonoObject *non_exception, StackFrameInfo *catch_frame, gboolean *has_perform_wait_callback_method)
+handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoJitInfo **out_prev_ji, MonoObject *non_exception, StackFrameInfo *catch_frame, gboolean *last_mono_wrapper_runtime_invoke)
 {
 	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_get ();
@@ -2242,7 +2242,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 	MonoFirstPassResult result = MONO_FIRST_PASS_UNHANDLED;
 
 	g_assert (ctx != NULL);
-
+	*last_mono_wrapper_runtime_invoke = TRUE;
 	if (obj == (MonoObject *)domain->stack_overflow_ex)
 		stack_overflow = TRUE;
 
@@ -2475,8 +2475,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 						//try to find threadpool_perform_wait_callback_method
 						unwind_res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, &new_ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 						while (unwind_res) {
-							if (frame.ji && !frame.ji->is_trampoline && jinfo_get_method (frame.ji) == mono_defaults.threadpool_perform_wait_callback_method) {
-								*has_perform_wait_callback_method = TRUE;
+							if (frame.ji && !frame.ji->is_trampoline && jinfo_get_method (frame.ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+								*last_mono_wrapper_runtime_invoke = FALSE;
 								break;
 							}
 							unwind_res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, &new_ctx, &new_ctx, NULL, &lmf, NULL, &frame);
@@ -2555,6 +2555,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	MonoObject *non_exception = NULL;
 	Unwinder unwinder;
 	gboolean in_interp;
+	gboolean is_caught_unmanaged = FALSE;
+	gboolean last_mono_wrapper_runtime_invoke = TRUE;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -2593,6 +2595,10 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		while (1)
 			;
 	}
+
+	if (mono_ex->caught_in_unmanaged)
+		is_caught_unmanaged = TRUE;
+	
 
 	if (mono_object_isinst_checked (obj, mono_defaults.exception_class, error)) {
 		mono_ex = (MonoException*)obj;
@@ -2686,8 +2692,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;
-		gboolean has_perform_wait_callback_method = FALSE;
-		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &has_perform_wait_callback_method);
+		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &last_mono_wrapper_runtime_invoke);
 
 		if (res == MONO_FIRST_PASS_UNHANDLED) {
 			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
@@ -2727,12 +2732,14 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			if (unhandled)
 				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 			else if (!ji || (jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
-				if (!has_perform_wait_callback_method)
+				if (last_mono_wrapper_runtime_invoke && mono_thread_get_main () && (mono_thread_internal_current () == mono_thread_get_main ()->internal_thread))
 					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
-				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+				else
+					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 			}
 			else if (res != MONO_FIRST_PASS_CALLBACK_TO_NATIVE)
-				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+				if (!is_caught_unmanaged)
+					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 		}
 	}
 

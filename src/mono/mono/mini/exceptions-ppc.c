@@ -340,7 +340,7 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 
 	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow) {
+		if (!rethrow && !mono_ex->caught_in_unmanaged) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		} else if (preserve_ips) {
