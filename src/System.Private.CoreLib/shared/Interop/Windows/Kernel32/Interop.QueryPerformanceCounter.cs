@@ -17,6 +17,7 @@ internal static partial class Interop
         // We don't set last error since we don't need the extended error info.
 
         [DllImport(Libraries.Kernel32, ExactSpelling = true)]
+        [SuppressGCTransition]
         internal static extern unsafe BOOL QueryPerformanceCounter(long* lpPerformanceCount);
     }
 }
