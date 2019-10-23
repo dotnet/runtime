@@ -18,49 +18,45 @@
 static int
 get_thread_state (int thread_state)
 {
-	MonoThreadStateMachine state;
-	state.raw = thread_state;
+	const MonoThreadStateMachine state = {thread_state};
 	return state.state;
 }
 
 static int
 get_thread_suspend_count (int thread_state)
 {
-	MonoThreadStateMachine state;
-	state.raw = thread_state;
+	const MonoThreadStateMachine state = {thread_state};
 	return state.suspend_count;
 }
 
 static gboolean
 get_thread_no_safepoints (int thread_state)
 {
-	MonoThreadStateMachine state;
-	state.raw = thread_state;
+	const MonoThreadStateMachine state = {thread_state};
 	return state.no_safepoints;
 }
 
-static int
+static MonoThreadStateMachine
 build_thread_state (int thread_state, int suspend_count, gboolean no_safepoints)
 {
 	g_assert (suspend_count >= 0 && suspend_count <= THREAD_SUSPEND_COUNT_MAX);
 	g_assert (thread_state >= 0 && thread_state <= STATE_MAX);
 	no_safepoints = !!no_safepoints; // ensure it's 0 or 1
 
-	MonoThreadStateMachine state;
-	/* want a predictable value for the unused bits so that
-	 * thread_state_cas doesn't fail for spurious reasons.
+	/* need a predictable value for the unused bits so that
+	 * thread_state_cas does not fail.
 	 */
-	state.raw = 0; 
+	MonoThreadStateMachine state = { 0 };
 	state.state = thread_state;
 	state.no_safepoints = no_safepoints;
 	state.suspend_count = suspend_count;
-	return state.raw;
+	return state;
 }
 
 static int
-thread_state_cas (MonoThreadStateMachine *state, int new_raw, int old_raw)
+thread_state_cas (MonoThreadStateMachine *state, MonoThreadStateMachine new_value, int old_raw)
 {
-	return mono_atomic_cas_i32 (&state->raw, new_raw, old_raw);
+	return mono_atomic_cas_i32 (&state->raw, new_value.raw, old_raw);
 }
 
 static const char*
@@ -90,10 +86,9 @@ unwrap_thread_state (MonoThreadInfo* info,
 		     int *count,
 		     int *blk)
 {
-	MonoThreadStateMachine state;
-	state.raw = mono_atomic_load_i32 (&info->thread_state.raw);
-	/* read once from info and then read from state so we unpack
-	 * consistently */
+	g_static_assert (sizeof (MonoThreadStateMachine) == sizeof (int32_t));
+	const MonoThreadStateMachine state = {mono_atomic_load_i32 (&info->thread_state.raw)};
+	// Read once from info and then read from local to get consistent values.
 	*raw = state.raw;
 	*cur = state.state;
 	*count = state.suspend_count;
@@ -197,7 +192,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (thread_state_cas (&info->thread_state, STATE_RUNNING, raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, 0, 0), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ATTACH", info, raw_state, STATE_RUNNING, FALSE, 0);
 		break;
@@ -228,7 +223,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (thread_state_cas (&info->thread_state, STATE_DETACHED, raw_state) != raw_state)
+		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_DETACHED, 0, 0), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DETACH", info, raw_state, STATE_DETACHED, FALSE, 0);
 		return TRUE;
@@ -485,7 +480,7 @@ retry_state_change:
 			trace_state_change ("RESUME", info, raw_state, cur_state, no_safepoints, -1);
 			return ResumeOk; //Resume worked and there's nothing for the caller to do.
 		} else {
-			if (thread_state_cas (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING, 0, 0), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_BLOCKING, no_safepoints, -1);
 			return ResumeOk; // Resume worked, back in blocking, nothing for the caller to do.
@@ -501,7 +496,7 @@ retry_state_change:
 			trace_state_change ("RESUME", info, raw_state, cur_state, no_safepoints, -1);
 			return ResumeOk; // Resume worked, there's nothing else for the caller to do.
 		} else {
-			if (thread_state_cas (&info->thread_state, STATE_BLOCKING, raw_state) != raw_state)
+			if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING, 0, 0), raw_state) != raw_state)
 				goto retry_state_change;
 			trace_state_change ("RESUME", info, raw_state, STATE_BLOCKING, no_safepoints, -1);
 			return ResumeInitAsyncResume; // Resume worked and caller must do async resume, thread resumes in BLOCKING

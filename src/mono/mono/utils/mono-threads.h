@@ -147,6 +147,7 @@ enum {
 
 	STATE_MAX				= 0x09,
 
+	// This is stored in a signed 8 bit value, so not really.
 	THREAD_SUSPEND_COUNT_MAX		= 0xFF,
 
 	SELF_SUSPEND_STATE_INDEX = 0,
@@ -159,7 +160,6 @@ typedef union {
 		int32_t state : 7;
 		int32_t no_safepoints : 1;
 		int32_t suspend_count : 8;
-		int32_t zeros : 16; /* must be 0 */
 	};
 } MonoThreadStateMachine;
 
