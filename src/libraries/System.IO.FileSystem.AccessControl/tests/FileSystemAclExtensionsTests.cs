@@ -2,13 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Security.AccessControl;
+using System.Security.Principal;
+using Microsoft.DotNet.PlatformAbstractions;
+using Microsoft.VisualBasic;
 using Xunit;
 
 namespace System.IO
 {
     public class FileSystemAclExtensionsTests
     {
+        #region Test methods
+
         [Fact]
         public void GetAccessControl_DirectoryInfo_InvalidArguments()
         {
@@ -112,7 +120,6 @@ namespace System.IO
             }
         }
 
-
         [Fact]
         public void SetAccessControl_DirectoryInfo_DirectorySecurity_InvalidArguments()
         {
@@ -187,5 +194,133 @@ namespace System.IO
                 FileSystemAclExtensions.SetAccessControl(fileStream, fileSecurity);
             }
         }
+
+        [Fact]
+        public void DirectoryInfo_Create_NullDirectoryInfo()
+        {
+            DirectoryInfo info = null;
+            DirectorySecurity security = new DirectorySecurity();
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<ArgumentNullException>(() => FileSystemAclExtensions.Create(info, security));
+            }
+            else
+            {
+                Assert.Throws<ArgumentNullException>(() => info.Create(security));
+            }
+        }
+
+        [Fact]
+        public void DirectoryInfo_Create_DefaultDirectorySecurity()
+        {
+            DirectorySecurity security = new DirectorySecurity();
+            VerifyDirectorySecurity(security);
+        }
+
+        [Fact]
+        public void DirectoryInfo_Create_NullDirectorySecurity()
+        {
+            DirectoryInfo info = new DirectoryInfo("path");
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<ArgumentNullException>(() => FileSystemAclExtensions.Create(info, null));
+            }
+            else
+            {
+                Assert.Throws<ArgumentNullException>(() => info.Create(null));
+            }
+        }
+
+        [Fact]
+        public void DirectoryInfo_Create_NotFound()
+        {
+            DirectoryInfo info = new DirectoryInfo(@"W:\\I\\Do\\Not\\Exist");
+            DirectorySecurity security = new DirectorySecurity();
+            Assert.Throws<DirectoryNotFoundException>(() => info.Create(security));
+        }
+
+        [Theory]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadData, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.Write, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.Write, AccessControlType.Deny)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Deny)]
+        public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(
+            WellKnownSidType sid,
+            FileSystemRights rights,
+            AccessControlType controlType)
+        {
+
+            DirectorySecurity security = GetDirectorySecurity(sid, rights, controlType);
+            VerifyDirectorySecurity(security);
+        }
+
+        #endregion
+
+        #region Helper methods
+
+        private DirectorySecurity GetDirectorySecurity(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
+        {
+            DirectorySecurity security = new DirectorySecurity();
+
+            SecurityIdentifier identity = new SecurityIdentifier(sid, null);
+            FileSystemAccessRule accessRule = new FileSystemAccessRule(identity, rights, controlType);
+            security.AddAccessRule(accessRule);
+
+            return security;
+        }
+
+        private void VerifyDirectorySecurity(DirectorySecurity expectedSecurity)
+        {
+            using var directory = new TempDirectory();
+
+            string path = Path.Combine(directory.Path, "directory");
+            DirectoryInfo info = new DirectoryInfo(path);
+
+            info.Create(expectedSecurity);
+
+            Assert.True(Directory.Exists(path));
+            Assert.Equal(typeof(FileSystemRights), expectedSecurity.AccessRightType);
+
+            DirectoryInfo actualInfo = new DirectoryInfo(info.FullName);
+
+            DirectorySecurity actualSecurity = actualInfo.GetAccessControl();
+
+            VerifyDirectoryAccessSecurity(expectedSecurity, actualSecurity);
+        }
+
+        private void VerifyDirectoryAccessSecurity(DirectorySecurity expectedSecurity, DirectorySecurity actualSecurity)
+        {
+            Assert.Equal(typeof(FileSystemRights), actualSecurity.AccessRightType);
+
+            List<FileSystemAccessRule> expectedAccessRules = expectedSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>().ToList();
+
+            List<FileSystemAccessRule> actualAccessRules = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>().ToList();
+
+            // If DirectorySecurity is created without arguments, GetAccessRules will return zero rules
+            Assert.Equal(expectedAccessRules.Count, actualAccessRules.Count);
+            if (expectedAccessRules.Count > 0)
+            {
+                Assert.All(expectedAccessRules, actualAccessRule =>
+                {
+                    int count = expectedAccessRules.Count(expectedAccessRule => AreAccessRulesEqual(expectedAccessRule, actualAccessRule));
+                    Assert.True(count > 0);
+                });
+            }
+        }
+
+        private bool AreAccessRulesEqual(FileSystemAccessRule expectedRule, FileSystemAccessRule actualRule)
+        {
+            return
+                expectedRule.AccessControlType == actualRule.AccessControlType &&
+                expectedRule.FileSystemRights  == actualRule.FileSystemRights &&
+                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
+        }
+
+        #endregion
     }
 }
