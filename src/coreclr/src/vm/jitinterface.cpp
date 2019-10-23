@@ -7338,6 +7338,17 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
+    {
+        static BYTE ilcode[] = { CEE_RET };
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 0;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
 
     return false;
 }
