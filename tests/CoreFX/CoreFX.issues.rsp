@@ -38,9 +38,6 @@
 -noclass System.Tests.Utf8StringTests
 -noclass System.Text.Tests.Utf8SpanTests
 
-# https://github.com/dotnet/corefx/issues/37886
--nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
-
 # System.Net.Tests are known for their instability
 -nonamespace System.Net.Http.Functional.Tests
 -nonamespace System.Net.Sockets.Tests
@@ -64,42 +61,10 @@
 # Timeout in System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs: https://github.com/dotnet/coreclr/issues/20246
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
 
-# Test failure: https://github.com/dotnet/corefx/issues/37989
--nomethod MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains
-
 # Timeout in System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
 # https://github.com/dotnet/coreclr/issues/22414
 -nomethod System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
 
-# Failure in System.Text.Encoding.Tests due to bug fix in DecoderNLS.Convert
-# https://github.com/dotnet/coreclr/issues/27191
--nomethod System.Text.Tests.DecoderConvert2.PosTest6
-
 # Timeout in System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
 # https://github.com/dotnet/coreclr/issues/18912
 -nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
-
-# Assert: https://github.com/dotnet/coreclr/issues/25050
--nonamespace System.Data.Common.Tests
-
-# Test failure: https://github.com/dotnet/corefx/issues/39223
--nomethod System.ComponentModel.TypeConverterTests.FontConverterTest.TestConvertFrom
-
-# Test failure: https://github.com/dotnet/coreclr/pull/26570
--nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
-
-# corefx tests need to be updated for changes to GetHashCode
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt16
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt32
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeDouble
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeByte
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeSByte
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt64
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt16
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeInt64
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeSingle
--nomethod System.Numerics.Tests.GenericVectorTests.GetHashCodeUInt32
-
-# corefx tests need to be updated with updated argument name
--nomethod System.Security.Cryptography.DeriveBytesTests.PasswordDeriveBytesTests.GetBytes_ZeroLength
--nomethod System.Tests.BufferTests.BlockCopy_Invalid
