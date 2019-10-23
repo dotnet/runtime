@@ -18784,17 +18784,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     if (thisArg != nullptr)
     {
-        var_types sigType;
-
-        if (clsAttr & CORINFO_FLG_VALUECLASS)
-        {
-            sigType = TYP_BYREF;
-        }
-        else
-        {
-            sigType = TYP_REF;
-        }
-
         lclVarInfo[0].lclVerTypeInfo = verMakeTypeInfo(pInlineInfo->inlineCandidateInfo->clsHandle);
         lclVarInfo[0].lclHasLdlocaOp = false;
 
@@ -18803,15 +18792,13 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // the inlining multiplier) for anything in that assembly.
         // But we only need to normalize it if it is a TYP_STRUCT
         // (which we need to do even if we have already set foundSIMDType).
-        if ((!foundSIMDType || (sigType == TYP_STRUCT)) && isSIMDorHWSIMDClass(&(lclVarInfo[0].lclVerTypeInfo)))
+        if (!foundSIMDType && isSIMDorHWSIMDClass(&(lclVarInfo[0].lclVerTypeInfo)))
         {
-            if (sigType == TYP_STRUCT)
-            {
-                sigType = impNormStructType(lclVarInfo[0].lclVerTypeInfo.GetClassHandle());
-            }
             foundSIMDType = true;
         }
 #endif // FEATURE_SIMD
+
+        var_types sigType         = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0) ? TYP_BYREF : TYP_REF;
         lclVarInfo[0].lclTypeInfo = sigType;
 
         GenTree* thisArgNode = thisArg->GetNode();
@@ -18831,30 +18818,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
             /* This can only happen with byrefs <-> ints/shorts */
 
-            assert(genActualType(sigType) == TYP_I_IMPL || sigType == TYP_BYREF);
+            assert(sigType == TYP_BYREF);
             assert((genActualType(thisArgNode->TypeGet()) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
 
-            if (sigType == TYP_BYREF)
-            {
-                lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
-            }
-            else if (thisArgNode->TypeGet() == TYP_BYREF)
-            {
-                assert(sigType == TYP_I_IMPL);
-
-                /* If possible change the BYREF to an int */
-                if (thisArgNode->IsLocalAddrExpr() != nullptr)
-                {
-                    thisArgNode->gtType          = TYP_I_IMPL;
-                    lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
-                }
-                else
-                {
-                    /* Arguments 'int <- byref' cannot be bashed */
-                    inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
-                    return;
-                }
-            }
+            lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
         }
     }
 
