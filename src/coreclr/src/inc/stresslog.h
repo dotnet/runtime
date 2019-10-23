@@ -65,7 +65,7 @@
 #define STRESS_LOG_VA(msg) do {                                               \
             if (StressLog::LogOn(LF_GC, LL_ALWAYS))                           \
                 StressLog::LogMsgOL msg;                                      \
-            LogSpewAlways msg;                                                \
+            LOGALWAYS(msg);                                                   \
             } while(0)
 
 #define STRESS_LOG0(facility, level, msg) do {                                \

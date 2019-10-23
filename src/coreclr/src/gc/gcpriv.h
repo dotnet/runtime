@@ -293,6 +293,7 @@ void GCLog (const char *fmt, ... );
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
 #define dprintf(l, x)
+//#define dprintf(l,x) STRESS_LOG_VA(x);
 
 #endif //SIMPLE_DPRINTF
 
@@ -363,6 +364,22 @@ class gc_heap;
 class exclusive_sync;
 class recursive_gc_sync;
 #endif //BACKGROUND_GC
+
+#ifdef MULTIPLE_HEAPS
+// card marking stealing only makes sense in server GC
+// but it works and is easier to debug for workstation GC
+// so turn it on for server GC, turn on for workstation GC if necessary
+#define FEATURE_CARD_MARKING_STEALING
+#endif //MULTIPLE_HEAPS
+
+#ifdef FEATURE_CARD_MARKING_STEALING
+class card_marking_enumerator;
+#define CARD_MARKING_STEALING_ARG(a)    ,a
+#define CARD_MARKING_STEALING_ARGS(a,b,c)    ,a,b,c
+#else // FEATURE_CARD_MARKING_STEALING
+#define CARD_MARKING_STEALING_ARG(a)
+#define CARD_MARKING_STEALING_ARGS(a,b,c)
+#endif // FEATURE_CARD_MARKING_STEALING
 
 // The following 2 modes are of the same format as in clr\src\bcl\system\runtime\gcsettings.cs
 // make sure you change that one if you change this one!
@@ -1120,11 +1137,11 @@ class gc_heap
 
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
-#define call_fn(fn) (this->*fn)
+#define call_fn(this_arg,fn) (this_arg->*fn)
 #define __this this
 #else
     typedef void (* card_fn) (uint8_t**);
-#define call_fn(fn) (*fn)
+#define call_fn(this_arg,fn) (*fn)
 #define __this (gc_heap*)0
 #endif
 
@@ -2711,17 +2728,19 @@ protected:
     void mark_through_cards_helper (uint8_t** poo, size_t& ngen,
                                     size_t& cg_pointers_found,
                                     card_fn fn, uint8_t* nhigh,
-                                    uint8_t* next_boundary);
+                                    uint8_t* next_boundary
+                                    CARD_MARKING_STEALING_ARG(gc_heap* hpt));
 
     PER_HEAP
     BOOL card_transition (uint8_t* po, uint8_t* end, size_t card_word_end,
-                               size_t& cg_pointers_found, 
-                               size_t& n_eph, size_t& n_card_set,
-                               size_t& card, size_t& end_card,
-                               BOOL& foundp, uint8_t*& start_address,
-                               uint8_t*& limit, size_t& n_cards_cleared);
+                          size_t& cg_pointers_found, 
+                          size_t& n_eph, size_t& n_card_set,
+                          size_t& card, size_t& end_card,
+                          BOOL& foundp, uint8_t*& start_address,
+                          uint8_t*& limit, size_t& n_cards_cleared
+                          CARD_MARKING_STEALING_ARGS(card_marking_enumerator& card_mark_enumerator, heap_segment* seg, size_t& card_word_end_out));
     PER_HEAP
-    void mark_through_cards_for_segments (card_fn fn, BOOL relocating);
+    void mark_through_cards_for_segments(card_fn fn, BOOL relocating CARD_MARKING_STEALING_ARG(gc_heap* hpt));
 
     PER_HEAP
     void repair_allocation_in_expanded_heap (generation* gen);
@@ -2927,7 +2946,8 @@ protected:
     PER_HEAP
     void relocate_in_large_objects ();
     PER_HEAP
-    void mark_through_cards_for_large_objects (card_fn fn, BOOL relocating);
+    void mark_through_cards_for_large_objects(card_fn fn, BOOL relocating
+                                              CARD_MARKING_STEALING_ARG(gc_heap* hpt));
     PER_HEAP
     void descr_segment (heap_segment* seg);
     PER_HEAP
@@ -4259,6 +4279,36 @@ public:
     static
     BOOL      g_low_memory_status;
 
+#ifdef FEATURE_CARD_MARKING_STEALING
+    PER_HEAP
+    VOLATILE(uint32_t)    card_mark_chunk_index_soh;
+
+    PER_HEAP
+    VOLATILE(bool)        card_mark_done_soh;
+
+    PER_HEAP
+    VOLATILE(uint32_t)    card_mark_chunk_index_loh;
+
+    PER_HEAP
+    VOLATILE(bool)        card_mark_done_loh;
+
+    PER_HEAP
+    void reset_card_marking_enumerators()
+    {
+        // set chunk index to all 1 bits so that incrementing it yields 0 as the first index
+        card_mark_chunk_index_soh = ~0;
+        card_mark_done_soh = false;
+
+        card_mark_chunk_index_loh = ~0;
+        card_mark_done_loh = false;
+    }
+
+    PER_HEAP
+    bool find_next_chunk(card_marking_enumerator& card_mark_enumerator, heap_segment* seg,
+                         size_t& n_card_set, uint8_t*& start_address, uint8_t*& limit,
+                         size_t& card, size_t& end_card, size_t& card_word_end);
+#endif //FEATURE_CARD_MARKING_STEALING
+
 protected:
     PER_HEAP
     void update_collection_counts ();
@@ -4919,3 +4969,46 @@ size_t gcard_of (uint8_t* object)
 {
     return (size_t)(object) / card_size;
 }
+#ifdef FEATURE_CARD_MARKING_STEALING
+// make this 8 card bundle bits (2 MB in 64-bit architectures, 1 MB in 32-bit) - should be at least 1 card bundle bit
+#define CARD_MARKING_STEALING_GRANULARITY (card_size*card_word_width*card_bundle_size*8)
+
+#define THIS_ARG    , __this
+class card_marking_enumerator
+{
+private:
+    heap_segment*       segment;
+    uint8_t*            gc_low;
+    uint32_t            segment_start_chunk_index;
+    VOLATILE(uint32_t)* chunk_index_counter;
+    uint8_t*            chunk_high;
+    uint32_t            old_chunk_index;
+    static const uint32_t INVALID_CHUNK_INDEX = ~0u;
+
+public:
+    card_marking_enumerator(heap_segment* seg, uint8_t* low, VOLATILE(uint32_t)* counter) :
+        segment(seg), gc_low(low), segment_start_chunk_index(0), chunk_index_counter(counter), chunk_high(nullptr), old_chunk_index(INVALID_CHUNK_INDEX)
+    {
+    }
+
+    // move to the next chunk in this segment - return false if no more chunks in this segment
+    bool move_next(heap_segment* seg, uint8_t*& low, uint8_t*& high);
+
+    void exhaust_segment(heap_segment* seg)
+    {
+        uint8_t* low;
+        uint8_t* high;
+        // make sure no more chunks in this segment - do this via move_next because we want to keep
+        // incrementing the chunk_index_counter rather than updating it via interlocked compare exchange
+        while (move_next(seg, low, high))
+            ;
+    }
+
+    uint8_t* get_chunk_high()
+    {
+        return chunk_high;
+    }
+};
+#else
+#define THIS_ARG
+#endif // FEATURE_CARD_MARKING_STEALING
