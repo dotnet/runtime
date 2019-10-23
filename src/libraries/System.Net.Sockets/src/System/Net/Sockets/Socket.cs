@@ -5070,6 +5070,21 @@ namespace System.Net.Sockets
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 
+        internal static void SocketListDangerousReleaseRefs(IList socketList, ref int refsAdded)
+        {
+            if (socketList == null)
+            {
+                return;
+            }
+
+            for (int i = 0; (i < socketList.Count) && (refsAdded > 0); i++)
+            {
+                Socket socket = (Socket)socketList[i];
+                socket.InternalSafeHandle.DangerousRelease();
+                refsAdded--;
+            }
+        }
+
         #endregion
     }
 }

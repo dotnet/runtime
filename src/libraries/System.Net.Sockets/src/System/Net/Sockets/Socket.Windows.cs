@@ -153,7 +153,7 @@ namespace System.Net.Sockets
             return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
-        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet)
+        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             int count;
             if (socketList == null || (count = socketList.Count) == 0)
@@ -166,18 +166,21 @@ namespace System.Net.Sockets
             fileDescriptorSet[0] = (IntPtr)count;
             for (int current = 0; current < count; current++)
             {
-                if (!(socketList[current] is Socket))
+                if (!(socketList[current] is Socket socket))
                 {
                     throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
-                fileDescriptorSet[current + 1] = ((Socket)socketList[current])._handle.DangerousGetHandle();
+                bool success = false;
+                socket.InternalSafeHandle.DangerousAddRef(ref success);
+                fileDescriptorSet[current + 1] = socket.InternalSafeHandle.DangerousGetHandle();
+                refsAdded++;
             }
         }
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet)
+        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             // Walk the list in order.
             //
@@ -195,6 +198,9 @@ namespace System.Net.Sockets
             int returnedCount = (int)fileDescriptorSet[0];
             if (returnedCount == 0)
             {
+                // Unref safehandles.
+                SocketListDangerousReleaseRefs(socketList, ref refsAdded);
+
                 // No socket present, will never find any socket, remove them all.
                 socketList.Clear();
                 return;
@@ -219,6 +225,8 @@ namespace System.Net.Sockets
                     if (currentFileDescriptor == returnedCount)
                     {
                         // Descriptor not found: remove the current socket and start again.
+                        socket.InternalSafeHandle.DangerousRelease();
+                        refsAdded--;
                         socketList.RemoveAt(currentSocket--);
                         count--;
                     }
