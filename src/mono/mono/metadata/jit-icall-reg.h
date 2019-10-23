@@ -367,8 +367,8 @@ MONO_JIT_ICALLS
 //
 #if MONO_LLVM_LOADED
 
-MonoJitICallInfos*
-mono_get_jit_icall_info (void) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL MonoJitICallInfos*
+mono_get_jit_icall_info (void);
 
 #else
 

@@ -799,8 +799,8 @@ mono_class_is_open_constructed_type (MonoType *t);
 void
 mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error);
 
-MonoMethod*
-mono_class_get_cctor (MonoClass *klass) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL MonoMethod*
+mono_class_get_cctor (MonoClass *klass);
 
 MonoMethod*
 mono_class_get_finalizer (MonoClass *klass);
@@ -1066,11 +1066,11 @@ mono_loader_init           (void);
 void
 mono_loader_cleanup        (void);
 
-void
-mono_loader_lock           (void) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL void
+mono_loader_lock           (void);
 
-void
-mono_loader_unlock         (void) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL void
+mono_loader_unlock         (void);
 
 void
 mono_loader_lock_track_ownership (gboolean track);
@@ -1315,8 +1315,8 @@ mono_get_image_for_generic_param (MonoGenericParam *param);
 char *
 mono_make_generic_name_string (MonoImage *image, int num);
 
-MonoClass *
-mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL MonoClass *
+mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
@@ -1328,8 +1328,8 @@ gboolean
 mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
-MonoGenericClass*
-mono_class_get_generic_class (MonoClass *klass) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL MonoGenericClass*
+mono_class_get_generic_class (MonoClass *klass);
 
 MonoGenericClass*
 mono_class_try_get_generic_class (MonoClass *klass);
@@ -1493,8 +1493,8 @@ mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
 
-MonoType*
-mono_class_enum_basetype_internal (MonoClass *klass) MONO_LLVM_INTERNAL;
+MONO_LLVM_INTERNAL MonoType*
+mono_class_enum_basetype_internal (MonoClass *klass);
 
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"
