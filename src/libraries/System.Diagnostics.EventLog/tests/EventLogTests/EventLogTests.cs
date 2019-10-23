@@ -44,7 +44,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log)); // unlike other tests, throw if delete fails
                 Assert.False(EventLog.Exists(log));
             }
         }
@@ -147,7 +147,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
@@ -213,7 +213,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
@@ -273,7 +273,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 

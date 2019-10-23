@@ -90,7 +90,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 

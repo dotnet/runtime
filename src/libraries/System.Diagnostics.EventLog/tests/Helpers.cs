@@ -18,6 +18,17 @@ namespace System.Diagnostics.Tests
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsIoTCore; }
 
+        // Retry that eats exceptions: for "best effort cleanup"
+        public static void RetrySilently(Action func)
+        {
+            try
+            {
+                Retry(func);
+            }
+            catch
+            {}
+        }
+
         public static void Retry(Action func)
         {
             Retry<object>(() => { func(); return null; });
@@ -30,7 +41,7 @@ namespace System.Diagnostics.Tests
             RetryHelper.Execute(() =>
             {
                 result = func();
-            }, maxAttempts: 10, (iteration) => iteration * 300);
+            }, maxAttempts: 20, (iteration) => iteration * 300);
 
             return result;
         }
