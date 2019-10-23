@@ -8222,8 +8222,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Regardless of the state of the basic block with respect to GC safe point,
     // we will always insert a GC Poll for scenarios involving a suppressed GC
-    // transition.
-    if (call->IsUnmanaged() && call->IsSuppressGCTransition())
+    // transition. Only insert the GC Poll on the first morph.
+    if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
         // Insert a GC poll.
         bool insertedBB = fgCreateGCPoll(GCPOLL_CALL, compCurBB);
