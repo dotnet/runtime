@@ -1024,15 +1024,12 @@ scan_object_for_xdomain_refs (GCObject *obj, mword size, void *data)
 void
 sgen_check_for_xdomain_refs (void)
 {
-	LOSObject *bigobj;
-
 	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE, TRUE);
 
 	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
-	for (bigobj = sgen_los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_xdomain_refs ((GCObject*)bigobj->data, sgen_los_object_size (bigobj), NULL);
+	sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 }
 
 #endif
@@ -1131,6 +1128,12 @@ dump_object (GCObject *obj, gboolean dump_location)
 #endif
 }
 
+static void
+dump_object_callback (GCObject *obj, size_t size, gboolean dump_location)
+{
+	dump_object (obj, dump_location);
+}
+
 void
 sgen_debug_enable_heap_dump (const char *filename)
 {
@@ -1145,7 +1148,6 @@ void
 sgen_debug_dump_heap (const char *type, int num, const char *reason)
 {
 	SgenPointerQueue *pinned_objects;
-	LOSObject *bigobj;
 	int i;
 
 	if (!heap_dump_file)
@@ -1174,8 +1176,7 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 	sgen_major_collector.dump_heap (heap_dump_file);
 
 	fprintf (heap_dump_file, "<los>\n");
-	for (bigobj = sgen_los_object_list; bigobj; bigobj = bigobj->next)
-		dump_object ((GCObject*)bigobj->data, FALSE);
+	sgen_los_iterate_objects ((IterateObjectCallbackFunc)dump_object_callback, (void*)FALSE);
 	fprintf (heap_dump_file, "</los>\n");
 
 	fprintf (heap_dump_file, "</collection>\n");

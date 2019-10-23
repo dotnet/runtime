@@ -401,6 +401,7 @@ void sgen_deregister_root (char* addr)
 	MONO_PERMIT (need (sgen_lock_gc));
 
 typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);
+typedef gboolean (*IterateObjectResultCallbackFunc) (GCObject*, size_t, void*);
 
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags, gboolean fail_on_canaries);
 
@@ -900,16 +901,11 @@ gboolean sgen_set_allow_synchronous_major (gboolean flag);
 
 typedef struct _LOSObject LOSObject;
 struct _LOSObject {
-	LOSObject *next;
 	mword size; /* this is the object size, lowest bit used for pin/mark */
 	guint8 * volatile cardtable_mod_union; /* only used by the concurrent collector */
-#if SIZEOF_VOID_P < 8
-	mword dummy;		/* to align object to sizeof (double) */
-#endif
 	GCObject data [MONO_ZERO_LEN_ARRAY];
 };
 
-extern LOSObject *sgen_los_object_list;
 extern mword sgen_los_memory_usage;
 extern mword sgen_los_memory_usage_total;
 
@@ -919,6 +915,7 @@ void* sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 void sgen_los_sweep (void);
 gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
+void sgen_los_iterate_objects_free (IterateObjectResultCallbackFunc cb, void *user_data);
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 void sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count);
 void sgen_los_update_cardtable_mod_union (void);
@@ -928,6 +925,7 @@ gboolean mono_sgen_los_describe_pointer (char *ptr);
 LOSObject* sgen_los_header_for_object (GCObject *data);
 mword sgen_los_object_size (LOSObject *obj);
 void sgen_los_pin_object (GCObject *obj);
+void sgen_los_pin_objects (SgenGrayQueue *gray_queue, gboolean finish_concurrent_mode);
 gboolean sgen_los_pin_object_par (GCObject *obj);
 gboolean sgen_los_object_is_pinned (GCObject *obj);
 void sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr);

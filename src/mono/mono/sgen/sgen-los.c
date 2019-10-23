@@ -30,6 +30,8 @@
 #include "mono/sgen/sgen-cardtable.h"
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-client.h"
+#include "mono/sgen/sgen-array-list.h"
+#include "mono/sgen/sgen-pinning.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
 
@@ -63,8 +65,61 @@ struct _LOSSection {
 	unsigned char *free_chunk_map;
 };
 
-/* We allow read only access on the list while sweep is not running */
-LOSObject *sgen_los_object_list = NULL;
+/* We allow read only access on the array list while sweep is not running */
+static SgenArrayList sgen_los_object_array_list = SGEN_ARRAY_LIST_INIT (NULL, sgen_array_list_default_is_slot_set, NULL, INTERNAL_MEM_PIN_QUEUE);
+static gboolean compact_los_objects = FALSE;
+
+#define LOS_OBJECT_IS_TAGGED_HAS_REFERENCES(bl) SGEN_POINTER_IS_TAGGED_1 ((bl))
+#define LOS_OBJECT_TAG_HAS_REFERENCES(bl) SGEN_POINTER_TAG_1 ((bl))
+
+#define LOS_OBJECT_UNTAG(bl) ((LOSObject *)SGEN_POINTER_UNTAG_1 ((bl)))
+
+#define LOS_OBJECT_TAG(bl) (SGEN_OBJECT_HAS_REFERENCES((bl)->data) ? LOS_OBJECT_TAG_HAS_REFERENCES ((bl)) : (bl))
+
+#define FOREACH_LOS_OBJECT_NO_LOCK(bl) { \
+	volatile gpointer *slot; \
+	SGEN_ARRAY_LIST_FOREACH_SLOT (&sgen_los_object_array_list, slot) { \
+		(bl) = LOS_OBJECT_UNTAG (*slot); \
+		if (!(bl)) \
+			continue;
+
+#define FREE_CURRENT_LOS_OBJECT_NO_LOCK(bl) \
+	*slot = NULL; \
+	sgen_los_free_object (bl);
+
+#define END_FOREACH_LOS_OBJECT_NO_LOCK } SGEN_ARRAY_LIST_END_FOREACH_SLOT; }
+
+#define FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK(bl,hr) { \
+	volatile gpointer *slot; \
+	SGEN_ARRAY_LIST_FOREACH_SLOT (&sgen_los_object_array_list, slot) { \
+		(bl) = (LOSObject *) (*slot); \
+		if (!(bl)) \
+			continue; \
+		(hr) = LOS_OBJECT_IS_TAGGED_HAS_REFERENCES ((bl)); \
+		(bl) = LOS_OBJECT_UNTAG ((bl));
+
+#define END_FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK } SGEN_ARRAY_LIST_END_FOREACH_SLOT; }
+
+#define FOREACH_LOS_OBJECT_RANGE_NO_LOCK(bl,begin,end,index) { \
+	volatile gpointer *slot; \
+	SGEN_ARRAY_LIST_FOREACH_SLOT_RANGE (&sgen_los_object_array_list, begin, end, slot, index) { \
+		(bl) = LOS_OBJECT_UNTAG (*slot); \
+		if (!(bl)) \
+			continue;
+
+#define END_FOREACH_LOS_OBJECT_RANGE_NO_LOCK } SGEN_ARRAY_LIST_END_FOREACH_SLOT_RANGE; }
+
+#define FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK(bl,begin,end,index,hr) { \
+	volatile gpointer *slot; \
+	SGEN_ARRAY_LIST_FOREACH_SLOT_RANGE (&sgen_los_object_array_list, begin, end, slot, index) { \
+		(bl) = (LOSObject *) (*slot); \
+		if (!(bl)) \
+			continue; \
+		(hr) = LOS_OBJECT_IS_TAGGED_HAS_REFERENCES ((bl)); \
+		(bl) = LOS_OBJECT_UNTAG ((bl));
+
+#define END_FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK } SGEN_ARRAY_LIST_END_FOREACH_SLOT_RANGE; }
+
 /* Memory used by LOS objects */
 mword sgen_los_memory_usage = 0;
 /* Total memory used by the LOS allocator */
@@ -101,7 +156,7 @@ los_consistency_check (void)
 	int i;
 	mword memory_usage = 0;
 
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		mword obj_size = sgen_los_object_size (obj);
 		char *end = obj->data + obj_size;
 		int start_index, num_chunks;
@@ -119,7 +174,7 @@ los_consistency_check (void)
 		num_chunks = (obj_size + sizeof (LOSObject) + LOS_CHUNK_SIZE - 1) >> LOS_CHUNK_BITS;
 		for (i = start_index; i < start_index + num_chunks; ++i)
 			g_assert (!section->free_chunk_map [i]);
-	}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 
 	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i) {
 		LOSFreeChunks *size_chunks;
@@ -408,13 +463,13 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
 	sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
-	obj->next = sgen_los_object_list;
+
 	/*
-	 * We need a memory barrier so we don't expose as head of the los object list
-	 * a LOSObject that doesn't have its fields initialized.
+	 * We need a memory barrier so we don't expose a LOSObject
+	 * that doesn't have its fields initialized.
 	 */
 	mono_memory_write_barrier ();
-	sgen_los_object_list = obj;
+	sgen_array_list_add (&sgen_los_object_array_list, LOS_OBJECT_TAG (obj), 0, FALSE);
 	sgen_los_memory_usage += size;
 	los_num_objects++;
 	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
@@ -432,39 +487,35 @@ static void sgen_los_unpin_object (GCObject *data);
 void
 sgen_los_sweep (void)
 {
-	LOSObject *bigobj, *prevbo;
+	LOSObject *obj;
 	LOSSection *section, *prev;
 	int i;
 	int num_sections = 0;
 
 	/* sweep the big objects list */
-	prevbo = NULL;
-	for (bigobj = sgen_los_object_list; bigobj;) {
-		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (bigobj->data), "Who pinned a LOS object?");
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
+		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (obj->data), "Who pinned a LOS object?");
 
-		if (sgen_los_object_is_pinned (bigobj->data)) {
-			if (bigobj->cardtable_mod_union) {
-				mword obj_size = sgen_los_object_size (bigobj);
-				mword num_cards = sgen_card_table_number_of_cards_in_range ((mword) bigobj->data, obj_size);
-				memset (bigobj->cardtable_mod_union, 0, num_cards);
+		if (sgen_los_object_is_pinned (obj->data)) {
+			if (obj->cardtable_mod_union) {
+				mword obj_size = sgen_los_object_size (obj);
+				mword num_cards = sgen_card_table_number_of_cards_in_range ((mword) obj->data, obj_size);
+				memset (obj->cardtable_mod_union, 0, num_cards);
 			}
 
-			sgen_los_unpin_object (bigobj->data);
-			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + sgen_los_object_size (bigobj));
+			sgen_los_unpin_object (obj->data);
+			sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + sgen_los_object_size (obj));
 		} else {
-			LOSObject *to_free;
-			/* not referenced anywhere, so we can free it */
-			if (prevbo)
-				prevbo->next = bigobj->next;
-			else
-				sgen_los_object_list = bigobj->next;
-			to_free = bigobj;
-			bigobj = bigobj->next;
-			sgen_los_free_object (to_free);
+			FREE_CURRENT_LOS_OBJECT_NO_LOCK (obj);
+			compact_los_objects = TRUE;
 			continue;
 		}
-		prevbo = bigobj;
-		bigobj = bigobj->next;
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
+
+	/* Try to compact list, if needed. */
+	if (compact_los_objects) {
+		sgen_array_list_remove_nulls (&sgen_los_object_array_list);
+		compact_los_objects = FALSE;
 	}
 
 	/* Try to free memory */
@@ -529,7 +580,7 @@ sgen_ptr_is_in_los (char *ptr, char **start)
 
 	if (start)
 		*start = NULL;
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		char *end = (char*)obj->data + sgen_los_object_size (obj);
 
 		if (ptr >= (char*)obj->data && ptr < end) {
@@ -537,7 +588,7 @@ sgen_ptr_is_in_los (char *ptr, char **start)
 				*start = (char*)obj->data;
 			return TRUE;
 		}
-	}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 	return FALSE;
 }
 
@@ -546,8 +597,23 @@ sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
 {
 	LOSObject *obj;
 
-	for (obj = sgen_los_object_list; obj; obj = obj->next)
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		cb (obj->data, sgen_los_object_size (obj), user_data);
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
+}
+
+void
+sgen_los_iterate_objects_free (IterateObjectResultCallbackFunc cb, void *user_data)
+{
+	LOSObject *obj;
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
+		if (cb (obj->data, sgen_los_object_size (obj), user_data)) {
+			SGEN_LOG (4, "Freeing large object %p",obj->data);
+			FREE_CURRENT_LOS_OBJECT_NO_LOCK (obj);
+			compact_los_objects = TRUE;
+			continue;
+		}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 }
 
 gboolean
@@ -555,10 +621,10 @@ sgen_los_is_valid_object (char *object)
 {
 	LOSObject *obj;
 
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		if ((char*)obj->data == object)
 			return TRUE;
-	}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 	return FALSE;
 }
 
@@ -567,7 +633,7 @@ mono_sgen_los_describe_pointer (char *ptr)
 {
 	LOSObject *obj;
 
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		const char *los_kind;
 		mword size;
 		gboolean pinned;
@@ -591,7 +657,7 @@ mono_sgen_los_describe_pointer (char *ptr)
 		}
 
 		return TRUE;
-	}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 	return FALSE;
 }
 
@@ -599,11 +665,11 @@ void
 sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
-		GCVTable vt = SGEN_LOAD_VTABLE (obj->data);
-		if (SGEN_VTABLE_HAS_REFERENCES (vt))
+	gboolean has_references;
+	FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK (obj, has_references) {
+		if (has_references)
 			callback ((mword)obj->data, sgen_los_object_size (obj));
-	}
+	} END_FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK;
 }
 
 static guint8*
@@ -628,17 +694,23 @@ void
 sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
 {
 	LOSObject *obj;
-	int i = 0;
+	gboolean has_references;
+	int first_object, last_object, index;
+	int object_count = sgen_los_object_array_list.next_slot / job_split_count;
 
 	sgen_binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
-	for (obj = sgen_los_object_list; obj; obj = obj->next, i++) {
+
+	first_object = object_count * job_index;
+	if (job_index == job_split_count - 1)
+		last_object = sgen_los_object_array_list.next_slot;
+	else
+		last_object = object_count * (job_index + 1);
+
+	FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK (obj, first_object, last_object, index, has_references) {
 		mword num_cards = 0;
 		guint8 *cards;
 
-		if (i % job_split_count != job_index)
-			continue;
-
-		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
+		if (!has_references)
 			continue;
 
 		if (scan_type & CARDTABLE_SCAN_MOD_UNION) {
@@ -668,7 +740,7 @@ sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int 
 
 		if (scan_type == CARDTABLE_SCAN_MOD_UNION_PRECLEAN)
 			sgen_free_internal_dynamic (cards, num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION);
-	}
+	} END_FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK;
 	sgen_binary_protocol_los_card_table_scan_end (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 }
 
@@ -676,16 +748,17 @@ void
 sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 {
 	LOSObject *obj;
+	gboolean has_references;
 	long long total_cards = 0;
 	long long marked_cards = 0;
 
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
+	FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK (obj, has_references) {
 		int i;
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) obj->data);
 		guint8 *cards_end = sgen_card_table_get_card_scan_address ((mword) obj->data + sgen_los_object_size (obj) - 1);
 		mword num_cards = (cards_end - cards) + 1;
 
-		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
+		if (!has_references)
 			continue;
 
 		total_cards += num_cards;
@@ -693,7 +766,7 @@ sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 			if (cards [i])
 				++marked_cards;
 		}
-	}
+	} END_FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK;
 
 	*num_total_cards = total_cards;
 	*num_marked_cards = marked_cards;
@@ -703,13 +776,13 @@ void
 sgen_los_update_cardtable_mod_union (void)
 {
 	LOSObject *obj;
-
-	for (obj = sgen_los_object_list; obj; obj = obj->next) {
-		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
+	gboolean has_references;
+	FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK (obj, has_references) {
+		if (!has_references)
 			continue;
 		sgen_card_table_update_mod_union (get_cardtable_mod_union_for_object (obj),
 				(char*)obj->data, sgen_los_object_size (obj), NULL);
-	}
+	} END_FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK;
 }
 
 LOSObject*
@@ -724,6 +797,32 @@ sgen_los_pin_object (GCObject *data)
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
 	sgen_binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+}
+
+void
+sgen_los_pin_objects (SgenGrayQueue *gray_queue, gboolean finish_concurrent_mode)
+{
+	LOSObject *obj;
+	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
+		size_t dummy;
+		if (sgen_find_optimized_pin_queue_area ((char*)obj->data, (char*)obj->data + sgen_los_object_size (obj), &dummy, &dummy)) {
+			sgen_binary_protocol_pin (obj->data, (gpointer)SGEN_LOAD_VTABLE (obj->data), sgen_safe_object_get_size (obj->data));
+
+			if (sgen_los_object_is_pinned (obj->data)) {
+				SGEN_ASSERT (0, finish_concurrent_mode == TRUE, "LOS objects can only be pinned here after concurrent marking.");
+				continue;
+			}
+			sgen_los_pin_object (obj->data);
+			if (SGEN_OBJECT_HAS_REFERENCES (obj->data))
+				GRAY_OBJECT_ENQUEUE_SERIAL (gray_queue, obj->data, sgen_obj_get_descriptor ((GCObject*)obj->data));
+			sgen_pin_stats_register_object (obj->data, GENERATION_OLD);
+			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", obj->data,
+					sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj->data)),
+					(unsigned long)sgen_los_object_size (obj));
+
+			sgen_client_pinned_los_object (obj->data);
+		}
+	} END_FOREACH_LOS_OBJECT_NO_LOCK;
 }
 
 gboolean
