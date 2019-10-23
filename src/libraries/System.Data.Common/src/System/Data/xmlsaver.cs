@@ -949,7 +949,7 @@ namespace System.Data
             _sRoot = rootSchema;
             WriteSchemaRoot(xd, rootSchema, dt.Namespace);
 
-            XmlElement dsCompositor = FillDataSetElement(xd, null, dt);
+            _ = FillDataSetElement(xd, null, dt);
 
             _constraintSeparator = xd.CreateElement(Keywords.XSD_PREFIX, "SHOULDNOTBEHERE", Keywords.XSDNS);
             _dsElement.AppendChild(_constraintSeparator);
@@ -1493,8 +1493,7 @@ namespace System.Data
                     root.SetAttribute(Keywords.REF, _prefixes[col.Namespace] + ":" + col.EncodedColumnName);
                     if (col.Table.Namespace != _ds.Namespace)
                     {
-                        string prefix = (string)_prefixes[col.Namespace];
-                        XmlElement tNode = GetSchema(col.Table.Namespace);
+                        _ = GetSchema(col.Table.Namespace);
                     }
                 }
             }
@@ -2486,9 +2485,6 @@ namespace System.Data
 
             string tablePrefix = (table.Namespace.Length != 0) ? table.Prefix : string.Empty;
 
-            // read value if the TextOnly column (if any)
-            object val = (table.XmlText == null ? DBNull.Value : row[table.XmlText, DataRowVersion.Original]);
-
             //old row
             _xmlw.WriteStartElement(tablePrefix, row.Table.EncodedTableName, row.Table.Namespace);
 
@@ -2773,8 +2769,6 @@ namespace System.Data
             _xmlw = DataTextWriter.CreateWriter(xw);
             _isDiffgram = true;
             _rowsOrder = rowsOrder;
-
-            int countTopTable = _topLevelTables.Length;
 
             string prefix = (_ds != null) ? ((_ds.Namespace.Length == 0) ? "" : _ds.Prefix) : ((_dt.Namespace.Length == 0) ? "" : _dt.Prefix);
 

@@ -802,11 +802,6 @@ namespace System.Data
         {
             _table.UpdatePropertyDescriptorCollectionCache();
 
-            if ((null != ccevent) && !_table.SchemaLoading && !_table.fInitInProgress)
-            {
-                DataColumn column = (DataColumn)ccevent.Element;
-            }
-
             CollectionChanged?.Invoke(this, ccevent);
         }
 
