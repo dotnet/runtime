@@ -19,5 +19,8 @@ namespace System.Linq
                 }
             }
         }
+
+        private static IEnumerable<TSource> SkipLastEnumerableFactory<TSource>(IEnumerable<TSource> source, int count) =>
+            SkipLastIterator<TSource>(source, count);
     }
 }

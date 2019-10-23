@@ -20,7 +20,7 @@ namespace System.Linq
 
             if (source is IPartition<TSource> partition)
             {
-                int length = partition.GetCount(true);
+                int length = partition.GetCount(onlyIfCheap: true);
 
                 if (length >= 0)
                 {
