@@ -10,6 +10,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
+#if NETCOREAPP
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+#endif
+
 namespace System.Text.Encodings.Web
 {
     /// <summary>
@@ -23,6 +28,8 @@ namespace System.Text.Encodings.Web
     {
         // Fast cache for Ascii
         private readonly byte[][] _asciiEscape = new byte[0x80][];
+
+        private readonly int[] _asciiNeedsEscaping = new int[0x80];
 
         // Keep a reference to Array.Empty<byte> as this is used as a singleton for comparisons
         // and there is no guarantee that Array.Empty<byte>() will always be the same instance.
@@ -693,46 +700,132 @@ namespace System.Text.Encodings.Web
         /// current encoder instance, or -1 if no data in <paramref name="utf8Text"/> requires escaping.
         /// </returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
+        public virtual unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
-            int originalUtf8TextLength = utf8Text.Length;
-
             // Loop through the input text, terminating when we see ill-formed UTF-8 or when we decode a scalar value
             // that must be encoded. If we see either of these things then we'll return its index in the original
             // input sequence. If we consume the entire text without seeing either of these, return -1 to indicate
             // that the text can be copied as-is without escaping.
 
-            int i = 0;
-            while (i < utf8Text.Length)
+            fixed (byte* ptr = utf8Text)
             {
-                byte value = utf8Text[i];
-                if (UnicodeUtility.IsAsciiCodePoint(value))
+                int idx = 0;
+
+#if NETCOREAPP
+                if (Sse2.IsSupported)
                 {
-                    if (!ReferenceEquals(GetAsciiEncoding(value), s_noEscape))
+                    sbyte* startingAddress = (sbyte*)ptr;
+                    while (utf8Text.Length - 16 >= idx)
                     {
-                        return originalUtf8TextLength - utf8Text.Length + i;
+                        Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
+
+                        // Load the next 16 bytes.
+                        Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
+
+                        Vector128<sbyte> mask = Sse2Helper.CreateAsciiMask(sourceValue);
+                        int index = Sse2.MoveMask(mask);
+
+                        if (index != 0)
+                        {
+                            // At least one of the following 16 bytes is non-ASCII.
+
+                            int processNextSixteen = idx + 16;
+                            Debug.Assert(processNextSixteen <= utf8Text.Length);
+
+                            while (idx < processNextSixteen)
+                            {
+                                Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
+
+                                if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
+                                {
+                                    if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
+                                    {
+                                        goto Return;
+                                    }
+                                    idx++;
+                                }
+                                else
+                                {
+                                    OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
+
+                                    Debug.Assert(nextScalarValue <= int.MaxValue);
+                                    if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
+                                    {
+                                        goto Return;
+                                    }
+
+                                    Debug.Assert(opStatus == OperationStatus.Done);
+                                    idx += utf8BytesConsumedForScalar;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (DoesAsciiNeedEncoding(ptr[idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1)
+                            {
+                                goto Return;
+                            }
+                            idx++;
+                        }
+                        startingAddress = (sbyte*)ptr + idx;
                     }
 
-                    i++;
+                    // Process the remaining bytes.
+                    Debug.Assert(utf8Text.Length - idx < 16);
                 }
-                else
+#endif
+
+                while (idx < utf8Text.Length)
                 {
-                    if (i > 0)
-                    {
-                        utf8Text = utf8Text.Slice(i);
-                    }
+                    Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
 
-                    if (UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text, out uint nextScalarValue, out int bytesConsumedThisIteration) != OperationStatus.Done
-                      || WillEncode((int)nextScalarValue))
+                    if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
                     {
-                        return originalUtf8TextLength - utf8Text.Length;
+                        if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
+                        {
+                            goto Return;
+                        }
+                        idx++;
                     }
+                    else
+                    {
+                        OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
 
-                    i = bytesConsumedThisIteration;
+                        Debug.Assert(nextScalarValue <= int.MaxValue);
+                        if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
+                        {
+                            goto Return;
+                        }
+
+                        Debug.Assert(opStatus == OperationStatus.Done);
+                        idx += utf8BytesConsumedForScalar;
+                    }
                 }
+
+                idx = -1; // All bytes are allowed.
+
+            Return:
+                return idx;
             }
-
-            return -1; // no input data needs to be escaped
         }
 
         /// <summary>
@@ -813,8 +906,24 @@ namespace System.Text.Encodings.Web
                     _asciiEscape[value] = encoding;
                 }
             }
-
             return encoding;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int DoesAsciiNeedEncoding(byte value)
+        {
+            Debug.Assert(value <= 0x7F);
+
+            int needsEscaping = _asciiNeedsEscaping[value];
+
+            Debug.Assert(needsEscaping == 0 || needsEscaping == 1 || needsEscaping == -1);
+
+            if (needsEscaping == 0)
+            {
+                needsEscaping = WillEncode(value) ? 1 : -1;
+                _asciiNeedsEscaping[value] = needsEscaping;
+            }
+            return needsEscaping;
         }
 
         private static void ThrowArgumentException_MaxOutputCharsPerInputChar()

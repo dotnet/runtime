@@ -9,22 +9,24 @@ using System.Text.Internal;
 using System.Text.Unicode;
 
 #if NETCOREAPP
-using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
 namespace System.Text.Encodings.Web
 {
-    internal sealed class UnsafeRelaxedJavaScriptEncoder : JavaScriptEncoder
+    internal sealed class DefaultJavaScriptEncoder : JavaScriptEncoder
     {
         private readonly AllowedCharactersBitmap _allowedCharacters;
 
-        internal static readonly UnsafeRelaxedJavaScriptEncoder s_singleton = new UnsafeRelaxedJavaScriptEncoder();
+        private readonly int[] _asciiNeedsEscaping = new int[0x80];
 
-        private UnsafeRelaxedJavaScriptEncoder()
+        public DefaultJavaScriptEncoder(TextEncoderSettings filter)
         {
-            var filter = new TextEncoderSettings(UnicodeRanges.All);
+            if (filter == null)
+            {
+                throw new ArgumentNullException(nameof(filter));
+            }
 
             _allowedCharacters = filter.GetAllowedCharacters();
 
@@ -32,13 +34,28 @@ namespace System.Text.Encodings.Web
             // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
             _allowedCharacters.ForbidUndefinedCharacters();
 
-            // '"' (U+0022 QUOTATION MARK) must always be escaped in Javascript / ECMAScript / JSON.
-            _allowedCharacters.ForbidCharacter('\"'); // can be used to escape attributes
+            // Forbid characters that are special in HTML.
+            // Even though this is a not HTML encoder,
+            // it's unfortunately common for developers to
+            // forget to HTML-encode a string once it has been JS-encoded,
+            // so this offers extra protection.
+            DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharacters);
 
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
             // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
             _allowedCharacters.ForbidCharacter('\\');
+
+            // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).
+            _allowedCharacters.ForbidCharacter('`');
+
+            for (int i = 0; i < _asciiNeedsEscaping.Length; i++)
+            {
+                _asciiNeedsEscaping[i] = WillEncode(i) ? 1 : -1;
+            }
         }
+
+        public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
+        { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool WillEncode(int unicodeScalar)
@@ -61,81 +78,9 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(text));
             }
 
-            int idx = 0;
-
-#if NETCOREAPP
-            if (Sse2.IsSupported)
-            {
-                short* startingAddress = (short*)text;
-                while (textLength - 8 >= idx)
-                {
-                    Debug.Assert(startingAddress >= text && startingAddress <= (text + textLength - 8));
-
-                    // Load the next 8 characters.
-                    Vector128<short> sourceValue = Sse2.LoadVector128(startingAddress);
-
-                    Vector128<short> mask = Sse2Helper.CreateAsciiMask(sourceValue);
-                    int index = Sse2.MoveMask(mask.AsByte());
-
-                    if (index != 0)
-                    {
-                        // At least one of the following 8 characters is non-ASCII.
-                        int processNextEight = idx + 8;
-                        Debug.Assert(processNextEight <= textLength);
-                        for (; idx < processNextEight; idx++)
-                        {
-                            Debug.Assert((text + idx) <= (text + textLength));
-                            if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
-                            {
-                                goto Return;
-                            }
-                        }
-                        startingAddress += 8;
-                    }
-                    else
-                    {
-                        // Check if any of the 8 characters need to be escaped.
-                        mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-
-                        index = Sse2.MoveMask(mask.AsByte());
-                        // If index == 0, that means none of the 8 characters needed to be escaped.
-                        // TrailingZeroCount is relatively expensive, avoid it if possible.
-                        if (index != 0)
-                        {
-                            // Found at least one character that needs to be escaped, figure out the index of
-                            // the first one found that needed to be escaped within the 8 characters.
-                            Debug.Assert(index > 0 && index <= 65_535);
-                            int tzc = BitOperations.TrailingZeroCount(index);
-                            Debug.Assert(tzc % 2 == 0 && tzc >= 0 && tzc <= 16);
-                            idx += tzc >> 1;
-                            goto Return;
-                        }
-                        idx += 8;
-                        startingAddress += 8;
-                    }
-                }
-
-                // Process the remaining characters.
-                Debug.Assert(textLength - idx < 8);
-            }
-#endif
-
-            for (; idx < textLength; idx++)
-            {
-                Debug.Assert((text + idx) <= (text + textLength));
-                if (!_allowedCharacters.IsCharacterAllowed(*(text + idx)))
-                {
-                    goto Return;
-                }
-            }
-
-            idx = -1; // All characters are allowed.
-
-        Return:
-            return idx;
+            return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
         {
             fixed (byte* ptr = utf8Text)
@@ -169,7 +114,7 @@ namespace System.Text.Encodings.Web
 
                                 if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
                                 {
-                                    if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
+                                    if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
                                     {
                                         goto Return;
                                     }
@@ -189,29 +134,35 @@ namespace System.Text.Encodings.Web
                                     idx += utf8BytesConsumedForScalar;
                                 }
                             }
-                            startingAddress = (sbyte*)ptr + idx;
                         }
                         else
                         {
-                            // Check if any of the 16 bytes need to be escaped.
-                            mask = Sse2Helper.CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
+                            if (DoesAsciiNeedEncoding(ptr[idx]) == 1
 
-                            index = Sse2.MoveMask(mask);
-                            // If index == 0, that means none of the 16 bytes needed to be escaped.
-                            // TrailingZeroCount is relatively expensive, avoid it if possible.
-                            if (index != 0)
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
+                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1)
                             {
-                                // Found at least one byte that needs to be escaped, figure out the index of
-                                // the first one found that needed to be escaped within the 16 bytes.
-                                Debug.Assert(index > 0 && index <= 65_535);
-                                int tzc = BitOperations.TrailingZeroCount(index);
-                                Debug.Assert(tzc >= 0 && tzc <= 16);
-                                idx += tzc;
                                 goto Return;
                             }
-                            idx += 16;
-                            startingAddress += 16;
+                            idx++;
                         }
+                        startingAddress = (sbyte*)ptr + idx;
                     }
 
                     // Process the remaining bytes.
@@ -225,7 +176,7 @@ namespace System.Text.Encodings.Web
 
                     if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
                     {
-                        if (!_allowedCharacters.IsUnicodeScalarAllowed(ptr[idx]))
+                        if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
                         {
                             goto Return;
                         }
@@ -253,6 +204,18 @@ namespace System.Text.Encodings.Web
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int DoesAsciiNeedEncoding(byte value)
+        {
+            Debug.Assert(value <= 0x7F);
+
+            int needsEscaping = _asciiNeedsEscaping[value];
+
+            Debug.Assert(needsEscaping == 1 || needsEscaping == -1);
+
+            return needsEscaping;
+        }
+
         // The worst case encoding is 6 output chars per input char: [input] U+FFFF -> [output] "\uFFFF"
         // We don't need to worry about astral code points since they're represented as encoded
         // surrogate pairs in the output.
@@ -264,7 +227,6 @@ namespace System.Text.Encodings.Web
         private static readonly char[] s_f = new char[] { '\\', 'f' };
         private static readonly char[] s_r = new char[] { '\\', 'r' };
         private static readonly char[] s_back = new char[] { '\\', '\\' };
-        private static readonly char[] s_doubleQuote = new char[] { '\\', '"' };
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
@@ -295,29 +257,13 @@ namespace System.Text.Encodings.Web
             char[] toCopy;
             switch (unicodeScalar)
             {
-                case '\"':
-                    toCopy = s_doubleQuote;
-                    break;
-                case '\b':
-                    toCopy = s_b;
-                    break;
-                case '\t':
-                    toCopy = s_t;
-                    break;
-                case '\n':
-                    toCopy = s_n;
-                    break;
-                case '\f':
-                    toCopy = s_f;
-                    break;
-                case '\r':
-                    toCopy = s_r;
-                    break;
-                case '\\':
-                    toCopy = s_back;
-                    break;
-                default:
-                    return JavaScriptEncoderHelper.TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+                case '\b': toCopy = s_b; break;
+                case '\t': toCopy = s_t; break;
+                case '\n': toCopy = s_n; break;
+                case '\f': toCopy = s_f; break;
+                case '\r': toCopy = s_r; break;
+                case '\\': toCopy = s_back; break;
+                default: return JavaScriptEncoderHelper.TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
             }
             return TryCopyCharacters(toCopy, buffer, bufferLength, out numberOfCharactersWritten);
         }
