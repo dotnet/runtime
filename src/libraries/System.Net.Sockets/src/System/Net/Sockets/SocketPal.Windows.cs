@@ -814,14 +814,17 @@ namespace System.Net.Sockets
             }
 
             IntPtr[] leaseRead = null, leaseWrite = null, leaseError = null;
+            int refsAdded = 0;
             try
             {
+                // In case we can't increase the reference count for each Socket,
+                // we'll unref refAdded Sockets in the finally block ordered: [checkRead, checkWrite, checkError].
                 Span<IntPtr> readfileDescriptorSet = ShouldStackAlloc(checkRead, ref leaseRead, out var tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
-                Socket.SocketListToFileDescriptorSet(checkRead, readfileDescriptorSet);
+                Socket.SocketListToFileDescriptorSet(checkRead, readfileDescriptorSet, ref refsAdded);
                 Span<IntPtr> writefileDescriptorSet = ShouldStackAlloc(checkWrite, ref leaseWrite, out tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
-                Socket.SocketListToFileDescriptorSet(checkWrite, writefileDescriptorSet);
+                Socket.SocketListToFileDescriptorSet(checkWrite, writefileDescriptorSet, ref refsAdded);
                 Span<IntPtr> errfileDescriptorSet = ShouldStackAlloc(checkError, ref leaseError, out tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
-                Socket.SocketListToFileDescriptorSet(checkError, errfileDescriptorSet);
+                Socket.SocketListToFileDescriptorSet(checkError, errfileDescriptorSet, ref refsAdded);
 
                 // This code used to erroneously pass a non-null timeval structure containing zeroes
                 // to select() when the caller specified (-1) for the microseconds parameter.  That
@@ -872,9 +875,10 @@ namespace System.Net.Sockets
                     return GetLastSocketError();
                 }
 
-                Socket.SelectFileDescriptor(checkRead, readfileDescriptorSet);
-                Socket.SelectFileDescriptor(checkWrite, writefileDescriptorSet);
-                Socket.SelectFileDescriptor(checkError, errfileDescriptorSet);
+                // Remove from the lists any entries which weren't set
+                Socket.SelectFileDescriptor(checkRead, readfileDescriptorSet, ref refsAdded);
+                Socket.SelectFileDescriptor(checkWrite, writefileDescriptorSet, ref refsAdded);
+                Socket.SelectFileDescriptor(checkError, errfileDescriptorSet, ref refsAdded);
 
                 return SocketError.Success;
             }
@@ -883,6 +887,13 @@ namespace System.Net.Sockets
                 if (leaseRead != null) ArrayPool<IntPtr>.Shared.Return(leaseRead);
                 if (leaseWrite != null) ArrayPool<IntPtr>.Shared.Return(leaseWrite);
                 if (leaseError != null) ArrayPool<IntPtr>.Shared.Return(leaseError);
+
+                // This order matches with the AddToPollArray calls
+                // to release only the handles that were ref'd.
+                Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+                Debug.Assert(refsAdded == 0);
             }
         }
 
