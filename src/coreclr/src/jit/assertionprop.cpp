@@ -1334,7 +1334,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
             {
                 assertion.assertionKind  = assertionKind;
-                assertion.op2.kind       = O2K_IND_CNS_INT;
+                assertion.op2.kind       = O2K_CONST_INT;
                 assertion.op2.u1.iconVal = cnsValue;
                 assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
@@ -1973,25 +1973,22 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
     GenTreeCall* call = op1->AsCall();
 
+    // Note CORINFO_HELP_READYTORUN_ISINSTANCEOF does not have the same argument pattern.
+    // In particular, it is not possible to deduce what class is being tested from its args.
+    //
+    // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
+    // So the helper list here is smaller than the one in optAssertionProp_Call.
     if ((call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE)) ||
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY)) ||
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS)) ||
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY)))
     {
-        // TODO-Cleanup: Arg nodes should be retrieved by other means (e.g. GetArgNode)
-        // that do not involve gtCallLateArgs directly. The helper parameter order is
-        // actually (methodTable, object) but the method table tends to end up last in
-        // gtCallLateArgs because it is usually a constant.
-        GenTree* objectNode      = call->gtCallLateArgs->GetNode();
-        GenTree* methodTableNode = call->gtCallLateArgs->GetNext()->GetNode();
-
-        // Swap the nodes if they're not ordered as expected.
-        if (objectNode->TypeGet() == TYP_I_IMPL)
-        {
-            jitstd::swap(objectNode, methodTableNode);
-        }
+        fgArgInfo* const argInfo         = call->fgArgInfo;
+        GenTree*         objectNode      = argInfo->GetArgNode(1);
+        GenTree*         methodTableNode = argInfo->GetArgNode(0);
 
         assert(objectNode->TypeGet() == TYP_REF);
+        assert(methodTableNode->TypeGet() == TYP_I_IMPL);
 
         // Reverse the assertion
         assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));
