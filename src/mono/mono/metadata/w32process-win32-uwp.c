@@ -24,8 +24,8 @@ MonoArrayHandle
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 {
 	g_unsupported_api ("EnumProcesses");
-	SetLastError (ERROR_NOT_SUPPORTED);
 	mono_error_set_not_supported (error, "This system does not support EnumProcesses");
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return NULL_HANDLE_ARRAY;
 }
 
@@ -101,8 +101,8 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handl
 	ERROR_DECL (error);
 	g_unsupported_api ("GetProcessWorkingSetSize");
 	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
-	SetLastError (ERROR_NOT_SUPPORTED);
 	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }
 
@@ -112,8 +112,8 @@ ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handl
 	ERROR_DECL (error);
 	g_unsupported_api ("SetProcessWorkingSetSize");
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
-	SetLastError (ERROR_NOT_SUPPORTED);
 	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }
 
@@ -125,8 +125,8 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 	ERROR_DECL (error);
 	g_unsupported_api ("GetPriorityClass");
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetPriorityClass");
-	SetLastError (ERROR_NOT_SUPPORTED);
 	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }
 
@@ -138,8 +138,8 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 	ERROR_DECL (error);
 	g_unsupported_api ("SetPriorityClass");
 	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "SetPriorityClass");
-	SetLastError (ERROR_NOT_SUPPORTED);
 	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 }
 
