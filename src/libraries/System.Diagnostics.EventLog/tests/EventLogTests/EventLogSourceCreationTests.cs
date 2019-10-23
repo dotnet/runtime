@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.Retry(() => EventLog.Delete(log));  // unlike other tests, throw if delete fails
             }
 
             Assert.False(EventLog.SourceExists(source));
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));
+                Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 
