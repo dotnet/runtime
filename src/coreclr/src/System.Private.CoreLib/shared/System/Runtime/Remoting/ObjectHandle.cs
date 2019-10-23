@@ -8,10 +8,6 @@ namespace System.Runtime.Remoting
     {
         private readonly object? _wrappedObject;
 
-        private ObjectHandle()
-        {
-        }
-
         public ObjectHandle(object? o)
         {
             _wrappedObject = o;

@@ -2371,25 +2371,6 @@ namespace System.Text
             return result;
         }
 
-        /// <summary>
-        /// Gets the chunk corresponding to the logical byte index in this builder.
-        /// </summary>
-        /// <param name="byteIndex">The logical byte index in this builder.</param>
-        private StringBuilder FindChunkForByte(int byteIndex)
-        {
-            Debug.Assert(0 <= byteIndex && byteIndex <= Length * sizeof(char));
-
-            StringBuilder result = this;
-            while (result.m_ChunkOffset * sizeof(char) > byteIndex)
-            {
-                Debug.Assert(result.m_ChunkPrevious != null);
-                result = result.m_ChunkPrevious;
-            }
-
-            Debug.Assert(result != null);
-            return result;
-        }
-
         /// <summary>Gets a span representing the remaining space available in the current chunk.</summary>
         private Span<char> RemainingCurrentChunk
         {
