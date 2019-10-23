@@ -374,7 +374,7 @@ namespace System.Net.Sockets
         {
             System.Buffer.BlockCopy(_acceptBuffer, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
             _acceptSocket = _currentSocket.CreateAcceptSocket(
-                SafeSocketHandle.CreateSocket(_acceptedFileDescriptor),
+                SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint.Create(remoteSocketAddress));
             return SocketError.Success;
         }

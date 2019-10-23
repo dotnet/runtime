@@ -24,19 +24,28 @@ namespace System.Net.Sockets
     // are always abortive.)
     public sealed partial class SafeSocketHandle : SafeHandleMinusOneIsInvalid
     {
+#if DEBUG
+        private SocketError _closeSocketResult = unchecked((SocketError)0xdeadbeef);
+        private SocketError _closeSocketLinger = unchecked((SocketError)0xdeadbeef);
+        private int _closeSocketThread;
+        private int _closeSocketTick;
+#endif
+        private int _ownClose;
+
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
-            handle = preexistingHandle;
+            SetHandleAndValid(preexistingHandle);
         }
 
         private SafeSocketHandle() : base(true) { }
 
-        private InnerSafeCloseSocket _innerSocket;
+        private bool TryOwnClose()
+        {
+            return Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
+        }
+
         private volatile bool _released;
-#if DEBUG
-        private InnerSafeCloseSocket _innerSocketCopy;
-#endif
         private bool _hasShutdownSend;
 
         internal void TrackShutdown(SocketShutdown how)
@@ -56,112 +65,18 @@ namespace System.Net.Sockets
             }
         }
 
-#if DEBUG
-        internal void AddRef()
-        {
-            try
-            {
-                // The inner socket can be closed by CloseAsIs and when SafeHandle runs ReleaseHandle.
-                InnerSafeCloseSocket innerSocket = Volatile.Read(ref _innerSocket);
-                if (innerSocket != null)
-                {
-                    innerSocket.AddRef();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.Fail("SafeSocketHandle.AddRef after inner socket disposed." + e);
-            }
-        }
-
-        internal void Release()
-        {
-            try
-            {
-                // The inner socket can be closed by CloseAsIs and when SafeHandle runs ReleaseHandle.
-                InnerSafeCloseSocket innerSocket = Volatile.Read(ref _innerSocket);
-                if (innerSocket != null)
-                {
-                    innerSocket.Release();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.Fail("SafeSocketHandle.Release after inner socket disposed." + e);
-            }
-        }
-#endif
-
-        private void SetInnerSocket(InnerSafeCloseSocket socket)
-        {
-            _innerSocket = socket;
-            SetHandle(socket.DangerousGetHandle());
-#if DEBUG
-            _innerSocketCopy = socket;
-#endif
-        }
-
-        private static SafeSocketHandle CreateSocket(InnerSafeCloseSocket socket)
-        {
-            SafeSocketHandle ret = new SafeSocketHandle();
-            CreateSocket(socket, ret);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, ret);
-
-            return ret;
-        }
-
-        private static void CreateSocket(InnerSafeCloseSocket socket, SafeSocketHandle target)
-        {
-            if (socket != null && socket.IsInvalid)
-            {
-                target.SetHandleAsInvalid();
-                return;
-            }
-
-            bool b = false;
-            try
-            {
-                socket.DangerousAddRef(ref b);
-            }
-            catch
-            {
-                if (b)
-                {
-                    socket.DangerousRelease();
-                    b = false;
-                }
-            }
-            finally
-            {
-                if (b)
-                {
-                    target.SetInnerSocket(socket);
-                    socket.Dispose();
-                }
-                else
-                {
-                    target.SetHandleAsInvalid();
-                }
-            }
-        }
-
         protected override bool ReleaseHandle()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_innerSocket={_innerSocket}");
-
             _released = true;
-            InnerSafeCloseSocket innerSocket = _innerSocket == null ? null : Interlocked.Exchange<InnerSafeCloseSocket>(ref _innerSocket, null);
-            if (innerSocket != null)
-            {
-#if DEBUG
-                // On AppDomain unload we may still have pending Overlapped operations.
-                // ThreadPoolBoundHandle should handle this scenario by canceling them.
-                innerSocket.LogRemainingOperations();
-#endif
+            bool shouldClose = TryOwnClose();
 
-                DoReleaseHandle();
-                innerSocket.Close(abortive: true);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"shouldClose={shouldClose}");
+
+            // When shouldClose is true, the user called Dispose on the SafeHandle.
+            // When it is false, the handle was closed from the Socket via CloseAsIs.
+            if (shouldClose)
+            {
+                CloseHandle(abortive: true, canceledOperations: false);
             }
 
             return true;
@@ -169,17 +84,18 @@ namespace System.Net.Sockets
 
         internal void CloseAsIs(bool abortive)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_innerSocket={_innerSocket}");
-
 #if DEBUG
             // If this throws it could be very bad.
             try
             {
 #endif
-                InnerSafeCloseSocket innerSocket = _innerSocket == null ? null : Interlocked.Exchange<InnerSafeCloseSocket>(ref _innerSocket, null);
+                bool shouldClose = TryOwnClose();
+
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"shouldClose={shouldClose}");
 
                 Dispose();
-                if (innerSocket != null)
+
+                if (shouldClose)
                 {
                     bool canceledOperations = false;
 
@@ -191,20 +107,11 @@ namespace System.Net.Sockets
                         // Try to make those on-going calls return.
                         // On Linux, TryUnblockSocket will unblock current operations but it doesn't prevent
                         // a new one from starting. So we must call TryUnblockSocket multiple times.
-                        canceledOperations |= innerSocket.TryUnblockSocket(abortive, _hasShutdownSend);
+                        canceledOperations |= TryUnblockSocket(abortive);
                         sw.SpinOnce();
                     }
 
-                    canceledOperations |= DoReleaseHandle();
-
-                    // In case we cancel operations, switch to an abortive close.
-                    // Unless the user requested a normal close using Socket.Shutdown.
-                    if (canceledOperations && !_hasShutdownSend)
-                    {
-                        abortive = true;
-                    }
-
-                    innerSocket.Close(abortive);
+                    CloseHandle(abortive, canceledOperations);
                 }
 #if DEBUG
             }
@@ -216,98 +123,64 @@ namespace System.Net.Sockets
 #endif
         }
 
-        internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
+        private bool CloseHandle(bool abortive, bool canceledOperations)
         {
-            private InnerSafeCloseSocket() : base(true) { }
-
-            // Indicates whether a Socket is shutdown cleanly or whether it was
-            // closed with on-going operations that should be aborted.
-            // For TCP, an abortive close causes the peer to see a RST-close (connection reset by peer)
-            // instead of the clean FIN-close.
-            private bool _abortive = true;
-
-            public override bool IsInvalid
-            {
-                get
-                {
-                    return IsClosed || base.IsInvalid;
-                }
-            }
-
-            // This method is implicitly reliable and called from a CER.
-            protected override bool ReleaseHandle()
-            {
-                bool ret = false;
+            bool ret = false;
 
 #if DEBUG
-                try
+            try
+            {
+#endif
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}");
+
+                canceledOperations |= OnHandleClose();
+
+                // In case we cancel operations, switch to an abortive close.
+                // Unless the user requested a normal close using Socket.Shutdown.
+                if (canceledOperations && !_hasShutdownSend)
                 {
-#endif
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}");
-
-                    SocketError errorCode = InnerReleaseHandle();
-                    return ret = errorCode == SocketError.Success;
-#if DEBUG
+                    abortive = true;
                 }
-                catch (Exception exception)
+
+                SocketError errorCode = DoCloseHandle(abortive);
+                return ret = errorCode == SocketError.Success;
+#if DEBUG
+            }
+            catch (Exception exception)
+            {
+                if (!ExceptionCheck.IsFatal(exception))
                 {
-                    if (!ExceptionCheck.IsFatal(exception))
-                    {
-                        NetEventSource.Fail(this, $"handle:{handle}, error:{exception}");
-                    }
-
-                    ret = true;  // Avoid a second assert.
-                    throw;
+                    NetEventSource.Fail(this, $"handle:{handle}, error:{exception}");
                 }
-                finally
+
+                ret = true;  // Avoid a second assert.
+                throw;
+            }
+            finally
+            {
+                _closeSocketThread = Environment.CurrentManagedThreadId;
+                _closeSocketTick = Environment.TickCount;
+                if (!ret)
                 {
-                    _closeSocketThread = Environment.CurrentManagedThreadId;
-                    _closeSocketTick = Environment.TickCount;
-                    if (!ret)
-                    {
-                        NetEventSource.Fail(this, $"ReleaseHandle failed. handle:{handle}");
-                    }
+                    NetEventSource.Fail(this, $"ReleaseHandle failed. handle:{handle}");
                 }
-#endif
-            }
-
-#if DEBUG
-            private IntPtr _closeSocketHandle;
-            private SocketError _closeSocketResult = unchecked((SocketError)0xdeadbeef);
-            private SocketError _closeSocketLinger = unchecked((SocketError)0xdeadbeef);
-            private int _closeSocketThread;
-            private int _closeSocketTick;
-
-            private int _refCount = 0;
-
-            public void AddRef()
-            {
-                Interlocked.Increment(ref _refCount);
-            }
-
-            public void Release()
-            {
-                Interlocked.MemoryBarrier();
-                Debug.Assert(_refCount > 0, "InnerSafeCloseSocket: Release() called more times than AddRef");
-                Interlocked.Decrement(ref _refCount);
-            }
-
-            public void LogRemainingOperations()
-            {
-                Interlocked.MemoryBarrier();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Releasing with pending operations: {_refCount}");
             }
 #endif
+        }
 
-            internal void Close(bool abortive)
+        private void SetHandleAndValid(IntPtr handle)
+        {
+            Debug.Assert(!IsClosed);
+
+            base.SetHandle(handle);
+
+            if (IsInvalid)
             {
-#if DEBUG
-                // Expected to have outstanding operations such as Accept.
-                LogRemainingOperations();
-#endif
+                // CloseAsIs musn't wait for a release.
+                TryOwnClose();
 
-                _abortive = abortive;
-                DangerousRelease();
+                // Mark handle as invalid, so it won't be released.
+                SetHandleAsInvalid();
             }
         }
     }

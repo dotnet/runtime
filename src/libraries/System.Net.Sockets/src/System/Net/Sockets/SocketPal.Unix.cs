@@ -57,9 +57,42 @@ namespace System.Net.Sockets
             return new IPPacketInformation(nativePacketInfo.Address.GetIPAddress(), nativePacketInfo.InterfaceIndex);
         }
 
-        public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
+        public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
-            return SafeSocketHandle.CreateSocket(addressFamily, socketType, protocolType, out socket);
+            IntPtr fd;
+            SocketError errorCode;
+            Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
+            if (error == Interop.Error.SUCCESS)
+            {
+                Debug.Assert(fd != (IntPtr)(-1), "fd should not be -1");
+
+                errorCode = SocketError.Success;
+
+                // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
+                // This fails on raw sockets so we just let them be in default state.
+                if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
+                {
+                    int on = 1;
+                    error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
+                    if (error != Interop.Error.SUCCESS)
+                    {
+                        Interop.Sys.Close(fd);
+                        fd = (IntPtr)(-1);
+                        errorCode = GetSocketErrorForErrorCode(error);
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(fd == (IntPtr)(-1), $"Unexpected fd: {fd}");
+
+                errorCode = GetSocketErrorForErrorCode(error);
+            }
+
+            socket = new SafeSocketHandle(fd, ownsHandle: true);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
+            return errorCode;
         }
 
         private static unsafe int Receive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
@@ -865,9 +898,27 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static SocketError Accept(SafeSocketHandle handle, byte[] buffer, ref int nameLen, out SafeSocketHandle socket)
+        public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressLen, out SafeSocketHandle socket)
         {
-            return SafeSocketHandle.Accept(handle, buffer, ref nameLen, out socket);
+            IntPtr acceptedFd;
+            SocketError errorCode;
+            if (!listenSocket.IsNonBlocking)
+            {
+                errorCode = listenSocket.AsyncContext.Accept(socketAddress, ref socketAddressLen, out acceptedFd);
+            }
+            else
+            {
+                bool completed = TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
+                if (!completed)
+                {
+                    errorCode = SocketError.WouldBlock;
+                }
+            }
+
+            socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
+            return errorCode;
         }
 
         public static SocketError Connect(SafeSocketHandle handle, byte[] socketAddress, int socketAddressLen)
@@ -1801,6 +1852,14 @@ namespace System.Net.Sockets
             return reuseSocket ?
                 socket.ReplaceHandle() :
                 SocketError.Success;
+        }
+
+        internal static unsafe SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
+        {
+            var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, res);
+            return res;
         }
     }
 }

@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
-        internal static extern SafeSocketHandle.InnerSafeCloseSocket accept(
+        internal static extern IntPtr accept(
             SafeSocketHandle socketHandle,
             [Out] byte[] socketAddress,
             [In, Out] ref int socketAddressSize);
