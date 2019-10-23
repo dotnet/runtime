@@ -783,7 +783,8 @@ namespace System.Data
                     continue;
                 }
 
-                DataTable table = HandleTable(element);
+                _ = HandleTable(element);
+
             }
 
             if (_dsElement != null)
@@ -2364,7 +2365,6 @@ namespace System.Data
                 // it should be  user defined  Named  simple type
                 if (((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name.Length != 0 && ((XmlSchemaSimpleType)typeNode).QualifiedName.Namespace != Keywords.XSDNS)
                 {
-                    string targetNamespace = XSDSchema.GetMsdataAttribute(typeNode, Keywords.TARGETNAMESPACE);
                     strType = ((XmlSchemaSimpleType)typeNode).QualifiedName.ToString(); // use qualifed name
                     type = ParseDataType(strType);
                 }
@@ -2536,7 +2536,6 @@ namespace System.Data
         {
             string dsName = node.Name;
             string dsNamespace = node.QualifiedName.Namespace;
-            int initialTableCount = _ds.Tables.Count; // just use for inference backward compatablity
 
             List<DataTable> tableSequenceList = new List<DataTable>();
 
