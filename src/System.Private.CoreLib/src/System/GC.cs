@@ -17,9 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Collections.Generic;
-#if !DEBUG
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System
 {
@@ -651,8 +649,11 @@ namespace System
             }
         }
 
-        // Skips zero-initialization of the array if possible. If T contains object references,
-        // the array is always zero-initialized.
+        /// <summary>
+        /// Skips zero-initialization of the array if possible.
+        /// If T contains object references, the array is always zero-initialized.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         internal static T[] AllocateUninitializedArray<T>(int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -660,23 +661,20 @@ namespace System
                 return new T[length];
             }
 
-            if (length < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, 0, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-#if DEBUG
-            // in DEBUG arrays of any length can be created uninitialized
-#else
-            // otherwise small arrays are allocated using `new[]` as that is generally faster.
-            //
-            // The threshold was derived from various simulations.
-            // As it turned out the threshold depends on overal pattern of all allocations and is typically in 200-300 byte range.
-            // The gradient around the number is shallow (there is no perf cliff) and the exact value of the threshold does not matter a lot.
-            // So it is 256 bytes including array header.
-            if (Unsafe.SizeOf<T>() * length < 256 - 3 * IntPtr.Size)
+            // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
+#if !DEBUG
+            // small arrays are allocated using `new[]` as that is generally faster.
+            if (length < 2048 / Unsafe.SizeOf<T>())
             {
                 return new T[length];
             }
 #endif
-            return (T[])AllocateNewArray(typeof(T[]).TypeHandle.Value, length, zeroingOptional: true);
+            // kept outside of the small arrays hot path to have inlining without big size growth
+            return AllocateNewUninitializedArray(length);
+
+            // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
+            T[] AllocateNewUninitializedArray(int length)
+                => Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, zeroingOptional: true));
         }
     }
 }
