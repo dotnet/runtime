@@ -8970,11 +8970,15 @@ CONTRACTL {
         LPCUTF8 namespaceName;
         LPCUTF8 className = methodTable->GetFullyQualifiedNameInfo(&namespaceName);
 
-        if (strcmp(className, "Vector`1") == 0 || strcmp(className, "Vector") == 0)
+        if (strncmp(className, "Vector", 6) == 0)
         {
-            assert(strcmp(namespaceName, "System.Numerics") == 0);
+            className += 6;
 
-            result = true;
+            if ((className[0] == '\0') || (strcmp(className, "`1") == 0) || (strcmp(className, "2") == 0) || (strcmp(className, "3") == 0) || (strcmp(className, "4") == 0))
+            {
+                assert(strcmp(namespaceName, "System.Numerics") == 0);
+                result = true;
+            }
         }
     }
     EE_TO_JIT_TRANSITION_LEAF();
