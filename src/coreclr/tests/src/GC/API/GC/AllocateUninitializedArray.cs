@@ -76,15 +76,37 @@ public class Test {
 
         // negative size
         {
+            int GetNegativeValue() => -1;
+            int negativeSize = GetNegativeValue();
+            Type expectedExceptionType = null;
+
+            try
+            {
+                GC.KeepAlive(new byte[negativeSize]);
+
+                Console.WriteLine("Scenario 5 Expected exception (new operator)!");
+                return 1;
+            }
+            catch (Exception newOperatorEx)
+            {
+                expectedExceptionType = newOperatorEx.GetType();
+            }
+
             try
             {
                 var arr = AllocUninitialized<byte>.Call(-1);
 
-                Console.WriteLine("Scenario 5 Expected exception!");
+                Console.WriteLine("Scenario 5 Expected exception (GC.AllocateUninitializedArray)!");
                 return 1;
             }
-            catch (ArgumentOutOfRangeException)
+            catch (Exception allocUninitializedEx) when (allocUninitializedEx.GetType() == expectedExceptionType)
             {
+                // OK
+            }
+            catch (Exception other)
+            {
+                Console.WriteLine($"Scenario 5 Expected exception type mismatch: expected {expectedExceptionType}, but got {other.GetType()}!");
+                return 1;
             }
         }
 
