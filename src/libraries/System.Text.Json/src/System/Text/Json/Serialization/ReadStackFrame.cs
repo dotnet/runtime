@@ -303,7 +303,11 @@ namespace System.Text.Json
 
         public void DetermineEnumerablePopulationStrategy(object targetEnumerable)
         {
-            if (JsonPropertyInfo.RuntimeClassInfo.AddItemToObject != null)
+            if (JsonPropertyInfo.ClassType != ClassType.Enumerable)
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(JsonPropertyInfo.RuntimePropertyType);
+            }
+            else if (JsonPropertyInfo.RuntimeClassInfo.AddItemToObject != null)
             {
                 if (!JsonPropertyInfo.TryCreateEnumerableAddMethod(targetEnumerable, out object addMethodDelegate))
                 {

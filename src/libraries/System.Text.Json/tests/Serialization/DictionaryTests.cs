@@ -320,23 +320,78 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, type));
         }
 
+        public class ClassWithArray
+        {
+            public int[] MyArray { get; set; }
+        }
+
+        public class ClassWithDictionary
+        {
+            public Dictionary<string, int[]> MyDictionary { get; set; }
+        }
+
         [Theory]
         [InlineData(typeof(int[]), @"""test""")]
         [InlineData(typeof(int[]), @"1")]
         [InlineData(typeof(int[]), @"false")]
         [InlineData(typeof(int[]), @"{}")]
+        [InlineData(typeof(int[]), @"{""test"": 1}")]
         [InlineData(typeof(int[]), @"[""test""")]
+        [InlineData(typeof(int[]), @"[""test""]")]
         [InlineData(typeof(int[]), @"[true]")]
         [InlineData(typeof(int[]), @"[{}]")]
         [InlineData(typeof(int[]), @"[[]]")]
+        [InlineData(typeof(int[]), @"[{""test"": 1}]")]
+        [InlineData(typeof(int[]), @"[[true]]")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {}}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {""test"": 1}}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": ""test""}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": 1}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": true}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [[]]}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [true]}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")]
-        public static void InvalidJsonForArrayShouldFail(Type type, string json)
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": ""test""}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": 1}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": false}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": {}}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": {""test"": 1}}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [""test""}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [""test""]}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [true]}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [{}]}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [[]]}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [{""test"": 1}]}")]
+        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [[true]]}")]
+        [InlineData(typeof(Dictionary<string, string>), @"""test""")]
+        [InlineData(typeof(Dictionary<string, string>), @"1")]
+        [InlineData(typeof(Dictionary<string, string>), @"false")]
+        [InlineData(typeof(Dictionary<string, string>), @"{"""": 1}")]
+        [InlineData(typeof(Dictionary<string, string>), @"{"""": {}}")]
+        [InlineData(typeof(Dictionary<string, string>), @"{"""": {"""":""""}}")]
+        [InlineData(typeof(Dictionary<string, string>), @"[""test""")]
+        [InlineData(typeof(Dictionary<string, string>), @"[""test""]")]
+        [InlineData(typeof(Dictionary<string, string>), @"[true]")]
+        [InlineData(typeof(Dictionary<string, string>), @"[{}]")]
+        [InlineData(typeof(Dictionary<string, string>), @"[[]]")]
+        [InlineData(typeof(Dictionary<string, string>), @"[{""test"": 1}]")]
+        [InlineData(typeof(Dictionary<string, string>), @"[[true]]")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":""test""}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":1}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":false}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": 1}}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": {}}}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": {"""":""""}}}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[""test""}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[""test""]}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[true]}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[{}]}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[[]]}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[{""test"": 1}]}")]
+        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[[true]]}")]
+        public static void InvalidJsonForTypeShouldFail(Type type, string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, type));
         }
