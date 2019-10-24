@@ -35,7 +35,6 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
     <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
-    <Compile Include="ProcessTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ProcessTests.Windows.cs" />
