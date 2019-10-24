@@ -892,7 +892,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		else
 			/* the lmf is always stored on the stack, so the following
 			 * expression points to a stack location which can be used as ESP */
-			new_ctx->esp = (unsigned long)&((*lmf)->eip);
+			new_ctx->esp = (gsize)&((*lmf)->eip);
 
 		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 
@@ -1091,8 +1091,8 @@ prepare_for_guard_pages (MonoContext *mctx)
 	sp -= 1;
 	/* the return addr */
 	sp [0] = (gpointer)(mctx->eip);
-	mctx->eip = (unsigned long)restore_soft_guard_pages;
-	mctx->esp = (unsigned long)sp;
+	mctx->eip = (gsize)restore_soft_guard_pages;
+	mctx->esp = (gsize)sp;
 }
 
 static void
