@@ -62,7 +62,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static void SetStateMachine(IAsyncStateMachine stateMachine, Task task)
+        public static void SetStateMachine(IAsyncStateMachine stateMachine, Task? task)
         {
             if (stateMachine == null)
             {

@@ -21,15 +21,12 @@ namespace System.Runtime.CompilerServices
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
         private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
 
-        /// <summary>The generic builder object to which this non-generic instance delegates.</summary>
-        private AsyncTaskMethodBuilder<VoidTaskResult> m_builder; // mutable struct: must not be readonly. Debugger depends on the exact name of this field.
+        /// <summary>The lazily-initialized built task.</summary>
+        private Task<VoidTaskResult>? m_task; // Debugger depends on the exact name of this field.
 
         /// <summary>Initializes a new <see cref="AsyncTaskMethodBuilder"/>.</summary>
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
-        public static AsyncTaskMethodBuilder Create() =>
-            // m_builder should be initialized to AsyncTaskMethodBuilder<VoidTaskResult>.Create(), but on coreclr
-            // that Create() is a nop, so we can just return the default here.
-            default;
+        public static AsyncTaskMethodBuilder Create() => default;
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
@@ -44,7 +41,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
-            m_builder.SetStateMachine(stateMachine);
+            AsyncMethodBuilderCore.SetStateMachine(stateMachine, task: null);
 
         /// <summary>
         /// Schedules the specified state machine to be pushed forward when the specified awaiter completes.
@@ -57,7 +54,7 @@ namespace System.Runtime.CompilerServices
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine =>
-            m_builder.AwaitOnCompleted(ref awaiter, ref stateMachine);
+            AsyncTaskMethodBuilder<VoidTaskResult>.AwaitOnCompleted(ref awaiter, ref stateMachine, ref m_task);
 
         /// <summary>
         /// Schedules the specified state machine to be pushed forward when the specified awaiter completes.
@@ -66,11 +63,12 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine =>
-            m_builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
+            AsyncTaskMethodBuilder<VoidTaskResult>.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine, ref m_task);
 
         /// <summary>Gets the <see cref="System.Threading.Tasks.Task"/> for this builder.</summary>
         /// <returns>The <see cref="System.Threading.Tasks.Task"/> representing the builder's asynchronous operation.</returns>
@@ -78,7 +76,19 @@ namespace System.Runtime.CompilerServices
         public Task Task
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_builder.Task;
+            get => m_task ?? InitializeTaskAsPromise();
+        }
+
+        /// <summary>
+        /// Initializes the task, which must not yet be initialized.  Used only when the Task is being forced into
+        /// existence when no state machine is needed, e.g. when the builder is being synchronously completed with
+        /// an exception, when the builder is being used out of the context of an async method, etc.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Task<VoidTaskResult> InitializeTaskAsPromise()
+        {
+            Debug.Assert(m_task == null);
+            return m_task = new Task<VoidTaskResult>();
         }
 
         /// <summary>
@@ -87,7 +97,20 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
         /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
-        public void SetResult() => m_builder.SetResult(s_cachedCompleted); // Using s_cachedCompleted is faster than using s_defaultResultTask.
+        public void SetResult()
+        {
+            // Get the currently stored task, which will be non-null if get_Task has already been accessed.
+            // If there isn't one, store the supplied completed task.
+            if (m_task is null)
+            {
+                m_task = s_cachedCompleted;
+            }
+            else
+            {
+                // Otherwise, complete the task that's there.
+                AsyncTaskMethodBuilder<VoidTaskResult>.SetExistingTaskResult(m_task, default!);
+            }
+        }
 
         /// <summary>
         /// Completes the <see cref="System.Threading.Tasks.Task"/> in the
@@ -97,7 +120,8 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
         /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
-        public void SetException(Exception exception) => m_builder.SetException(exception);
+        public void SetException(Exception exception) =>
+            AsyncTaskMethodBuilder<VoidTaskResult>.SetException(exception, ref m_task);
 
         /// <summary>
         /// Called by the debugger to request notification when the first wait operation
@@ -106,7 +130,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="enabled">
         /// true to enable notification; false to disable a previously set notification.
         /// </param>
-        internal void SetNotificationForWaitCompletion(bool enabled) => m_builder.SetNotificationForWaitCompletion(enabled);
+        internal void SetNotificationForWaitCompletion(bool enabled) =>
+            AsyncTaskMethodBuilder<VoidTaskResult>.SetNotificationForWaitCompletion(enabled, ref m_task);
 
         /// <summary>
         /// Gets an object that may be used to uniquely identify this builder to the debugger.
@@ -116,6 +141,7 @@ namespace System.Runtime.CompilerServices
         /// It must only be used by the debugger and tracing purposes, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this property or this.Task.
         /// </remarks>
-        internal object ObjectIdForDebugger => m_builder.ObjectIdForDebugger;
+        internal object ObjectIdForDebugger =>
+            m_task ??= AsyncTaskMethodBuilder<VoidTaskResult>.CreateWeaklyTypedStateMachineBox();
     }
 }
