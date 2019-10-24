@@ -26,7 +26,6 @@
 #include "jitinterface.h"
 #include "eeconfig.h"
 #include "log.h"
-#include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "array.h"
 #include "typestring.h"

@@ -19,10 +19,13 @@ class LoadLibErrorTracker;
 struct StubSigDesc
 {
 public:
-    StubSigDesc(MethodDesc *pMD, PInvokeStaticSigInfo* pSigInfo = NULL);
-    StubSigDesc(MethodDesc *pMD, Signature sig, Module *m_pModule);
+    StubSigDesc(MethodDesc * pMD, PInvokeStaticSigInfo* pSigInfo = NULL);
+    StubSigDesc(MethodDesc*  pMD, Signature sig, Module* m_pModule);
+    StubSigDesc(MethodTable* pMT, Signature sig, Module* m_pModule);
+    StubSigDesc(std::nullptr_t, Signature sig, Module* m_pModule);
 
     MethodDesc        *m_pMD;
+    MethodTable       *m_pMT;
     Signature          m_sig;
     Module            *m_pModule;
     Module            *m_pLoaderModule;
@@ -100,6 +103,9 @@ public:
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
+    static MethodDesc* CreateStructMarshalILStub(MethodTable* pMT);
+    static PCODE GetEntryPointForStructMarshalStub(MethodTable* pMT);
+
     static MethodDesc* CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                              DWORD dwStubFlags,
                              MethodDesc* pMD);
@@ -143,7 +149,7 @@ enum NDirectStubFlags
 #endif // FEATURE_COMINTEROP
     NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING   = 0x00000100,
     NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     = 0x00000200,
-    // unused                               = 0x00000400,
+    NDIRECTSTUB_FL_STRUCT_MARSHAL           = 0x00000400,
     NDIRECTSTUB_FL_UNMANAGED_CALLI          = 0x00000800,
     NDIRECTSTUB_FL_TRIGGERCCTOR             = 0x00001000,
 #ifdef FEATURE_COMINTEROP
@@ -208,6 +214,7 @@ inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)); }
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
+inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) || 
@@ -282,6 +289,11 @@ inline void SF_ConsistencyCheck(DWORD dwStubFlags)
 
     // Delegate stubs are not COM
     CONSISTENCY_CHECK(!(SF_IsDelegateStub(dwStubFlags) && SF_IsCOMStub(dwStubFlags)));
+
+    // Struct marshal stubs are not COM or HRESULT swapping stubs
+    CONSISTENCY_CHECK(!(SF_IsStructMarshalStub(dwStubFlags) && SF_IsCOMStub(dwStubFlags)));
+    CONSISTENCY_CHECK(!(SF_IsStructMarshalStub(dwStubFlags) && SF_IsHRESULTSwapping(dwStubFlags)));
+    CONSISTENCY_CHECK(!(SF_IsStructMarshalStub(dwStubFlags) && SF_IsReverseCOMStub(dwStubFlags)));
 }
 
 enum ETW_IL_STUB_FLAGS
@@ -291,7 +303,8 @@ enum ETW_IL_STUB_FLAGS
     ETW_IL_STUB_FLAGS_NGENED_STUB           = 0x00000004,
     ETW_IL_STUB_FLAGS_DELEGATE              = 0x00000008,    
     ETW_IL_STUB_FLAGS_VARARG                = 0x00000010,
-    ETW_IL_STUB_FLAGS_UNMANAGED_CALLI       = 0x00000020
+    ETW_IL_STUB_FLAGS_UNMANAGED_CALLI       = 0x00000020,
+    ETW_IL_STUB_FLAGS_STRUCT_MARSHAL        = 0x00000040
 };
 
 //---------------------------------------------------------
@@ -571,7 +584,8 @@ public:
                           DWORD              dwStubFlags,  // NDirectStubFlags
                           int                nParamTokens,
                           mdParamDef*        pParamTokenArray,
-                          int                iLCIDArg
+                          int                iLCIDArg,
+                          MethodTable*       pMT
                           ) :
         m_sig(sig),
         m_pTypeContext(pTypeContext),
@@ -583,7 +597,8 @@ public:
         m_nlFlags(nlFlags),
         m_dwStubFlags(dwStubFlags),
         m_iLCIDArg(iLCIDArg),
-        m_nParamTokens(nParamTokens)
+        m_nParamTokens(nParamTokens),
+        m_pMT(pMT)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -599,6 +614,7 @@ public:
     DWORD               m_dwStubFlags;
     int                 m_iLCIDArg;
     int                 m_nParamTokens;
+    MethodTable*        m_pMT;
 };
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
@@ -612,6 +628,9 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0, MethodDesc
 // Resolve and return the predefined IL stub method
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD);
 #endif // FEATURE_COMINTEROP
+
+void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
+void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 
 // 
 // Limit length of string field in IL stub ETW events so that the whole

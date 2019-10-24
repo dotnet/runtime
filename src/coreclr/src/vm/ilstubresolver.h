@@ -54,6 +54,8 @@ public:
     void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
     void SetStubMethodDesc(MethodDesc* pStubMD);
 
+    void CreateILHeader(COR_ILMETHOD_DECODER* pILHeader, size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig);
+
     COR_ILMETHOD_DECODER * AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_DECODER * GetILHeader();
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
@@ -68,6 +70,8 @@ public:
     void SetJitFlags(CORJIT_FLAGS jitFlags);
     CORJIT_FLAGS GetJitFlags();
 
+    void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
+
     static void StubGenFailed(ILStubResolver* pResolver);
 
 protected:    
@@ -80,6 +84,7 @@ protected:
         NativeToCLRInteropStub,
         COMToCLRInteropStub,
         WinRTToCLRInteropStub,
+        StructMarshalInteropStub,
 #ifdef FEATURE_ARRAYSTUB_AS_IL 
         ArrayOpStub,
 #endif
@@ -101,6 +106,7 @@ protected:
 
     void ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState);
     void SetStubType(ILStubType stubType);
+    bool UseLoaderHeap();
 
     //
     // This stuff is only needed during JIT
@@ -120,6 +126,7 @@ protected:
     PTR_MethodDesc          m_pStubTargetMD;
     ILStubType              m_type;
     CORJIT_FLAGS            m_jitFlags;
+    PTR_LoaderHeap          m_loaderHeap;
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, NULL> ILStubGenHolder;

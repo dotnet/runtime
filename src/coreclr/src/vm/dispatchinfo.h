@@ -174,7 +174,6 @@ private:
     void DetermineCultureAwareness();
     void SetUpParamMarshalerInfo();
     void SetUpMethodMarshalerInfo(MethodDesc *pMeth, BOOL bReturnValueOnly);
-    void SetUpFieldMarshalerInfo(FieldDesc *pField);
     void SetUpDispParamMarshalerForMarshalInfo(int iParam, MarshalInfo *pInfo);
     void SetUpDispParamAttributes(int iParam, MarshalInfo* Info);
 public:

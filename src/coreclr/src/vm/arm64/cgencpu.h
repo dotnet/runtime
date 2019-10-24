@@ -63,14 +63,6 @@ extern PCODE GetPreStubEntryPoint();
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
-//=======================================================================
-// IMPORTANT: This value is used to figure out how much to allocate
-// for a fixed array of FieldMarshaler's. That means it must be at least
-// as large as the largest FieldMarshaler subclass. This requirement
-// is guarded by an assert.
-//=======================================================================
-#define MAXFIELDMARSHALERSIZE               40
-
 inline
 ARG_SLOT FPSpillToR8(void* pSpillSlot)
 {

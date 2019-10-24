@@ -6,7 +6,7 @@
 enum NativeFieldFlags : short
 {
     // The field may be blittable. The other subcategories determine if the field is blittable.
-    NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE = 1 << 7,
+    NATIVE_FIELD_SUBCATEGORY_BLITTABLE = 1 << 7,
     // The native representation of the field is a floating point field.
     NATIVE_FIELD_SUBCATEGORY_FLOAT = 1 << 8,
     // The field has a nested MethodTable* (i.e. a field of a struct, class, or array)
@@ -20,19 +20,19 @@ enum NativeFieldFlags : short
     // This subcategory is used for well-known runtime types that aren't specially marshalled in ABIs and fields that cannot be marshalled.
     NATIVE_FIELD_SUBCATEGORY_OTHER = 1 << 14,
     // The field is a 4-byte floating point.
-    NATIVE_FIELD_CATEGORY_R4 = NATIVE_FIELD_SUBCATEGORY_FLOAT | NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE,
+    NATIVE_FIELD_CATEGORY_R4 = NATIVE_FIELD_SUBCATEGORY_FLOAT | NATIVE_FIELD_SUBCATEGORY_BLITTABLE,
     // The field is an 8-byte floating point
-    NATIVE_FIELD_CATEGORY_R8 = NATIVE_FIELD_SUBCATEGORY_FLOAT | NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE | 0x1,
+    NATIVE_FIELD_CATEGORY_R8 = NATIVE_FIELD_SUBCATEGORY_FLOAT | NATIVE_FIELD_SUBCATEGORY_BLITTABLE | 0x1,
     // The field is a type with a nested method table but is never blittable (ex. a class with non-auto layout or an array).
     NATIVE_FIELD_CATEGORY_NESTED = NATIVE_FIELD_SUBCATEGORY_NESTED,
-    // The field is a value class type
-    NATIVE_FIELD_CATEGORY_NESTED_VALUE_CLASS = NATIVE_FIELD_SUBCATEGORY_NESTED | NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE,
+    // The field is a nested type that may be blittable, such as a value class (C# struct).
+    NATIVE_FIELD_CATEGORY_NESTED_BLITTABLE = NATIVE_FIELD_SUBCATEGORY_NESTED | NATIVE_FIELD_SUBCATEGORY_BLITTABLE,
     // The field is a System.DateTime (marshals to a Windows DATE type, which is a typedef of double)
     NATIVE_FIELD_CATEGORY_DATE = NATIVE_FIELD_SUBCATEGORY_FLOAT,
     // The field should be treated like an integer for the purposes of ABIs.
     NATIVE_FIELD_CATEGORY_INTEGER_LIKE = NATIVE_FIELD_SUBCATEGORY_INTEGER,
     // The field is a blittable integer type.
-    NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER = NATIVE_FIELD_SUBCATEGORY_INTEGER | NATIVE_FIELD_SUBCATEGORY_MAYBE_BLITTABLE,
+    NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER = NATIVE_FIELD_SUBCATEGORY_INTEGER | NATIVE_FIELD_SUBCATEGORY_BLITTABLE,
     // The field is being marshaled to a COM interface pointer.
     NATIVE_FIELD_CATEGORY_INTERFACE_TYPE = NATIVE_FIELD_SUBCATEGORY_INTEGER | NATIVE_FIELD_SUBCATEGORY_COM_ONLY,
     // The field is a structure that is only valid in COM scenarios.

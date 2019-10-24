@@ -2401,6 +2401,15 @@
   <data name="Interop_Marshal_Unmappable_Char" xml:space="preserve">
     <value>Cannot marshal: Encountered unmappable character.</value>
   </data>
+  <data name="Interop_Marshal_SafeHandle_InvalidOperation" xml:space="preserve">
+    <value>Structures containing SafeHandle fields are not allowed in this operation.</value>
+  </data>
+  <data name="Interop_Marshal_CannotCreateSafeHandleField" xml:space="preserve">
+    <value>SafeHandle fields cannot be created from an unmanaged handle.</value>
+  </data>
+  <data name="Interop_Marshal_CannotCreateCriticalHandleField" xml:space="preserve">
+    <value>CriticalHandle fields cannot be created from an unmanaged handle.</value>
+  </data>
   <data name="InvalidCast_CannotCastNullToValueType" xml:space="preserve">
     <value>Null object cannot be converted to a value type.</value>
   </data>

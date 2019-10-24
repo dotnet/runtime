@@ -77,6 +77,7 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case NativeToCLRInteropStub: return "IL_STUB_ReversePInvoke";
         case COMToCLRInteropStub:    return "IL_STUB_COMtoCLR";
         case WinRTToCLRInteropStub:  return "IL_STUB_WinRTtoCLR";
+        case StructMarshalInteropStub: return "IL_STUB_StructMarshal";
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         case ArrayOpStub:            return "IL_STUB_Array";
 #endif
@@ -299,10 +300,28 @@ ILStubResolver::ILStubResolver() :
     m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_type(Unassigned),
-    m_jitFlags()
+    m_jitFlags(),
+    m_loaderHeap(dac_cast<PTR_LoaderHeap>(nullptr))
 {
     LIMITED_METHOD_CONTRACT;
     
+}
+
+void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
+{
+    m_loaderHeap = pLoaderHeap;
+}
+
+void ILStubResolver::CreateILHeader(COR_ILMETHOD_DECODER* pILHeader, size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
+{
+    pILHeader->Flags = 0;
+    pILHeader->CodeSize = (DWORD)cbCode;
+    pILHeader->MaxStack = maxStack;
+    pILHeader->EH = 0;
+    pILHeader->Sect = 0;
+    pILHeader->Code = pNewILCodeBuffer;
+    pILHeader->LocalVarSig = pNewLocalSig;
+    pILHeader->cbLocalVarSig = cbLocalSig;
 }
 
 //---------------------------------------------------------------------------------------
@@ -318,42 +337,62 @@ ILStubResolver::AllocGeneratedIL(
 #if !defined(DACCESS_COMPILE)
     _ASSERTE(0 != cbCode);
 
-    NewArrayHolder<BYTE>             pNewILCodeBuffer        = NULL;
-    NewArrayHolder<BYTE>             pNewLocalSig            = NULL;
-    NewArrayHolder<CompileTimeState> pNewCompileTimeState    = NULL;
-
-    pNewCompileTimeState = (CompileTimeState *)new BYTE[sizeof(CompileTimeState)];
-    memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
-
-    pNewILCodeBuffer = new BYTE[cbCode];
-
-    if (0 != cbLocalSig)
+    if (!UseLoaderHeap())
     {
-        pNewLocalSig = new BYTE[cbLocalSig];
-    }
+        NewArrayHolder<BYTE>             pNewILCodeBuffer = new BYTE[cbCode];
+        NewArrayHolder<CompileTimeState> pNewCompileTimeState = (CompileTimeState*)new BYTE[sizeof(CompileTimeState)];
+        memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
+        NewArrayHolder<BYTE>             pNewLocalSig = NULL;
 
-    COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;    
+        if (0 != cbLocalSig)
+        {
+            pNewLocalSig = new BYTE[cbLocalSig];
+        }
 
-    pILHeader->Flags         = 0;
-    pILHeader->CodeSize      = (DWORD)cbCode;
-    pILHeader->MaxStack      = maxStack;
-    pILHeader->EH            = 0;
-    pILHeader->Sect          = 0;
-    pILHeader->Code          = pNewILCodeBuffer;
-    pILHeader->LocalVarSig   = pNewLocalSig;
-    pILHeader->cbLocalVarSig = cbLocalSig;
+        COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
+
+        CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
 
 #ifdef _DEBUG
-    LPVOID pPrevCompileTimeState =
+        LPVOID pPrevCompileTimeState =
 #endif // _DEBUG
-    FastInterlockExchangePointer(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
-    CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
+            FastInterlockExchangePointer(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
+        CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
 
-    pNewLocalSig.SuppressRelease();
-    pNewILCodeBuffer.SuppressRelease();
-    pNewCompileTimeState.SuppressRelease();
+        pNewLocalSig.SuppressRelease();
+        pNewILCodeBuffer.SuppressRelease();
+        pNewCompileTimeState.SuppressRelease();
+        return pILHeader;
+    }
+    else
+    {
+        CONSISTENCY_CHECK(m_loaderHeap != dac_cast<PTR_LoaderHeap>(nullptr));
 
-    return pILHeader;
+        AllocMemHolder<BYTE>             pNewILCodeBuffer(m_loaderHeap->AllocMem(S_SIZE_T(cbCode)));
+        AllocMemHolder<CompileTimeState> pNewCompileTimeState(m_loaderHeap->AllocMem(S_SIZE_T(sizeof(CompileTimeState))));
+        memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
+        AllocMemHolder<BYTE>             pNewLocalSig;
+
+        if (0 != cbLocalSig)
+        {
+            pNewLocalSig = m_loaderHeap->AllocMem(S_SIZE_T(cbLocalSig));
+        }
+
+        COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
+
+        CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
+
+#ifdef _DEBUG
+        LPVOID pPrevCompileTimeState =
+#endif // _DEBUG
+            FastInterlockExchangePointer(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
+        CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
+        
+        pNewLocalSig.SuppressRelease();
+        pNewILCodeBuffer.SuppressRelease();
+        pNewCompileTimeState.SuppressRelease();
+        return pILHeader;
+    }
 
 #else  // DACCESS_COMPILE
     DacNotImpl();
@@ -398,6 +437,13 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
     }
 }
 
+bool ILStubResolver::UseLoaderHeap()
+{
+    // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
+    // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
+    return m_type == StructMarshalInteropStub;
+}
+
 void ILStubResolver::FreeCompileTimeState()
 {
     CONTRACTL
@@ -414,7 +460,11 @@ void ILStubResolver::FreeCompileTimeState()
         return;
     }
 
-    ClearCompileTimeState(ILGeneratedAndFreed);
+    if (!UseLoaderHeap())
+    {
+        ClearCompileTimeState(ILGeneratedAndFreed);
+    }
+
 }
 
 //---------------------------------------------------------------------------------------
@@ -427,6 +477,7 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(!UseLoaderHeap());
     }
     CONTRACTL_END;
 

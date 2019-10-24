@@ -112,5 +112,11 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SYSTEMTYPE,                      SystemTypeMa
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_KEYVALUEPAIR,                    KeyValuePairMarshaler,         true)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_EXCEPTION,                       HResultExceptionMarshaler,     true)  // For WinRT, marshal exceptions as Windows.Foundation.HResult
 #endif // FEATURE_COMINTEROP
+          
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_ARRAY,                     FixedArrayMarshaler,           false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_WSTR,                      FixedWSTRMarshaler,            false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_CSTR,                      FixedCSTRMarshaler,            false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS,           BlittableLayoutClassMarshaler, false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LAYOUTCLASS,                     LayoutClassMarshaler,          false)
 
 #undef DEFINE_MARSHALER_TYPE

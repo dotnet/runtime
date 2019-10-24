@@ -1423,8 +1423,14 @@ void ILCodeStream::EmitLDIND_T(LocalDesc* pType)
 
         case ELEMENT_TYPE_INTERNAL:
         {
-            CONSISTENCY_CHECK_MSG(!(pType->InternalToken.GetMethodTable()->IsValueType()), "don't know how to handle value types here");
-            EmitLDIND_REF();
+            if (pType->InternalToken.GetMethodTable()->IsValueType())
+            {
+                EmitLDOBJ(m_pOwner->GetToken(pType->InternalToken.GetMethodTable()));
+            }
+            else
+            {
+                EmitLDIND_REF();
+            }
             break;
         }
 
@@ -1630,8 +1636,14 @@ void ILCodeStream::EmitSTIND_T(LocalDesc* pType)
 
         case ELEMENT_TYPE_INTERNAL:
         {
-            CONSISTENCY_CHECK_MSG(!(pType->InternalToken.GetMethodTable()->IsValueType()), "don't know how to handle value types here");
-            EmitSTIND_REF();
+            if (pType->InternalToken.GetMethodTable()->IsValueType())
+            {
+                EmitSTOBJ(m_pOwner->GetToken(pType->InternalToken.GetMethodTable()));
+            }
+            else
+            {
+                EmitSTIND_REF();
+            }
             break;
         }
 
@@ -1669,6 +1681,12 @@ void ILCodeStream::EmitTHROW()
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_THROW, -1, 0);
+}
+
+void ILCodeStream::EmitUNALIGNED(BYTE alignment)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNALIGNED, 0, alignment);
 }
 
 

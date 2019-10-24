@@ -9051,7 +9051,7 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
         {
             if (pClass->HasLayout() && pClass->GetLayoutInfo()->GetNumCTMFields() > 0)
             {
-                image->PlaceStructureForAddress((void *)pClass->GetLayoutInfo()->GetFieldMarshalers(), CORCOMPILE_SECTION_HOT);
+                image->PlaceStructureForAddress((void *)pClass->GetLayoutInfo()->GetNativeFieldDescriptors(), CORCOMPILE_SECTION_HOT);
             }
         }
     }

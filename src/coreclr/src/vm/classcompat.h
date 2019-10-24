@@ -43,7 +43,6 @@ class   EEClass;
 class   LayoutEEClass;
 class   EnCFieldDesc;
 class   FieldDesc;
-class   FieldMarshaler;
 struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
