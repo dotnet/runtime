@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
-            string cgroupsLocation = Interop.cgroups.s_cgroupMemoryPath;
+            string cgroupsLocation = Interop.cgroups.s_cgroupMemoryLimitPath;
             if (cgroupsLocation != null)
             {
                 Console.WriteLine($"### CGROUPS MEMORY: {cgroupsLocation}");

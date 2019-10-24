@@ -12,6 +12,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>Common\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\cgroups\Interop.cgroups.cs">
+      <Link>Common\Interop\Linux\cgroups\Interop.cgroups.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\procfs\Interop.ProcFsStat.cs</Link>
     </Compile>
@@ -69,6 +72,7 @@
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
       <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
+    <Compile Include="Tests\Interop\cgroupsTests.cs" />
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
