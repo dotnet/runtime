@@ -52,9 +52,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 int initialErrorCount = chain.ChainStatus.Length;
                 Assert.InRange(initialErrorCount, 0, 1);
 
-                if (initialErrorCount > 0)
+                X509ChainStatusFlags initialFlags = chain.AllStatusFlags();
+
+                if (initialFlags != X509ChainStatusFlags.NoError)
                 {
-                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.ChainStatus[0].Status);
+                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, initialFlags);
                 }
 
                 chainHolder.DisposeChainElements();
@@ -64,8 +66,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.False(valid, "Chain should not build validly");
 
-                Assert.Equal(initialErrorCount + 1, chain.ChainStatus.Length);
-                Assert.Equal(X509ChainStatusFlags.RevocationStatusUnknown, chain.ChainStatus[0].Status);
+                const X509ChainStatusFlags UnknownOffline =
+                    X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
+
+                Assert.Equal(initialFlags | UnknownOffline, chain.AllStatusFlags());
 
                 File.WriteAllText(crlFile, MicrosoftDotComRootCrlPem, Encoding.ASCII);
 
@@ -90,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        private static void X509Store_AddReadOnly()
+        public static void X509Store_AddReadOnly()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -109,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        private static void X509Store_AddClosed()
+        public static void X509Store_AddClosed()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -127,7 +131,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddOne()
+        public static void X509Store_AddOne()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -158,7 +162,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddOneAfterUpgrade()
+        public static void X509Store_AddOneAfterUpgrade()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -198,7 +202,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_DowngradePermissions()
+        public static void X509Store_DowngradePermissions()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -221,7 +225,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddAfterDispose()
+        public static void X509Store_AddAfterDispose()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -244,7 +248,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddAndClear()
+        public static void X509Store_AddAndClear()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -268,7 +272,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddDuplicate()
+        public static void X509Store_AddDuplicate()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -290,7 +294,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddTwo()
+        public static void X509Store_AddTwo()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -321,7 +325,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddTwo_UpgradePrivateKey()
+        public static void X509Store_AddTwo_UpgradePrivateKey()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -383,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_AddTwo_UpgradePrivateKey_NoDowngrade()
+        public static void X509Store_AddTwo_UpgradePrivateKey_NoDowngrade()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -443,7 +447,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_DistinctCollections()
+        public static void X509Store_DistinctCollections()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -484,7 +488,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop(/* Alters user/machine state */)]
-        private static void X509Store_Add4_Remove1()
+        public static void X509Store_Add4_Remove1()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -535,7 +539,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop(/* Alters user/machine state */)]
         [InlineData(false)]
         [InlineData(true)]
-        private static void X509Store_MultipleObjects(bool matchCase)
+        public static void X509Store_MultipleObjects(bool matchCase)
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
@@ -580,7 +584,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [OuterLoop( /* Alters user/machine state */)]
-        private static void X509Store_FiltersDuplicateOnLoad()
+        public static void X509Store_FiltersDuplicateOnLoad()
         {
             RunX509StoreTest(
                 (store, storeDirectory) =>
