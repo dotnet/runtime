@@ -936,15 +936,13 @@ FCFuncStart(gContextSynchronizationFuncs)
 #endif
 FCFuncEnd()
 
-FCFuncStart(gDateMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::DateMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::DateMarshaler__ConvertToManaged)
-FCFuncEnd()
-
-FCFuncStart(gValueClassMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::ValueClassMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::ValueClassMarshaler__ConvertToManaged)
-    FCFuncElement("ClearNative", StubHelpers::ValueClassMarshaler__ClearNative)
+FCFuncStart(gMngdFixedArrayMarshalerFuncs)
+    FCFuncElement("CreateMarshaler", MngdFixedArrayMarshaler::CreateMarshaler)
+    FCFuncElement("ConvertSpaceToNative", MngdFixedArrayMarshaler::ConvertSpaceToNative)
+    FCFuncElement("ConvertContentsToNative", MngdFixedArrayMarshaler::ConvertContentsToNative)
+    FCFuncElement("ConvertSpaceToManaged", MngdFixedArrayMarshaler::ConvertSpaceToManaged)
+    FCFuncElement("ConvertContentsToManaged", MngdFixedArrayMarshaler::ConvertContentsToManaged)
+    FCFuncElement("ClearNativeContents", MngdFixedArrayMarshaler::ClearNativeContents)
 FCFuncEnd()
 
 FCFuncStart(gMngdNativeArrayMarshalerFuncs)
@@ -1224,7 +1222,6 @@ FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilit
 FCClassElement("CriticalHandle", "System.Runtime.InteropServices", gCriticalHandleFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
-FCClassElement("DateMarshaler", "System.StubHelpers", gDateMarshalerFuncs)
 FCClassElement("DateTime", "System", gDateTimeFuncs)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
 FCClassElement("Delegate", "System", gDelegateFuncs)
@@ -1257,6 +1254,7 @@ FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MdUtf8String", "System", gMdUtf8String)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
+FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("MngdHiddenLengthArrayMarshaler", "System.StubHelpers", gMngdHiddenLengthArrayMarshalerFuncs)
 #endif // FEATURE_COMINTEROP
@@ -1319,7 +1317,6 @@ FCClassElement("UriMarshaler", "System.StubHelpers", gUriMarshalerFuncs)
 #ifdef FEATURE_UTF8STRING
 FCClassElement("Utf8String", "System", gUtf8StringFuncs)
 #endif // FEATURE_UTF8STRING
-FCClassElement("ValueClassMarshaler", "System.StubHelpers", gValueClassMarshalerFuncs)
 FCClassElement("ValueType", "System", gValueTypeFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("Variant", "System", gVariantFuncs)

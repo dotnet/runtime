@@ -3724,10 +3724,10 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     DWORD i;
     IMDInternalImport * pInternalImport = GetMDImport(); // to avoid multiple dereferencings
 
-    FieldMarshaler * pNextFieldMarshaler = NULL;
+    NativeFieldDescriptor * pNextNativeFieldDescriptor = NULL;
     if (HasLayout())
     {
-        pNextFieldMarshaler = (FieldMarshaler*)(GetLayoutInfo()->GetFieldMarshalers());
+        pNextNativeFieldDescriptor = GetLayoutInfo()->GetNativeFieldDescriptors();
     }
 
 
@@ -4189,14 +4189,14 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 {
                     pLayoutFieldInfo = pwalk;
 
-                    const FieldMarshaler *pSrcFieldMarshaler = (const FieldMarshaler *) &pwalk->m_FieldMarshaler;
+                    const NativeFieldDescriptor *pSrcFieldDescriptor = &pwalk->m_nfd;
 
-                    pSrcFieldMarshaler->CopyTo(pNextFieldMarshaler, MAXFIELDMARSHALERSIZE);
+                    *pNextNativeFieldDescriptor = *pSrcFieldDescriptor;
 
-                    pNextFieldMarshaler->SetFieldDesc(pFD);
-                    pNextFieldMarshaler->SetExternalOffset(pwalk->m_nativePlacement.m_offset);
+                    pNextNativeFieldDescriptor->SetFieldDesc(pFD);
+                    pNextNativeFieldDescriptor->SetExternalOffset(pwalk->m_nativePlacement.m_offset);
 
-                    ((BYTE*&)pNextFieldMarshaler) += MAXFIELDMARSHALERSIZE;
+                    pNextNativeFieldDescriptor++;
                     break;
                 }
                 pwalk++;

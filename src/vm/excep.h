@@ -592,7 +592,7 @@ VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCWSTR pFullTypeName,
                                               UINT resIDWhy);
 
 VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl of the NStruct being loaded
-                           Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
+                           Module* pModule,             // Module that defines the scope, loader and heap (for allocated NativeFieldDescriptors)
                            DWORD   dwOffset,            // Field offset
                            DWORD   dwID);
 

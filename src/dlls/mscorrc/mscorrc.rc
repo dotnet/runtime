@@ -758,6 +758,8 @@ BEGIN
     IDS_CLASSLOAD_WRONGCPU                  "Could not load file or assembly '%1'. This assembly was compiled for a different processor."
 
     IDS_CANNOT_MARSHAL                      "Type '%1' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed."
+
+    IDS_CANNOT_MARSHAL_RECURSIVE_DEF        "Type '%1' cannot be marshaled as an unmanaged structure; its native layout contains a recursive definition so no meaningful size can be computed."
     
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 

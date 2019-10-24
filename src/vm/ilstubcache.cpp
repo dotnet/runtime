@@ -208,6 +208,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
+    pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
@@ -267,6 +268,12 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
 #endif
+    if (SF_IsStructMarshalStub(dwStubFlags))
+    {
+        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdStructMarshalStub;
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::StructMarshalInteropStub);
+    }
+    else
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))

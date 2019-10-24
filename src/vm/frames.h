@@ -286,7 +286,6 @@ FRAME_TYPE_NAME(AssumeByrefFromJITStack)
 
 // Forward references
 class Frame;
-class FieldMarshaler;
 class FramedMethodFrame;
 typedef VPTR(class FramedMethodFrame) PTR_FramedMethodFrame;
 struct HijackArgs;

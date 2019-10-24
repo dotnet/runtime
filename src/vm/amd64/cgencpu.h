@@ -103,16 +103,6 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define X86RegFromAMD64Reg(extended_reg) \
             ((X86Reg)(((int)extended_reg) & X86_REGISTER_MASK))
 
-
-//=======================================================================
-// IMPORTANT: This value is used to figure out how much to allocate
-// for a fixed array of FieldMarshaler's. That means it must be at least
-// as large as the largest FieldMarshaler subclass. This requirement
-// is guarded by an assert.
-//=======================================================================
-#define MAXFIELDMARSHALERSIZE                   40
-
-
 // Why is the return value ARG_SLOT? On 64-bit systems, that is 64-bits
 // and much bigger than necessary for R4, requiring explicit downcasts.
 inline

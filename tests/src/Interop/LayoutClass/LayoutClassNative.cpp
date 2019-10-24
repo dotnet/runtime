@@ -72,3 +72,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleNestedLayoutClassByValue(Nest
 {
     return SimpleSeqLayoutClassByRef(&v.str);
 }
+
+extern "C" DLL_EXPORT void __cdecl Invalid(...)
+{
+}

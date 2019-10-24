@@ -96,18 +96,6 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 // Offset of pc register
 #define PC_REG_RELATIVE_OFFSET 4
 
-//=======================================================================
-// IMPORTANT: This value is used to figure out how much to allocate
-// for a fixed array of FieldMarshaler's. That means it must be at least
-// as large as the largest FieldMarshaler subclass. This requirement
-// is guarded by an assert.
-//=======================================================================
-#ifdef BIT64
-#define MAXFIELDMARSHALERSIZE               40
-#else
-#define MAXFIELDMARSHALERSIZE               24
-#endif
-
 //**********************************************************************
 // Parameter size
 //**********************************************************************

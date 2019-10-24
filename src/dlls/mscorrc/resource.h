@@ -179,6 +179,7 @@
 #define IDS_EE_ADUNLOAD_CANT_UNWIND_THREAD      0x1769
 
 #define IDS_CANNOT_MARSHAL                      0x1770
+#define IDS_CANNOT_MARSHAL_RECURSIVE_DEF        0x1771
 #define IDS_EE_HASH_VAL_FAILED                  0x1772
 
 

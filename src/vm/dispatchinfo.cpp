@@ -30,6 +30,7 @@
 #include "dispparammarshaler.h"
 #include "reflectioninvocation.h"
 #include "dbginterface.h"
+#include "dllimport.h"
 
 #define EXCEPTION_INNER_PROP                            "InnerException"
 
@@ -749,11 +750,7 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
         }
         else if (MscorlibBinder::IsClass(pMemberInfoMT, CLASS__FIELD))
         {
-            MethodDescCallSite getFieldHandle(METHOD__RTFIELD__GET_FIELDHANDLE, &MemberInfoObj);
-            ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
-            FieldDesc* pFld = (FieldDesc*) getFieldHandle.Call_RetLPVOID(&arg);
-            if (pFld)
-                SetUpFieldMarshalerInfo(pFld);
+            // We don't support non-default marshalling behavior for field getter/setter stubs invoked via IDispatch.
         }
         else if (MscorlibBinder::IsClass(pMemberInfoMT, CLASS__PROPERTY))
         {
@@ -906,7 +903,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
             MarshalInfo Info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), paramDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                              (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
+                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE, FALSE
     #ifdef _DEBUG
                      , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, iParam
     #endif
@@ -943,7 +940,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         MarshalInfo Info(msig.GetModule(), msig.GetReturnProps(), msig.GetSigTypeContext(), returnParamDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                          (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
+                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE, FALSE
 #ifdef _DEBUG
                          , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, 0
 #endif
@@ -951,12 +948,6 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
         SetUpDispParamMarshalerForMarshalInfo(0, &Info);
     }
-}
-
-void DispatchMemberInfo::SetUpFieldMarshalerInfo(FieldDesc *pField)
-{
-    // @TODO(DM): Implement this.
-    LIMITED_METHOD_CONTRACT;
 }
 
 void DispatchMemberInfo::SetUpDispParamMarshalerForMarshalInfo(int iParam, MarshalInfo *pInfo)
@@ -2344,8 +2335,17 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         VARTYPE ElementVt = V_VT(pRefVar) & ~(VT_BYREF | VT_ARRAY);
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
+        PCODE pStructMarshalStubAddress = NULL;
+        GCPROTECT_BEGIN(*pSrcObj);
+        if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
+        {
+            GCX_PREEMP();
+            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElementMT);
+        }
+        GCPROTECT_END();
+
         // Convert the contents of the managed array into the original SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt,  pElementMT);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pStructMarshalStubAddress);
     }
     else
 {

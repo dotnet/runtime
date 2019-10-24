@@ -28,7 +28,6 @@
 #include "jitinterface.h"
 #include "eeconfig.h"
 #include "log.h"
-#include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
 #include "dbginterface.h"
@@ -47,6 +46,7 @@
 #include "eeconfig.h"
 #include "contractimpl.h"
 #include "prettyprintsig.h"
+#include "compile.h"
 
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
