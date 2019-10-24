@@ -252,6 +252,7 @@ coreclr/.stamp-tests:
 
 .PHONY: corerun
 corerun:
+	$(MAKE) -C corerun
 	cp corerun/corerun $(SHAREDRUNTIME)
 
 run-tests-coreclr: prepare update-tests-coreclr corerun
