@@ -552,6 +552,180 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> AndNot(Vector128<ulong> left, Vector128<ulong> right) => AndNot(left, right);
 
         /// <summary>
+        /// int8x8_t vcls_s8 (int8x8_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint8x8_t vcls_u8 (uint8x8_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<byte> LeadingSignCount(Vector64<byte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int16x4_t vcls_s16 (int16x4_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector64<short> LeadingSignCount(Vector64<short> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint16x4_t vcls_u16 (uint16x4_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<ushort> LeadingSignCount(Vector64<ushort> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int32x2_t vcls_s32 (int32x2_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector64<int> LeadingSignCount(Vector64<int> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint32x2_t vcls_u32 (uint32x2_t a)
+        ///   A32: VCLS Dd, Dm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<uint> LeadingSignCount(Vector64<uint> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int8x16_t vclsq_s8 (int8x16_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint8x16_t vclsq_u8 (uint8x16_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<byte> LeadingSignCount(Vector128<byte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int16x8_t vclsq_s16 (int16x8_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector128<short> LeadingSignCount(Vector128<short> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint16x8_t vclsq_u16 (uint16x8_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<ushort> LeadingSignCount(Vector128<ushort> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int32x4_t vclsq_s32 (int32x4_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// </summary>
+        public static Vector128<int> LeadingSignCount(Vector128<int> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// uint32x4_t vclsq_u32 (uint32x4_t a)
+        ///   A32: VCLS Qd, Qm
+        ///   A64: CLS Vd, Vn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<uint> LeadingSignCount(Vector128<uint> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// int8x8_t vclz_s8 (int8x8_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint8x8_t vclz_u8 (uint8x8_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<byte> LeadingZeroCount(Vector64<byte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int16x4_t vclz_s16 (int16x4_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<short> LeadingZeroCount(Vector64<short> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint16x4_t vclz_u16 (uint16x4_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int32x2_t vclz_s32 (int32x2_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<int> LeadingZeroCount(Vector64<int> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint32x2_t vclz_u32 (uint32x2_t a)
+        ///   A32: VCLZ Dd, Dm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector64<uint> LeadingZeroCount(Vector64<uint> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int8x16_t vclzq_s8 (int8x16_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint8x16_t vclzq_u8 (uint8x16_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<byte> LeadingZeroCount(Vector128<byte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int16x8_t vclzq_s16 (int16x8_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<short> LeadingZeroCount(Vector128<short> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint16x8_t vclzq_u16 (uint16x8_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// int32x4_t vclzq_s32 (int32x4_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<int> LeadingZeroCount(Vector128<int> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// uint32x4_t vclzq_u32 (uint32x4_t a)
+        ///   A32: VCLZ Qd, Qm
+        ///   A64: CLZ Vd, Vn
+        /// </summary>
+        public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) => LeadingZeroCount(value);
+
+        /// <summary>
         /// uint8x8_t vld1_u8 (uint8_t const * ptr)
         ///   A32: VLD1.8 Dd, [Rn]
         ///   A64: LD1 Vt.8B, [Xn]
@@ -1101,6 +1275,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ORN Vd, Vn, Vm
         /// </summary>
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
+
+        /// <summary>
+        /// int8x8_t vcnt_s8 (int8x8_t a)
+        ///   A32: VCNT Dd, Dm
+        ///   A64: CNT Vd, Vn
+        /// </summary>
+        public static Vector64<sbyte> PopCount(Vector64<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// uint8x8_t vcnt_u8 (uint8x8_t a)
+        ///   A32: VCNT Dd, Dm
+        ///   A64: CNT Vd, Vn
+        /// </summary>
+        public static Vector64<byte> PopCount(Vector64<byte> value) => PopCount(value);
+
+        /// <summary>
+        /// int8x16_t vcntq_s8 (int8x16_t a)
+        ///   A32: VCNT Qd, Qm
+        ///   A64: CNT Vd, Vn
+        /// </summary>
+        public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// uint8x16_t vcntq_u8 (uint8x16_t a)
+        ///   A32: VCNT Qd, Qm
+        ///   A64: CNT Vd, Vn
+        /// </summary>
+        public static Vector128<byte> PopCount(Vector128<byte> value) => PopCount(value);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
