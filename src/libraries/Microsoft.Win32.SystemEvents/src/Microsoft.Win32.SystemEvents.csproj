@@ -146,6 +146,11 @@
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs">
+      <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
