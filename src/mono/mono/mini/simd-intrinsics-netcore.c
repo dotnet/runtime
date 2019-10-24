@@ -99,39 +99,6 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 		return (int)*result;
 }
 
-static guint16 vector_methods [] = {
-	SN_get_IsHardwareAccelerated
-};
-
-static MonoInst*
-emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	MonoInst *ins;
-	gboolean supported = FALSE;
-	int id;
-
-	id = lookup_intrins (vector_methods, sizeof (vector_methods), cmethod);
-	if (id == -1)
-		return NULL;
-
-	//printf ("%s\n", mono_method_full_name (cmethod, 1));
-
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	supported = TRUE;
-#endif
-
-	switch (id) {
-	case SN_get_IsHardwareAccelerated:
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		ins->type = STACK_I4;
-		return ins;
-	default:
-		break;
-	}
-
-	return NULL;
-}
-
 static int
 type_to_expand_op (MonoType *type)
 {
@@ -236,6 +203,90 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoType *etype, MonoInst *ar
 	return ins;
 }
 
+static MonoType*
+get_vector_t_elem_type (MonoType *vector_type)
+{
+	MonoClass *klass;
+	MonoType *etype;
+
+	g_assert (vector_type->type == MONO_TYPE_GENERICINST);
+	klass = mono_class_from_mono_type_internal (vector_type);
+	g_assert (!strcmp (m_class_get_name (klass), "Vector`1"));
+	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	return etype;
+}
+
+static guint16 vector_methods [] = {
+	SN_ConvertToDouble,
+	SN_ConvertToInt32,
+	SN_ConvertToInt64,
+	SN_ConvertToSingle,
+	SN_ConvertToUInt32,
+	SN_ConvertToUInt64,
+	SN_Narrow,
+	SN_Widen,
+	SN_get_IsHardwareAccelerated,
+};
+
+static MonoInst*
+emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins;
+	gboolean supported = FALSE;
+	int id;
+	MonoType *etype;
+
+	id = lookup_intrins (vector_methods, sizeof (vector_methods), cmethod);
+	if (id == -1)
+		return NULL;
+
+	//printf ("%s\n", mono_method_full_name (cmethod, 1));
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	supported = TRUE;
+#endif
+
+	if (cfg->verbose_level > 1) {
+		char *name = mono_method_full_name (cmethod, TRUE);
+		printf ("  SIMD intrinsic %s\n", name);
+		g_free (name);
+	}
+
+	switch (id) {
+	case SN_get_IsHardwareAccelerated:
+		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+		ins->type = STACK_I4;
+		return ins;
+	case SN_ConvertToInt32:
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+		etype = get_vector_t_elem_type (fsig->params [0]);
+		g_assert (etype->type == MONO_TYPE_R4);
+		return emit_simd_ins (cfg, mono_class_from_mono_type_internal (fsig->ret), OP_CVTPS2DQ, args [0]->dreg, -1);
+	case SN_ConvertToSingle:
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+		etype = get_vector_t_elem_type (fsig->params [0]);
+		g_assert (etype->type == MONO_TYPE_I4 || etype->type == MONO_TYPE_U4);
+		// FIXME:
+		if (etype->type == MONO_TYPE_U4)
+			return NULL;
+		return emit_simd_ins (cfg, mono_class_from_mono_type_internal (fsig->ret), OP_CVTDQ2PS, args [0]->dreg, -1);
+	case SN_ConvertToDouble:
+	case SN_ConvertToInt64:
+	case SN_ConvertToUInt32:
+	case SN_ConvertToUInt64:
+	case SN_Narrow:
+	case SN_Widen:
+		// FIXME:
+		break;
+	default:
+		break;
+	}
+
+	return NULL;
+}
+
 static guint16 vector_t_methods [] = {
 	SN_ctor,
 	SN_CopyTo,
@@ -244,6 +295,8 @@ static guint16 vector_t_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_LessThan,
 	SN_LessThanOrEqual,
+	SN_Max,
+	SN_Min,
 	SN_get_AllOnes,
 	SN_get_Count,
 	SN_get_Item,
@@ -471,10 +524,15 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_op_BitwiseAnd:
 	case SN_op_BitwiseOr:
 	case SN_op_ExclusiveOr:
+	case SN_Max:
+	case SN_Min:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
+			return NULL;
+		if (!COMPILE_LLVM (cfg) && (id == SN_Max || id == SN_Min))
 			return NULL;
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = etype->type;
+
 		if (etype->type == MONO_TYPE_R4 || etype->type == MONO_TYPE_R8) {
 			switch (id) {
 			case SN_op_Addition:
@@ -488,6 +546,12 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 				break;
 			case SN_op_Division:
 				ins->inst_c0 = OP_FDIV;
+				break;
+			case SN_Max:
+				ins->inst_c0 = OP_FMAX;
+				break;
+			case SN_Min:
+				ins->inst_c0 = OP_FMIN;
 				break;
 			default:
 				NULLIFY_INS (ins);
@@ -517,6 +581,12 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 				break;
 			case SN_op_ExclusiveOr:
 				ins->inst_c0 = OP_IXOR;
+				break;
+			case SN_Max:
+				ins->inst_c0 = OP_IMAX;
+				break;
+			case SN_Min:
+				ins->inst_c0 = OP_IMIN;
 				break;
 			default:
 				NULLIFY_INS (ins);

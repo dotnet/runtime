@@ -7437,6 +7437,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_FDIV:
 				values [ins->dreg] = LLVMBuildFDiv (builder, lhs, rhs, "");
 				break;
+			case OP_FMAX:
+			case OP_FMIN: {
+				LLVMValueRef args [] = { lhs, rhs };
+
+				gboolean is_r4 = ins->inst_c1 == MONO_TYPE_R4;
+				if (ins->inst_c0 == OP_FMAX)
+					values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, is_r4 ? INTRINS_SSE_MAXPS : INTRINS_SSE_MAXPD), args, 2, dname);
+				else
+					values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, is_r4 ? INTRINS_SSE_MINPS : INTRINS_SSE_MINPD), args, 2, dname);
+				break;
+			}
+			case OP_IMAX: {
+				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
+				LLVMValueRef cmp = LLVMBuildICmp (builder, is_unsigned ? LLVMIntUGT : LLVMIntSGT, lhs, rhs, "");
+				values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+				break;
+			}
+			case OP_IMIN: {
+				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
+				LLVMValueRef cmp = LLVMBuildICmp (builder, is_unsigned ? LLVMIntULT : LLVMIntSLT, lhs, rhs, "");
+				values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+			}
+			break;
+
 			default:
 				g_assert_not_reached ();
 			}
