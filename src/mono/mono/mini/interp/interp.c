@@ -5096,6 +5096,56 @@ common_vcall:
 			sp -= 2;
 			MINT_IN_BREAK;
 
+#define STARGFLD(datamem, fieldtype) do { \
+	MonoObject *o = frame->stack_args [ip [1]].data.o; \
+	NULL_CHECK (o); \
+	sp--; \
+	* (fieldtype *)((char *)o + ip [2]) = sp [0].data.datamem; \
+	ip += 3; \
+} while (0)
+		MINT_IN_CASE(MINT_STARGFLD_I1) STARGFLD(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_U1) STARGFLD(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_I2) STARGFLD(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_U2) STARGFLD(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_I4) STARGFLD(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_I8) STARGFLD(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_R4) STARGFLD(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_R8) STARGFLD(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_P) STARGFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STARGFLD_O) {
+			MonoObject *o = frame->stack_args [ip [1]].data.o;
+			NULL_CHECK (o);
+			sp--;
+			mono_gc_wbarrier_set_field_internal (o, (char *) o + ip [2], sp [0].data.o);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+#define STLOCFLD(datamem, fieldtype) do { \
+	MonoObject *o = *(MonoObject**)(locals + ip [1]); \
+	NULL_CHECK (o); \
+	sp--; \
+	* (fieldtype *)((char *)o + ip [2]) = sp [0].data.datamem; \
+	ip += 3; \
+} while (0)
+		MINT_IN_CASE(MINT_STLOCFLD_I1) STLOCFLD(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_U1) STLOCFLD(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_I2) STLOCFLD(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_U2) STLOCFLD(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_I4) STLOCFLD(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_I8) STLOCFLD(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_R4) STLOCFLD(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_R8) STLOCFLD(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_P) STLOCFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOCFLD_O) {
+			MonoObject *o = *(MonoObject**)(locals + ip [1]);
+			NULL_CHECK (o);
+			sp--;
+			mono_gc_wbarrier_set_field_internal (o, (char *) o + ip [2], sp [0].data.o);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]];
 			INIT_VTABLE (vtable);
@@ -6415,6 +6465,8 @@ common_vcall:
 
 		MINT_IN_CASE(MINT_STLOC_NP_I4) STLOC_NP(i, gint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOC_NP_I8) STLOC_NP(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOC_NP_R4) STLOC_NP(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STLOC_NP_R8) STLOC_NP(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOC_NP_O) STLOC_NP(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STLOC_VT) {
