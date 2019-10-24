@@ -32,7 +32,7 @@ PLATFORM_AOT_SUFFIX := .dylib
 PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
-XUNIT_FLAGS = -notrait category=nonosxtests
+XUNIT_FLAGS = -notrait category=nonosxtests @../../../../CoreFX.issues_mac.rsp
 TESTS_PLATFORM = OSX.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
