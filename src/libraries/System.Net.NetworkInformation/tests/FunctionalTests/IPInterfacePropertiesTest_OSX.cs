@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 
@@ -89,7 +90,10 @@ namespace System.Net.NetworkInformation.Tests
                     Assert.Throws<PlatformNotSupportedException>(() => uni.SuffixOrigin);
 
                     // Prefix Length
-                    Assert.Throws<PlatformNotSupportedException>(() => uni.PrefixLength);
+                    _log.WriteLine("--- PrefixLength: " + uni.PrefixLength);
+                    Assert.True(uni.PrefixLength > 0);
+                    Assert.True((uni.Address.AddressFamily == AddressFamily.InterNetwork ? 33 : 129) > uni.PrefixLength);
+
                 }
 
                 Assert.Throws<PlatformNotSupportedException>(() => ipProperties.WinsServersAddresses);
@@ -167,6 +171,49 @@ namespace System.Net.NetworkInformation.Tests
                 foreach (ScopeLevel level in values)
                 {
                     Assert.Throws<PlatformNotSupportedException>(() => ipv6Properties.GetScopeId(level));
+                }
+            }
+        }
+
+        [Fact]
+        [Trait("IPv4", "true")]
+        public void IPInfoTest_IPv4Loopback_ProperAddress()
+        {
+            Assert.True(Capability.IPv4Support());
+
+            _log.WriteLine("Loopback IPv4 index: " + NetworkInterface.LoopbackInterfaceIndex);
+
+            NetworkInterface loopback = NetworkInterface.GetAllNetworkInterfaces().First(ni => ni.Name == "lo0");
+            Assert.NotNull(loopback);
+
+            foreach (UnicastIPAddressInformation unicast in loopback.GetIPProperties().UnicastAddresses)
+            {
+                if (unicast.Address.Equals(IPAddress.Loopback))
+                {
+                    Assert.Equal(IPAddress.Parse("255.0.0.0"), unicast.IPv4Mask);
+                    Assert.Equal(8, unicast.PrefixLength);
+                    break;
+                }
+            }
+        }
+
+        [Fact]
+        [Trait("IPv6", "true")]
+        public void IPInfoTest_IPv6Loopback_ProperAddress()
+        {
+            Assert.True(Capability.IPv6Support());
+
+            _log.WriteLine("Loopback IPv6 index: " + NetworkInterface.IPv6LoopbackInterfaceIndex);
+
+            NetworkInterface loopback = NetworkInterface.GetAllNetworkInterfaces().First(ni => ni.Name == "lo0");
+            Assert.NotNull(loopback);
+
+            foreach (UnicastIPAddressInformation unicast in loopback.GetIPProperties().UnicastAddresses)
+            {
+                if (unicast.Address.Equals(IPAddress.IPv6Loopback))
+                {
+                    Assert.Equal(128, unicast.PrefixLength);
+                    break;
                 }
             }
         }

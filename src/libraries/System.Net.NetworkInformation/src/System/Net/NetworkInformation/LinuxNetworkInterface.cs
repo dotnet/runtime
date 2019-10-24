@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Net.NetworkInformation
 {
@@ -12,156 +14,117 @@ namespace System.Net.NetworkInformation
     /// </summary>
     internal class LinuxNetworkInterface : UnixNetworkInterface
     {
-        private readonly OperationalStatus _operationalStatus;
-        private readonly bool? _supportsMulticast;
-        private readonly long? _speed;
+        private OperationalStatus _operationalStatus;
+        private bool _supportsMulticast;
+        private long _speed;
+        internal int _mtu;
+        private NetworkInterfaceType _interfaceType = NetworkInterfaceType.Unknown;
         private readonly LinuxIPInterfaceProperties _ipProperties;
 
-        internal LinuxNetworkInterface(string name, int index) : base(name)
+        internal class LinuxNetworkInterfaceSystemProperties
+        {
+            internal string[] IPv4Routes;
+            internal string[] IPv6Routes;
+            internal string DnsSuffix;
+            internal IPAddressCollection DnsAddresses;
+
+            internal LinuxNetworkInterfaceSystemProperties()
+            {
+                if (File.Exists(NetworkFiles.Ipv4RouteFile))
+                {
+                    IPv4Routes = File.ReadAllLines(NetworkFiles.Ipv4RouteFile);
+                }
+
+                if (File.Exists(NetworkFiles.Ipv6RouteFile))
+                {
+                    IPv6Routes = File.ReadAllLines(NetworkFiles.Ipv6RouteFile);
+                }
+
+                try
+                {
+                    string resolverConfig = File.ReadAllText(NetworkFiles.EtcResolvConfFile);
+                    DnsSuffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);
+                    DnsAddresses = new InternalIPAddressCollection(StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(resolverConfig));
+                }
+                catch (FileNotFoundException)
+                {
+                }
+            }
+        }
+
+        internal LinuxNetworkInterface(string name, int index, LinuxNetworkInterfaceSystemProperties systemProperties) : base(name)
         {
             _index = index;
-            _operationalStatus = GetOperationalStatus(name);
-            _supportsMulticast = GetSupportsMulticast(name);
-            _speed = GetSpeed(name);
-            _ipProperties = new LinuxIPInterfaceProperties(this);
+            _ipProperties = new LinuxIPInterfaceProperties(this, systemProperties);
         }
 
         public static unsafe NetworkInterface[] GetLinuxNetworkInterfaces()
         {
-            Dictionary<string, LinuxNetworkInterface> interfacesByName = new Dictionary<string, LinuxNetworkInterface>();
-            List<Exception> exceptions = null;
-            const int MaxTries = 3;
+            var systemProperties = new LinuxNetworkInterfaceSystemProperties();
 
-            for (int attempt = 0; attempt < MaxTries; attempt++)
+            int interfaceCount=0;
+            int addressCount=0;
+            Interop.Sys.NetworkInterfaceInfo * nii = null;
+            Interop.Sys.IpAddressInfo * ai = null;
+            IntPtr globalMemory = (IntPtr)null;
+
+            if (Interop.Sys.GetNetworkInterfaces(ref interfaceCount, ref nii, ref addressCount, ref ai) != 0)
             {
-                // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
-                // to propagate out, because they will not be catchable. Instead, we track all the exceptions
-                // that are thrown in these callbacks, and aggregate them at the end.
-                int result = Interop.Sys.EnumerateInterfaceAddresses(
-                    (name, ipAddr, maskAddr) =>
-                    {
-                        try
-                        {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
-                            lni.ProcessIpv4Address(ipAddr, maskAddr);
-                        }
-                        catch (Exception e)
-                        {
-                            if (exceptions == null)
-                            {
-                                exceptions = new List<Exception>();
-                            }
-                            exceptions.Add(e);
-                        }
-                    },
-                    (name, ipAddr, scopeId) =>
-                    {
-                        try
-                        {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
-                            lni.ProcessIpv6Address(ipAddr, *scopeId);
-                        }
-                        catch (Exception e)
-                        {
-                            if (exceptions == null)
-                            {
-                                exceptions = new List<Exception>();
-                            }
-                            exceptions.Add(e);
-                        }
-                    },
-                    (name, llAddr) =>
-                    {
-                        try
-                        {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, llAddr->InterfaceIndex);
-                            lni.ProcessLinkLayerAddress(llAddr);
-                        }
-                        catch (Exception e)
-                        {
-                            if (exceptions == null)
-                            {
-                                exceptions = new List<Exception>();
-                            }
-                            exceptions.Add(e);
-                        }
-                    });
-                if (exceptions != null)
+                string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
+                throw new NetworkInformationException(message);
+            }
+
+            globalMemory = (IntPtr)nii;
+            try
+            {
+                NetworkInterface[] interfaces = new NetworkInterface[interfaceCount];
+                Dictionary<int, LinuxNetworkInterface> interfacesByIndex = new Dictionary<int, LinuxNetworkInterface>(interfaceCount);
+
+                for (int i = 0; i < interfaceCount; i++)
                 {
-                    throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
+                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringAnsi((IntPtr)nii->Name), nii->InterfaceIndex, systemProperties);
+                    lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
+                    lni._speed = nii->Speed;
+                    lni._operationalStatus = (OperationalStatus)nii->OperationalState;
+                    lni._mtu = nii->Mtu;
+                    lni._supportsMulticast = nii->SupportsMulticast != 0;
+
+                    interfaces[i] = lni;
+                    interfacesByIndex.Add(nii->InterfaceIndex, lni);
+                    nii++;
                 }
-                else if (result == 0)
+
+                while (addressCount != 0)
                 {
-                    var results = new LinuxNetworkInterface[interfacesByName.Count];
-                    int i = 0;
-                    foreach (KeyValuePair<string, LinuxNetworkInterface> item in interfacesByName)
+                    var address = new IPAddress(new ReadOnlySpan<byte>(ai->AddressBytes, ai->NumAddressBytes));
+                    if (address.IsIPv6LinkLocal)
                     {
-                        results[i++] = item.Value;
+                        address.ScopeId = ai->InterfaceIndex;
                     }
-                    return results;
+
+                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface lni))
+                    {
+                        lni.AddAddress(address, ai->PrefixLength);
+                    }
+
+                    ai++;
+                    addressCount--;
                 }
-                else
-                {
-                    interfacesByName.Clear();
-                }
+
+                return interfaces;
             }
-
-            throw new NetworkInformationException(SR.net_PInvokeError);
-        }
-
-        /// <summary>
-        /// Gets or creates a LinuxNetworkInterface, based on whether it already exists in the given Dictionary.
-        /// If created, it is added to the Dictionary.
-        /// </summary>
-        /// <param name="interfaces">The Dictionary of existing interfaces.</param>
-        /// <param name="name">The name of the interface.</param>
-        /// <param name="index">Interafce index of the interface.</param>
-        /// <returns>The cached or new LinuxNetworkInterface with the given name.</returns>
-        private static LinuxNetworkInterface GetOrCreate(Dictionary<string, LinuxNetworkInterface> interfaces, string name, int index)
-        {
-            LinuxNetworkInterface lni;
-            if (!interfaces.TryGetValue(name, out lni))
+            finally
             {
-                lni = new LinuxNetworkInterface(name, index);
-                interfaces.Add(name, lni);
+                Marshal.FreeHGlobal(globalMemory);
             }
-
-            return lni;
         }
 
         public override bool SupportsMulticast
         {
             get
             {
-                if (_supportsMulticast.HasValue)
-                {
-                    return _supportsMulticast.Value;
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-                }
+                return _supportsMulticast;
             }
-        }
-
-        private static bool? GetSupportsMulticast(string name)
-        {
-            // /sys/class/net/<interface_name>/flags
-            string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.FlagsFileName);
-
-            if (File.Exists(path))
-            {
-                try
-                {
-                    Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
-                    return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
-                }
-                catch (Exception) // Ignore any problems accessing or parsing the file.
-                {
-                }
-            }
-
-            return null;
         }
 
         public override IPInterfaceProperties GetIPProperties()
@@ -181,83 +144,16 @@ namespace System.Net.NetworkInformation
 
         public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }
 
+        public override NetworkInterfaceType NetworkInterfaceType { get { return _interfaceType; } }
+
         public override long Speed
         {
             get
             {
-                if (_speed.HasValue)
-                {
-                    return _speed.Value;
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-                }
+                return _speed;
             }
         }
 
-        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
-
-        private static long? GetSpeed(string name)
-        {
-            try
-            {
-                string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.SpeedFileName);
-                long megabitsPerSecond = StringParsingHelpers.ParseRawLongFile(path);
-                return megabitsPerSecond == -1
-                    ? megabitsPerSecond
-                    : megabitsPerSecond * 1_000_000; // Value must be returned in bits per second, not megabits.
-            }
-            catch (Exception) // Ignore any problems accessing or parsing the file.
-            {
-                return null;
-            }
-        }
-
-        private static OperationalStatus GetOperationalStatus(string name)
-        {
-            // /sys/class/net/<name>/operstate
-            string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.OperstateFileName);
-            if (File.Exists(path))
-            {
-                try
-                {
-                    string state = File.ReadAllText(path).Trim();
-                    return MapState(state);
-                }
-                catch (Exception) // Ignore any problems accessing or parsing the file.
-                {
-                }
-            }
-
-            return OperationalStatus.Unknown;
-        }
-
-        // Maps values from /sys/class/net/<interface>/operstate to OperationalStatus values.
-        private static OperationalStatus MapState(string state)
-        {
-            //
-            // http://users.sosdg.org/~qiyong/lxr/source/Documentation/networking/operstates.txt?a=um#L41
-            //
-            switch (state)
-            {
-                case "unknown":
-                    return OperationalStatus.Unknown;
-                case "notpresent":
-                    return OperationalStatus.NotPresent;
-                case "down":
-                    return OperationalStatus.Down;
-                case "lowerlayerdown":
-                    return OperationalStatus.LowerLayerDown;
-                case "testing":
-                    return OperationalStatus.Testing;
-                case "dormant":
-                    return OperationalStatus.Dormant;
-                case "up":
-                    return OperationalStatus.Up;
-                default:
-                    return OperationalStatus.Unknown;
-            }
-        }
+        public override bool IsReceiveOnly { get { return false; } }
     }
 }

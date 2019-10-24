@@ -10,14 +10,12 @@ namespace System.Net.NetworkInformation
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
         private readonly bool _isForwardingEnabled;
-        private readonly int _mtu;
 
         public LinuxIPv4InterfaceProperties(LinuxNetworkInterface linuxNetworkInterface)
             : base(linuxNetworkInterface)
         {
             _linuxNetworkInterface = linuxNetworkInterface;
             _isForwardingEnabled = GetIsForwardingEnabled();
-            _mtu = GetMtu();
         }
 
         public override bool IsAutomaticPrivateAddressingActive { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
@@ -28,7 +26,7 @@ namespace System.Net.NetworkInformation
 
         public override bool IsForwardingEnabled { get { return _isForwardingEnabled; } }
 
-        public override int Mtu { get { return _mtu; } }
+        public override int Mtu { get { return _linuxNetworkInterface._mtu; } }
 
         public override bool UsesWins { get { return _linuxNetworkInterface.GetIPProperties().WinsServersAddresses.Count > 0; } }
 
@@ -56,12 +54,6 @@ namespace System.Net.NetworkInformation
             }
 
             return false;
-        }
-
-        private int GetMtu()
-        {
-            string path = path = Path.Combine(NetworkFiles.SysClassNetFolder, _linuxNetworkInterface.Name, NetworkFiles.MtuFileName);
-            return StringParsingHelpers.ParseRawIntFile(path);
         }
     }
 }

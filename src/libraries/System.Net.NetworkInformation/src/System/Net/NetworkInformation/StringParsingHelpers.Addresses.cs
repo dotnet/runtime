@@ -12,11 +12,10 @@ namespace System.Net.NetworkInformation
         private static char[] s_delimiter = new char[1] { ' ' };
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
-        internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string filePath, string interfaceName)
+        internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string[] fileLines, string interfaceName)
         {
             // Columns are as follows (first-line header):
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
-            string[] fileLines = File.ReadAllLines(filePath);
             foreach (string line in fileLines)
             {
                 if (line.StartsWith(interfaceName))
@@ -38,7 +37,7 @@ namespace System.Net.NetworkInformation
             return collection;
         }
 
-        internal static void ParseIPv6GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string filePath, string interfaceName, long scopeId)
+        internal static void ParseIPv6GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string[] fileLines, string interfaceName, long scopeId)
         {
             // Columns are as follows (first-line header):
             // 00000000000000000000000000000000 00 00000000000000000000000000000000 00 00000000000000000000000000000000 ffffffff 00000001 00000001 00200200 lo
@@ -56,7 +55,6 @@ namespace System.Net.NetworkInformation
             // 7. Use counter
             // 8. Flags
             // 9. Interface name
-            string[] fileLines = File.ReadAllLines(filePath);
             foreach (string line in fileLines)
             {
                 if (line.StartsWith("00000000000000000000000000000000"))

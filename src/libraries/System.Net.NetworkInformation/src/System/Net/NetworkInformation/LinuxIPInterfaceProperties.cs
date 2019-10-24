@@ -16,13 +16,15 @@ namespace System.Net.NetworkInformation
         private readonly LinuxIPv4InterfaceProperties _ipv4Properties;
         private readonly LinuxIPv6InterfaceProperties _ipv6Properties;
 
-        public LinuxIPInterfaceProperties(LinuxNetworkInterface lni)
-            : base(lni)
+        public LinuxIPInterfaceProperties(LinuxNetworkInterface lni, LinuxNetworkInterface.LinuxNetworkInterfaceSystemProperties systemProperties)
+            : base(lni, globalConfig: true)
         {
             _linuxNetworkInterface = lni;
-            _gatewayAddresses = GetGatewayAddresses();
+            _gatewayAddresses = GetGatewayAddresses(systemProperties);
             _dhcpServerAddresses = GetDhcpServerAddresses();
             _winsServerAddresses = GetWinsServerAddresses();
+            _dnsSuffix = systemProperties.DnsSuffix;
+            _dnsAddresses = systemProperties.DnsAddresses;
             _ipv4Properties = new LinuxIPv4InterfaceProperties(lni);
             _ipv6Properties = new LinuxIPv6InterfaceProperties(lni);
         }
@@ -49,18 +51,18 @@ namespace System.Net.NetworkInformation
 
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
-        public GatewayIPAddressInformationCollection GetGatewayAddresses()
+        public GatewayIPAddressInformationCollection GetGatewayAddresses(LinuxNetworkInterface.LinuxNetworkInterfaceSystemProperties systemProperties)
         {
             List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
 
-            if (File.Exists(NetworkFiles.Ipv4RouteFile))
+            if (systemProperties.IPv4Routes != null)
             {
-                StringParsingHelpers.ParseIPv4GatewayAddressesFromRouteFile(collection, NetworkFiles.Ipv4RouteFile, _linuxNetworkInterface.Name);
+                StringParsingHelpers.ParseIPv4GatewayAddressesFromRouteFile(collection, systemProperties.IPv4Routes, _linuxNetworkInterface.Name);
             }
 
-            if (File.Exists(NetworkFiles.Ipv6RouteFile))
+            if (systemProperties.IPv6Routes != null)
             {
-                StringParsingHelpers.ParseIPv6GatewayAddressesFromRouteFile(collection, NetworkFiles.Ipv6RouteFile, _linuxNetworkInterface.Name, _linuxNetworkInterface.Index);
+                StringParsingHelpers.ParseIPv6GatewayAddressesFromRouteFile(collection, systemProperties.IPv6Routes, _linuxNetworkInterface.Name, _linuxNetworkInterface.Index);
             }
 
             return new GatewayIPAddressInformationCollection(collection);

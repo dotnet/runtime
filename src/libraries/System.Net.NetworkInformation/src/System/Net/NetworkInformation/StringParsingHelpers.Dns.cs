@@ -9,23 +9,21 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        internal static string ParseDnsSuffixFromResolvConfFile(string filePath)
+        internal static string ParseDnsSuffixFromResolvConfFile(string data)
         {
-            string data = File.ReadAllText(filePath);
             RowConfigReader rcr = new RowConfigReader(data);
             string dnsSuffix;
 
             return rcr.TryGetNextValue("search", out dnsSuffix) ? dnsSuffix : string.Empty;
         }
 
-        internal static List<IPAddress> ParseDnsAddressesFromResolvConfFile(string filePath)
+        internal static List<IPAddress> ParseDnsAddressesFromResolvConfFile(string data)
         {
             // Parse /etc/resolv.conf for all of the "nameserver" entries.
             // These are the DNS servers the machine is configured to use.
             // On OSX, this file is not directly used by most processes for DNS
             // queries/routing, but it is automatically generated instead, with
             // the machine's DNS servers listed in it.
-            string data = File.ReadAllText(filePath);
             RowConfigReader rcr = new RowConfigReader(data);
             List<IPAddress> addresses = new List<IPAddress>();
 

@@ -15,9 +15,9 @@ namespace System.Net.NetworkInformation.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public NetworkInterfaceBasicTest()
+        public NetworkInterfaceBasicTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace System.Net.NetworkInformation.Tests
                 string id = nic.Id;
                 Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
                 _log.WriteLine("ID: " + id);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                Assert.False(nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
 
@@ -131,6 +131,7 @@ namespace System.Net.NetworkInformation.Tests
                     {
                         Assert.Equal<int>(nic.GetIPProperties().GetIPv4Properties().Index,
                             NetworkInterface.LoopbackInterfaceIndex);
+                        Assert.True(nic.NetworkInterfaceType == NetworkInterfaceType.Loopback);
                         return; // Only check IPv4 loopback
                     }
                 }

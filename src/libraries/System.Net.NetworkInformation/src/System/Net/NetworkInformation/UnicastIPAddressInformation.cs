@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Net.Sockets;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -50,6 +53,33 @@ namespace System.Net.NetworkInformation
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
+        }
+
+        /// <summary>
+        /// Convert a CIDR prefix length to a subnet mask "255.255.255.0" format.
+        /// </summary>
+        /// <param name="prefixLength">Length of the prefix.</param>
+        /// <param name="family">AddressFamily for the mask.</param>
+        /// <returns>netmask corresponsing to prefix length.</returns>
+        internal static IPAddress PrefixLengthToSubnetMask(byte prefixLength, AddressFamily family)
+        {
+            Debug.Assert((0 <= prefixLength) && (prefixLength <= 126));
+            Debug.Assert((family == AddressFamily.InterNetwork) || (family == AddressFamily.InterNetworkV6));
+
+            Span<byte> addressBytes = (family == AddressFamily.InterNetwork) ?
+                stackalloc byte[4] :
+                stackalloc byte[16];
+            addressBytes.Clear();
+
+            Debug.Assert(prefixLength <= (addressBytes.Length * 8));
+
+            // Enable bits one at a time from left/high to right/low.
+            for (int bit = 0; bit < prefixLength; bit++)
+            {
+                addressBytes[bit / 8] |= (byte)(0x80 >> (bit % 8));
+            }
+
+            return new IPAddress(addressBytes);
         }
     }
 }
