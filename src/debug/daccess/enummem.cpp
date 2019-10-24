@@ -101,12 +101,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 // and people may have come to rely on this - so we'll include them for now.
                 else
                 if (
-                    // With Copy On Write feature enabled
-                    // IL images would not be dumped as part of the private pages.
-                    // We need to explicitly dump them here.
-#ifndef FEATURE_LAZY_COW_PAGES
                     file->GetPath().IsEmpty() && // is in-memory
-#endif // FEATURE_LAZY_COW_PAGES
                     file->HasMetadata() &&       // skip resource assemblies
                     file->IsLoaded(FALSE) &&     // skip files not yet loaded 
                     !file->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)

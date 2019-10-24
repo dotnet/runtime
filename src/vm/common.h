@@ -288,7 +288,6 @@ namespace Loader
 #include "log.h"
 #include "loaderheap.h"
 #include "fixuppointer.h"
-#include "lazycow.h"
 
 // src/vm
 #include "gcenv.interlocked.h"

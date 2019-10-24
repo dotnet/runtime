@@ -142,10 +142,7 @@ MethodDesc *MethodImpl::RestoreSlot(DWORD index, MethodTable *pMT)
 
     _ASSERTE(result != NULL);
 
-    // Don't worry about races since we would all be setting the same result
-    if (EnsureWritableExecutablePagesNoThrow(&pImplementedMD.GetValue()[index],
-                                             sizeof(pImplementedMD.GetValue()[index])))
-        pImplementedMD.GetValue()[index].SetValue(result);
+    pImplementedMD.GetValue()[index].SetValue(result);
 
     return result;
 }

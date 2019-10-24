@@ -900,7 +900,6 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-            EnsureWritableExecutablePages(pThunk, sizeof(INT64));
             FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);

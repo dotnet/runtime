@@ -213,8 +213,6 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
     // Avoid unnecessary writes - do not overwrite existing value
     if (*pElement == NULL)
     {
-        if (!EnsureWritablePagesNoThrow(pElement, sizeof (TYPE)))
-            return FALSE;
         SetValueAt(pElement, value, flags);
     }
     return TRUE;
@@ -247,7 +245,6 @@ void LookupMap<TYPE>::AddElement(Module * pModule, DWORD rid, TYPE value, TADDR 
     // Avoid unnecessary writes - do not overwrite existing value
     if (*pElement == NULL)
     {
-        EnsureWritablePages(pElement, sizeof (TYPE));
         SetValueAt(pElement, value, flags);
     }
 }
@@ -278,8 +275,6 @@ void LookupMap<TYPE>::EnsureElementCanBeStored(Module * pModule, DWORD rid)
     PTR_TADDR pElement = GetElementPtr(rid);
     if (pElement == NULL)
         GrowMap(pModule, rid);
-
-    EnsureWritablePages(pElement, sizeof (TYPE));
 }
 
 #endif // DACCESS_COMPILE

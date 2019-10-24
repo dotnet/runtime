@@ -4471,7 +4471,6 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
     }
     else
     {
-        EnsureWritablePages(&pNMD->ndirect);
         pNMD->ndirect.m_pszLibName.SetValueMaybeNull(szLibName);
         pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(szEntryPointName);
     }
@@ -5571,7 +5570,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
     }
 
     if (ppStubMD != NULL)
-        *EnsureWritablePages(ppStubMD) = pStubMD;
+        *ppStubMD = pStubMD;
 
     RETURN pStub;
 }
@@ -5668,7 +5667,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     NDirectWriteableData* pWriteableData = GetWriteableData();
-    EnsureWritablePages(pWriteableData);
     g_IBCLogger.LogNDirectCodeAccess(this);
     pWriteableData->m_pNDirectTarget = pTarget;
 }

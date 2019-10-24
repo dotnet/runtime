@@ -220,8 +220,8 @@ DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
                         memcpy(pResultSignature, pNewSig, cbNewSig);
                     }
 
-                    *EnsureWritablePages(&(pDictLayout->m_slots[iSlot].m_signature)) = pResultSignature;
-                    *EnsureWritablePages(&(pDictLayout->m_slots[iSlot].m_signatureSource)) = signatureSource;
+                    pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
+                    pDictLayout->m_slots[iSlot].m_signatureSource = signatureSource;
                 }
 
                 pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
@@ -244,7 +244,7 @@ DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
         // orphaning a bucket in a race. We leak the loser in such a race (since the allocation comes from the loader heap) but both
         // the race and the overflow should be very rare.
         if (pDictLayout->m_pNext == NULL)
-            FastInterlockCompareExchangePointer(EnsureWritablePages(&(pDictLayout->m_pNext)), Allocate(4, pAllocator, NULL), 0);
+            FastInterlockCompareExchangePointer(&pDictLayout->m_pNext, Allocate(4, pAllocator, NULL), 0);
 
         pDictLayout = pDictLayout->m_pNext;
         isFirstBucket = FALSE;
@@ -386,7 +386,7 @@ DictionaryLayout::Trim()
     // Trim down the size to what's actually used
     DWORD dwSlots = pDictLayout->GetNumUsedSlots();
     _ASSERTE(FitsIn<WORD>(dwSlots));
-    *EnsureWritablePages(&pDictLayout->m_numSlots) = static_cast<WORD>(dwSlots);
+    pDictLayout->m_numSlots = static_cast<WORD>(dwSlots);
 
 }
 
@@ -1245,7 +1245,7 @@ Dictionary::PopulateEntry(
 
         if ((slotIndex != 0) && !IsCompilationProcess())
         {
-            *EnsureWritablePages(pDictionary->GetSlotAddr(0, slotIndex)) = result;
+            *(pDictionary->GetSlotAddr(0, slotIndex)) = result;
             *ppSlot = pDictionary->GetSlotAddr(0, slotIndex);
         }
     }

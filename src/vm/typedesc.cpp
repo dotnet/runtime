@@ -778,7 +778,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        EnsureWritablePages(this);
         if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
@@ -787,7 +786,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         if (OwnsTemplateMethodTable())
         {
             // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
-            EnsureWritablePages(GetTemplateMethodTableInternal()->GetWriteableDataForWrite())->m_hExposedClassObject = m_hExposedClassObject;
+            GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
         }
 
         // Log the TypeVarTypeDesc access
@@ -1005,7 +1004,6 @@ void TypeDesc::DoRestoreTypeKey()
     if (HasTypeParam())
     {
         ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-        EnsureWritablePages(pPTD);
 
         // Must have the same loader module, so not encoded
         CONSISTENCY_CHECK(!pPTD->m_Arg.IsEncodedFixup());
@@ -1013,10 +1011,6 @@ void TypeDesc::DoRestoreTypeKey()
 
         // Might live somewhere else e.g. Object[] is shared across all ref array types
         Module::RestoreMethodTablePointer(&(pPTD->m_TemplateMT), NULL, CLASS_LOAD_UNRESTORED);
-    }
-    else
-    {
-        EnsureWritablePages(this);
     }
 
     FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_UnrestoredTypeKey);
@@ -1257,7 +1251,7 @@ void TypeDesc::SetIsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     TypeHandle th = TypeHandle(this);
-    FastInterlockAnd(EnsureWritablePages(&m_typeAndFlags), ~TypeDesc::enum_flag_Unrestored);
+    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_Unrestored);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1415,8 +1409,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
 
     if (numConstraints == (DWORD) -1)
     {
-        EnsureWritablePages(this);
-
         IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
 
         HENUMInternalHolder hEnum(pInternalImport);
@@ -2215,7 +2207,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.      
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(EnsureWritablePages(&m_hExposedClassObject), hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }

@@ -73,7 +73,6 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
         {
             // We are going to write the m_pComPlusCallInfo field of the MethodDesc
             g_IBCLogger.LogMethodDescWriteAccess(pMD);
-            EnsureWritablePages(pCMD);
 
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
@@ -86,7 +85,6 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
 
     ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
     _ASSERTE(pComInfo != NULL);
-    EnsureWritablePages(pComInfo);
 
     BOOL fWinRTCtor = FALSE;
     BOOL fWinRTComposition = FALSE;
@@ -418,7 +416,7 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
         if (pComInfo->m_pILStub == NULL)
         {
             PCODE pCode = JitILStub(*ppStubMD);
-            InterlockedCompareExchangeT<PCODE>(EnsureWritablePages(pComInfo->GetAddrOfILStubField()), pCode, NULL);
+            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
         }
         else
         {

@@ -549,7 +549,6 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_rel32);
         rel32SetInterlocked(&m_rel32, GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
     }
 
@@ -562,7 +561,6 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_rel32);
         return rel32SetInterlocked(&m_rel32, target, expected, (MethodDesc*)GetMethodDesc());
     }
 };

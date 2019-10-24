@@ -2194,14 +2194,12 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            EnsureWritableExecutablePages(pThunk, sizeof(INT64));
             FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
 #elif  defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         // Patchup the thunk to point to the actual implementation of the cross module external method
-        EnsureWritableExecutablePages(&pThunk->m_pTarget);
         pThunk->m_pTarget = pCode;
 
         #if defined(_TARGET_ARM_)
@@ -2214,7 +2212,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
     else
     {
-        *EnsureWritableExecutablePages((TADDR *)pIndirection) = pCode;
+        *(TADDR *)pIndirection = pCode;
     }
 
     return pCode;
@@ -2492,7 +2490,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             else
             {
                 pCode = pMgr->GetVTableCallStub(slot);
-                *EnsureWritableExecutablePages((TADDR *)pIndirection) = pCode;
+                *(TADDR *)pIndirection = pCode;
             }
             _ASSERTE(pCode != NULL);
         }
@@ -2596,8 +2594,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_VIRTUAL_I
         }
 
         // Patch the thunk to the actual method body
-        if (EnsureWritableExecutablePagesNoThrow(&pThunk->m_pTarget, sizeof(pThunk->m_pTarget)))
-            pThunk->m_pTarget = pCode;
+        pThunk->m_pTarget = pCode;
     }
 #if defined(_TARGET_ARM_)
     // The target address should have the thumb bit set
@@ -3138,7 +3135,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != NULL)
             {
-                *EnsureWritableExecutablePages((TADDR *)pCell) = pHelper;
+                *(TADDR *)pCell = pHelper;
             }
 
 #ifdef _DEBUG
@@ -3243,7 +3240,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
         if (pHelper != NULL)
         {
-            *EnsureWritableExecutablePages((TADDR *)pCell) = pHelper;
+            *(TADDR *)pCell = pHelper;
         }
     }
 

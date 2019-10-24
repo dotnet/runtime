@@ -940,7 +940,6 @@ void PEFile::SetNativeImage(PEImage *image)
     m_nativeImage = image;
     m_nativeImage->AddRef();
     m_nativeImage->Load();
-    m_nativeImage->AllocateLazyCOWPages();
 
 #if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
     static ConfigDWORD configNGenReserveForJumpStubs;

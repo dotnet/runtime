@@ -1469,7 +1469,6 @@ void DomainAssembly::FindNativeImage()
         else
         {
             Module *  pNativeModule = pNativeImage->GetLoadedLayout()->GetPersistedModuleImage();
-            EnsureWritablePages(pNativeModule);
             PEFile ** ppNativeFile = (PEFile **) (PBYTE(pNativeModule) + Module::GetFileOffset());
 
             PEAssembly * pFile = (PEAssembly *)FastInterlockCompareExchangePointer((void **)ppNativeFile, (void *)GetFile(), (void *)NULL);

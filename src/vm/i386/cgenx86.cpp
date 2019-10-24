@@ -1408,8 +1408,7 @@ EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_V
             *(INT32 *)(&pNewValue[1]) = (INT32) pcRelOffset;
 
             _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-            if (EnsureWritableExecutablePagesNoThrow(pThunk, sizeof(INT64)))
-                FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
+            FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
