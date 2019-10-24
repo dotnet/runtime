@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build">
+﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp-Windows_NT;
