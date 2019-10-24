@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
@@ -169,6 +171,83 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return vector.As<T, ulong>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        public static Vector128<float> AsVector128(this Vector2 value)
+        {
+            return new Vector4(value, 0.0f, 0.0f).AsVector128();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        public static Vector128<float> AsVector128(this Vector3 value)
+        {
+            return new Vector4(value, 0.0f).AsVector128();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        public static Vector128<float> AsVector128(this Vector4 value)
+        {
+            return Unsafe.As<Vector4, Vector128<float>>(ref value);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector128{T}" />.</summary>
+        /// <typeparam name="T">The type of the vectors.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> AsVector128<T>(this Vector<T> value)
+            where T : struct
+        {
+            Debug.Assert(Vector<T>.Count >= Vector128<T>.Count);
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return Unsafe.As<Vector<T>, Vector128<T>>(ref value);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector2" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector2" />.</returns>
+        public static Vector2 AsVector2(this Vector128<float> value)
+        {
+            return Unsafe.As<Vector128<float>, Vector2>(ref value);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector3" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector3" />.</returns>
+        public static Vector3 AsVector3(this Vector128<float> value)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector4" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector4" />.</returns>
+        public static Vector4 AsVector4(this Vector128<float> value)
+        {
+            return Unsafe.As<Vector128<float>, Vector4>(ref value);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector{T}" />.</summary>
+        /// <typeparam name="T">The type of the vectors.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector<T> AsVector<T>(this Vector128<T> value)
+            where T : struct
+        {
+            Debug.Assert(Vector<T>.Count >= Vector128<T>.Count);
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            Vector<T> result = default;
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with all elements initialized to the specified value.</summary>

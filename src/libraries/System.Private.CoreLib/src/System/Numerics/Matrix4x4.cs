@@ -4,10 +4,8 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-#if HAS_INTRINSICS
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-#endif
 
 namespace System.Numerics
 {
@@ -1761,7 +1759,6 @@ namespace System.Numerics
         /// <returns>The transposed matrix.</returns>
         public static unsafe Matrix4x4 Transpose(Matrix4x4 matrix)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 var row1 = Sse.LoadVector128(&matrix.M11);
@@ -1781,7 +1778,7 @@ namespace System.Numerics
 
                 return matrix;
             }
-#endif
+
             Matrix4x4 result;
 
             result.M11 = matrix.M11;
@@ -1813,7 +1810,6 @@ namespace System.Numerics
         /// <returns>The interpolated matrix.</returns>
         public static unsafe Matrix4x4 Lerp(Matrix4x4 matrix1, Matrix4x4 matrix2, float amount)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 Vector128<float> amountVec = Vector128.Create(amount);
@@ -1823,7 +1819,7 @@ namespace System.Numerics
                 Sse.Store(&matrix1.M41, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M41), Sse.LoadVector128(&matrix2.M41), amountVec));
                 return matrix1;
             }
-#endif
+
             Matrix4x4 result;
 
             // First row
@@ -1899,7 +1895,6 @@ namespace System.Numerics
         /// <returns>The negated matrix.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 Vector128<float> zero = Vector128<float>.Zero;
@@ -1910,7 +1905,7 @@ namespace System.Numerics
 
                 return value;
             }
-#endif
+
             Matrix4x4 m;
 
             m.M11 = -value.M11;
@@ -1941,7 +1936,6 @@ namespace System.Numerics
         /// <returns>The resulting matrix.</returns>
         public static unsafe Matrix4x4 operator +(Matrix4x4 value1, Matrix4x4 value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Add(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
@@ -1950,7 +1944,7 @@ namespace System.Numerics
                 Sse.Store(&value1.M41, Sse.Add(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41)));
                 return value1;
             }
-#endif
+
             Matrix4x4 m;
 
             m.M11 = value1.M11 + value2.M11;
@@ -1981,7 +1975,6 @@ namespace System.Numerics
         /// <returns>The result of the subtraction.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value1, Matrix4x4 value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Subtract(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
@@ -1990,7 +1983,7 @@ namespace System.Numerics
                 Sse.Store(&value1.M41, Sse.Subtract(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41)));
                 return value1;
             }
-#endif
+
             Matrix4x4 m;
 
             m.M11 = value1.M11 - value2.M11;
@@ -2021,7 +2014,6 @@ namespace System.Numerics
         /// <returns>The result of the multiplication.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 var row = Sse.LoadVector128(&value1.M11);
@@ -2056,7 +2048,7 @@ namespace System.Numerics
                                     Sse.Multiply(Sse.Shuffle(row, row, 0xFF), Sse.LoadVector128(&value2.M41)))));
                 return value1;
             }
-#endif
+
             Matrix4x4 m;
 
             // First row
@@ -2094,7 +2086,6 @@ namespace System.Numerics
         /// <returns>The scaled matrix.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, float value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 Vector128<float> value2Vec = Vector128.Create(value2);
@@ -2104,7 +2095,7 @@ namespace System.Numerics
                 Sse.Store(&value1.M41, Sse.Multiply(Sse.LoadVector128(&value1.M41), value2Vec));
                 return value1;
             }
-#endif
+
             Matrix4x4 m;
 
             m.M11 = value1.M11 * value2;
@@ -2134,7 +2125,6 @@ namespace System.Numerics
         /// <returns>True if the given matrices are equal; False otherwise.</returns>
         public static unsafe bool operator ==(Matrix4x4 value1, Matrix4x4 value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 return
@@ -2143,7 +2133,7 @@ namespace System.Numerics
                     VectorMath.Equal(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) &&
                     VectorMath.Equal(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
             }
-#endif
+
             return (value1.M11 == value2.M11 && value1.M22 == value2.M22 && value1.M33 == value2.M33 && value1.M44 == value2.M44 && // Check diagonal element first for early out.
                     value1.M12 == value2.M12 && value1.M13 == value2.M13 && value1.M14 == value2.M14 && value1.M21 == value2.M21 &&
                     value1.M23 == value2.M23 && value1.M24 == value2.M24 && value1.M31 == value2.M31 && value1.M32 == value2.M32 &&
@@ -2158,7 +2148,6 @@ namespace System.Numerics
         /// <returns>True if the given matrices are not equal; False if they are equal.</returns>
         public static unsafe bool operator !=(Matrix4x4 value1, Matrix4x4 value2)
         {
-#if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
                 return
@@ -2167,7 +2156,7 @@ namespace System.Numerics
                     VectorMath.NotEqual(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) ||
                     VectorMath.NotEqual(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
             }
-#endif
+
             return (value1.M11 != value2.M11 || value1.M12 != value2.M12 || value1.M13 != value2.M13 || value1.M14 != value2.M14 ||
                     value1.M21 != value2.M21 || value1.M22 != value2.M22 || value1.M23 != value2.M23 || value1.M24 != value2.M24 ||
                     value1.M31 != value2.M31 || value1.M32 != value2.M32 || value1.M33 != value2.M33 || value1.M34 != value2.M34 ||
