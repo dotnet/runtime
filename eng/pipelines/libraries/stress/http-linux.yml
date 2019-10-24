@@ -1,0 +1,28 @@
+trigger: none
+
+pool:
+  name: Hosted Ubuntu 1604
+
+variables:
+  httpStressProject: src/System.Net.Http/tests/StressTests/HttpStress
+  sdkBaseImage: sdk-corefx-current
+  httpStressImage: httpstress
+
+steps:
+- checkout: self
+  clean: true
+  fetchDepth: 0
+  lfs: false
+
+- bash: |
+    docker build -t $(sdkBaseImage) -f $(Build.SourcesDirectory)/$(HttpStressProject)/corefx.Dockerfile .
+  displayName: Build Corefx
+
+- bash: |
+    cd '$(Build.SourcesDirectory)/$(HttpStressProject)'
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) .
+  displayName: Build HttpStress
+
+- bash: |
+    docker run --rm -e HTTPSTRESS_ARGS='$(HTTPSTRESS_ARGS)' $(httpStressImage)
+  displayName: Run HttpStress

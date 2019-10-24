@@ -30,12 +30,8 @@ PS> .\build.sh -c Release
 # Load the testhost sdk in the current environment, must match build configuration
 PS> . .\src\System.Net.Http\tests\StressTests\HttpStress\load-corefx-testhost.ps1 -c Release
 # run the stress suite with the new bits
-PS> cd .\src\System.Net.Http\tests\StressTests\HttpStress ; dotnet run --runtime win10-x64 
+PS> cd .\src\System.Net.Http\tests\StressTests\HttpStress ; dotnet run -c Release -- <stress args>
 ```
-
-Note that the `--runtime` argument is necessary because `testhost` 
-does not bundle the required aspnetcore runtime dependencies.
-This will force the sdk to install the relevant native bits from nuget.
 
 Equivalently using bash on linux:
 
@@ -45,5 +41,5 @@ $ ./build.sh -c Release
 # Load the testhost sdk in the current environment, must match build configuration
 $ source src/System.Net.Http/tests/StressTests/HttpStress/load-corefx-testhost.sh -c Release
 # run the stress suite with the new bits
-$ cd src/System.Net.Http/tests/StressTests/HttpStress && dotnet run -r linux-x64 
+$ cd src/System.Net.Http/tests/StressTests/HttpStress && dotnet run -- <stress args>
 ```
