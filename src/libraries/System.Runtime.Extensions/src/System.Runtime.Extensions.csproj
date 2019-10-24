@@ -13,7 +13,7 @@
     <Compile Include="System\ApplicationId.cs" />
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\Context.cs" />
-    <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\LoaderOptimization.cs" />
     <Compile Include="System\LoaderOptimizationAttribute.cs" />
     <Compile Include="System\IO\StringReader.cs" />
@@ -56,7 +56,7 @@
   <!-- WINDOWS: Shared CoreCLR -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
-    <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
       <Link>Common\CoreLib\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -112,7 +112,7 @@
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Unix.cs" />
-    <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
