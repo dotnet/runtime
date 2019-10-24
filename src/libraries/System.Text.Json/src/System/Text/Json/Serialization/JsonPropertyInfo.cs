@@ -366,6 +366,11 @@ namespace System.Text.Json
             JsonClassInfo elementClassInfo = ElementClassInfo;
             if (elementClassInfo != null && (propertyInfo = elementClassInfo.PolicyProperty) != null)
             {
+                if (!state.Current.CollectionPropertyInitialized)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(propertyInfo.RuntimePropertyType);
+                }
+
                 // Forward the setter to the value-based JsonPropertyInfo.
                 propertyInfo.ReadEnumerable(tokenType, ref state, ref reader);
             }

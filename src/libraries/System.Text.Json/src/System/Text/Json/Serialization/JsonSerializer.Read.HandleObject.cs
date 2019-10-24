@@ -52,6 +52,8 @@ namespace System.Text.Json
                     state.Current.ReturnValue = value;
                     state.Current.DetermineIfDictionaryCanBePopulated(state.Current.ReturnValue);
                 }
+
+                state.Current.CollectionPropertyInitialized = true;
             }
             else
             {
@@ -63,6 +65,12 @@ namespace System.Text.Json
         {
             // Only allow dictionaries to be processed here if this is the DataExtensionProperty.
             Debug.Assert(!state.Current.IsProcessingDictionary() || state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo);
+
+            if (state.Current.JsonClassInfo.ClassType == ClassType.Value)
+            {
+                // We should be in a converter, thus we must have bad JSON.
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo.RuntimePropertyType);
+            }
 
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
