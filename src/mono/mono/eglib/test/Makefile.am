@@ -1,6 +1,6 @@
 include $(top_srcdir)/mk/common.mk
 
-EXTRA_DIST = UTF-8.txt UTF-16BE.txt UTF-16LE.txt UTF-32BE.txt UTF-32LE.txt
+EXTRA_DIST = UTF-8.txt UTF-16BE.txt UTF-16LE.txt UTF-32BE.txt UTF-32LE.txt test-eglib.exp
 
 SOURCES = \
 	enum.cpp	\
@@ -37,6 +37,10 @@ test_eglib_SOURCES = $(SOURCES)
 GLIB_TEST_FLAGS_COMMON = -Wall -DEGLIB_TESTS=1 -D_FORTIFY_SOURCE=2 -I$(srcdir)/.. -I.. -DDRIVER_NAME=\"EGlib\"
 CFLAGS += $(GLIB_TEST_FLAGS_COMMON)
 CXXFLAGS += $(GLIB_TEST_FLAGS_COMMON) @CXXFLAGS_COMMON@
+if HOST_AIX
+# This export file is required so test symbols are visible.
+LDFLAGS += -Wl,-bE:test-eglib.exp
+endif
 
 test_eglib_LDADD = ../libeglib.la $(LTLIBICONV)
 assertf_LDADD = ../libeglib.la $(LTLIBICONV)

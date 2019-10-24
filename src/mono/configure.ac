@@ -473,6 +473,8 @@ case "$host" in
 		mono_cv_clang=no
 		;;
 	*-*-aix*|*-*-os400*)
+		AC_DEFINE(HOST_AIX,1,[Targeting the AIX and PASE platforms])
+		host_aix=yes
 		dnl IMPORTANT: For svr4 sonames on AIX, you should set
 		dnl `OBJECT_MODE=64` when configuring.
 		dnl libtool cannot generate functioning svr4 sonames on
@@ -576,6 +578,7 @@ AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
 AM_CONDITIONAL(HOST_TIZEN, test x$platform_tizen = xyes)
 AM_CONDITIONAL(HOST_IOS, test x$platform_ios = xyes)
 AM_CONDITIONAL(HOST_WASM, test x$platform_wasm = xyes)
+AM_CONDITIONAL(HOST_AIX, test x$host_aix = xyes)
 
 if test -z "$HOST_DARWIN_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.dylib

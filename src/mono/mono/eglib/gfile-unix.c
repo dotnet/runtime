@@ -55,8 +55,26 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 
 	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
+#if !defined(__PASE__)
 		if (access (filename, X_OK) == 0)
 			return TRUE;
+#else
+		/*
+		 * PASE always returns true for X_OK; contrary to how AIX
+		 * behaves (but *does* correspond to how it's documented!).
+		 * This behaviour is also consistent with the ILE, so it's
+		 * probably just an upcall returning the same results. As
+		 * such, workaround it.
+		 */
+		if (!have_stat)
+			have_stat = (stat (filename, &st) == 0);
+		/* Hairy parens, but just manually try all permission bits */
+		if (have_stat && (
+			((st.st_mode & S_IXOTH)
+				|| ((st.st_mode & S_IXUSR) && (st.st_uid == getuid()))
+				|| ((st.st_mode & S_IXGRP) && (st.st_gid == getgid())))))
+			return TRUE;
+#endif
 	}
 #ifdef HAVE_LSTAT
 	if ((test & G_FILE_TEST_IS_SYMLINK) != 0) {

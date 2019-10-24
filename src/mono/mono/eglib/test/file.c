@@ -22,6 +22,9 @@ test_file_get_contents (void)
 	gsize length;
 #ifdef G_OS_WIN32
 	const gchar *filename = "c:\\Windows\\system.ini";
+#elif defined(__PASE__)
+	/* Most etc files don't exist in PASE. Try one that should exist. */
+	const gchar *filename = "/etc/magic";
 #else
 	const gchar *filename = "/etc/hosts";
 #endif
