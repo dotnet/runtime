@@ -1238,12 +1238,6 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
                                                         bool  &isNGEN,
                                                         IStringHolder* pStrFilename)
 {
-#if !defined(FEATURE_PREJIT)
-
-    return false;
-
-#else // defined(FEATURE_PREJIT)
-
     DD_ENTER_MAY_THROW;
 
     DWORD dwDataSize;
@@ -1266,7 +1260,6 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
 
     pStrFilename->AssignCopy(wszFilePath);
     return ret;
-#endif // !defined(FEATURE_PREJIT)
 }
 
 
