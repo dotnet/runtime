@@ -2550,7 +2550,6 @@ namespace System.Threading.Tasks
             // If we're unable to because the task has already completed, queue it.
             if (!AddTaskContinuation(stateMachineBox, addBeforeOthers: false))
             {
-                Debug.Assert(stateMachineBox is Task, "Every state machine box should derive from Task");
                 ThreadPool.UnsafeQueueUserWorkItemInternal(stateMachineBox, preferLocal: true);
             }
         }
