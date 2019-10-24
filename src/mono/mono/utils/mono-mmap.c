@@ -22,9 +22,7 @@
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>

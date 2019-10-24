@@ -12,10 +12,7 @@
 
 #ifdef HOST_WIN32
 #include <windows.h>
-/* use SIG* defines if possible */
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 
 #if !defined(_MSC_VER)
 /* sigcontext surrogate */
@@ -26,7 +23,7 @@ struct sigcontext {
 	guint64 edx;
 	guint64 ebp;
 	guint64 esp;
-    guint64 esi;
+	guint64 esi;
 	guint64 edi;
 	guint64 eip;
 };

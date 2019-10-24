@@ -12,9 +12,7 @@
  */
 
 #include <config.h>
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 #if HAVE_SCHED_SETAFFINITY
 #include <sched.h>
 #endif

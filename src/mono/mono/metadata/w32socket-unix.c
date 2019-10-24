@@ -42,9 +42,7 @@
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>    /* defines SIOCATMARK */
 #endif
-#ifndef HAVE_MSG_NOSIGNAL
 #include <signal.h>
-#endif
 #ifdef HAVE_SYS_SENDFILE_H
 #include <sys/sendfile.h>
 #endif

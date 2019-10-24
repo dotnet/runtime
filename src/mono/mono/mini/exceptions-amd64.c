@@ -20,10 +20,7 @@
 
 #include <glib.h>
 #include <string.h>
-
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
 #endif

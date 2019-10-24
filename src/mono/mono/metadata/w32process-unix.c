@@ -22,9 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 #include <sys/time.h>
 #include <fcntl.h>
 #ifdef HAVE_SYS_PARAM_H

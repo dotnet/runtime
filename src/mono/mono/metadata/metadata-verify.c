@@ -32,7 +32,6 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/bsearch.h>
 #include <string.h>
-//#include <signal.h>
 #include <ctype.h>
 
 #ifndef DISABLE_VERIFIER

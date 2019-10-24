@@ -14,10 +14,7 @@
 #include "mono-compiler.h"
 #include "mono-sigcontext.h"
 #include "mono-machine.h"
-
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 
 #define MONO_CONTEXT_OFFSET(field, index, field_type) \
     "i" (offsetof (MonoContext, field) + (index) * sizeof (field_type))

@@ -18,9 +18,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 
 #if defined(TARGET_X86)
 

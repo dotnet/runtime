@@ -2361,21 +2361,6 @@ if test x$host_win32 = xno; then
 			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
 	esac
 
-	dnl *******************************
-	dnl *** Checks for MSG_NOSIGNAL ***
-	dnl *******************************
-	AC_MSG_CHECKING(for MSG_NOSIGNAL)
-	AC_TRY_COMPILE([#include <sys/socket.h>], [
-		int f = MSG_NOSIGNAL;
-	], [
-		# Yes, we have it...
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_MSG_NOSIGNAL, 1, [Have MSG_NOSIGNAL])
-	], [
-		# We'll have to use signals
-		AC_MSG_RESULT(no)
-	])
-
 	dnl *****************************
 	dnl *** Checks for IPPROTO_IP ***
 	dnl *****************************

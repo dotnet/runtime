@@ -11,10 +11,7 @@
 
 #ifdef HOST_WIN32
 #include <windows.h>
-/* use SIG* defines if possible */
-#ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
 
 typedef void MONO_SIG_HANDLER_SIGNATURE ((*MonoW32ExceptionHandler));
 
