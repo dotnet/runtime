@@ -12,9 +12,9 @@ namespace System.Net.NetworkInformation
         protected string _name;
         protected int _index = -1;
         protected NetworkInterfaceType _networkInterfaceType = NetworkInterfaceType.Unknown;
-        protected PhysicalAddress _physicalAddress = PhysicalAddress.None;
-        protected List<IPAddress> _addresses = new List<IPAddress>();
-        protected Dictionary<IPAddress, IPAddress> _netMasks = new Dictionary<IPAddress, IPAddress>();
+        internal PhysicalAddress _physicalAddress = PhysicalAddress.None;
+        internal List<UnixUnicastIPAddressInformation> _unicastAddresses = new List<UnixUnicastIPAddressInformation>();
+        internal List<IPAddress> _multicastAddresses;
         // If this is an ipv6 device, contains the Scope ID.
         protected uint? _ipv6ScopeId = null;
 
@@ -29,7 +29,7 @@ namespace System.Net.NetworkInformation
 
         public sealed override string Description { get { return _name; } }
 
-        public sealed override NetworkInterfaceType NetworkInterfaceType { get { return _networkInterfaceType; } }
+        public override NetworkInterfaceType NetworkInterfaceType { get { return _networkInterfaceType; } }
 
         public sealed override PhysicalAddress GetPhysicalAddress() { return _physicalAddress; }
 
@@ -39,9 +39,9 @@ namespace System.Net.NetworkInformation
                 Sockets.AddressFamily.InterNetwork :
                 Sockets.AddressFamily.InterNetworkV6;
 
-            foreach (IPAddress addr in _addresses)
+            foreach (UnixUnicastIPAddressInformation addr in _unicastAddresses)
             {
-                if (addr.AddressFamily == family)
+                if (addr.Address.AddressFamily == family)
                 {
                     return true;
                 }
@@ -56,28 +56,38 @@ namespace System.Net.NetworkInformation
         public int Index { get { return _index; } }
 
         /// <summary>
-        /// Returns a list of all of the interface's IP Addresses.
+        /// Returns a list of all Unicast addresses of the interface's IP Addresses.
         /// </summary>
-        public List<IPAddress> Addresses { get { return _addresses; } }
+        public List<UnixUnicastIPAddressInformation> UnicastAddress { get { return _unicastAddresses; } }
+
+        /// <summary>
+        /// Returns a list of all Unicast addresses of the interface's IP Addresses.
+        /// </summary>
+        public List<IPAddress> MulticastAddresess { get { return _multicastAddresses; } }
 
         // Adds any IPAddress to this interface's List of addresses.
-        protected void AddAddress(IPAddress ipAddress)
+        protected void AddAddress(IPAddress ipAddress, int prefix)
         {
-            _addresses.Add(ipAddress);
+            if (IPAddressUtil.IsMulticast(ipAddress))
+            {
+                if (_multicastAddresses == null)
+                {
+                    // Deferred initialization.
+                    _multicastAddresses = new List<IPAddress>();
+                }
+
+                _multicastAddresses.Add(ipAddress);
+            }
+            else
+            {
+                _unicastAddresses.Add(new UnixUnicastIPAddressInformation(ipAddress, prefix));
+            }
         }
 
-        public IPAddress GetNetMaskForIPv4Address(IPAddress address)
-        {
-            Debug.Assert(address.AddressFamily == Sockets.AddressFamily.InterNetwork);
-            return _netMasks[address];
-        }
-
-        protected unsafe void ProcessIpv4Address(Interop.Sys.IpAddressInfo* addressInfo, Interop.Sys.IpAddressInfo* netMask)
+        protected unsafe void ProcessIpv4Address(Interop.Sys.IpAddressInfo* addressInfo)
         {
             IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(addressInfo);
-            IPAddress netMaskAddress = IPAddressUtil.GetIPAddressFromNativeInfo(netMask);
-            AddAddress(ipAddress);
-            _netMasks[ipAddress] = netMaskAddress;
+            AddAddress(ipAddress, addressInfo->PrefixLength);
             _index = addressInfo->InterfaceIndex;
         }
 
@@ -85,7 +95,7 @@ namespace System.Net.NetworkInformation
         {
             IPAddress address = IPAddressUtil.GetIPAddressFromNativeInfo(addressInfo);
             address.ScopeId = scopeId;
-            AddAddress(address);
+            AddAddress(address, addressInfo->PrefixLength);
             _ipv6ScopeId = scopeId;
             _index = addressInfo->InterfaceIndex;
         }

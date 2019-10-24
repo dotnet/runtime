@@ -41,13 +41,12 @@ namespace System.Net.NetworkInformation
             UnicastIPAddressInformationCollection collection = new UnicastIPAddressInformationCollection();
 
             Interop.Sys.EnumerateInterfaceAddresses(
-                (name, ipAddressInfo, netmaskInfo) =>
+                (name, ipAddressInfo) =>
                 {
                     IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(ipAddressInfo);
                     if (!IPAddressUtil.IsMulticast(ipAddress))
                     {
-                        IPAddress netMaskAddress = IPAddressUtil.GetIPAddressFromNativeInfo(netmaskInfo);
-                        collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, netMaskAddress));
+                        collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddressInfo->PrefixLength));
                     }
                 },
                 (name, ipAddressInfo, scopeId) =>
@@ -55,7 +54,7 @@ namespace System.Net.NetworkInformation
                     IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(ipAddressInfo);
                     if (!IPAddressUtil.IsMulticast(ipAddress))
                     {
-                        collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, IPAddress.Any));
+                        collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddressInfo->PrefixLength));
                     }
                 },
                 // Ignore link-layer addresses that are discovered; don't create a callback.

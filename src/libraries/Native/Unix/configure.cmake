@@ -354,6 +354,10 @@ check_include_files(
      HAVE_SYS_SOCKIO_H)
 
 check_include_files(
+     "linux/ethtool.h"
+     HAVE_ETHTOOL_H)
+
+check_include_files(
      "sys/poll.h"
      HAVE_SYS_POLL_H)
 

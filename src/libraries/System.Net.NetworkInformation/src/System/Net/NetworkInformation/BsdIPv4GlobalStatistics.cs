@@ -52,7 +52,7 @@ namespace System.Net.NetworkInformation
             HashSet<string> interfaceSet = new HashSet<string>();
             int numIPAddresses = 0;
             Interop.Sys.EnumerateInterfaceAddresses(
-                (name, addressInfo, netmaskInfo) =>
+                (name, addressInfo) =>
                 {
                     interfaceSet.Add(name);
                     numIPAddresses++;

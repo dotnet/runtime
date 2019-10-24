@@ -47,12 +47,12 @@ namespace System.Net.NetworkInformation
                 // to propogate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
-                    (name, ipAddr, maskAddr) =>
+                    (name, ipAddr) =>
                     {
                         try
                         {
                             BsdNetworkInterface oni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
-                            oni.ProcessIpv4Address(ipAddr, maskAddr);
+                            oni.ProcessIpv4Address(ipAddr);
                         }
                         catch (Exception e)
                         {

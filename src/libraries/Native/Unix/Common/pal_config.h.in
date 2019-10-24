@@ -41,6 +41,7 @@
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_SYS_SOCKIO_H
+#cmakedefine01 HAVE_ETHTOOL_H
 #cmakedefine01 HAVE_SYS_POLL_H
 #cmakedefine01 HAVE_SYS_INOTIFY_H
 #cmakedefine01 HAVE_EPOLL

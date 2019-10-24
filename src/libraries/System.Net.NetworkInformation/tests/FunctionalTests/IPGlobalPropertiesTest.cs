@@ -22,9 +22,9 @@ namespace System.Net.NetworkInformation.Tests
             new object[] { IPAddress.IPv6Loopback },
         };
 
-        public IPGlobalPropertiesTest()
+        public IPGlobalPropertiesTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]

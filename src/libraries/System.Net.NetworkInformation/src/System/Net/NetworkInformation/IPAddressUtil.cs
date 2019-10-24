@@ -33,12 +33,7 @@ namespace System.Net.NetworkInformation
         /// <returns>A new IPAddress created with the information in the native structure.</returns>
         public static unsafe IPAddress GetIPAddressFromNativeInfo(Interop.Sys.IpAddressInfo* addressInfo)
         {
-            byte[] ipBytes = new byte[addressInfo->NumAddressBytes];
-            fixed (byte* ipArrayPtr = ipBytes)
-            {
-                Buffer.MemoryCopy(addressInfo->AddressBytes, ipArrayPtr, ipBytes.Length, ipBytes.Length);
-            }
-            IPAddress ipAddress = new IPAddress(ipBytes);
+            IPAddress ipAddress = new IPAddress(new ReadOnlySpan<byte>(addressInfo->AddressBytes, addressInfo->NumAddressBytes));
             return ipAddress;
         }
     }
