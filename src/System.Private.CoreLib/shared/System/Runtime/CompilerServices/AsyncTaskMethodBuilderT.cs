@@ -395,7 +395,7 @@ namespace System.Runtime.CompilerServices
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
             // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
-            return new AsyncStateMachineBox<IAsyncStateMachine>());
+            return new AsyncStateMachineBox<IAsyncStateMachine>();
 #else
             return AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
