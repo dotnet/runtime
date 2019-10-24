@@ -771,6 +771,95 @@ namespace System.Diagnostics.Tests
                 }
             }).Dispose();
         }
+
+        [Fact]
+        public void ActivityObjectsAreInspectable()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticListener = new DiagnosticListener("MySource"))
+                {
+                    string activityProps =
+                        "-DummyProp" +
+                        ";ActivityId=*Activity.Id" +
+                        ";ActivityStartTime=*Activity.StartTimeUtc.Ticks" +
+                        ";ActivityDuration=*Activity.Duration.Ticks" +
+                        ";ActivityOperationName=*Activity.OperationName" +
+                        ";ActivityIdFormat=*Activity.IdFormat" +
+                        ";ActivityParentId=*Activity.ParentId" +
+                        ";ActivityTags=*Activity.Tags.*Enumerate" +
+                        ";ActivityTraceId=*Activity.TraceId" +
+                        ";ActivitySpanId=*Activity.SpanId" +
+                        ";ActivityTraceStateString=*Activity.TraceStateString" +
+                        ";ActivityParentSpanId=*Activity.ParentSpanId";
+                    eventListener.Enable(
+                        "MySource/TestActivity1.Start@Activity1Start:" + activityProps + "\r\n" +
+                        "MySource/TestActivity1.Stop@Activity1Stop:" + activityProps + "\r\n" +
+                        "MySource/TestActivity2.Start@Activity2Start:" + activityProps + "\r\n" +
+                        "MySource/TestActivity2.Stop@Activity2Stop:" + activityProps + "\r\n"
+                        );
+
+                    Activity activity1 = new Activity("TestActivity1");
+                    activity1.SetIdFormat(ActivityIdFormat.W3C);
+                    activity1.TraceStateString = "hi_there";
+                    activity1.AddTag("one", "1");
+                    activity1.AddTag("two", "2");
+
+                    diagnosticListener.StartActivity(activity1, new { DummyProp = "val" });
+                    Assert.Equal(1, eventListener.EventCount);
+                    AssertActivityMatchesEvent(activity1, eventListener.LastEvent, isStart: true);
+                    
+                    Activity activity2 = new Activity("TestActivity2");
+                    diagnosticListener.StartActivity(activity2, new { DummyProp = "val" });
+                    Assert.Equal(2, eventListener.EventCount);
+                    AssertActivityMatchesEvent(activity2, eventListener.LastEvent, isStart: true);
+
+                    diagnosticListener.StopActivity(activity2, new { DummyProp = "val" });
+                    Assert.Equal(3, eventListener.EventCount);
+                    AssertActivityMatchesEvent(activity2, eventListener.LastEvent, isStart: false);
+
+                    diagnosticListener.StopActivity(activity1, new { DummyProp = "val" });
+                    Assert.Equal(4, eventListener.EventCount);
+                    AssertActivityMatchesEvent(activity1, eventListener.LastEvent, isStart: false);
+
+                }
+            }).Dispose();
+        }
+
+        private void AssertActivityMatchesEvent(Activity a, DiagnosticSourceEvent e, bool isStart)
+        {
+            Assert.Equal("MySource", e.SourceName);
+            Assert.Equal(a.OperationName + (isStart ? ".Start" : ".Stop"), e.EventName);
+            Assert.Equal("val", e.Arguments["DummyProp"]);
+            Assert.Equal(a.Id, e.Arguments["ActivityId"]);
+            Assert.Equal(a.StartTimeUtc.Ticks.ToString(), e.Arguments["ActivityStartTime"]);
+            if (!isStart)
+            {
+                Assert.Equal(a.Duration.Ticks.ToString(), e.Arguments["ActivityDuration"]);
+            }
+            Assert.Equal(a.OperationName, e.Arguments["ActivityOperationName"]);
+            if (a.ParentId == null)
+            {
+                Assert.True(!e.Arguments.ContainsKey("ActivityParentId"));
+            }
+            else
+            {
+                Assert.Equal(a.ParentId, e.Arguments["ActivityParentId"]);
+            }
+            Assert.Equal(a.IdFormat.ToString(), e.Arguments["ActivityIdFormat"]);
+            if (a.IdFormat == ActivityIdFormat.W3C)
+            {
+                Assert.Equal(a.TraceId.ToString(), e.Arguments["ActivityTraceId"]);
+                Assert.Equal(a.SpanId.ToString(), e.Arguments["ActivitySpanId"]);
+                Assert.Equal(a.TraceStateString, e.Arguments["ActivityTraceStateString"]);
+                if(a.ParentSpanId != default)
+                {
+                    Assert.Equal(a.ParentSpanId.ToString(), e.Arguments["ActivityParentSpanId"]);
+                }
+            }
+            Assert.Equal(string.Join(',', a.Tags), e.Arguments["ActivityTags"]);
+        }
     }
 
     /****************************************************************************/

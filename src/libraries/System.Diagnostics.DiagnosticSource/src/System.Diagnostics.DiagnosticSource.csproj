@@ -10,6 +10,8 @@
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' OR '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
