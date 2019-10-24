@@ -1379,7 +1379,7 @@ public:
     inline void SetHasNoGuid()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages(&m_VMFlags), VMFLAG_NO_GUID);
+        FastInterlockOr(&m_VMFlags, VMFLAG_NO_GUID);
     }
 
 public:
@@ -1647,7 +1647,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        EnsureWritablePages(&m_pGuidInfo)->SetValueMaybeNull(pGuidInfo);
+        m_pGuidInfo.SetValueMaybeNull(pGuidInfo);
         #endif // DACCESS_COMPILE
     }
 
@@ -1710,7 +1710,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        *EnsureWritablePages(&GetOptionalFields()->m_pCoClassForIntf) = th;
+        GetOptionalFields()->m_pCoClassForIntf = th;
     }
 
     inline WinMDAdapter::RedirectedTypeIndex GetWinRTRedirectedTypeIndex()
@@ -1766,7 +1766,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(IsInterface());
-        EnsureWritablePages(this);
         m_ComInterfaceType = ItfType;
     }
 
@@ -1778,7 +1777,7 @@ public:
     inline BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
     {
         WRAPPER_NO_CONTRACT;
-        return (InterlockedCompareExchangeT(EnsureWritablePages(&m_pccwTemplate), pTemplate, NULL) == NULL);
+        return (InterlockedCompareExchangeT(&m_pccwTemplate, pTemplate, NULL) == NULL);
     }
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -1791,7 +1790,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        return (InterlockedCompareExchangeT(EnsureWritablePages(&GetOptionalFields()->m_pClassFactory), pFactory, NULL) == NULL);
+        return (InterlockedCompareExchangeT(&GetOptionalFields()->m_pClassFactory, pFactory, NULL) == NULL);
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP

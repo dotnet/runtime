@@ -569,7 +569,7 @@ void MethodTable::SetIsRestored()
         
     PRECONDITION(!IsFullyLoaded());
 
-    FastInterlockAnd(EnsureWritablePages(&(GetWriteableDataForWrite()->m_dwFlags)), ~MethodTableWriteableData::enum_flag_Unrestored);
+    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -685,7 +685,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         if (!pItfMT->HasInstantiation())
         {
             // m_pMethodTable.SetValue() is not used here since we want to update the indirection cell
-            *EnsureWritablePages(m_pMethodTable.GetValuePtr()) = pItfMT;
+            *m_pMethodTable.GetValuePtr() = pItfMT;
         }
 
         return pItfMT;
@@ -1189,7 +1189,6 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     *(((DWORD_PTR *)pNewItfMap) - 1) = NumDynAddedInterfaces + 1;
 
     // Switch the old interface map with the new one.
-    EnsureWritablePages(&m_pInterfaceMap);
     m_pInterfaceMap.SetValueVolatile(pNewItfMap);
 
     // Log the fact that we leaked the interface vtable map.
@@ -3856,7 +3855,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         // Only the winner can set m_ExposedClassObject from NULL.
         LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&(EnsureWritablePages(GetWriteableDataForWrite())->m_hExposedClassObject), exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        if (FastInterlockCompareExchangePointer(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
         }
@@ -5886,7 +5885,7 @@ void MethodTable::DoRestoreTypeKey()
         Module::RestoreTypeHandlePointer(&inst.GetRawArgs()[j], GetLoaderModule(), CLASS_LOAD_UNRESTORED);
     }
 
-    FastInterlockAnd(&(EnsureWritablePages(GetWriteableDataForWrite())->m_dwFlags), ~MethodTableWriteableData::enum_flag_UnrestoredTypeKey);
+    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_UnrestoredTypeKey);
 }
 
 //==========================================================================================
@@ -5962,8 +5961,6 @@ void MethodTable::Restore()
     {
         MethodTableWriteableData * pWriteableData = GetWriteableDataForWrite();
         CrossModuleGenericsStaticsInfo * pInfo = pWriteableData->GetCrossModuleGenericsStaticsInfo();
-
-        EnsureWritablePages(pWriteableData, sizeof(MethodTableWriteableData) + sizeof(CrossModuleGenericsStaticsInfo));
 
         pInfo->m_pModuleForStatics = GetLoaderModule();
     }
@@ -9137,7 +9134,7 @@ void MethodTable::SetGuidInfo(GuidInfo* pGuidInfo)
 #ifdef FEATURE_COMINTEROP
     if (HasGuidInfo())
     {
-        *EnsureWritablePages(GetGuidInfoPtr()) = pGuidInfo;
+        *GetGuidInfoPtr() = pGuidInfo;
         return;
     }
 #endif // FEATURE_COMINTEROP
@@ -9183,18 +9180,6 @@ RCWPerTypeData *MethodTable::CreateRCWPerTypeData(bool bThrowOnOOM)
     _ASSERTE(pData->m_dwFlags == 0);
 
     RCWPerTypeData **pDataPtr = GetRCWPerTypeDataPtr();
-
-    if (bThrowOnOOM)
-    {
-        EnsureWritablePages(pDataPtr);
-    }
-    else
-    {
-        if (!EnsureWritablePagesNoThrow(pDataPtr, sizeof(*pDataPtr)))
-        {
-            return NULL;
-        }
-    }
 
     if (InterlockedCompareExchangeT(pDataPtr, pData, NULL) == NULL)
     {
@@ -9922,10 +9907,7 @@ BOOL MethodTable::Validate()
     }
     
 #ifdef _DEBUG    
-    // It is not a fatal error to fail the update the counter. We will run slower and retry next time, 
-    // but the system will function properly.
-    if (EnsureWritablePagesNoThrow(pWriteableData, sizeof(MethodTableWriteableData)))
-        pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;
@@ -10106,8 +10088,8 @@ BOOL MethodTable::IsLayoutInCurrentVersionBubble()
     {
         MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
         if (ComputeIsLayoutInCurrentVersionBubble(this))
-            *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble;
-        *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed;
+            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble;
+        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed;
     }
 
     return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble) != 0;
@@ -10126,8 +10108,8 @@ BOOL MethodTable::IsLayoutFixedInCurrentVersionBubble()
     {
         MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
         if (ComputeIsLayoutFixedInCurrentVersionBubble(this))
-            *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed;
-        *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed;
+            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed;
+        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed;
     }
 
     return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed) != 0;

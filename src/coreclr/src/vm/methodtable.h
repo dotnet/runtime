@@ -431,7 +431,7 @@ public:
         CONTRACTL_END;
 
         if ((m_dwFlags & enum_flag_NGEN_OverridingInterface) != 0) return;
-        FastInterlockOr(EnsureWritablePages((ULONG *) &m_dwFlags), enum_flag_NGEN_OverridingInterface);
+        FastInterlockOr((ULONG *) &m_dwFlags, enum_flag_NGEN_OverridingInterface);
     }
 
     inline BOOL IsOverridingInterface() const
@@ -1076,7 +1076,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockAnd(EnsureWritablePages(&GetWriteableDataForWrite()->m_dwFlags), ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -1097,7 +1097,7 @@ public:
     inline void SetSkipWinRTOverride()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags), MethodTableWriteableData::enum_flag_SkipWinRTOverride);
+        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_SkipWinRTOverride);
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1114,7 +1114,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags),
+            FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -1132,7 +1132,7 @@ public:
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags), MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
     
     inline void SetIsDependenciesLoaded()
@@ -1148,7 +1148,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite()->m_dwFlags), MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        FastInterlockOr(&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()

@@ -261,11 +261,6 @@ ULONG PEImage::Release()
         }
     }
 
-#ifdef FEATURE_LAZY_COW_PAGES
-    if (result == 0 && m_bAllocatedLazyCOWPages)
-        ::FreeLazyCOWPages(GetLoadedLayout());
-#endif
-
     // This needs to be done outside of the hash lock, since this can call FreeLibrary,
     // which can cause _CorDllMain to be executed, which can cause the hash lock to be
     // taken again because we need to release the IJW fixup data in another PEImage hash.
@@ -932,9 +927,6 @@ PEImage::PEImage():
     m_dwPEKind(0),
     m_dwMachine(0),
     m_fCachedKindAndMachine(FALSE)
-#ifdef FEATURE_LAZY_COW_PAGES
-    ,m_bAllocatedLazyCOWPages(FALSE)
-#endif // FEATURE_LAZY_COW_PAGES
 {
     CONTRACTL
     {

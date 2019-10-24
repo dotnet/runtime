@@ -600,7 +600,6 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_pTarget);
         InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetPreStubEntryPoint());
     }
 
@@ -613,7 +612,6 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_pTarget);
         return (TADDR)InterlockedCompareExchange64(
             (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
@@ -726,7 +724,6 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_pTarget);
         InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
     }
 
@@ -739,7 +736,6 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_pTarget);
         return (TADDR)InterlockedCompareExchange64(
             (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
@@ -800,7 +796,6 @@ struct ThisPtrRetBufPrecode {
         }
         CONTRACTL_END;
 
-        EnsureWritableExecutablePages(&m_pTarget);
         return (TADDR)InterlockedCompareExchange64(
             (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }

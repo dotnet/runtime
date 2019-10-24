@@ -81,10 +81,6 @@ VALUE *NgenHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTrac
     }
     CONTRACTL_END;
 
-    // Faults are forbidden in BaseInsertEntry. Make the table writeable now that the faults are still allowed.
-    EnsureWritablePages(this);
-    EnsureWritablePages(this->GetWarmBuckets(), m_cWarmBuckets * sizeof(PTR_VolatileEntry));
-
     TaggedMemAllocPtr pMemory = GetHeap()->AllocMem(S_SIZE_T(sizeof(VolatileEntry)));
 
     VolatileEntry *pEntry;

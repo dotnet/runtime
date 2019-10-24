@@ -645,10 +645,10 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
         pTemp->InitStackArgumentSize();
 
-        InterlockedCompareExchangeT(EnsureWritablePages(&pClass->m_pComPlusCallInfo), pTemp, NULL);
+        InterlockedCompareExchangeT(&pClass->m_pComPlusCallInfo, pTemp, NULL);
     }
 
-    *EnsureWritablePages(&pClass->m_pComPlusCallInfo->m_pInterfaceMT) = pDelMT;
+    pClass->m_pComPlusCallInfo->m_pInterfaceMT = pDelMT;
 
     return pClass->m_pComPlusCallInfo;
 }
@@ -696,8 +696,6 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     }
 
     g_IBCLogger.LogEEClassCOWTableAccess(pDelMT);
-
-    EnsureWritablePages(pClass);
 
     if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg()) 
     {
@@ -1244,7 +1242,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
 
                 g_IBCLogger.LogEEClassCOWTableAccess(pMT);
-                EnsureWritablePages(pClass);
                 if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
@@ -1382,7 +1379,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         pMarshalStub = GetStubForInteropMethod(pMD, 0, &(pClass->m_pForwardStubMD));
 
         // Save this new stub on the DelegateEEClass.       
-        EnsureWritablePages(dac_cast<PVOID>(&pClass->m_pMarshalStub), sizeof(PCODE));
         InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, NULL);
 
         pMarshalStub = pClass->m_pMarshalStub;
@@ -1489,7 +1485,7 @@ OBJECTREF COMDelegate::ConvertWinRTInterfaceToDelegate(IUnknown *pIdentity, Meth
         _ASSERTE(pComInfo != NULL);
 
         // Save this new stub on the ComPlusCallInfo
-        InterlockedCompareExchangeT<PCODE>(EnsureWritablePages(&pComInfo->m_pILStub), pMarshalStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&pComInfo->m_pILStub, pMarshalStub, NULL);
 
         pMarshalStub = pComInfo->m_pILStub;
     }
@@ -2412,7 +2408,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
-        InterlockedCompareExchangeT<PTR_Stub>(EnsureWritablePages(&delegateEEClass->m_pMultiCastInvokeStub), pStub, NULL);
+        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
 
         HELPER_METHOD_FRAME_END();
     }
@@ -2471,7 +2467,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
         // will make sure all threads racing here will get the same stub, so they'll all store the same value
-        EnsureWritablePages(&delegateEEClass->m_pMultiCastInvokeStub);
         delegateEEClass->m_pMultiCastInvokeStub = pStub;
 
         HELPER_METHOD_FRAME_END();
@@ -2544,7 +2539,7 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
 
         g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
-        InterlockedCompareExchangeT<PTR_Stub>(EnsureWritablePages(&delegateEEClass->m_pSecureDelegateInvokeStub), pStub, NULL);
+        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pSecureDelegateInvokeStub, pStub, NULL);
 
     }
     return pStub->GetEntryPoint();
@@ -2597,7 +2592,6 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
         }
 
         g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
-        EnsureWritablePages(&delegateEEClass->m_pSecureDelegateInvokeStub);
         delegateEEClass->m_pSecureDelegateInvokeStub = pStub;
     }
     RETURN (pStub->GetEntryPoint());

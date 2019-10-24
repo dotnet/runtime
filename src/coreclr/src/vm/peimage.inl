@@ -618,21 +618,4 @@ inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
         *pdwMachine = m_dwMachine;
 }
 
-
-
-#ifndef DACCESS_COMPILE
-inline void PEImage::AllocateLazyCOWPages()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_LAZY_COW_PAGES
-    if (!m_bAllocatedLazyCOWPages && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapLazyCOWPagesEnabled))
-    {
-        ::AllocateLazyCOWPages(GetLoadedLayout());
-        m_bAllocatedLazyCOWPages = TRUE;
-    }
-#endif
-}
-#endif
-
 #endif  // PEIMAGE_INL_

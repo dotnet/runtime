@@ -409,7 +409,7 @@ public:
         TypeHandle th(this);
         g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
 
-        return (InterlockedCompareExchangeT(EnsureWritablePages(&m_pCCWTemplate), pTemplate, NULL) == NULL);
+        return (InterlockedCompareExchangeT(&m_pCCWTemplate, pTemplate, NULL) == NULL);
     }
 #endif // FEATURE_COMINTEROP
 

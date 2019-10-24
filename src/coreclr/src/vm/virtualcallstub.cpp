@@ -2724,8 +2724,7 @@ void StubCallSite::SetSiteTarget(PCODE newTarget)
 { 
     WRAPPER_NO_CONTRACT;
     PTR_PCODE pCell = GetIndirectCell();
-    if (EnsureWritablePagesNoThrow(pCell, sizeof(PCODE)))
-        *pCell = newTarget;
+    *pCell = newTarget;
 }
 
 //----------------------------------------------------------------------------

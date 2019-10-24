@@ -956,7 +956,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #endif
 
     g_IBCLogger.LogMethodDescWriteAccess(this);
-    EnsureWritablePages(pdwFlags);    
 
     if (fSet)
         FastInterlockOr(pdwFlags, dwMask);
@@ -3165,8 +3164,6 @@ RestoreSignatureContainingInternalTypes(
     Volatile<BYTE> * pVolatileSig = (Volatile<BYTE> *)pSig;
     if (*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE)
     {
-        EnsureWritablePages(dac_cast<void*>(pSig), cSig);
-
         ULONG nArgs;
         SigPointer psig(pSig, cSig);
 
@@ -3981,7 +3978,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
         {
 #ifndef DACCESS_COMPILE
             InstantiatedMethodDesc *pIMD = AsInstantiatedMethodDesc();
-            EnsureWritablePages(pIMD);
 
             // First restore method table pointer in singleton chunk;
             // it might be out-of-module
@@ -4786,13 +4782,13 @@ Precode* MethodDesc::GetOrCreatePrecode()
         {
             newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pPrecode->GetEntryPoint());
             oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, tempEntry);
-            slotAddr = (TADDR *) EnsureWritablePages((MethodTable::VTableIndir2_t *) pSlot);
+            slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
         }
         else
         {
             newVal = pPrecode->GetEntryPoint();
             oldVal = tempEntry;
-            slotAddr = (TADDR *) EnsureWritablePages((PCODE *) pSlot);
+            slotAddr = (TADDR *) (PCODE *) pSlot;
         }
 
         if (FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal)
@@ -5083,7 +5079,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         value.SetValueMaybeNull(pSlot, addr | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
         expected.SetValueMaybeNull(pSlot, pExpected | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
 
-        return FastInterlockCompareExchangePointer(EnsureWritablePages(reinterpret_cast<TADDR*>(pSlot)),
+        return FastInterlockCompareExchangePointer(reinterpret_cast<TADDR*>(pSlot),
             (TADDR&)value, (TADDR&)expected) == (TADDR&)expected;
     }
     
@@ -5111,12 +5107,12 @@ void MethodDesc::SetMethodEntryPoint(PCODE addr)
     if (IsVtableSlot())
     {
         newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, addr);
-        slotAddr = (TADDR *) EnsureWritablePages((MethodTable::VTableIndir2_t *) pSlot);
+        slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
     }
     else
     {
         newVal = addr;
-        slotAddr = (TADDR *) EnsureWritablePages((PCODE *) pSlot);
+        slotAddr = (TADDR *) (PCODE *) pSlot;
     }
 
     *(TADDR *)slotAddr = newVal;
@@ -5148,13 +5144,13 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     {
         newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, addr);
         oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pExpected);
-        slotAddr = (TADDR *) EnsureWritablePages((MethodTable::VTableIndir2_t *) pSlot);
+        slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
     }
     else
     {
         newVal = addr;
         oldVal = pExpected;
-        slotAddr = (TADDR *) EnsureWritablePages((PCODE *) pSlot);
+        slotAddr = (TADDR *) (PCODE *) pSlot;
     }
 
     fResult = FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal;
@@ -5239,8 +5235,6 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
     // we'll have to operate on the entire ULONG. Ugh.
 
     WORD *pFlags = &ndirect.m_wFlags;
-
-    EnsureWritablePages(pFlags);
     
     // Make sure that m_flags is aligned on a 4 byte boundry
     _ASSERTE( ( ((size_t) pFlags) & (sizeof(ULONG)-1) ) == 0);

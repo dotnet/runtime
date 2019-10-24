@@ -309,12 +309,6 @@ void ZapImage::AllocateVirtualSections()
         //
         DWORD access = DATA_MEM_WRITABLE;
 
-#ifdef FEATURE_LAZY_COW_PAGES
-        // READYTORUN: FUTURE: Optional support for COW pages
-        if (!IsReadyToRunCompilation() && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapLazyCOWPagesEnabled))
-            access = DATA_MEM_READONLY;
-#endif
-
         ZapPhysicalSection * pDataSection = NewPhysicalSection(".data", IMAGE_SCN_CNT_INITIALIZED_DATA | access);
 
         m_pPreloadSections[CORCOMPILE_SECTION_MODULE] = NewVirtualSection(pDataSection, IBCUnProfiledSection | HotRange | ModuleSection);
@@ -398,11 +392,6 @@ void ZapImage::AllocateVirtualSections()
     if (!IsReadyToRunCompilation())
     {
         DWORD access = XDATA_MEM;
-
-#ifdef FEATURE_LAZY_COW_PAGES
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapLazyCOWPagesEnabled))
-            access = TEXT_MEM;
-#endif            
 
         //
         // .xdata section
