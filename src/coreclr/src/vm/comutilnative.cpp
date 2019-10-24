@@ -1131,7 +1131,6 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 {
     CONTRACTL {
         FCALL_CHECK;
-        PRECONDITION(length >= 0);
     } CONTRACTL_END;
 
     OBJECTREF pRet = NULL;
