@@ -56,6 +56,7 @@ enum MarshalFlags
     MARSHAL_FLAG_HRESULT_SWAP   = 0x10,
     MARSHAL_FLAG_RETVAL         = 0x20,
     MARSHAL_FLAG_HIDDENLENPARAM = 0x40,
+    MARSHAL_FLAG_FIELD          = 0x80
 };
 
 #include <pshpack1.h>
@@ -104,6 +105,10 @@ struct OverrideProcArgs
             void*       m_hndManagedType; // TypeHandle cannot be a union member
         } rcm;  // MARSHAL_TYPE_REFERENCECUSTOMMARSHALER
 
+        struct
+        {
+            UINT32 fixedStringLength;
+        } fs;
     };
 };
 
@@ -195,6 +200,10 @@ void VerifyAndAdjustNormalizedType(
                          const SigTypeContext *     pTypeContext,
                          CorElementType *           pManagedElemType,
                          CorNativeType *            pNativeType);
+
+#ifdef _DEBUG
+BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
+#endif
 
 #ifdef FEATURE_COMINTEROP
 
@@ -430,6 +439,7 @@ public:
 #ifdef FEATURE_COMINTEROP
         MARSHAL_SCENARIO_COMINTEROP,
         MARSHAL_SCENARIO_WINRT,
+        MARSHAL_SCENARIO_WINRT_FIELD,
 #endif // FEATURE_COMINTEROP
         MARSHAL_SCENARIO_FIELD
     };
@@ -458,7 +468,8 @@ public:
                 BOOL fEmitsIL,
                 BOOL onInstanceMethod,
                 MethodDesc* pMD = NULL,
-                BOOL fUseCustomMarshal = TRUE
+                BOOL fUseCustomMarshal = TRUE,
+                BOOL fCalculatingFieldMetadata = FALSE // Calculating metadata for fields on type load.
 #ifdef _DEBUG
                 ,
                 LPCUTF8 pDebugName = NULL,
@@ -470,13 +481,16 @@ public:
 
     VOID EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
 
+    void ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pFieldDesc, UINT resID);
+
     // These methods retrieve the information for different element types.
     HRESULT HandleArrayElemType(NativeTypeParamInfo *pParamInfo,
                                 TypeHandle elemTypeHnd, 
                                 int iRank, 
                                 BOOL fNoLowerBounds, 
                                 BOOL isParam, 
-                                Assembly *pAssembly);
+                                Assembly *pAssembly,
+                                BOOL isArrayClass = FALSE);
 
     void GenerateArgumentIL(NDirectStubLinker* psl,
                             int argOffset, // the argument's index is m_paramidx + argOffset
@@ -488,6 +502,17 @@ public:
                           BOOL fMngToNative,
                           BOOL fieldGetter,
                           BOOL retval);
+
+    void GenerateFieldIL(NDirectStubLinker* psl,
+                        UINT32 managedOffset, // the field's byte offset into the managed object
+                        UINT32 nativeOffset, // the field's byte offset into the native object
+                        FieldDesc* pFieldDesc); // The field descriptor for reporting errors
+
+    OverrideProcArgs const* GetOverrideProcArgs()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_args;
+    }
     
     void SetupArgumentSizes();
 
@@ -651,14 +676,23 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT;
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
     }
 #endif // FEATURE_COMINTEROP
 
+    BOOL IsFieldScenario()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_COMINTEROP
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
+#else
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
+#endif
+    }
+
 private:
 
-    UINT16                      GetManagedSize(MarshalType mtype, MarshalScenario ms);
-    UINT16                      GetNativeSize(MarshalType mtype, MarshalScenario ms);
+    UINT16                      GetNativeSize(MarshalType mtype);
     static bool                 IsInOnly(MarshalType mtype);
     static bool                 IsSupportedForWinRT(MarshalType mtype);
 
@@ -697,7 +731,6 @@ private:
 #endif // FEATURE_COMINTEROP
 
     UINT16          m_nativeArgSize;
-    UINT16          m_managedArgSize;
 
     MarshalScenario m_ms;
     BOOL            m_fAnsi;
@@ -727,6 +760,7 @@ private:
 #endif
 
     Module*         m_pModule;
+    mdToken         m_token;
 };
 
 
@@ -791,7 +825,11 @@ public:
         {
             // for the purpose of marshaling, we don't care about the inner
             // type - we just marshal pointer-sized values
-            return (sizeof(LPVOID) == 4 ? VT_I4 : VT_I8);
+#ifdef _TARGET_64BIT_
+            return VT_I8;
+#else
+            return VT_I4;
+#endif
         }
         else
         {
@@ -855,7 +893,11 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return sizeof(LPVOID);
+#ifdef _TARGET_64BIT_
+            return 8;
+#else
+            return 4;
+#endif
     }
 
 protected:

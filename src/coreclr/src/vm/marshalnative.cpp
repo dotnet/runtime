@@ -155,10 +155,19 @@ FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR
     }
     else if (pMT->HasLayout())
     {
-        if (fDeleteOld)
-            LayoutDestroyNative(ptr, pMT);
+        MethodDesc* structMarshalStub;
 
-        FmtClassUpdateNative( &(pObj), (LPBYTE)(ptr), NULL );
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+        }
+
+        if (fDeleteOld)
+        {
+            MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Cleanup);
+        }
+
+        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Marshal);
     }
     else
     {
@@ -201,7 +210,14 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     }
     else if (pMT->HasLayout())
     {
-        LayoutUpdateCLR((LPVOID*) &(pObj), Object::GetOffsetOfFirstField(), pMT, (LPBYTE)(ptr));
+        MethodDesc* structMarshalStub;
+
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+        }
+
+        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Unmarshal);
     }
     else
     {
@@ -243,7 +259,14 @@ FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObjec
     }
     else if (th.HasLayout())
     {
-        LayoutDestroyNative(ptr, th.GetMethodTable());
+        MethodDesc* structMarshalStub;
+
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(th.GetMethodTable());
+        }
+
+        MarshalStructViaILStub(structMarshalStub, nullptr, ptr, StructMarshalStubs::MarshalOperation::Cleanup);
     }
     else
     {
@@ -362,16 +385,16 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
         HELPER_METHOD_FRAME_END();
     }
 
-    FieldMarshaler *pFM = th.GetMethodTable()->GetLayoutInfo()->GetFieldMarshalers();
+    NativeFieldDescriptor *pNFD = th.GetMethodTable()->GetLayoutInfo()->GetNativeFieldDescriptors();
     UINT  numReferenceFields = th.GetMethodTable()->GetLayoutInfo()->GetNumCTMFields();
 
     while (numReferenceFields--) 
     {
-        if (pFM->GetFieldDesc() == pField) 
+        if (pNFD->GetFieldDesc() == pField) 
         {
-            return pFM->GetExternalOffset();
+            return pNFD->GetExternalOffset();
         }
-        ((BYTE*&)pFM) += MAXFIELDMARSHALERSIZE;
+        pNFD++;
     }
 
     UNREACHABLE_MSG("We should never hit this point since we already verified that the requested field was present from managed code");   

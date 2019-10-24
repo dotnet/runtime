@@ -142,7 +142,22 @@ void ILDelegateMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit
     pslILEmit->EmitCALL(METHOD__MARSHAL__GET_DELEGATE_FOR_FUNCTION_POINTER, 2, 1); // Delegate System.Marshal.GetDelegateForFunctionPointer(IntPtr p, Type t)
     EmitStoreManagedValue(pslILEmit);
 
-    pslILEmit->EmitLabel(pNullLabel);
+    if (IsFieldMarshal(m_dwMarshalFlags))
+    {
+        // Field marshalling of delegates supports marshalling back null from native code.
+        // Parameter and return value marshalling does not.
+        ILCodeLabel* pFinishedLabel = pslILEmit->NewCodeLabel();
+        pslILEmit->EmitBR(pFinishedLabel);
+        pslILEmit->EmitLabel(pNullLabel);
+        pslILEmit->EmitLDNULL();
+        EmitStoreManagedValue(pslILEmit);
+        pslILEmit->EmitLabel(pFinishedLabel);
+    }
+    else
+    {
+        pslILEmit->EmitLabel(pNullLabel);
+    }
+
 }
 
 
@@ -530,7 +545,7 @@ void ILUTF8BufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel();
-    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags))
+    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags))
     {
         ILCodeLabel *pNoOptimize = pslILEmit->NewCodeLabel();
         m_dwLocalBuffer = pslILEmit->NewLocal(ELEMENT_TYPE_I);
@@ -679,7 +694,7 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel(); 
-    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags))
+    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags))
     {
         ILCodeLabel *pNoOptimize = pslILEmit->NewCodeLabel(); 
         m_dwLocalBuffer = pslILEmit->NewLocal(ELEMENT_TYPE_I);
@@ -880,7 +895,7 @@ void ILCSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel(); 
-    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags))
+    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags))
     {
         ILCodeLabel *pNoOptimize = pslILEmit->NewCodeLabel(); 
         m_dwLocalBuffer = pslILEmit->NewLocal(ELEMENT_TYPE_I);
@@ -1072,12 +1087,14 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    mdToken     managedVCToken = pslILEmit->GetToken(m_pargs->m_pMT);
-    
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+
+    EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDTOKEN(managedVCToken); // pMT
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1);
-    pslILEmit->EmitCALL(METHOD__VALUECLASSMARSHALER__CLEAR_NATIVE, 2, 0);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
 }
 
 
@@ -1085,28 +1102,28 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    mdToken     managedVCToken = pslILEmit->GetToken(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadNativeHomeAddr(pslILEmit);      // dst
-    EmitLoadManagedHomeAddr(pslILEmit);     // src
-    pslILEmit->EmitLDTOKEN(managedVCToken); // pMT
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1); // Convert RTH to IntPtr
-
+    EmitLoadManagedHomeAddr(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
     EmitLoadCleanupWorkList(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__VALUECLASSMARSHALER__CONVERT_TO_NATIVE, 4, 0);        // void ConvertToNative(IntPtr dst, IntPtr src, IntPtr pMT, ref CleanupWorkListElement pCleanupWorkList)
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    mdToken     managedVCToken = pslILEmit->GetToken(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadManagedHomeAddr(pslILEmit);     // dst
-    EmitLoadNativeHomeAddr(pslILEmit);      // src
-    pslILEmit->EmitLDTOKEN(managedVCToken);                                 // pMT
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1);
-    pslILEmit->EmitCALL(METHOD__VALUECLASSMARSHALER__CONVERT_TO_MANAGED, 3, 0);   // void ConvertToManaged(IntPtr dst, IntPtr src, IntPtr pMT)
+    EmitLoadManagedHomeAddr(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
 }
 
 
@@ -1776,7 +1793,7 @@ void ILBSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 
     EmitLoadManagedValue(pslILEmit);
     
-    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags))
+    if (IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags))
     {
         ILCodeLabel *pNoOptimizeLabel = pslILEmit->NewCodeLabel(); 
         m_dwLocalBuffer = pslILEmit->NewLocal(ELEMENT_TYPE_I);
@@ -1895,6 +1912,58 @@ void ILAnsiBSTRMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
     
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__ANSIBSTRMARSHALER__CLEAR_NATIVE, 1, 0);
+}
+
+void ILFixedWSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
+    ILCodeLabel* pFinishedLabel = pslILEmit->NewCodeLabel();
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitCALL(METHOD__FIXEDWSTRMARSHALER__CONVERT_TO_NATIVE, 3, 0);
+}
+
+void ILFixedWSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitDUP();
+    pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
+
+    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
+    EmitStoreManagedValue(pslILEmit);
+}
+
+void ILFixedCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    DWORD dwAnsiMarshalFlags =
+        (m_pargs->m_pMarshalInfo->GetBestFitMapping() & 0xFF) |
+        (m_pargs->m_pMarshalInfo->GetThrowOnUnmappableChar() << 8);
+
+    // CSTRMarshaler.ConvertFixedToNative dwAnsiMarshalFlags, pManaged, homeAddr, fixedLength
+    pslILEmit->EmitLDC(dwAnsiMarshalFlags);
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitCALL(METHOD__CSTRMARSHALER__CONVERT_FIXED_TO_NATIVE, 4, 0);
+}
+
+void ILFixedCSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitCALL(METHOD__CSTRMARSHALER__CONVERT_FIXED_TO_MANAGED, 2, 1);
+    EmitStoreManagedValue(pslILEmit);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -2363,14 +2432,14 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     pslILEmit->EmitLDC(uNativeSize);
     pslILEmit->EmitINITBLK();        
 
-    EmitLoadManagedValue(pslILEmit);
-    EmitLoadNativeValue(pslILEmit);
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    // static void FmtClassUpdateNativeInternal(object obj, byte* pNative, IntPtr pOptionalCleanupList);
-
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__FMT_CLASS_UPDATE_NATIVE_INTERNAL, 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
@@ -2383,11 +2452,14 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    EmitLoadManagedValue(pslILEmit);
-    EmitLoadNativeValue(pslILEmit);
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    // static void FmtClassUpdateCLRInternal(object obj, byte* pNative);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__FMT_CLASS_UPDATE_CLR_INTERNAL, 2, 0);
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
@@ -2395,14 +2467,14 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
 {
     STANDARD_VM_CONTRACT;
 
-    int tokManagedType = pslILEmit->GetToken(m_pargs->m_pMT);
-    
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDTOKEN(tokManagedType);
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1);
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    // static void LayoutDestroyNativeInternal(byte* pNative, IntPtr pMT);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__LAYOUT_DESTROY_NATIVE_INTERNAL, 2, 0);
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
 }
 
 
@@ -2452,7 +2524,7 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
 
 bool ILBlittablePtrMarshaler::CanUsePinnedLayoutClass()
 {
-    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
+    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
 }
 
 void ILBlittablePtrMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit)
@@ -2486,8 +2558,119 @@ void ILBlittablePtrMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeS
     EmitStoreNativeValue(pslILEmit);
 }
 
+void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
+    UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
 
 
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitLDC(uNativeSize);
+    pslILEmit->EmitINITBLK();
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pNullRefLabel);
+
+
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    pslILEmit->EmitLabel(pNullRefLabel);
+}
+
+void ILLayoutClassMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
+{
+    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
+    pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_UNINITIALIZED_OBJECT, 1, 1);
+    EmitStoreManagedValue(pslILEmit);
+}
+
+void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+}
+
+void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+
+    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
+    EmitLoadCleanupWorkList(pslILEmit);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+}
+
+
+void ILBlittableLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
+    UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
+    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitLDC(uNativeSize);
+    pslILEmit->EmitINITBLK();
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pNullRefLabel);
+
+    EmitLoadNativeHomeAddr(pslILEmit);                             // dest
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDFLDA(fieldDef);                            // src
+
+    pslILEmit->EmitLDC(uNativeSize);                            // size
+
+    pslILEmit->EmitCPBLK();
+    pslILEmit->EmitLabel(pNullRefLabel);
+}
+
+void ILBlittableLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
+    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+
+    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
+    pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_UNINITIALIZED_OBJECT, 1, 1);
+    EmitStoreManagedValue(pslILEmit);
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDFLDA(fieldDef);                            // dest
+
+    EmitLoadNativeHomeAddr(pslILEmit);                             // src
+
+    pslILEmit->EmitLDC(uNativeSize);                            // size
+
+    pslILEmit->EmitCPBLK();
+}
 
 MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker* psl,
                                                 BOOL               byref,
@@ -2552,6 +2735,40 @@ MarshalerOverrideStatus ILHandleRefMarshaler::ReturnOverride(NDirectStubLinker* 
 
     *pResID = IDS_EE_BADMARSHAL_HANDLEREFRESTRICTION;
     return DISALLOWED;
+}
+
+void ILSafeHandleMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadCleanupWorkList(pslILEmit);
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitCONV_U();
+    pslILEmit->EmitCEQ();
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitCEQ();
+    EmitLoadCleanupWorkList(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__HANDLE_MARSHALER__CONVERT_SAFEHANDLE_TO_NATIVE, 3, 1);
+    EmitStoreNativeValue(pslILEmit);
+}
+
+void ILSafeHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
+
+    ILCodeLabel* successLabel = pslILEmit->NewCodeLabel();
+    ILCodeLabel* failureLabel = pslILEmit->NewCodeLabel();
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(failureLabel);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE)));
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitBEQ(successLabel);
+    pslILEmit->EmitLabel(failureLabel);
+    pslILEmit->EmitCALL(METHOD__HANDLE_MARSHALER__THROW_SAFEHANDLE_FIELD_CHANGED, 0, 0);
+    pslILEmit->EmitLabel(successLabel);
 }
 
 MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinker* psl,
@@ -2884,6 +3101,32 @@ ILSafeHandleMarshaler::ReturnOverride(
     return OVERRIDDEN;
 } // ILSafeHandleMarshaler::ReturnOverride
 
+void ILCriticalHandleMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
+    EmitStoreNativeValue(pslILEmit);
+}
+
+void ILCriticalHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
+
+    ILCodeLabel* successLabel = pslILEmit->NewCodeLabel();
+    ILCodeLabel* failureLabel = pslILEmit->NewCodeLabel();
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(failureLabel);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitBEQ(successLabel);
+    pslILEmit->EmitLabel(failureLabel);
+    pslILEmit->EmitCALL(METHOD__HANDLE_MARSHALER__THROW_CRITICALHANDLE_FIELD_CHANGED, 0, 0);
+    pslILEmit->EmitLabel(successLabel);
+}
 
 //---------------------------------------------------------------------------------------
 // 
@@ -3695,8 +3938,17 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     }
 
     pslILEmit->EmitLDC(dwFlags);
+
+    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
+    {
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+    }
+    else
+    {
+        pslILEmit->EmitLoadNullPtr();
+    }
     
-    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 3, 0);
+    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
 }
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
@@ -4013,6 +4265,7 @@ void ILNativeArrayMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
     STANDARD_VM_CONTRACT;
 
     EmitLoadMngdMarshaler(pslILEmit);
+    EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadNativeSize(pslILEmit);
     
@@ -4047,6 +4300,7 @@ void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
     STANDARD_VM_CONTRACT;
 
     EmitLoadMngdMarshaler(pslILEmit);
+    EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadNativeSize(pslILEmit);
    
@@ -4073,7 +4327,7 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
 
 #ifndef CROSSGEN_COMPILE
 
-FCIMPL3(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags)
+FCIMPL4(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
     FCALL_CONTRACT;
 
@@ -4086,6 +4340,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::CreateMarshaler, MngdNativeArrayMarshale
     pThis->m_BestFitMap            = (BYTE)(dwFlags >> 16);
     pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
     pThis->m_Array                 = TypeHandle();
+    pThis->m_pManagedMarshaler     = pManagedMarshaler;
 }
 FCIMPLEND
 
@@ -4148,7 +4403,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToNative, MngdNativeArray
         else
         {
             pMarshaler->ComToOleArray(pArrayRef, *pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap, 
-                                      pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, cElements);
+                                      pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, cElements, pThis->m_pManagedMarshaler);
         }
     }
     HELPER_METHOD_FRAME_END();
@@ -4209,7 +4464,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToManaged, MngdNativeArra
         }
         else
         {
-            pMarshaler->OleToComArray(*pNativeHome, pArrayRef, pThis->m_pElementMT);
+            pMarshaler->OleToComArray(*pNativeHome, pArrayRef, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
         }
     }
     
@@ -4217,7 +4472,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToManaged, MngdNativeArra
 }
 FCIMPLEND
 
-FCIMPL3(void, MngdNativeArrayMarshaler::ClearNative, MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements)
+FCIMPL4(void, MngdNativeArrayMarshaler::ClearNative, MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
 {
     FCALL_CONTRACT;
 
@@ -4225,7 +4480,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ClearNative, MngdNativeArrayMarshaler* p
     
     if (*pNativeHome != NULL)
     {
-        DoClearNativeContents(pThis, pNativeHome, cElements);
+        DoClearNativeContents(pThis, pManagedHome, pNativeHome, cElements);
         CoTaskMemFree(*pNativeHome);
     }
     
@@ -4233,19 +4488,19 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ClearNative, MngdNativeArrayMarshaler* p
 }
 FCIMPLEND
     
-FCIMPL3(void, MngdNativeArrayMarshaler::ClearNativeContents, MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements)
+FCIMPL4(void, MngdNativeArrayMarshaler::ClearNativeContents, MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    DoClearNativeContents(pThis, pNativeHome, cElements);
+    DoClearNativeContents(pThis, pManagedHome, pNativeHome, cElements);
     
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
 
-void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements)
+void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
 {
     CONTRACTL
     {
@@ -4261,10 +4516,227 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
 
         if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
         {
-            pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT);
+            pMarshaler->ClearOleArray((BASEARRAYREF*)pManagedHome, *pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
         }
     }
 }
+
+#endif // CROSSGEN_COMPILE
+
+
+void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
+
+    pslILEmit->EmitLDC(sizeof(MngdFixedArrayMarshaler));
+    pslILEmit->EmitLOCALLOC();
+    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
+
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+
+    pslILEmit->EmitLDLOC(m_dwMngdMarshalerLocalNum);
+
+    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(mops.methodTable));
+    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1);
+
+    DWORD dwFlags = mops.elementType;
+    dwFlags |= (((DWORD)mops.bestfitmapping) << 16);
+    dwFlags |= (((DWORD)mops.throwonunmappablechar) << 24);
+
+    pslILEmit->EmitLDC(dwFlags);
+
+    pslILEmit->EmitLDC(mops.additive);
+
+    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
+    {
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+    }
+    else
+    {
+        pslILEmit->EmitLoadNullPtr();
+    }
+    
+    pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
+}
+
+#ifndef CROSSGEN_COMPILE
+
+FCIMPL5(void, MngdFixedArrayMarshaler::CreateMarshaler, MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
+{
+    FCALL_CONTRACT;
+
+    // Don't check whether the input values are negative - passing negative size-controlling
+    // arguments and compensating them with a positive SizeConst has always worked.
+    pThis->m_pElementMT = pMT;
+    pThis->m_vt = (VARTYPE)(dwFlags);
+    pThis->m_NativeDataValid = (BYTE)((dwFlags & FLAG_NATIVE_DATA_VALID) != 0);
+    dwFlags &= ~FLAG_NATIVE_DATA_VALID;
+    pThis->m_BestFitMap = (BYTE)(dwFlags >> 16);
+    pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
+    pThis->m_Array = TypeHandle();
+    pThis->m_cElements = cElements;
+    pThis->m_pManagedElementMarshaler = pManagedElementMarshaler;
+}
+FCIMPLEND
+
+FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToNative, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+
+    if (arrayRef != NULL && arrayRef->GetNumComponents() < pThis->m_cElements)
+    {
+        COMPlusThrow(kArgumentException, IDS_WRONGSIZEARRAY_IN_NSTRUCT);
+    }
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    BASEARRAYREF* pArrayRef = (BASEARRAYREF*)pManagedHome;
+
+    if (pThis->m_vt == VTHACK_ANSICHAR)
+    {
+        SIZE_T nativeSize = sizeof(CHAR) * pThis->m_cElements;
+
+        if (*pArrayRef == NULL)
+        {
+            FillMemory(pNativeHome, nativeSize, 0);
+        }
+        else
+        {
+            InternalWideToAnsi((const WCHAR*)(*pArrayRef)->GetDataPtr(),
+                pThis->m_cElements,
+                (CHAR*)pNativeHome,
+                (int)nativeSize,
+                pThis->m_BestFitMap,
+                pThis->m_ThrowOnUnmappableChar);
+        }
+    }
+    else
+    {
+        SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
+        SIZE_T nativeSize = cbElement * pThis->m_cElements;
+
+        if (*pArrayRef == NULL)
+        {
+            FillMemory(pNativeHome, nativeSize, 0);
+        }
+        else
+        {
+
+            const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
+            SIZE_T cElements = (*pArrayRef)->GetNumComponents();
+            if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
+            {
+                _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+                memcpyNoGCRefs(pNativeHome, (*pArrayRef)->GetDataPtr(), nativeSize);
+            }
+            else
+            {
+                pMarshaler->ComToOleArray(pArrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
+                    pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
+            }
+        }
+    }
+    
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToManaged, MngdFixedArrayMarshaler* pThis,
+    OBJECTREF* pManagedHome, void* pNativeHome)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    // <TODO>@todo: lookup this class before marshal time</TODO>
+    if (pThis->m_Array.IsNull())
+    {
+        // Get proper array class name & type
+        pThis->m_Array = OleVariant::GetArrayForVarType(pThis->m_vt, TypeHandle(pThis->m_pElementMT));
+        if (pThis->m_Array.IsNull())
+            COMPlusThrow(kTypeLoadException);
+    }
+    //
+    // Allocate array
+    //
+    SetObjectReference(pManagedHome, AllocateSzArray(pThis->m_Array, pThis->m_cElements));
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    BASEARRAYREF* pArrayRef = (BASEARRAYREF*)pManagedHome;
+
+    if (pThis->m_vt == VTHACK_ANSICHAR)
+    {
+        MultiByteToWideChar(CP_ACP,
+            MB_PRECOMPOSED,
+            (const CHAR*)pNativeHome,
+            pThis->m_cElements * sizeof(CHAR), // size, in bytes, of in buffer
+            (WCHAR*)((*((I2ARRAYREF*)pArrayRef))->GetDirectPointerToNonObjectElements()),
+            pThis->m_cElements);               // size, in WCHAR's of outbuffer  
+    }
+    else
+    {
+        const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
+
+        SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
+        SIZE_T nativeSize = cbElement * pThis->m_cElements;
+
+
+        if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
+        {
+            // If we are copying variants, strings, etc, we need to use write barrier
+            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+            memcpyNoGCRefs((*pArrayRef)->GetDataPtr(), pNativeHome, nativeSize);
+        }
+        else
+        {
+            pMarshaler->OleToComArray(pNativeHome, pArrayRef, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+        }
+    }
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
+
+    if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
+    {
+        pMarshaler->ClearOleArray((BASEARRAYREF*)pManagedHome, pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+    }
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
 
 #endif // CROSSGEN_COMPILE
 
@@ -4306,7 +4778,16 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMarshalInfo->GetArrayRank());
     pslILEmit->EmitLDC(dwFlags);
 
-    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
+    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
+    {
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+    }
+    else
+    {
+        pslILEmit->EmitLoadNullPtr();
+    }
+
+    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
 void ILSafeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -4346,7 +4827,7 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
 
 #ifndef CROSSGEN_COMPILE
 
-FCIMPL4(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags)
+FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
     FCALL_CONTRACT;
 
@@ -4355,6 +4836,7 @@ FCIMPL4(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* p
     pThis->m_vt            = (VARTYPE)dwFlags;
     pThis->m_fStatic       = (BYTE)(dwFlags >> 16);
     pThis->m_nolowerbounds = (BYTE)(dwFlags >> 24);
+    pThis->m_pManagedMarshaler = pManagedMarshaler;
 }
 FCIMPLEND
 
@@ -4415,6 +4897,7 @@ FCIMPL4(void, MngdSafeArrayMarshaler::ConvertContentsToNative, MngdSafeArrayMars
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
+                                                pThis->m_pManagedMarshaler,
                                                 (pThis->m_fStatic & SCSF_NativeDataValid));
     }
 
@@ -4499,6 +4982,7 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertContentsToManaged, MngdSafeArrayMar
         OleVariant::MarshalArrayRefForSafeArray((SAFEARRAY*)*pNativeHome,
                                                 (BASEARRAYREF *) pManagedHome,
                                                 pThis->m_vt,
+                                                pThis->m_pManagedMarshaler,
                                                 pThis->m_pElementMT);
     }
     
@@ -4562,7 +5046,16 @@ void ILHiddenLengthArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEm
     pslILEmit->EmitLDC(m_pargs->na.m_cbElementSize);
     pslILEmit->EmitLDC(m_pargs->na.m_vt);
 
-    pslILEmit->EmitCALL(METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
+    if (m_pargs->na.m_vt == VTHACK_NONBLITTABLERECORD)
+    {
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(pElementMT)));
+    }
+    else
+    {
+        pslILEmit->EmitLoadNullPtr();
+    }
+
+    pslILEmit->EmitCALL(METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
 void ILHiddenLengthArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -5016,13 +5509,14 @@ MethodDesc *ILHiddenLengthArrayMarshaler::GetExactMarshalerMethod(MethodDesc *pG
 
 #ifndef CROSSGEN_COMPILE
 
-FCIMPL4(void, MngdHiddenLengthArrayMarshaler::CreateMarshaler, MngdHiddenLengthArrayMarshaler* pThis, MethodTable* pMT, SIZE_T cbElementSize, UINT16 vt)
+FCIMPL5(void, MngdHiddenLengthArrayMarshaler::CreateMarshaler, MngdHiddenLengthArrayMarshaler* pThis, MethodTable* pMT, SIZE_T cbElementSize, UINT16 vt, PCODE pManagedMarshaler)
 {
     FCALL_CONTRACT;
 
     pThis->m_pElementMT = pMT;
     pThis->m_cbElementSize = cbElementSize;
     pThis->m_vt = (VARTYPE)vt;
+    pThis->m_pManagedMarshaler = pManagedMarshaler;
 }
 FCIMPLEND
 
@@ -5122,7 +5616,8 @@ FCIMPL3(void, MngdHiddenLengthArrayMarshaler::ConvertContentsToNative, MngdHidde
                 SIZE_T nativeSize = pThis->m_pElementMT->GetNativeSize();
                 for (SIZE_T i = 0; i < gc.arrayRef->GetNumComponents(); ++i)
                 {
-                    LayoutUpdateNative(reinterpret_cast<LPVOID *>(&gc.arrayRef), managedOffset, pThis->m_pElementMT, pNativeStart + nativeOffset, NULL);
+                    MarshalStructViaILStubCode(pThis->m_pManagedMarshaler, reinterpret_cast<BYTE*>(&gc.arrayRef) + managedOffset, pNativeStart + nativeOffset, StructMarshalStubs::MarshalOperation::Marshal);
+
                     managedOffset += managedSize;
                     nativeOffset += nativeSize;
                 }
@@ -5243,15 +5738,15 @@ FCIMPL3(void, MngdHiddenLengthArrayMarshaler::ConvertContentsToManaged, MngdHidd
 
             case VTHACK_NONBLITTABLERECORD:
             {
-                // Defer to the field marshaler to handle structures
-                BYTE *pNativeStart = reinterpret_cast<BYTE *>(*pNativeHome);
+                BYTE* pNativeStart = reinterpret_cast<BYTE*>(*pNativeHome);
                 SIZE_T managedOffset = ArrayBase::GetDataPtrOffset(gc.arrayRef->GetMethodTable());
                 SIZE_T nativeOffset = 0;
                 SIZE_T managedSize = gc.arrayRef->GetComponentSize();
                 SIZE_T nativeSize = pThis->m_pElementMT->GetNativeSize();
                 for (SIZE_T i = 0; i < gc.arrayRef->GetNumComponents(); ++i)
                 {
-                    LayoutUpdateCLR(reinterpret_cast<LPVOID *>(&gc.arrayRef), managedOffset, pThis->m_pElementMT, pNativeStart + nativeOffset);
+                    MarshalStructViaILStubCode(pThis->m_pManagedMarshaler, reinterpret_cast<BYTE*>(&gc.arrayRef) + managedOffset, pNativeStart + nativeOffset, StructMarshalStubs::MarshalOperation::Unmarshal);
+
                     managedOffset += managedSize;
                     nativeOffset += nativeSize;
                 }
@@ -5299,7 +5794,7 @@ FCIMPL3(void, MngdHiddenLengthArrayMarshaler::ClearNativeContents, MngdHiddenLen
 
     if (*pNativeHome != NULL)
     {
-        pThis->DoClearNativeContents(pNativeHome, cElements);
+        pThis->DoClearNativeContents(pThis, pNativeHome, cElements);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -5338,7 +5833,7 @@ SIZE_T MngdHiddenLengthArrayMarshaler::GetArraySize(SIZE_T elements)
 }
 
 #ifndef CROSSGEN_COMPILE
-void MngdHiddenLengthArrayMarshaler::DoClearNativeContents(void** pNativeHome, INT32 cElements)
+void MngdHiddenLengthArrayMarshaler::DoClearNativeContents(MngdHiddenLengthArrayMarshaler* pThis, void** pNativeHome, INT32 cElements)
 {
     CONTRACTL
     {
@@ -5376,14 +5871,13 @@ void MngdHiddenLengthArrayMarshaler::DoClearNativeContents(void** pNativeHome, I
 
         case VTHACK_NONBLITTABLERECORD:
         {
-            SIZE_T cbArray = GetArraySize(cElements);
-            BYTE *pNativeCurrent = reinterpret_cast<BYTE *>(*pNativeHome);
-            BYTE *pNativeEnd = pNativeCurrent + cbArray;
-
-            while (pNativeCurrent < pNativeEnd)
+            BYTE* pNativeStart = reinterpret_cast<BYTE*>(*pNativeHome);
+            SIZE_T nativeOffset = 0;
+            SIZE_T nativeSize = pThis->m_pElementMT->GetNativeSize();
+            for (INT32 i = 0; i < cElements; ++i)
             {
-                LayoutDestroyNative(pNativeCurrent, m_pElementMT);
-                pNativeCurrent += m_pElementMT->GetNativeSize();
+                MarshalStructViaILStubCode(pThis->m_pManagedMarshaler, nullptr, pNativeStart + nativeOffset, StructMarshalStubs::MarshalOperation::Cleanup);
+                nativeOffset += nativeSize;
             }
             break;
         }

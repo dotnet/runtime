@@ -12720,7 +12720,7 @@ VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCWSTR pFullTypeName,
 // Used by the classloader to post illegal layout
 //==========================================================================
 VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl of the NStruct being loaded
-                           Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
+                           Module* pModule,             // Module that defines the scope, loader and heap (for allocated NativeFieldDescriptors)
                            DWORD   dwOffset,            // Offset of field
                            DWORD   dwID)                // Message id
 {

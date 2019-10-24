@@ -1470,12 +1470,13 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
     CorElementType hfaType = ELEMENT_TYPE_END;
 
 #ifndef DACCESS_COMPILE
-    const FieldMarshaler *pFieldMarshaler = GetFieldMarshalers();
-    while (numReferenceFields--)
+    const NativeFieldDescriptor* pNativeFieldDescriptorsBegin = GetNativeFieldDescriptors();
+    const NativeFieldDescriptor* pNativeFieldDescriptorsEnd = pNativeFieldDescriptorsBegin + numReferenceFields;
+    for(const NativeFieldDescriptor* pCurrNFD = pNativeFieldDescriptorsBegin; pCurrNFD < pNativeFieldDescriptorsEnd; ++pCurrNFD)
     {
         CorElementType fieldType = ELEMENT_TYPE_END;
 
-        NativeFieldFlags category = pFieldMarshaler->GetNativeFieldFlags();
+        NativeFieldFlags category = pCurrNFD->GetNativeFieldFlags();
 
         if (category & NATIVE_FIELD_SUBCATEGORY_FLOAT)
         {
@@ -1498,14 +1499,14 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
             }
 
             // An HFA can only have aligned float and double fields.
-            if (pFieldMarshaler->GetExternalOffset() % pFieldMarshaler->AlignmentRequirement() != 0)
+            if (pCurrNFD->GetExternalOffset() % pCurrNFD->AlignmentRequirement() != 0)
             {
                 fieldType = ELEMENT_TYPE_END;
             }
         }
         else if (category & NATIVE_FIELD_SUBCATEGORY_NESTED)
         {
-            fieldType = ((FieldMarshaler_NestedType*)pFieldMarshaler)->GetNestedNativeMethodTable()->GetNativeHFAType();
+            fieldType = pCurrNFD->GetNestedNativeMethodTable()->GetNativeHFAType();
         }
         else
         {
@@ -1528,8 +1529,6 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
         {
             return ELEMENT_TYPE_END;
         }
-
-        ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
     }
 
     if (hfaType == ELEMENT_TYPE_END)
@@ -2712,17 +2711,17 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
         if (pInfo->m_numCTMFields > 0)
         {
-            ZapStoredStructure * pNode = image->StoreStructure(pInfo->GetFieldMarshalers(),
-                                            pInfo->m_numCTMFields * MAXFIELDMARSHALERSIZE,
+            ZapStoredStructure * pNode = image->StoreStructure(pInfo->GetNativeFieldDescriptors(),
+                                            pInfo->m_numCTMFields * sizeof(NativeFieldDescriptor),
                                             DataImage::ITEM_FIELD_MARSHALERS);
 
             for (UINT iField = 0; iField < pInfo->m_numCTMFields; iField++)
             {
-                FieldMarshaler *pFM = (FieldMarshaler*)((BYTE *)pInfo->GetFieldMarshalers() + iField * MAXFIELDMARSHALERSIZE);
+                NativeFieldDescriptor *pFM = &pInfo->GetNativeFieldDescriptors()[iField];
                 pFM->Save(image);
 
                 if (iField > 0)
-                    image->BindPointer(pFM, pNode, iField * MAXFIELDMARSHALERSIZE);
+                    image->BindPointer(pFM, pNode, iField * sizeof(NativeFieldDescriptor));
             }
         }
     }
@@ -2923,16 +2922,15 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
 
     if (HasLayout())
     {
-        image->FixupRelativePointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pFieldMarshalers));
+        image->FixupRelativePointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pNativeFieldDescriptors));
 
         EEClassLayoutInfo *pInfo = &((LayoutEEClass*)this)->m_LayoutInfo;
 
-        FieldMarshaler *pFM = pInfo->GetFieldMarshalers();
-        FieldMarshaler *pFMEnd = (FieldMarshaler*) ((BYTE *)pFM + pInfo->m_numCTMFields*MAXFIELDMARSHALERSIZE);
-        while (pFM < pFMEnd)
+        NativeFieldDescriptor* pFMBegin = pInfo->GetNativeFieldDescriptors();
+        NativeFieldDescriptor* pFMEnd = pFMBegin + pInfo->m_numCTMFields;
+        for (NativeFieldDescriptor* pCurr = pFMBegin; pCurr < pFMEnd; ++pCurr)
         {
-            pFM->Fixup(image);
-            ((BYTE*&)pFM) += MAXFIELDMARSHALERSIZE;
+            pCurr->Fixup(image);
         }
     }
     else if (IsDelegate())
@@ -3664,7 +3662,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     _ASSERTE(!(fHasNonTrivialParent && !(pParentMT->HasLayout())));
 
     pEEClassLayoutInfoOut->m_numCTMFields        = fHasNonTrivialParent ? pParentMT->GetLayoutInfo()->m_numCTMFields : 0;
-    pEEClassLayoutInfoOut->SetFieldMarshalers(NULL);
+    pEEClassLayoutInfoOut->SetNativeFieldDescriptors(NULL);
     pEEClassLayoutInfoOut->SetIsBlittable(TRUE);
     if (fHasNonTrivialParent)
         pEEClassLayoutInfoOut->SetIsBlittable(pParentMT->IsBlittable());
@@ -3719,8 +3717,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // Now compute the native size of each field
     for (LayoutRawFieldInfo* pfwalk = pInfoArrayOut; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
     {
-        pfwalk->m_nativePlacement.m_size = ((FieldMarshaler*) & (pfwalk->m_FieldMarshaler))->NativeSize();
-        pfwalk->m_nativePlacement.m_alignment = ((FieldMarshaler*) & (pfwalk->m_FieldMarshaler))->AlignmentRequirement();
+        pfwalk->m_nativePlacement.m_size = pfwalk->m_nfd.NativeSize();
+        pfwalk->m_nativePlacement.m_alignment = pfwalk->m_nfd.AlignmentRequirement();
 
 #ifdef _DEBUG
         // @perf: If the type is blittable, the managed and native layouts have to be identical
@@ -3745,7 +3743,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // If this type has 
     if (pEEClassLayoutInfoOut->m_numCTMFields)
     {
-        pEEClassLayoutInfoOut->SetFieldMarshalers((FieldMarshaler*)(pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(MAXFIELDMARSHALERSIZE) * S_SIZE_T(pEEClassLayoutInfoOut->m_numCTMFields)))));
+        pEEClassLayoutInfoOut->SetNativeFieldDescriptors((NativeFieldDescriptor*)(pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeFieldDescriptor)) * S_SIZE_T(pEEClassLayoutInfoOut->m_numCTMFields)))));
 
         // Bring in the parent's fieldmarshalers
         if (fHasNonTrivialParent)
@@ -3755,15 +3753,12 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 
             UINT numChildCTMFields = pEEClassLayoutInfoOut->m_numCTMFields - pParentLayoutInfo->m_numCTMFields;
 
-            BYTE *pParentCTMFieldSrcArray = (BYTE*)pParentLayoutInfo->GetFieldMarshalers();
-            BYTE *pParentCTMFieldDestArray = ((BYTE*)pEEClassLayoutInfoOut->GetFieldMarshalers()) + MAXFIELDMARSHALERSIZE*numChildCTMFields;
+            NativeFieldDescriptor *pParentCTMFieldSrcArray = pParentLayoutInfo->GetNativeFieldDescriptors();
+            NativeFieldDescriptor *pParentCTMFieldDestArray = pEEClassLayoutInfoOut->GetNativeFieldDescriptors() + numChildCTMFields;
 
             for (UINT parentCTMFieldIndex = 0; parentCTMFieldIndex < pParentLayoutInfo->m_numCTMFields; parentCTMFieldIndex++)
             {
-                FieldMarshaler *pParentCTMFieldSrc = (FieldMarshaler *)(pParentCTMFieldSrcArray + MAXFIELDMARSHALERSIZE*parentCTMFieldIndex);
-                FieldMarshaler *pParentCTMFieldDest = (FieldMarshaler *)(pParentCTMFieldDestArray + MAXFIELDMARSHALERSIZE*parentCTMFieldIndex);
-
-                pParentCTMFieldSrc->CopyTo(pParentCTMFieldDest, MAXFIELDMARSHALERSIZE);
+                pParentCTMFieldDestArray[parentCTMFieldIndex] = pParentCTMFieldSrcArray[parentCTMFieldIndex];
             }
         }
 
@@ -3855,19 +3850,18 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             LOG((LF_INTEROP, LL_INFO100000, "%s", fieldname));
             LOG((LF_INTEROP, LL_INFO100000, "\n"));
 
-            if (((FieldMarshaler*)&pfwalk->m_FieldMarshaler)->IsIllegalMarshaler())
+            if (pfwalk->m_nfd.IsUnmarshalable())
                 illegalMarshaler = TRUE;             
         }
 
         // If we are dealing with a non trivial parent, determine if it has any illegal marshallers.
         if (fHasNonTrivialParent)
         {
-            FieldMarshaler *pParentFM = pParentMT->GetLayoutInfo()->GetFieldMarshalers();
+            NativeFieldDescriptor *pParentNFD = pParentMT->GetLayoutInfo()->GetNativeFieldDescriptors();
             for (UINT i = 0; i < pParentMT->GetLayoutInfo()->m_numCTMFields; i++)
             {
-                if (pParentFM->IsIllegalMarshaler())
-                    illegalMarshaler = TRUE;                                 
-                ((BYTE*&)pParentFM) += MAXFIELDMARSHALERSIZE;
+                if (pParentNFD->IsUnmarshalable())
+                    illegalMarshaler = TRUE;
             }
         }
         
@@ -3880,6 +3874,76 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif // _PREFAST_
+
+namespace
+{
+    //=======================================================================
+    // This function returns TRUE if the provided corElemType disqualifies
+    // the structure from being a managed-sequential structure.
+    // The fsig parameter is used when the corElemType doesn't contain enough information
+    // to successfully determine if this field disqualifies the type from being
+    // managed-sequential.
+    // This function also fills in the pManagedPlacementInfo structure for this field.
+    //=======================================================================
+    BOOL IsDisqualifiedFromManagedSequential(CorElementType corElemType, MetaSig &fsig, RawFieldPlacementInfo * pManagedPlacementInfo)
+    {
+        // This type may qualify for ManagedSequential. Collect managed size and alignment info.
+        if (CorTypeInfo::IsPrimitiveType(corElemType))
+        {
+            // Safe cast - no primitive type is larger than 4gb!
+            pManagedPlacementInfo->m_size = ((UINT32)CorTypeInfo::Size(corElemType));
+    #if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+            switch (corElemType)
+            {
+                // The System V ABI for i386 defines different packing for these types.
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_R8:
+            {
+                pManagedPlacementInfo->m_alignment = 4;
+                break;
+            }
+
+            default:
+            {
+                pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
+                break;
+            }
+            }
+    #else // _TARGET_X86_ && UNIX_X86_ABI
+            pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
+    #endif
+
+            return FALSE;
+        }
+        else if (corElemType == ELEMENT_TYPE_PTR)
+        {
+            pManagedPlacementInfo->m_size = TARGET_POINTER_SIZE;
+            pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
+            
+            return FALSE;
+        }
+        else if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle pNestedType = fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
+                CLASS_LOAD_APPROXPARENTS,
+                TRUE);
+            if (!pNestedType.GetMethodTable()->IsManagedSequential())
+            {
+                return TRUE;
+            }
+            
+            pManagedPlacementInfo->m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
+
+            _ASSERTE(pNestedType.GetMethodTable()->HasLayout()); // If it is ManagedSequential(), it also has Layout but doesn't hurt to check before we do a cast!
+            pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            
+            return FALSE;
+        }
+        // No other type permitted for ManagedSequential.
+        return TRUE;
+    }
+}
 
 //=====================================================================
 // ParseNativeFieldTypes:
@@ -3961,16 +4025,20 @@ void EEClassLayoutInfo::ParseFieldNativeTypes(
             }
 #endif
 
+
+            MetaSig fsig(pCOMSignature, cbCOMSignature, pModule, pTypeContext, MetaSig::sigField);
+            CorElementType corElemType = fsig.NextArgNormalized();
+            if (!(*fDisqualifyFromManagedSequential))
+            {
+                *fDisqualifyFromManagedSequential = IsDisqualifiedFromManagedSequential(corElemType, fsig, &pFieldInfoArrayOut->m_managedPlacement);
+            }
+
             ParseNativeType(pModule,
-                pCOMSignature,
-                cbCOMSignature,
+                fsig.GetArgProps(),
+                fd,
                 nativeTypeFlags,
-                pFieldInfoArrayOut,
-                pNativeType,
-                cbNativeType,
-                cl,
-                pTypeContext,
-                fDisqualifyFromManagedSequential
+                &pFieldInfoArrayOut->m_nfd,
+                pTypeContext
 #ifdef _DEBUG
                 ,
                 szNamespace,
@@ -3979,7 +4047,7 @@ void EEClassLayoutInfo::ParseFieldNativeTypes(
 #endif
             );
 
-            if (!IsFieldBlittable((FieldMarshaler*)(&pFieldInfoArrayOut->m_FieldMarshaler)))
+            if (!pFieldInfoArrayOut->m_nfd.IsBlittable())
                 pEEClassLayoutInfoOut->SetIsBlittable(FALSE);
 
             (*cInstanceFields)++;

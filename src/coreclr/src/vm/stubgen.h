@@ -13,6 +13,21 @@
 
 #include "stublink.h"
 
+struct StructMarshalStubs
+{
+    static const DWORD MANAGED_STRUCT_ARGIDX = 0;
+    static const DWORD NATIVE_STRUCT_ARGIDX = 1;
+    static const DWORD OPERATION_ARGIDX = 2;
+    static const DWORD CLEANUP_WORK_LIST_ARGIDX = 3;
+
+    enum MarshalOperation
+    {
+        Marshal,
+        Unmarshal,
+        Cleanup
+    };
+};
+
 struct LocalDesc
 {
     const static size_t MAX_LOCALDESC_ELEMENTS = 8;
@@ -80,8 +95,14 @@ struct LocalDesc
     void MakeCopyConstructedPointer()
     {
         LIMITED_METHOD_CONTRACT;
-        ChangeType(ELEMENT_TYPE_PTR);
+        MakePointer();
         bIsCopyConstructed = TRUE;
+    }
+
+    void MakePointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        ChangeType(ELEMENT_TYPE_PTR);
     }
 
     void ChangeType(CorElementType elemType)
@@ -682,6 +703,7 @@ public:
     void EmitSTSFLD     (int token);
     void EmitSUB        ();
     void EmitTHROW      ();
+    void EmitUNALIGNED  (BYTE alignment);
 
     // Overloads to simplify common usage patterns
     void EmitNEWOBJ     (BinderMethodID id, int numInArgs);

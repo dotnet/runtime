@@ -99,14 +99,6 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 
-//=======================================================================
-// IMPORTANT: This value is used to figure out how much to allocate
-// for a fixed array of FieldMarshaler's. That means it must be at least
-// as large as the largest FieldMarshaler subclass. This requirement
-// is guarded by an assert.
-//=======================================================================
-#define MAXFIELDMARSHALERSIZE               24
-
 //**********************************************************************
 // Parameter size
 //**********************************************************************

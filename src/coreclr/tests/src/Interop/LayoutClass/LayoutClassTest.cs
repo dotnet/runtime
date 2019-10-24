@@ -84,6 +84,18 @@ namespace PInvokeTests
         public SeqClass value;
     }
 
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class RecursiveTestClass
+    {
+        public RecursiveTestStruct s;
+    }
+
+    public struct RecursiveTestStruct
+    {
+        public RecursiveTestClass c;
+    }
+
     class StructureTests
     {
         [DllImport("LayoutClassNative")]
@@ -97,6 +109,9 @@ namespace PInvokeTests
 
         [DllImport("LayoutClassNative")]
         private static extern bool SimpleBlittableSeqLayoutClassByRef(Blittable p);
+
+        [DllImport("LayoutClassNative", EntryPoint = "Invalid")]
+        private static extern void RecursiveNativeLayoutInvalid(RecursiveTestStruct str);
 
         public static bool SequentialClass()
         {
@@ -210,6 +225,22 @@ namespace PInvokeTests
             return retval;
         }
 
+        public static bool RecursiveNativeLayout()
+        {
+            TestFramework.BeginScenario("Test #5 Structure with field of nested layout class with field of containing structure.");
+
+            try
+            {
+                RecursiveNativeLayoutInvalid(new RecursiveTestStruct());
+            }
+            catch (TypeLoadException)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public static int Main(string[] argv)
         {
             bool retVal = true;
@@ -218,6 +249,7 @@ namespace PInvokeTests
             retVal = retVal && ExplicitClass();
             retVal = retVal && BlittableClass();
             retVal = retVal && NestedLayoutClass();
+            retVal = retVal && RecursiveNativeLayout();
 
             return (retVal ? 100 : 101);
         }

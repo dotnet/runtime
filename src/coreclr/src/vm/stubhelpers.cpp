@@ -180,60 +180,6 @@ void StubHelpers::ProcessByrefValidationList()
 
 #endif // VERIFY_HEAP
 
-FCIMPL1_V(double, StubHelpers::DateMarshaler__ConvertToNative,  INT64 managedDate)
-{
-    FCALL_CONTRACT;
-
-    double retval = 0.0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    retval = COMDateTime::TicksToDoubleDate(managedDate);
-    HELPER_METHOD_FRAME_END();
-    return retval;
-}
-FCIMPLEND
-
-FCIMPL1_V(INT64, StubHelpers::DateMarshaler__ConvertToManaged, double nativeDate)
-{
-    FCALL_CONTRACT;
-
-    INT64 retval = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    retval = COMDateTime::DoubleDateToTicks(nativeDate);
-    HELPER_METHOD_FRAME_END();
-    return retval;
-}
-FCIMPLEND
-
-FCIMPL4(void, StubHelpers::ValueClassMarshaler__ConvertToNative, LPVOID pDest, LPVOID pSrc, MethodTable* pMT, OBJECTREF *ppCleanupWorkListOnStack)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    FmtValueTypeUpdateNative(&pSrc, pMT, (BYTE*)pDest, ppCleanupWorkListOnStack);
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL3(void, StubHelpers::ValueClassMarshaler__ConvertToManaged, LPVOID pDest, LPVOID pSrc, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    FmtValueTypeUpdateCLR(&pDest, pMT, (BYTE*)pSrc);
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-
-FCIMPL2(void, StubHelpers::ValueClassMarshaler__ClearNative, LPVOID pDest, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    FmtClassDestroyNative(pDest, pMT);
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-
 #ifdef FEATURE_COMINTEROP
 
 FORCEINLINE static void GetCOMIPFromRCW_ClearFP()
@@ -1518,7 +1464,23 @@ FCIMPL3(void, StubHelpers::FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYT
     OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
     HELPER_METHOD_FRAME_BEGIN_1(pObj);
 
-    FmtClassUpdateNative(&pObj, pbNative, ppCleanupWorkListOnStack);
+    MethodTable* pMT = pObj->GetMethodTable();
+
+    if (pMT->IsBlittable())
+    {
+        memcpyNoGCRefs(pbNative, pObj->GetData(), pMT->GetNativeSize());
+    }
+    else
+    {
+        MethodDesc* structMarshalStub;
+
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+        }
+
+        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Marshal, (void**)ppCleanupWorkListOnStack);
+    }
 
     HELPER_METHOD_FRAME_END();
 }
@@ -1531,18 +1493,48 @@ FCIMPL2(void, StubHelpers::FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* 
     OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
     HELPER_METHOD_FRAME_BEGIN_1(pObj);
 
-    FmtClassUpdateCLR(&pObj, pbNative);
+    MethodTable* pMT = pObj->GetMethodTable();
+
+    if (pMT->IsBlittable())
+    {
+        memcpyNoGCRefs(pObj->GetData(), pbNative, pMT->GetNativeSize());
+    }
+    else
+    {
+        MethodDesc* structMarshalStub;
+
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+        }
+
+        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Unmarshal);
+    }
 
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
 
-FCIMPL2(void, StubHelpers::LayoutDestroyNativeInternal, BYTE* pbNative, MethodTable* pMT)
+FCIMPL2(void, StubHelpers::LayoutDestroyNativeInternal, Object* pObjUNSAFE, BYTE* pbNative)
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-    LayoutDestroyNative(pbNative, pMT);
+    OBJECTREF pObj = ObjectToOBJECTREF(pObjUNSAFE);
+    HELPER_METHOD_FRAME_BEGIN_1(pObj);
+    MethodTable* pMT = pObj->GetMethodTable();
+
+    if (!pMT->IsBlittable())
+    {
+        MethodDesc* structMarshalStub;
+
+        {
+            GCX_PREEMP();
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+        }
+
+        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), pbNative, StructMarshalStubs::MarshalOperation::Cleanup);
+    }
+
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND

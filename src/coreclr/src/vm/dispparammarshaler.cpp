@@ -229,6 +229,7 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pSrcVar));
+        PRECONDITION(CheckPointer(pDestObj) && *pDestObj == NULL);
     }
     CONTRACTL_END;
     
@@ -242,25 +243,30 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
     // Retrieve the SAFEARRAY pointer.
     SAFEARRAY *pSafeArray = V_VT(pSrcVar) & VT_BYREF ? *V_ARRAYREF(pSrcVar) : V_ARRAY(pSrcVar);
 
-    if (pSafeArray)
+    if (!pSafeArray)
     {
-        // Retrieve the variant type if it is not specified for the parameter.
-        if (vt == VT_EMPTY)
-            vt = V_VT(pSrcVar) & ~VT_ARRAY | VT_BYREF;
-
-        if (!pElemMT && vt == VT_RECORD)
-            pElemMT = OleVariant::GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
-
-        // Create an array from the SAFEARRAY.
-        *(BASEARRAYREF*)pDestObj = OleVariant::CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
-
-        // Convert the contents of the SAFEARRAY.
-        OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pElemMT);
+        return;
     }
-    else
+
+    // Retrieve the variant type if it is not specified for the parameter.
+    if (vt == VT_EMPTY)
+        vt = V_VT(pSrcVar) & ~VT_ARRAY | VT_BYREF;
+
+    if (!pElemMT && vt == VT_RECORD)
+        pElemMT = OleVariant::GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
+
+    PCODE pStructMarshalStubAddress = NULL;
+    if (vt == VT_RECORD && !pElemMT->IsBlittable())
     {
-        *pDestObj = NULL;
+        GCX_PREEMP();
+        pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElemMT);
     }
+
+    // Create an array from the SAFEARRAY.
+    *(BASEARRAYREF*)pDestObj = OleVariant::CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
+
+    // Convert the contents of the SAFEARRAY.
+    OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pStructMarshalStubAddress, pElemMT);
 }
 
 void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
@@ -293,13 +299,22 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
             TypeHandle tempHandle = OleVariant::GetArrayElementTypeWrapperAware((BASEARRAYREF*)pSrcObj);
             pElemMT = tempHandle.GetMethodTable();
         }
-        
+
+        PCODE pStructMarshalStubAddress = NULL;
+        GCPROTECT_BEGIN(*pSrcObj);
+        if (vt == VT_RECORD && !pElemMT->IsBlittable())
+        {
+            GCX_PREEMP();
+            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElemMT);
+        }
+        GCPROTECT_END();
+
         // Allocate the safe array based on the source object and the destination VT.
         pSafeArray = OleVariant::CreateSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, vt, pElemMT);
         _ASSERTE(pSafeArray);
 
         // Marshal the contents of the SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT, pStructMarshalStubAddress);
     }
 
     // Store the resulting SAFEARRAY in the destination VARIANT.
@@ -397,7 +412,15 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             // Allocate an instance of the boxed value class and copy the contents
             // of the record into it.
             BoxedValueClass = m_pRecordMT->Allocate();
-            FmtClassUpdateCLR(&BoxedValueClass, (BYTE*)pvRecord);
+
+            MethodDesc* pStructMarshalStub;
+            {
+                GCX_PREEMP();
+
+                pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pRecordMT);
+            }
+
+            MarshalStructViaILStub(pStructMarshalStub, BoxedValueClass->GetData(), pvRecord, StructMarshalStubs::MarshalOperation::Unmarshal);
         }
 
         *pDestObj = BoxedValueClass;

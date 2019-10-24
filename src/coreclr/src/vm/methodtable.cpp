@@ -2571,7 +2571,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
     }
 
-    const FieldMarshaler *pFieldMarshalers = GetLayoutInfo()->GetFieldMarshalers();
+    const NativeFieldDescriptor *pNativeFieldDescs = GetLayoutInfo()->GetNativeFieldDescriptors();
     UINT  numIntroducedFields = GetLayoutInfo()->GetNumCTMFields();
 
     // No fields.
@@ -2587,17 +2587,17 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     // instead of adding additional padding at the end of a one-field structure.
     // We do this check here to save looking up the FixedBufferAttribute when loading the field
     // from metadata.
-    CorElementType firstFieldElementType = pFieldMarshalers->GetFieldDesc()->GetFieldType();
+    CorElementType firstFieldElementType = pNativeFieldDescs->GetFieldDesc()->GetFieldType();
     bool isFixedBuffer = numIntroducedFields == 1
                                 && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                                     || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
-                                && (pFieldMarshalers->GetExternalOffset() == 0)
+                                && (pNativeFieldDescs->GetExternalOffset() == 0)
                                 && IsValueType()
-                                && (GetLayoutInfo()->GetNativeSize() % pFieldMarshalers->NativeSize() == 0);
+                                && (GetLayoutInfo()->GetNativeSize() % pNativeFieldDescs->NativeSize() == 0);
 
     if (isFixedBuffer)
     {
-        numIntroducedFields = GetNativeSize() / pFieldMarshalers->NativeSize();
+        numIntroducedFields = GetNativeSize() / pNativeFieldDescs->NativeSize();
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2633,18 +2633,18 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
-        const FieldMarshaler* pFieldMarshaler;
+        const NativeFieldDescriptor* pNFD;
         if (isFixedBuffer)
         {
             // Reuse the first field marshaler for all fields if a fixed buffer.
-            pFieldMarshaler = pFieldMarshalers;
+            pNFD = pNativeFieldDescs;
         }
         else
         {
-            pFieldMarshaler = (FieldMarshaler*)(((BYTE*)pFieldMarshalers) + MAXFIELDMARSHALERSIZE * fieldIndex);
+            pNFD = &pNativeFieldDescs[fieldIndex];
         }
 
-        FieldDesc *pField = pFieldMarshaler->GetFieldDesc();
+        FieldDesc *pField = pNFD->GetFieldDesc();
         CorElementType fieldType = pField->GetFieldType();
 
         // Invalid field type.
@@ -2653,12 +2653,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             return false;
         }
 
-        unsigned int fieldNativeSize = pFieldMarshaler->NativeSize();
-        DWORD fieldOffset = pFieldMarshaler->GetExternalOffset();
+        unsigned int fieldNativeSize = pNFD->NativeSize();
+        DWORD fieldOffset = pNFD->GetExternalOffset();
 
         if (isFixedBuffer)
         {
-            // Since we reuse the FieldMarshaler for fixed buffers, we need to adjust the offset.
+            // Since we reuse the NativeFieldDescriptor for fixed buffers, we need to adjust the offset.
             fieldOffset += fieldIndex * fieldNativeSize;
         }
 
@@ -2681,7 +2681,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
 
-        NativeFieldFlags nfc = pFieldMarshaler->GetNativeFieldFlags();
+        NativeFieldFlags nfc = pNFD->GetNativeFieldFlags();
 
 #ifdef FEATURE_COMINTEROP
         if (nfc & NATIVE_FIELD_SUBCATEGORY_COM_ONLY)
@@ -2693,11 +2693,10 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 #endif // FEATURE_COMINTEROP
         if (nfc & NATIVE_FIELD_SUBCATEGORY_NESTED)
         {
-            FieldMarshaler_NestedType* pNestedMarshaler = (FieldMarshaler_NestedType*)pFieldMarshaler;
-            unsigned int numElements = pNestedMarshaler->GetNumElements();
+            unsigned int numElements = pNFD->GetNumElements();
             unsigned int nestedElementOffset = normalizedFieldOffset;
 
-            MethodTable* pFieldMT = pNestedMarshaler->GetNestedNativeMethodTable();
+            MethodTable* pFieldMT = pNFD->GetNestedNativeMethodTable();
 
             if (pFieldMT == nullptr)
             {
@@ -2739,13 +2738,13 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             UNREACHABLE_MSG("Invalid native field subcategory.");
         }
 
-        if ((normalizedFieldOffset % pFieldMarshaler->AlignmentRequirement()) != 0)
+        if ((normalizedFieldOffset % pNFD->AlignmentRequirement()) != 0)
         {
             // The spec requires that struct values on the stack from register passed fields expects
             // those fields to be at their natural alignment.
 
             LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Native Field %d %s: offset %d (normalized %d), required alignment %d not at natural alignment; not enregistering struct\n",
-                nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, pFieldMarshaler->AlignmentRequirement()));
+                nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, pNFD->AlignmentRequirement()));
             return false;
         }
 
@@ -5584,12 +5583,12 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // Fully load the types of fields associated with a field marshaler when ngenning
     if (HasLayout() && GetAppDomain()->IsCompilationDomain() && !IsZapped())
     {
-        FieldMarshaler* pFM                   = this->GetLayoutInfo()->GetFieldMarshalers();
-        UINT  numReferenceFields              = this->GetLayoutInfo()->GetNumCTMFields();
+        NativeFieldDescriptor* pNativeFieldDescriptors = this->GetLayoutInfo()->GetNativeFieldDescriptors();
+        UINT  numReferenceFields                       = this->GetLayoutInfo()->GetNumCTMFields();
 
-        while (numReferenceFields--)
+        for (UINT i = 0; i < numReferenceFields; ++i)
         {
-            
+            NativeFieldDescriptor* pFM = &pNativeFieldDescriptors[i];
             FieldDesc *pMarshalerField = pFM->GetFieldDesc();
 
             // If the fielddesc pointer here is a token tagged pointer, then the field marshaler that we are
@@ -5603,8 +5602,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 
                 th.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
             }
-            // The accessibility check is not used here to prevent functional differences between ngen and non-ngen scenarios.
-            ((BYTE*&)pFM) += MAXFIELDMARSHALERSIZE;
         }
     }
 #endif //FEATURE_NATIVE_IMAGE_GENERATION

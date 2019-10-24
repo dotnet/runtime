@@ -526,6 +526,7 @@
                         <map value="0x8" message="$(string.RuntimePublisher.ILStubGenerated.DelegateMapMessage)"/>
                         <map value="0x10" message="$(string.RuntimePublisher.ILStubGenerated.VarArgMapMessage)"/>
                         <map value="0x20" message="$(string.RuntimePublisher.ILStubGenerated.UnmanagedCalleeMapMessage)"/>
+                        <map value="0x40" message="$(string.RuntimePublisher.ILStubGenerated.StructStubMapMessage)"/>
                     </bitMap>
                     <bitMap name="StartupFlagsMap">
                         <map value="0x000001" message="$(string.RuntimePublisher.Startup.CONCURRENT_GCMapMessage)"/>
@@ -6879,6 +6880,7 @@
                 <string id="RuntimePublisher.ILStubGenerated.DelegateMapMessage" value="Delegate" />
                 <string id="RuntimePublisher.ILStubGenerated.VarArgMapMessage" value="VarArg" />
                 <string id="RuntimePublisher.ILStubGenerated.UnmanagedCalleeMapMessage" value="UnmanagedCallee" />
+                <string id="RuntimePublisher.ILStubGenerated.StructStubMapMessage" value="StructMarshal" />
                 <string id="RuntimePublisher.Contention.ManagedMapMessage" value="Managed" />
                 <string id="RuntimePublisher.Contention.NativeMapMessage" value="Native" />
                 <string id="RuntimePublisher.TailCallType.OptimizedMapMessage" value="OptimizedTailCall" />
