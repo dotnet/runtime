@@ -44,7 +44,7 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 {
     MethodDesc *pMD = GetMethodDesc();
     _ASSERTE(gcCover == NULL || pMD->m_GcCover == NULL);
-    *EnsureWritablePages(&pMD->m_GcCover) = gcCover;
+    pMD->m_GcCover = gcCover;
 }
 #endif
 
@@ -439,7 +439,7 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
     {
         MethodDesc *pMD = GetMethodDesc();
         _ASSERTE(gcCover == NULL || pMD->m_GcCover == NULL);
-        *EnsureWritablePages(&pMD->m_GcCover) = gcCover;
+        pMD->m_GcCover = gcCover;
     }
 }
 

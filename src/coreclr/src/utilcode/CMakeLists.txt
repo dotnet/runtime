@@ -71,14 +71,7 @@ if(WIN32)
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
-  )
-
-  if(CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
-    list(APPEND UTILCODE_COMMON_SOURCES
-      lazycow.cpp
-    )
-  endif()
-  
+  )  
 endif(WIN32)
   
 set(UTILCODE_SOURCES 

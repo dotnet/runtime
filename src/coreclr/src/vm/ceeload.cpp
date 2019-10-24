@@ -453,14 +453,6 @@ void Module::InitializeForProfiling()
         }
 #endif
     }
-
-#ifdef FEATURE_LAZY_COW_PAGES
-    // When running a IBC tuning image to gather profile data 
-    // we increment the block counts contained in this area.
-    //
-    if (cbProfileList)
-        EnsureWritablePages(m_methodProfileList, cbProfileList);
-#endif
 }
 
 #ifdef FEATURE_PREJIT 
@@ -1038,7 +1030,6 @@ MemberRefToDescHashEntry* MemberRefToDescHashTable::Insert(mdMemberRef token , F
         // However its value will be null. We need to set its actual value.
         if(pEntry->m_value == dac_cast<TADDR>(NULL))
         {
-            EnsureWritablePages(&(pEntry->m_value));
             pEntry->m_value = dac_cast<TADDR>(value)|IS_FIELD_MEMBER_REF;
         }
 
@@ -1076,7 +1067,6 @@ MemberRefToDescHashEntry* MemberRefToDescHashTable::Insert(mdMemberRef token , M
         // However its value will be null. We need to set its actual value.
         if(pEntry->m_value == dac_cast<TADDR>(NULL))
         {
-            EnsureWritablePages(&(pEntry->m_value));
             pEntry->m_value = dac_cast<TADDR>(value);
         }
 
@@ -1228,7 +1218,6 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, Allo
         PREFIX_ASSUME(pModule != NULL);
         CONSISTENCY_CHECK_MSG(pModule->m_pAssembly == NULL || !pModule->IsTenured(), // if the module is not tenured it could be our previous attempt
                               "Native image can only be used once per process\n");
-        EnsureWritablePages(pModule);
         pModule = new ((void*) pModule) Module(pAssembly, moduleRef, file);
         PREFIX_ASSUME(pModule != NULL);
     }
@@ -2741,7 +2730,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
         }
     }
 
-    EnsureWritablePages(&(m_pDynamicStaticsInfo[newId]))->pEnclosingMT = pMT;
+    m_pDynamicStaticsInfo[newId].pEnclosingMT = pMT;
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Assigned dynamic ID %d to %s\n", newId, pMT->GetDebugClassName()));
 
@@ -4368,8 +4357,6 @@ OBJECTHANDLE Module::ResolveStringRefHelper(DWORD token, BaseDomain *pDomain, PT
             if (*pBlob++ == ENCODE_STRING_HANDLE && 
                     TokenFromRid(CorSigUncompressData((PCCOR_SIGNATURE&) pBlob), mdtString) ==  token)
             {
-                EnsureWritablePages(pEntry);
-
                 // This string hasn't been fixed up. Synchronize the update with the normal
                 // fixup logic
                 {
@@ -9913,7 +9900,7 @@ void Module::RestoreMethodTablePointerRaw(MethodTable ** ppMT,
                                                              pInfoModule,
                                                              pBlobData,
                                                              level);
-        *EnsureWritablePages(ppMT) = th.AsMethodTable();
+        *ppMT = th.AsMethodTable();
     }
     else if (*ppMT)
     {
@@ -10121,8 +10108,7 @@ PTR_Module Module::RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Mo
 
         if (pInfoModule)
         {
-            if (EnsureWritablePagesNoThrow(ppValue, sizeof(*ppValue)))
-                *ppValue = pInfoModule;
+            *ppValue = pInfoModule;
         }
         return pInfoModule;
     }
@@ -10171,7 +10157,7 @@ void Module::RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, M
         Module * pInfoModule;
         PCCOR_SIGNATURE pBlobData = pContainingModule->GetEncodedSig(fixupRva, &pInfoModule);
 
-        *EnsureWritablePages(ppValue) = pInfoModule;
+        *ppValue = pInfoModule;
     }
 }
 
@@ -10242,7 +10228,6 @@ void Module::RestoreTypeHandlePointerRaw(TypeHandle *pHandle, Module* pContainin
                                                            pInfoModule,
                                                            pBlobData,
                                                            level);
-        EnsureWritablePages(pHandle);
         if (IS_ALIGNED(pHandle, sizeof(TypeHandle)))
         {
             *pHandle = thResolved;
@@ -10356,9 +10341,9 @@ void Module::RestoreMethodDescPointerRaw(PTR_MethodDesc * ppMD, Module *pContain
         Module * pInfoModule;
         PCCOR_SIGNATURE pBlobData = pContainingModule->GetEncodedSig(fixupRva, &pInfoModule);
 
-        *EnsureWritablePages(ppMD) =  ZapSig::DecodeMethod(pContainingModule,
-                                              pInfoModule,
-                                              pBlobData);
+        *ppMD =  ZapSig::DecodeMethod(pContainingModule,
+                                      pInfoModule,
+                                      pBlobData);
     }
     else if (*ppMD) {
         (*ppMD)->CheckRestore(level);
@@ -10452,9 +10437,9 @@ void Module::RestoreFieldDescPointer(RelativeFixupPointer<PTR_FieldDesc> * ppFD)
         Module * pInfoModule;
         PCCOR_SIGNATURE pBlobData = pContainingModule->GetEncodedSig(fixupRva, &pInfoModule);
 
-        *EnsureWritablePages(ppValue) =  ZapSig::DecodeField(pContainingModule,
-                                                pInfoModule,
-                                                pBlobData);
+        *ppValue =  ZapSig::DecodeField(pContainingModule,
+                                        pInfoModule,
+                                        pBlobData);
     }
 }
 

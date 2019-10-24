@@ -884,11 +884,10 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
             if (pMT->IsParentMethodTableIndirectPointerMaybeNull())
             {
-                *EnsureWritablePages(pMT->GetParentMethodTableValuePtr()) = pNewParentMT;
+                *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
             }
             else
             {
-                EnsureWritablePages(pMT->GetParentMethodTablePointerPtr());
                 pMT->GetParentMethodTablePointerPtr()->SetValueMaybeNull(pNewParentMT);
             }
 
@@ -911,7 +910,6 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         {
             if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
             {
-                EnsureWritablePages(&pMT->GetPerInstInfo()[iDict]);
                 pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
             }
         }
@@ -2041,7 +2039,7 @@ void EEClass::GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL 
         if (*pfBestFitMapping) flags |= VMFLAG_BESTFITMAPPING;
         if (*pfThrowOnUnmappableChar) flags |= VMFLAG_THROWONUNMAPPABLECHAR;
 
-        FastInterlockOr(EnsureWritablePages(&pClass->m_VMFlags), flags);
+        FastInterlockOr(&pClass->m_VMFlags, flags);
     }
     else
     {

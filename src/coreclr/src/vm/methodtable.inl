@@ -1015,7 +1015,7 @@ inline BOOL MethodTable::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemp
     {
         TypeHandle th(this);
         g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
-        return (InterlockedCompareExchangeT(EnsureWritablePages(GetCCWTemplatePtr()), pTemplate, NULL) == NULL);
+        return (InterlockedCompareExchangeT(GetCCWTemplatePtr(), pTemplate, NULL) == NULL);
     }
     g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComCallWrapperTemplate(pTemplate);
