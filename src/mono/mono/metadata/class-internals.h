@@ -980,7 +980,9 @@ typedef struct {
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
+#ifndef ENABLE_NETCORE
 	MonoMethod *threadpool_perform_wait_callback_method;
+#endif
 } MonoDefaults;
 
 #ifdef DISABLE_REMOTING

@@ -132,6 +132,7 @@
     <DefineConstants>MONO;NETCORE;DISABLE_REMOTING;MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
 
     <FeaturePortableTimer>true</FeaturePortableTimer>
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
 
    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>    
@@ -257,11 +258,12 @@
       <Compile Include="src\System.Threading\Monitor.cs" />
       <Compile Include="src\System.Threading\Overlapped.cs" />
       <Compile Include="src\System.Threading\PreAllocatedOverlapped.cs" />
-      <Compile Include="src\System.Threading\RegisteredWaitHandle.cs" />
       <Compile Include="src\System.Threading\StackCrawlMark.cs" />
       <Compile Include="src\System.Threading\Thread.cs" />
       <Compile Include="src\System.Threading\ThreadPool.cs" />
-      <Compile Include="src\System.Threading\ThreadPoolBoundHandle.cs" />
+      <Compile Include="src\System.Threading\LowLevelLock.cs" />
+      <Compile Include="src\System.Threading\LowLevelSpinWaiter.cs" />
+      <Compile Include="src\System.Threading\LowLevelLifoSemaphore.Unix.cs" />
       <Compile Include="src\System.Threading\WaitHandle.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

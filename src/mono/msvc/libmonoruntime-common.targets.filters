@@ -403,9 +403,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\threadpool.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\threadpool-netcore.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\threadpool.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>

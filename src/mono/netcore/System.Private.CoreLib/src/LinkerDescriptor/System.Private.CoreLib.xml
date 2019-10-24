@@ -753,11 +753,6 @@
 			<field name="safe_wait_handle" />
 		</type>
 
-		<!-- threadpool-ms.c (worker_thread) -->
-		<type fullname="System.Threading._ThreadPoolWaitCallback">
-		  <method name="PerformWaitCallback"/>
-		</type>
-
 		<!-- marshal-ilgen.c (emit_native_icall_wrapper_ilgen) -->
 		<type fullname="Mono.RuntimeStructs/MonoError" />
 

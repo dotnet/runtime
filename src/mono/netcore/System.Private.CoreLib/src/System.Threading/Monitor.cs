@@ -133,7 +133,7 @@ namespace System.Threading
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static bool Monitor_wait (object obj, int ms);
+		internal extern static bool Monitor_wait (object obj, int ms, bool allowInterruption);
 
 		static bool ObjWait (bool exitContext, int millisecondsTimeout, object obj)
 		{
@@ -142,11 +142,11 @@ namespace System.Threading
 			if (!Monitor_test_synchronised (obj))
 				throw new SynchronizationLockException ("Object is not synchronized");
 
-			return Monitor_wait (obj, millisecondsTimeout);
+			return Monitor_wait (obj, millisecondsTimeout, true);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static void try_enter_with_atomic_var (object obj, int millisecondsTimeout, ref bool lockTaken);
+		internal extern static void try_enter_with_atomic_var (object obj, int millisecondsTimeout, bool allowInterruption, ref bool lockTaken);
 
 		static void ReliableEnterTimeout (object obj, int timeout, ref bool lockTaken)
 		{
@@ -156,7 +156,7 @@ namespace System.Threading
 			if (timeout < 0 && timeout != (int) Timeout.Infinite)
 				throw new ArgumentOutOfRangeException (nameof (timeout));
 
-			try_enter_with_atomic_var (obj, timeout, ref lockTaken);
+			try_enter_with_atomic_var (obj, timeout, true, ref lockTaken);
 		}
 
 		static void ReliableEnter (object obj, ref bool lockTaken)

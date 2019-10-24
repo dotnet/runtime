@@ -22,6 +22,7 @@
 // Ported from C++ to C and adjusted to Mono runtime
 
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef ENABLE_NETCORE
 
@@ -823,3 +824,5 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (MonoError *error)
 }
 
 #endif /* !ENABLE_NETCORE */
+
+MONO_EMPTY_SOURCE_FILE (threadpool);

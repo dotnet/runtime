@@ -43,5 +43,9 @@ namespace System.Threading
 				}
 			}
 		}
+
+		// FIXME: Move to shared
+		internal static int WaitAny (ReadOnlySpan<WaitHandle> waitHandles, int millisecondsTimeout) =>
+			WaitMultiple (waitHandles, false, millisecondsTimeout);
 	}
 }

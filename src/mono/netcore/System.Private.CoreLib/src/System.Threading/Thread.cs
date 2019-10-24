@@ -122,6 +122,9 @@ namespace System.Threading
 				ValidateThreadState ();
 				return threadpool_thread;
 			}
+			internal set {
+				threadpool_thread = value;
+			}
 		}
 
 		public int ManagedThreadId => managed_id;
@@ -181,6 +184,14 @@ namespace System.Threading
 
 		internal void ResetThreadPoolThread ()
 		{
+			if (_name != null)
+				Name = null;
+
+			if ((state & ThreadState.Background) == 0)
+				IsBackground = true;
+
+			if ((ThreadPriority) priority != ThreadPriority.Normal)
+				Priority = ThreadPriority.Normal;
 		}
 
 		void SetCultureOnUnstartedThreadNoCheck (CultureInfo value, bool uiCulture)
@@ -211,8 +222,10 @@ namespace System.Threading
 			if (millisecondsTimeout < Timeout.Infinite)
 				throw new ArgumentOutOfRangeException (nameof (millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-			SleepInternal (millisecondsTimeout);
+			SleepInternal (millisecondsTimeout, true);
 		}
+
+		internal static void UninterruptibleSleep0 () => SleepInternal (0, false);
 
 		public void Start ()
 		{
@@ -305,7 +318,7 @@ namespace System.Threading
 		extern static bool YieldInternal ();
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static void SleepInternal (int millisecondsTimeout);
+		extern static void SleepInternal (int millisecondsTimeout, bool allowInterruption);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static void SpinWait_nop ();

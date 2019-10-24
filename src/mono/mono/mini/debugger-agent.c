@@ -2849,8 +2849,10 @@ suspend_vm (void)
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
 
+#ifndef ENABLE_NETCORE
 	if (tp_suspend)
 		mono_threadpool_suspend ();
+#endif
 }
 
 /*
@@ -2890,8 +2892,10 @@ resume_vm (void)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
 
+#ifndef ENABLE_NETCORE
 	if (tp_resume)
 		mono_threadpool_resume ();
+#endif
 }
 
 /*
