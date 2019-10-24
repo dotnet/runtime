@@ -289,7 +289,7 @@ namespace HttpStress
 
         private void SetUpJustInTimeLogging()
         {
-            if (_eventListener == null)
+            if (_eventListener == null && !Console.IsInputRedirected)
             {
                 // If no command-line requested logging, enable the user to press 'L' to enable logging to the console
                 // during execution, so that it can be done just-in-time when something goes awry.
