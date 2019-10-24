@@ -337,28 +337,21 @@ namespace System.Net.Test.Uri.IriTest
             char[] unescapedChars = new char[inbytes.Length];
             chars.CopyTo(unescapedChars, 0);
 
-            HeapCheck hc = new HeapCheck(dest);
+            int expectedLength = inbytes.Length * 3;
+            ValueStringBuilder vsb = HeapCheck.CreateFilledPooledArray(expectedLength);
 
-            unsafe
-            {
-                fixed (char* pInput = hc.HeapBlock)
-                {
-                    int offset = hc.Offset;
-                    UriHelper.MatchUTF8Sequence(
-                        pInput,
-                        hc.HeapBlock,
-                        ref offset,
-                        unescapedChars,
-                        chars.Length,
-                        inbytes,
-                        numBytes,
-                        isQuery,
-                        iriParsing);
-                }
-            }
+            vsb.Length = 32;
+            UriHelper.MatchUTF8Sequence(
+                ref vsb,
+                unescapedChars,
+                chars.Length,
+                inbytes,
+                numBytes,
+                isQuery,
+                iriParsing);
 
             // Check for buffer under and overruns.
-            hc.ValidatePadding();
+            HeapCheck.ValidatePadding(vsb, expectedLength);
         }
 
         private class HeapCheck
@@ -403,13 +396,41 @@ namespace System.Net.Test.Uri.IriTest
             {
                 for (int i = 0; i < _memblock.Length; i++)
                 {
-                    if ((i < padding) || (i >= padding + _len))
+                    AssertValidPadding(i, _len, _memblock[i]);
+                }
+            }
+
+            public static void ValidatePadding(ValueStringBuilder pooledArray, int expectedLength)
+            {
+                for (int i = 0; i < pooledArray.Length; i++)
+                {
+                    if ((i < padding) || (i >= padding + expectedLength))
                     {
-                        Assert.True(
-                            (int)paddingValue == (int)_memblock[i],
-                            "Heap corruption detected: unexpected padding value at index: " + i +
-                            " Data allocated at idx: " + padding + " - " + (_len + padding - 1));
+                        AssertValidPadding(i, expectedLength, pooledArray[i]);
                     }
+                }
+            }
+
+            public static ValueStringBuilder CreateFilledPooledArray(int length)
+            {
+                int size = length + padding * 2;
+                ValueStringBuilder vsb = new ValueStringBuilder(size);
+                vsb.Length = size;
+                for (int i = 0; i < vsb.Length; i++)
+                {
+                    vsb[i] = paddingValue;
+                }
+                return vsb;
+            }
+
+            private static void AssertValidPadding(int i, int len, char memValue)
+            {
+                if ((i < padding) || (i >= padding + len))
+                {
+                    Assert.True(
+                        (int)paddingValue == (int)memValue,
+                        "Heap corruption detected: unexpected padding value at index: " + i +
+                        " Data allocated at idx: " + padding + " - " + (len + padding - 1));
                 }
             }
         }

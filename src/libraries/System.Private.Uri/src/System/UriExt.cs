@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System
 {
@@ -559,10 +560,14 @@ namespace System
 
                     UnescapeMode unescapeMode = UnescapeMode.Unescape | UnescapeMode.UnescapeAll;
                     position = 0;
-                    char[] dest = new char[stringToUnescape.Length];
-                    dest = UriHelper.UnescapeString(stringToUnescape, 0, stringToUnescape.Length, dest, ref position,
+                    ValueStringBuilder vsb = new ValueStringBuilder(stringToUnescape.Length);
+                    UriHelper.UnescapeString(stringToUnescape, 0, stringToUnescape.Length, ref vsb, ref position,
                         c_DummyChar, c_DummyChar, c_DummyChar, unescapeMode, null, false);
-                    return new string(dest, 0, position);
+
+                    ReadOnlySpan<char> resultSpan = vsb.AsSpan(0, position);
+                    string result = resultSpan.SequenceEqual(stringToUnescape) ? stringToUnescape : resultSpan.ToString();
+                    vsb.Dispose();
+                    return result;
                 }
             }
         }
