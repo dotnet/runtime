@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
@@ -25,17 +25,11 @@ namespace System.Runtime.CompilerServices
         internal static readonly Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask<TResult>(default);
 
         /// <summary>The lazily-initialized built task.</summary>
-        private Task<TResult> m_task; // lazily-initialized: must not be readonly. Debugger depends on the exact name of this field.
+        private Task<TResult>? m_task; // Debugger depends on the exact name of this field.
 
         /// <summary>Initializes a new <see cref="AsyncTaskMethodBuilder"/>.</summary>
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
-        public static AsyncTaskMethodBuilder<TResult> Create()
-        {
-            // NOTE: If this method is ever updated to perform more initialization,
-            //       other Create methods like AsyncTaskMethodBuilder.Create and
-            //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
-            return default;
-        }
+        public static AsyncTaskMethodBuilder<TResult> Create() => default;
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
@@ -49,8 +43,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
-        public void SetStateMachine(IAsyncStateMachine stateMachine)
-            => AsyncMethodBuilderCore.SetStateMachine(stateMachine, m_task);
+        public void SetStateMachine(IAsyncStateMachine stateMachine) =>
+            AsyncMethodBuilderCore.SetStateMachine(stateMachine, m_task);
 
         /// <summary>
         /// Schedules the specified state machine to be pushed forward when the specified awaiter completes.
@@ -62,11 +56,17 @@ namespace System.Runtime.CompilerServices
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
+            where TStateMachine : IAsyncStateMachine =>
+            AwaitOnCompleted(ref awaiter, ref stateMachine, ref m_task);
+
+        internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref Task<TResult>? taskField)
+            where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine).MoveNextAction);
+                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref taskField).MoveNextAction);
             }
             catch (Exception e)
             {
@@ -81,15 +81,28 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
-        // AggressiveOptimization to workaround boxing allocations in Tier0 until: https://github.com/dotnet/coreclr/issues/14474
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
+            where TStateMachine : IAsyncStateMachine =>
+            AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine, ref m_task);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref Task<TResult>? taskField)
+            where TAwaiter : ICriticalNotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
-            IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine);
+            IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine, ref taskField);
+            AwaitUnsafeOnCompleted(ref awaiter, box);
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/coreclr/issues/14474
+        internal static void AwaitUnsafeOnCompleted<TAwaiter>(
+            ref TAwaiter awaiter, IAsyncStateMachineBox box)
+            where TAwaiter : ICriticalNotifyCompletion
+        {
             // The null tests here ensure that the jit can optimize away the interface
             // tests when TAwaiter is a ref type.
 
@@ -139,8 +152,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the async state machine.</typeparam>
         /// <param name="stateMachine">The state machine.</param>
         /// <returns>The "boxed" state machine.</returns>
-        private IAsyncStateMachineBox GetStateMachineBox<TStateMachine>(
-            ref TStateMachine stateMachine)
+        private static IAsyncStateMachineBox GetStateMachineBox<TStateMachine>(
+            ref TStateMachine stateMachine,
+            [NotNull] ref Task<TResult>? taskField)
             where TStateMachine : IAsyncStateMachine
         {
             ExecutionContext? currentContext = ExecutionContext.Capture();
@@ -150,7 +164,7 @@ namespace System.Runtime.CompilerServices
             // a strongly-typed manner into an AsyncStateMachineBox.  It will already contain
             // the state machine as well as a MoveNextDelegate and a context.  The only thing
             // we might need to do is update the context if that's changed since it was stored.
-            if (m_task is AsyncStateMachineBox<TStateMachine> stronglyTypedBox)
+            if (taskField is AsyncStateMachineBox<TStateMachine> stronglyTypedBox)
             {
                 if (stronglyTypedBox.Context != currentContext)
                 {
@@ -168,7 +182,7 @@ namespace System.Runtime.CompilerServices
             // result in a boxing allocation when storing the TStateMachine if it's a struct, but
             // this only happens in active debugging scenarios where such performance impact doesn't
             // matter.
-            if (m_task is AsyncStateMachineBox<IAsyncStateMachine> weaklyTypedBox)
+            if (taskField is AsyncStateMachineBox<IAsyncStateMachine> weaklyTypedBox)
             {
                 // If this is the first await, we won't yet have a state machine, so store it.
                 if (weaklyTypedBox.StateMachine == null)
@@ -191,7 +205,7 @@ namespace System.Runtime.CompilerServices
             // multiple callbacks registered to push the state machine, which could result in bad behavior.
             Debugger.NotifyOfCrossThreadDependency();
 
-            // At this point, m_task should really be null, in which case we want to create the box.
+            // At this point, taskField should really be null, in which case we want to create the box.
             // However, in a variety of debugger-related (erroneous) situations, it might be non-null,
             // e.g. if the Task property is examined in a Watch window, forcing it to be lazily-intialized
             // as a Task<TResult> rather than as an AsyncStateMachineBox.  The worst that happens in such
@@ -209,7 +223,7 @@ namespace System.Runtime.CompilerServices
                 CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
                 new AsyncStateMachineBox<TStateMachine>();
 #endif
-            m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
+            taskField = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
 
@@ -374,24 +388,16 @@ namespace System.Runtime.CompilerServices
             return m_task = new Task<TResult>();
         }
 
-        /// <summary>
-        /// Initializes the task, which must not yet be initialized.  Used only when the Task is being forced into
-        /// existence due to the debugger trying to enable step-out/step-over/etc. prior to the first await yielding
-        /// in an async method.  In that case, we don't know the actual TStateMachine type, so we're forced to
-        /// use IAsyncStateMachine instead.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private Task<TResult> InitializeTaskAsStateMachineBox()
+        internal static Task<TResult> CreateWeaklyTypedStateMachineBox()
         {
-            Debug.Assert(m_task == null);
 #if CORERT
             // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
             // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
-            return (m_task = new AsyncStateMachineBox<IAsyncStateMachine>());
+            return new AsyncStateMachineBox<IAsyncStateMachine>());
 #else
-            return m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
+            return AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
                 CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
                 new AsyncStateMachineBox<IAsyncStateMachine>();
 #endif
@@ -407,7 +413,7 @@ namespace System.Runtime.CompilerServices
         {
             // Get the currently stored task, which will be non-null if get_Task has already been accessed.
             // If there isn't one, get a task and store it.
-            if (m_task == null)
+            if (m_task is null)
             {
                 m_task = GetTaskForResult(result);
                 Debug.Assert(m_task != null, $"{nameof(GetTaskForResult)} should never return null");
@@ -415,48 +421,24 @@ namespace System.Runtime.CompilerServices
             else
             {
                 // Slow path: complete the existing task.
-                SetExistingTaskResult(result);
+                SetExistingTaskResult(m_task, result);
             }
         }
 
         /// <summary>Completes the already initialized task with the specified result.</summary>
         /// <param name="result">The result to use to complete the task.</param>
-        private void SetExistingTaskResult([AllowNull] TResult result)
+        internal static void SetExistingTaskResult(Task<TResult> taskField, [AllowNull] TResult result)
         {
-            Debug.Assert(m_task != null, "Expected non-null task");
+            Debug.Assert(taskField != null, "Expected non-null task");
 
             if (AsyncCausalityTracer.LoggingOn)
             {
-                AsyncCausalityTracer.TraceOperationCompletion(m_task, AsyncCausalityStatus.Completed);
+                AsyncCausalityTracer.TraceOperationCompletion(taskField, AsyncCausalityStatus.Completed);
             }
 
-            if (!m_task.TrySetResult(result))
+            if (!taskField.TrySetResult(result))
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-            }
-        }
-
-        /// <summary>
-        /// Completes the builder by using either the supplied completed task, or by completing
-        /// the builder's previously accessed task using default(TResult).
-        /// </summary>
-        /// <param name="completedTask">A task already completed with the value default(TResult).</param>
-        /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
-        internal void SetResult(Task<TResult> completedTask)
-        {
-            Debug.Assert(completedTask != null, "Expected non-null task");
-            Debug.Assert(completedTask.IsCompletedSuccessfully, "Expected a successfully completed task");
-
-            // Get the currently stored task, which will be non-null if get_Task has already been accessed.
-            // If there isn't one, store the supplied completed task.
-            if (m_task == null)
-            {
-                m_task = completedTask;
-            }
-            else
-            {
-                // Otherwise, complete the task that's there.
-                SetExistingTaskResult(default!); // Remove ! when nullable attributes are respected
             }
         }
 
@@ -467,7 +449,9 @@ namespace System.Runtime.CompilerServices
         /// <param name="exception">The <see cref="System.Exception"/> to use to fault the task.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
-        public void SetException(Exception exception)
+        public void SetException(Exception exception) => SetException(exception, ref m_task);
+
+        internal static void SetException(Exception exception, ref Task<TResult>? taskField)
         {
             if (exception == null)
             {
@@ -475,7 +459,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // Get the task, forcing initialization if it hasn't already been initialized.
-            Task<TResult> task = this.Task;
+            Task<TResult> task = (taskField ??= new Task<TResult>());
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?
@@ -505,10 +489,13 @@ namespace System.Runtime.CompilerServices
         /// This should only be invoked from within an asynchronous method,
         /// and only by the debugger.
         /// </remarks>
-        internal void SetNotificationForWaitCompletion(bool enabled)
+        internal void SetNotificationForWaitCompletion(bool enabled) =>
+            SetNotificationForWaitCompletion(enabled, ref m_task);
+
+        internal static void SetNotificationForWaitCompletion(bool enabled, [NotNull] ref Task<TResult>? taskField)
         {
             // Get the task (forcing initialization if not already initialized), and set debug notification
-            (m_task ?? InitializeTaskAsStateMachineBox()).SetNotificationForWaitCompletion(enabled);
+            (taskField ??= CreateWeaklyTypedStateMachineBox()).SetNotificationForWaitCompletion(enabled);
 
             // NOTE: It's important that the debugger use builder.SetNotificationForWaitCompletion
             // rather than builder.Task.SetNotificationForWaitCompletion.  Even though the latter will
@@ -529,7 +516,7 @@ namespace System.Runtime.CompilerServices
         /// It must only be used by the debugger and tracing purposes, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this or other members that lazily initialize the task.
         /// </remarks>
-        internal object ObjectIdForDebugger => m_task ?? InitializeTaskAsStateMachineBox();
+        internal object ObjectIdForDebugger => m_task ??= CreateWeaklyTypedStateMachineBox();
 
         /// <summary>
         /// Gets a task for the specified result.  This will either
