@@ -10,6 +10,7 @@
 #include <glib.h>
 #include <mono/utils/mono-publib.h>
 #include "marshal.h"
+#include "icalls.h"
 
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
 
@@ -19,6 +20,7 @@ typedef struct {
 	const char* (*lookup_icall_symbol) (gpointer func);
 } MonoIcallTableCallbacks;
 
+ICALL_EXTERN_C
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 

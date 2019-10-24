@@ -6,10 +6,13 @@
 #define __MONO_TRACE_H__
 #include <glib.h>
 #include "mono/utils/mono-compiler.h"
+#include "mono/metadata/icalls.h"
 
+ICALL_EXTERN_C
 void
 mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx);
 
+ICALL_EXTERN_C
 void 
 mono_trace_leave_method (MonoMethod *method, MonoProfilerCallContext *ctx);
 

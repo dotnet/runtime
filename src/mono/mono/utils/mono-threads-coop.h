@@ -17,12 +17,14 @@
 #include "checked-build.h"
 #include "mono-threads.h"
 #include "mono-threads-api.h"
+#include "mono/metadata/icalls.h"
 
 /* JIT specific interface */
 extern volatile size_t mono_polling_required;
 
 /* Internal API */
 
+ICALL_EXTERN_C
 void
 mono_threads_state_poll (void);
 

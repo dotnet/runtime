@@ -2292,6 +2292,7 @@ mono_string_hash_internal (MonoString *s);
 int
 mono_object_hash_internal (MonoObject* obj);
 
+ICALL_EXTERN_C
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
 
@@ -2376,6 +2377,7 @@ mono_gchandle_new_internal (MonoObject *obj, mono_bool pinned);
 uint32_t
 mono_gchandle_new_weakref_internal (MonoObject *obj, mono_bool track_resurrection);
 
+ICALL_EXTERN_C
 MonoObject*
 mono_gchandle_get_target_internal (uint32_t gchandle);
 
@@ -2417,6 +2419,7 @@ mono_gc_wbarrier_generic_store_internal (void volatile* ptr, MonoObject* value);
 void
 mono_gc_wbarrier_generic_store_atomic_internal (void *ptr, MonoObject *value);
 
+ICALL_EXTERN_C
 void
 mono_gc_wbarrier_generic_nostore_internal (void* ptr);
 
