@@ -1,7 +1,7 @@
 <Project>
 
   <ItemGroup>
-    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" />
   </ItemGroup>
 
   <Target Name="IncludeToolsFiles"
