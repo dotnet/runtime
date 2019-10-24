@@ -72,6 +72,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> AndNot(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> AndNot(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> AndNot(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> LeadingSignCount(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> LeadingSignCount(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> LeadingSignCount(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> LeadingSignCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> LeadingSignCount(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> LeadingSignCount(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> LeadingSignCount(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> LeadingSignCount(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> LeadingSignCount(System.Runtime.Intrinsics.Vector64<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> LeadingSignCount(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> LeadingSignCount(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> LeadingSignCount(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<byte> LoadVector128(byte* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<double> LoadVector128(double* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<short> LoadVector128(short* address) { throw null; }
@@ -140,6 +164,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> OrNot(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> OrNot(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> OrNot(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> PopCount(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> PopCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> PopCount(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> PopCount(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Subtract(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Subtract(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> Subtract(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
@@ -207,6 +235,8 @@ namespace System.Runtime.Intrinsics.Arm
             public static bool IsSupported { get { throw null; } }
             public static int LeadingSignCount(int value) { throw null; }
             public static int LeadingSignCount(long value) { throw null; }
+            public static int LeadingSignCount(uint value) { throw null; }
+            public static int LeadingSignCount(ulong value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
         }
