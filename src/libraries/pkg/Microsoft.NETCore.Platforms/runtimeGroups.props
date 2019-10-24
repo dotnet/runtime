@@ -99,7 +99,7 @@
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
-      <Versions>11;11.0;11.1;11.2;11.3</Versions>
+      <Versions>11;12;13</Versions>
     </RuntimeGroup>
 
     <!-- rhel 6 is independent -->
