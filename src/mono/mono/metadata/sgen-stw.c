@@ -174,7 +174,7 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 	max_stw_pause_time = MAX (stw_pause_time, max_stw_pause_time);
 	end_of_last_stw = end_sw;
 
-	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d usec)", (int)stw_pause_time / 10, (int)max_stw_pause_time / 10);
+	SGEN_LOG (1, "restarted (pause time: %d usec, max: %d usec)", (int)stw_pause_time / 10, (int)max_stw_pause_time / 10);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD, generation, serial_collection));
 
