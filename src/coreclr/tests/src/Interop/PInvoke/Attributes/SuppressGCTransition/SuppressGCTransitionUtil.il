@@ -3,25 +3,25 @@
 // See the LICENSE file in the project root for more information.
 
 .assembly extern mscorlib { }
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Runtime { auto }
 
 .assembly SuppressGCTransitionUtil { }
 
 .class public auto ansi beforefieldinit FunctionPointer
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
     .method hidebysig specialname rtspecialname 
             instance void .ctor() cil managed
     {
         ldarg.0
-        call instance void [System.Private.CoreLib]System.Object::.ctor()
+        call instance void [System.Runtime]System.Object::.ctor()
         ret
     }
 
     .method public hidebysig static int32  Call_NextUInt(native int fptr,
                                                  int32* n) cil managed
     {
-        .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.SuppressGCTransitionAttribute::.ctor() = ( 01 00 00 00 )
+        .custom instance void [System.Runtime]System.Runtime.InteropServices.SuppressGCTransitionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack  8
         ldarg.1
         ldarg.0
