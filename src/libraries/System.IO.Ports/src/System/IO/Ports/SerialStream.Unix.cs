@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
+using Signals = Interop.Termios.Signals;
 
 namespace System.IO.Ports
 {
@@ -55,6 +56,26 @@ namespace System.IO.Ports
             remove
             {
                 _dataReceived -= value;
+            }
+        }
+
+        // called when any of the pin/ring-related triggers occurs
+        private SerialPinChangedEventHandler _pinChanged;
+        internal event SerialPinChangedEventHandler PinChanged
+        {
+            add
+            {
+                bool wasNull = _pinChanged == null;
+                _pinChanged += value;
+
+                if (wasNull)
+                {
+                    EnsureIOLoopRunning();
+                }
+            }
+            remove
+            {
+                _pinChanged -= value;
             }
         }
 
@@ -611,6 +632,8 @@ namespace System.IO.Ports
 
             if (disposing)
             {
+                _dataReceived = null;
+                _pinChanged = null;
                 _ioLoop?.GetAwaiter().GetResult();
                 _ioLoop = null;
 
@@ -634,11 +657,18 @@ namespace System.IO.Ports
             {
                 ThreadPool.QueueUserWorkItem(s => {
                         var thisRef = (SerialStream)s;
-                        SerialDataReceivedEventHandler dataReceived = thisRef._dataReceived;
-                        if (dataReceived != null)
-                        {
-                            dataReceived(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
-                        }
+                        thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
+                    }, this);
+            }
+        }
+
+        private void RaisePinChanged(SerialPinChange pinChanged)
+        {
+            if (_pinChanged != null)
+            {
+                ThreadPool.QueueUserWorkItem(s => {
+                        var thisRef = (SerialStream)s;
+                        thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
                     }, this);
             }
         }
@@ -765,13 +795,17 @@ namespace System.IO.Ports
             bool lastIsIdle = false;
             int ticksWhenIdleStarted = 0;
 
+            Signals lastSignals = _pinChanged != null ? Interop.Termios.TermiosGetAllSignals(_handle) : Signals.Error;
+
+            bool IsNoEventRegistered() => _dataReceived == null && _pinChanged == null;
+
             while (IsOpen && !eofReceived && !_ioLoopFinished)
             {
                 bool hasPendingReads = !_readQueue.IsEmpty;
                 bool hasPendingWrites = !_writeQueue.IsEmpty;
 
                 bool hasPendingIO = hasPendingReads || hasPendingWrites;
-                bool isIdle = _dataReceived == null && !hasPendingIO;
+                bool isIdle = IsNoEventRegistered() && !hasPendingIO;
 
                 if (!hasPendingIO)
                 {
@@ -790,7 +824,7 @@ namespace System.IO.Ports
                             lock (_ioLoopLock)
                             {
                                 // double check we are done under lock
-                                if (_dataReceived == null && _readQueue.IsEmpty && _writeQueue.IsEmpty)
+                                if (IsNoEventRegistered() && _readQueue.IsEmpty && _writeQueue.IsEmpty)
                                 {
                                     _ioLoop = null;
                                     break;
@@ -850,8 +884,50 @@ namespace System.IO.Ports
                     RaiseDataReceivedChars();
                 }
 
+                if (_pinChanged != null)
+                {
+                    // Checking for changes could technically speaking be done by waiting with ioctl+TIOCMIWAIT
+                    // This would require spinning new thread and also would potentially trigger events when
+                    // user didn't have time to respond.
+                    // Diffing seems like a better solution.
+                    Signals current = Interop.Termios.TermiosGetAllSignals(_handle);
+
+                    // There is no really good action we can take when this errors so just ignore
+                    // a sinle event.
+                    if (current != Signals.Error && lastSignals != Signals.Error)
+                    {
+                        Signals changed = current ^ lastSignals;
+                        if (changed != Signals.None)
+                        {
+                            SerialPinChange pinChanged = SignalsToPinChanges(changed);
+                            RaisePinChanged(pinChanged);
+                        }
+                    }
+
+                    lastSignals = current;
+                }
+
                 lastIsIdle = isIdle;
             }
+        }
+
+        private static SerialPinChange SignalsToPinChanges(Signals signals)
+        {
+            SerialPinChange pinChanges = default;
+
+            if (signals.HasFlag(Signals.SignalCts))
+                pinChanges |= SerialPinChange.CtsChanged;
+
+            if (signals.HasFlag(Signals.SignalDsr))
+                pinChanges |= SerialPinChange.DsrChanged;
+
+            if (signals.HasFlag(Signals.SignalDcd))
+                pinChanges |= SerialPinChange.CDChanged;
+
+            if (signals.HasFlag(Signals.SignalRng))
+                pinChanges |= SerialPinChange.Ring;
+
+            return pinChanges;
         }
 
         private static CancellationTokenSource GetCancellationTokenSourceFromTimeout(int timeoutMs)
