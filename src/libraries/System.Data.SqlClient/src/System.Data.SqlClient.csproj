@@ -235,6 +235,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetGroup)' != 'netcoreapp'">
+      <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
