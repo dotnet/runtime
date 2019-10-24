@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -10,13 +11,17 @@ internal static partial class Interop
 {
     internal static partial class Termios
     {
+        [Flags]
         internal enum Signals
         {
-            SignalDtr = 1,
-            SignalDsr = 2,
-            SignalRts = 3,
-            SignalCts = 4,
-            SignalDcd = 5,
+            None = 0,
+            SignalDtr = 1 << 0,
+            SignalDsr = 1 << 1,
+            SignalRts = 1 << 2,
+            SignalCts = 1 << 3,
+            SignalDcd = 1 << 4,
+            SignalRng = 1 << 5,
+            Error = -1,
         }
 
         internal enum Queue
@@ -34,6 +39,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosSetSignal", SetLastError = true)]
         internal static extern int TermiosGetSignal(SafeSerialDeviceHandle handle, Signals signal, int set);
+
+        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosGetAllSignals")]
+        internal static extern Signals TermiosGetAllSignals(SafeSerialDeviceHandle handle);
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosSetSpeed", SetLastError = true)]
         internal static extern int TermiosSetSpeed(SafeSerialDeviceHandle handle, int speed);

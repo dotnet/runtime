@@ -7,6 +7,7 @@
 
 DLLEXPORT int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t fd, int32_t signal);
 DLLEXPORT int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t fd, int32_t signal, int32_t set);
+DLLEXPORT int32_t SystemIoPortsNative_TermiosGetAllSignals(intptr_t fd);
 
 DLLEXPORT int32_t SystemIoPortsNative_TermiosGetSpeed(intptr_t fd);
 DLLEXPORT int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t fd, int32_t speed);

@@ -32,11 +32,12 @@ enum
 /* Interop/Unix/Interop.Termios.cs */
 enum
 {
-    SignalDtr = 1,
-    SignalDsr = 2,
-    SignalRts = 3,
-    SignalCts = 4,
-    SignalDcd = 5,
+    SignalDtr = 1 << 0,
+    SignalDsr = 1 << 1,
+    SignalRts = 1 << 2,
+    SignalCts = 1 << 3,
+    SignalDcd = 1 << 4,
+    SignalRng = 1 << 5,
 };
 
 enum
@@ -81,6 +82,31 @@ int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t handle, int32_t signal)
     default:
         return -1;
    }
+}
+
+int32_t SystemIoPortsNative_TermiosGetAllSignals(intptr_t handle)
+{
+    int32_t status = SystemIoPortsNative_TermiosGetStatus(handle);
+    if (status == -1)
+    {
+        return -1;
+    }
+
+    int32_t signals = 0;
+
+    if (status & TIOCM_CTS)
+        signals |= SignalCts;
+
+    if (status & TIOCM_DSR)
+        signals |= SignalDsr;
+
+    if (status & TIOCM_CAR)
+        signals |= SignalDcd;
+
+    if (status & TIOCM_RNG)
+        signals |= SignalRng;
+
+    return signals;
 }
 
 int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t handle, int32_t signal, int32_t set)

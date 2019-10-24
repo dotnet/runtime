@@ -36,6 +36,9 @@ namespace System.IO.Ports
         // called when one character is received.
         internal event SerialDataReceivedEventHandler DataReceived;
 
+        // called when any of the pin/ring-related triggers occurs
+        internal event SerialPinChangedEventHandler PinChanged;
+
         private SafeFileHandle _handle = null;
 
         // members supporting properties exposed to SerialPort
