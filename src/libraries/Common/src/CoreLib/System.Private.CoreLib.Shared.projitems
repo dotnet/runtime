@@ -388,6 +388,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2_Intrinsics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3_Intrinsics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4_Intrinsics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NullReferenceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />

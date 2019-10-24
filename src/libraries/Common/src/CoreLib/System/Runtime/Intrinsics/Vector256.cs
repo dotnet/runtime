@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
@@ -169,6 +171,35 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return vector.As<T, ulong>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <typeparam name="T">The type of the vectors.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector256<T> AsVector256<T>(this Vector<T> value)
+            where T : struct
+        {
+            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            Vector256<T> result = default;
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
+            return result;
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
+        /// <typeparam name="T">The type of the vectors.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector<T> AsVector<T>(this Vector256<T> value)
+            where T : struct
+        {
+            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return Unsafe.As<Vector256<T>, Vector<T>>(ref value);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with all elements initialized to the specified value.</summary>
