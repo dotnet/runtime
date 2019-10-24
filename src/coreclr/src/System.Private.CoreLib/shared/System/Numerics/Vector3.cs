@@ -11,6 +11,7 @@ namespace System.Numerics
     /// <summary>
     /// A structure encapsulating three single precision floating point values and provides hardware accelerated methods.
     /// </summary>
+    [Intrinsic]
     public partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
         #region Public Static Properties

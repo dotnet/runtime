@@ -34,8 +34,8 @@ namespace ILCompiler
                 if (metadataType.IsIntrinsic)
                 {
                     string name = metadataType.Name;
-                    if ((name == "Vector`1" || name == "Vector") &&
-                        metadataType.Namespace == "System.Numerics")
+                    if (((name == "Vector") || (name == "Vector`1") || (name == "Vector2") || (name == "Vector3") || (name == "Vector4")) &&
+                        (metadataType.Namespace == "System.Numerics"))
                         return true;
                 }
             }
