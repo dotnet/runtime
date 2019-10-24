@@ -229,9 +229,9 @@ void TypeDesc::GetName(SString &ssBuf)
         th = TypeHandle(this);
 
     if (kind == ELEMENT_TYPE_ARRAY)
-        rank = ((ArrayTypeDesc*) this)->GetRank();
+        rank = dac_cast<PTR_ArrayTypeDesc>(this)->GetRank();
     else if (CorTypeInfo::IsGenericVariable(kind))
-        rank = ((TypeVarTypeDesc*) this)->GetIndex();
+        rank = dac_cast<PTR_TypeVarTypeDesc>(this)->GetIndex();
     else
         rank = 0;
 

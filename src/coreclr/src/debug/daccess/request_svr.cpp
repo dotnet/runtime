@@ -227,7 +227,9 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
         size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap), sizeof(dac_gc_heap));
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
-        DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->generation_table), gen_table_size);
+
+        TADDR taddrTable = dac_cast<TADDR>(pHeap) + offsetof(dac_gc_heap, generation_table);
+        DacEnumMemoryRegion(taddrTable, gen_table_size);
 
         // enumerating the generations from max (which is normally gen2) to max+1 gives you
         // the segment list for all the normal segements plus the large heap segment (max+1)
