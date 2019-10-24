@@ -16,5 +16,17 @@
       <!-- Instantiated via reflection -->
       <method name=".ctor" />
     </type>
+    <type fullname="System.Text.Json.ImmutableCollectionCreator">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Text.Json.ImmutableDictionaryCreator`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Text.Json.ImmutableEnumerableCreator`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
   </assembly>
 </linker>

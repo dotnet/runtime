@@ -10,7 +10,7 @@
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' == 'core'">$(ILLinkDir)netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ILLinkDir)net46/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ILLinkDir)net472/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -80,6 +80,8 @@
       <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
+      <!-- keep interface implementations -->
+      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -101,9 +103,22 @@
       <!-- Add project references first to give precedence to project-specific files -->
       <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
       <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'!='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
+      <!-- Remove trailing slash to work around response file parsing behavior -->
+      <_DependencyDirectoriesSlash Include="@(_DependencyDirectories)">
+        <PathWithSlash>$([MSBuild]::EnsureTrailingSlash('%(Identity)'))</PathWithSlash>
+      </_DependencyDirectoriesSlash>
+      <_DependencyDirectoriesNoSlash Include="@(_DependencyDirectoriesSlash)">
+        <PathWithoutSlash>$([System.String]::new('%(PathWithSlash)').TrimEnd($([System.IO.Path]::DirectorySeparatorChar)))</PathWithoutSlash>
+      </_DependencyDirectoriesNoSlash>
+      <_DependencyDirectories Remove="@(_DependencyDirectories)" />
+      <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
     </ItemGroup>
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly);@(_DependencyDirectories)"
+    <PropertyGroup>
+      <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
+    </PropertyGroup>
+
+    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ClearInitLocals="$(ILLinkClearInitLocals)"
