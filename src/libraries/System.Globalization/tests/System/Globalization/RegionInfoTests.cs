@@ -68,7 +68,7 @@ namespace System.Globalization.Tests
         [OuterLoop("May fail on machines with multiple language packs installed")] // https://github.com/dotnet/corefx/issues/39177
         public void DisplayName(string name, string expected)
         {
-            using (new ThreadCultureChange(name))
+            using (new ThreadCultureChange(null, new CultureInfo(name)))
             {
                 Assert.Equal(expected, new RegionInfo(name).DisplayName);
             }
