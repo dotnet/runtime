@@ -63,6 +63,11 @@ namespace Internal.Cryptography.Pal
                         suppressionFlag = X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
                     }
                 }
+                else if (status.Status == X509ChainStatusFlags.OfflineRevocation)
+                {
+                    // This is mainly a warning code, it's redundant to RevocationStatusUnknown
+                    continue;
+                }
                 else
                 {
                     suppressionFlag = GetSuppressionFlag(status.Status);

@@ -80,6 +80,10 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PushX509StackField(SafeX509StackHandle stack, SafeX509Handle x509);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool PushX509StackField(SafeSharedX509StackHandle stack, SafeX509Handle x509);
+
         internal static string GetX509RootStorePath()
         {
             return Marshal.PtrToStringAnsi(GetX509RootStorePath_private());

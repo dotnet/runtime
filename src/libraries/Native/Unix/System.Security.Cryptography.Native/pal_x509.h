@@ -354,13 +354,13 @@ DLLEXPORT int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX
 Look for a cached OCSP response appropriate to the end-entity certificate using the issuer as
 determined by the chain in storeCtx.
 */
-DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath);
+DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
 
 /*
 Build an OCSP request appropriate for the end-entity certificate using the issuer (and trust) as
 determined by the chain in storeCtx.
 */
-DLLEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx);
+DLLEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth);
 
 /*
 Determine if the OCSP response is acceptable, and if acceptable report the status and
@@ -369,4 +369,5 @@ cache the result (if appropriate)
 DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
                                                                 OCSP_REQUEST* req,
                                                                 OCSP_RESPONSE* resp,
-                                                                char* cachePath);
+                                                                char* cachePath,
+                                                                int chainDepth);

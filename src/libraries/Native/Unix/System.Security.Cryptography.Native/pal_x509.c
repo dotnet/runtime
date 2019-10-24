@@ -841,6 +841,10 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
     if (basicResp != NULL)
     {
         X509_STORE* store = X509_STORE_CTX_get0_store(storeCtx);
+        X509_VERIFY_PARAM* param = X509_STORE_get0_param(store);
+        unsigned long currentFlags = X509_VERIFY_PARAM_get_flags(param);
+        // Reset the flags so the OCSP_basic_verify doesn't do a CRL lookup
+        X509_VERIFY_PARAM_clear_flags(param, currentFlags);
         X509Stack* untrusted = X509_STORE_CTX_get0_untrusted(storeCtx);
 
         // From the documentation:
@@ -858,7 +862,7 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
             nonceCheck = 1;
         }
 
-        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, 0))
+        if (nonceCheck == 1 && OCSP_basic_verify(basicResp, untrusted, store, OCSP_TRUSTOTHER))
         {
             ASN1_GENERALIZEDTIME* thisupd = NULL;
             ASN1_GENERALIZEDTIME* nextupd = NULL;
@@ -886,6 +890,9 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
             }
         }
 
+        // Restore the flags
+        X509_STORE_set_flags(store, currentFlags);
+
         OCSP_BASICRESP_free(basicResp);
         basicResp = NULL;
     }
@@ -894,7 +901,7 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
     return ret;
 }
 
-static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, X509** subject, X509** issuer)
+static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, int chainDepth, X509** subject, X509** issuer)
 {
     assert(storeCtx != NULL);
     assert(subject != NULL);
@@ -904,13 +911,13 @@ static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, X509** subject, X509** is
     X509Stack* chain = X509_STORE_CTX_get0_chain(storeCtx);
     int chainSize = chain == NULL ? 0 : sk_X509_num(chain);
 
-    if (chainSize < 1)
+    if (chainSize <= chainDepth)
     {
         return 0;
     }
 
-    *subject = sk_X509_value(chain, 0);
-    *issuer = sk_X509_value(chain, chainSize == 1 ? 0 : 1);
+    *subject = sk_X509_value(chain, chainDepth);
+    *issuer = sk_X509_value(chain, chainSize == chainDepth + 1 ? chainDepth : chainDepth + 1);
     return 1;
 }
 
@@ -924,7 +931,7 @@ static time_t GetIssuanceWindowStart()
     return t;
 }
 
-X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath)
+X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || cachePath == NULL)
     {
@@ -934,7 +941,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
     X509* subject;
     X509* issuer;
 
-    if (!Get0CertAndIssuer(storeCtx, &subject, &issuer))
+    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
         return (X509VerifyStatusCode)-2;
     }
@@ -1009,7 +1016,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
     return ret;
 }
 
-OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx)
+OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
 {
     if (storeCtx == NULL)
     {
@@ -1019,7 +1026,7 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx)
     X509* subject;
     X509* issuer;
 
-    if (!Get0CertAndIssuer(storeCtx, &subject, &issuer))
+    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
         return NULL;
     }
@@ -1055,7 +1062,7 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx)
 }
 
 X509VerifyStatusCode
-CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath)
+CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || req == NULL || resp == NULL)
     {
@@ -1065,7 +1072,7 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
     X509* subject;
     X509* issuer;
 
-    if (!Get0CertAndIssuer(storeCtx, &subject, &issuer))
+    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
         return (X509VerifyStatusCode)-2;
     }

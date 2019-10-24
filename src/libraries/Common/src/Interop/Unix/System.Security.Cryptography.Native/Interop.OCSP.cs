@@ -35,13 +35,15 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
         internal static extern void OcspResponseDestroy(IntPtr ocspReq);
 
-
         [DllImport(Libraries.CryptoNative)]
-        private static extern X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(SafeX509StoreCtxHandle ctx, string cachePath);
+        private static extern X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(
+            SafeX509StoreCtxHandle ctx,
+            string cachePath,
+            int chainDepth);
 
-        internal static X509VerifyStatusCode X509ChainGetCachedOcspStatus(SafeX509StoreCtxHandle ctx, string cachePath)
+        internal static X509VerifyStatusCode X509ChainGetCachedOcspStatus(SafeX509StoreCtxHandle ctx, string cachePath, int chainDepth)
         {
-            X509VerifyStatusCode response = CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath);
+            X509VerifyStatusCode response = CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath, chainDepth);
 
             if (response < 0)
             {
@@ -57,15 +59,17 @@ internal static partial class Interop
             SafeX509StoreCtxHandle ctx,
             SafeOcspRequestHandle req,
             SafeOcspResponseHandle resp,
-            string cachePath);
+            string cachePath,
+            int chainDepth);
 
         internal static X509VerifyStatusCode X509ChainVerifyOcsp(
             SafeX509StoreCtxHandle ctx,
             SafeOcspRequestHandle req,
             SafeOcspResponseHandle resp,
-            string cachePath)
+            string cachePath,
+            int chainDepth)
         {
-            X509VerifyStatusCode response = CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath);
+            X509VerifyStatusCode response = CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath, chainDepth);
 
             if (response < 0)
             {
@@ -77,11 +81,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(SafeX509StoreCtxHandle storeCtx);
+        private static extern SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
+            SafeX509StoreCtxHandle storeCtx,
+            int chainDepth);
 
-        internal static SafeOcspRequestHandle X509ChainBuildOcspRequest(SafeX509StoreCtxHandle storeCtx)
+        internal static SafeOcspRequestHandle X509ChainBuildOcspRequest(SafeX509StoreCtxHandle storeCtx, int chainDepth)
         {
-            SafeOcspRequestHandle req = CryptoNative_X509ChainBuildOcspRequest(storeCtx);
+            SafeOcspRequestHandle req = CryptoNative_X509ChainBuildOcspRequest(storeCtx, chainDepth);
 
             if (req.IsInvalid)
             {

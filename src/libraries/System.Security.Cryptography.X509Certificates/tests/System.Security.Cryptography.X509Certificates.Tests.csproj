@@ -6,7 +6,14 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
     <Compile Include="Cert.cs" />
     <Compile Include="CertTests.cs" />
     <Compile Include="ChainHolder.cs" />
@@ -43,6 +50,9 @@
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
+    <Compile Include="RevocationTests\CertificateAuthority.cs" />
+    <Compile Include="RevocationTests\DynamicRevocationTests.cs" />
+    <Compile Include="RevocationTests\RevocationResponder.cs" />
     <Compile Include="DSAOther.cs" />
     <Compile Include="DynamicChainTests.cs" />
     <Compile Include="ECDsaOther.cs" />

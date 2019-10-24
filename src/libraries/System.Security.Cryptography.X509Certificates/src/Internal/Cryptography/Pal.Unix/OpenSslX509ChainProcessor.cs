@@ -4,6 +4,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -11,6 +12,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -30,13 +32,19 @@ namespace Internal.Cryptography.Pal
         private static readonly CachedDirectoryStoreProvider s_userPersonalStore =
             new CachedDirectoryStoreProvider(X509Store.MyStoreName);
 
+        // Save the results of GetX509VerifyCertErrorString as we look them up.
+        // On Windows we preload the entire string table, but on Linux we'll delay-load memoize
+        // to avoid needing to know the upper bound of error codes for the particular build of OpenSSL.
+        private static readonly ConcurrentDictionary<Interop.Crypto.X509VerifyStatusCode, string> s_errorStrings =
+            new ConcurrentDictionary<Interop.Crypto.X509VerifyStatusCode, string>();
+
         private SafeX509Handle _leafHandle;
         private SafeX509StoreHandle _store;
         private readonly SafeX509StackHandle _untrustedLookup;
         private readonly SafeX509StoreCtxHandle _storeCtx;
         private readonly DateTime _verificationTime;
         private TimeSpan _remainingDownloadTime;
-        private X509RevocationMode _revocationMode;
+        private WorkingChain _workingChain;
 
         private OpenSslX509ChainProcessor(
             SafeX509Handle leafHandle,
@@ -59,6 +67,7 @@ namespace Internal.Cryptography.Pal
             _storeCtx?.Dispose();
             _untrustedLookup?.Dispose();
             _store?.Dispose();
+            _workingChain?.Dispose();
 
             // We don't own this one.
             _leafHandle = null;
@@ -321,21 +330,33 @@ namespace Internal.Cryptography.Pal
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag)
         {
-            _revocationMode = revocationMode;
-
             if (revocationMode == X509RevocationMode.NoCheck)
             {
                 return;
             }
 
+            int chainSize;
+            int revocationSize;
+
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
-                int chainSize =
-                    revocationFlag == X509RevocationFlag.EndCertificateOnly ?
-                        1 :
-                        Interop.Crypto.GetX509StackFieldCount(chainStack);
+                chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
 
-                for (int i = 0; i < chainSize; i++)
+                switch (revocationFlag)
+                {
+                    case X509RevocationFlag.EndCertificateOnly:
+                        revocationSize = 1;
+                        break;
+                    case X509RevocationFlag.ExcludeRoot:
+                        revocationSize = chainSize - 1;
+                        break;
+                    default:
+                        Debug.Assert(revocationFlag == X509RevocationFlag.EntireChain);
+                        revocationSize = chainSize;
+                        break;
+                }
+
+                for (int i = 0; i < revocationSize; i++)
                 {
                     using (SafeX509Handle cert =
                         Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
@@ -352,68 +373,242 @@ namespace Internal.Cryptography.Pal
 
             Interop.Crypto.X509StoreSetRevocationFlag(_store, revocationFlag);
             Interop.Crypto.X509StoreCtxRebuildChain(_storeCtx);
+
+            // If anything is wrong, move see if we need to try OCSP,
+            // or clearing an unwanted root revocation flag.
+            if (Interop.Crypto.X509StoreCtxGetError(_storeCtx) != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+            {
+                FinishRevocation(revocationMode, revocationFlag, chainSize);
+            }
+        }
+
+        private void FinishRevocation(
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            int chainSize)
+        {
+            WorkingChain workingChain = BuildWorkingChain();
+
+            // If the chain built and the only error was something we ignore (probably X509_V_ERR_CRL_NOT_YET_VALID)
+            // then there's nothing to do.
+            if (workingChain.LastError < 0)
+            {
+                return;
+            }
+
+            Interop.Crypto.X509VerifyStatusCode statusCode;
+            ref ErrorCollection refErrors = ref workingChain[0];
+
+            // EndCertificateOnly, not testing a trusted self-signed certificate.
+            if (revocationFlag == X509RevocationFlag.EndCertificateOnly && chainSize > 1)
+            {
+                if (refErrors.HasCorruptRevocation())
+                {
+                    refErrors.ClearRevoked();
+                }
+
+                if (refErrors.IsRevoked())
+                {
+                    refErrors.ClearRevocationUnknown();
+                    return;
+                }
+
+                Debug.Assert(refErrors.HasRevocationUnknown());
+                refErrors.ClearRevocationUnknown();
+
+                statusCode = CheckOcsp(0, _leafHandle, revocationMode);
+
+                if (statusCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                {
+                    refErrors.Add(statusCode);
+                }
+
+                return;
+            }
+
+            // Either we're self-signed, or we're in EntireChain or ExcludeRoot
+
+            using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
+            {
+                // Root processing is special.
+                // * OpenSSL doesn't have an ExcludeRoot mode, so if it determines the root
+                //   was revoked it'll assert Revoked, and we need to clear that.
+                // * In EntireChain we'll process OCSP to clear RevocationStatusUnknown, but
+                //   if OCSP also is inconclusive we report NoError.
+                int start = chainSize - 1;
+                bool encounteredRevocation = false;
+
+                if (workingChain.LastError >= start)
+                {
+                    refErrors = ref workingChain[start];
+
+                    if (refErrors.HasCorruptRevocation())
+                    {
+                        refErrors.ClearRevoked();
+                    }
+
+                    encounteredRevocation = refErrors.IsRevoked();
+
+                    Debug.Assert(chainSize == 1 || revocationFlag != X509RevocationFlag.EndCertificateOnly);
+
+                    // If we're in EntireChain, keep the revoked result.
+                    // If we're in ExcludeRoot, ignore the revoked result.
+                    //
+                    // If we're in EndCertificateOnly the chainSize has to be one, or we already exited...
+                    // since the root IS the end certificate, keep the revoked result.
+                    if (encounteredRevocation && revocationFlag == X509RevocationFlag.ExcludeRoot)
+                    {
+                        refErrors.ClearRevoked();
+                        encounteredRevocation = false;
+                    }
+                    else if (refErrors.HasRevocationUnknown() && revocationFlag != X509RevocationFlag.ExcludeRoot)
+                    {
+                        // If the chain size is 1 we need to copy the root cert into untrusted so
+                        // OCSP_basic_verify can find it.
+                        if (chainSize == 1)
+                        {
+                            using (SafeSharedX509StackHandle untrusted = Interop.Crypto.X509StoreCtxGetSharedUntrusted(_storeCtx))
+                            using (SafeX509Handle upref = Interop.Crypto.X509UpRef(_leafHandle))
+                            {
+                                Interop.Crypto.PushX509StackField(untrusted, upref);
+                                // Ownership moved to the stack
+                                upref.SetHandleAsInvalid();
+                            }
+                        }
+
+                        IntPtr rootPtr = Interop.Crypto.GetX509StackField(chainStack, start);
+
+                        using (SafeX509Handle rootHandle = Interop.Crypto.X509UpRef(rootPtr))
+                        {
+                            statusCode = CheckOcsp(start, rootHandle, revocationMode);
+                        }
+
+                        if (statusCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                        {
+                            refErrors.Add(statusCode);
+                            encounteredRevocation = refErrors.IsRevoked();
+                        }
+                    }
+
+                    // Root is revoked and we care, revoked and we don't care, or it's OK.
+                    // Clear any of the bits that indicate revocation is unknown (for the root).
+                    refErrors.ClearRevocationUnknown();
+                    start--;
+                }
+                else
+                {
+                    Debug.Assert(workingChain.LastError <= start - 1);
+                    start = workingChain.LastError;
+                }
+
+                // For the remaining (issued) levels:
+                // If any higher level cert is revoked, set RevocationStatusUnknown and clear Revoked.
+                // If revoked at this level, clear RevocationStatusUnknown (revoked on an expired CRL).
+                // If revocation status is unknown, ask OCSP
+
+                for (int i = start; i >= 0; i--)
+                {
+                    refErrors = ref workingChain[i];
+
+                    if (encounteredRevocation)
+                    {
+                        refErrors.ClearRevoked();
+                        refErrors.AddRevocationUnknown();
+                        continue;
+                    }
+
+                    if (refErrors.HasCorruptRevocation())
+                    {
+                        refErrors.ClearRevoked();
+                    }
+
+                    if (refErrors.IsRevoked())
+                    {
+                        refErrors.ClearRevocationUnknown();
+                        encounteredRevocation = true;
+                        continue;
+                    }
+
+                    if (refErrors.HasRevocationUnknown())
+                    {
+                        refErrors.ClearRevocationUnknown();
+
+                        if (i == 0)
+                        {
+                            statusCode = CheckOcsp(0, _leafHandle, revocationMode);
+                        }
+                        else
+                        {
+                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(certPtr))
+                            {
+                                statusCode = CheckOcsp(i, certHandle, revocationMode);
+                            }
+                        }
+
+                        if (statusCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                        {
+                            refErrors.Add(statusCode);
+                            encounteredRevocation = refErrors.IsRevoked();
+                        }
+                    }
+                }
+            }
+        }
+
+        private WorkingChain BuildWorkingChain()
+        {
+            if (_workingChain != null)
+            {
+                return _workingChain;
+            }
+
+            WorkingChain workingChain = new WorkingChain();
+            WorkingChain extraDispose = null;
+
+            Interop.Crypto.X509StoreCtxReset(_storeCtx);
+            Interop.Crypto.X509StoreVerifyCallback workingCallback = workingChain.VerifyCallback;
+            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+            bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
+
+            if (workingChain.AbortedForSignatureError)
+            {
+                Debug.Assert(!verify, "verify should have returned false for signature error");
+                CloneChainForSignatureErrors();
+
+                // Reset to a WorkingChain that won't fail.
+                extraDispose = workingChain;
+                workingChain = new WorkingChain(abortOnSignatureError: false);
+                workingCallback = workingChain.VerifyCallback;
+                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+                verify = Interop.Crypto.X509VerifyCert(_storeCtx);
+            }
+
+            // Keep the bound delegate alive until X509_verify_cert isn't going to call it any longer.
+            GC.KeepAlive(workingCallback);
+
+            // Because our callback tells OpenSSL that every problem is ignorable, it should tell us that the
+            // chain is just fine (unless it returned a negative code for an exception)
+            Debug.Assert(verify, "verify should have returned true");
+
+            extraDispose?.Dispose();
+
+            _workingChain = workingChain;
+            return workingChain;
         }
 
         internal void Finish(OidCollection applicationPolicy, OidCollection certificatePolicy)
         {
-            WorkingChain workingChain = null;
+            WorkingChain workingChain = _workingChain;
 
             // If the chain had any errors during the previous build we need to walk it again with
             // the error collector running.
-            if (Interop.Crypto.X509StoreCtxGetError(_storeCtx) !=
-                Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+            if (Interop.Crypto.X509StoreCtxGetError(_storeCtx) != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
             {
-                Interop.Crypto.X509StoreCtxReset(_storeCtx);
-
-                workingChain = new WorkingChain();
-                Interop.Crypto.X509StoreVerifyCallback workingCallback = workingChain.VerifyCallback;
-                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
-
-                bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
-
-                if (workingChain.AbortedForSignatureError)
-                {
-                    Debug.Assert(!verify, "verify should have returned false for signature error");
-                    CloneChainForSignatureErrors();
-
-                    // Reset to a WorkingChain that won't fail.
-                    workingChain = new WorkingChain(abortOnSignatureError: false);
-                    workingCallback = workingChain.VerifyCallback;
-                    Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
-
-                    verify = Interop.Crypto.X509VerifyCert(_storeCtx);
-                }
-
-                GC.KeepAlive(workingCallback);
-
-                // Because our callback tells OpenSSL that every problem is ignorable, it should tell us that the
-                // chain is just fine (unless it returned a negative code for an exception)
-                Debug.Assert(verify, "verify should have returned true");
-
-                const Interop.Crypto.X509VerifyStatusCode NoCrl =
-                    Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL;
-
-                ErrorCollection? errors =
-                    workingChain.LastError > 0 ? (ErrorCollection?)workingChain[0] : null;
-
-                if (_revocationMode == X509RevocationMode.Online &&
-                    _remainingDownloadTime > TimeSpan.Zero &&
-                    errors?.HasError(NoCrl) == true)
-                {
-                    Interop.Crypto.X509VerifyStatusCode ocspStatus = CheckOcsp();
-
-                    ref ErrorCollection refErrors = ref workingChain[0];
-
-                    if (ocspStatus == Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
-                    {
-                        refErrors.ClearError(NoCrl);
-                    }
-                    else if (ocspStatus != NoCrl)
-                    {
-                        refErrors.ClearError(NoCrl);
-                        refErrors.Add(ocspStatus);
-                    }
-                }
+                workingChain ??= BuildWorkingChain();
             }
 
             X509ChainElement[] elements = BuildChainElements(
@@ -446,25 +641,33 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private Interop.Crypto.X509VerifyStatusCode CheckOcsp()
+        private Interop.Crypto.X509VerifyStatusCode CheckOcsp(
+            int chainDepth,
+            SafeX509Handle certHandle,
+            X509RevocationMode revocationMode)
         {
             string ocspCache = CrlCache.GetCachedOcspResponseDirectory();
             Interop.Crypto.X509VerifyStatusCode status =
-                Interop.Crypto.X509ChainGetCachedOcspStatus(_storeCtx, ocspCache);
+                Interop.Crypto.X509ChainGetCachedOcspStatus(_storeCtx, ocspCache, chainDepth);
 
             if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL)
             {
                 return status;
             }
 
-            string baseUri = GetOcspEndpoint(_leafHandle);
+            if (revocationMode != X509RevocationMode.Online || _remainingDownloadTime <= TimeSpan.Zero)
+            {
+                return Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL;
+            }
+
+            string baseUri = GetOcspEndpoint(certHandle);
 
             if (baseUri == null)
             {
                 return status;
             }
 
-            using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx))
+            using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx, chainDepth))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
                     handle => Interop.Crypto.GetOcspRequestDerSize(handle),
@@ -483,10 +686,9 @@ namespace Internal.Cryptography.Pal
                 //
                 // Doing POST via the reflection indirection to HttpClient is difficult, and
                 // CA/Browser Forum Baseline Requirements (version 1.6.3) section 4.9.10
-                // (On-line REvocation Checking Requirements) says that the GET method must be supported.
+                // (On-line Revocation Checking Requirements) says that the GET method must be supported.
                 //
                 // So, for now, only try GET.
-
                 SafeOcspResponseHandle resp =
                     CertificateAssetDownloader.DownloadOcspGet(requestUrl, ref _remainingDownloadTime);
 
@@ -506,7 +708,7 @@ namespace Internal.Cryptography.Pal
                         // Opportunistic create, suppress all errors.
                     }
 
-                    return Interop.Crypto.X509ChainVerifyOcsp(_storeCtx, req, resp, ocspCache);
+                    return Interop.Crypto.X509ChainVerifyOcsp(_storeCtx, req, resp, ocspCache, chainDepth);
                 }
             }
         }
@@ -606,6 +808,8 @@ namespace Internal.Cryptography.Pal
             X509ChainElement[] elements;
             overallStatus = null;
 
+            List<X509ChainStatus> statusBuilder = null;
+
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
@@ -615,15 +819,16 @@ namespace Internal.Cryptography.Pal
                 {
                     X509ChainStatus[] status = Array.Empty<X509ChainStatus>();
                     ErrorCollection? elementErrors =
-                        workingChain?.LastError > i ? (ErrorCollection?)workingChain[i] : null;
+                        workingChain?.LastError >= i ? (ErrorCollection?)workingChain[i] : null;
 
                     if (elementErrors.HasValue && elementErrors.Value.HasErrors)
                     {
-                        List<X509ChainStatus> statusBuilder = new List<X509ChainStatus>();
-                        overallStatus = overallStatus ?? new List<X509ChainStatus>();
+                        statusBuilder ??= new List<X509ChainStatus>();
+                        overallStatus ??= new List<X509ChainStatus>();
 
                         AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
                         status = statusBuilder.ToArray();
+                        statusBuilder.Clear();
                     }
 
                     IntPtr elementCertPtr = Interop.Crypto.GetX509StackField(chainStack, i);
@@ -719,6 +924,24 @@ namespace Internal.Cryptography.Pal
             {
                 AddElementStatus(errorCode, elementStatus, overallStatus);
             }
+
+            foreach (X509ChainStatus element in elementStatus)
+            {
+                if (element.Status == X509ChainStatusFlags.RevocationStatusUnknown)
+                {
+                    X509ChainStatus chainStatus = new X509ChainStatus
+                    {
+                        Status = X509ChainStatusFlags.OfflineRevocation,
+
+                        StatusInformation = GetErrorString(
+                            Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL),
+                    };
+
+                    elementStatus.Add(chainStatus);
+                    AddUniqueStatus(overallStatus, ref chainStatus);
+                    break;
+                }
+            }
         }
 
         private static void AddElementStatus(
@@ -746,14 +969,14 @@ namespace Internal.Cryptography.Pal
             X509ChainStatus chainStatus = new X509ChainStatus
             {
                 Status = statusFlag,
-                StatusInformation = Interop.Crypto.GetX509VerifyCertErrorString(errorCode),
+                StatusInformation = GetErrorString(errorCode),
             };
 
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
         }
 
-        private static void AddUniqueStatus(IList<X509ChainStatus> list, ref X509ChainStatus status)
+        private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)
         {
             X509ChainStatusFlags statusCode = status.Status;
 
@@ -793,9 +1016,9 @@ namespace Internal.Cryptography.Pal
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
                     return X509ChainStatusFlags.UntrustedRoot;
 
+                // When adding to the RevocationStatusUnknown block, ensure these codes are properly
+                // tested/cleared in the ErrorCollection type.
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_HAS_EXPIRED:
-                    return X509ChainStatusFlags.OfflineRevocation;
-
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID:
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE:
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
@@ -943,6 +1166,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        private static string GetErrorString(Interop.Crypto.X509VerifyStatusCode code)
+        {
+            return s_errorStrings.GetOrAdd(
+                code,
+                c => Interop.Crypto.GetX509VerifyCertErrorString(c));
+        }
+
         private sealed class WorkingChain : IDisposable
         {
             // OpenSSL 1.0 sets a "signature valid, don't check again" if we OK the signature error
@@ -954,18 +1184,18 @@ namespace Internal.Cryptography.Pal
 
             internal bool AbortOnSignatureError { get; }
             internal bool AbortedForSignatureError { get; private set; }
+            internal int LastError { get; private set; }
 
             internal WorkingChain()
                 : this(s_defaultAbort)
             {
+                LastError = -1;
             }
 
             internal WorkingChain(bool abortOnSignatureError)
             {
                 AbortOnSignatureError = abortOnSignatureError;
             }
-
-            internal int LastError => _errors?.Length ?? 0;
 
             internal ref ErrorCollection this[int idx] => ref _errors[idx];
 
@@ -1029,6 +1259,7 @@ namespace Internal.Cryptography.Pal
                                 ArrayPool<ErrorCollection>.Shared.Return(toReturn);
                             }
 
+                            LastError = Math.Max(errorDepth, LastError);
                             _errors[errorDepth].Add(errorCode);
                         }
                     }
@@ -1061,16 +1292,82 @@ namespace Internal.Cryptography.Pal
                 _codes[bucket] |= bitValue;
             }
 
-            public void ClearError(Interop.Crypto.X509VerifyStatusCode statusCode)
+            private void ClearError(Interop.Crypto.X509VerifyStatusCode statusCode)
             {
                 int bucket = FindBucket(statusCode, out int bitValue);
                 _codes[bucket] &= ~bitValue;
             }
 
-            internal bool HasError(Interop.Crypto.X509VerifyStatusCode statusCode)
+            private bool HasError(Interop.Crypto.X509VerifyStatusCode statusCode)
             {
                 int bucket = FindBucket(statusCode, out int bitValue);
                 return (_codes[bucket] & bitValue) != 0;
+            }
+
+            internal void ClearRevoked()
+            {
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_REVOKED);
+            }
+
+            internal bool IsRevoked()
+            {
+                return HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_REVOKED);
+            }
+
+            internal bool HasCorruptRevocation()
+            {
+                return
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE) &&
+                    IsRevoked();
+            }
+
+            internal void ClearRevocationUnknown()
+            {
+                // When adding codes here, make sure that HasRevocationUnknown and
+                // MapVerifyErrorToChainStatus both agree that the code maps to RevocationStatusUnknown.
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_HAS_EXPIRED);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CRL_SIGN);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL_ISSUER);
+                ClearError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION);
+            }
+
+            internal bool HasRevocationUnknown()
+            {
+                if (!HasErrors)
+                {
+                    return false;
+                }
+
+                // When adding codes here, make sure that ClearRevocationUnknown and
+                // MapVerifyErrorToChainStatus both agree that the code maps to RevocationStatusUnknown.
+
+                // The most common reasons are UNABLE_TO_GET_CRL, then CRL_HAS_EXPIRED.
+                return
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_HAS_EXPIRED) ||
+
+                    // The rest are simply alphabetical.
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CRL_SIGN) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL_ISSUER) ||
+                    HasError(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION);
+            }
+
+            internal void AddRevocationUnknown()
+            {
+                // Only one of the codes has to be set.
+                // So set the one we look for first.
+                Add(Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL);
             }
 
             public Enumerator GetEnumerator()
@@ -1082,6 +1379,28 @@ namespace Internal.Cryptography.Pal
 
                 return new Enumerator(this);
             }
+
+#if DEBUG
+            public override string ToString()
+            {
+                if (!HasErrors)
+                {
+                    return "{}";
+                }
+
+                StringBuilder builder = new StringBuilder("{ ");
+                string delim = "";
+
+                foreach (Interop.Crypto.X509VerifyStatusCode code in this)
+                {
+                    builder.Append(delim).Append(code);
+                    delim = " | ";
+                }
+
+                builder.Append(" }");
+                return builder.ToString();
+            }
+#endif
 
             private static int FindBucket(Interop.Crypto.X509VerifyStatusCode statusCode, out int bitValue)
             {
