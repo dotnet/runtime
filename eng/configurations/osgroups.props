@@ -35,10 +35,8 @@
       <PackageTargetRuntime>netbsd</PackageTargetRuntime>
     </OSGroups>
     <OSGroups Include="WebAssembly">
-      <!-- TODO: we need to change this to import Unix instead whenever
-      we want to start using managed implementation for WebAssembly -->
-      <Imports>Linux</Imports>
-      <TargetsLinux>true</TargetsLinux>
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
       <TargetsWebAssembly>true</TargetsWebAssembly>
     </OSGroups>
     <OSGroups Include="AnyOS" />
