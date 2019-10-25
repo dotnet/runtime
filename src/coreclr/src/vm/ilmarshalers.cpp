@@ -2743,13 +2743,7 @@ void ILSafeHandleMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
-    pslILEmit->EmitLDC(0);
-    pslILEmit->EmitCONV_U();
-    pslILEmit->EmitCEQ();
-    pslILEmit->EmitLDC(0);
-    pslILEmit->EmitCEQ();
-    EmitLoadCleanupWorkList(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__HANDLE_MARSHALER__CONVERT_SAFEHANDLE_TO_NATIVE, 3, 1);
+    pslILEmit->EmitCALL(METHOD__HANDLE_MARSHALER__CONVERT_SAFEHANDLE_TO_NATIVE, 2, 1);
     EmitStoreNativeValue(pslILEmit);
 }
 
