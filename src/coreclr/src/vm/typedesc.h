@@ -354,9 +354,6 @@ public:
         INDEBUG(Verify());
     }
 
-//private:    TypeHandle      m_Arg;              // The type that is being modified
-
-
     // placement new operator
     void* operator new(size_t size, void* spot) {   return (spot); }
 

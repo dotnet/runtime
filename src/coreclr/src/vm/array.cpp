@@ -255,7 +255,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // used when verfifying generic code.
     // However verification is tied in with some codegen in the JITs, so give these
     // the shared MT just in case.
-    // This checks match precisely one in ParamTypeDesc::OwnsMethodTable
+    // This checks match precisely one in ParamTypeDesc::OwnsTemplateMethodTable
     if (CorTypeInfo::IsGenericVariable(elemType)) {
         // This is loading the canonical version of the array so we can override
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);

@@ -101,19 +101,6 @@ FCIMPL2(INT32, ArrayNative::GetLength, ArrayBase* array, unsigned int dimension)
 FCIMPLEND
 
 
-FCIMPL1(void*, ArrayNative::GetRawArrayData, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    _ASSERTE(array != NULL);
-
-    return array->GetDataPtr();
-}
-FCIMPLEND
-
-
 // array is GC protected by caller
 void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
                            MethodTable* pArrayMT,
