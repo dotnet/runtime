@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Threading;
 
@@ -44,6 +45,8 @@ namespace System.Text.Json
                 options);
         }
 
+        [PreserveDependency(".ctor()", "System.Text.Json.JsonPropertyInfoNullable`2", "System.Text.Json")]
+        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.JsonPropertyInfoNotNullableContravariant`4", "System.Text.Json")]
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
             Type runtimePropertyType,
