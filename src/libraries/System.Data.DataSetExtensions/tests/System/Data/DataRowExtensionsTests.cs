@@ -95,6 +95,23 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        public void Field_Nullable_Enum()
+        {
+            DataTable table = new DataTable("test");
+            table.Columns.Add(new DataColumn("col", typeof(int)));
+            DataRow row = table.NewRow();
+            row["col"] = 0;
+            table.Rows.Add(row);
+
+            Assert.Equal(SomeEnum.Foo, table.Rows[0].Field<SomeEnum?>("col"));
+        }
+
+        enum SomeEnum
+        {
+            Foo
+        }
+
+        [Fact]
         public void SetField_IndexValue_NullRowThrows()
         {
             AssertExtensions.Throws<ArgumentNullException>("row", () => DataRowExtensions.SetField(null, columnIndex: 0, value: 0));
@@ -170,7 +187,5 @@ namespace System.Data.Tests
             DataRowExtensions.SetField<string>(row, column: column, value: null);
             Assert.Equal(DBNull.Value, row[column]);
         }
-
-
     }
 }

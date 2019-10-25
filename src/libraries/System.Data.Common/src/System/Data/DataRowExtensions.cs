@@ -147,25 +147,30 @@ namespace System.Data
 
             private static Converter<object, T> Create()
             {
-                if (default(T) == null)
-                    return ReferenceOrNullableField;
-                else
-                    return ValueField;
+                if (typeof(T).IsValueType)
+                {
+                    return typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>)
+                        ? (Converter<object, T>)Delegate.CreateDelegate(
+                            typeof(Converter<object, T>),
+                                typeof(UnboxT<T>)
+                                    .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                                    .MakeGenericMethod(typeof(T).GetGenericArguments()[0]))
+                        : ValueField;
+                }
+
+                return ReferenceField;
             }
 
-            private static T ReferenceOrNullableField(object value)
-            {
-                return ((DBNull.Value == value) ? default(T) : (T)value);
-            }
+            private static T ReferenceField(object value)
+                => value == DBNull.Value ? default : (T)value;
 
             private static T ValueField(object value)
-            {
-                if (DBNull.Value == value)
-                {
-                    throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
-                }
-                return (T)value;
-            }
+                => value == DBNull.Value
+                    ? throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)))
+                    : (T)value;
+
+            private static Nullable<TElem> NullableField<TElem>(object value) where TElem : struct
+                => value == DBNull.Value ? default : new Nullable<TElem>((TElem)value);
         }
     }
 }
