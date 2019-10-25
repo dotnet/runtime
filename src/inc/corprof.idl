@@ -3985,6 +3985,40 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
     HRESULT ResumeRuntime();
 }
 
+[
+    object,
+    uuid(06398876-8987-4154-B621-40A00D6E4D04),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo11 : ICorProfilerInfo10
+{
+    /*
+     * Get environment variable for the running managed code.
+     */
+    HRESULT GetEnvironmentVariable(
+                [in, string] const WCHAR *szName,
+                [in]         ULONG cchValue,
+                [out]        ULONG *pcchValue,
+                [out, annotation("_Out_writes_to_(cchValue, *pcchValue)")]
+                             WCHAR szValue[]);
+
+    /*
+     * Set environment variable for the running managed code.
+     *
+     * The code profiler calls this function to modify environment variables of the
+     * current managed process. For example, it can be used in the profiler's Initialize()
+     * or InitializeForAttach() callbacks.
+     *
+     * szName is the name of the environment variable, should not be NULL.
+     *
+     * szValue is the contents of the environment variable, or NULL if the variable should be deleted.
+     */
+    HRESULT SetEnvironmentVariable(
+                [in, string] const WCHAR *szName,
+                [in, string] const WCHAR *szValue);
+}
+
 /*
 * This interface lets you iterate over methods in the runtime.
 */

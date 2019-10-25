@@ -594,6 +594,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     {
         *pInterface = static_cast<ICorProfilerInfo10 *>(this);
     }
+    else if (id == IID_ICorProfilerInfo11)
+    {
+        *pInterface = static_cast<ICorProfilerInfo11 *>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorProfilerInfo *>(this));
@@ -7007,6 +7011,92 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
     ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
     return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
+    const WCHAR *szName,
+    ULONG       cchValue,
+    ULONG       *pcchValue,
+    __out_ecount_part_opt(cchValue, *pcchValue) WCHAR szValue[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+
+        PRECONDITION(CheckPointer(szName, NULL_NOT_OK));
+        PRECONDITION(CheckPointer(pcchValue, NULL_OK));
+        PRECONDITION(CheckPointer(szValue, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: GetEnvironmentVariable.\n"));
+
+    if (szName == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    if ((cchValue != 0) && (szValue == nullptr))
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+
+    if ((pcchValue != nullptr) || (szValue != nullptr))
+    {
+        DWORD trueLen = GetEnvironmentVariableW(szName, szValue, cchValue);
+        if (trueLen == 0)
+        {
+            hr = HRESULT_FROM_WIN32(GetLastError());
+        }
+        else if ((trueLen > cchValue) && (szValue != nullptr))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+        }
+
+        if (pcchValue != nullptr)
+        {
+            *pcchValue = trueLen;
+        }
+    }
+
+    return hr;
+}
+
+HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const WCHAR *szValue)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+
+        PRECONDITION(CheckPointer(szName, NULL_NOT_OK));
+        PRECONDITION(CheckPointer(szValue, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: SetEnvironmentVariable.\n"));
+
+    if (szName == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
 /*
