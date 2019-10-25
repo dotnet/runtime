@@ -18,7 +18,6 @@ namespace System.Drawing
         internal unsafe partial class Gdip
         {
             internal const string LibraryName = "libgdiplus";
-            private static readonly Version LibraryRequiredVersion = new Version(6, 0, 1);
             public static IntPtr Display = IntPtr.Zero;
 
             // Indicates whether X11 is available. It's available on Linux but not on recent macOS versions
@@ -63,28 +62,6 @@ namespace System.Drawing
             private static void PlatformInitialize()
             {
                 LibraryResolver.EnsureRegistered();
-
-                // Check whether the version of libgdiplus is a recent version of libgdiplus.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    Version installedVersion = null;
-
-                    try
-                    {
-                        installedVersion = new Version(GetLibgdiplusVersion());
-                    }
-                    catch (EntryPointNotFoundException)
-                    {
-                        // We're using an old version of libgdiplus, which doesn't implement the GetLibgdiplusVersion
-                        // version.
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated, LibraryRequiredVersion));
-                    }
-
-                    if (installedVersion < LibraryRequiredVersion)
-                    {
-                        throw new PlatformNotSupportedException(SR.Format(SR.LibgdiplusOutdated2, LibraryRequiredVersion, installedVersion));
-                    }
-                }
             }
 
             // Imported functions
@@ -438,9 +415,6 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptSavePage(IntPtr graphics);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern string GetLibgdiplusVersion();
         }
     }
 
