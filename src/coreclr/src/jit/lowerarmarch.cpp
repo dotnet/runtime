@@ -326,6 +326,20 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= CPBLK_UNROLL_LIMIT))
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+                if (src->OperIs(GT_IND))
+                {
+                    GenTree* srcAddr = src->AsIndir()->Addr();
+                    if (srcAddr->OperIsLocalAddr())
+                    {
+                        srcAddr->SetContained();
+                    }
+                }
+
+                if (dstAddr->OperIsLocalAddr())
+                {
+                    dstAddr->SetContained();
+                }
             }
             else
             {
