@@ -4,10 +4,26 @@ trigger:
     include:
     - master
     - release/3.*
+  paths:
+    exclude:
+    - Documentation/*
+    - README.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 pr:
-- master
-- release/3.*
+  branches:
+    include:
+    - master
+    - release/3.*
+  paths:
+    exclude:
+    - Documentation/*
+    - README.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
 
