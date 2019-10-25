@@ -91,16 +91,10 @@ fi
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dotnet=$"${scriptDir}"/../.dotnet/dotnet
-packageDir="${scriptDir}"/../.packages
-csprojPath="${scriptDir}"/src/Common/stress_dependencies/stress_dependencies.csproj
+csprojPath="${scriptDir}"/stress_dependencies/stress_dependencies.csproj
 
 if [ ! -e $dotnetCmd ]; then
     exit_with_error 1 'dotnet commandline does not exist:'$dotnetCmd
-fi
-
-# make package directory
-if [ ! -e $packageDir ]; then
-    mkdir -p $packageDir
 fi
 
 # make output directory
@@ -160,7 +154,11 @@ initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
 # 14.04 and 16.04 packages. Use the oldest package which will work on newer
 # platforms.
 if [[ ${__BuildOS} == "Linux" ]]; then
-   __DistroRid=ubuntu.14.04
+    if [[ ${__BuildArch} == "x64" ]]; then
+        __DistroRid=ubuntu.14.04-x64
+    elif [[ ${__BuildArch} == "x86" ]]; then
+        __DistroRid=ubuntu.14.04-x86
+    fi
 fi
 
 # Query runtime Id
@@ -174,11 +172,21 @@ fi
 
 # Download the package
 echo Downloading CoreDisTools package
-bash -c -x "$dotnet restore $csprojPath --packages $packageDir"
+bash -c -x "$dotnet restore $csprojPath"
 if [ $? -ne 0 ]
 then
     exit_with_error 1 "Failed to restore the package"
 fi
+
+CoreDisToolsPackagePathOutputFile="${scriptDir}/../bin/obj/${__BuildOS}.x64/optdatapath.txt"
+
+bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\" /bl" 
+if [ $? -ne 0 ]
+then
+    exit_with_error 1 "Failed to find the path to CoreDisTools."
+fi
+
+packageDir=$(<"${CoreDisToolsPackagePathOutputFile}")
 
 # Get library path
 libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`

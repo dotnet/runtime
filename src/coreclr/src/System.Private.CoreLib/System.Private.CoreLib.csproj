@@ -443,7 +443,7 @@
 
   <!-- Setup ILLink.targets -->
   <ItemGroup>
-    <PackageReference Include="$(ILLinkTasksPackage)">
+    <PackageReference Include="$(ILLinkTasksPackage)" GeneratePackagePath="True">
       <Version>$(ILLinkTasksPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>

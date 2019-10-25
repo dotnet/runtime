@@ -684,7 +684,6 @@ __IncludeTests=INCLUDE_TESTS
 # Set the various build properties here so that CMake and MSBuild can pick them up
 export __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
-__PackagesDir="$__ProjectDir/.packages"
 __RootBinDir="$__ProjectDir/bin"
 __DotNetCli="$__ProjectDir/dotnet.sh"
 __UnprocessedBuildArgs=
@@ -704,7 +703,6 @@ __ClangMinorVersion=0
 __GccBuild=0
 __GccMajorVersion=0
 __GccMinorVersion=0
-__NuGetPath="$__PackagesDir/NuGet.exe"
 __SkipRestorePackages=0
 __DistroRid=""
 __cmakeargs=""
