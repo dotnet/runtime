@@ -573,7 +573,6 @@ private:
     SVAL_DECL(INT32, s_arrayBoundsZero); // = 0
 
     // What comes after this conceputally is:
-    // TypeHandle elementType;        Only present if the method table is shared among many types (arrays of pointers)
     // INT32      bounds[rank];       The bounds are only present for Multidimensional arrays   
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
