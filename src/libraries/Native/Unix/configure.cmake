@@ -655,10 +655,6 @@ check_include_files(
     linux/rtnetlink.h
     HAVE_LINUX_RTNETLINK_H)
 
-check_include_files(
-    linux/can.h
-    HAVE_LINUX_CAN_H)
-
 check_symbol_exists(
     getpeereid
     unistd.h

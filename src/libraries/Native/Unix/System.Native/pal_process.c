@@ -154,7 +154,7 @@ static int compare_groups(const void * a, const void * b)
 
 static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* processGroups)
 {
-#if defined(__linux__) || defined(_WASM_)
+#ifdef __linux__
     size_t platformGroupsLength = Int32ToSizeT(userGroupsLength);
 #else // BSD
     int platformGroupsLength = userGroupsLength;
