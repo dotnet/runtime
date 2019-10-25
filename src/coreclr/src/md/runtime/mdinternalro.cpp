@@ -2182,7 +2182,7 @@ HRESULT MDInternalRO::GetFieldOffset(
 
     IfFailGo(m_LiteWeightStgdb.m_MiniMd.GetFieldLayoutRecord(iLayout, &pRec));
     *pulOffset = m_LiteWeightStgdb.m_MiniMd.getOffSetOfFieldLayout(pRec);
-    _ASSERTE(*pulOffset != ULONG_MAX);
+    _ASSERTE(*pulOffset != UINT32_MAX);
 
 ErrExit:
     return hr;
@@ -2215,7 +2215,7 @@ HRESULT MDInternalRO::GetClassLayoutNext(
         {
             IfFailGo(m_LiteWeightStgdb.m_MiniMd.GetFieldLayoutRecord(iLayout2, &pRec));
             *pulOffset = m_LiteWeightStgdb.m_MiniMd.getOffSetOfFieldLayout(pRec);
-            _ASSERTE(*pulOffset != ULONG_MAX);
+            _ASSERTE(*pulOffset != UINT32_MAX);
             *pfd = TokenFromRid(pLayout->m_ridFieldCur - 1, mdtFieldDef);
             goto ErrExit;
         }
@@ -2585,7 +2585,7 @@ HRESULT MDInternalRO::EnumAssociateInit(
     memset(phEnum, 0, sizeof(HENUMInternal));
 
     // There is no token kind!!!
-    phEnum->m_tkKind = ULONG_MAX;
+    phEnum->m_tkKind = UINT32_MAX;
 
     // output parameters have to be supplied
     _ASSERTE(TypeFromToken(evprop) == mdtEvent || TypeFromToken(evprop) == mdtProperty);

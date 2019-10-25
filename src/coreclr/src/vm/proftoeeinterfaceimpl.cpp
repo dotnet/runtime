@@ -1611,9 +1611,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
             size = PtrAlign(size);
         }
 
-        if (size > ULONG_MAX)
+        if (size > UINT32_MAX)
         {
-            *pcSize = ULONG_MAX;
+            *pcSize = UINT32_MAX;
             return COR_E_OVERFLOW;
         }
         *pcSize = (ULONG)size; 

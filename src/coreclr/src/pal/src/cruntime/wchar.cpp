@@ -244,7 +244,7 @@ Convert string to an unsigned long-integer value.
 
 Return Value
 
-wcstoul returns the converted value, if any, or ULONG_MAX on
+wcstoul returns the converted value, if any, or UINT32_MAX on
 overflow. It returns 0 if no conversion can be performed. errno is
 set to ERANGE if overflow or underflow occurs.
 
@@ -332,7 +332,7 @@ PAL_wcstoul(
     res = strtoul(s_nptr, &s_endptr, base);
 
 #ifdef BIT64
-    if (res > _UI32_MAX)
+    if (res > UINT32_MAX)
     {
         wchar_16 wc = *nptr;
         while (iswspace(wc))
@@ -344,7 +344,7 @@ PAL_wcstoul(
            to match Windows behavior. */
         if (wc != '-')
         {
-            res = _UI32_MAX;
+            res = UINT32_MAX;
             errno = ERANGE;
         }
     }

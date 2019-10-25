@@ -2748,7 +2748,7 @@ STDMETHODIMP RegMeta::GetParamForMethodIndex( // S_OK or error.
     START_MD_PERF();
     LOCKREAD();
     
-    _ASSERTE((TypeFromToken(md) == mdtMethodDef) && (ulParamSeq != ULONG_MAX) && (ppd != NULL));
+    _ASSERTE((TypeFromToken(md) == mdtMethodDef) && (ulParamSeq != UINT32_MAX) && (ppd != NULL));
     
     IfFailGo(_FindParamOfMethod(md, ulParamSeq, ppd));
 ErrExit:

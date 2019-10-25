@@ -260,7 +260,7 @@ STDMETHODIMP SymbolInfo::GetTypeDefProps (             // S_OK or error.
 
 
     SIZE_T cch=wcslen(classInfo->wszName)+1;
-    if (cch > ULONG_MAX)
+    if (cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchTypeDef=(ULONG)cch;
     
@@ -311,7 +311,7 @@ STDMETHODIMP SymbolInfo::GetMethodProps (
     
     *pClass=m_LastMethod.cls;
     SIZE_T cch=wcslen(m_LastMethod.wszName)+1;
-    if(cch > ULONG_MAX)
+    if(cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchMethod=(ULONG)cch;
     

@@ -13037,7 +13037,7 @@ public:
     MDUpdateModeHolder()
     {
         m_pInternalEmitter = NULL;
-        m_OriginalMDUpdateMode = ULONG_MAX;
+        m_OriginalMDUpdateMode = UINT32_MAX;
     }
     ~MDUpdateModeHolder()
     {
@@ -13049,29 +13049,29 @@ public:
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
         
-        _ASSERTE(updateMode != ULONG_MAX);
+        _ASSERTE(updateMode != UINT32_MAX);
         
         IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
         _ASSERTE(m_pInternalEmitter != NULL);
         
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
-        _ASSERTE(m_OriginalMDUpdateMode != ULONG_MAX);
+        _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
         
         return hr;
     }
-    HRESULT Release(ULONG expectedPreviousUpdateMode = ULONG_MAX)
+    HRESULT Release(ULONG expectedPreviousUpdateMode = UINT32_MAX)
     {
         HRESULT hr = S_OK;
         
-        if (m_OriginalMDUpdateMode != ULONG_MAX)
+        if (m_OriginalMDUpdateMode != UINT32_MAX)
         {
             _ASSERTE(m_pInternalEmitter != NULL);
             ULONG previousUpdateMode;
             // Ignore the error when releasing
             hr = m_pInternalEmitter->SetMDUpdateMode(m_OriginalMDUpdateMode, &previousUpdateMode);
-            m_OriginalMDUpdateMode = ULONG_MAX;
+            m_OriginalMDUpdateMode = UINT32_MAX;
             
-            if (expectedPreviousUpdateMode != ULONG_MAX)
+            if (expectedPreviousUpdateMode != UINT32_MAX)
             {
                 if ((hr == S_OK) && (expectedPreviousUpdateMode != previousUpdateMode))
                 {
@@ -13089,7 +13089,7 @@ public:
     ULONG GetOriginalMDUpdateMode()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_OriginalMDUpdateMode != LONG_MAX);
+        _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
         return m_OriginalMDUpdateMode;
     }
 private:

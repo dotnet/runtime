@@ -1187,12 +1187,12 @@ HRESULT RegMeta::_SetTypeDefProps(      // S_OK or error.
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
     _ASSERTE(TypeFromToken(tkExtends) == mdtTypeDef || TypeFromToken(tkExtends) == mdtTypeRef || TypeFromToken(tkExtends) == mdtTypeSpec ||
-                IsNilToken(tkExtends) || tkExtends == ULONG_MAX);
+                IsNilToken(tkExtends) || tkExtends == UINT32_MAX);
 
     // Get the record.
     IfFailGo(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(td), &pRecord));
 
-    if (dwTypeDefFlags != ULONG_MAX)
+    if (dwTypeDefFlags != UINT32_MAX)
     {
         // No one should try to set the reserved flags explicitly.
         _ASSERTE((dwTypeDefFlags & (tdReservedMask&~tdRTSpecialName)) == 0);
@@ -1203,7 +1203,7 @@ HRESULT RegMeta::_SetTypeDefProps(      // S_OK or error.
         // Set the flags.
         pRecord->SetFlags(dwTypeDefFlags);
     }
-    if (tkExtends != ULONG_MAX)
+    if (tkExtends != UINT32_MAX)
     {
         if (IsNilToken(tkExtends))
             tkExtends = mdTypeDefNil;
@@ -1460,7 +1460,7 @@ HRESULT RegMeta::_SetEventProps1(                // Return hresult.
     _ASSERTE(TypeFromToken(ev) == mdtEvent && RidFromToken(ev));
 
     IfFailGo(m_pStgdb->m_MiniMd.GetEventRecord(RidFromToken(ev), &pRecord));
-    if (dwEventFlags != ULONG_MAX)
+    if (dwEventFlags != UINT32_MAX)
     {
         // Don't let caller set reserved bits
         dwEventFlags &= ~evReservedMask;
@@ -1552,7 +1552,7 @@ HRESULT RegMeta::_SetPermissionSetProps(         // Return hresult.
     DeclSecurityRec *pRecord;
     HRESULT     hr = S_OK;
 
-    _ASSERTE(TypeFromToken(tkPerm) == mdtPermission && cbPermission != ULONG_MAX);
+    _ASSERTE(TypeFromToken(tkPerm) == mdtPermission && cbPermission != UINT32_MAX);
     _ASSERTE(dwAction && dwAction <= dclMaximumValue);
 
     IfFailGo(m_pStgdb->m_MiniMd.GetDeclSecurityRecord(RidFromToken(tkPerm), &pRecord));
@@ -1578,7 +1578,7 @@ HRESULT RegMeta::_DefineSetConstant(    // Return hresult.
     
 
     if ((dwCPlusTypeFlag != ELEMENT_TYPE_VOID && dwCPlusTypeFlag != ELEMENT_TYPE_END &&
-         dwCPlusTypeFlag != ULONG_MAX) &&
+         dwCPlusTypeFlag != UINT32_MAX) &&
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
@@ -1646,7 +1646,7 @@ HRESULT RegMeta::_SetMethodProps(       // S_OK or error.
     IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(md), &pRecord));
 
     // Set the data.
-    if (dwMethodFlags != ULONG_MAX)
+    if (dwMethodFlags != UINT32_MAX)
     {
         // Preserve the reserved flags stored already and always keep the mdRTSpecialName
         dwMethodFlags |= (pRecord->GetFlags() & mdReservedMask);
@@ -1654,9 +1654,9 @@ HRESULT RegMeta::_SetMethodProps(       // S_OK or error.
         // Set the flags.
         pRecord->SetFlags(static_cast<USHORT>(dwMethodFlags));
     }
-    if (ulCodeRVA != ULONG_MAX)
+    if (ulCodeRVA != UINT32_MAX)
         pRecord->SetRVA(ulCodeRVA);
-    if (dwImplFlags != ULONG_MAX)
+    if (dwImplFlags != UINT32_MAX)
         pRecord->SetImplFlags(static_cast<USHORT>(dwImplFlags));
 
     IfFailGo(UpdateENCLog(md));
@@ -1689,11 +1689,11 @@ HRESULT RegMeta::_SetFieldProps(        // S_OK or error.
 
     // See if there is a Constant.
     if ((dwCPlusTypeFlag != ELEMENT_TYPE_VOID && dwCPlusTypeFlag != ELEMENT_TYPE_END &&
-         dwCPlusTypeFlag != ULONG_MAX) &&
+         dwCPlusTypeFlag != UINT32_MAX) &&
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
-        if (dwFieldFlags == ULONG_MAX)
+        if (dwFieldFlags == UINT32_MAX)
             dwFieldFlags = pRecord->GetFlags();
         dwFieldFlags |= fdHasDefault;
 
@@ -1701,7 +1701,7 @@ HRESULT RegMeta::_SetFieldProps(        // S_OK or error.
     }
 
     // Set the flags.
-    if (dwFieldFlags != ULONG_MAX)
+    if (dwFieldFlags != UINT32_MAX)
     {
         if ( IsFdHasFieldRVA(dwFieldFlags) && !IsFdHasFieldRVA(pRecord->GetFlags()) ) 
         {
@@ -1753,24 +1753,24 @@ HRESULT RegMeta::_SetPropertyProps(      // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.GetPropertyRecord(RidFromToken(pr), &pRecord));
 
-    if (dwPropFlags != ULONG_MAX)
+    if (dwPropFlags != UINT32_MAX)
     {
         // Clear the reserved flags from the flags passed in.
         dwPropFlags &= (~prReservedMask);
     }
     // See if there is a constant.
     if ((dwCPlusTypeFlag != ELEMENT_TYPE_VOID && dwCPlusTypeFlag != ELEMENT_TYPE_END &&
-         dwCPlusTypeFlag != ULONG_MAX) &&
+         dwCPlusTypeFlag != UINT32_MAX) &&
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
-        if (dwPropFlags == ULONG_MAX)
+        if (dwPropFlags == UINT32_MAX)
             dwPropFlags = pRecord->GetPropFlags();
         dwPropFlags |= prHasDefault;
         
         bHasDefault = true;
     }
-    if (dwPropFlags != ULONG_MAX)
+    if (dwPropFlags != UINT32_MAX)
     {
         // Preserve the reserved flags.
         dwPropFlags |= (pRecord->GetPropFlags() & prReservedMask);
@@ -1779,14 +1779,14 @@ HRESULT RegMeta::_SetPropertyProps(      // S_OK or error.
     }
 
     // store the getter (or clear out old one).
-    if (mdGetter != ULONG_MAX)
+    if (mdGetter != UINT32_MAX)
     {
         _ASSERTE(TypeFromToken(mdGetter) == mdtMethodDef || IsNilToken(mdGetter));
         IfFailGo(_DefineMethodSemantics(msGetter, mdGetter, pr, bClear));
     }
 
     // Store the setter (or clear out old one).
-    if (mdSetter != ULONG_MAX)
+    if (mdSetter != UINT32_MAX)
     {
         _ASSERTE(TypeFromToken(mdSetter) == mdtMethodDef || IsNilToken(mdSetter));
         IfFailGo(_DefineMethodSemantics(msSetter, mdSetter, pr, bClear));
@@ -1852,7 +1852,7 @@ HRESULT RegMeta::_SetParamProps(        // Return code.
         IfFailGo(m_pStgdb->m_MiniMd.PutStringW(TBL_Param, ParamRec::COL_Name, pRecord, szName));
     }
 
-    if (dwParamFlags != ULONG_MAX)
+    if (dwParamFlags != UINT32_MAX)
     {
         // No one should try to set the reserved flags explicitly.
         _ASSERTE((dwParamFlags & pdReservedMask) == 0);
@@ -1861,18 +1861,18 @@ HRESULT RegMeta::_SetParamProps(        // Return code.
     }
     // See if there is a constant.
     if ((dwCPlusTypeFlag != ELEMENT_TYPE_VOID && dwCPlusTypeFlag != ELEMENT_TYPE_END &&
-         dwCPlusTypeFlag != ULONG_MAX) &&
+         dwCPlusTypeFlag != UINT32_MAX) &&
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
-        if (dwParamFlags == ULONG_MAX)
+        if (dwParamFlags == UINT32_MAX)
             dwParamFlags = pRecord->GetFlags();
         dwParamFlags |= pdHasDefault;
 
         bHasDefault = true;
     }
     // Set the flags.
-    if (dwParamFlags != ULONG_MAX)
+    if (dwParamFlags != UINT32_MAX)
     {
         // Preserve the reserved flags stored.
         dwParamFlags |= (pRecord->GetFlags() & pdReservedMask);

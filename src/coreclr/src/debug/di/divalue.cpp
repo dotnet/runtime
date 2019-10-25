@@ -4442,9 +4442,9 @@ HRESULT CordbHandleValue::GetSize(ULONG32 *pSize)
         return CORDBG_E_HANDLE_HAS_BEEN_DISPOSED;
     }
 
-    if (m_size > ULONG_MAX)
+    if (m_size > UINT32_MAX)
     {
-        *pSize = ULONG_MAX;
+        *pSize = UINT32_MAX;
         return (COR_E_OVERFLOW);
     }
 

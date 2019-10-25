@@ -378,7 +378,7 @@ HRESULT ULongLongToULong(ULONGLONG ullOperand, ULONG* pulResult)
     HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
     *pulResult = ULONG_ERROR;
     
-    if (ullOperand <= ULONG_MAX)
+    if (ullOperand <= UINT32_MAX)
     {
         *pulResult = (ULONG)ullOperand;
         hr = S_OK;

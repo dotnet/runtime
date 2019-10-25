@@ -229,11 +229,11 @@ class CComObject : public Base
 public:
 	typedef Base _BaseClass;
 
-	// Set refcount to -(LONG_MAX/2) to protect destruction and 
+	// Set refcount to -(INT32_MAX/2) to protect destruction and
 	// also catch mismatched Release in debug builds
 	~CComObject()
 	{
-		this->m_dwRef = -(LONG_MAX/2);
+		this->m_dwRef = -(INT32_MAX/2);
 	}
 	//If InternalAddRef or InternalRelease is undefined then your class
 	//doesn't derive from CComObjectRoot
@@ -297,7 +297,7 @@ public:
 	{
 #ifdef _DEBUG
 		LONG nRef = _ThreadModel::Decrement(&m_dwRef);
-		if (nRef < -(LONG_MAX / 2))
+		if (nRef < -(INT32_MAX / 2))
 		{
 			ATLASSERT(0);
 		}
