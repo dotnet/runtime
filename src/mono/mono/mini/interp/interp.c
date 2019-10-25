@@ -2927,7 +2927,13 @@ static MONO_NEVER_INLINE gboolean
 mono_interp_isinst (MonoObject* object, MonoClass* klass)
 {
 	ERROR_DECL (error);
-	const gboolean isinst = mono_object_isinst_checked (object, klass, error) != NULL;
+	gboolean isinst;
+	MonoClass *obj_class = mono_object_class (object);
+	// mono_class_is_assignable_from_checked can't handle remoting casts
+	if (mono_class_is_transparent_proxy (obj_class))
+		isinst = mono_object_isinst_checked (object, klass, error) != NULL;
+	else
+		mono_class_is_assignable_from_checked (klass, obj_class, &isinst, error);
 	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return isinst;
 }
@@ -5575,81 +5581,58 @@ common_vcall:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_STELEM_I)  /* fall through */
-		MINT_IN_CASE(MINT_STELEM_I1) /* fall through */ 
-		MINT_IN_CASE(MINT_STELEM_U1) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_I2) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_U2) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_I4) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_I8) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_R4) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_R8) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_REF) /* fall through */
+#define STELEM_PROLOG(o, aindex) do { \
+	sp -= 3; \
+	o = (MonoArray*)sp [0].data.p; \
+	NULL_CHECK (o); \
+	aindex = sp [1].data.i; \
+	if (aindex >= mono_array_length_internal (o)) \
+		THROW_EX (mono_get_exception_index_out_of_range (), ip); \
+} while (0)
+
+#define STELEM(datamem,elemtype) do { \
+	MonoArray *o; \
+	gint32 aindex; \
+	STELEM_PROLOG(o, aindex); \
+	mono_array_set_fast (o, elemtype, aindex, sp [2].data.datamem); \
+	ip++; \
+} while (0)
+		MINT_IN_CASE(MINT_STELEM_I1) STELEM(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_U1) STELEM(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_I2) STELEM(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_U2) STELEM(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_I4) STELEM(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_I8) STELEM(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_I)  STELEM(nati, mono_i); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_R4) STELEM(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_R8) STELEM(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_REF) {
+			MonoArray *o;
+			gint32 aindex;
+			STELEM_PROLOG(o, aindex);
+
+			if (sp [2].data.o) {
+				gboolean isinst = mono_interp_isinst (sp [2].data.o, m_class_get_element_class (mono_object_class (o)));
+				if (!isinst)
+					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
+			}
+			mono_array_setref_fast ((MonoArray *) o, aindex, sp [2].data.p);
+			ip++;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_STELEM_VT) {
-			mono_u aindex;
+			MonoArray *o;
+			gint32 aindex;
+			STELEM_PROLOG(o, aindex);
 
-			sp -= 3;
+			MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [1]];
+			int const i32 = READ32 (ip + 2);
+			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 
-			MonoObject* const o = sp [0].data.o;
-			NULL_CHECK (o);
-
-			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length_internal ((MonoArray *)o))
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
-
-			switch (*ip) {
-			case MINT_STELEM_I:
-				mono_array_set_fast ((MonoArray *)o, mono_i, aindex, sp [2].data.nati);
-				break;
-			case MINT_STELEM_I1:
-				mono_array_set_fast ((MonoArray *)o, gint8, aindex, sp [2].data.i);
-				break;
-			case MINT_STELEM_U1:
-				mono_array_set_fast ((MonoArray *) o, guint8, aindex, sp [2].data.i);
-				break;
-			case MINT_STELEM_I2:
-				mono_array_set_fast ((MonoArray *)o, gint16, aindex, sp [2].data.i);
-				break;
-			case MINT_STELEM_U2:
-				mono_array_set_fast ((MonoArray *)o, guint16, aindex, sp [2].data.i);
-				break;
-			case MINT_STELEM_I4:
-				mono_array_set_fast ((MonoArray *)o, gint32, aindex, sp [2].data.i);
-				break;
-			case MINT_STELEM_I8:
-				mono_array_set_fast ((MonoArray *)o, gint64, aindex, sp [2].data.l);
-				break;
-			case MINT_STELEM_R4:
-				mono_array_set_fast ((MonoArray *)o, float, aindex, sp [2].data.f_r4);
-				break;
-			case MINT_STELEM_R8:
-				mono_array_set_fast ((MonoArray *)o, double, aindex, sp [2].data.f);
-				break;
-			case MINT_STELEM_REF: {
-				if (sp [2].data.p) {
-					MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.o, m_class_get_element_class (mono_object_class (o)), error);
-					mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-					if (!isinst_obj)
-						THROW_EX (mono_get_exception_array_type_mismatch (), ip);
-				}
-				mono_array_setref_fast ((MonoArray *) o, aindex, sp [2].data.p);
-				break;
-			}
-			case MINT_STELEM_VT: {
-				MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [1]];
-				int const i32 = READ32 (ip + 2);
-				char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
-
-				mono_value_copy_internal (dst_addr, sp [2].data.vt, klass_vt);
-				vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
-				ip += 3;
-				break;
-			}
-			default:
-				ves_abort();
-			}
-
-			++ip;
+			mono_value_copy_internal (dst_addr, sp [2].data.vt, klass_vt);
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U4)
