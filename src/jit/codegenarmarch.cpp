@@ -2019,19 +2019,18 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (!dstAddr->isContained())
     {
         dstAddrBaseReg = genConsumeReg(dstAddr);
-
-        // TODO-Cleanup: This matches the old code behavior in order to get 0 diffs. It's otherwise
-        // messed up - lowering does not mark a local address node contained even if it's possible
-        // and then the old code consumed the register but ignored it and generated code that accesses
-        // the local variable directly.
-        if (dstAddr->OperIsLocalAddr())
-        {
-            dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-            dstOffset = dstAddr->OperIs(GT_LCL_FLD_ADDR) ? dstAddr->AsLclFld()->gtLclOffs : 0;
-        }
     }
     else
     {
+        // TODO-ARM-CQ: If the local frame offset is too large to be encoded, the emitter automatically
+        // loads the offset into a reserved register (see CodeGen::rsGetRsvdReg()). If we generate
+        // multiple store instructions we'll also generate multiple offset loading instructions.
+        // We could try to detect such cases, compute the base destination address in this reserved
+        // and use it in all store instructions we generate. This would effectively undo the effect
+        // of local address containment done by lowering.
+        //
+        // The same issue also occurs in source address case below and in genCodeForInitBlkUnroll.
+
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->OperIs(GT_LCL_FLD_ADDR) ? dstAddr->AsLclFld()->gtLclOffs : 0;
@@ -2057,16 +2056,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         if (!srcAddr->isContained())
         {
             srcAddrBaseReg = genConsumeReg(srcAddr);
-
-            // TODO-Cleanup: This matches the old code behavior in order to get 0 diffs. It's otherwise
-            // messed up - lowering does not mark a local address node contained even if it's possible
-            // and then the old code consumed the register but ignored it and generated code that accesses
-            // the local variable directly.
-            if (srcAddr->OperIsLocalAddr())
-            {
-                srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-                srcOffset = srcAddr->OperIs(GT_LCL_FLD_ADDR) ? srcAddr->AsLclFld()->gtLclOffs : 0;
-            }
         }
         else
         {
