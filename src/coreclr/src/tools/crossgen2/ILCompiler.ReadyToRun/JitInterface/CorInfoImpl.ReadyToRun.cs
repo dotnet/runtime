@@ -1731,20 +1731,8 @@ namespace Internal.JitInterface
                 // Sequential layout
                 return true;
             }
-            else
-            {
-                // <BUGNUM>workaround for B#104780 - VC fails to set SequentialLayout on some classes
-                // with ClassSize. Too late to fix compiler for V1.
-                //
-                // To compensate, we treat AutoLayout classes as Sequential if they
-                // meet all of the following criteria:
-                //
-                //    - ClassSize present and nonzero.
-                //    - No instance fields declared
-                //    - Base class is System.ValueType.
-                //</BUGNUM>
-                return type.BaseType.IsValueType && !type.GetFields().GetEnumerator().MoveNext();
-            }
+
+            return false;
         }
 
         /// <summary>
