@@ -34,7 +34,6 @@ set ghprbCommentBody=
 ::      __BuildOS           -- default: Windows_NT
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __SourceDir         -- default: %__ProjectDir%\src\
-::      __PackagesDir       -- default: %__ProjectDir%\.packages\
 ::      __RootBinDir        -- default: %__ProjectDir%\bin\
 ::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
@@ -53,8 +52,6 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__PackagesDir=%DotNetRestorePackagesPath%"
-if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\.packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
@@ -101,9 +98,9 @@ set __CrossgenAltJit=
 set __SkipRestoreArg=/p:RestoreDuringBuild=true
 set __OfficialBuildIdArg=
 set __CrossArch=
-set __PgoOptDataVersion=
-set __IbcOptDataVersion=
-set __IbcMergeVersion=
+set __PgoOptDataPath=
+set __IbcOptDataPath=
+set __IbcMergePath=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -297,8 +294,11 @@ if %__SkipCrossArchNative% EQU 0 (
 
 REM Set the remaining variables based upon the determined build configuration
 
-if %__PgoOptimize%==0 set __RestoreOptData=0
-if /i %__BuildType% NEQ Release set __RestoreOptData=0
+if %__PgoOptimize%==0 (
+    if %__IbcOptimize% == 0 (
+        set __RestoreOptData=0
+    )
+)
 
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -394,38 +394,38 @@ if %__RestoreOptData% EQU 1 (
     )
 )
 
-set PgoDataPackageVersionOutputFile="%__IntermediatesDir%\optdataversion.txt"
-set IbcDataPackageVersionOutputFile="%__IntermediatesDir%\ibcoptdataversion.txt"
+set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
+set IbcDataPackagePathOutputFile="%__IntermediatesDir%\ibcoptdatapath.txt"
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion %__CommonMSBuildArgs% /p:PgoDataPackageVersionOutputFile="!PgoDataPackageVersionOutputFile!"
+    "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%Failed to get PGO data package version.
+    echo %__ErrMsgPrefix%Failed to get PGO data package path.
     exit /b !errorlevel!
 )
-if not exist "!PgoDataPackageVersionOutputFile!" (
-    echo %__ErrMsgPrefix%Failed to get PGO data package version.
+if not exist "!PgoDataPackagePathOutputFile!" (
+    echo %__ErrMsgPrefix%Failed to get PGO data package path.
     exit /b 1
 )
 
-set /p __PgoOptDataVersion=<"!PgoDataPackageVersionOutputFile!"
+set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo %__CommonMSBuildArgs% /p:IbcDataPackageVersionOutputFile="!IbcDataPackageVersionOutputFile!"
+    "%OptDataProjectFilePath%" /t:DumpIbcDataPackagePath /nologo %__CommonMSBuildArgs% /p:IbcDataPackagePathOutputFile="!IbcDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%Failed to get IBC data package version.
+    echo %__ErrMsgPrefix%Failed to get IBC data package path.
     exit /b !errorlevel!
 )
 
-if not exist "!IbcDataPackageVersionOutputFile!" (
-    echo %__ErrMsgPrefix%Failed to get IBC data package version.
+if not exist "!IbcDataPackagePathOutputFile!" (
+    echo %__ErrMsgPrefix%Failed to get IBC data package path.
     exit /b 1
 )
 
-set /p __IbcOptDataVersion=<"!IbcDataPackageVersionOutputFile!"
+set /p __IbcOptDataPath=<"!IbcDataPackagePathOutputFile!"
 
 REM =========================================================================================
 REM ===
@@ -477,7 +477,7 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
     
     if not !errorlevel! == 0 (
@@ -559,7 +559,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    set __ExtraCmakeArgs=!___SDKVersion! !___CrossBuildDefine! "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
+    set __ExtraCmakeArgs=!___SDKVersion! !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -663,25 +663,25 @@ if %__BuildCoreLib% EQU 1 (
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
-        set IbcMergePackageVersionOutputFile="%__IntermediatesDir%\ibcmergeversion.txt"
+        set IbcMergePackagePathOutputFile="%__IntermediatesDir%\ibcmergepath.txt"
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-            "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo %__CommonMSBuildArgs% /p:IbcMergePackageVersionOutputFile="!IbcMergePackageVersionOutputFile!"
+            "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackagePath /nologo %__CommonMSBuildArgs% /p:IbcMergePackagePathOutputFile="!IbcMergePackagePathOutputFile!"
 
         if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%Failed to determine IBC Merge version.
+            echo %__ErrMsgPrefix%Failed to determine IBC Merge path.
             exit /b !errorlevel!
         )
-        if not exist "!IbcMergePackageVersionOutputFile!" (
-            echo %__ErrMsgPrefix%Failed to determine IBC Merge version.
+        if not exist "!IbcMergePackagePathOutputFile!" (
+            echo %__ErrMsgPrefix%Failed to determine IBC Merge path.
             exit /b 1
         )
 
-        set /p __IbcMergeVersion=<"!IbcMergePackageVersionOutputFile!"
+        set /p __IbcMergePath=<"!IbcMergePackagePathOutputFile!"
 
-        set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
+        set IbcMergePath=!__IbcMergePath!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
             echo %__MsgPrefix%Optimizing using IBC training data
-            set OptimizationDataDir=%__PackagesDir%\optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR\!__IbcOptDataVersion!\data\System.Private.CoreLib.dll\
+            set OptimizationDataDir=!__IbcOptDataPath!\data\System.Private.CoreLib.dll\
             set InputAssemblyFile=!OptimizationDataDir!System.Private.CoreLib.dll
             set TargetOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.pgo
 

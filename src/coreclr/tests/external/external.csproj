@@ -11,7 +11,6 @@
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
-    <RestoreOutputPath>$(MSBuildThisFileDirectory)obj</RestoreOutputPath>
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
@@ -80,22 +79,18 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
-    <PackageReference Include="$(XUnitRunnerPackageId)" Version="$(XunitPackageVersion)" />
+    <PackageReference Include="xunit.runner.console" Version="$(XunitPackageVersion)" GeneratePackagePath="True" />
     <PackageReference Include="xunit.runner.utility" Version="$(XunitPackageVersion)" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)Common\external\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
-
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences">
-    <Error Condition="!Exists('$(PackagesDir)\$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll')"
-            Text="Error: looks the package $(PackagesDir)\$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.dll."
+    <Error Condition="!Exists('$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll')"
+            Text="Error: looks the package $(Pkgxunit_runner_console) not restored or missing xunit.console.dll."
     />
     <ItemGroup>
       <ReferenceCopyLocalPaths
-        Include="$(PackagesDir)\$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\$(XUnitRunnerTargetFramework)\*.*"
-        Exclude="$(PackagesDir)\$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll.config"
+        Include="$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\*.*"
+        Exclude="$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll.config"
       >
         <Private>false</Private>
         <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>

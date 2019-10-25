@@ -30,14 +30,14 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\performance\performance.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\external\external.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)external\external.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
-    <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.csproj"
+    <MSBuild Projects="$(MSBuildThisFileDirectory)external\external.csproj"
              Targets="Build" />
   </Target>
 
@@ -57,8 +57,9 @@
       <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
       <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
       <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true</DotnetRestoreCommand>
+      <_ConfigurationProperties>/p:__BuildOS=$(__BuildOS) /p:__BuildArch=$(__BuildArch) /p:__BuildType=$(__BuildType)</_ConfigurationProperties>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>

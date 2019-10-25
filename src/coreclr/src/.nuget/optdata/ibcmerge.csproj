@@ -5,24 +5,28 @@
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.IBCMerge" Version="$(MicrosoftDotNetIBCMergeVersion)" GeneratePathProperty="True" />
+  </ItemGroup>
+
   <!--                                                                       -->
-  <!-- Task: DumpIbcMergePackageVersion                                       -->
+  <!-- Task: DumpIbcMergePackagePath                                         -->
   <!--                                                                       -->
   <!-- Notes:                                                                -->
   <!--                                                                       -->
-  <!-- DumpIbcMergePackageVersion is used by build.sh and build.cmd to pass  -->
-  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- DumpIbcMergePackagePath is used by build.sh and build.cmd to pass     -->
+  <!-- the path information to cmake. The task will write a file to be       -->
   <!-- read back by build.cmd/sh. The path for the file is:                  -->
-  <!-- $(IbcMergePackageVersionOutputFile)                                    -->
+  <!-- $(IbcMergePackagePathOutputFile)                                      -->
   <!--                                                                       -->
-  <Target Name="DumpIbcMergePackageVersion">
-    <!-- Error if IbcMergePackageVersionOutputFile is not set. -->
-    <Error Condition="'$(IbcMergePackageVersionOutputFile)'==''" Text="IbcMergePackageVersionOutputFile must be passed as a property." />
+  <Target Name="DumpIbcMergePackagePath">
+    <!-- Error if IbcMergePackagePathOutputFile is not set. -->
+    <Error Condition="'$(IbcMergePackagePathOutputFile)'==''" Text="IbcMergePackagePathOutputFile must be passed as a property." />
 
-    <!-- Cleanup old version file -->
-    <Delete Files="$(IbcMergePackageVersionOutputFile)" Condition="Exists('$(IbcMergePackageVersionOutputFile)')" />
-    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(MicrosoftDotNetIBCMergeVersion)" Overwrite="true"/>
-    <Message Text="MicrosoftDotNetIBCMergeVersion: $(MicrosoftDotNetIBCMergeVersion) written to: $(IbcMergePackageVersionOutputFile)" Importance="High" />
+    <!-- Cleanup old path file -->
+    <Delete Files="$(IbcMergePackagePathOutputFile)" Condition="Exists('$(IbcMergePackagePathOutputFile)')" />
+    <WriteLinesToFile File="$(IbcMergePackagePathOutputFile)" Lines="$(PkgMicrosoft_DotNet_IBCMerge)" Overwrite="true"/>
+    <Message Text="MicrosoftDotNetIBCMergePath: $(PkgMicrosoft_DotNet_IBCMerge) written to: $(IbcMergePackagePathOutputFile)" Importance="High" />
   </Target>
 
 </Project>
