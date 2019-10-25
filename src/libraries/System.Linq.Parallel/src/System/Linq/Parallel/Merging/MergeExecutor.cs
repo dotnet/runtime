@@ -28,7 +28,7 @@ namespace System.Linq.Parallel
     {
         // Many internal algorithms are parameterized based on the data. The IMergeHelper
         // is the pluggable interface whose implementations perform those algorithms.
-        private IMergeHelper<TInputOutput> _mergeHelper;
+        private IMergeHelper<TInputOutput>? _mergeHelper;
 
         // Private constructor. MergeExecutor should only be constructed via the
         // MergeExecutor.Execute static method.
@@ -123,8 +123,9 @@ namespace System.Linq.Parallel
         // Returns the merged results as an array.
         //
 
-        internal TInputOutput[] GetResultsAsArray()
+        internal TInputOutput[]? GetResultsAsArray()
         {
+            Debug.Assert(_mergeHelper != null);
             return _mergeHelper.GetResultsAsArray();
         }
 
@@ -140,7 +141,7 @@ namespace System.Linq.Parallel
         //     An array of asynchronous channels, one for each partition.
         //
 
-        internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent consumerEvent, CancellationToken cancellationToken)
+        internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent? consumerEvent, CancellationToken cancellationToken)
         {
             AsynchronousChannel<TInputOutput>[] channels = new AsynchronousChannel<TInputOutput>[partitionCount];
 

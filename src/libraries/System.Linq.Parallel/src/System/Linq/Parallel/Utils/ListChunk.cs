@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
     {
         internal TInputOutput[] _chunk;
         private int _chunkCount;
-        private ListChunk<TInputOutput> _nextChunk;
+        private ListChunk<TInputOutput>? _nextChunk;
         private ListChunk<TInputOutput> _tailChunk;
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// The next chunk in the linked chain.
         /// </summary>
-        internal ListChunk<TInputOutput> Next
+        internal ListChunk<TInputOutput>? Next
         {
             get { return _nextChunk; }
         }
@@ -72,7 +72,7 @@ namespace System.Linq.Parallel
         /// </summary>
         public IEnumerator<TInputOutput> GetEnumerator()
         {
-            ListChunk<TInputOutput> curr = this;
+            ListChunk<TInputOutput>? curr = this;
             while (curr != null)
             {
                 for (int i = 0; i < curr._chunkCount; i++)

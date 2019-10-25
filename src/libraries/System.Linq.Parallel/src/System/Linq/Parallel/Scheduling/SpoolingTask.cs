@@ -216,15 +216,15 @@ namespace System.Linq.Parallel
         {
             // We just enumerate over the entire source data stream, placing each element
             // into the destination channel.
-            TInputOutput current = default(TInputOutput);
-            TIgnoreKey keyUnused = default(TIgnoreKey);
+            TInputOutput current = default(TInputOutput)!;
+            TIgnoreKey keyUnused = default(TIgnoreKey)!;
 
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source = _source;
             SynchronousChannel<TInputOutput> destination = _destination;
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;
 
             destination.Init();
-            while (source.MoveNext(ref current, ref keyUnused))
+            while (source.MoveNext(ref current!, ref keyUnused))
             {
                 // If an abort has been requested, stop this worker immediately.
                 if (cancelToken.IsCancellationRequested)
@@ -305,14 +305,14 @@ namespace System.Linq.Parallel
         {
             // We just enumerate over the entire source data stream, placing each element
             // into the destination channel.
-            TInputOutput current = default(TInputOutput);
-            TIgnoreKey keyUnused = default(TIgnoreKey);
+            TInputOutput current = default(TInputOutput)!;
+            TIgnoreKey keyUnused = default(TIgnoreKey)!;
 
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source = _source;
             AsynchronousChannel<TInputOutput> destination = _destination;
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;
 
-            while (source.MoveNext(ref current, ref keyUnused))
+            while (source.MoveNext(ref current!, ref keyUnused))
             {
                 // If an abort has been requested, stop this worker immediately.
                 if (cancelToken.IsCancellationRequested)
@@ -390,11 +390,11 @@ namespace System.Linq.Parallel
         protected override void SpoolingWork()
         {
             // We just enumerate over the entire source data stream for effect.
-            TInputOutput currentUnused = default(TInputOutput);
-            TIgnoreKey keyUnused = default(TIgnoreKey);
+            TInputOutput currentUnused = default(TInputOutput)!;
+            TIgnoreKey keyUnused = default(TIgnoreKey)!;
 
             //Note: this only ever runs with a ForAll operator, and ForAllEnumerator performs cancellation checks
-            while (_source.MoveNext(ref currentUnused, ref keyUnused))
+            while (_source.MoveNext(ref currentUnused!, ref keyUnused))
                 ;
         }
 

@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -32,9 +33,9 @@ namespace System.Linq.Parallel
     /// <typeparam name="TOutput"></typeparam>
     internal sealed class SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> : UnaryQueryOperator<TLeftInput, TOutput>
     {
-        private readonly Func<TLeftInput, IEnumerable<TRightInput>> _rightChildSelector; // To select a new child each iteration.
-        private readonly Func<TLeftInput, int, IEnumerable<TRightInput>> _indexedRightChildSelector; // To select a new child each iteration.
-        private readonly Func<TLeftInput, TRightInput, TOutput> _resultSelector; // An optional result selection function.
+        private readonly Func<TLeftInput, IEnumerable<TRightInput>>? _rightChildSelector; // To select a new child each iteration.
+        private readonly Func<TLeftInput, int, IEnumerable<TRightInput>>? _indexedRightChildSelector; // To select a new child each iteration.
+        private readonly Func<TLeftInput, TRightInput, TOutput>? _resultSelector; // An optional result selection function.
         private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
         private bool _limitsParallelism = false; // Whether to prematurely merge the input of this operator.
 
@@ -50,9 +51,9 @@ namespace System.Linq.Parallel
         //
 
         internal SelectManyQueryOperator(IEnumerable<TLeftInput> leftChild,
-                                         Func<TLeftInput, IEnumerable<TRightInput>> rightChildSelector,
-                                         Func<TLeftInput, int, IEnumerable<TRightInput>> indexedRightChildSelector,
-                                         Func<TLeftInput, TRightInput, TOutput> resultSelector)
+                                         Func<TLeftInput, IEnumerable<TRightInput>>? rightChildSelector,
+                                         Func<TLeftInput, int, IEnumerable<TRightInput>>? indexedRightChildSelector,
+                                         Func<TLeftInput, TRightInput, TOutput>? resultSelector)
             : base(leftChild)
         {
             Debug.Assert(leftChild != null, "left child data source cannot be null");
@@ -234,15 +235,15 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TLeftInput, int> _leftSource; // The left data source to enumerate.
             private readonly SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> _selectManyOperator; // The select many operator to use.
-            private IEnumerator<TRightInput> _currentRightSource; // The current enumerator we're using.
-            private IEnumerator<TOutput> _currentRightSourceAsOutput; // If we need to access the enumerator for output directly (no result selector).
-            private Mutables _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
+            private IEnumerator<TRightInput>? _currentRightSource; // The current enumerator we're using.
+            private IEnumerator<TOutput>? _currentRightSourceAsOutput; // If we need to access the enumerator for output directly (no result selector).
+            private Mutables? _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
             private readonly CancellationToken _cancellationToken;
 
             private class Mutables
             {
                 internal int _currentRightSourceIndex = -1; // The index for the right data source.
-                internal TLeftInput _currentLeftElement; // The current element in the left data source.
+                internal TLeftInput _currentLeftElement = default!; // The current element in the left data source.
                 internal int _currentLeftSourceIndex; // The current key in the left data source.
                 internal int _lhsCount; //counts the number of lhs elements enumerated. used for cancellation testing.
             }
@@ -270,7 +271,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TOutput currentElement, ref Pair<int, int> currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref Pair<int, int> currentKey)
             {
                 while (true)
                 {
@@ -286,11 +287,12 @@ namespace System.Linq.Parallel
                         // We don't have a "current" right enumerator to use. We have to fetch the next
                         // one. If the left has run out of elements, however, we're done and just return
                         // false right away.
-                        if (!_leftSource.MoveNext(ref _mutables._currentLeftElement, ref _mutables._currentLeftSourceIndex))
+                        if (!_leftSource.MoveNext(ref _mutables._currentLeftElement!, ref _mutables._currentLeftSourceIndex))
                         {
                             return false;
                         }
 
+                        Debug.Assert(_selectManyOperator._indexedRightChildSelector != null);
                         // Use the source selection routine to create a right child.
                         IEnumerable<TRightInput> rightChild =
                             _selectManyOperator._indexedRightChildSelector(_mutables._currentLeftElement, _mutables._currentLeftSourceIndex);
@@ -316,6 +318,7 @@ namespace System.Linq.Parallel
 
                     if (_currentRightSource.MoveNext())
                     {
+                        Debug.Assert(_mutables != null);
                         _mutables._currentRightSourceIndex++;
 
                         // If the inner data source has an element, we can yield it.
@@ -364,16 +367,16 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TLeftInput, TLeftKey> _leftSource; // The left data source to enumerate.
             private readonly SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> _selectManyOperator; // The select many operator to use.
-            private IEnumerator<TRightInput> _currentRightSource; // The current enumerator we're using.
-            private IEnumerator<TOutput> _currentRightSourceAsOutput; // If we need to access the enumerator for output directly (no result selector).
-            private Mutables _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
+            private IEnumerator<TRightInput>? _currentRightSource; // The current enumerator we're using.
+            private IEnumerator<TOutput>? _currentRightSourceAsOutput; // If we need to access the enumerator for output directly (no result selector).
+            private Mutables? _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
             private readonly CancellationToken _cancellationToken;
 
             private class Mutables
             {
                 internal int _currentRightSourceIndex = -1; // The index for the right data source.
-                internal TLeftInput _currentLeftElement; // The current element in the left data source.
-                internal TLeftKey _currentLeftKey; // The current key in the left data source.
+                internal TLeftInput _currentLeftElement = default!; // The current element in the left data source.
+                internal TLeftKey _currentLeftKey = default!; // The current key in the left data source.
                 internal int _lhsCount; // Counts the number of lhs elements enumerated. used for cancellation testing.
             }
 
@@ -400,7 +403,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TOutput currentElement, ref Pair<TLeftKey, int> currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref Pair<TLeftKey, int> currentKey)
             {
                 while (true)
                 {
@@ -417,11 +420,12 @@ namespace System.Linq.Parallel
                         // one. If the left has run out of elements, however, we're done and just return
                         // false right away.
 
-                        if (!_leftSource.MoveNext(ref _mutables._currentLeftElement, ref _mutables._currentLeftKey))
+                        if (!_leftSource.MoveNext(ref _mutables._currentLeftElement!, ref _mutables._currentLeftKey))
                         {
                             return false;
                         }
 
+                        Debug.Assert(_selectManyOperator._rightChildSelector != null);
                         // Use the source selection routine to create a right child.
                         IEnumerable<TRightInput> rightChild = _selectManyOperator._rightChildSelector(_mutables._currentLeftElement);
 
@@ -446,6 +450,7 @@ namespace System.Linq.Parallel
 
                     if (_currentRightSource.MoveNext())
                     {
+                        Debug.Assert(_mutables != null);
                         _mutables._currentRightSourceIndex++;
 
                         // If the inner data source has an element, we can yield it.

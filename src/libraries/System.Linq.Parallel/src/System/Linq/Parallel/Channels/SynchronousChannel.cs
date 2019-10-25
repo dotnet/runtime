@@ -25,7 +25,7 @@ namespace System.Linq.Parallel
     internal sealed class SynchronousChannel<T>
     {
         // We currently use the BCL FIFO queue internally, although any would do.
-        private Queue<T> _queue;
+        private Queue<T>? _queue;
 
 #if DEBUG
         // In debug builds, we keep track of when the producer is done (for asserts).
@@ -113,7 +113,7 @@ namespace System.Linq.Parallel
 
         internal void CopyTo(T[] array, int arrayIndex)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(_queue != null && array != null);
 #if DEBUG
             Debug.Assert(_done, "Can only copy from the channel after it's done being added to");
 #endif

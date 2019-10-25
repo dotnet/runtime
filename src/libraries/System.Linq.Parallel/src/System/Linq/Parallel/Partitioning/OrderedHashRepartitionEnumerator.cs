@@ -11,6 +11,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -28,20 +29,20 @@ namespace System.Linq.Parallel
 
         private readonly int _partitionCount; // The number of partitions.
         private readonly int _partitionIndex; // Our unique partition index.
-        private readonly Func<TInputOutput, THashKey> _keySelector; // A key-selector function.
+        private readonly Func<TInputOutput, THashKey>? _keySelector; // A key-selector function.
         private readonly HashRepartitionStream<TInputOutput, THashKey, TOrderKey> _repartitionStream; // A repartitioning stream.
         private readonly ListChunk<Pair<TInputOutput, THashKey>>[][] _valueExchangeMatrix; // Matrix to do inter-task communication of values.
         private readonly ListChunk<TOrderKey>[][] _keyExchangeMatrix; // Matrix to do inter-task communication of order keys.
         private readonly QueryOperatorEnumerator<TInputOutput, TOrderKey> _source; // The immediate source of data.
         private CountdownEvent _barrier; // Used to signal and wait for repartitions to complete.
         private readonly CancellationToken _cancellationToken; // A token for canceling the process.
-        private Mutables _mutables; // Mutable fields for this enumerator.
+        private Mutables? _mutables; // Mutable fields for this enumerator.
 
         private class Mutables
         {
             internal int _currentBufferIndex; // Current buffer index.
-            internal ListChunk<Pair<TInputOutput, THashKey>> _currentBuffer; // The buffer we're currently enumerating.
-            internal ListChunk<TOrderKey> _currentKeyBuffer; // The buffer we're currently enumerating.
+            internal ListChunk<Pair<TInputOutput, THashKey>>? _currentBuffer; // The buffer we're currently enumerating.
+            internal ListChunk<TOrderKey>? _currentKeyBuffer; // The buffer we're currently enumerating.
             internal int _currentIndex; // Current index into the buffer.
 
             internal Mutables()
@@ -65,7 +66,7 @@ namespace System.Linq.Parallel
 
         internal OrderedHashRepartitionEnumerator(
             QueryOperatorEnumerator<TInputOutput, TOrderKey> source, int partitionCount, int partitionIndex,
-            Func<TInputOutput, THashKey> keySelector, OrderedHashRepartitionStream<TInputOutput, THashKey, TOrderKey> repartitionStream, CountdownEvent barrier,
+            Func<TInputOutput, THashKey>? keySelector, OrderedHashRepartitionStream<TInputOutput, THashKey, TOrderKey> repartitionStream, CountdownEvent barrier,
             ListChunk<Pair<TInputOutput, THashKey>>[][] valueExchangeMatrix, ListChunk<TOrderKey>[][] keyExchangeMatrix, CancellationToken cancellationToken)
         {
             Debug.Assert(source != null);
@@ -108,20 +109,20 @@ namespace System.Linq.Parallel
         {
             if (_partitionCount == 1)
             {
-                TInputOutput current = default(TInputOutput);
+                TInputOutput current = default(TInputOutput)!;
 
                 // If there's only one partition, no need to do any sort of exchanges.
-                if (_source.MoveNext(ref current, ref currentKey))
+                if (_source.MoveNext(ref current!, ref currentKey))
                 {
                     currentElement = new Pair<TInputOutput, THashKey>(
-                        current, _keySelector == null ? default(THashKey) : _keySelector(current));
+                        current, _keySelector == null ? default : _keySelector(current));
                     return true;
                 }
 
                 return false;
             }
 
-            Mutables mutables = _mutables;
+            Mutables? mutables = _mutables;
             if (mutables == null)
                 mutables = _mutables = new Mutables();
 
@@ -160,7 +161,7 @@ namespace System.Linq.Parallel
                         mutables._currentKeyBuffer = mutables._currentKeyBuffer.Next;
                         Debug.Assert(mutables._currentBuffer == null || mutables._currentBuffer.Count > 0);
                         Debug.Assert((mutables._currentBuffer == null) == (mutables._currentKeyBuffer == null));
-                        Debug.Assert(mutables._currentBuffer == null || mutables._currentBuffer.Count == mutables._currentKeyBuffer.Count);
+                        Debug.Assert(mutables._currentBuffer == null || mutables._currentBuffer.Count == mutables._currentKeyBuffer!.Count);
                         continue; // Go back around and invoke this same logic.
                     }
                 }
@@ -204,16 +205,16 @@ namespace System.Linq.Parallel
 
         private void EnumerateAndRedistributeElements()
         {
-            Mutables mutables = _mutables;
+            Mutables? mutables = _mutables;
             Debug.Assert(mutables != null);
 
             ListChunk<Pair<TInputOutput, THashKey>>[] privateBuffers = new ListChunk<Pair<TInputOutput, THashKey>>[_partitionCount];
             ListChunk<TOrderKey>[] privateKeyBuffers = new ListChunk<TOrderKey>[_partitionCount];
 
-            TInputOutput element = default(TInputOutput);
-            TOrderKey key = default(TOrderKey);
+            TInputOutput element = default(TInputOutput)!;
+            TOrderKey key = default(TOrderKey)!;
             int loopCount = 0;
-            while (_source.MoveNext(ref element, ref key))
+            while (_source.MoveNext(ref element!, ref key))
             {
                 if ((loopCount++ & CancellationState.POLL_INTERVAL) == 0)
                     CancellationState.ThrowIfCanceled(_cancellationToken);
@@ -221,7 +222,7 @@ namespace System.Linq.Parallel
                 // Calculate the element's destination partition index, placing it into the
                 // appropriate buffer from which partitions will later enumerate.
                 int destinationIndex;
-                THashKey elementHashKey = default(THashKey);
+                THashKey elementHashKey = default(THashKey)!;
                 if (_keySelector != null)
                 {
                     elementHashKey = _keySelector(element);
@@ -283,7 +284,7 @@ namespace System.Linq.Parallel
                 if (_mutables == null || (_mutables._currentBufferIndex == ENUMERATION_NOT_STARTED))
                 {
                     _barrier.Signal();
-                    _barrier = null;
+                    _barrier = null!;
                 }
 
                 _source.Dispose();

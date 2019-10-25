@@ -3,6 +3,7 @@
     <AssemblyName>System.Linq.Parallel</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+	<Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>

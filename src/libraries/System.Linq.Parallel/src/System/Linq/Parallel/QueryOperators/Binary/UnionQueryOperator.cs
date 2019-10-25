@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -21,13 +22,13 @@ namespace System.Linq.Parallel
     internal sealed class UnionQueryOperator<TInputOutput> :
         BinaryQueryOperator<TInputOutput, TInputOutput, TInputOutput>
     {
-        private readonly IEqualityComparer<TInputOutput> _comparer; // An equality comparer.
+        private readonly IEqualityComparer<TInputOutput>? _comparer; // An equality comparer.
 
         //---------------------------------------------------------------------------------------
         // Constructs a new union operator.
         //
 
-        internal UnionQueryOperator(ParallelQuery<TInputOutput> left, ParallelQuery<TInputOutput> right, IEqualityComparer<TInputOutput> comparer)
+        internal UnionQueryOperator(ParallelQuery<TInputOutput> left, ParallelQuery<TInputOutput> right, IEqualityComparer<TInputOutput>? comparer)
             : base(left, right)
         {
             Debug.Assert(left != null && right != null, "child data sources cannot be null");
@@ -182,12 +183,12 @@ namespace System.Linq.Parallel
 
         private class UnionQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> _rightSource; // Right data source.
-            private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the union.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey>? _leftSource; // Left data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey>? _rightSource; // Right data source.
+            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the union.
             private readonly CancellationToken _cancellationToken;
-            private Shared<int> _outputLoopCount;
-            private readonly IEqualityComparer<TInputOutput> _comparer;
+            private Shared<int>? _outputLoopCount;
+            private readonly IEqualityComparer<TInputOutput>? _comparer;
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new union operator.
@@ -196,7 +197,7 @@ namespace System.Linq.Parallel
             internal UnionQueryOperatorEnumerator(
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftSource,
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> rightSource,
-                IEqualityComparer<TInputOutput> comparer,
+                IEqualityComparer<TInputOutput>? comparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(leftSource != null);
@@ -212,7 +213,7 @@ namespace System.Linq.Parallel
             // Walks the two data sources, left and then right, to produce the union.
             //
 
-            internal override bool MoveNext(ref TInputOutput currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref int currentKey)
             {
                 if (_hashLookup == null)
                 {
@@ -227,7 +228,7 @@ namespace System.Linq.Parallel
                 if (_leftSource != null)
                 {
                     // Iterate over this set's elements until we find a unique element.
-                    TLeftKey keyUnused = default(TLeftKey);
+                    TLeftKey keyUnused = default(TLeftKey)!;
                     Pair<TInputOutput, NoKeyMemoizationRequired> currentLeftElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
 
                     int i = 0;
@@ -255,11 +256,12 @@ namespace System.Linq.Parallel
                 if (_rightSource != null)
                 {
                     // Iterate over this set's elements until we find a unique element.
-                    TRightKey keyUnused = default(TRightKey);
+                    TRightKey keyUnused = default(TRightKey)!;
                     Pair<TInputOutput, NoKeyMemoizationRequired> currentRightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
 
                     while (_rightSource.MoveNext(ref currentRightElement, ref keyUnused))
                     {
+                        Debug.Assert(_outputLoopCount != null);
                         if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
@@ -299,10 +301,10 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> _rightSource; // Right data source.
             private readonly IComparer<ConcatKey<TLeftKey, TRightKey>> _keyComparer; // Comparer for compound order keys.
-            private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>>>> _outputEnumerator; // Enumerator over the output of the union.
+            private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>>>>? _outputEnumerator; // Enumerator over the output of the union.
             private readonly bool _leftOrdered; // Whether the left data source is ordered.
             private readonly bool _rightOrdered; // Whether the right data source is ordered.
-            private readonly IEqualityComparer<TInputOutput> _comparer; // Comparer for the elements.
+            private readonly IEqualityComparer<TInputOutput>? _comparer; // Comparer for the elements.
             private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
@@ -312,7 +314,7 @@ namespace System.Linq.Parallel
             internal OrderedUnionQueryOperatorEnumerator(
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftSource,
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> rightSource,
-                bool leftOrdered, bool rightOrdered, IEqualityComparer<TInputOutput> comparer, IComparer<ConcatKey<TLeftKey, TRightKey>> keyComparer,
+                bool leftOrdered, bool rightOrdered, IEqualityComparer<TInputOutput>? comparer, IComparer<ConcatKey<TLeftKey, TRightKey>> keyComparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(leftSource != null);
@@ -338,7 +340,7 @@ namespace System.Linq.Parallel
             // Walks the two data sources, left and then right, to produce the union.
             //
 
-            internal override bool MoveNext(ref TInputOutput currentElement, ref ConcatKey<TLeftKey, TRightKey> currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref ConcatKey<TLeftKey, TRightKey> currentKey)
             {
                 Debug.Assert(_leftSource != null);
                 Debug.Assert(_rightSource != null);
@@ -350,7 +352,7 @@ namespace System.Linq.Parallel
                         new Dictionary<Wrapper<TInputOutput>, Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>>>(wrapperComparer);
 
                     Pair<TInputOutput, NoKeyMemoizationRequired> elem = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
-                    TLeftKey leftKey = default(TLeftKey);
+                    TLeftKey leftKey = default(TLeftKey)!;
 
                     int i = 0;
                     while (_leftSource.MoveNext(ref elem, ref leftKey))
@@ -359,7 +361,7 @@ namespace System.Linq.Parallel
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
                         ConcatKey<TLeftKey, TRightKey> key =
-                            ConcatKey<TLeftKey, TRightKey>.MakeLeft(_leftOrdered ? leftKey : default(TLeftKey));
+                            ConcatKey<TLeftKey, TRightKey>.MakeLeft(_leftOrdered ? leftKey : default);
                         Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>> oldEntry;
                         Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>(elem.First);
 
@@ -369,14 +371,14 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    TRightKey rightKey = default(TRightKey);
+                    TRightKey rightKey = default(TRightKey)!;
                     while (_rightSource.MoveNext(ref elem, ref rightKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
                         ConcatKey<TLeftKey, TRightKey> key =
-                            ConcatKey<TLeftKey, TRightKey>.MakeRight(_rightOrdered ? rightKey : default(TRightKey));
+                            ConcatKey<TLeftKey, TRightKey>.MakeRight(_rightOrdered ? rightKey : default);
                         Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>> oldEntry;
                         Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>(elem.First);
 

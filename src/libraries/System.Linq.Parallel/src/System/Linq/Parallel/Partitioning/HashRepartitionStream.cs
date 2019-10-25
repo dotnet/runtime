@@ -34,8 +34,8 @@ namespace System.Linq.Parallel
     /// <typeparam name="TOrderKey"></typeparam>
     internal abstract class HashRepartitionStream<TInputOutput, THashKey, TOrderKey> : PartitionedStream<Pair<TInputOutput, THashKey>, TOrderKey>
     {
-        private readonly IEqualityComparer<THashKey> _keyComparer; // The optional key comparison routine.
-        private readonly IEqualityComparer<TInputOutput> _elementComparer; // The optional element comparison routine.
+        private readonly IEqualityComparer<THashKey>? _keyComparer; // The optional key comparison routine.
+        private readonly IEqualityComparer<TInputOutput>? _elementComparer; // The optional element comparison routine.
         private readonly int _distributionMod; // The distribution value we'll use to scramble input.
 
         //---------------------------------------------------------------------------------------
@@ -43,8 +43,8 @@ namespace System.Linq.Parallel
         //
 
         internal HashRepartitionStream(
-            int partitionsCount, IComparer<TOrderKey> orderKeyComparer, IEqualityComparer<THashKey> hashKeyComparer,
-            IEqualityComparer<TInputOutput> elementComparer)
+            int partitionsCount, IComparer<TOrderKey> orderKeyComparer, IEqualityComparer<THashKey>? hashKeyComparer,
+            IEqualityComparer<TInputOutput>? elementComparer)
             : base(partitionsCount, orderKeyComparer, OrdinalIndexState.Shuffled)
         {
             // elementComparer is used by operators that use elements themselves as the hash keys.

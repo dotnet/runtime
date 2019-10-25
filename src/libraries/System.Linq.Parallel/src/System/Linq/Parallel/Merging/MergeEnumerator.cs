@@ -44,7 +44,7 @@ namespace System.Linq.Parallel
         // Straightforward IEnumerator<T> methods. So subclasses needn't bother.
         //
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get { return ((IEnumerator<TInputOutput>)this).Current; }
         }

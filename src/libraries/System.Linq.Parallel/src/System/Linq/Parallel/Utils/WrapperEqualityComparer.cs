@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     {
         private readonly IEqualityComparer<T> _comparer;
 
-        internal WrapperEqualityComparer(IEqualityComparer<T> comparer)
+        internal WrapperEqualityComparer(IEqualityComparer<T>? comparer)
         {
             if (comparer == null)
             {

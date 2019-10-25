@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -22,13 +23,13 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput"></typeparam>
     internal sealed class DistinctQueryOperator<TInputOutput> : UnaryQueryOperator<TInputOutput, TInputOutput>
     {
-        private readonly IEqualityComparer<TInputOutput> _comparer; // An (optional) equality comparer.
+        private readonly IEqualityComparer<TInputOutput>? _comparer; // An (optional) equality comparer.
 
         //---------------------------------------------------------------------------------------
         // Constructs a new distinction operator.
         //
 
-        internal DistinctQueryOperator(IEnumerable<TInputOutput> source, IEqualityComparer<TInputOutput> comparer)
+        internal DistinctQueryOperator(IEnumerable<TInputOutput> source, IEqualityComparer<TInputOutput>? comparer)
             : base(source)
         {
             Debug.Assert(source != null, "child data source cannot be null");
@@ -121,14 +122,14 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private readonly Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
             private readonly CancellationToken _cancellationToken;
-            private Shared<int> _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
+            private Shared<int>? _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new distinction operator.
             //
 
             internal DistinctQueryOperatorEnumerator(
-                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> source, IEqualityComparer<TInputOutput> comparer,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> source, IEqualityComparer<TInputOutput>? comparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(source != null);
@@ -141,13 +142,13 @@ namespace System.Linq.Parallel
             // Walks the single data source, skipping elements it has already seen.
             //
 
-            internal override bool MoveNext(ref TInputOutput currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref int currentKey)
             {
                 Debug.Assert(_source != null);
                 Debug.Assert(_hashLookup != null);
 
                 // Iterate over this set's elements until we find a unique element.
-                TKey keyUnused = default(TKey);
+                TKey keyUnused = default!;
                 Pair<TInputOutput, NoKeyMemoizationRequired> current = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
 
                 if (_outputLoopCount == null)
@@ -194,7 +195,7 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private readonly Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.
             private readonly IComparer<TKey> _keyComparer; // Comparer to decide the key order.
-            private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, TKey>> _hashLookupEnumerator; // Enumerates over _hashLookup.
+            private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, TKey>>? _hashLookupEnumerator; // Enumerates over _hashLookup.
             private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
@@ -203,7 +204,7 @@ namespace System.Linq.Parallel
 
             internal OrderedDistinctQueryOperatorEnumerator(
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> source,
-                IEqualityComparer<TInputOutput> comparer, IComparer<TKey> keyComparer,
+                IEqualityComparer<TInputOutput>? comparer, IComparer<TKey> keyComparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(source != null);
@@ -220,7 +221,7 @@ namespace System.Linq.Parallel
             // Walks the single data source, skipping elements it has already seen.
             //
 
-            internal override bool MoveNext(ref TInputOutput currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TKey currentKey)
             {
                 Debug.Assert(_source != null);
                 Debug.Assert(_hashLookup != null);
@@ -228,7 +229,7 @@ namespace System.Linq.Parallel
                 if (_hashLookupEnumerator == null)
                 {
                     Pair<TInputOutput, NoKeyMemoizationRequired> elem = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
-                    TKey orderKey = default(TKey);
+                    TKey orderKey = default!;
 
                     int i = 0;
                     while (_source.MoveNext(ref elem, ref orderKey))
@@ -243,7 +244,7 @@ namespace System.Linq.Parallel
 
                         // If this is the first occurrence of this element, or the order key is lower than all keys we saw previously,
                         // update the order key for this element.
-                        if (!_hashLookup.TryGetValue(wrappedElem, out oldEntry) || _keyComparer.Compare(orderKey, oldEntry) < 0)
+                        if (!_hashLookup.TryGetValue(wrappedElem, out oldEntry!) || _keyComparer.Compare(orderKey, oldEntry) < 0)
                         {
                             // For each "elem" value, we store the smallest key, and the element value that had that key.
                             // Note that even though two element values are "equal" according to the EqualityComparer,

@@ -24,7 +24,7 @@ namespace System.Linq.Parallel
     internal class QueryOpeningEnumerator<TOutput> : IEnumerator<TOutput>
     {
         private readonly QueryOperator<TOutput> _queryOperator;
-        private IEnumerator<TOutput> _openedQueryEnumerator;
+        private IEnumerator<TOutput>? _openedQueryEnumerator;
         private QuerySettings _querySettings;
         private readonly ParallelMergeOptions? _mergeOptions;
         private readonly bool _suppressOrderPreservation;
@@ -81,7 +81,7 @@ namespace System.Linq.Parallel
             QueryLifecycle.LogicalQueryExecutionEnd(_querySettings.QueryId);
         }
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get { return ((IEnumerator<TOutput>)this).Current; }
         }
@@ -108,7 +108,7 @@ namespace System.Linq.Parallel
                 OpenQuery();
             }
 
-            bool innerMoveNextResult = _openedQueryEnumerator.MoveNext();
+            bool innerMoveNextResult = _openedQueryEnumerator!.MoveNext();
 
             // This provides cancellation-testing for the consumer-side of the buffers that appears in each scenario:
             //   Non-order-preserving (defaultMergeHelper)

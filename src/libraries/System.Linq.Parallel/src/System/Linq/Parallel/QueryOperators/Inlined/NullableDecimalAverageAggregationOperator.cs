@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
         //     The single result of aggregation.
         //
 
-        protected override decimal? InternalAggregate(ref Exception singularExceptionToThrow)
+        protected override decimal? InternalAggregate(ref Exception? singularExceptionToThrow)
         {
             // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
         //
 
         protected override QueryOperatorEnumerator<Pair<decimal, long>, int> CreateEnumerator<TKey>(
-            int index, int count, QueryOperatorEnumerator<decimal?, TKey> source, object sharedData, CancellationToken cancellationToken)
+            int index, int count, QueryOperatorEnumerator<decimal?, TKey> source, object? sharedData, CancellationToken cancellationToken)
         {
             return new NullableDecimalAverageAggregationOperatorEnumerator<TKey>(source, index, cancellationToken);
         }
@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
 
                 QueryOperatorEnumerator<decimal?, TKey> source = _source;
                 decimal? current = default(decimal?);
-                TKey currentKey = default(TKey);
+                TKey currentKey = default(TKey)!;
                 int i = 0;
                 while (source.MoveNext(ref current, ref currentKey))
                 {

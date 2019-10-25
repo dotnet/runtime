@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -139,11 +140,11 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TSource currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref TKey currentKey)
             {
                 Debug.Assert(_source != null);
 
-                bool moveNextResult = _source.MoveNext(ref currentElement, ref currentKey);
+                bool moveNextResult = _source.MoveNext(ref currentElement!, ref currentKey);
 
                 // There is special logic the first time this function is called.
                 if (!_lookedForEmpty)
@@ -167,7 +168,7 @@ namespace System.Linq.Parallel
                             {
                                 // No data, we will yield the default value.
                                 currentElement = _defaultValue;
-                                currentKey = default(TKey);
+                                currentKey = default(TKey)!;
                                 return true;
                             }
                             else

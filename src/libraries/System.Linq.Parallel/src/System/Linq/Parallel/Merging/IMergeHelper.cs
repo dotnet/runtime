@@ -26,6 +26,6 @@ namespace System.Linq.Parallel
         IEnumerator<TInputOutput> GetEnumerator();
 
         // Returns the merged output as an array.
-        TInputOutput[] GetResultsAsArray();
+        TInputOutput[]? GetResultsAsArray();
     }
 }

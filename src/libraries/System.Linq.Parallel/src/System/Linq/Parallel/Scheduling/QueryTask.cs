@@ -42,8 +42,9 @@ namespace System.Linq.Parallel
         // A static function used by s_runTaskSynchronouslyDelegate, which is used by RunSynchronously
         //
 
-        private static void RunTaskSynchronously(object o)
+        private static void RunTaskSynchronously(object? o)
         {
+            Debug.Assert(o != null);
             ((QueryTask)o).BaseWork(null);
         }
 
@@ -51,7 +52,7 @@ namespace System.Linq.Parallel
         // A static delegate used by RunSynchronously
         //
 
-        private static readonly Action<object> s_runTaskSynchronouslyDelegate = RunTaskSynchronously;
+        private static readonly Action<object?> s_runTaskSynchronouslyDelegate = RunTaskSynchronously;
 
         //-----------------------------------------------------------------------------------
         // Executes the task synchronously (on the current thread).
@@ -70,8 +71,9 @@ namespace System.Linq.Parallel
         // Executes the task asynchronously (elsewhere, unspecified).
         //
 
-        private static readonly Action<object> s_baseWorkDelegate = delegate (object o)
+        private static readonly Action<object?> s_baseWorkDelegate = delegate (object? o)
         {
+            Debug.Assert(o != null);
             ((QueryTask)o).BaseWork(null);
         };
 
@@ -88,7 +90,7 @@ namespace System.Linq.Parallel
         // amount of tracing around the call to the real work API.
         //
 
-        private void BaseWork(object unused)
+        private void BaseWork(object? unused)
         {
             Debug.Assert(unused == null);
             TraceHelpers.TraceInfo("[timing]: {0}: Start work {1}", DateTime.Now.Ticks, _taskIndex);

@@ -19,7 +19,7 @@ namespace System.Linq.Parallel
     internal class CancellationState
     {
         // a cancellation signal that can be set internally to prompt early query termination.
-        internal CancellationTokenSource InternalCancellationTokenSource;
+        internal CancellationTokenSource? InternalCancellationTokenSource;
 
         // the external cancellationToken that the user sets to ask for the query to terminate early.
         // this has to be tracked explicitly so that an OCE(externalToken) can be thrown as the query
@@ -27,7 +27,7 @@ namespace System.Linq.Parallel
         internal CancellationToken ExternalCancellationToken;
 
         // A combined token Source for internal/external cancellation, defining the total cancellation state.
-        internal CancellationTokenSource MergedCancellationTokenSource;
+        internal CancellationTokenSource? MergedCancellationTokenSource;
 
         // A combined token for internal/external cancellation, defining the total cancellation state.
         internal CancellationToken MergedCancellationToken

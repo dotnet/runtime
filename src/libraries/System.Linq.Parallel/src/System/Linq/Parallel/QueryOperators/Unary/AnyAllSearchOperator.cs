@@ -191,10 +191,10 @@ namespace System.Linq.Parallel
                     return false;
 
                 // We just scroll through the enumerator and accumulate the result.
-                TInput element = default(TInput);
-                TKey keyUnused = default(TKey);
+                TInput element = default(TInput)!;
+                TKey keyUnused = default(TKey)!;
 
-                if (_source.MoveNext(ref element, ref keyUnused))
+                if (_source.MoveNext(ref element!, ref keyUnused))
                 {
                     currentElement = !_qualification;
                     currentKey = _partitionIndex;
@@ -222,7 +222,7 @@ namespace System.Linq.Parallel
                             break;
                         }
                     }
-                    while (_source.MoveNext(ref element, ref keyUnused));
+                    while (_source.MoveNext(ref element!, ref keyUnused));
 
                     return true;
                 }

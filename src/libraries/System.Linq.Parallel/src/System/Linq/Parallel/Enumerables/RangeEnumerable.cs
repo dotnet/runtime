@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
             private readonly int _from; // The initial value.
             private readonly int _count; // How many values to yield.
             private readonly int _initialIndex; // The ordinal index of the first value in the range.
-            private Shared<int> _currentCount; // The 0-based index of the current value. [allocate in moveNext to avoid false-sharing]
+            private Shared<int>? _currentCount; // The 0-based index of the current value. [allocate in moveNext to avoid false-sharing]
 
             //-----------------------------------------------------------------------------------
             // Creates a new enumerator.

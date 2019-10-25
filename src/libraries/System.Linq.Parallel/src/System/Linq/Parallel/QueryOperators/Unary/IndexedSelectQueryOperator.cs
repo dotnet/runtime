@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -152,11 +153,11 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TOutput currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref int currentKey)
             {
                 // So long as the source has a next element, we have an element.
-                TInput element = default(TInput);
-                if (_source.MoveNext(ref element, ref currentKey))
+                TInput element = default(TInput)!;
+                if (_source.MoveNext(ref element!, ref currentKey))
                 {
                     Debug.Assert(_selector != null, "expected a compiled selection function");
                     currentElement = _selector(element, currentKey);

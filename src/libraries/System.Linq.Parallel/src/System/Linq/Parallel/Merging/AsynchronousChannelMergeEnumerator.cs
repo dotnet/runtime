@@ -10,6 +10,7 @@
 
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -29,17 +30,17 @@ namespace System.Linq.Parallel
     internal sealed class AsynchronousChannelMergeEnumerator<T> : MergeEnumerator<T>
     {
         private readonly AsynchronousChannel<T>[] _channels; // The channels being enumerated.
-        private IntValueEvent _consumerEvent; // The consumer event.
+        private IntValueEvent? _consumerEvent; // The consumer event.
         private readonly bool[] _done;       // Tracks which channels are done.
         private int _channelIndex;  // The next channel from which we'll dequeue.
-        private T _currentElement;  // The remembered element from the previous MoveNext.
+        [MaybeNull, AllowNull] private T _currentElement = default;  // The remembered element from the previous MoveNext. TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/37511
 
         //-----------------------------------------------------------------------------------
         // Allocates a new enumerator over a set of one-to-one channels.
         //
 
         internal AsynchronousChannelMergeEnumerator(
-            QueryTaskGroupState taskGroupState, AsynchronousChannel<T>[] channels, IntValueEvent consumerEvent)
+            QueryTaskGroupState taskGroupState, AsynchronousChannel<T>[] channels, IntValueEvent? consumerEvent)
             : base(taskGroupState)
         {
             Debug.Assert(channels != null);
@@ -70,7 +71,7 @@ namespace System.Linq.Parallel
                     throw new InvalidOperationException(SR.PLINQ_CommonEnumerator_Current_NotStarted);
                 }
 
-                return _currentElement;
+                return _currentElement!;
             }
         }
 
@@ -98,7 +99,7 @@ namespace System.Linq.Parallel
             }
 
             // Else try the fast path.
-            if (!_done[index] && _channels[index].TryDequeue(ref _currentElement))
+            if (!_done[index] && _channels[index].TryDequeue(ref _currentElement!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
             {
                 _channelIndex = (index + 1) % _channels.Length;
                 return true;
@@ -126,7 +127,7 @@ namespace System.Linq.Parallel
                 AsynchronousChannel<T> current = _channels[currChannelIndex];
 
                 bool isDone = _done[currChannelIndex];
-                if (!isDone && current.TryDequeue(ref _currentElement))
+                if (!isDone && current.TryDequeue(ref _currentElement!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
                 {
                     // The channel has an item to be processed. We already remembered the current
                     // element (Dequeue stores it as an out-parameter), so we just return true
@@ -146,7 +147,7 @@ namespace System.Linq.Parallel
                         // we still need to continue processing them.
                         if (!current.IsChunkBufferEmpty)
                         {
-                            bool dequeueResult = current.TryDequeue(ref _currentElement);
+                            bool dequeueResult = current.TryDequeue(ref _currentElement!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
                             Debug.Assert(dequeueResult, "channel isn't empty, yet the dequeue failed, hmm");
                             return true;
                         }
@@ -191,7 +192,7 @@ namespace System.Linq.Parallel
                             for (int i = 0; i < _channels.Length; i++)
                             {
                                 bool channelIsDone = false;
-                                if (!_done[i] && _channels[i].TryDequeue(ref _currentElement, ref channelIsDone))
+                                if (!_done[i] && _channels[i].TryDequeue(ref _currentElement!, ref channelIsDone)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
                                 {
                                     // The channel has received an item since the last time we checked.
                                     // Just return and let the consumer process the element returned.
@@ -220,6 +221,7 @@ namespace System.Linq.Parallel
                                 break;
                             }
 
+                            Debug.Assert(_consumerEvent != null);
                             //This Wait() does not require cancellation support as it will wake up when all the producers into the
                             //channel have finished.  Hence, if all the producers wake up on cancellation, so will this.
                             _consumerEvent.Wait();

@@ -11,6 +11,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -42,8 +43,8 @@ namespace System.Linq.Parallel
     {
         // Predicate function used to decide when to stop yielding elements. One pair is used for
         // index-based evaluation (i.e. it is passed the index as well as the element's value).
-        private readonly Func<TResult, bool> _predicate;
-        private readonly Func<TResult, int, bool> _indexedPredicate;
+        private readonly Func<TResult, bool>? _predicate;
+        private readonly Func<TResult, int, bool>? _indexedPredicate;
 
         private readonly bool _take; // Whether to take (true) or skip (false).
         private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
@@ -64,8 +65,8 @@ namespace System.Linq.Parallel
         //
 
         internal TakeOrSkipWhileQueryOperator(IEnumerable<TResult> child,
-                                              Func<TResult, bool> predicate,
-                                              Func<TResult, int, bool> indexedPredicate, bool take)
+                                              Func<TResult, bool>? predicate,
+                                              Func<TResult, int, bool>? indexedPredicate, bool take)
             : base(child)
         {
             Debug.Assert(child != null, "child data source cannot be null");
@@ -133,7 +134,7 @@ namespace System.Linq.Parallel
             CountdownEvent sharedBarrier = new CountdownEvent(partitionCount);
 
             Debug.Assert(_indexedPredicate == null || typeof(TKey) == typeof(int));
-            Func<TResult, TKey, bool> convertedIndexedPredicate = (Func<TResult, TKey, bool>)(object)_indexedPredicate;
+            Func<TResult, TKey, bool>? convertedIndexedPredicate = (Func<TResult, TKey, bool>?)(object?)_indexedPredicate;
 
             PartitionedStream<TResult, TKey> partitionedStream =
                 new PartitionedStream<TResult, TKey>(partitionCount, inputStream.KeyComparer, OrdinalIndexState);
@@ -171,6 +172,7 @@ namespace System.Linq.Parallel
                     return Child.AsSequentialQuery(token).TakeWhile(_indexedPredicate);
                 }
 
+                Debug.Assert(_predicate != null);
                 return Child.AsSequentialQuery(token).TakeWhile(_predicate);
             }
 
@@ -180,6 +182,7 @@ namespace System.Linq.Parallel
                 return wrappedIndexedChild.SkipWhile(_indexedPredicate);
             }
 
+            Debug.Assert(_predicate != null);
             IEnumerable<TResult> wrappedChild = CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token);
             return wrappedChild.SkipWhile(_predicate);
         }
@@ -201,8 +204,8 @@ namespace System.Linq.Parallel
         private class TakeOrSkipWhileQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
         {
             private readonly QueryOperatorEnumerator<TResult, TKey> _source; // The data source to enumerate.
-            private readonly Func<TResult, bool> _predicate;  // The actual predicate function.
-            private readonly Func<TResult, TKey, bool> _indexedPredicate;  // The actual index-based predicate function.
+            private readonly Func<TResult, bool>? _predicate;  // The actual predicate function.
+            private readonly Func<TResult, TKey, bool>? _indexedPredicate;  // The actual index-based predicate function.
             private readonly bool _take; // Whether to execute a take- (true) or skip-while (false).
             private readonly IComparer<TKey> _keyComparer; // Comparer for the order keys.
 
@@ -211,10 +214,10 @@ namespace System.Linq.Parallel
             private readonly CountdownEvent _sharedBarrier; // To separate the search/yield phases.
             private readonly CancellationToken _cancellationToken; // Token used to cancel this operator.
 
-            private List<Pair<TResult, TKey>> _buffer; // Our buffer.
-            private Shared<int> _bufferIndex; // Our current index within the buffer.  [allocate in moveNext to avoid false-sharing]
+            private List<Pair<TResult, TKey>>? _buffer; // Our buffer.
+            private Shared<int>? _bufferIndex; // Our current index within the buffer.  [allocate in moveNext to avoid false-sharing]
             private int _updatesSeen; // How many updates has this enumerator observed? (Each other enumerator will contribute one update.)
-            private TKey _currentLowKey; // The lowest key rejected by one of the other enumerators.
+            private TKey _currentLowKey = default!; // The lowest key rejected by one of the other enumerators.
 
 
             //---------------------------------------------------------------------------------------
@@ -222,7 +225,7 @@ namespace System.Linq.Parallel
             //
 
             internal TakeOrSkipWhileQueryOperatorEnumerator(
-                QueryOperatorEnumerator<TResult, TKey> source, Func<TResult, bool> predicate, Func<TResult, TKey, bool> indexedPredicate, bool take,
+                QueryOperatorEnumerator<TResult, TKey> source, Func<TResult, bool>? predicate, Func<TResult, TKey, bool>? indexedPredicate, bool take,
                 OperatorState<TKey> operatorState, CountdownEvent sharedBarrier, CancellationToken cancelToken, IComparer<TKey> keyComparer)
             {
                 Debug.Assert(source != null);
@@ -245,7 +248,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TResult currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, ref TKey currentKey)
             {
                 // If the buffer has not been created, we will generate it lazily on demand.
                 if (_buffer == null)
@@ -261,10 +264,10 @@ namespace System.Linq.Parallel
 
                     try
                     {
-                        TResult current = default(TResult);
-                        TKey key = default(TKey);
+                        TResult current = default(TResult)!;
+                        TKey key = default(TKey)!;
                         int i = 0; //counter to help with cancellation
-                        while (_source.MoveNext(ref current, ref key))
+                        while (_source.MoveNext(ref current!, ref key))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                                 CancellationState.ThrowIfCanceled(_cancellationToken);
@@ -332,6 +335,7 @@ namespace System.Linq.Parallel
                     _bufferIndex = new Shared<int>(-1);
                 }
 
+                Debug.Assert(_bufferIndex != null);
                 // Now either enter (or continue) the yielding phase. As soon as we reach this, we know the
                 // current shared "low false" value is the absolute lowest with a false.
                 if (_take)
@@ -377,7 +381,7 @@ namespace System.Linq.Parallel
                     }
 
                     // Lastly, so long as our input still has elements, they will be yieldable.
-                    if (_source.MoveNext(ref currentElement, ref currentKey))
+                    if (_source.MoveNext(ref currentElement!, ref currentKey))
                     {
                         Debug.Assert(_keyComparer.Compare(currentKey, _operatorState._currentLowKey) > 0,
                                         "expected remaining element indices to be greater than smallest");
@@ -397,7 +401,7 @@ namespace System.Linq.Parallel
         private class OperatorState<TKey>
         {
             internal volatile int _updatesDone = 0;
-            internal TKey _currentLowKey;
+            internal TKey _currentLowKey = default!;
         }
     }
 }

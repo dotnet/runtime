@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
 
         internal UnorderedHashRepartitionStream(
             PartitionedStream<TInputOutput, TIgnoreKey> inputStream,
-            Func<TInputOutput, THashKey> keySelector, IEqualityComparer<THashKey> keyComparer, IEqualityComparer<TInputOutput> elementComparer,
+            Func<TInputOutput, THashKey>? keySelector, IEqualityComparer<THashKey>? keyComparer, IEqualityComparer<TInputOutput>? elementComparer,
             CancellationToken cancellationToken)
             : base(inputStream.PartitionCount, Util.GetDefaultComparer<int>(), keyComparer, elementComparer)
         {
