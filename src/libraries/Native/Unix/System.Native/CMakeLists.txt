@@ -31,12 +31,25 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     endif ()
 endif ()
 
-add_library(System.Native
-    SHARED
-    ${NATIVE_SOURCES}
-    ${VERSION_FILE_PATH}
-)
+if (GEN_SHARED_LIB)
+    add_library(System.Native
+        SHARED
+        ${NATIVE_SOURCES}
+        ${VERSION_FILE_PATH}
+    )
+    if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
+        target_link_libraries(System.Native rt)
+    endif ()
 
+    if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+        target_link_libraries(System.Native pthread)
+    if (HAVE_INOTIFY)
+        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+        target_link_libraries(System.Native ${INOTIFY_LIBRARY})
+    endif ()
+    endif ()
+    install_library_and_symbols (System.Native)
+endif ()
 
 add_library(System.Native-Static
     STATIC
@@ -48,17 +61,4 @@ add_library(System.Native-Static
 set_target_properties(System.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
-    target_link_libraries(System.Native rt)
-endif ()
-
-if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-    target_link_libraries(System.Native pthread)
-if (HAVE_INOTIFY)
-    find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-    target_link_libraries(System.Native ${INOTIFY_LIBRARY})
-endif()
-endif ()
-
-install_library_and_symbols (System.Native)
 install (TARGETS System.Native-Static DESTINATION .)

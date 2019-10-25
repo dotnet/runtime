@@ -36,6 +36,14 @@ popd
 :DoGen
 
 if "%3" == "wasm" (
+    if "%EMSDK_PATH%" == "" (
+       echo "Error: Should set EMSDK_PATH environment variable pointing to emsdk root."
+       exit /B 1
+    )
+
+    if "%EMSCRIPTEN_ROOT%" == "" (
+      set EMSCRIPTEN_ROOT="%EMSDK_PATH/upstream/emscripten%"
+    )
     emcmake cmake "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" -G "NMake Makefiles" %__sourceDir%
 ) else (
     "%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1 %__ExtraCmakeParams%
