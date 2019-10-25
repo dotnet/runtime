@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <CrossGenFiles Include="..\.packages\runtime.$(TargetRid).Microsoft.NETCore.Runtime.CoreCLR\$(DesiredPackageVersionArg)\tools\crossgen*"/>
+    <CrossGenFiles Include="$(NuGetPackageRoot)\runtime.$(TargetRid).Microsoft.NETCore.Runtime.CoreCLR\$(DesiredPackageVersionArg)\tools\crossgen*"/>
   </ItemGroup>
 
   <PropertyGroup>

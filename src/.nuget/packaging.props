@@ -6,7 +6,7 @@
     <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
 
-    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/microsoft.netcore.platforms/$(MicrosoftNETCorePlatformsVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)/microsoft.netcore.platforms/$(MicrosoftNETCorePlatformsVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 
     <ProjectUrl>https://dot.net</ProjectUrl>

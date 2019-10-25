@@ -9,7 +9,7 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksToolsDir>$(PackagesDir)/illink.tasks/$(ILLinkTasksPackageVersion)/tools</ILLinkTasksToolsDir>
+    <ILLinkTasksToolsDir>$(PkgILLink_Tasks)/tools</ILLinkTasksToolsDir>
     <ILLinkTasksDir>$(ILLinkTasksToolsDir)/net46/</ILLinkTasksDir>
     <ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ILLinkTasksToolsDir)/netcoreapp2.0/</ILLinkTasksDir>
     <ILLinkTasksPath>$(ILLinkTasksDir)ILLink.Tasks.dll</ILLinkTasksPath>
