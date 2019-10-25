@@ -226,8 +226,14 @@ public class ProcessRunner : IDisposable
     private void CleanupLogWriter()
     {
         TextWriter logWriter = _logWriter;
-        _logWriter = null;
-        logWriter?.Dispose();
+        if (logWriter != null)
+        {
+            lock (logWriter)
+            {
+                _logWriter = null;
+                logWriter.Dispose();
+            }            
+        }
     }
 
     private void ExitEventHandler(object sender, EventArgs eventArgs)
@@ -254,7 +260,11 @@ public class ProcessRunner : IDisposable
         {
             lock (logWriter)
             {
-                logWriter.WriteLine(data);
+                if (_logWriter != null)
+                {
+                    // The logWriter was not disposed yet
+                    logWriter.WriteLine(data);
+                }
             }
         }
     }
@@ -267,7 +277,11 @@ public class ProcessRunner : IDisposable
         {
             lock (logWriter)
             {
-                logWriter.WriteLine(data);
+                if (_logWriter != null)
+                {
+                    // The logWriter was not disposed yet
+                    logWriter.WriteLine(data);
+                }
             }
         }
     }
@@ -338,7 +352,6 @@ public class ProcessRunner : IDisposable
         _processInfo.Finished = true;
 
         _logWriter.Flush();
-        _logWriter.Close();
 
         CleanupLogWriter();
 
