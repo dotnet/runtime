@@ -102,13 +102,6 @@ enum tagSTREAM_SEEK
     } 	STREAM_SEEK;
 
 typedef 
-enum tagLOCKTYPE
-    {	LOCK_WRITE	= 1,
-	LOCK_EXCLUSIVE	= 2,
-	LOCK_ONLYONCE	= 4
-    } 	LOCKTYPE;
-
-typedef 
 enum tagSTATFLAG
     {	STATFLAG_DEFAULT	= 0,
 	STATFLAG_NONAME	= 1,
