@@ -18,9 +18,6 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     public struct AsyncTaskMethodBuilder
     {
-        /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
-        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
-
         /// <summary>The lazily-initialized built task.</summary>
         private Task<VoidTaskResult>? m_task; // Debugger depends on the exact name of this field.
 
@@ -103,7 +100,7 @@ namespace System.Runtime.CompilerServices
             // If there isn't one, store the supplied completed task.
             if (m_task is null)
             {
-                m_task = s_cachedCompleted;
+                m_task = Task.s_cachedCompleted;
             }
             else
             {
