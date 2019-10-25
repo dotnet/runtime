@@ -160,10 +160,6 @@ IF ERRORLEVEL 1 (
     goto :Failure
 )
 
-:: Copy results to native_aot since packaging expects a copy there too
-mkdir "%__artifactsDir%\bin\native\%__outConfig%-aot"
-copy "%__artifactsDir%\bin\native\%__outConfig%\*" "%__artifactsDir%\bin\native\%__outConfig%-aot"
-
 exit /B 0
 
 :Failure
