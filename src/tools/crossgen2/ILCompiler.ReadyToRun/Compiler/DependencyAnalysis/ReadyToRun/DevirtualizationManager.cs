@@ -30,6 +30,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_compilationModuleGroup.VersionsWithMethodBody(declMethod) &&
                 _compilationModuleGroup.VersionsWithType(implType))
             {
+                /**
+                 * It is possible for us to hit a scenario where a type implements
+                 * the same interface more than once due to generic instantiations.
+                 *
+                 * In some instances of those cases, the VirtualMethodAlgorithm
+                 * does not produce identical output as CoreCLR would, leading to
+                 * behavioral differences in compiled outputs.
+                 *
+                 * Instead of fixing the algorithm (in which the work to fix it is
+                 * tracked in https://github.com/dotnet/corert/issues/208), the
+                 * following duplication detection algorithm will detect the case and
+                 * refuse to devirtualize for those scenarios.
+                 */
+                if (declMethod.OwningType.IsInterface)
+                {
+                    DefType[] implTypeRuntimeInterfaces = implType.RuntimeInterfaces;
+                    for (int i = 0; i < implTypeRuntimeInterfaces.Length; i++)
+                    {
+                        for (int j = i + 1; j < implTypeRuntimeInterfaces.Length; j++)
+                        {
+                            if (implTypeRuntimeInterfaces[i] == implTypeRuntimeInterfaces[j])
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                }
+
                 return base.ResolveVirtualMethod(declMethod, implType);
             }
 
