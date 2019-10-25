@@ -166,5 +166,107 @@ namespace JIT.HardwareIntrinsics.Arm
             return (byte)result;
         }
 
+        public static byte ReverseElementBits(byte op1)
+        {
+            byte val = (byte)op1;
+            byte result = 0;
+            const int bitsize = sizeof(byte) * 8;
+            const byte cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (byte)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (byte)result;
+        }
+        public static int ReverseElementBits(int op1)
+        {
+            uint val = (uint)op1;
+            uint result = 0;
+            const int bitsize = sizeof(uint) * 8;
+            const uint cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (uint)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (int)result;
+        }
+        public static long ReverseElementBits(long op1)
+        {
+            ulong val = (ulong)op1;
+            ulong result = 0;
+            const int bitsize = sizeof(ulong) * 8;
+            const ulong cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (long)result;
+        }
+        public static sbyte ReverseElementBits(sbyte op1)
+        {
+            byte val = (byte)op1;
+            byte result = 0;
+            const int bitsize = sizeof(byte) * 8;
+            const byte cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (byte)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (sbyte)result;
+        }
+        public static uint ReverseElementBits(uint op1)
+        {
+            uint val = (uint)op1;
+            uint result = 0;
+            const int bitsize = sizeof(uint) * 8;
+            const uint cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (uint)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (uint)result;
+        }
+        public static ulong ReverseElementBits(ulong op1)
+        {
+            ulong val = (ulong)op1;
+            ulong result = 0;
+            const int bitsize = sizeof(ulong) * 8;
+            const ulong cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (ulong)result;
+        }
     }
 }
