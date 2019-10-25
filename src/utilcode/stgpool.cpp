@@ -1904,7 +1904,7 @@ CInMemoryStream::Seek(
     STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
 
     _ASSERTE(dwOrigin == STREAM_SEEK_SET || dwOrigin == STREAM_SEEK_CUR);
-    _ASSERTE(dlibMove.QuadPart <= static_cast<LONGLONG>(ULONG_MAX));
+    _ASSERTE(dlibMove.QuadPart <= static_cast<LONGLONG>(UINT32_MAX));
 
     if (dwOrigin == STREAM_SEEK_SET)
     {
@@ -1940,7 +1940,7 @@ CInMemoryStream::CopyTo(
     _ASSERTE(pcbRead == 0);
     _ASSERTE(pcbWritten == 0);
 
-    _ASSERTE(cb.QuadPart <= ULONG_MAX);
+    _ASSERTE(cb.QuadPart <= UINT32_MAX);
     ULONG       cbTotal = min(static_cast<ULONG>(cb.QuadPart), m_cbSize - m_cbCurrent);
     ULONG       cbRead=min(1024, cbTotal);
     CQuickBytes rBuf;

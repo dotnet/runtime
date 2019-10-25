@@ -114,7 +114,7 @@ Convert string to an unsigned long-integer value.
 
 Return Value
 
-strtoul returns the converted value, if any, or ULONG_MAX on
+strtoul returns the converted value, if any, or UINT32_MAX on
 overflow. It returns 0 if no conversion can be performed. errno is
 set to ERANGE if overflow or underflow occurs.
 
@@ -171,7 +171,7 @@ PAL_strtoul(const char *szNumber, char **pszEnd, int nBase)
     ulResult = strtoul(szNumber, pszEnd, nBase);
 
 #ifdef BIT64
-    if (ulResult > _UI32_MAX)
+    if (ulResult > UINT32_MAX)
     {
         char ch = *szNumber;
         while (isspace(ch))
@@ -183,7 +183,7 @@ PAL_strtoul(const char *szNumber, char **pszEnd, int nBase)
             to match Windows behavior. */
         if (ch != '-')
         {
-            ulResult = _UI32_MAX;
+            ulResult = UINT32_MAX;
             errno = ERANGE;
         }
     }

@@ -1231,7 +1231,7 @@ CMiniMdRW::ComputeGrowLimits(
     else
     {
         // Tables are already large
-        m_maxRid = m_maxIx = ULONG_MAX;
+        m_maxRid = m_maxIx = UINT32_MAX;
         m_limIx = USHRT_MAX << 1;
         m_limRid = USHRT_MAX << 1; 
         m_eGrow = eg_grown;
@@ -4732,7 +4732,7 @@ CMiniMdRW::ExpandTables()
 
     // Remember that we've grown.
     m_eGrow = eg_grown;
-    m_maxRid = m_maxIx = ULONG_MAX;
+    m_maxRid = m_maxIx = UINT32_MAX;
 
 ErrExit:
     return hr;
@@ -5052,7 +5052,7 @@ CMiniMdRW::AddRecord(             // S_OK or error.
         if (m_maxRid > m_limRid && m_eGrow == eg_ok)
         {
             // OutputDebugStringA("Growing tables due to Record overflow.\n");
-            m_eGrow = eg_grow, m_maxRid = m_maxIx = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
     ++m_Schema.m_cRecs[nTableIndex];
@@ -5370,7 +5370,7 @@ CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
     
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nStringIndex);
     
-    if (m_maxIx != ULONG_MAX)
+    if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_StringHeap.GetAlignedSize(&nStringIndex));
     }
@@ -5380,7 +5380,7 @@ CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
         if (m_maxIx > m_limIx && m_eGrow == eg_ok)
         {
             // OutputDebugStringA("Growing tables due to String overflow.\n");
-            m_eGrow = eg_grow, m_maxRid = m_maxIx = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
     
@@ -5427,7 +5427,7 @@ CMiniMdRW::PutStringW(
 
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nStringIndex);
     
-    if (m_maxIx != ULONG_MAX)
+    if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_StringHeap.GetAlignedSize(&nStringIndex));
     }
@@ -5437,7 +5437,7 @@ CMiniMdRW::PutStringW(
         if (m_maxIx > m_limIx && m_eGrow == eg_ok)
         {
             // OutputDebugStringA("Growing tables due to String overflow.\n");
-            m_eGrow = eg_grow, m_maxRid = m_maxIx = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
     
@@ -5471,7 +5471,7 @@ CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
 
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nIndex);
     
-    if (m_maxIx != ULONG_MAX)
+    if (m_maxIx != UINT32_MAX)
     {
         cbSize = m_GuidHeap.GetSize();
     }
@@ -5481,7 +5481,7 @@ CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
         if (m_maxIx > m_limIx && m_eGrow == eg_ok)
         {
             // OutputDebugStringA("Growing tables due to GUID overflow.\n");
-            m_eGrow = eg_grow, m_maxRid = m_maxIx = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
     
@@ -5594,7 +5594,7 @@ CMiniMdRW::PutBlob(
     
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nBlobIndex);
     
-    if (m_maxIx != ULONG_MAX)
+    if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_BlobHeap.GetAlignedSize(&nBlobIndex));
     }
@@ -5604,7 +5604,7 @@ CMiniMdRW::PutBlob(
         if (m_maxIx > m_limIx && m_eGrow == eg_ok)
         {
             // OutputDebugStringA("Growing tables due to Blob overflow.\n");
-            m_eGrow = eg_grow, m_maxRid = m_maxIx = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
     
@@ -5651,7 +5651,7 @@ CMiniMdRW::AddChildRowIndirectForParent(
     {
         m_maxRid = m_Schema.m_cRecs[tblChild];
         if (m_maxRid > m_limRid && m_eGrow == eg_ok)
-            m_eGrow = eg_grow, m_maxIx = m_maxRid = ULONG_MAX;
+            m_eGrow = eg_grow, m_maxIx = m_maxRid = UINT32_MAX;
     }
     
     // Adjust the rest of the rows in the table.

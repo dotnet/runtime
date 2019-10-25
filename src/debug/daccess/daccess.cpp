@@ -6321,9 +6321,9 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     while (size)
     {
         ULONG32 enumSize;
-        if (size > ULONG_MAX)
+        if (size > UINT32_MAX)
         {
-            enumSize = ULONG_MAX;
+            enumSize = UINT32_MAX;
         }
         else
         {

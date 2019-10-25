@@ -73,7 +73,7 @@ StringTableEntry* CeeSectionString::createEntry(__in_z LPWSTR target, ULONG hash
     entry->m_hashId = hashId;
     entry->m_offset = dataLen();
     size_t len = (wcslen(target)+1) * sizeof(WCHAR);
-    if (len > ULONG_MAX) {
+    if (len > UINT32_MAX) {
         delete entry;
         return NULL;
     }

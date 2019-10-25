@@ -1550,7 +1550,7 @@ interface ICorProfilerCallback : IUnknown
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      *
-     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as ULONG_MAX 
+     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as UINT32_MAX
      * on 64-bit platforms. Use ICorProfilerCallback4::MovedReferences2 instead.
      */
     HRESULT MovedReferences(
@@ -2093,7 +2093,7 @@ interface ICorProfilerCallback2 : ICorProfilerCallback
      *      objectIDRangeStart[i] <= ObjectID < objectIDRangeStart[i] + cObjectIDRangeLength[i]
      * for 0 <= i < cMovedObjectIDRanges, then the ObjectID has survived the collection
      *
-     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as ULONG_MAX 
+     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as UINT32_MAX
      * on 64-bit platforms. Use ICorProfilerCallback4::SurvivingReferences2 instead.
      */
     HRESULT SurvivingReferences(

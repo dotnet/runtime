@@ -45,7 +45,7 @@ PVOID DecodeDynamicFunctionTableContext (PVOID pvContext)
 }
 
 
-#define DYNAMIC_FUNCTION_TABLE_MAX_RANGE LONG_MAX
+#define DYNAMIC_FUNCTION_TABLE_MAX_RANGE INT32_MAX
 
 #endif // FEATURE_EH_FUNCLETS
 

@@ -2844,7 +2844,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
             10          // Base 10 conversion
             );
 
-        if (dwCustomObjectAllocationEventsPerTypePerSec == ULONG_MAX)
+        if (dwCustomObjectAllocationEventsPerTypePerSec == UINT32_MAX)
             dwCustomObjectAllocationEventsPerTypePerSec = 0;
         if (dwCustomObjectAllocationEventsPerTypePerSec != 0)
         {

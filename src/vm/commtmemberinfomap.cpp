@@ -525,7 +525,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     MethodDesc  *pMeth;                   // A MethodDesc.
     CQuickArray<int> rSlotMap;            // Array to map vtable slots.
     DWORD               nSlots;                                 // Number of vtable slots.
-    ULONG               ulComSlotMin    = ULONG_MAX;            // Find first COM+ slot.
+    ULONG               ulComSlotMin    = UINT32_MAX;           // Find first COM+ slot.
     ULONG               ulComSlotMax    = 0;                    // Find last COM+ slot.
     int                 bSlotRemap      = false;                // True if slots need to be mapped, due to holes.
     HRESULT             hr              = S_OK;

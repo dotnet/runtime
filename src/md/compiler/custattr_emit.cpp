@@ -1376,7 +1376,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
 
         // Class packing and size.
         ULONG ulSize, ulPack;
-        ulPack = ulSize = ULONG_MAX;
+        ulPack = ulSize = UINT32_MAX;
         if (qNamedArgs[SL_Pack].val.type.tag)
         {    // Only 1,2,4,8,16,32,64,128 are legal values.
              ulPack = qNamedArgs[SL_Pack].val.u4;
@@ -1390,7 +1390,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
                 IfFailGo(PostError(META_E_CA_INVALID_VALUE));
             ulSize = qNamedArgs[SL_Size].val.u4;
         }
-        if (ulPack!=ULONG_MAX || ulSize!=ULONG_MAX)
+        if (ulPack!=UINT32_MAX || ulSize!=UINT32_MAX)
             IfFailGo(_SetClassLayout(tkObj, ulPack, ulSize));
 
         // Class character set.

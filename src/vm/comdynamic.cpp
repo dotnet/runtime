@@ -736,7 +736,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
     {
         hr = pRCW->GetEmitter()->SetFieldProps( 
             tk,                         // [IN] The FieldDef.
-            ULONG_MAX,                  // [IN] Field attributes.
+            UINT32_MAX,                 // [IN] Field attributes.
             valueCorType,               // [IN] Flag for the value type, selected ELEMENT_TYPE_*
             pValue,                     // [IN] Constant value.
             (ULONG) -1);                // [IN] Optional length.
@@ -745,7 +745,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
     {
         hr = pRCW->GetEmitter()->SetPropertyProps( 
             tk,                         // [IN] The PropertyDef.
-            ULONG_MAX,                  // [IN] Property attributes.
+            UINT32_MAX,                 // [IN] Property attributes.
             valueCorType,               // [IN] Flag for the value type, selected ELEMENT_TYPE_*
             pValue,                     // [IN] Constant value.
             (ULONG) -1,                 // [IN] Optional length.
@@ -758,7 +758,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
         hr = pRCW->GetEmitter()->SetParamProps( 
             tk,                   // [IN] The ParamDef.
             NULL,
-            ULONG_MAX,                  // [IN] Parameter attributes.
+            UINT32_MAX,                 // [IN] Parameter attributes.
             valueCorType,               // [IN] Flag for the value type, selected ELEMENT_TYPE_*
             pValue,                     // [IN] Constant value.
             (ULONG) -1);                // [IN] Optional length.

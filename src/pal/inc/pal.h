@@ -37,6 +37,7 @@ Abstract:
 #define __PAL_H__
 
 #ifdef PAL_STDCPP_COMPAT
+#include <float.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -261,9 +262,10 @@ typedef char * va_list;
 #define INT_MAX       2147483647
 #define UINT_MAX      0xffffffff
 
-#define LONG_MIN    (-2147483647L - 1)
-#define LONG_MAX      2147483647L
-#define ULONG_MAX     0xffffffffUL
+// LONG_MIN, LONG_MAX, ULONG_MAX -- use INT32_MIN etc. instead.
+
+#define FLT_MAX 3.402823466e+38F
+#define DBL_MAX 1.7976931348623157e+308
 
 #endif // !PAL_STDCPP_COMPAT
 
@@ -275,9 +277,6 @@ PALIMPORT
 BOOL
 PALAPI
 PAL_IsDebuggerPresent(VOID);
-
-#define FLT_MAX 3.402823466e+38F
-#define DBL_MAX 1.7976931348623157e+308
 
 /* minimum signed 64 bit value */
 #define _I64_MIN    (I64(-9223372036854775807) - 1)

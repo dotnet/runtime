@@ -1351,11 +1351,11 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
     //
     // The RUNTIME_FUNCTION offsets are ULONGs.  If the region size is >
-    // ULONG_MAX, then we'll shift the base address to the next 4gb and
+    // UINT32_MAX, then we'll shift the base address to the next 4gb and
     // register a separate function table.
     //
     // But...RtlInstallFunctionTableCallback has a 2gb restriction...so
-    // make that LONG_MAX.
+    // make that INT32_MAX.
     //
 
     StubUnwindInfoHeader *pHeader = pStub->GetUnwindInfoHeader();

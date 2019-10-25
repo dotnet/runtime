@@ -188,7 +188,7 @@ HRESULT RegMeta::SetFieldLayoutHelper(  // Return hresult.
 
     LOCKWRITE();
 
-    if (ulOffset == ULONG_MAX)
+    if (ulOffset == UINT32_MAX)
     {
         // invalid argument
         IfFailGo( E_INVALIDARG );
