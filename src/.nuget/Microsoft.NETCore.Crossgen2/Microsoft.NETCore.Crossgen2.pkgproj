@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+  </PropertyGroup>
+
+  <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+
+  <PropertyGroup>
+    <!-- We're publishing crossgen2 as framework dependent application in the runtime package for now since we only have
+        two simple scenarios we want to support in the short term: win_x64 to win_x64 and linux_x64 to linux_x64 compilations.
+        Once we have more complex targets, especially cross-platform and cross-architecture, crossgen2 should move to its own
+        package, and become a self-contained package.
+    -->
+    <Crossgen2RuntimeConfigContents>
+{
+  "runtimeOptions": {
+    "tfm": "netcoreapp3.0",
+    "framework": {
+      "name": "Microsoft.NETCore.App",
+      "version": "5.0.0-alpha1.0"
+    }
+  }
+}
+    </Crossgen2RuntimeConfigContents>
+    <Crossgen2RuntimeConfigFile>$(ArtifactsObjDir)crossgen2\crossgen2.runtimeconfig.json</Crossgen2RuntimeConfigFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ArchitectureSpecificToolFile Include="$(Crossgen2RuntimeConfigFile)" />
+  </ItemGroup>
+    
+  <Target Name="WriteCrossgen2RuntimeConfig" BeforeTargets="GetPackageFiles">
+    <!-- Emit the runtime config json file that will be packaged with crossgen2 -->
+    <WriteLinesToFile File="$(Crossgen2RuntimeConfigFile)" Lines="$(Crossgen2RuntimeConfigContents)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+</Project>
