@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
         private readonly bool _forEffectMerge;
         private readonly ParallelMergeOptions _mergeOptions;
         private readonly bool _isOrdered;
-        private MergeExecutor<TOutput> _mergeExecutor = null;
+        private MergeExecutor<TOutput>? _mergeExecutor = null;
         private readonly TaskScheduler _taskScheduler;
         private readonly int _queryId; // ID of the current query execution
 
@@ -31,7 +31,7 @@ namespace System.Linq.Parallel
         private bool _received = false;
 #endif
         // Returns the merge executor which merges the received partitioned stream.
-        internal MergeExecutor<TOutput> MergeExecutor
+        internal MergeExecutor<TOutput>? MergeExecutor
         {
             get
             {

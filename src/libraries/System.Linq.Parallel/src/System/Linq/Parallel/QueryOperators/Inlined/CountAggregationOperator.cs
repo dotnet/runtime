@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -36,7 +37,7 @@ namespace System.Linq.Parallel
         //     The single result of aggregation.
         //
 
-        protected override int InternalAggregate(ref Exception singularExceptionToThrow)
+        protected override int InternalAggregate(ref Exception? singularExceptionToThrow)
         {
             // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
@@ -63,7 +64,7 @@ namespace System.Linq.Parallel
         //
 
         protected override QueryOperatorEnumerator<int, int> CreateEnumerator<TKey>(
-            int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object sharedData,
+            int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object? sharedData,
             CancellationToken cancellationToken)
         {
             return new CountAggregationOperatorEnumerator<TKey>(source, index, cancellationToken);
@@ -97,11 +98,11 @@ namespace System.Linq.Parallel
 
             protected override bool MoveNextCore(ref int currentElement)
             {
-                TSource elementUnused = default(TSource);
-                TKey keyUnused = default(TKey);
+                TSource elementUnused = default(TSource)!;
+                TKey keyUnused = default(TKey)!;
 
                 QueryOperatorEnumerator<TSource, TKey> source = _source;
-                if (source.MoveNext(ref elementUnused, ref keyUnused))
+                if (source.MoveNext(ref elementUnused!, ref keyUnused))
                 {
                     // We just scroll through the enumerator and keep a running count.
                     int count = 0;
@@ -115,7 +116,7 @@ namespace System.Linq.Parallel
                             count++;
                         }
                     }
-                    while (source.MoveNext(ref elementUnused, ref keyUnused));
+                    while (source.MoveNext(ref elementUnused!, ref keyUnused));
 
                     currentElement = count;
                     return true;

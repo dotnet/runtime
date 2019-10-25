@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
             {
                 while (true)
                 {
-                    TElement elem = default(TElement);
+                    TElement elem = default(TElement)!;
                     try
                     {
                         if (!enumerator.MoveNext())
@@ -66,8 +66,8 @@ namespace System.Linq.Parallel
         internal static IEnumerable<TElement> WrapQueryEnumerator<TElement, TIgnoreKey>(QueryOperatorEnumerator<TElement, TIgnoreKey> source,
             CancellationState cancellationState)
         {
-            TElement elem = default(TElement);
-            TIgnoreKey ignoreKey = default(TIgnoreKey);
+            TElement elem = default(TElement)!;
+            TIgnoreKey ignoreKey = default(TIgnoreKey)!;
 
             try
             {
@@ -75,7 +75,7 @@ namespace System.Linq.Parallel
                 {
                     try
                     {
-                        if (!source.MoveNext(ref elem, ref ignoreKey))
+                        if (!source.MoveNext(ref elem!, ref ignoreKey))
                         {
                             yield break;
                         }
@@ -136,7 +136,7 @@ namespace System.Linq.Parallel
         {
             return t =>
                 {
-                    U retval = default(U);
+                    U retval = default(U)!;
                     try
                     {
                         retval = f(t);
@@ -165,23 +165,22 @@ namespace System.Linq.Parallel
             // See QueryTaskGroupState.WaitAll for the main plinq exception handling logic.
 
             // check for co-operative cancellation.
-            OperationCanceledException cancelEx = ex as OperationCanceledException;
-            if (cancelEx != null &&
-                cancelEx.CancellationToken == cancellationState.ExternalCancellationToken
-                && cancellationState.ExternalCancellationToken.IsCancellationRequested)
+            if (ex is OperationCanceledException cancelEx)
             {
-                return true;  // let the OCE(extCT) be rethrown.
-            }
+                if (cancelEx.CancellationToken == cancellationState.ExternalCancellationToken
+                    && cancellationState.ExternalCancellationToken.IsCancellationRequested)
+                {
+                    return true;  // let the OCE(extCT) be rethrown.
+                }
 
-            // check for external cancellation which triggered the mergedToken.
-            if (cancelEx != null &&
-                cancelEx.CancellationToken == cancellationState.MergedCancellationToken
-                && cancellationState.MergedCancellationToken.IsCancellationRequested
-                && cancellationState.ExternalCancellationToken.IsCancellationRequested)
-            {
-                return true;  // convert internal cancellation back to OCE(extCT).
+                // check for external cancellation which triggered the mergedToken.
+                if (cancelEx.CancellationToken == cancellationState.MergedCancellationToken
+                    && cancellationState.MergedCancellationToken.IsCancellationRequested
+                    && cancellationState.ExternalCancellationToken.IsCancellationRequested)
+                {
+                    return true;  // convert internal cancellation back to OCE(extCT).
+                }
             }
-
             return false;
         }
     }

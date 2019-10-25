@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -33,7 +34,7 @@ namespace System.Linq.Parallel
         private const int InitialSize = 7;
         private const int HashCodeMask = 0x7FFFFFFF;
 
-        public Set(IEqualityComparer<TElement> comparer)
+        public Set(IEqualityComparer<TElement>? comparer)
         {
             if (comparer == null) comparer = EqualityComparer<TElement>.Default;
             _comparer = comparer;
@@ -67,7 +68,7 @@ namespace System.Linq.Parallel
             int last = -1;
             for (int i = _buckets[bucket] - 1; i >= 0; last = i, i = _slots[i].next)
             {
-                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value))
+                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value!, value)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
                 {
                     if (last < 0)
                     {
@@ -78,7 +79,7 @@ namespace System.Linq.Parallel
                         _slots[last].next = _slots[i].next;
                     }
                     _slots[i].hashCode = -1;
-                    _slots[i].value = default(TElement);
+                    _slots[i].value = default;
                     _slots[i].next = -1;
                     return true;
                 }
@@ -91,7 +92,7 @@ namespace System.Linq.Parallel
             int hashCode = InternalGetHashCode(value);
             for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
             {
-                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value)) return true;
+                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value!, value)) return true; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
             }
             if (add)
             {
@@ -133,7 +134,7 @@ namespace System.Linq.Parallel
         {
             internal int hashCode;
             internal int next;
-            internal TElement value;
+            [MaybeNull, AllowNull] internal TElement value;
         }
     }
 }

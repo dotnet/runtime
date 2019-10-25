@@ -104,9 +104,11 @@ namespace System.Linq.Parallel
             internal override void GivePartitionedStream(IPartitionedStreamRecipient<TOutput> recipient)
             {
                 Debug.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexable));
+                Debug.Assert(_settings.ExecutionMode != null);
 
                 if (_settings.ExecutionMode.Value == ParallelExecutionMode.Default && _op.LimitsParallelism)
                 {
+                    Debug.Assert(_settings.DegreeOfParallelism != null);
                     // We need to run the query sequentially up to and including this operator
                     IEnumerable<TOutput> opSequential = _op.AsSequentialQuery(_settings.CancellationState.ExternalCancellationToken);
                     PartitionedStream<TOutput, int> result = ExchangeUtilities.PartitionDataSource(
@@ -115,6 +117,7 @@ namespace System.Linq.Parallel
                 }
                 else if (IsIndexible)
                 {
+                    Debug.Assert(_settings.DegreeOfParallelism != null);
                     // The output of this operator is indexable. Pass the partitioned output into the IPartitionedStreamRecipient.
                     PartitionedStream<TOutput, int> result = ExchangeUtilities.PartitionDataSource(this, _settings.DegreeOfParallelism.Value, _preferStriping);
                     recipient.Receive<int>(result);

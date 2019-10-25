@@ -25,7 +25,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TSource"></typeparam>
     internal sealed class SingleQueryOperator<TSource> : UnaryQueryOperator<TSource, TSource>
     {
-        private readonly Func<TSource, bool> _predicate; // The optional predicate used during the search.
+        private readonly Func<TSource, bool>? _predicate; // The optional predicate used during the search.
 
         //---------------------------------------------------------------------------------------
         // Initializes a new Single operator.
@@ -34,7 +34,7 @@ namespace System.Linq.Parallel
         //     child                - the child whose data we will reverse
         //
 
-        internal SingleQueryOperator(IEnumerable<TSource> child, Func<TSource, bool> predicate)
+        internal SingleQueryOperator(IEnumerable<TSource> child, Func<TSource, bool>? predicate)
             : base(child)
         {
             Debug.Assert(child != null, "child data source cannot be null");
@@ -97,7 +97,7 @@ namespace System.Linq.Parallel
         private class SingleQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
-            private readonly Func<TSource, bool> _predicate; // The optional predicate used during the search.
+            private readonly Func<TSource, bool>? _predicate; // The optional predicate used during the search.
             private bool _alreadySearched; // Whether we have searched our input already.
             private bool _yieldExtra; // Whether we found more than one element.
 
@@ -109,7 +109,7 @@ namespace System.Linq.Parallel
             //
 
             internal SingleQueryOperatorEnumerator(QueryOperatorEnumerator<TSource, TKey> source,
-                                                   Func<TSource, bool> predicate, Shared<int> totalElementCount)
+                                                   Func<TSource, bool>? predicate, Shared<int> totalElementCount)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(totalElementCount != null);
@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TSource currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref int currentKey)
             {
                 Debug.Assert(_source != null);
 
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
                     if (_yieldExtra)
                     {
                         _yieldExtra = false;
-                        currentElement = default(TSource);
+                        currentElement = default(TSource)!;
                         currentKey = 0;
                         return true;
                     }
@@ -144,10 +144,10 @@ namespace System.Linq.Parallel
 
                 // Scan our input, looking for a match.
                 bool found = false;
-                TSource current = default(TSource);
-                TKey keyUnused = default(TKey);
+                TSource current = default(TSource)!;
+                TKey keyUnused = default(TKey)!;
 
-                while (_source.MoveNext(ref current, ref keyUnused))
+                while (_source.MoveNext(ref current!, ref keyUnused))
                 {
                     // If the predicate is null or the current element satisfies it, we will remember
                     // it so that we can yield it later.  We then proceed with scanning the input

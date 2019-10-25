@@ -8,6 +8,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Linq.Parallel
 {
     /// <summary>
@@ -27,7 +29,7 @@ namespace System.Linq.Parallel
         // A simple constructor that initializes the first/second fields.
         //
 
-        public Pair(T first, U second)
+        public Pair(T first, [MaybeNull, AllowNull] U second)
         {
             _first = first;
             _second = second;

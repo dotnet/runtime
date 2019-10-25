@@ -61,7 +61,7 @@ namespace System.Linq.Parallel
         private readonly Func<TIntermediate, TOutput> _resultSelector;
 
         // A function that constructs seed instances
-        private readonly Func<TIntermediate> _seedFactory;
+        private readonly Func<TIntermediate>? _seedFactory;
 
         //---------------------------------------------------------------------------------------
         // Constructs a new instance of an associative operator.
@@ -70,7 +70,7 @@ namespace System.Linq.Parallel
         //     This operator must be associative.
         //
 
-        internal AssociativeAggregationOperator(IEnumerable<TInput> child, TIntermediate seed, Func<TIntermediate> seedFactory, bool seedIsSpecified,
+        internal AssociativeAggregationOperator(IEnumerable<TInput> child, TIntermediate seed, Func<TIntermediate>? seedFactory, bool seedIsSpecified,
                                                 Func<TIntermediate, TInput, TIntermediate> intermediateReduce,
                                                 Func<TIntermediate, TIntermediate, TIntermediate> finalReduce,
                                                 Func<TIntermediate, TOutput> resultSelector, bool throwIfEmpty, QueryAggregationOptions options)
@@ -106,7 +106,7 @@ namespace System.Linq.Parallel
             Debug.Assert(_finalReduce != null);
             Debug.Assert(_resultSelector != null);
 
-            TIntermediate accumulator = default(TIntermediate);
+            TIntermediate accumulator = default(TIntermediate)!;
             bool hadElements = false;
 
             // Because the final reduction is typically much cheaper than the intermediate
@@ -271,7 +271,7 @@ namespace System.Linq.Parallel
             // the end, we will have our intermediate result, ready for final aggregation.
             //
 
-            internal override bool MoveNext(ref TIntermediate currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TIntermediate currentElement, ref int currentKey)
             {
                 Debug.Assert(_reduceOperator != null);
                 Debug.Assert(_reduceOperator._intermediateReduce != null, "expected a compiled operator");
@@ -284,7 +284,7 @@ namespace System.Linq.Parallel
                 _accumulated = true;
 
                 bool hadNext = false;
-                TIntermediate accumulator = default(TIntermediate);
+                TIntermediate accumulator = default(TIntermediate)!;
 
                 // Initialize the accumulator.
                 if (_reduceOperator._seedIsSpecified)
@@ -300,18 +300,18 @@ namespace System.Linq.Parallel
                     // Seed may be unspecified only if TInput is the same as TIntermediate.
                     Debug.Assert(typeof(TInput) == typeof(TIntermediate));
 
-                    TInput acc = default(TInput);
-                    TKey accKeyUnused = default(TKey);
-                    if (!_source.MoveNext(ref acc, ref accKeyUnused)) return false;
+                    TInput acc = default(TInput)!;
+                    TKey accKeyUnused = default(TKey)!;
+                    if (!_source.MoveNext(ref acc!, ref accKeyUnused)) return false;
                     hadNext = true;
-                    accumulator = (TIntermediate)((object)acc);
+                    accumulator = (TIntermediate)((object?)acc!);
                 }
 
                 // Scan through the source and accumulate the result.
-                TInput input = default(TInput);
-                TKey keyUnused = default(TKey);
+                TInput input = default(TInput)!;
+                TKey keyUnused = default(TKey)!;
                 int i = 0;
-                while (_source.MoveNext(ref input, ref keyUnused))
+                while (_source.MoveNext(ref input!, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                         CancellationState.ThrowIfCanceled(_cancellationToken);

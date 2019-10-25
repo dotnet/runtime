@@ -45,7 +45,7 @@ namespace System.Linq.Parallel
         private readonly Func<TLeftInput, TKey> _leftKeySelector; // The key selection routine for the outer (left) data source.
         private readonly Func<TRightInput, TKey> _rightKeySelector; // The key selection routine for the inner (right) data source.
         private readonly Func<TLeftInput, TRightInput, TOutput> _resultSelector; // The result selection routine.
-        private readonly IEqualityComparer<TKey> _keyComparer; // An optional key comparison object.
+        private readonly IEqualityComparer<TKey>? _keyComparer; // An optional key comparison object.
 
         //---------------------------------------------------------------------------------------
         // Constructs a new join operator.
@@ -55,7 +55,7 @@ namespace System.Linq.Parallel
                                    Func<TLeftInput, TKey> leftKeySelector,
                                    Func<TRightInput, TKey> rightKeySelector,
                                    Func<TLeftInput, TRightInput, TOutput> resultSelector,
-                                   IEqualityComparer<TKey> keyComparer)
+                                   IEqualityComparer<TKey>? keyComparer)
             : base(left, right)
         {
             Debug.Assert(left != null && right != null, "child data sources cannot be null");
@@ -195,9 +195,9 @@ namespace System.Linq.Parallel
     internal class JoinHashLookupBuilder<TElement, TOrderKey, THashKey> : HashLookupBuilder<TElement, TOrderKey, THashKey>
     {
         private readonly QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> _dataSource; // data source. For building.
-        private readonly IEqualityComparer<THashKey> _keyComparer; // An optional key comparison object.
+        private readonly IEqualityComparer<THashKey>? _keyComparer; // An optional key comparison object.
 
-        internal JoinHashLookupBuilder(QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> dataSource, IEqualityComparer<THashKey> keyComparer)
+        internal JoinHashLookupBuilder(QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> dataSource, IEqualityComparer<THashKey>? keyComparer)
         {
             Debug.Assert(dataSource != null);
 

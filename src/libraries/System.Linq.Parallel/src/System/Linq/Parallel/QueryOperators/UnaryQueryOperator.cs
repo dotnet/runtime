@@ -110,6 +110,7 @@ namespace System.Linq.Parallel
             {
                 Debug.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexable));
 
+                Debug.Assert(_settings.ExecutionMode != null && _settings.DegreeOfParallelism != null);
                 if (_settings.ExecutionMode.Value == ParallelExecutionMode.Default && _op.LimitsParallelism)
                 {
                     // We need to run the query sequentially, up to and including this operator

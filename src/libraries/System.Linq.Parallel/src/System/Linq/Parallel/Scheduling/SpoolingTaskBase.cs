@@ -9,6 +9,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -48,8 +49,7 @@ namespace System.Linq.Parallel
             }
             catch (Exception ex)
             {
-                OperationCanceledException oce = ex as OperationCanceledException;
-                if (oce != null &&
+                if (ex is OperationCanceledException oce &&
                     oce.CancellationToken == _groupState.CancellationState.MergedCancellationToken
                     && _groupState.CancellationState.MergedCancellationToken.IsCancellationRequested)
                 {
@@ -60,6 +60,7 @@ namespace System.Linq.Parallel
                     // TPL will catch and store the exception on the task object. We'll then later
                     // turn around and wait on it, having the effect of propagating it. In the meantime,
                     // we want to cooperative cancel all workers.
+                    Debug.Assert(_groupState.CancellationState.InternalCancellationTokenSource != null);
                     _groupState.CancellationState.InternalCancellationTokenSource.Cancel();
 
                     // And then repropagate to let TPL catch it.

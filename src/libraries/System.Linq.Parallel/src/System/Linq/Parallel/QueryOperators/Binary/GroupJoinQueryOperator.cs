@@ -29,7 +29,7 @@ namespace System.Linq.Parallel
         private readonly Func<TLeftInput, TKey> _leftKeySelector; // The key selection routine for the outer (left) data source.
         private readonly Func<TRightInput, TKey> _rightKeySelector; // The key selection routine for the inner (right) data source.
         private readonly Func<TLeftInput, IEnumerable<TRightInput>, TOutput> _resultSelector; // The result selection routine.
-        private readonly IEqualityComparer<TKey> _keyComparer; // An optional key comparison object.
+        private readonly IEqualityComparer<TKey>? _keyComparer; // An optional key comparison object.
 
         //---------------------------------------------------------------------------------------
         // Constructs a new join operator.
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel
                                         Func<TLeftInput, TKey> leftKeySelector,
                                         Func<TRightInput, TKey> rightKeySelector,
                                         Func<TLeftInput, IEnumerable<TRightInput>, TOutput> resultSelector,
-                                        IEqualityComparer<TKey> keyComparer)
+                                        IEqualityComparer<TKey>? keyComparer)
             : base(left, right)
         {
             Debug.Assert(left != null && right != null, "child data sources cannot be null");
@@ -136,7 +136,7 @@ namespace System.Linq.Parallel
         private void WrapPartitionedStreamHelper<TLeftKey, TRightKey>(
             PartitionedStream<Pair<TLeftInput, TKey>, TLeftKey> leftHashStream,
             HashLookupBuilder<IEnumerable<TRightInput>, TRightKey, TKey>[] rightLookupBuilders,
-            IComparer<TRightKey> rightKeyComparer, IPartitionedStreamRecipient<TOutput> outputRecipient,
+            IComparer<TRightKey>? rightKeyComparer, IPartitionedStreamRecipient<TOutput> outputRecipient,
             int partitionCount, CancellationToken cancellationToken)
         {
             if (RightChild.OutputOrdered && LeftChild.OutputOrdered)
@@ -218,9 +218,9 @@ namespace System.Linq.Parallel
     internal class GroupJoinHashLookupBuilder<TElement, TOrderKey, THashKey> : HashLookupBuilder<IEnumerable<TElement>, int, THashKey>
     {
         private readonly QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> _dataSource; // data source. For building.
-        private readonly IEqualityComparer<THashKey> _keyComparer; // An optional key comparison object.
+        private readonly IEqualityComparer<THashKey>? _keyComparer; // An optional key comparison object.
 
-        internal GroupJoinHashLookupBuilder(QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> dataSource, IEqualityComparer<THashKey> keyComparer)
+        internal GroupJoinHashLookupBuilder(QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> dataSource, IEqualityComparer<THashKey>? keyComparer)
         {
             Debug.Assert(dataSource != null);
 
@@ -257,7 +257,7 @@ namespace System.Linq.Parallel
             {
                 bool hasCollision = true;
 
-                ListChunk<TElement> currentValue = default(ListChunk<TElement>);
+                ListChunk<TElement>? currentValue = default(ListChunk<TElement>);
                 if (!_base.TryGetValue(hashKey, ref currentValue))
                 {
                     const int INITIAL_CHUNK_SIZE = 2;
@@ -304,12 +304,12 @@ namespace System.Linq.Parallel
     internal sealed class OrderedGroupJoinHashLookupBuilder<TElement, TOrderKey, THashKey> : HashLookupBuilder<IEnumerable<TElement>, Pair<bool, TOrderKey>, THashKey>
     {
         private readonly QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> _dataSource; // data source. For building.
-        private readonly IEqualityComparer<THashKey> _keyComparer; // An optional key comparison object.
+        private readonly IEqualityComparer<THashKey>? _keyComparer; // An optional key comparison object.
         private readonly IComparer<TOrderKey> _orderKeyComparer;
 
         internal OrderedGroupJoinHashLookupBuilder(
             QueryOperatorEnumerator<Pair<TElement, THashKey>, TOrderKey> dataSource,
-            IEqualityComparer<THashKey> keyComparer,
+            IEqualityComparer<THashKey>? keyComparer,
             IComparer<TOrderKey> orderKeyComparer)
         {
             Debug.Assert(dataSource != null);
@@ -362,7 +362,7 @@ namespace System.Linq.Parallel
             {
                 bool hasCollision = true;
 
-                GroupKeyData currentValue = default(GroupKeyData);
+                GroupKeyData? currentValue = default(GroupKeyData);
                 if (!_base.TryGetValue(hashKey, ref currentValue))
                 {
                     currentValue = new GroupKeyData(orderKey, hashKey, _orderKeyComparer);
@@ -446,8 +446,8 @@ namespace System.Linq.Parallel
 
         private Pair<IEnumerable<TElement>, TOrderKey> GetValueList(THashKey key)
         {
-            TBaseElement baseValue = default(TBaseElement);
-            if (_base.TryGetValue(key, ref baseValue))
+            TBaseElement baseValue = default(TBaseElement)!;
+            if (_base.TryGetValue(key, ref baseValue!))
             {
                 return CreateValuePair(baseValue);
             }

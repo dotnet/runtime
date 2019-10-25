@@ -39,7 +39,7 @@ namespace System.Linq.Parallel
         //     The single result of aggregation.
         //
 
-        protected override int? InternalAggregate(ref Exception singularExceptionToThrow)
+        protected override int? InternalAggregate(ref Exception? singularExceptionToThrow)
         {
             // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
@@ -88,7 +88,7 @@ namespace System.Linq.Parallel
         //
 
         protected override QueryOperatorEnumerator<int?, int> CreateEnumerator<TKey>(
-            int index, int count, QueryOperatorEnumerator<int?, TKey> source, object sharedData, CancellationToken cancellationToken)
+            int index, int count, QueryOperatorEnumerator<int?, TKey> source, object? sharedData, CancellationToken cancellationToken)
         {
             return new NullableIntMinMaxAggregationOperatorEnumerator<TKey>(source, index, _sign, cancellationToken);
         }
@@ -125,7 +125,7 @@ namespace System.Linq.Parallel
             {
                 // Based on the sign, do either a min or max reduction.
                 QueryOperatorEnumerator<int?, TKey> source = _source;
-                TKey keyUnused = default(TKey);
+                TKey keyUnused = default(TKey)!;
 
                 if (source.MoveNext(ref currentElement, ref keyUnused))
                 {

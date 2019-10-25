@@ -35,8 +35,7 @@ namespace System.Linq.Parallel
             // The partitioned stream to return.
             PartitionedStream<T, int> returnValue;
 
-            IParallelPartitionable<T> sourceAsPartitionable = source as IParallelPartitionable<T>;
-            if (sourceAsPartitionable != null)
+            if (source is IParallelPartitionable<T> sourceAsPartitionable)
             {
                 // The type overrides the partitioning algorithm, so we will use it instead of the default.
                 // The returned enumerator must be the same size that we requested, otherwise we throw.
@@ -89,16 +88,16 @@ namespace System.Linq.Parallel
         //
 
         internal static PartitionedStream<Pair<TElement, THashKey>, int> HashRepartition<TElement, THashKey, TIgnoreKey>(
-            PartitionedStream<TElement, TIgnoreKey> source, Func<TElement, THashKey> keySelector, IEqualityComparer<THashKey> keyComparer,
-            IEqualityComparer<TElement> elementComparer, CancellationToken cancellationToken)
+            PartitionedStream<TElement, TIgnoreKey> source, Func<TElement, THashKey>? keySelector, IEqualityComparer<THashKey>? keyComparer,
+            IEqualityComparer<TElement>? elementComparer, CancellationToken cancellationToken)
         {
             TraceHelpers.TraceInfo("PartitionStream<..>.HashRepartitionStream(..):: creating **RE**partitioned stream for nested operator");
             return new UnorderedHashRepartitionStream<TElement, THashKey, TIgnoreKey>(source, keySelector, keyComparer, elementComparer, cancellationToken);
         }
 
         internal static PartitionedStream<Pair<TElement, THashKey>, TOrderKey> HashRepartitionOrdered<TElement, THashKey, TOrderKey>(
-            PartitionedStream<TElement, TOrderKey> source, Func<TElement, THashKey> keySelector, IEqualityComparer<THashKey> keyComparer,
-            IEqualityComparer<TElement> elementComparer, CancellationToken cancellationToken)
+            PartitionedStream<TElement, TOrderKey> source, Func<TElement, THashKey>? keySelector, IEqualityComparer<THashKey>? keyComparer,
+            IEqualityComparer<TElement>? elementComparer, CancellationToken cancellationToken)
         {
             TraceHelpers.TraceInfo("PartitionStream<..>.HashRepartitionStream(..):: creating **RE**partitioned stream for nested operator");
             return new OrderedHashRepartitionStream<TElement, THashKey, TOrderKey>(source, keySelector, keyComparer, elementComparer, cancellationToken);

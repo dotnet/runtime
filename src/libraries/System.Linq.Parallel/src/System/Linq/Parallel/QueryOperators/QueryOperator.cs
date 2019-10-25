@@ -122,9 +122,10 @@ namespace System.Linq.Parallel
         // The enumerator will be "opened", which means that PLINQ will start executing the query
         // immediately, even before the user calls MoveNext() for the first time.
         //
-        internal IEnumerator<TOutput> GetOpenedEnumerator(ParallelMergeOptions? mergeOptions, bool suppressOrder, bool forEffect,
+        internal IEnumerator<TOutput>? GetOpenedEnumerator(ParallelMergeOptions? mergeOptions, bool suppressOrder, bool forEffect,
             QuerySettings querySettings)
         {
+            Debug.Assert(querySettings.ExecutionMode != null);
             // If the top-level enumerator forces a premature merge, run the query sequentially.
             if (querySettings.ExecutionMode.Value == ParallelExecutionMode.Default && LimitsParallelism)
             {
@@ -155,6 +156,7 @@ namespace System.Linq.Parallel
 
             bool orderedMerge = OutputOrdered && !suppressOrder;
 
+            Debug.Assert(querySettings.TaskScheduler != null);
             PartitionedStreamMerger<TOutput> merger = new PartitionedStreamMerger<TOutput>(forEffect, mergeOptions.GetValueOrDefault(),
                                                                                            querySettings.TaskScheduler,
                                                                                            orderedMerge,
@@ -168,6 +170,7 @@ namespace System.Linq.Parallel
                 return null;
             }
 
+            Debug.Assert(merger.MergeExecutor != null);
             return merger.MergeExecutor.GetEnumerator();
         }
 
@@ -201,6 +204,7 @@ namespace System.Linq.Parallel
             QueryLifecycle.LogicalQueryExecutionBegin(querySettings.QueryId);
             try
             {
+                Debug.Assert(querySettings.ExecutionMode != null);
                 if (querySettings.ExecutionMode.Value == ParallelExecutionMode.Default && LimitsParallelism)
                 {
                     IEnumerable<TOutput> opSequential = AsSequentialQuery(querySettings.CancellationState.ExternalCancellationToken);
@@ -235,12 +239,15 @@ namespace System.Linq.Parallel
                 }
                 else
                 {
+                    Debug.Assert(querySettings.TaskScheduler != null);
                     PartitionedStreamMerger<TOutput> merger =
                         new PartitionedStreamMerger<TOutput>(false, ParallelMergeOptions.FullyBuffered, querySettings.TaskScheduler,
                             OutputOrdered, querySettings.CancellationState, querySettings.QueryId);
                     results.GivePartitionedStream(merger);
-                    TOutput[] output = merger.MergeExecutor.GetResultsAsArray();
+                    Debug.Assert(merger.MergeExecutor != null);
+                    TOutput[]? output = merger.MergeExecutor.GetResultsAsArray();
                     querySettings.CleanStateAtQueryEnd();
+                    Debug.Assert(output != null);
                     return output;
                 }
             }
@@ -285,14 +292,13 @@ namespace System.Linq.Parallel
             bool useStriping,
             QuerySettings settings)
         {
-            TaskScheduler taskScheduler = settings.TaskScheduler;
-
-
+            TaskScheduler? taskScheduler = settings.TaskScheduler;
+            Debug.Assert(taskScheduler != null);
 
             MergeExecutor<TOutput> executor = MergeExecutor<TOutput>.Execute<TKey>(
                 openedChild, false, ParallelMergeOptions.FullyBuffered, taskScheduler, outputOrdered,
                 settings.CancellationState, settings.QueryId);
-            return new ListQueryResults<TOutput>(executor.GetResultsAsArray(), partitionCount, useStriping);
+            return new ListQueryResults<TOutput>(executor.GetResultsAsArray()!, partitionCount, useStriping);
         }
 
 
@@ -314,12 +320,11 @@ namespace System.Linq.Parallel
 
             // Just try casting the data source to a query operator, in the case that
             // our child is just another query operator.
-            QueryOperator<TOutput> sourceAsOperator = source as QueryOperator<TOutput>;
+            QueryOperator<TOutput>? sourceAsOperator = source as QueryOperator<TOutput>;
 
             if (sourceAsOperator == null)
             {
-                OrderedParallelQuery<TOutput> orderedQuery = source as OrderedParallelQuery<TOutput>;
-                if (orderedQuery != null)
+                if (source is OrderedParallelQuery<TOutput>  orderedQuery)
                 {
                     // We have to handle OrderedParallelQuery<T> specially. In all other cases,
                     // ParallelQuery *is* the QueryOperator<T>. But, OrderedParallelQuery<T>

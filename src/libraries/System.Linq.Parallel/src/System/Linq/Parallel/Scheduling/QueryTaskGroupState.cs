@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// </summary>
     internal class QueryTaskGroupState
     {
-        private Task _rootTask; // The task under which all query tasks root.
+        private Task? _rootTask; // The task under which all query tasks root.
         private int _alreadyEnded; // Whether the tasks have been waited on already.
         private readonly CancellationState _cancellationState; // The cancellation state.
         private readonly int _queryId; // Id of this query execution.
@@ -112,7 +112,7 @@ namespace System.Linq.Parallel
                     bool allOCEsOnTrackedExternalCancellationToken = true;
                     for (int i = 0; i < flattenedAE.InnerExceptions.Count; i++)
                     {
-                        OperationCanceledException oce = flattenedAE.InnerExceptions[i] as OperationCanceledException;
+                        OperationCanceledException? oce = flattenedAE.InnerExceptions[i] as OperationCanceledException;
 
                         // we only let it pass through iff:
                         // it is not null, not default, and matches the exact token we were given as being the external token

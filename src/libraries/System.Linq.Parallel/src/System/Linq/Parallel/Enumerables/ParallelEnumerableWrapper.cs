@@ -18,7 +18,7 @@ namespace System.Linq.Parallel
     /// A simple implementation of the ParallelQuery{object} interface which wraps an
     /// underlying IEnumerable, such that it can be used in parallel queries.
     /// </summary>
-    internal class ParallelEnumerableWrapper : ParallelQuery<object>
+    internal class ParallelEnumerableWrapper : ParallelQuery<object?>
     {
         private readonly IEnumerable _source; // The wrapped enumerable object.
 
@@ -38,7 +38,7 @@ namespace System.Linq.Parallel
             return _source.GetEnumerator();
         }
 
-        public override IEnumerator<object> GetEnumerator()
+        public override IEnumerator<object?> GetEnumerator()
         {
             return new EnumerableWrapperWeakToStrong(_source).GetEnumerator();
         }

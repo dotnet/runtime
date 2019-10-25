@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -30,7 +31,7 @@ namespace System.Linq.Parallel
         //
 
         internal SortQueryOperator(IEnumerable<TInputOutput> source, Func<TInputOutput, TSortKey> keySelector,
-                                   IComparer<TSortKey> comparer, bool descending)
+                                   IComparer<TSortKey>? comparer, bool descending)
             : base(source, true)
         {
             Debug.Assert(keySelector != null, "key selector must not be null");
@@ -60,7 +61,7 @@ namespace System.Linq.Parallel
         //
 
         IOrderedEnumerable<TInputOutput> IOrderedEnumerable<TInputOutput>.CreateOrderedEnumerable<TKey2>(
-            Func<TInputOutput, TKey2> key2Selector, IComparer<TKey2> key2Comparer, bool descending)
+            Func<TInputOutput, TKey2> key2Selector, IComparer<TKey2>? key2Comparer, bool descending)
         {
             key2Comparer = key2Comparer ?? Util.GetDefaultComparer<TKey2>();
 
@@ -175,7 +176,7 @@ namespace System.Linq.Parallel
 
     internal class SortQueryOperatorEnumerator<TInputOutput, TKey, TSortKey> : QueryOperatorEnumerator<TInputOutput, TSortKey>
     {
-        private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // Data source to sort.
+        private readonly QueryOperatorEnumerator<TInputOutput, TKey>? _source; // Data source to sort.
         private readonly Func<TInputOutput, TSortKey> _keySelector; // Key selector used when sorting.
 
         //---------------------------------------------------------------------------------------
@@ -198,12 +199,12 @@ namespace System.Linq.Parallel
         // in memory, and the data sorted.
         //
 
-        internal override bool MoveNext(ref TInputOutput currentElement, ref TSortKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TSortKey currentKey)
         {
             Debug.Assert(_source != null);
 
-            TKey keyUnused = default(TKey);
-            if (!_source.MoveNext(ref currentElement, ref keyUnused))
+            TKey keyUnused = default(TKey)!;
+            if (!_source.MoveNext(ref currentElement!, ref keyUnused))
             {
                 return false;
             }

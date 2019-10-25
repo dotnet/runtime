@@ -234,7 +234,7 @@ namespace System.Linq.Parallel
             ///
             /// Read and written by the consumer only.
             /// </summary>
-            private readonly Queue<Pair<TKey, TOutput>>[] _privateBuffer;
+            private readonly Queue<Pair<TKey, TOutput>>?[] _privateBuffer;
 
             /// <summary>
             /// Tracks whether MoveNext() has already been called previously.
@@ -460,7 +460,7 @@ namespace System.Linq.Parallel
                         return true;
                     }
 
-                    Debug.Assert(_privateBuffer[producer].Count == 0);
+                    Debug.Assert(_privateBuffer[producer]!.Count == 0);
                     _privateBuffer[producer] = null;
                 }
 

@@ -35,11 +35,11 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TKey"></typeparam>
     /// <typeparam name="TElement"></typeparam>
-    internal class Lookup<TKey, TElement> : ILookup<TKey, TElement>
+    internal class Lookup<TKey, TElement> : ILookup<TKey, TElement> where TKey: notnull
     {
         private readonly IDictionary<TKey, IGrouping<TKey, TElement>> _dict;
         private readonly IEqualityComparer<TKey> _comparer;
-        private IGrouping<TKey, TElement> _defaultKeyGrouping = null;
+        private IGrouping<TKey, TElement>? _defaultKeyGrouping = null;
 
         internal Lookup(IEqualityComparer<TKey> comparer)
         {
@@ -66,7 +66,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                if (_comparer.Equals(key, default(TKey)))
+                if (_comparer.Equals(key, default))
                 {
                     if (_defaultKeyGrouping != null)
                     {
@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
                 }
                 else
                 {
-                    IGrouping<TKey, TElement> grouping;
+                    IGrouping<TKey, TElement>? grouping;
                     if (_dict.TryGetValue(key, out grouping))
                     {
                         return grouping;
@@ -90,7 +90,7 @@ namespace System.Linq.Parallel
 
         public bool Contains(TKey key)
         {
-            if (_comparer.Equals(key, default(TKey)))
+            if (_comparer.Equals(key, default))
             {
                 return _defaultKeyGrouping != null;
             }
@@ -111,7 +111,7 @@ namespace System.Linq.Parallel
 
         internal void Add(IGrouping<TKey, TElement> grouping)
         {
-            if (_comparer.Equals(grouping.Key, default(TKey)))
+            if (_comparer.Equals(grouping.Key, default))
             {
                 Debug.Assert(_defaultKeyGrouping == null, "Cannot insert two groupings with the default key into a lookup.");
 

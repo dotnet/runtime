@@ -21,9 +21,9 @@ namespace System.Linq.Parallel
     internal sealed class PairComparer<T, U> : IComparer<Pair<T, U>>
     {
         private readonly IComparer<T> _comparer1;
-        private readonly IComparer<U> _comparer2;
+        private readonly IComparer<U>? _comparer2;
 
-        public PairComparer(IComparer<T> comparer1, IComparer<U> comparer2)
+        public PairComparer(IComparer<T> comparer1, IComparer<U>? comparer2)
         {
             _comparer1 = comparer1;
             _comparer2 = comparer2;
@@ -36,6 +36,9 @@ namespace System.Linq.Parallel
             {
                 return result1;
             }
+
+            if (_comparer2 == null)
+                return result1;
 
             return _comparer2.Compare(x.Second, y.Second);
         }

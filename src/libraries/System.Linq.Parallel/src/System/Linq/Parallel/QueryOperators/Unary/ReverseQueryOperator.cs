@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -105,8 +106,8 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to reverse.
             private readonly CancellationToken _cancellationToken;
-            private List<Pair<TSource, TKey>> _buffer; // Our buffer. [allocate in moveNext to avoid false-sharing]
-            private Shared<int> _bufferIndex; // Our current index within the buffer. [allocate in moveNext to avoid false-sharing]
+            private List<Pair<TSource, TKey>>? _buffer; // Our buffer. [allocate in moveNext to avoid false-sharing]
+            private Shared<int>? _bufferIndex; // Our current index within the buffer. [allocate in moveNext to avoid false-sharing]
 
             //---------------------------------------------------------------------------------------
             // Instantiates a new select enumerator.
@@ -124,7 +125,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TSource currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref TKey currentKey)
             {
                 // If the buffer has not been created, we will generate it lazily on demand.
                 if (_buffer == null)
@@ -132,10 +133,10 @@ namespace System.Linq.Parallel
                     _bufferIndex = new Shared<int>(0);
                     // Buffer all of our data.
                     _buffer = new List<Pair<TSource, TKey>>();
-                    TSource current = default(TSource);
-                    TKey key = default(TKey);
+                    TSource current = default(TSource)!;
+                    TKey key = default(TKey)!;
                     int i = 0;
-                    while (_source.MoveNext(ref current, ref key))
+                    while (_source.MoveNext(ref current!, ref key))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
@@ -144,6 +145,7 @@ namespace System.Linq.Parallel
                         _bufferIndex.Value++;
                     }
                 }
+                Debug.Assert(_bufferIndex != null);
 
                 // Continue yielding elements from our buffer.
                 if (--_bufferIndex.Value >= 0)

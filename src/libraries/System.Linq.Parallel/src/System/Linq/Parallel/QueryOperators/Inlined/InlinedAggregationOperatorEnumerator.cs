@@ -8,6 +8,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -51,7 +52,7 @@ namespace System.Linq.Parallel
         // and then one that is used for extensibility by subclasses.
         //
 
-        internal sealed override bool MoveNext(ref TIntermediate currentElement, ref int currentKey)
+        internal sealed override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TIntermediate currentElement, ref int currentKey)
         {
             if (!_done && MoveNextCore(ref currentElement))
             {

@@ -49,7 +49,7 @@ namespace System.Linq.Parallel
         internal TResult Aggregate()
         {
             TResult tr;
-            Exception toThrow = null;
+            Exception? toThrow = null;
 
             try
             {
@@ -76,8 +76,7 @@ namespace System.Linq.Parallel
                     // -  We find the external CancellationToken for this query in the OperationCanceledException
                     // -  The externalToken is actually in the canceled state.
 
-                    OperationCanceledException cancelEx = ex as OperationCanceledException;
-                    if (cancelEx != null
+                    if (ex is OperationCanceledException cancelEx
                         && cancelEx.CancellationToken == SpecifiedQuerySettings.CancellationState.ExternalCancellationToken
                         && SpecifiedQuerySettings.CancellationState.ExternalCancellationToken.IsCancellationRequested)
                     {
@@ -111,7 +110,7 @@ namespace System.Linq.Parallel
         //     The single result of aggregation.
         //
 
-        protected abstract TResult InternalAggregate(ref Exception singularExceptionToThrow);
+        protected abstract TResult InternalAggregate(ref Exception? singularExceptionToThrow);
 
         //---------------------------------------------------------------------------------------
         // Just opens the current operator, including opening the child and wrapping it with
@@ -141,7 +140,7 @@ namespace System.Linq.Parallel
         }
 
         protected abstract QueryOperatorEnumerator<TIntermediate, int> CreateEnumerator<TKey>(
-            int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object sharedData, CancellationToken cancellationToken);
+            int index, int count, QueryOperatorEnumerator<TSource, TKey> source, object? sharedData, CancellationToken cancellationToken);
 
         [ExcludeFromCodeCoverage]
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)

@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
         //     The single result of aggregation.
         //
 
-        protected override double InternalAggregate(ref Exception singularExceptionToThrow)
+        protected override double InternalAggregate(ref Exception? singularExceptionToThrow)
         {
             // Because the final reduction is typically much cheaper than the intermediate
             // reductions over the individual partitions, and because each parallel partition
@@ -59,7 +59,7 @@ namespace System.Linq.Parallel
         //
 
         protected override QueryOperatorEnumerator<double, int> CreateEnumerator<TKey>(
-            int index, int count, QueryOperatorEnumerator<double, TKey> source, object sharedData, CancellationToken cancellationToken)
+            int index, int count, QueryOperatorEnumerator<double, TKey> source, object? sharedData, CancellationToken cancellationToken)
         {
             return new DoubleSumAggregationOperatorEnumerator<TKey>(source, index, cancellationToken);
         }
@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
             protected override bool MoveNextCore(ref double currentElement)
             {
                 double element = default(double);
-                TKey keyUnused = default(TKey);
+                TKey keyUnused = default(TKey)!;
 
                 QueryOperatorEnumerator<double, TKey> source = _source;
                 if (source.MoveNext(ref element, ref keyUnused))

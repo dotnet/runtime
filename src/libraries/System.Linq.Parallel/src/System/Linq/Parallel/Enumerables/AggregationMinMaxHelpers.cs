@@ -11,6 +11,7 @@
 using System.Collections.Generic;
 using System.Linq.Parallel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -20,6 +21,7 @@ namespace System.Linq
         // Helper method to find the minimum or maximum element in the source.
         //
 
+        [return: MaybeNull]
         private static T Reduce(IEnumerable<T> source, int sign)
         {
             Debug.Assert(source != null);
@@ -30,8 +32,8 @@ namespace System.Linq
             Func<Pair<bool, T>, T> resultSelector = MakeResultSelectorFunction();
 
             AssociativeAggregationOperator<T, Pair<bool, T>, T> aggregation =
-                new AssociativeAggregationOperator<T, Pair<bool, T>, T>(source, new Pair<bool, T>(false, default(T)), null,
-                                                                        true, intermediateReduce, finalReduce, resultSelector, default(T) != null, QueryAggregationOptions.AssociativeCommutative);
+                new AssociativeAggregationOperator<T, Pair<bool, T>, T>(source, new Pair<bool, T>(false, default), null,
+                                                                        true, intermediateReduce, finalReduce, resultSelector, default(T)! != null, QueryAggregationOptions.AssociativeCommutative);
 
             return aggregation.Aggregate();
         }
@@ -40,6 +42,7 @@ namespace System.Linq
         // Helper method to find the minimum element in the source.
         //
 
+        [return: MaybeNull]
         internal static T ReduceMin(IEnumerable<T> source)
         {
             return Reduce(source, -1);
@@ -49,6 +52,7 @@ namespace System.Linq
         // Helper method to find the maximum element in the source.
         //
 
+        [return: MaybeNull]
         internal static T ReduceMax(IEnumerable<T> source)
         {
             return Reduce(source, 1);
@@ -71,7 +75,7 @@ namespace System.Linq
                            // the existing accumulated result is equal to the sign requested by the function factory,
                            // we will return a new pair that contains the current element as the best item.  We will
                            // ignore null elements (for reference and nullable types) in the input stream.
-                           if ((default(T) != null || element != null) &&
+                           if ((default(T)! != null || element != null) &&
                                (!accumulator.First || Util.Sign(comparer.Compare(element, accumulator.Second)) == sign))
                            {
                                return new Pair<bool, T>(true, element);
@@ -98,7 +102,7 @@ namespace System.Linq
                            if (element.First &&
                                (!accumulator.First || Util.Sign(comparer.Compare(element.Second, accumulator.Second)) == sign))
                            {
-                               Debug.Assert(default(T) != null || element.Second != null, "nulls unexpected in final reduce");
+                               Debug.Assert(default(T)! != null || element.Second != null, "nulls unexpected in final reduce");
                                return new Pair<bool, T>(true, element.Second);
                            }
 
@@ -115,7 +119,7 @@ namespace System.Linq
             // empty sequences.  Else, we will just return the element, which may be null for other types.
             return delegate (Pair<bool, T> accumulator)
                        {
-                           Debug.Assert(accumulator.First || default(T) == null,
+                           Debug.Assert(accumulator.First || default(T)! == null,
                                            "for non-null types we expect an exception to be thrown before getting here");
                            return accumulator.Second;
                        };

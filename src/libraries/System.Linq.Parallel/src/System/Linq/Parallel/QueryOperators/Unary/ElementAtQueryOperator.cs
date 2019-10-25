@@ -123,18 +123,18 @@ namespace System.Linq.Parallel
         /// <param name="result">result</param>
         /// <param name="withDefaultValue">withDefaultValue</param>
         /// <returns>whether an element with this index exists</returns>
-        internal bool Aggregate(out TSource result, bool withDefaultValue)
+        internal bool Aggregate([MaybeNullWhen(false)] out TSource result, bool withDefaultValue)
         {
             // If we were to insert a premature merge before this ElementAt, and we are executing in conservative mode, run the whole query
             // sequentially.
-            if (LimitsParallelism && SpecifiedQuerySettings.WithDefaults().ExecutionMode.Value != ParallelExecutionMode.ForceParallelism)
+            if (LimitsParallelism && SpecifiedQuerySettings.WithDefaults().ExecutionMode!.Value != ParallelExecutionMode.ForceParallelism)
             {
                 CancellationState cancelState = SpecifiedQuerySettings.CancellationState;
                 if (withDefaultValue)
                 {
                     IEnumerable<TSource> childAsSequential = Child.AsSequentialQuery(cancelState.ExternalCancellationToken);
                     IEnumerable<TSource> childWithCancelChecks = CancellableEnumerable.Wrap(childAsSequential, cancelState.ExternalCancellationToken);
-                    result = ExceptionAggregator.WrapEnumerable(childWithCancelChecks, cancelState).ElementAtOrDefault(_index);
+                    result = ExceptionAggregator.WrapEnumerable(childWithCancelChecks, cancelState).ElementAtOrDefault(_index)!;
                 }
                 else
                 {
@@ -156,7 +156,7 @@ namespace System.Linq.Parallel
                 }
             }
 
-            result = default(TSource);
+            result = default(TSource)!;
             return false;
         }
 
@@ -195,11 +195,11 @@ namespace System.Linq.Parallel
             // partition has signaled that it found the element.
             //
 
-            internal override bool MoveNext(ref TSource currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref int currentKey)
             {
                 // Just walk the enumerator until we've found the element.
                 int i = 0;
-                while (_source.MoveNext(ref currentElement, ref currentKey))
+                while (_source.MoveNext(ref currentElement!, ref currentKey))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                         CancellationState.ThrowIfCanceled(_cancellationToken);
