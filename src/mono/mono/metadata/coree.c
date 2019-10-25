@@ -214,7 +214,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 
 	mono_runtime_run_main_checked (method, argc, argv, error);
 	mono_error_raise_exception_deprecated (error); /* OK, triggers unhandled exn handler */
-	mono_thread_manage ();
+	mono_thread_manage_internal ();
 
 	mono_runtime_quit ();
 

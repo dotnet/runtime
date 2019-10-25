@@ -106,6 +106,9 @@ mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, Mo
 }
 #endif
 
+void
+mono_thread_manage_internal (void);
+
 /* Data owned by a MonoInternalThread that must live until both the finalizer
  * for MonoInternalThread has run, and the underlying machine thread has
  * detached.

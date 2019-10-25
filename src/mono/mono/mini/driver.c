@@ -1247,7 +1247,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	mono_thread_create_checked (mono_domain_get (), (gpointer)compile_all_methods_thread_main, &args, error);
 	mono_error_assert_ok (error);
 
-	mono_thread_manage ();
+	mono_thread_manage_internal ();
 }
 
 /**
@@ -2620,7 +2620,7 @@ mono_main (int argc, char* argv[])
 		main_args.opts = opt;
 		main_args.aot_options = aot_options;
 		main_thread_handler (&main_args);
-		mono_thread_manage ();
+		mono_thread_manage_internal ();
 
 		mini_cleanup (domain);
 
@@ -2799,7 +2799,7 @@ void
 mono_jit_cleanup (MonoDomain *domain)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_thread_manage ();
+	mono_thread_manage_internal ();
 
 	mini_cleanup (domain);
 	MONO_EXIT_GC_UNSAFE;

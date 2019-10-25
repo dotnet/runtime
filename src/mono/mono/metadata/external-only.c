@@ -21,6 +21,8 @@
 #include "object.h"
 #include "assembly-internals.h"
 #include "external-only.h"
+#include "threads.h"
+#include "threads-types.h"
 
 /**
  * mono_gchandle_new:
@@ -338,4 +340,14 @@ mono_assembly_name_free (MonoAssemblyName *aname)
 	if (!aname)
 		return;
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_assembly_name_free_internal (aname));
+}
+
+/**
+ * mono_thread_manage:
+ *
+ */
+void
+mono_thread_manage (void)
+{
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
 }
