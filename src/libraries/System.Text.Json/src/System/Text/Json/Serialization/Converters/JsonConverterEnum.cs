@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -17,6 +18,10 @@ namespace System.Text.Json.Serialization.Converters
             return type.IsEnum;
         }
 
+        [PreserveDependency(
+            ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions)",
+            "System.Text.Json.Serialization.Converters.JsonConverterEnum`1",
+            "System.Text.Json")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(

@@ -166,6 +166,9 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETStandard)' == 'true' OR '$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
