@@ -397,6 +397,8 @@ convert_attr (AttrKind kind)
 		return Attribute::NoInline;
 	case LLVM_ATTR_OPTIMIZE_FOR_SIZE:
 		return Attribute::OptimizeForSize;
+	case LLVM_ATTR_OPTIMIZE_NONE:
+		return Attribute::OptimizeNone;
 	case LLVM_ATTR_IN_REG:
 		return Attribute::InReg;
 	case LLVM_ATTR_STRUCT_RET:
@@ -528,6 +530,16 @@ mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module)
 
 	return wrap(SafepointPoll);
 #endif
+}
+
+gboolean
+mono_llvm_remove_gc_safepoint_poll (LLVMModuleRef module)
+{
+	llvm::Function *func = unwrap (module)->getFunction ("gc.safepoint_poll");
+	if (func == nullptr)
+		return FALSE;
+	func->eraseFromParent ();
+	return TRUE;
 }
 
 int

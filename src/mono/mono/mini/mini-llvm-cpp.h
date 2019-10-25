@@ -41,6 +41,7 @@ typedef enum {
 	LLVM_ATTR_NO_UNWIND,
 	LLVM_ATTR_NO_INLINE,
 	LLVM_ATTR_OPTIMIZE_FOR_SIZE,
+	LLVM_ATTR_OPTIMIZE_NONE,
 	LLVM_ATTR_IN_REG,
 	LLVM_ATTR_STRUCT_RET,
 	LLVM_ATTR_NO_ALIAS,
@@ -173,6 +174,9 @@ mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md);
 
 LLVMValueRef
 mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module);
+
+gboolean
+mono_llvm_remove_gc_safepoint_poll (LLVMModuleRef module);
 
 typedef struct {
 	const char* alias;

@@ -3162,53 +3162,72 @@ get_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 }
 
 static void
-emit_gc_safepoint_poll (MonoLLVMModule *module)
+emit_gc_safepoint_poll (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoCompile *cfg)
 {
-	LLVMModuleRef lmodule = module->lmodule;
-	LLVMValueRef func, flag_addr, val_ptr, val, cmp, args [2], icall_wrapper;
-	LLVMBasicBlockRef entry_bb, poll_bb, exit_bb;
-	LLVMBuilderRef builder;
-	LLVMTypeRef sig;
-
-	icall_wrapper = emit_icall_cold_wrapper (module, module->lmodule, MONO_JIT_ICALL_mono_threads_state_poll, TRUE);
-	module->gc_poll_cold_wrapper = icall_wrapper;
-
-	sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
-	func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
+	gboolean is_aot = cfg == NULL || cfg->compile_aot;
+	LLVMValueRef func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
 	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
-	LLVMSetLinkage (func, LLVMWeakODRLinkage);
-
-	entry_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.entry");
-	poll_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.poll");
-	exit_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.exit");
-
-	builder = LLVMCreateBuilder ();
+	if (is_aot) {
+		LLVMSetLinkage (func, LLVMWeakODRLinkage);
+	} else {
+		mono_llvm_add_func_attr (func, LLVM_ATTR_OPTIMIZE_NONE); // no need to waste time here, the function is already optimized and will be inlined.
+		mono_llvm_add_func_attr (func, LLVM_ATTR_NO_INLINE); // optnone attribute requires noinline (but it will be inlined anyway)
+		if (!module->gc_poll_cold_wrapper_compiled) {
+			ERROR_DECL (error);
+			/* Compiling a method here is a bit ugly, but it works */
+			MonoMethod *wrapper = mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL);
+			module->gc_poll_cold_wrapper_compiled = mono_jit_compile_method (wrapper, error);
+			mono_error_assert_ok (error);
+		}
+	}
+	LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.entry");
+	LLVMBasicBlockRef poll_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.poll");
+	LLVMBasicBlockRef exit_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.exit");
+	LLVMTypeRef ptr_type = LLVMPointerType (IntPtrType (), 0);
+	LLVMBuilderRef builder = LLVMCreateBuilder ();
 
 	/* entry: */
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
-
-	flag_addr = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, NULL, LLVMPointerType (IntPtrType (), 0));
-	val_ptr = LLVMBuildLoad (builder, flag_addr, "");
-	val = LLVMBuildPtrToInt (builder, val_ptr, IntPtrType (), "");
-	cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
-	args [0] = cmp;
-	args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
-	cmp = LLVMBuildCall (builder, get_intrins_from_module (module->lmodule, INTRINS_EXPECT_I1), args, 2, "");
-	LLVMBuildCondBr (builder, cmp, exit_bb, poll_bb);
+	LLVMValueRef poll_val_ptr;
+	if (is_aot) {
+		poll_val_ptr = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, NULL, ptr_type);
+	} else {
+		LLVMValueRef poll_val_int = LLVMConstInt (IntPtrType (), (guint64) &mono_polling_required, FALSE);
+		poll_val_ptr = LLVMBuildIntToPtr (builder, poll_val_int, ptr_type, "");
+	}
+	LLVMValueRef poll_val_ptr_load = LLVMBuildLoad (builder, poll_val_ptr, ""); // probably needs to be volatile
+	LLVMValueRef poll_val = LLVMBuildPtrToInt (builder, poll_val_ptr_load, IntPtrType (), "");
+	LLVMValueRef poll_val_zero = LLVMConstNull (LLVMTypeOf (poll_val));
+	LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, poll_val, poll_val_zero, "");
+	mono_llvm_build_weighted_branch (builder, cmp, exit_bb, poll_bb, 1000 /* weight for exit_bb */, 1 /* weight for poll_bb */);
 
 	/* poll: */
-	LLVMPositionBuilderAtEnd(builder, poll_bb);
-
-	LLVMValueRef call = LLVMBuildCall (builder, icall_wrapper, NULL, 0, "");
+	LLVMPositionBuilderAtEnd (builder, poll_bb);
+	LLVMValueRef call;
+	if (is_aot) {
+		LLVMValueRef icall_wrapper = emit_icall_cold_wrapper (module, lmodule, MONO_JIT_ICALL_mono_threads_state_poll, TRUE);
+		module->gc_poll_cold_wrapper = icall_wrapper;
+		call = LLVMBuildCall (builder, icall_wrapper, NULL, 0, "");
+	} else {
+		// in JIT mode we have to emit @gc.safepoint_poll function for each method (module)
+		// this function calls gc_poll_cold_wrapper_compiled via a global variable.
+		// @gc.safepoint_poll will be inlined and can be deleted after -place-safepoints pass.
+		LLVMTypeRef poll_sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+		LLVMTypeRef poll_sig_ptr = LLVMPointerType (poll_sig, 0);
+		gpointer target = resolve_patch (cfg, MONO_PATCH_INFO_ABS, module->gc_poll_cold_wrapper_compiled);
+		LLVMValueRef tramp_var = LLVMAddGlobal (lmodule, poll_sig_ptr, "mono_threads_state_poll");
+		LLVMValueRef target_val = LLVMConstInt (LLVMInt64Type (), (guint64) target, FALSE);
+		LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (target_val, poll_sig_ptr));
+		LLVMSetLinkage (tramp_var, LLVMExternalLinkage);
+		LLVMValueRef callee = LLVMBuildLoad (builder, tramp_var, "");
+		call = LLVMBuildCall (builder, callee, NULL, 0, "");
+	}
 	set_call_cold_cconv (call);
-	LLVMBuildBr(builder, exit_bb);
+	LLVMBuildBr (builder, exit_bb);
 
 	/* exit: */
-	LLVMPositionBuilderAtEnd(builder, exit_bb);
-
+	LLVMPositionBuilderAtEnd (builder, exit_bb);
 	LLVMBuildRetVoid (builder);
-
-	LLVMVerifyFunction(func, LLVMAbortProcessAction);
 	LLVMDisposeBuilder (builder);
 }
 
@@ -8153,9 +8172,16 @@ emit_method_inner (EmitContext *ctx)
 			}
 		}
 	}
-
-	if (!cfg->llvm_only && cfg->compile_aot && mono_threads_are_safepoints_enabled () && requires_safepoint)
-		LLVMSetGC (method, "coreclr");
+#ifndef MONO_LLVM_LOADED
+	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
+		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
+			LLVMSetGC (method, "coreclr");
+			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
+		} else if (cfg->compile_aot) {
+			LLVMSetGC (method, "coreclr");
+		}
+	}
+#endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
@@ -9533,7 +9559,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	LLVMSetInitializer (module->inited_var, LLVMConstNull (inited_type));
 
 
-	emit_gc_safepoint_poll (module);
+	emit_gc_safepoint_poll (module, module->lmodule, NULL);
 
 	emit_llvm_code_start (module);
 
@@ -10694,6 +10720,7 @@ llvm_jit_finalize_method (EmitContext *ctx)
 		callee_vars [i ++] = var;
 
 	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
+	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));
 		if (cfg->compile_aot) {
