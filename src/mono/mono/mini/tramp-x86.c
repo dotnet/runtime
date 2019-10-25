@@ -74,7 +74,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	x86_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, arg);
+	x86_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, (gsize)arg);
 	x86_jump_code (code, addr);
 	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
 
@@ -111,7 +111,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	orig_code -= 6;
 	if (code [1] == 0xe8) {
 		if (can_write) {
-			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
+			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
 
 			/* Tell valgrind to recompile the patched code */
 			VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, 4);
@@ -119,7 +119,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
 		if (can_write)
-			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
+			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x n", code [0], code [1], code [2], code [3],
 				code [4], code [5]);
@@ -351,7 +351,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		/* Not really a jit icall */
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_rethrow_preserve_exception));
 	} else {
-		x86_mov_reg_imm (code, X86_ECX, (guint8*)mono_get_rethrow_preserve_exception_addr ());
+		x86_mov_reg_imm (code, X86_ECX, (gsize)(guint8*)mono_get_rethrow_preserve_exception_addr ());
 	}
 	x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof (target_mgreg_t));
 	x86_jump_reg (code, X86_ECX);
@@ -408,7 +408,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	code = buf = mono_domain_code_reserve_align (domain, size, 4);
 
-	x86_push_imm (buf, arg1);
+	x86_push_imm (buf, (gsize)arg1);
 	x86_jump_code (buf, tramp);
 	g_assertf ((code - buf) <= size, "%d %d", (int)(code - buf), size);
 
@@ -565,7 +565,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	/* FIXME: This is not thread safe */
 	guint8 *code = (guint8*)ji->code_start;
 
-	x86_push_imm (code, func_arg);
+	x86_push_imm (code, (gsize)func_arg);
 	x86_call_code (code, (guint8*)func);
 }
 
@@ -605,7 +605,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	x86_mov_reg_imm (code, X86_EAX, arg);
+	x86_mov_reg_imm (code, X86_EAX, (gsize)arg);
 	x86_jump_code (code, addr);
 	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
 
