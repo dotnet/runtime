@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 #endif // FEATURE_COMINTEROP
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Internal.Runtime.CompilerServices;
 
 namespace System.StubHelpers
 {
@@ -638,9 +639,9 @@ namespace System.StubHelpers
 
     internal sealed class HandleMarshaler
     {
-        internal static unsafe IntPtr ConvertSafeHandleToNative(SafeHandle? handle, bool hasCleanupWorkList, ref CleanupWorkListElement? cleanupWorkList)
+        internal static unsafe IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
         {
-            if (!hasCleanupWorkList)
+            if (Unsafe.IsNullRef(ref cleanupWorkList))
             {
                 throw new InvalidOperationException(SR.Interop_Marshal_SafeHandle_InvalidOperation);
             }
