@@ -52,7 +52,7 @@ EventPipeBufferManager::EventPipeBufferManager(EventPipeSession* pSession, size_
     m_pCurrentBuffer = nullptr;
     m_pCurrentBufferList = nullptr;
 
-    m_maxSizeOfAllBuffers = Clamp((size_t)100 * 1024, maxSizeOfAllBuffers, (size_t)ULONG_MAX);
+    m_maxSizeOfAllBuffers = Clamp((size_t)100 * 1024, maxSizeOfAllBuffers, (size_t)UINT32_MAX);
 
     if (sequencePointAllocationBudget == 0)
     {

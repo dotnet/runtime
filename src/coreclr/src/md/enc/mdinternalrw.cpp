@@ -2944,7 +2944,7 @@ HRESULT MDInternalRW::GetFieldOffset(
 
     IfFailGo(m_pStgdb->m_MiniMd.GetFieldLayoutRecord(iLayout, &pRec));
     *pulOffset = m_pStgdb->m_MiniMd.getOffSetOfFieldLayout(pRec);
-    _ASSERTE(*pulOffset != ULONG_MAX);
+    _ASSERTE(*pulOffset != UINT32_MAX);
 
 ErrExit:
     return hr;
@@ -2979,7 +2979,7 @@ HRESULT MDInternalRW::GetClassLayoutNext(
         {
             IfFailGo(m_pStgdb->m_MiniMd.GetFieldLayoutRecord(iLayout2, &pRec));
             *pulOffset = m_pStgdb->m_MiniMd.getOffSetOfFieldLayout(pRec);
-            _ASSERTE(*pulOffset != ULONG_MAX);
+            _ASSERTE(*pulOffset != UINT32_MAX);
             *pfd = fd;
             goto ErrExit;
         }

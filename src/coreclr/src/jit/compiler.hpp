@@ -1789,8 +1789,8 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 setLvRefCntWtd(newWeight, state);
             }
             else
-            { // On overflow we assign ULONG_MAX
-                setLvRefCntWtd(ULONG_MAX, state);
+            { // On overflow we assign UINT32_MAX
+                setLvRefCntWtd(UINT32_MAX, state);
             }
         }
     }

@@ -33,9 +33,9 @@ int __cdecl main(int argc, char *argv[])
     errno = 0;
     l = wcstoul(overstr, &end, 10);
 
-    if (l != ULONG_MAX)
+    if (l != _UI32_MAX)
     {
-        Fail("ERROR: Expected wcstoul to return %u, got %u\n", ULONG_MAX, l);
+        Fail("ERROR: Expected wcstoul to return %u, got %u\n", _UI32_MAX, l);
     }
     if (end != overstr + 10)
     {
@@ -50,9 +50,9 @@ int __cdecl main(int argc, char *argv[])
     errno = 0;
     l = wcstoul(understr, &end, 10);
 
-    if (l != ULONG_MAX)
+    if (l != _UI32_MAX)
     {
-        Fail("ERROR: Expected wcstoul to return %u, got %u\n", ULONG_MAX, l);
+        Fail("ERROR: Expected wcstoul to return %u, got %u\n", _UI32_MAX, l);
     }
     if (end != understr + 2)
     {

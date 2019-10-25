@@ -337,7 +337,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
 
         size = range->end - range->start;
-        _ASSERTE( size < ULONG_MAX );    // ranges should be less than 4gig!
+        _ASSERTE( size < UINT32_MAX );    // ranges should be less than 4gig!
 
         // We can't be sure this entire range is mapped.  For example, the code:StubLinkStubManager
         // keeps track of all ranges in the code:BaseDomain::m_pStubHeap LoaderHeap, and 

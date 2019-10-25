@@ -3973,7 +3973,7 @@ public:
 #if defined(DBG_TARGET_64BIT)
 #define MAX_ADDRESS     (_UI64_MAX)
 #else
-#define MAX_ADDRESS     (ULONG_MAX)
+#define MAX_ADDRESS     (_UI32_MAX)
 #endif
 #define MIN_ADDRESS     (0x0)
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
@@ -8684,9 +8684,9 @@ public:
         FAIL_IF_NEUTERED(this);
         VALIDATE_POINTER_TO_OBJECT(pSize, ULONG32 *);
 
-        if (m_size > ULONG_MAX)
+        if (m_size > UINT32_MAX)
         {
-            *pSize = ULONG_MAX;
+            *pSize = UINT32_MAX;
             return (COR_E_OVERFLOW);
         }
 

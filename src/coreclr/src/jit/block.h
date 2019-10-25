@@ -517,9 +517,9 @@ struct BasicBlock : private LIR::Range
 #define BB_UNITY_WEIGHT 100 // how much a normal execute once block weights
 #define BB_LOOP_WEIGHT 8    // how much more loops are weighted
 #define BB_ZERO_WEIGHT 0
-#define BB_MAX_WEIGHT ULONG_MAX // we're using an 'unsigned' for the weight
-#define BB_VERY_HOT_WEIGHT 256  // how many average hits a BB has (per BBT scenario run) for this block
-                                // to be considered as very hot
+#define BB_MAX_WEIGHT UINT32_MAX // we're using an 'unsigned' for the weight
+#define BB_VERY_HOT_WEIGHT 256   // how many average hits a BB has (per BBT scenario run) for this block
+                                 // to be considered as very hot
 
     weight_t bbWeight; // The dynamic execution weight of this block
 

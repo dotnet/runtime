@@ -5756,7 +5756,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
 #ifdef BIT64
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
-            pData->arrULONG[i] = (pData->arrMemBlockSize[i] > ULONG_MAX) ? ULONG_MAX : (ULONG)pData->arrMemBlockSize[i];
+            pData->arrULONG[i] = (pData->arrMemBlockSize[i] > UINT32_MAX) ? UINT32_MAX : (ULONG)pData->arrMemBlockSize[i];
 #endif
 
         {
@@ -5786,7 +5786,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
 #ifdef BIT64
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
-            pData->arrULONG[i] = (pData->arrMemBlockSize[i] > ULONG_MAX) ? ULONG_MAX : (ULONG)pData->arrMemBlockSize[i];
+            pData->arrULONG[i] = (pData->arrMemBlockSize[i] > UINT32_MAX) ? UINT32_MAX : (ULONG)pData->arrMemBlockSize[i];
 #endif
 
         {

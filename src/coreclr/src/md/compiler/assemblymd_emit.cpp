@@ -308,7 +308,7 @@ STDMETHODIMP RegMeta::DefineExportedType(     // S_OK or error.
     // Split the name into name/namespace pair.
     ns::SplitInline(szNameUTF8, szTypeNamespaceUTF8, szTypeNameUTF8);
     
-    _ASSERTE(szName && dwExportedTypeFlags != ULONG_MAX && pmct);
+    _ASSERTE(szName && dwExportedTypeFlags != UINT32_MAX && pmct);
     _ASSERTE(TypeFromToken(tkImplementation) == mdtFile ||
               TypeFromToken(tkImplementation) == mdtAssemblyRef ||
               TypeFromToken(tkImplementation) == mdtExportedType ||
@@ -394,7 +394,7 @@ STDMETHODIMP RegMeta::DefineManifestResource( // S_OK or error.
     
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
     
-    _ASSERTE(szName && dwResourceFlags != ULONG_MAX && pmmr);
+    _ASSERTE(szName && dwResourceFlags != UINT32_MAX && pmmr);
     _ASSERTE(TypeFromToken(tkImplementation) == mdtFile ||
               TypeFromToken(tkImplementation) == mdtAssemblyRef ||
               tkImplementation == mdTokenNil);
@@ -646,7 +646,7 @@ HRESULT RegMeta::_SetAssemblyProps(     // S_OK or error.
     if (pbPublicKey)
         IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_Assembly, AssemblyRec::COL_PublicKey,
                                 pRecord, pbPublicKey, cbPublicKey));
-    if (ulHashAlgId != ULONG_MAX)
+    if (ulHashAlgId != UINT32_MAX)
         pRecord->SetHashAlgId(ulHashAlgId);
     IfFailGo(m_pStgdb->m_MiniMd.PutStringW(TBL_Assembly, AssemblyRec::COL_Name, pRecord, szName));
     if (pMetaData->usMajorVersion != USHRT_MAX)
@@ -713,7 +713,7 @@ HRESULT RegMeta::_SetAssemblyRefProps(  // S_OK or error.
     if (pbHashValue)
         IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_AssemblyRef, AssemblyRefRec::COL_HashValue,
                                     pRecord, pbHashValue, cbHashValue));
-    if (dwAssemblyRefFlags != ULONG_MAX)
+    if (dwAssemblyRefFlags != UINT32_MAX)
         pRecord->SetFlags(PrepareForSaving(dwAssemblyRefFlags));
 
     IfFailGo(UpdateENCLog(ar));
@@ -741,7 +741,7 @@ HRESULT RegMeta::_SetFileProps(         // S_OK or error.
     if (pbHashValue)
         IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_File, FileRec::COL_HashValue, pRecord,
                                     pbHashValue, cbHashValue));
-    if (dwFileFlags != ULONG_MAX)
+    if (dwFileFlags != UINT32_MAX)
         pRecord->SetFlags(dwFileFlags);
 
     IfFailGo(UpdateENCLog(file));
@@ -771,7 +771,7 @@ HRESULT RegMeta::_SetExportedTypeProps( // S_OK or error.
         _ASSERTE(TypeFromToken(tkTypeDef) == mdtTypeDef);
         pRecord->SetTypeDefId(tkTypeDef);
     }
-    if (dwExportedTypeFlags != ULONG_MAX)
+    if (dwExportedTypeFlags != UINT32_MAX)
         pRecord->SetFlags(dwExportedTypeFlags);
 
     IfFailGo(UpdateENCLog(ct));
@@ -797,9 +797,9 @@ HRESULT RegMeta::_SetManifestResourceProps(// S_OK or error.
     if (tkImplementation != mdTokenNil)
         IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_ManifestResource,
                     ManifestResourceRec::COL_Implementation, pRecord, tkImplementation));
-    if (dwOffset != ULONG_MAX)
+    if (dwOffset != UINT32_MAX)
         pRecord->SetOffset(dwOffset);
-    if (dwResourceFlags != ULONG_MAX)
+    if (dwResourceFlags != UINT32_MAX)
         pRecord->SetFlags(dwResourceFlags);
 
     IfFailGo(UpdateENCLog(mr));
