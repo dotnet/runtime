@@ -440,8 +440,7 @@ mono_check_corlib_version_internal (void)
 #if defined(MONO_CROSS_COMPILE)
 	/* Can't read the corlib version because we only have the target class layouts */
 	return NULL;
-#endif
-
+#else
 	char *result = NULL;
 	char *version = mono_get_corlib_version ();
 	if (!version) {
@@ -466,6 +465,7 @@ mono_check_corlib_version_internal (void)
 exit:
 	g_free (version);
 	return result;
+#endif
 }
 
 /**

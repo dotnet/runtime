@@ -581,15 +581,11 @@ void
 mono_gstring_append_thread_name (GString*, MonoInternalThread*);
 
 
-#ifdef ENABLE_NETCORE
 /*
- * There is only one thread object, MonoInternalThread is aliased to MonoThread,
+ * NETCORE: There is only one thread object,
  * thread->internal_thread points to itself.
  */
-struct _MonoThread {
-#else
 struct _MonoInternalThread {
-#endif
 	// FIXME: Mechanize keeping this in sync with managed.
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
@@ -632,7 +628,7 @@ struct _MonoInternalThread {
 	gsize thread_state;
 
 #ifdef ENABLE_NETCORE
-	struct _MonoThread *internal_thread;
+	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
 #else
@@ -645,9 +641,7 @@ struct _MonoInternalThread {
 	gpointer last;
 };
 
-#ifdef ENABLE_NETCORE
-#define _MonoInternalThread _MonoThread
-#else
+#ifndef ENABLE_NETCORE
 struct _MonoThread {
 	MonoObject obj;
 	MonoInternalThread *internal_thread;

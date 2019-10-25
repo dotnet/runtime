@@ -4770,7 +4770,9 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_cleanup (domain);
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_threadpool_cleanup ();
+#endif
 
 	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
 

@@ -14,11 +14,7 @@ typedef struct MonoHandleStack MonoHandleStack;
 typedef struct MonoJitTlsData MonoJitTlsData;
 typedef struct MonoLMF MonoLMF;
 typedef struct MonoTrampInfo MonoTrampInfo;
-#ifdef ENABLE_NETCORE
-typedef struct _MonoThread MonoInternalThread;
-#else
 typedef struct _MonoInternalThread MonoInternalThread;
-#endif
 typedef struct _SgenThreadInfo SgenThreadInfo;
 
 #endif
