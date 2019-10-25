@@ -11,6 +11,6 @@ namespace System.Reflection
     {
         protected DispatchProxy() { }
         public static T Create<T, TProxy>() where TProxy : System.Reflection.DispatchProxy { throw null; }
-        protected abstract object Invoke(System.Reflection.MethodInfo targetMethod, object[] args);
+        protected abstract object? Invoke(System.Reflection.MethodInfo? targetMethod, object?[]? args);
     }
 }
