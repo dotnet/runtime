@@ -45,8 +45,13 @@
         "CommonTypes": [ ]
     },
     {
-	"Name": "Microsoft.NETCore.Native",
-	"Description": "Native shims for .NET Core runtime",
-	"CommonTypes": [ ]
+        "Name": "Microsoft.NETCore.Native",
+        "Description": "Native shims for .NET Core runtime",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.Crossgen2",
+        "Description": "The .NET Crossgen2 compiler.",
+        "CommonTypes": [ ]
     }
 ]
