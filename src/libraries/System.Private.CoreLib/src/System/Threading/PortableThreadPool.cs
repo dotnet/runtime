@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -57,7 +58,7 @@ namespace System.Threading
         }
 
         private CacheLineSeparated _separated;
-        private ulong _currentSampleStartTime;
+        private long _currentSampleStartTime;
         private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;
 
@@ -225,9 +226,9 @@ namespace System.Threading
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = (int)_completionCounter.Count;
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
-            ulong startTime = _currentSampleStartTime;
-            ulong endTime = HighPerformanceCounter.TickCount;
-            ulong freq = HighPerformanceCounter.Frequency;
+            long startTime = _currentSampleStartTime;
+            long endTime = Stopwatch.GetTimestamp();
+            long freq = Stopwatch.Frequency;
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 
