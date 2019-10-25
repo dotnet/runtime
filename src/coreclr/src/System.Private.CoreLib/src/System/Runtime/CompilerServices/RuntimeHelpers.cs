@@ -171,6 +171,15 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawSzArrayData(this Array array) =>
             ref Unsafe.As<RawArrayData>(array).Data;
 
+        // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
+        // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
+        //                 ^               ^                                    ^ returned reference
+        //                 |               \-- ref Unsafe.As<RawData>(array).Data
+        //                 \-- array
+        // The BaseSize of an array includes all the fields before the array data,
+        // including the sync block and method table. The reference to RawData.Data
+        // points at the number of components, skipping over these two pointer-sized fields.
+        // So substrate those from BaseSize before adding to the RawData.Data reference.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref byte GetRawArrayData(this Array array) =>
             ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)GetObjectMethodTablePointer(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
@@ -186,16 +195,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool ObjectHasComponentSize(object obj)
         {
-            // CLR objects are laid out in memory as follows.
-            // [ pMethodTable || .. object data .. ]
-            //   ^-- the object reference points here
-            //
-            // The m_dwFlags field of the method table class will have its high bit set if the
+            // The Flags field of the method table class will have its high bit set if the
             // method table has component size info stored somewhere. See member
             // MethodTable:IsStringOrArray in src\vm\methodtable.h for full details.
-            //
-            // So in effect this method is the equivalent of
-            // return ((MethodTable*)(*obj))->IsStringOrArray();
             return (int)GetObjectMethodTablePointer(obj)->Flags < 0;
         }
 
@@ -211,7 +213,7 @@ namespace System.Runtime.CompilerServices
             public uint BaseSize;
         }
 
-        // Given an object reference, returns its MethodTable* as an IntPtr.
+        // Given an object reference, returns its MethodTable*.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe MethodTable* GetObjectMethodTablePointer(object obj)
         {

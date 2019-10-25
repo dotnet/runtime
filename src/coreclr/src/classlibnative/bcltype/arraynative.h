@@ -26,7 +26,6 @@ class ArrayNative
 {
 public:
     static FCDECL1(INT32, GetRank, ArrayBase* pArray);
-    static FCDECL1(void*, GetRawArrayData, ArrayBase* array);
     static FCDECL2(INT32, GetLowerBound, ArrayBase* pArray, unsigned int dimension);
     static FCDECL2(INT32, GetUpperBound, ArrayBase* pArray, unsigned int dimension);
     static FCDECL2(INT32, GetLength, ArrayBase* pArray, unsigned int dimension);
