@@ -343,11 +343,7 @@ MONO_JIT_ICALL (count) \
 
 #define MONO_JIT_ICALL_mono_get_lmf_addr MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern
 
-#ifdef __cplusplus
-typedef enum MonoJitICallId : gsize // Widen to gsize for use in MonoJumpInfo union.
-#else
 typedef enum MonoJitICallId
-#endif
 {
 #define MONO_JIT_ICALL(x) MONO_JIT_ICALL_ ## x,
 MONO_JIT_ICALLS
@@ -395,3 +391,13 @@ mono_find_jit_icall_info (MonoJitICallId id)
 
 	return &mono_get_jit_icall_info ()->array [index];
 }
+
+#if __cplusplus
+// MonoJumpInfo.jit_icall_id is gsize instead of MonoJitICallId in order
+// to fully overlap pointers, and not match union reads with writes.
+inline MonoJitICallInfo*
+mono_find_jit_icall_info (gsize id)
+{
+	return mono_find_jit_icall_info ((MonoJitICallId)id);
+}
+#endif

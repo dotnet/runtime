@@ -343,11 +343,7 @@ struct MonoJumpInfo {
 		MonoImage      *image;
 		MonoVTable     *vtable;
 		const char     *name;
-#ifdef __cplusplus // MonoJitICallId has base type of gsize to widen per above.
-		MonoJitICallId jit_icall_id;
-#else
-		gsize jit_icall_id;	// only 9 bits used but widened per above
-#endif
+		gsize jit_icall_id;	// MonoJitICallId, 9 bits, but widened per above.
 		MonoJumpInfoToken  *token;
 		MonoJumpInfoBBTable *table;
 		MonoJumpInfoRgctxEntry *rgctx_entry;
