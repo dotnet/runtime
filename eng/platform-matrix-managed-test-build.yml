@@ -46,7 +46,7 @@ jobs:
       managedTestBuildOsGroup: ${{ parameters.armManagedTestBuildOsGroup }}
       managedTestBuildOsSubgroup: ${{ parameters.armManagedTestBuildOsSubgroup }}
       container:
-        image: ubuntu-16.04-cross-14.04-23cacb0-20190923200213
+        image: ubuntu-16.04-cross-14.04-23cacb0-20191023143847
         registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -69,7 +69,7 @@ jobs:
       managedTestBuildOsGroup: ${{ parameters.arm64ManagedTestBuildOsGroup }}
       managedTestBuildOsSubgroup: ${{ parameters.arm64ManagedTestBuildOsSubgroup }}
       container:
-        image: ubuntu-16.04-cross-arm64-cfdd435-20190923200213
+        image: ubuntu-16.04-cross-arm64-cfdd435-20191023143847
         registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -119,7 +119,7 @@ jobs:
       managedTestBuildOsGroup: ${{ parameters.arm64ManagedTestBuildOsGroup }}
       managedTestBuildOsSubgroup: ${{ parameters.arm64ManagedTestBuildOsSubgroup }}
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-406629a-20190923200213
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
         registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -142,7 +142,7 @@ jobs:
       managedTestBuildOsGroup: ${{ parameters.x64ManagedTestBuildOsGroup }}
       managedTestBuildOsSubgroup: ${{ parameters.x64ManagedTestBuildOsSubgroup }}
       container:
-        image: centos-6-50f0d02-20190918213956
+        image: centos-6-f39df28-20191023143802
         registry: mcr
       helixQueues:
       # TODO: enable RedHat.6.Amd64.Open once https://github.com/dotnet/coreclr/issues/23580 is resolved
@@ -162,7 +162,7 @@ jobs:
       managedTestBuildOsGroup: ${{ parameters.x64ManagedTestBuildOsGroup }}
       managedTestBuildOsSubgroup: ${{ parameters.x64ManagedTestBuildOsSubgroup }}
       container:
-        image: centos-7-50f0d02-20190918214028
+        image: centos-7-f39df28-20191023143754
         registry: mcr
       helixQueues:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
