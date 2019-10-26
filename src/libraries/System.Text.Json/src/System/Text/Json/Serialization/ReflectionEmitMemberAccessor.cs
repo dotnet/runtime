@@ -61,7 +61,7 @@ namespace System.Text.Json
             return (Action<TProperty>)addMethod.CreateDelegate(typeof(Action<TProperty>), target);
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2", "System.Text.Json")]
+        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
         public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
@@ -101,7 +101,7 @@ namespace System.Text.Json
             return creator;
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2", "System.Text.Json")]
+        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
         public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             Debug.Assert(collectionType.IsGenericType);
