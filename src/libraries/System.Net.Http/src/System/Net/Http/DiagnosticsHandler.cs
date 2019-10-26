@@ -75,7 +75,7 @@ namespace System.Net.Http
                 // Only send start event to users who subscribed for it, but start activity anyway
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
-                    s_diagnosticListener.StartActivity(activity, new { Request = request });
+                    s_diagnosticListener.StartActivity(activity, new ActivityStartData(request));
                 }
                 else
                 {
@@ -88,13 +88,7 @@ namespace System.Net.Http
                 long timestamp = Stopwatch.GetTimestamp();
                 loggingRequestId = Guid.NewGuid();
                 s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
-                    new
-                    {
-                        Request = request,
-                        LoggingRequestId = loggingRequestId,
-                        Timestamp = timestamp
-                    }
-                );
+                    new RequestData(request, loggingRequestId, timestamp));
             }
 
             // If we are on at all, we propagate current activity information
@@ -123,7 +117,7 @@ namespace System.Net.Http
                     // If request was initially instrumented, Activity.Current has all necessary context for logging
                     // Request is passed to provide some context if instrumentation was disabled and to avoid
                     // extensive Activity.Tags usage to tunnel request properties
-                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new { Exception = ex, Request = request });
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
                 }
                 throw;
             }
@@ -132,34 +126,105 @@ namespace System.Net.Http
                 // always stop activity if it was started
                 if (activity != null)
                 {
-                    s_diagnosticListener.StopActivity(activity, new
-                    {
-                        Response = responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                    s_diagnosticListener.StopActivity(activity, new ActivityStopData(
+                        responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
                         // and not retain all requests in Start
-                        Request = request,
-                        RequestTaskStatus = responseTask?.Status ?? TaskStatus.Faulted
-                    });
+                        request,
+                        responseTask?.Status ?? TaskStatus.Faulted));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
                     s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
-                        new
-                        {
-                            Response = responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
-                            LoggingRequestId = loggingRequestId,
-                            TimeStamp = timestamp,
-                            RequestTaskStatus = responseTask?.Status ?? TaskStatus.Faulted
-                        }
-                    );
+                        new ResponseData(
+                            responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                            loggingRequestId,
+                            timestamp,
+                            responseTask?.Status ?? TaskStatus.Faulted));
                 }
             }
         }
 
         #region private
+
+        private sealed class ActivityStartData
+        {
+            internal ActivityStartData(HttpRequestMessage request)
+            {
+                Request = request;
+            }
+
+            public HttpRequestMessage Request { get; }
+
+            public override string ToString() => $"{{ {nameof(Request)} = {Request} }}";
+        }
+
+        private sealed class ActivityStopData
+        {
+            internal ActivityStopData(HttpResponseMessage response, HttpRequestMessage request, TaskStatus requestTaskStatus)
+            {
+                Response = response;
+                Request = request;
+                RequestTaskStatus = requestTaskStatus;
+            }
+
+            public HttpResponseMessage Response { get; }
+            public HttpRequestMessage Request { get; }
+            public TaskStatus RequestTaskStatus { get; }
+
+            public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(Request)} = {Request}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
+        }
+
+        private sealed class ExceptionData
+        {
+            internal ExceptionData(Exception exception, HttpRequestMessage request)
+            {
+                Exception = exception;
+                Request = request;
+            }
+
+            public Exception Exception { get; }
+            public HttpRequestMessage Request { get; }
+
+            public override string ToString() => $"{{ {nameof(Exception)} = {Exception}, {nameof(Request)} = {Request} }}";
+        }
+
+        private sealed class RequestData
+        {
+            internal RequestData(HttpRequestMessage request, Guid loggingRequestId, long timestamp)
+            {
+                Request = request;
+                LoggingRequestId = loggingRequestId;
+                Timestamp = timestamp;
+            }
+
+            public HttpRequestMessage Request { get; }
+            public Guid LoggingRequestId { get; }
+            public long Timestamp { get; }
+
+            public override string ToString() => $"{{ {nameof(Request)} = {Request}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp} }}";
+        }
+
+        private sealed class ResponseData
+        {
+            internal ResponseData(HttpResponseMessage response, Guid loggingRequestId, long timestamp, TaskStatus requestTaskStatus)
+            {
+                Response = response;
+                LoggingRequestId = loggingRequestId;
+                Timestamp = timestamp;
+                RequestTaskStatus = requestTaskStatus;
+            }
+
+            public HttpResponseMessage Response { get; }
+            public Guid LoggingRequestId { get; }
+            public long Timestamp { get; }
+            public TaskStatus RequestTaskStatus { get; }
+
+            public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
+        }
 
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
