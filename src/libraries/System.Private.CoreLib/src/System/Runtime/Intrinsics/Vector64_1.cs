@@ -127,20 +127,20 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             int lastElement = Count - 1;
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[64]);
             CultureInfo invariant = CultureInfo.InvariantCulture;
 
             sb.Append('<');
             for (int i = 0; i < lastElement; i++)
             {
-                sb.Append(((IFormattable)this.GetElement(i)).ToString("G", invariant))
-                 .Append(',')
-                 .Append(' ');
+                sb.Append(((IFormattable)this.GetElement(i)).ToString("G", invariant));
+                sb.Append(',');
+                sb.Append(' ');
             }
-            sb.Append(((IFormattable)this.GetElement(lastElement)).ToString("G", invariant))
-             .Append('>');
+            sb.Append(((IFormattable)this.GetElement(lastElement)).ToString("G", invariant));
+            sb.Append('>');
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
     }
 }
