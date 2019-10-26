@@ -104,14 +104,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
 		{
-			var caseDefinedOptions = metadataProvider.GetLinkerOptions ();
+			var caseDefinedOptions = metadataProvider.GetLinkerOptions (sandbox.InputDirectory);
 
 			builder.AddOutputDirectory (sandbox.OutputDirectory);
 			foreach (var linkXmlFile in sandbox.LinkXmlFiles)
 				builder.AddLinkXmlFile (linkXmlFile);
 
-			foreach (var linkXmlFile in sandbox.ResponseFiles)
-				builder.AddResponseFile (linkXmlFile);
+			foreach (var rspFile in sandbox.ResponseFiles)
+				builder.AddResponseFile (rspFile);
 
 			builder.AddSearchDirectory (sandbox.InputDirectory);
 			foreach (var extraSearchDir in metadataProvider.GetExtraLinkerSearchDirectories ())

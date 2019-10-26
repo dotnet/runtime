@@ -259,7 +259,7 @@ namespace Mono.Linker.Steps
 						{
 							if (method.Name == "get_UseManagedCollation")
 							{
-								annotations.SetAction(method, MethodAction.ConvertToFalse);
+								annotations.SetAction(method, MethodAction.ConvertToStub);
 								break;
 							}
 						}

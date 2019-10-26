@@ -2049,6 +2049,18 @@ namespace Mono.Linker.Steps {
 				throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
 
 			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor;
+
+			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
+			if (objectType == null)
+				throw new NotSupportedException ("Missing predefined 'System.Object' type");
+
+			MarkType (objectType);
+
+			var objectCtor = MarkMethodIf (objectType.Methods, MethodDefinitionExtensions.IsDefaultConstructor);
+			if (objectCtor == null)
+				throw new MarkException ($"Could not find constructor on '{objectType.FullName}'");
+
+			_context.MarkedKnownMembers.ObjectCtor = objectCtor;
 		}
 
 		bool MarkDisablePrivateReflectionAttribute ()

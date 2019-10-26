@@ -98,6 +98,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
+			foreach (var res in metadataProvider.GetSubstitutionFiles ()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
+			}
+
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())
 			{
 				var destination = BeforeReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();

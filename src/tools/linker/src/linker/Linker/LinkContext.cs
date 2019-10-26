@@ -117,6 +117,8 @@ namespace Mono.Linker {
 
 		public bool StripResources { get; set; }
 
+		public List<string> Substitutions { get; private set; }
+
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}
@@ -193,6 +195,20 @@ namespace Mono.Linker {
 			// See https://github.com/mono/linker/issues/612
 			DisabledOptimizations |= CodeOptimizations.UnreachableBodies;
 			DisabledOptimizations |= CodeOptimizations.ClearInitLocals;
+		}
+
+		public void AddSubstitutionFile (string file)
+		{
+			if (Substitutions == null) {
+				Substitutions = new List<string> ();
+				Substitutions.Add (file);
+				return;
+			}
+
+			if (Substitutions.Contains (file))
+				return;
+
+			Substitutions.Add (file);
 		}
 
 		public TypeDefinition GetType (string fullName)

@@ -6,6 +6,7 @@ namespace Mono.Linker
 	{
 		public MethodDefinition NotSupportedExceptionCtorString { get; set; }
 		public MethodDefinition DisablePrivateReflectionAttributeCtor { get; set; }
+		public MethodDefinition ObjectCtor { get; set; }
 
 		public static bool IsNotSupportedExceptionCtorString (MethodDefinition method)
 		{
