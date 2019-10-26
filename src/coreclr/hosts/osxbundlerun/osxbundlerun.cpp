@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-int corerun(const int argc, const char* argv[])
+int main(const int argc, const char* argv[])
 {
     // Make sure we have a full path for argv[0].
     std::string argv0AbsolutePath;
@@ -82,9 +82,4 @@ int corerun(const int argc, const char* argv[])
                             managedAssemblyArgv);
 
     return exitCode;
-}
-
-int main(const int argc, const char* argv[])
-{
-    return corerun(argc, argv);
 }
