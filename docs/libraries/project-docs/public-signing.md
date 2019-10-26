@@ -31,6 +31,10 @@ CorFlags  : 0x2000b
 
 The bit that is flipped is 0x8. If the bit is set, the assembly is strong-named. Additionally, the `sn.exe -vf` tool can show the same information. It will output `<assembly> is a delay-signed or test-signed assembly` or `Failed to verify assembly -- Strong name validation failed.` for a public-signed binary.
 
-The [FakeSign package on NuGet](https://www.nuget.org/packages/fakesign) contains the `FakeSign.exe` tool that can flip the bit on or off.
+# MSBuild and Compiler Tooling Support
 
-Additionally, starting with Visual Studio 2015 Update 2 the C# and VB compilers support the new `/publicsign` command-line argument. You can also pass it to the compiler from your MSBuild project by setting the `<PublicSign>True</PublicSign>` MSBuild property to true. Note that you have to set `<DelaySign>False</DelaySign>` otherwise you will get an error that DelaySign and PublicSign can't be both specified at the same time.
+Starting with Visual Studio 2015 Update 2, the C# and VB compilers support the new `/publicsign` command-line argument. You can also pass it to the compiler from your MSBuild project by setting the `<PublicSign>True</PublicSign>` MSBuild property to true. Note that you have to set `<DelaySign>False</DelaySign>` otherwise you will get an error that DelaySign and PublicSign can't be both specified at the same time.
+
+# Legacy FakeSign tool
+
+If you're not able to use Visual Studio 2016 Update 2 or later, the [FakeSign package on NuGet](https://www.nuget.org/packages/fakesign) contains the `FakeSign.exe` tool that can flip the bit on or off.
