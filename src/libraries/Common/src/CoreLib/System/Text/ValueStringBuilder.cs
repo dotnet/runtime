@@ -140,8 +140,13 @@ namespace System.Text
             _pos += count;
         }
 
-        public void Insert(int index, string s)
+        public void Insert(int index, string? s)
         {
+            if (s == null)
+            {
+                return;
+            }
+
             int count = s.Length;
 
             if (_pos > (_chars.Length - count))
@@ -171,8 +176,13 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Append(string s)
+        public void Append(string? s)
         {
+            if (s == null)
+            {
+                return;
+            }
+
             int pos = _pos;
             if (s.Length == 1 && (uint)pos < (uint)_chars.Length) // very common case, e.g. appending strings from NumberFormatInfo like separators, percent symbols, etc.
             {
