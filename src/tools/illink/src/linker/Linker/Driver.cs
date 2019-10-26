@@ -211,6 +211,10 @@ namespace Mono.Linker {
 							context.StripResources = bool.Parse (GetParam ());
 							continue;
 
+						case "--substitutions":
+							context.AddSubstitutionFile (GetParam ());
+							continue;
+
 						case "--exclude-feature":
 							var name = GetParam ();
 							foreach (var feature in name.Split (',')) {
@@ -377,6 +381,8 @@ namespace Mono.Linker {
 					p.AddStepAfter (typeof (PreserveDependencyLookupStep), new PreserveCalendarsStep (assemblies));
 				}
 
+				p.AddStepBefore (typeof (MarkStep), new BodySubstituterStep ());
+
 				if (removeCAS)
 					p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
 
@@ -393,6 +399,8 @@ namespace Mono.Linker {
 					excluded_features.CopyTo (excluded);
 					context.ExcludedFeatures = excluded;
 				}
+
+				p.AddStepBefore (typeof (MarkStep), new RemoveUnreachableBlocksStep ());
 
 				if (disabled_optimizations.Count > 0) {
 					foreach (var item in disabled_optimizations) {
@@ -605,7 +613,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --keep-dep-attributes     Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
-			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");			
+			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
+			Console.WriteLine ("  --substitutions <file>    Configuration file with methods substitution rules");
 			Console.WriteLine ("  --strip-resources         Remove XML descriptor resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
 			Console.WriteLine ("  --used-attrs-only         Any attribute is removed if the attribute type is not used. Defaults to false");

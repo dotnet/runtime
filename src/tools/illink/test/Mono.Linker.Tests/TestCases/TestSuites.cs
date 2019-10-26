@@ -169,6 +169,18 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.UnreachableBlockTests))]
+		public void UnreachableBlockTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SubstitutionsTests))]
+		public void SubstitutionsTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		protected virtual void Run (TestCase testCase)
 		{
 			var runner = new TestRunner (new ObjectFactory ());

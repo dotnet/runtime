@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -39,9 +40,6 @@ namespace Mono.Linker.Steps {
 			case MethodAction.ConvertToThrow:
 				RewriteBodyToLinkedAway (method);
 				break;
-			case MethodAction.ConvertToFalse:
-				RewriteBodyToFalse (method);
-				break;
 			}
 		}
 
@@ -65,28 +63,28 @@ namespace Mono.Linker.Steps {
 			method.ClearDebugInformation();
 		}
 
-		protected virtual void RewriteBodyToFalse (MethodDefinition method)
-		{
-			if (!method.IsIL)
-				throw new NotImplementedException ();
-
-			method.Body = CreateReturnFalseBody (method);
-
-			method.ClearDebugInformation();
-		}
-
 		MethodBody CreateThrowLinkedAwayBody (MethodDefinition method)
 		{
 			var body = new MethodBody (method);
 			var il = body.GetILProcessor ();
+			MethodReference ctor;
+
+			// Makes the body verifiable
+			if (method.IsConstructor && !method.DeclaringType.IsValueType) {
+				ctor = assembly.MainModule.ImportReference (Context.MarkedKnownMembers.ObjectCtor);
+
+				il.Emit (OpCodes.Ldarg_0);
+				il.Emit (OpCodes.Call, ctor);
+			}
 
 			// import the method into the current assembly
-			MethodReference ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
+			ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
 			ctor = assembly.MainModule.ImportReference (ctor);
 
 			il.Emit (OpCodes.Ldstr, "Linked away");
 			il.Emit (OpCodes.Newobj, ctor);
 			il.Emit (OpCodes.Throw);
+
 			return body;
 		}
 
@@ -98,8 +96,11 @@ namespace Mono.Linker.Steps {
 				throw new NotImplementedException ();
 
 			var il = body.GetILProcessor ();
-			if (method.IsInstanceConstructor ()) {
+			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
 				var base_ctor = method.DeclaringType.BaseType.GetDefaultInstanceConstructor();
+				if (base_ctor == null)
+					throw new NotSupportedException ($"Cannot replace constructor for '{method.DeclaringType}' when no base default constructor exists");
+
 				base_ctor = assembly.MainModule.ImportReference (base_ctor);
 
 				il.Emit (OpCodes.Ldarg_0);
@@ -109,27 +110,90 @@ namespace Mono.Linker.Steps {
 			switch (method.ReturnType.MetadataType) {
 			case MetadataType.Void:
 				break;
-			case MetadataType.Boolean:
-				il.Emit (OpCodes.Ldc_I4_0);
-				break;
 			default:
-				throw new NotImplementedException (method.ReturnType.FullName);
+				var instruction = StubMethodWithConstant (Context, method);
+				if (instruction != null) {
+					il.Append (instruction);
+				} else {
+					StubComplexBody (method, body);
+				}
+				break;
 			}
 
 			il.Emit (OpCodes.Ret);
 			return body;
 		}
 
-		MethodBody CreateReturnFalseBody (MethodDefinition method)
+		static void StubComplexBody (MethodDefinition method, MethodBody body)
 		{
-			if (method.ReturnType.MetadataType != MetadataType.Boolean)
-				throw new NotImplementedException ();
+			switch (method.ReturnType.MetadataType) {
+			case MetadataType.MVar:
+			case MetadataType.ValueType:
+				var vd = new VariableDefinition (method.ReturnType);
+				body.Variables.Add (vd);
+				body.InitLocals = true;
 
-			var body = new MethodBody (method);
-			var il = body.GetILProcessor ();
-			il.Emit (OpCodes.Ldc_I4_0);
-			il.Emit (OpCodes.Ret);
-			return body;
+				var il = body.GetILProcessor ();
+				il.Emit (OpCodes.Ldloca_S, vd);
+				il.Emit (OpCodes.Initobj, method.ReturnType);
+				il.Emit (OpCodes.Ldloc_0);
+				return;
+			}
+
+			throw new NotImplementedException (method.FullName);
+		}
+
+		public static Instruction StubMethodWithConstant (LinkContext context, MethodDefinition method)
+		{
+			context.Annotations.TryGetMethodStubValue (method, out object value);
+
+			switch (method.ReturnType.MetadataType) {
+			case MetadataType.Boolean:
+				if (value is int bintValue && bintValue == 1)
+					return Instruction.Create (OpCodes.Ldc_I4_1);
+
+				return Instruction.Create (OpCodes.Ldc_I4_0);
+
+			case MetadataType.String:
+				if (value is string svalue)
+					return Instruction.Create (OpCodes.Ldstr, svalue);
+
+				return Instruction.Create (OpCodes.Ldnull);
+
+			case MetadataType.Object:
+			case MetadataType.Array:
+				Debug.Assert (value == null);
+				return Instruction.Create (OpCodes.Ldnull);
+
+			case MetadataType.Double:
+				if (value is double dvalue)
+					return Instruction.Create (OpCodes.Ldc_R8, dvalue);
+
+				return Instruction.Create (OpCodes.Ldc_R8, 0.0);
+
+			case MetadataType.Single:
+				if (value is float fvalue)
+					return Instruction.Create (OpCodes.Ldc_R4, fvalue);
+
+				return Instruction.Create (OpCodes.Ldc_R4, 0.0f);
+
+			case MetadataType.Char:
+			case MetadataType.Byte:
+			case MetadataType.SByte:
+			case MetadataType.Int16:
+			case MetadataType.UInt16:
+			case MetadataType.Int32:
+				if (value is int intValue)
+					return Instruction.Create (OpCodes.Ldc_I4, intValue);
+
+				return Instruction.Create (OpCodes.Ldc_I4_0);
+
+			case MetadataType.UInt64:
+			case MetadataType.Int64:
+				return Instruction.Create (OpCodes.Ldc_I8, 0L);
+			}
+
+			return null;
 		}
 	}
 }

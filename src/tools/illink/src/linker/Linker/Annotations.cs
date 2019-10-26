@@ -39,6 +39,7 @@ namespace Mono.Linker {
 
 		protected readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
 		protected readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
+		protected readonly Dictionary<MethodDefinition, object> method_stub_values = new Dictionary<MethodDefinition, object> ();
 		protected readonly HashSet<IMetadataTokenProvider> marked = new HashSet<IMetadataTokenProvider> ();
 		protected readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
@@ -117,6 +118,11 @@ namespace Mono.Linker {
 		public void SetAction (MethodDefinition method, MethodAction action)
 		{
 			method_actions [method] = action;
+		}
+
+		public void SetMethodStubValue (MethodDefinition method, object value)
+		{
+			method_stub_values [method] = value;
 		}
 
 		public void Mark (IMetadataTokenProvider provider)
@@ -231,6 +237,11 @@ namespace Mono.Linker {
 		public bool TryGetPreserve (TypeDefinition type, out TypePreserve preserve)
 		{
 			return preserved_types.TryGetValue (type, out preserve);
+		}
+
+		public bool TryGetMethodStubValue (MethodDefinition method, out object value)
+		{
+			return method_stub_values.TryGetValue (method, out value);
 		}
 
 		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)

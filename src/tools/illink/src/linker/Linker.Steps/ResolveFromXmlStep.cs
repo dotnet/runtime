@@ -462,18 +462,23 @@ namespace Mono.Linker.Steps {
 		{
 			if (type.HasMethods)
 				foreach (MethodDefinition meth in type.Methods)
-					if (signature == GetMethodSignature (meth))
+					if (signature == GetMethodSignature (meth, false))
 						return meth;
 
 			return null;
 		}
 
-		static string GetMethodSignature (MethodDefinition meth)
+		public static string GetMethodSignature (MethodDefinition meth, bool includeGenericParameters)
 		{
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (meth.ReturnType.FullName);
 			sb.Append (" ");
 			sb.Append (meth.Name);
+			if (includeGenericParameters && meth.HasGenericParameters) {
+				sb.Append ("`");
+				sb.Append (meth.GenericParameters.Count);
+			}
+
 			sb.Append ("(");
 			if (meth.HasParameters) {
 				for (int i = 0; i < meth.Parameters.Count; i++) {

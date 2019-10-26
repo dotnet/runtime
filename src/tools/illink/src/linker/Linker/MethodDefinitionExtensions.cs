@@ -14,6 +14,20 @@ namespace Mono.Linker
 			return method.IsConstructor && !method.IsStatic;
 		}
 
+		public static bool IsIntrinsic (this MethodDefinition method)
+		{
+			if (!method.HasCustomAttributes)
+				return false;
+
+			foreach (var ca in method.CustomAttributes) {
+				var caType = ca.AttributeType;
+				if (caType.Name == "IntrinsicAttribute" && caType.Namespace == "System.Runtime.CompilerServices")
+					return true;
+			}
+
+			return false;
+		}
+
 		public static bool IsStaticConstructor (this MethodDefinition method)
 		{
 			return method.IsConstructor && method.IsStatic;
