@@ -266,15 +266,15 @@ public:
     // There are two variants of the "CanCastTo" method:
     //
     // CanCastTo
-    // - restore encoded pointers on demand
     // - might throw, might trigger GC
     // - return type is boolean (FALSE = cannot cast, TRUE = can cast)
     //
-    // CanCastToNoGC
-    // - do not restore encoded pointers on demand
+    // CanCastToCached
     // - does not throw, does not trigger GC
     // - return type is three-valued (CanCast, CannotCast, MaybeCast)
-    // - MaybeCast indicates that the test tripped on an encoded pointer
+    //
+    // MaybeCast indicates an inconclusive result
+    // - the test result could not be obtained from a cache
     //   so the caller should now call CanCastTo if it cares
     //
     // Note that if the TypeHandle is a valuetype, the caller is responsible
@@ -284,7 +284,7 @@ public:
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited = NULL) const;
     BOOL IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pVisited) const;
-    CastResult CanCastToNoGC(TypeHandle type) const;
+    CastResult CanCastToCached(TypeHandle type) const;
 
 #ifndef DACCESS_COMPILE
     // Type equivalence based on Guid and TypeIdentifier attributes

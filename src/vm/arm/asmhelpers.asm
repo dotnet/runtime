@@ -24,7 +24,7 @@
     IMPORT PreStubWorker
     IMPORT PreStubGetMethodDescForCompactEntryPoint
     IMPORT NDirectImportWorker
-    IMPORT ObjIsInstanceOfNoGC
+    IMPORT ObjIsInstanceOfCached
     IMPORT ArrayStoreCheck
     IMPORT VSD_ResolveWorker
     IMPORT $g_pObjectClass
@@ -1524,10 +1524,10 @@ ThrowIndexOutOfRangeException
     CHECK_STACK_ALIGNMENT 
 
     ; allow in case val can be casted to array element type
-    ; call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    ; call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     r1, r12 ; array->GetArrayElementTypeHandle()
     mov     r0, r2
-    bl      ObjIsInstanceOfNoGC
+    bl      ObjIsInstanceOfCached
     cmp     r0, TypeHandle_CanCast 
     beq     DoWrite             ; ObjIsInstance returned TypeHandle::CanCast
 

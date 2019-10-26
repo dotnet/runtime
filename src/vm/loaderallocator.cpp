@@ -7,6 +7,7 @@
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
+#include "castcache.h"
 #include "mlinfo.h"
 #ifndef DACCESS_COMPILE
 #include "comdelegate.h"
@@ -613,6 +614,9 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
                         // Other values are typically ignored. If using SUSPEND_FOR_APPDOMAIN_SHUTDOWN
                         // is inappropriate, we can introduce a new flag or hijack an unused one.
             ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_APPDOMAIN_SHUTDOWN);
+
+            // drop the cast cache while still in COOP mode.
+            CastCache::FlushCurrentCache();
         }
 
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);

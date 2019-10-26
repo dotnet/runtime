@@ -40,6 +40,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     assembly.cpp
     baseassemblyspec.cpp
     binder.cpp
+    castcache.cpp
     callcounter.cpp
     ceeload.cpp
     class.cpp
@@ -141,6 +142,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     baseassemblyspec.h
     baseassemblyspec.inl
     binder.h
+    castcache.h
     ceeload.h
     ceeload.inl
     class.h

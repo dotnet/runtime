@@ -606,7 +606,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsInstanceOfType, ReflectClassBaseObject
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));    
 
-    switch (ObjIsInstanceOfNoGC(objectUNSAFE, refType->GetType())) {
+    switch (ObjIsInstanceOfCached(objectUNSAFE, refType->GetType())) {
     case TypeHandle::CanCast:
         FC_RETURN_BOOL(true);
     case TypeHandle::CannotCast:

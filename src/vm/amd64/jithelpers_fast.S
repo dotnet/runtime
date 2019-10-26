@@ -453,7 +453,7 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
         cmp     rcx, [r11]
         je      LOCAL_LABEL(DoWrite)
 
-        jmp     C_FUNC(JIT_Stelem_Ref__ObjIsInstanceOfNoGC_Helper)
+        jmp     C_FUNC(JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper)
                            
     LOCAL_LABEL(ThrowNullReferenceException):
         mov     rdi, CORINFO_NullReferenceException_ASM 
@@ -464,7 +464,7 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
         jmp     C_FUNC(JIT_InternalThrow)        
 LEAF_END JIT_Stelem_Ref, _TEXT
 
-LEAF_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfNoGC_Helper, _TEXT
+LEAF_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper, _TEXT
         push_nonvol_reg rbp
         mov     rbp, rsp
         set_cfa_register rbp, 16
@@ -478,8 +478,8 @@ LEAF_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfNoGC_Helper, _TEXT
         mov     rsi, rcx
         mov     rdi, rdx
 
-        // TypeHandle::CastResult ObjIsInstanceOfNoGC(Object *pElement, TypeHandle toTypeHnd)
-        call    C_FUNC(ObjIsInstanceOfNoGC)
+        // TypeHandle::CastResult ObjIsInstanceOfCached(Object *pElement, TypeHandle toTypeHnd)
+        call    C_FUNC(ObjIsInstanceOfCached)
 
         mov     rdi, [rbp - 0x08]
         mov     rsi, [rbp - 0x10]
@@ -503,7 +503,7 @@ LEAF_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfNoGC_Helper, _TEXT
 
     LOCAL_LABEL(NeedCheck):
         jmp     C_FUNC(JIT_Stelem_Ref__ArrayStoreCheck_Helper)
-LEAF_END JIT_Stelem_Ref__ObjIsInstanceOfNoGC_Helper, _TEXT
+LEAF_END JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper, _TEXT
 
 // Need to save reg to provide a stack address for the Object*
 LEAF_ENTRY JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT

@@ -1729,7 +1729,7 @@ FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
 {
     FCALL_CONTRACT;
 
-    if (ObjIsInstanceOfNoGC(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
+    if (ObjIsInstanceOfCached(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
         return;
     
     FC_INNER_RETURN_VOID(ArrayTypeCheckSlow(element, arr));

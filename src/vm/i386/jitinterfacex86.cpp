@@ -153,7 +153,7 @@ NotExactMatch:
         push EDX                    // element type handle
         push EAX                    // object
 
-        call ObjIsInstanceOfNoGC
+        call ObjIsInstanceOfCached
 
         pop ECX                     // caller-restore ECX and EDX
         pop EDX
