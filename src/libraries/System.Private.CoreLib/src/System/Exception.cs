@@ -120,26 +120,65 @@ namespace System
 
         public override string ToString()
         {
-            string s = GetClassName();
-
+            string className = GetClassName();
             string? message = Message;
+            string innerExceptionString = _innerException?.ToString() ?? "";
+            string endOfInnerExceptionResource = SR.Exception_EndOfInnerExceptionStack;
+            string? stackTrace = StackTrace;
+
+            // Calculate result string length
+            int length = className.Length;
+            checked
+            {
+                if (!string.IsNullOrEmpty(message))
+                {
+                    length += 2 + message.Length;
+                }
+                if (_innerException != null)
+                {
+                    length += Environment.NewLineConst.Length + InnerExceptionPrefix.Length + innerExceptionString.Length + Environment.NewLineConst.Length + 3 + endOfInnerExceptionResource.Length;
+                }
+                if (stackTrace != null)
+                {
+                    length += Environment.NewLineConst.Length + stackTrace.Length;
+                }
+            }
+
+            // Create the string
+            string result = string.FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+
+            // Fill it in
+            Write(className, ref resultSpan);
             if (!string.IsNullOrEmpty(message))
             {
-                s += ": " + message;
+                Write(": ", ref resultSpan);
+                Write(message, ref resultSpan);
             }
-
             if (_innerException != null)
             {
-                s += Environment.NewLineConst + InnerExceptionPrefix + _innerException.ToString() + Environment.NewLineConst + "   " + SR.Exception_EndOfInnerExceptionStack;
+                Write(Environment.NewLineConst, ref resultSpan);
+                Write(InnerExceptionPrefix, ref resultSpan);
+                Write(innerExceptionString, ref resultSpan);
+                Write(Environment.NewLineConst, ref resultSpan);
+                Write("   ", ref resultSpan);
+                Write(endOfInnerExceptionResource, ref resultSpan);
             }
-
-            string? stackTrace = StackTrace;
             if (stackTrace != null)
             {
-                s += Environment.NewLineConst + stackTrace;
+                Write(Environment.NewLineConst, ref resultSpan);
+                Write(stackTrace, ref resultSpan);
             }
+            Debug.Assert(resultSpan.Length == 0);
 
-            return s;
+            // Return it
+            return result;
+
+            static void Write(string source, ref Span<char> dest)
+            {
+                source.AsSpan().CopyTo(dest);
+                dest = dest.Slice(source.Length);
+            }
         }
 
         protected event EventHandler<SafeSerializationEventArgs>? SerializeObjectState
