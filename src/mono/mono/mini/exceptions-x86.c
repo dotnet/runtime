@@ -27,6 +27,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-state.h>
 
 #include "mini.h"
 #include "mini-x86.h"
@@ -64,8 +65,8 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 		return (*mono_old_win_toplevel_exception_filter)(ep);
 	}
 #endif
-
-	mono_handle_native_crash ("SIGSEGV", NULL, NULL);
+	if (mono_dump_start ())
+		mono_handle_native_crash ("SIGSEGV", NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -1137,7 +1138,10 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	if (!ji) {
 		MonoContext mctx;
 		mono_sigctx_to_monoctx (sigctx, &mctx);
-		mono_handle_native_crash ("SIGSEGV", &mctx, siginfo);
+		if (mono_dump_start ())
+			mono_handle_native_crash ("SIGSEGV", &mctx, siginfo);
+		else
+			abort ();
 	}
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.

@@ -197,6 +197,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\refcount.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\w32api.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-state.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-state.h" />
   </ItemGroup>
   <ItemGroup Label="libmonoutilsinclude_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />

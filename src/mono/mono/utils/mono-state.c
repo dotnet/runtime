@@ -8,11 +8,13 @@
  * (C) 2018 Microsoft, Inc.
  *
  */
-#ifndef DISABLE_CRASH_REPORTING
-
 #include <config.h>
 #include <glib.h>
 #include <mono/utils/mono-state.h>
+#include <mono/utils/atomic.h>
+
+#ifndef DISABLE_CRASH_REPORTING
+
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-config-dirs.h>
@@ -1152,3 +1154,17 @@ mono_crash_dump (const char *jsonFile, MonoStackHash *hashes)
 }
 
 #endif // DISABLE_CRASH_REPORTING
+
+static volatile int32_t dump_status;
+
+gboolean
+mono_dump_start (void)
+{
+	return (mono_atomic_xchg_i32(&dump_status, 1) == 0);  // return true if we started the dump
+}
+
+gboolean
+mono_dump_complete (void)
+{
+	return (mono_atomic_xchg_i32(&dump_status, 0) == 1);  // return true if we completed the dump
+}
