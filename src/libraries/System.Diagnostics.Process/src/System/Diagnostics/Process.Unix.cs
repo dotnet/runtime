@@ -809,7 +809,7 @@ namespace System.Diagnostics
 
         private static string GetNextArgument(string arguments, ref int i)
         {
-            var currentArgument = StringBuilderCache.Acquire();
+            var currentArgument = new ValueStringBuilder(stackalloc char[256]);
             bool inQuotes = false;
 
             while (i < arguments.Length)
@@ -883,7 +883,7 @@ namespace System.Diagnostics
                 i++;
             }
 
-            return StringBuilderCache.GetStringAndRelease(currentArgument);
+            return currentArgument.ToString();
         }
 
         /// <summary>Gets the wait state for this Process object.</summary>
