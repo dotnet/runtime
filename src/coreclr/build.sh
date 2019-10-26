@@ -818,6 +818,16 @@ while :; do
             __ClangMinorVersion=
             ;;
 
+        clang8|-clang8)
+            __ClangMajorVersion=8
+            __ClangMinorVersion=
+            ;;
+
+        clang9|-clang9)
+            __ClangMajorVersion=9
+            __ClangMinorVersion=
+            ;;
+
         gcc5|-gcc5)
             __GccMajorVersion=5
             __GccMinorVersion=
