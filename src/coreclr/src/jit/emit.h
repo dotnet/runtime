@@ -1212,9 +1212,9 @@ protected:
     }; // End of  struct instrDesc
 
 #if defined(_TARGET_XARCH_)
-    insFormat emitter::getMemoryOperation(instrDesc* id);
+    insFormat getMemoryOperation(instrDesc* id);
 #elif defined(_TARGET_ARM64_)
-    void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+    void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
