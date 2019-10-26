@@ -507,6 +507,9 @@ typedef void (*MonoFreeDomainFunc) (MonoDomain *domain);
 void
 mono_install_free_domain_hook (MonoFreeDomainFunc func);
 
+void
+mono_runtime_quit_internal (void);
+
 void 
 mono_cleanup (void);
 

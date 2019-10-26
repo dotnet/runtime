@@ -121,7 +121,7 @@ mono_runtime_try_shutdown (void)
 	/*TODO move the follow to here:
 	mono_thread_suspend_all_other_threads (); OR  mono_thread_wait_all_other_threads
 
-	mono_runtime_quit ();
+	mono_runtime_quit_internal ();
 	*/
 
 	return TRUE;

@@ -547,8 +547,26 @@ mono_install_runtime_cleanup (MonoDomainFunc func)
  * mono_runtime_quit:
  */
 void
-mono_runtime_quit ()
+mono_runtime_quit (void)
 {
+	MONO_STACKDATA (dummy);
+	(void) mono_threads_enter_gc_unsafe_region_unbalanced_internal (&dummy);
+	// after quit_function (in particular, mini_cleanup) everything is
+	// cleaned up so MONO_EXIT_GC_UNSAFE can't work and doesn't make sense.
+	
+	mono_runtime_quit_internal ();
+}
+
+/**
+ * mono_runtime_quit_internal:
+ */
+void
+mono_runtime_quit_internal (void)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	// but note that when we return, we're not in GC Unsafe mode anymore.
+	// After clean up threads don't _have_ a thread state anymore.
+	
 	if (quit_function != NULL)
 		quit_function (mono_get_root_domain (), NULL);
 }

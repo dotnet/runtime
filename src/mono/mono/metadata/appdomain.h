@@ -49,7 +49,7 @@ mono_runtime_cleanup       (MonoDomain *domain);
 MONO_API void
 mono_install_runtime_cleanup (MonoDomainFunc func);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_runtime_quit (void);
 
 MONO_API void
