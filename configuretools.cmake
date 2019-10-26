@@ -1,6 +1,6 @@
 # Get the version of the compiler that is in the file name for tool location.
 set (CLR_CMAKE_COMPILER_FILE_NAME_VERSION "")
-if (CMAKE_C_COMPILER MATCHES "-?[0-9]+\.?[0-9]+$")
+if (CMAKE_C_COMPILER MATCHES "-?[0-9]+(\.[0-9]+)?$")
   set(CLR_CMAKE_COMPILER_FILE_NAME_VERSION "${CMAKE_MATCH_0}")
 endif()
 

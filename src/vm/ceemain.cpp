@@ -509,7 +509,7 @@ void InitGSCookie()
     }
     CONTRACTL_END;
 
-    GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
+    volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_PAL
     // On Unix, the GS cookie is stored in a read only data segment
