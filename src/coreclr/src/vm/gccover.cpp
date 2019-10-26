@@ -1769,7 +1769,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #endif // !_TARGET_AMD64_ || !PLATFORM_UNIX
     }
 
-    FrameWithCookie<GCFrame> gcFrame;
+    GCFrame gcFrame;
     if (numberOfRegs != 0)
     {
         _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
@@ -1825,8 +1825,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             _ASSERTE(!"Not expected multi reg return with pointers.");
 #endif // !_TARGET_AMD64_ || !PLATFORM_UNIX   
         }
-
-        gcFrame.Pop();
     }
 
 #if !defined(USE_REDIRECT_FOR_GCSTRESS)

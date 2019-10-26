@@ -1319,6 +1319,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -7984,25 +7985,6 @@ void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
 
     // Make the actual call.
     propSet.Call_RetArgSlot(pNewArgs);
-}
-
-void Thread::SetHasPromotedBytes ()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    m_fPromoted = TRUE;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress()  && IsGCThread ());
-
-    if (!m_fPreemptiveGCDisabled)
-    {
-        if (FRAME_TOP == GetFrame())
-            m_fPromoted = FALSE;
-    }
 }
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
