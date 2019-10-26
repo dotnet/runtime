@@ -138,6 +138,7 @@ typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
 typedef VPTR(class Frame)               PTR_Frame;
+typedef VPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;
 typedef VPTR(struct IUnknown)           PTR_IUnknown;

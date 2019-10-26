@@ -25,8 +25,6 @@ class EHClauseInfo;
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
-typedef DPTR(PTR_Frame)                 PTR_PTR_Frame;
-
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
 // Since we have two different implementations, this class is needed to unify 
@@ -160,24 +158,12 @@ public:
     }
 #else
     ExInfo                  m_currentExInfo;
-    PTR_PTR_Frame           m_ppBottomFrameDuringUnwind;
 public:
     PTR_ExInfo                 GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return PTR_ExInfo(PTR_HOST_MEMBER_TADDR(ThreadExceptionState, this, m_currentExInfo));
     }
-
-    PTR_PTR_Frame GetPtrToBottomFrameDuringUnwind()
-    {
-        return m_ppBottomFrameDuringUnwind;
-    }
-
-    void SetPtrToBottomFrameDuringUnwind(PTR_PTR_Frame framePtr)
-    {
-        m_ppBottomFrameDuringUnwind = framePtr;
-    }
-
 #endif
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
