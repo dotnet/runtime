@@ -23,16 +23,16 @@ namespace System.IO.MemoryMappedFiles.Tests
         protected static string CreateUniqueWhitespaceMapName()
         {
             var data = Guid.NewGuid().ToByteArray();
-            var sb = StringBuilderCache.Acquire(data.Length * 4);
+            Span<char> s = stackalloc char[data.Length * 4];
             for (int i = 0; i < data.Length; i++)
             {
                 byte b = data[i];
-                sb.Append(s_fourWhitespaceCharacters[b & 0x3]);
-                sb.Append(s_fourWhitespaceCharacters[(b & 0xC) >> 2]);
-                sb.Append(s_fourWhitespaceCharacters[(b & 0x30) >> 4]);
-                sb.Append(s_fourWhitespaceCharacters[(b & 0xC0) >> 6]);
+                s[i] = s_fourWhitespaceCharacters[b & 0x3];
+                s[i + 1] = s_fourWhitespaceCharacters[(b & 0xC) >> 2];
+                s[i + 2] = s_fourWhitespaceCharacters[(b & 0x30) >> 4];
+                s[i + 3] = s_fourWhitespaceCharacters[(b & 0xC0) >> 6];
             }
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return new string(s);
         }
 
         /// <summary>An array of four whitespace characters.</summary>

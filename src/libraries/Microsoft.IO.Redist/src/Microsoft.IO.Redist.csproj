@@ -64,7 +64,6 @@
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.cs" Link="Common\CoreLib\System\IO\PathInternal.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs" Link="Common\CoreLib\System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs" Link="Common\CoreLib\System\IO\Win32Marshal.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs" Link="Common\CoreLib\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs" Link="Common\CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs" Link="Common\Interop\Windows\Interop.EncryptDecrypt.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
