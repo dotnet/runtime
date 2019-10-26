@@ -331,9 +331,6 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
     if (vptr == HelperMethodFrame::GetMethodFrameVPtr())
         return true;
 
-    if (vptr == GCFrame::GetMethodFrameVPtr())
-        return true;
-
     if (vptr == DebuggerSecurityCodeMarkFrame::GetMethodFrameVPtr())
         return true;
 
@@ -908,6 +905,35 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     Init(pThread, pObjRefs, numObjRefs, maybeInterior);
 }
 
+GCFrame::~GCFrame()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
+    // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
+    BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+    if (!wasCoop)
+    {
+        m_pCurThread->DisablePreemptiveGC();
+    }
+
+    // When the frame is destroyed, make sure it is no longer in the
+    // frame chain managed by the Thread.
+
+    Pop();
+
+    if (!wasCoop)
+    {
+        m_pCurThread->EnablePreemptiveGC();
+    }
+}
+
 void GCFrame::Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
 {
     CONTRACTL
@@ -946,9 +972,8 @@ void GCFrame::Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL m
     m_pCurThread    = pThread;
     m_MaybeInterior = maybeInterior;
 
-    Frame::Push(m_pCurThread);
+    Push(m_pCurThread);
 }
-
 
 //
 // GCFrame Object Scanning
@@ -986,6 +1011,31 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 
 #ifndef DACCESS_COMPILE
+
+void GCFrame::Push(Thread *pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    m_Next = pThread->GetGCFrame();
+
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // declared in the same source function. We cannot predict the order
+    // in which the C compiler will lay them out in the stack frame.
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // with multiple Frames in mscorwks.dll
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a GCFrame out of order ?");
+
+    pThread->SetGCFrame(this);
+}
+
 //--------------------------------------------------------------------
 // Pops the GCFrame and cancels the GC protection.
 //--------------------------------------------------------------------
@@ -993,117 +1043,17 @@ VOID GCFrame::Pop()
 {
     WRAPPER_NO_CONTRACT;
 
-    Frame::Pop(m_pCurThread);
+    _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
+
+    m_pCurThread->SetGCFrame(m_Next);
+    m_Next = NULL;
+
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
 }
-
-#ifndef CROSSGEN_COMPILE
-// GCFrame destructor removes the GCFrame from the current thread's explicit frame list.
-// This prevents issues in functions that have HELPER_METHOD_FRAME_BEGIN / END around 
-// GCPROTECT_BEGIN / END and where the C++ compiler places some local variables over 
-// the stack location of the GCFrame local variable after the variable goes out of scope. 
-GCFrame::~GCFrame()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_Next != NULL)
-    {
-        // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
-        // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
-        if (!wasCoop)
-        {
-            m_pCurThread->DisablePreemptiveGC();
-        }
-
-        // When the frame is destroyed, make sure it is no longer in the
-        // frame chain managed by the Thread.
-
-        Pop();
-
-#ifndef FEATURE_PAL
-
-        PTR_Frame frame = NULL;
-
-#ifdef FEATURE_EH_FUNCLETS
-        PTR_ExceptionTracker pCurrentTracker = m_pCurThread->GetExceptionState()->GetCurrentExceptionTracker();
-        if (pCurrentTracker != NULL)
-        {
-            frame = pCurrentTracker->GetInitialExplicitFrame();
-        }
-#else
-        PTR_PTR_Frame ptrToInitialFrame = m_pCurThread->GetExceptionState()->GetPtrToBottomFrameDuringUnwind();
-        if (ptrToInitialFrame != NULL)
-        {
-            frame = *ptrToInitialFrame;
-            if (frame == this)
-            {
-                // The current frame that was just popped was the bottom frame used
-                // as an initial frame to scan stack frames.
-                // Update the bottom frame pointer to point to the first valid frame.
-                *ptrToInitialFrame = m_pCurThread->m_pFrame;
-            }
-        }
-#endif // FEATURE_EH_FUNCLETS
-
-        if (frame != NULL)
-        {
-            // There is an initial explicit frame, so we need to scan the explicit frame chain starting at
-            // that frame to see if the current frame that is being destroyed was on the chain.
-
-            while ((frame != FRAME_TOP) && (frame != this))
-            {
-                PTR_Frame nextFrame = frame->PtrNextFrame();
-                if (nextFrame == this)
-                {
-                    // Repair frame chain from the initial explicit frame to the current frame,
-                    // skipping the current GCFrame that was destroyed
-                    frame->m_Next = m_pCurThread->m_pFrame;
-                    break;
-                }
-                frame = nextFrame;
-                _ASSERTE(frame != NULL);
-            }
-        }
-#endif // !FEATURE_PAL
-
-        if (!wasCoop)
-        {
-            m_pCurThread->EnablePreemptiveGC();
-        }
-    }
-}
-
-ExceptionFilterFrame::~ExceptionFilterFrame()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_Next != NULL)
-    {
-        GCX_COOP();
-        // When the frame is destroyed, make sure it is no longer in the
-        // frame chain managed by the Thread.
-        Pop();
-    }
-}
-
-#endif // !CROSSGEN_COMPILE
 
 #ifdef FEATURE_INTERPRETER
 // Methods of IntepreterFrame.
@@ -1170,6 +1120,17 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE ();
     IsProtectedByGCFrameStruct d = {ppObjectRef, 0};
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
+
+    GCFrame* pGCFrame = GetThread()->GetGCFrame();
+    while (pGCFrame != NULL)
+    {
+        if (pGCFrame->Protects(ppObjectRef)) {
+            d.count++;
+        }
+
+        pGCFrame = pGCFrame->PtrNextFrame();
+    }
+
     if (d.count > 1) {
         _ASSERTE(!"Multiple GCFrames protecting the same pointer. This will cause GC corruption!");
     }

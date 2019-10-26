@@ -35,8 +35,6 @@ ThreadExceptionState::ThreadExceptionState()
 {
 #ifdef FEATURE_EH_FUNCLETS
     m_pCurrentTracker = NULL;
-#else
-    m_ppBottomFrameDuringUnwind = NULL;
 #endif // FEATURE_EH_FUNCLETS
 
     m_flag = TEF_None;

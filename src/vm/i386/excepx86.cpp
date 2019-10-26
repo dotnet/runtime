@@ -554,14 +554,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(EXCEPTION_REGISTRATION_REC
     LOG((LF_EH|LF_CORDB, LL_INFO100, "\t\t: pFunc is 0x%X\n", tct.pFunc));
     LOG((LF_EH|LF_CORDB, LL_INFO100, "\t\t: pStack is 0x%X\n", tct.pStack));
 
-    _ASSERTE(pExState->GetPtrToBottomFrameDuringUnwind() == NULL);
-    pExState->SetPtrToBottomFrameDuringUnwind(&tct.pBottomFrame);
-
     CallRtlUnwindSafe(pEstablisherFrame, RtlUnwindCallback, pExceptionRecord, 0);
-
-    _ASSERTE(pExState->GetPtrToBottomFrameDuringUnwind() == &tct.pBottomFrame);
-    _ASSERTE(*pExState->GetPtrToBottomFrameDuringUnwind() == tct.pBottomFrame);
-    pExState->SetPtrToBottomFrameDuringUnwind(NULL);
 
     ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
     if (pExInfo->m_ValidInterceptionContext)
@@ -1241,16 +1234,8 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: handler found: %s\n", tct.pFunc->m_pszDebugMethodName));
 
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    _ASSERTE(pExState->GetPtrToBottomFrameDuringUnwind() == NULL);
-    pExState->SetPtrToBottomFrameDuringUnwind(&tct.pBottomFrame);
-
     CallRtlUnwindSafe(pEstablisherFrame, RtlUnwindCallback, pExceptionRecord, 0);
     // on x86 at least, RtlUnwind always returns
-
-    _ASSERTE(pExState->GetPtrToBottomFrameDuringUnwind() == &tct.pBottomFrame);
-    _ASSERTE(*pExState->GetPtrToBottomFrameDuringUnwind() == tct.pBottomFrame);
-    pExState->SetPtrToBottomFrameDuringUnwind(NULL);
 
     // The CallRtlUnwindSafe could have popped the explicit frame that the tct.pBottomFrame points to (UMThunkPrestubHandler
     // does that). In such case, the tct.pBottomFrame needs to be updated to point to the first valid explicit frame.

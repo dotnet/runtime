@@ -91,8 +91,6 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
-    pThread->SetHasPromotedBytes();
-
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
     if ((pTopFrame != ((Frame*)-1))
@@ -146,6 +144,13 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+    }
+
+    GCFrame* pGCFrame = pThread->GetGCFrame();
+    while (pGCFrame != NULL)
+    {
+        pGCFrame->GcScanRoots(fn, sc);
+        pGCFrame = pGCFrame->PtrNextFrame();
     }
 }
 
