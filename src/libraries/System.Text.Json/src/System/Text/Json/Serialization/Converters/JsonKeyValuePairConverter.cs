@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
             return (generic == typeof(KeyValuePair<,>));
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.JsonKeyValuePairConverter`2", "System.Text.Json")]
+        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.JsonKeyValuePairConverter`2")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             Type keyType = type.GetGenericArguments()[0];
