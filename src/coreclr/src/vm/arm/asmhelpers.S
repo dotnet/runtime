@@ -1120,10 +1120,10 @@ LOCAL_LABEL(ThrowIndexOutOfRangeException):
     CHECK_STACK_ALIGNMENT 
 
     // allow in case val can be casted to array element type
-    // call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    // call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     r1, r12 // array->GetArrayElementTypeHandle()
     mov     r0, r2
-    bl      C_FUNC(ObjIsInstanceOfNoGC)
+    bl      C_FUNC(ObjIsInstanceOfCached)
     cmp     r0, TypeHandle_CanCast 
     beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
 

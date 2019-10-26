@@ -2781,7 +2781,7 @@ void PackArgumentArray(DebuggerEval *pDE,
                     TypeHandle thFrom = TypeHandle(pMT);
                     TypeHandle thTarget = TypeHandle(pDE->m_md->GetMethodTable());
                     //<TODO> What about MaybeCast?</TODO>
-                    if (thFrom.CanCastToNoGC(thTarget) == TypeHandle::CannotCast)
+                    if (thFrom.CanCastToCached(thTarget) == TypeHandle::CannotCast)
                     {
                         COMPlusThrow(kArgumentException, W("Argument_CORDBBadMethod"));
                     }

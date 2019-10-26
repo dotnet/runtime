@@ -29,6 +29,7 @@
 #include "peimagelayout.inl"
 #include "eventtrace.h"
 #include "invokeutil.h"
+#include "castcache.h"
 
 BOOL QCALLTYPE MdUtf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -1360,31 +1361,40 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
     TypeHandle fromHandle = refType->GetType();
     TypeHandle toHandle = refTarget->GetType();
 
-    BOOL iRetVal = 0;
-
-    TypeHandle::CastResult r = fromHandle.CanCastToNoGC(toHandle);
-    if (r == TypeHandle::MaybeCast)
+    TypeHandle::CastResult r = fromHandle.CanCastToCached(toHandle);
+    if (r != TypeHandle::MaybeCast)
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
-        iRetVal = fromHandle.CanCastTo(toHandle);
-        HELPER_METHOD_FRAME_END();
-    }
-    else
-    {
-        iRetVal = (r == TypeHandle::CanCast);
+        FC_RETURN_BOOL((BOOL)r);
     }
 
-    // We allow T to be cast to Nullable<T>
-    if (!iRetVal && Nullable::IsNullableType(toHandle) && !fromHandle.IsTypeDesc())
+    BOOL iRetVal;
+    HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
-        if (Nullable::IsNullableForType(toHandle, fromHandle.AsMethodTable())) 
+        // We allow T to be cast to Nullable<T>
+        if (!fromHandle.IsTypeDesc() && Nullable::IsNullableForType(toHandle, fromHandle.AsMethodTable()))
         {
+            // do not put this in the cache (see TypeHandle::CanCastTo and ObjIsInstanceOfCore). 
             iRetVal = TRUE;
         }
-        HELPER_METHOD_FRAME_END();
+        else
+        {
+            if (fromHandle.IsTypeDesc())
+            {
+                iRetVal = fromHandle.AsTypeDesc()->CanCastTo(toHandle, /* pVisited */ NULL);
+            }
+            else if (toHandle.IsTypeDesc())
+            {
+                iRetVal = FALSE;
+                CastCache::TryAddToCache(fromHandle, toHandle, FALSE);
+            }
+            else
+            {
+                iRetVal = fromHandle.AsMethodTable()->CanCastToClassOrInterface(toHandle.AsMethodTable(), /* pVisited */ NULL);
+            }
+        }
     }
-        
+    HELPER_METHOD_FRAME_END();
+
     FC_RETURN_BOOL(iRetVal);
 }
 FCIMPLEND

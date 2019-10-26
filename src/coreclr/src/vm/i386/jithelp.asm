@@ -1294,7 +1294,7 @@ ret
 _JIT_PatchedCodeEnd@0 endp
 
 ; This is the ASM portion of JIT_IsInstanceOfInterface.  For all the bizarre cases, it quickly
-; fails and falls back on the JITutil_IsInstanceOfAny helper.  So all failure cases take
+; fails and falls back on the JITutil_IsInstanceOfInterface helper.  So all failure cases take
 ; the slow path, too.
 ;
 ; ARGUMENT_REG1 = array or interface to check for.
