@@ -859,7 +859,8 @@ namespace System.IO
             //  C:\Foo\Bar C:\Bar\Bar L3, S2 -> ..\..\Bar\Bar
             //  C:\Foo\Foo C:\Foo\Bar L7, S1 -> ..\Bar
 
-            StringBuilder sb = StringBuilderCache.Acquire(Math.Max(relativeTo.Length, path.Length));
+            var sb = new ValueStringBuilder(stackalloc char[260]);
+            sb.EnsureCapacity(Math.Max(relativeTo.Length, path.Length));
 
             // Add parent segments for segments past the common on the "from" path
             if (commonLength < relativeToLength)
@@ -894,10 +895,10 @@ namespace System.IO
                     sb.Append(DirectorySeparatorChar);
                 }
 
-                sb.Append(path, commonLength, differenceLength);
+                sb.Append(path.AsSpan(commonLength, differenceLength));
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
