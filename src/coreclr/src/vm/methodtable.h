@@ -1972,30 +1972,14 @@ public:
     //-------------------------------------------------------------------
     // CASTING
     // 
-    // There are two variants of each of these methods:
-    //
-    // CanCastToX
-    // - restore encoded pointers on demand
-    // - might throw, might trigger GC
-    // - return type is boolean (FALSE = cannot cast, TRUE = can cast)
-    //
-    // CanCastToXNoGC
-    // - do not restore encoded pointers on demand
-    // - does not throw, does not trigger GC
-    // - return type is three-valued (CanCast, CannotCast, MaybeCast)
-    // - MaybeCast indicates that the test tripped on an encoded pointer
-    //   so the caller should now call CanCastToXRestoring if it cares
-    // 
     BOOL CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
     BOOL CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
-    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);
-    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT, TypeHandlePairList *pVisited);
+    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);  
+    BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
+    BOOL ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited);
 
-    BOOL CanCastToNonVariantInterface(MethodTable *pTargetMT);
-
-    TypeHandle::CastResult CanCastToInterfaceNoGC(MethodTable *pTargetMT);
-    TypeHandle::CastResult CanCastToClassNoGC(MethodTable *pTargetMT);
-    TypeHandle::CastResult CanCastToClassOrInterfaceNoGC(MethodTable *pTargetMT);
+    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
+    BOOL CanCastToNonVariantInterface(MethodTable* pTargetMT);
 
     // The inline part of equivalence check.
 #ifndef DACCESS_COMPILE

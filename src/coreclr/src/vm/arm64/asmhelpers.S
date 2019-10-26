@@ -1344,10 +1344,10 @@ NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
     PROLOG_SAVE_REG        x2, 32
 
     // allow in case val can be casted to array element type
-    // call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    // call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     x1, x12 // array->GetArrayElementTypeHandle()
     mov     x0, x2
-    bl      C_FUNC(ObjIsInstanceOfNoGC)
+    bl      C_FUNC(ObjIsInstanceOfCached)
     cmp     x0, TypeHandle_CanCast
     beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
 

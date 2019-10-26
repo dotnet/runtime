@@ -36,7 +36,7 @@
     IMPORT DynamicHelperWorker
 #endif
 
-    IMPORT ObjIsInstanceOfNoGC
+    IMPORT ObjIsInstanceOfCached
     IMPORT ArrayStoreCheck
     SETALIAS g_pObjectClass,  ?g_pObjectClass@@3PEAVMethodTable@@EA 
     IMPORT  $g_pObjectClass
@@ -1582,10 +1582,10 @@ ThrowIndexOutOfRangeException
     str     x2, [sp, #32]
 
     ; allow in case val can be casted to array element type
-    ; call ObjIsInstanceOfNoGC(val, array->GetArrayElementTypeHandle())
+    ; call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     x1, x12 ; array->GetArrayElementTypeHandle()
     mov     x0, x2
-    bl      ObjIsInstanceOfNoGC
+    bl      ObjIsInstanceOfCached
     cmp     x0, TypeHandle_CanCast
     beq     DoWrite             ; ObjIsInstance returned TypeHandle::CanCast
 

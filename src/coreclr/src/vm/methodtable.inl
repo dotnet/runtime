@@ -1611,46 +1611,6 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     }
 }
 #endif
-//==========================================================================================
-__forceinline TypeHandle::CastResult MethodTable::CanCastToClassOrInterfaceNoGC(MethodTable *pTargetMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
-    }
-    CONTRACTL_END
-
-    if (pTargetMT->IsInterface())
-        return CanCastToInterfaceNoGC(pTargetMT);
-    else
-        return CanCastToClassNoGC(pTargetMT);
-}
-
-//==========================================================================================
-inline BOOL MethodTable::CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
-        PRECONDITION(IsRestored_NoLogging());
-    }
-    CONTRACTL_END
-
-    if (pTargetMT->IsInterface())
-        return CanCastToInterface(pTargetMT, pVisited);
-    else
-        return CanCastToClass(pTargetMT, pVisited);
-}
 
 //==========================================================================================
 FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)

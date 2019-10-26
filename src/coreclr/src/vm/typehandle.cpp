@@ -15,6 +15,8 @@
 #include "typestring.h"
 #include "classloadlevel.h"
 #include "array.h"
+#include "castcache.h"
+
 #ifdef FEATURE_PREJIT 
 #include "zapsig.h"
 #endif
@@ -644,6 +646,7 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
 
         LOADS_TYPE(CLASS_DEPENDENCIES_LOADED);
@@ -651,32 +654,56 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
     CONTRACTL_END
 
     if (*this == type)
-        return(true);
+        return true;
 
-    if (IsTypeDesc())
-        return AsTypeDesc()->CanCastTo(type, pVisited);
-                
-    if (type.IsTypeDesc())
-        return(false);
+    if (!IsTypeDesc() && type.IsTypeDesc())
+        return false;
+        
+    {
+        GCX_COOP();
 
-    return AsMethodTable()->CanCastToClassOrInterface(type.AsMethodTable(), pVisited);
+        TypeHandle::CastResult result = CastCache::TryGetFromCache(*this, type);
+        if (result != TypeHandle::MaybeCast)
+        {
+            return (BOOL)result;
+        }
+
+        if (IsTypeDesc())
+            return AsTypeDesc()->CanCastTo(type, pVisited);
+
+#ifndef CROSSGEN_COMPILE
+        // we check nullable case first because it is not cacheable.
+        // object castability and type castability disagree on T --> Nullable<T>, 
+        // so we can't put this in the cache
+        if (Nullable::IsNullableForType(type, AsMethodTable()))
+        {
+            // do not allow type T to be cast to Nullable<T>
+            return FALSE;
+        }
+#endif  //!CROSSGEN_COMPILE
+
+        return AsMethodTable()->CanCastToClassOrInterface(type.AsMethodTable(), pVisited);
+    }
 }
 
 #include <optsmallperfcritical.h>
-TypeHandle::CastResult TypeHandle::CanCastToNoGC(TypeHandle type)  const
+TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     if (*this == type)
-        return(CanCast);
+        return CanCast;
 
-    if (IsTypeDesc())
-        return AsTypeDesc()->CanCastToNoGC(type);
-                
-    if (type.IsTypeDesc())
-        return(CannotCast);
+    if (!IsTypeDesc() && type.IsTypeDesc())
+        return CannotCast;
 
-    return AsMethodTable()->CanCastToClassOrInterfaceNoGC(type.AsMethodTable());
+    return CastCache::TryGetFromCache(*this, type);
 }
 #include <optdefault.h>
 
@@ -781,18 +808,24 @@ TypeHandle TypeHandle::MergeTypeHandlesToCommonParent(TypeHandle ta, TypeHandle 
     {
         if (tb.IsArray())
             return MergeArrayTypeHandlesToCommonParent(ta, tb);
-        else if (tb.IsInterface())
+
+        if (tb.IsInterface() && tb.HasInstantiation())
         {
             //Check to see if we can merge the array to a common interface (such as Derived[] and IList<Base>)
-            if (ArraySupportsBizarreInterface(ta.AsArray(), tb.AsMethodTable()))
+            if (ta.AsArray()->ArraySupportsBizarreInterface(tb.AsMethodTable(), /* pVisited */ NULL))
                 return tb;
         }
+
         ta = TypeHandle(g_pArrayClass);         // keep merging from here. 
     }
     else if (tb.IsArray())
     {
-        if (ta.IsInterface() && ArraySupportsBizarreInterface(tb.AsArray(), ta.AsMethodTable()))
-            return ta;
+        if (ta.IsInterface() && ta.HasInstantiation())
+        {
+            //Check to see if we can merge the array to a common interface (such as Derived[] and IList<Base>)
+            if (tb.AsArray()->ArraySupportsBizarreInterface(ta.AsMethodTable(), /* pVisited */ NULL))
+                return ta;
+        }
 
         tb = TypeHandle(g_pArrayClass);
     }

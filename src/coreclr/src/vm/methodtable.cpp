@@ -61,6 +61,7 @@
 #include "typestring.h"
 #include "typedesc.h"
 #include "array.h"
+#include "castcache.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -1479,15 +1480,10 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
 
     if (!pTargetMT->HasVariance())
     {
-        if (HasTypeEquivalence() || pTargetMT->HasTypeEquivalence())
-        {
-            if (IsInterface() && IsEquivalentTo(pTargetMT))
-                return TRUE;
+        if (IsInterface() && IsEquivalentTo(pTargetMT))
+            return TRUE;
 
-            return ImplementsEquivalentInterface(pTargetMT);
-        }
-
-        return CanCastToNonVariantInterface(pTargetMT);
+        return ImplementsEquivalentInterface(pTargetMT);
     }
     else
     {
@@ -1520,19 +1516,21 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
     }
     CONTRACTL_END
 
-    BOOL returnValue = FALSE;
-
-    EEClass *pClass = NULL;
-
-    TypeHandlePairList pairList(this, pTargetMT, pVisited);
-
-    if (TypeHandlePairList::Exists(pVisited, this, pTargetMT))
-        goto Exit;
-
-    if (GetTypeDefRid() != pTargetMT->GetTypeDefRid() || GetModule() != pTargetMT->GetModule())
+    // shortcut when having same types
+    if (this == pTargetMT)
     {
-        goto Exit;
+        return TRUE;
     }
+
+    if (GetTypeDefRid() != pTargetMT->GetTypeDefRid() || GetModule() != pTargetMT->GetModule() ||
+        TypeHandlePairList::Exists(pVisited, this, pTargetMT))
+    {
+        return FALSE;
+    }
+
+    EEClass* pClass = NULL;
+    TypeHandlePairList pairList(this, pTargetMT, pVisited);
+    BOOL returnValue = FALSE;
 
     {
         pClass = pTargetMT->GetClass();
@@ -1658,73 +1656,107 @@ BOOL MethodTable::CanCastToNonVariantInterface(MethodTable *pTargetMT)
 }
 
 //==========================================================================================
-TypeHandle::CastResult MethodTable::CanCastToInterfaceNoGC(MethodTable *pTargetMT)
+BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(pTargetMT->IsInterface());
+        PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
-    if (!pTargetMT->HasVariance() && !IsArray() && !HasTypeEquivalence() && !pTargetMT->HasTypeEquivalence())
+#ifndef CROSSGEN_COMPILE
+    // we cannot cache T --> Nullable<T> here since result is contextual.
+    // callers should have handled this already according to their rules.
+    _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
+#endif // CROSSGEN_COMPILE
+
+    BOOL result = pTargetMT->IsInterface() ?
+                                CanCastToInterface(pTargetMT, pVisited) :
+                                CanCastToClass(pTargetMT, pVisited);
+
+    // We only consider type-based conversion rules here.
+    // Therefore a negative result cannot rule out convertibility for ICastable and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable())))
     {
-        return CanCastToNonVariantInterface(pTargetMT) ? TypeHandle::CanCast : TypeHandle::CannotCast;
+        CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }
-    else
-    {
-        // We're conservative on variant interfaces and types with equivalence
-        return TypeHandle::MaybeCast;
-    }
+
+    return result;
 }
 
 //==========================================================================================
-TypeHandle::CastResult MethodTable::CanCastToClassNoGC(MethodTable *pTargetMT)
+BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable * pInterfaceMT, TypeHandlePairList* pVisited)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
-        PRECONDITION(!pTargetMT->IsInterface());
-    }
-    CONTRACTL_END
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(this->IsArray());
+        PRECONDITION(pInterfaceMT->IsInterface());
+        PRECONDITION(pInterfaceMT->HasInstantiation());
+    } CONTRACTL_END;
 
-    // We're conservative on variant classes
-    if (pTargetMT->HasVariance() || g_IBCLogger.InstrEnabled())
+    // IList<T> & IReadOnlyList<T> only supported for SZ_ARRAYS
+    if (this->IsMultiDimArray() || 
+        !IsImplicitInterfaceOfSZArray(pInterfaceMT))
     {
-        return TypeHandle::MaybeCast;
-    }
-
-    // Type equivalence needs the slow path
-    if (HasTypeEquivalence() || pTargetMT->HasTypeEquivalence())
-    {
-        return TypeHandle::MaybeCast;
+        CastCache::TryAddToCache(this, pInterfaceMT, FALSE);
+        return FALSE;
     }
 
-    // If there are no variant type parameters, just chase the hierarchy
+    BOOL result = TypeDesc::CanCastParam(this->GetApproxArrayElementTypeHandle(), pInterfaceMT->GetInstantiation()[0], pVisited);
+
+    CastCache::TryAddToCache(this, pInterfaceMT, (BOOL)result);
+    return result;
+}
+
+BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(this->IsArray());
+        PRECONDITION(toTypeHnd.IsArray());
+    } CONTRACTL_END;
+
+    ArrayTypeDesc* toArrayType = toTypeHnd.AsArray();
+
+    // GetRank touches EEClass. Try to avoid it for SZArrays.
+    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    {
+        if (this->IsMultiDimArray())
+        {
+            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            return TypeHandle::CannotCast;
+        }
+    }
     else
     {
-        PTR_VOID pMT = this;
-
-        do {
-            if (pMT == pTargetMT)
-                return TypeHandle::CanCast;
-
-            pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-        } while (pMT);
+        if (this->GetRank() != toArrayType->GetRank())
+        {
+            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            return TypeHandle::CannotCast;
+        }
     }
+    _ASSERTE(this->GetRank() == toArrayType->GetRank());
 
-    return TypeHandle::CannotCast;
+    TypeHandle elementTypeHandle = this->GetApproxArrayElementTypeHandle();
+    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
+
+    BOOL result = (elementTypeHandle == toElementTypeHandle) ||
+        TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);
+
+    CastCache::TryAddToCache(this, toTypeHnd, (BOOL)result);
+    return result;
 }
+
 #include <optdefault.h>
 
 BOOL 
