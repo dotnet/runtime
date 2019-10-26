@@ -282,7 +282,7 @@ namespace System
             if (name.IndexOfAny(SPECIAL_CHARS) < 0)
                 return name;
 
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[64]);
             foreach (char c in name)
             {
                 if (Array.IndexOf<char>(SPECIAL_CHARS, c) >= 0)
@@ -291,7 +291,7 @@ namespace System
                 sb.Append(c);
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         private static SafeTypeNameParserHandle? CreateTypeNameParser(string typeName, bool throwOnError)

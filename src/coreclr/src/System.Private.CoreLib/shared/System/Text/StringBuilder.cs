@@ -1579,8 +1579,8 @@ namespace System.Text
                             FormatError();
                         }
                     }
-                    // Is it a opening brace?
-                    if (ch == '{')
+                    // Is it an opening brace?
+                    else if (ch == '{')
                     {
                         // Check next character (if there is one) to see if it is escaped. eg {{
                         if (pos < len && format[pos] == '{')
@@ -1594,7 +1594,7 @@ namespace System.Text
                             break;
                         }
                     }
-                    // If it neither then treat the character as just text.
+                    // If it's neither then treat the character as just text.
                     Append(ch);
                 }
 
