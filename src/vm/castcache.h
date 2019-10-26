@@ -331,7 +331,7 @@ public:
         return TypeHandle::MaybeCast;
     }
 
-    static void CastCache::Initialize()
+    static void Initialize()
     {
     }
 
