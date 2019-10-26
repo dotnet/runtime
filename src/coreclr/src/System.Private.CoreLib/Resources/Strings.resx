@@ -163,9 +163,6 @@
     <value>(Inner Exception #{0}) </value>
     <comment>This text is prepended to each inner exception description during aggregate exception formatting</comment>
   </data>
-  <data name="AppDomain_AppBaseNotSet" xml:space="preserve">
-    <value>The ApplicationBase must be set before retrieving this property.</value>
-  </data>
   <data name="AppDomain_Name" xml:space="preserve">
     <value>Name:</value>
   </data>
@@ -285,9 +282,6 @@
   </data>
   <data name="Arg_DllNotFoundException" xml:space="preserve">
     <value>Dll was not found.</value>
-  </data>
-  <data name="Arg_DriveNotFoundException" xml:space="preserve">
-    <value>Attempted to access a drive that is not available.</value>
   </data>
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
@@ -427,9 +421,6 @@
   <data name="Arg_InvalidOperationException" xml:space="preserve">
     <value>Operation is not valid due to the current state of the object.</value>
   </data>
-  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
-  </data>
   <data name="Arg_InvalidTypeInRetType" xml:space="preserve">
     <value>The return Type must be a type provided by the runtime.</value>
   </data>
@@ -549,9 +540,6 @@
   </data>
   <data name="Arg_MustBeSingle" xml:space="preserve">
     <value>Object must be of type Single.</value>
-  </data>
-  <data name="Arg_MustBeStatic" xml:space="preserve">
-    <value>Method must be a static method.</value>
   </data>
   <data name="Arg_MustBeString" xml:space="preserve">
     <value>Object must be of type String.</value>
@@ -678,9 +666,6 @@
   </data>
   <data name="Arg_PathEmpty" xml:space="preserve">
     <value>The path is empty.</value>
-  </data>
-  <data name="Arg_PathIllegalUNC_Path" xml:space="preserve">
-    <value>The UNC path '{0}' should be of the form \\\\server\\share.</value>
   </data>
   <data name="Arg_PlatformNotSupported" xml:space="preserve">
     <value>Operation is not supported on this platform.</value>
@@ -834,9 +819,6 @@
   </data>
   <data name="Argument_AlreadyBoundOrSyncHandle" xml:space="preserve">
     <value>'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.</value>
-  </data>
-  <data name="Argument_ArgumentZero" xml:space="preserve">
-    <value>Argument cannot be zero.</value>
   </data>
   <data name="Argument_ArrayGetInterfaceMap" xml:space="preserve">
     <value>Interface maps for generic interfaces on arrays cannot be retrieved.</value>
@@ -1069,9 +1051,6 @@
   <data name="Argument_GlobalFunctionHasToBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
   </data>
-  <data name="Argument_HandleLeak" xml:space="preserve">
-    <value>Cannot pass a GCHandle across AppDomains.</value>
-  </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
   </data>
@@ -1252,9 +1231,6 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
-  <data name="Argument_InvalidRegistryViewCheck" xml:space="preserve">
-    <value>The specified RegistryView value is invalid.</value>
-  </data>
   <data name="Argument_InvalidResourceCultureName" xml:space="preserve">
     <value>The given culture name '{0}' cannot be used to locate a resource file. Resource filenames must consist of only letters, numbers, hyphens or underscores.</value>
   </data>
@@ -1366,20 +1342,11 @@
   <data name="Argument_NeverValidGenericArgument" xml:space="preserve">
     <value>The type '{0}' may not be used as a type argument.</value>
   </data>
-  <data name="Argument_NoDomainManager" xml:space="preserve">
-    <value>The domain manager specified by the host could not be instantiated.</value>
-  </data>
   <data name="Argument_NoEra" xml:space="preserve">
     <value>No Era was supplied.</value>
   </data>
-  <data name="Argument_NoModuleFileExtension" xml:space="preserve">
-    <value>Module file name '{0}' must have file extension.</value>
-  </data>
   <data name="Argument_NoRegionInvariantCulture" xml:space="preserve">
     <value>There is no region associated with the Invariant Culture (Culture ID: 0x7F).</value>
-  </data>
-  <data name="Argument_NotATP" xml:space="preserve">
-    <value>Type must be a TransparentProxy</value>
   </data>
   <data name="Argument_NotAWritableProperty" xml:space="preserve">
     <value>Not a writable property.</value>
@@ -1404,9 +1371,6 @@
   </data>
   <data name="Argument_NotSerializable" xml:space="preserve">
     <value>Argument passed in is not serializable.</value>
-  </data>
-  <data name="Argument_NoUnderlyingCCW" xml:space="preserve">
-    <value>The object has no underlying COM data associated with it.</value>
   </data>
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
@@ -1446,9 +1410,6 @@
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
-  </data>
-  <data name="Argument_PathFormatNotSupported_Path" xml:space="preserve">
-    <value>The format of the path '{0}' is not supported.</value>
   </data>
   <data name="Argument_PreAllocatedAlreadyAllocated" xml:space="preserve">
     <value>'preAllocated' is already in use.</value>
@@ -1578,9 +1539,6 @@
   </data>
   <data name="Argument_UTCOutOfRange" xml:space="preserve">
     <value>The UTC time represented when the offset is applied must be between year 0 and 10,000.</value>
-  </data>
-  <data name="Argument_VerStringTooLong" xml:space="preserve">
-    <value>The unmanaged Version information is too large to persist.</value>
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
@@ -1933,9 +1891,6 @@
   <data name="AssemblyLoadContext_Unload_CannotUnloadIfNotCollectible" xml:space="preserve">
     <value>Cannot unload non-collectible AssemblyLoadContext.</value>
   </data>
-  <data name="AssemblyLoadContext_Unload_AlreadyUnloaded" xml:space="preserve">
-    <value>Unload called on AssemblyLoadContext that is unloading or that was already unloaded.</value>
-  </data>
   <data name="AssemblyLoadContext_Verify_NotUnloading" xml:space="preserve">
     <value>AssemblyLoadContext is unloading or was already unloaded.</value>
   </data>
@@ -1999,20 +1954,11 @@
   <data name="CancellationToken_CreateLinkedToken_TokensIsEmpty" xml:space="preserve">
     <value>No tokens were supplied.</value>
   </data>
-  <data name="CancellationToken_SourceDisposed" xml:space="preserve">
-    <value>The CancellationTokenSource associated with this CancellationToken has been disposed.</value>
-  </data>
   <data name="CancellationTokenSource_Disposed" xml:space="preserve">
     <value>The CancellationTokenSource has been disposed.</value>
   </data>
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
-  </data>
-  <data name="event_SpinLock_FastPathFailed" xml:space="preserve">
-    <value>SpinLock beginning to spin.</value>
-  </data>
-  <data name="event_SpinWait_NextSpinWillYield" xml:space="preserve">
-    <value>Next spin will yield.</value>
   </data>
   <data name="event_TaskCompleted" xml:space="preserve">
     <value>Task {2} completed.</value>
@@ -2173,9 +2119,6 @@
   <data name="EventSource_RecursiveTypeDefinition" xml:space="preserve">
     <value>Recursive type definition is not supported.</value>
   </data>
-  <data name="EventSource_SessionIdError" xml:space="preserve">
-    <value>Bit position in AllKeywords ({0}) must equal the command argument named "EtwSessionKeyword" ({1}).</value>
-  </data>
   <data name="EventSource_StopsFollowStarts" xml:space="preserve">
     <value>An event with stop suffix must follow a corresponding event with a start suffix.</value>
   </data>
@@ -2236,9 +2179,6 @@
   <data name="ExecutionContext_ExceptionInAsyncLocalNotification" xml:space="preserve">
     <value>An exception was not handled in an AsyncLocal&lt;T&gt; notification callback.</value>
   </data>
-  <data name="FieldAccess_InitOnly" xml:space="preserve">
-    <value>InitOnly (aka ReadOnly) fields can only be initialized in the type/instance constructor.</value>
-  </data>
   <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
     <value>Could not resolve assembly '{0}'.</value>
   </data>
@@ -2253,9 +2193,6 @@
   </data>
   <data name="Format_BadBase64Char" xml:space="preserve">
     <value>The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters.</value>
-  </data>
-  <data name="Format_BadBase64CharArrayLength" xml:space="preserve">
-    <value>Invalid length for a Base-64 char array or string.</value>
   </data>
   <data name="Format_BadBoolean" xml:space="preserve">
     <value>String '{0}' was not recognized as a valid Boolean.</value>
@@ -2524,9 +2461,6 @@
   <data name="InvalidOperation_DateTimeParsing" xml:space="preserve">
     <value>Internal Error in DateTime and Calendar operations.</value>
   </data>
-  <data name="InvalidOperation_DebuggerLaunchFailed" xml:space="preserve">
-    <value>Debugger unable to launch.</value>
-  </data>
   <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
     <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
   </data>
@@ -2656,9 +2590,6 @@
   <data name="InvalidOperation_ResourceNotString_Type" xml:space="preserve">
     <value>Resource was of type '{0}' instead of String - call GetObject instead.</value>
   </data>
-  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
-    <value>SetData can only be used to set the value of a given name once.</value>
-  </data>
   <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
     <value>The NoGCRegion mode is in progress.End it and then set a different mode.</value>
   </data>
@@ -2727,9 +2658,6 @@
   </data>
   <data name="InvariantFailed_Cnd" xml:space="preserve">
     <value>Invariant failed: {0}</value>
-  </data>
-  <data name="IO_DriveNotFound_Drive" xml:space="preserve">
-    <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
   </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
@@ -2818,15 +2746,6 @@
   <data name="Lazy_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>
   </data>
-  <data name="Loader_ContextPolicies" xml:space="preserve">
-    <value>Context Policies:</value>
-  </data>
-  <data name="Loader_Name" xml:space="preserve">
-    <value>Name:</value>
-  </data>
-  <data name="Loader_NoContextPolicies" xml:space="preserve">
-    <value>There are no context policies.</value>
-  </data>
   <data name="ManualResetEventSlim_ctor_SpinCountOutOfRange" xml:space="preserve">
     <value>The spinCount argument must be in the range 0 to {0}, inclusive.</value>
   </data>
@@ -2889,9 +2808,6 @@
   </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
     <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
-  </data>
-  <data name="NotImplemented_ResourcesLongerThanInt64Max" xml:space="preserve">
-    <value>Resource files longer than 2^63 bytes are not currently implemented.</value>
   </data>
   <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
     <value>This non-CLS method is not implemented.</value>
@@ -2961,9 +2877,6 @@
   </data>
   <data name="NotSupported_GenericMethod" xml:space="preserve">
     <value>Generic methods with NativeCallableAttribute are not supported.</value>
-  </data>
-  <data name="NotSupported_GlobalMethodSerialization" xml:space="preserve">
-    <value>Serialization of global methods (including implicit serialization via the use of asynchronous delegates) is not supported.</value>
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
@@ -3058,9 +2971,6 @@
   <data name="NotSupported_Type" xml:space="preserve">
     <value>Type is not supported.</value>
   </data>
-  <data name="NotSupported_TypeCannotDeserialized" xml:space="preserve">
-    <value>Direct deserialization of type '{0}' is not supported.</value>
-  </data>
   <data name="NotSupported_TypeNotYetCreated" xml:space="preserve">
     <value>The invoked member is not supported before the type is created.</value>
   </data>
@@ -3093,9 +3003,6 @@
   </data>
   <data name="NotSupported_VoidArray" xml:space="preserve">
     <value>Arrays of System.Void are not supported.</value>
-  </data>
-  <data name="NotSupported_WinRT_PartialTrust" xml:space="preserve">
-    <value>Windows Runtime is not supported in partial trust.</value>
   </data>
   <data name="NotSupported_Writing" xml:space="preserve">
     <value>Accessor does not support writing.</value>
@@ -3135,9 +3042,6 @@
   </data>
   <data name="OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
-  </data>
-  <data name="OutOfMemory_GCHandleMDA" xml:space="preserve">
-    <value>The GCHandle MDA has run out of available cookies.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
@@ -3241,9 +3145,6 @@
   <data name="PlatformNotSupported_ThreadSuspend" xml:space="preserve">
     <value>Thread suspend is not supported on this platform.</value>
   </data>
-  <data name="Policy_CannotLoadSemiTrustAssembliesDuringInit" xml:space="preserve">
-    <value>All assemblies loaded as part of AppDomain initialization must be fully trusted.</value>
-  </data>
   <data name="PostconditionFailed" xml:space="preserve">
     <value>Postcondition failed.</value>
   </data>
@@ -3346,23 +3247,14 @@
   <data name="Serialization_DelegatesNotSupported" xml:space="preserve">
     <value>Serializing delegates is not supported on this platform.</value>
   </data>
-  <data name="Serialization_InsufficientDeserializationState" xml:space="preserve">
-    <value>Insufficient state to deserialize the object. Missing field '{0}'. More information is needed.</value>
-  </data>
   <data name="Serialization_InsufficientState" xml:space="preserve">
     <value>Insufficient state to return the real object.</value>
   </data>
   <data name="Serialization_InvalidData" xml:space="preserve">
     <value>An error occurred while deserializing the object.  The serialized data is corrupt.</value>
   </data>
-  <data name="Serialization_InvalidDelegateType" xml:space="preserve">
-    <value>Cannot serialize delegates over unmanaged function pointers, dynamic methods or methods outside the delegate creator's assembly.</value>
-  </data>
   <data name="Serialization_InvalidEscapeSequence" xml:space="preserve">
     <value>The serialized data contained an invalid escape sequence '\\{0}'.</value>
-  </data>
-  <data name="Serialization_InvalidFieldState" xml:space="preserve">
-    <value>Object fields may not be properly initialized.</value>
   </data>
   <data name="Serialization_InvalidOnDeser" xml:space="preserve">
     <value>OnDeserialization method was called while the object was not being deserialized.</value>
@@ -3375,15 +3267,6 @@
   </data>
   <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
     <value>The keys and values arrays have different sizes.</value>
-  </data>
-  <data name="Serialization_MemberOutOfRange" xml:space="preserve">
-    <value>The deserialized value of the member "{0}" in the class "{1}" is out of range.</value>
-  </data>
-  <data name="Serialization_MemberTypeNotRecognized" xml:space="preserve">
-    <value>Unknown member type.</value>
-  </data>
-  <data name="Serialization_MissField" xml:space="preserve">
-    <value>Field {0} is missing.</value>
   </data>
   <data name="Serialization_MissingDateTimeData" xml:space="preserve">
     <value>Invalid serialized DateTime data. Unable to find 'ticks' or 'dateData'.</value>
@@ -3403,9 +3286,6 @@
   <data name="Serialization_NullKey" xml:space="preserve">
     <value>One of the serialized keys is null.</value>
   </data>
-  <data name="Serialization_NullSignature" xml:space="preserve">
-    <value>The method signature cannot be null.</value>
-  </data>
   <data name="Serialization_OptionalFieldVersionValue" xml:space="preserve">
     <value>Version value must be positive.</value>
   </data>
@@ -3417,12 +3297,6 @@
   </data>
   <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
     <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
-  </data>
-  <data name="Serialization_UnableToFindModule" xml:space="preserve">
-    <value>The given module {0} cannot be found within the assembly {1}.</value>
-  </data>
-  <data name="Serialization_UnknownMember" xml:space="preserve">
-    <value>Cannot get the member '{0}'.</value>
   </data>
   <data name="SpinLock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
@@ -3660,9 +3534,6 @@
   </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
-  </data>
-  <data name="MemoryDisposed" xml:space="preserve">
-    <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
     <value>Release all references before disposing this instance.</value>
