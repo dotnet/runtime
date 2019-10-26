@@ -19,6 +19,9 @@
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
+    </Compile>
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.1'">

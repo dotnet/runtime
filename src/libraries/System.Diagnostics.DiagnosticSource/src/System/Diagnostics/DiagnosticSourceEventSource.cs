@@ -229,7 +229,7 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [Event(4, Keywords = Keywords.Events)]
-        private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(4, SourceName, EventName, Arguments);
         }
@@ -238,7 +238,7 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity
         /// </summary>
         [Event(5, Keywords = Keywords.Events)]
-        private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(5, SourceName, EventName, Arguments);
         }
@@ -247,7 +247,7 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [Event(6, Keywords = Keywords.Events)]
-        private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(6, SourceName, EventName, Arguments);
         }
@@ -256,7 +256,7 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
         [Event(7, Keywords = Keywords.Events)]
-        private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(7, SourceName, EventName, Arguments);
         }
@@ -265,7 +265,7 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(8, SourceName, EventName, Arguments);
         }
@@ -274,7 +274,7 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
@@ -335,13 +335,14 @@ namespace System.Diagnostics
         }
 #endif
 
+        private DiagnosticSourceEventSource()
 #if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        /// <summary>
-        /// This constructor uses EventSourceSettings which is only available on V4.6 and above
-        /// systems.   We use the EventSourceSettings to turn on support for complex types.
-        /// </summary>
-        private DiagnosticSourceEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat) { }
+            // This constructor uses EventSourceSettings which is only available on V4.6 and above
+            // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
+            : base(EventSourceSettings.EtwSelfDescribingEventFormat)
 #endif
+        {
+        }
 
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
@@ -563,19 +564,19 @@ namespace System.Diagnostics
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
                 if (activityName != null && activityName.Contains("Activity"))
                 {
-                    MethodInfo? writeEventMethodInfo = typeof(DiagnosticSourceEventSource).GetTypeInfo().GetDeclaredMethod(activityName);
-                    if (writeEventMethodInfo != null)
+#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
+                    writeEvent = activityName switch
                     {
-                        // This looks up the activityName (which needs to be a name of an event on DiagnosticSourceEventSource
-                        // like Activity1Start and returns that method).   This allows us to have a number of them and this code
-                        // just works.
-                        try
-                        {
-                            writeEvent = (Action<string?, string?, IEnumerable<KeyValuePair<string, string?>>>)
-                                writeEventMethodInfo.CreateDelegate(typeof(Action<string, string, IEnumerable<KeyValuePair<string, string>>>), _eventSource);
-                        }
-                        catch (Exception) { }
-                    }
+                        nameof(Activity1Start) => _eventSource.Activity1Start,
+                        nameof(Activity1Stop) => _eventSource.Activity1Stop,
+                        nameof(Activity2Start) => _eventSource.Activity2Start,
+                        nameof(Activity2Stop) => _eventSource.Activity2Stop,
+                        nameof(RecursiveActivity1Start) => _eventSource.RecursiveActivity1Start,
+                        nameof(RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
+                        _ => null
+                    };
+#endif
+
                     if (writeEvent == null)
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
                 }
@@ -890,6 +891,9 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
+                    [PreserveDependency(".ctor(System.Type)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/EnumeratePropertyFetch`1")]
+                    [PreserveDependency(".ctor(System.Type, System.Reflection.PropertyInfo)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/RefTypedFetchProperty`2")]
+                    [PreserveDependency(".ctor(System.Type, System.Reflection.PropertyInfo)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/ValueTypedFetchProperty`2")]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
