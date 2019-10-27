@@ -48,27 +48,9 @@ typedef DPTR(ICLRPrivBinder) PTR_ICLRPrivBinder;
 //=====================================================================================================================
 namespace CLRPrivBinderUtil
 {
-    //=================================================================================================
-    template <typename ItfT>
-    struct CLRPrivResourceBase :
-        public IUnknownCommon<ICLRPrivResource>
-    {
-        //---------------------------------------------------------------------------------------------
-        STDMETHOD(GetResourceType)(
-            IID *pIID)
-        {
-            LIMITED_METHOD_CONTRACT;
-            if (pIID == nullptr)
-                return E_INVALIDARG;
-            *pIID = __uuidof(ItfT);
-            return S_OK;
-        }
-    };
-
     //=================================================================================================================
     class CLRPrivResourcePathImpl :
-        public IUnknownCommon< ItfBase< CLRPrivResourceBase< ICLRPrivResourcePath > >,
-                               ICLRPrivResourcePath >
+        public IUnknownCommon<ICLRPrivResource, ICLRPrivResourcePath >
     {
     public:
         //---------------------------------------------------------------------------------------------
@@ -78,9 +60,16 @@ namespace CLRPrivBinderUtil
         LPCWSTR GetPath()
         { return m_wzPath; }
 
-        //
-        // ICLRPrivResourcePath methods
-        //
+        //---------------------------------------------------------------------------------------------
+        STDMETHOD(GetResourceType)(
+            IID* pIID)
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (pIID == nullptr)
+                return E_INVALIDARG;
+            *pIID = __uuidof(ICLRPrivResourcePath);
+            return S_OK;
+        }
 
         //---------------------------------------------------------------------------------------------
         STDMETHOD(GetPath)(
@@ -93,25 +82,6 @@ namespace CLRPrivBinderUtil
         NewArrayHolder<WCHAR> m_wzPath;
     };
 
-    //=================================================================================================================
-    class CLRPrivResourceStreamImpl :
-        public IUnknownCommon< ItfBase< CLRPrivResourceBase<ICLRPrivResourceStream > >,
-                               ICLRPrivResourceStream>
-    {
-    public:
-        //---------------------------------------------------------------------------------------------
-        CLRPrivResourceStreamImpl(IStream * pStream);
-
-        //---------------------------------------------------------------------------------------------
-        STDMETHOD(GetStream)(
-            REFIID riid,
-            LPVOID * ppvStream);
-
-    private:
-        //---------------------------------------------------------------------------------------------
-        ReleaseHolder<IStream> m_pStream;
-    };
-    
     //=================================================================================================================
     // Types for WStringList (used in WinRT binders)
     

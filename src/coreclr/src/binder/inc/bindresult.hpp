@@ -35,8 +35,6 @@ namespace BINDER_SPACE
         inline void SetIsContextBound(BOOL fIsContextBound);
         inline BOOL GetIsFirstRequest();
         inline void SetIsFirstRequest(BOOL fIsFirstRequest);
-        inline BOOL GetIsSharable();
-        inline void SetIsSharable(BOOL fIsSharable);
 
         inline void SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound = TRUE);
         inline void SetResult(Assembly *pAssembly);

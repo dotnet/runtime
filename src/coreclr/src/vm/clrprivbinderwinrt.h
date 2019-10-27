@@ -170,7 +170,6 @@ public:
     // the app paths so the WinRT binder will find 3rd party WinMDs.
     HRESULT SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, LPCWSTR pwzAppLocalWinMD);
     // Finds assembly with WinRT type if it is already loaded
-    // Note: This method could implement interface code:ICLRPrivWinRtTypeBinder if it is ever needed
     PTR_Assembly FindAssemblyForTypeIfLoaded(
         PTR_AppDomain pAppDomain, 
         LPCUTF8       szNamespace, 
@@ -307,11 +306,7 @@ public:
 
     //=============================================================================================
     // ICLRPrivAssembly interface methods
-    
-    // Implements interface method code:ICLRPrivAssembly::IsShareable.
-    STDMETHOD(IsShareable)(
-        BOOL * pbIsShareable);
-    
+
     // Implements interface method code:ICLRPrivAssembly::GetAvailableImageTypes.
     STDMETHOD(GetAvailableImageTypes)(
         LPDWORD pdwImageTypes);
@@ -342,7 +337,6 @@ private:
     // This cannot be a holder as there can be a race to assign to it.
     ICLRPrivResource * m_pIResourceNI;
     ReleaseHolder<IBindResult> m_pIBindResult;
-    BOOL m_fShareable;
     Volatile<DWORD> m_dwImageTypes;
     ReleaseHolder<ICLRPrivBinder> m_FallbackBinder;
 };  // class CLRPrivAssemblyWinRT

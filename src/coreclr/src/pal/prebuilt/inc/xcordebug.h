@@ -52,13 +52,6 @@ typedef interface ICorDebugProcess4 ICorDebugProcess4;
 #endif 	/* __ICorDebugProcess4_FWD_DEFINED__ */
 
 
-#ifndef __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__
-#define __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__
-typedef interface ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly;
-
-#endif 	/* __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__ */
-
-
 /* header files for imported files */
 #include "cordebug.h"
 
@@ -167,92 +160,6 @@ EXTERN_C const IID IID_ICorDebugProcess4;
 
 
 #endif 	/* __ICorDebugProcess4_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_INTERFACE_DEFINED__
-#define __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_INTERFACE_DEFINED__
-
-/* interface ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly */
-/* [unique][uuid][local][object] */ 
-
-
-EXTERN_C const IID IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("34B27FB0-A318-450D-A0DD-11B70B21F41D")
-    ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE InvokePauseCallback( void) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE InvokeResumeCallback( void) = 0;
-        
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnlyVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *InvokePauseCallback )( 
-            ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *InvokeResumeCallback )( 
-            ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly * This);
-        
-        END_INTERFACE
-    } ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnlyVtbl;
-
-    interface ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly
-    {
-        CONST_VTBL struct ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnlyVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_InvokePauseCallback(This)	\
-    ( (This)->lpVtbl -> InvokePauseCallback(This) ) 
-
-#define ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_InvokeResumeCallback(This)	\
-    ( (This)->lpVtbl -> InvokeResumeCallback(This) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */
