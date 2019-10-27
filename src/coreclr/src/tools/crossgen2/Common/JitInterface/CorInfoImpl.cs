@@ -885,29 +885,10 @@ namespace Internal.JitInterface
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
 
-        private SimdHelper _simdHelper;
-        private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
+        private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
         {
             TypeDesc type = HandleToObject(classHnd);
-            
-            if (_simdHelper.IsSimdType(type))
-            {
-#if DEBUG
-                // If this is Vector<T>, make sure the codegen and the type system agree on what instructions/registers
-                // we're generating code for.
-
-                CORJIT_FLAGS flags = default(CORJIT_FLAGS);
-                getJitFlags(ref flags, (uint)sizeof(CORJIT_FLAGS));
-
-                Debug.Assert(!_simdHelper.IsVectorOfT(type)
-                    || ((DefType)type).InstanceFieldSize.IsIndeterminate /* This would happen in the ReadyToRun case */
-                    || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, &flags));
-#endif
-
-                return true;
-            }
-
-            return false;
+            return type.IsIntrinsic;
         }
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)

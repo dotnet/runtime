@@ -144,9 +144,8 @@ void expandRawHandleIntrinsic(
 // *pMustExpand tells whether or not JIT must expand the intrinsic.
 CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand = NULL /* OUT */);
 
-// Is the given module the System.Numerics.Vectors module?
-// This defaults to false.
-bool isInSIMDModule(CORINFO_CLASS_HANDLE classHnd); /* { return false; } */
+// Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
+bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd);
 
 // return the unmanaged calling convention for a PInvoke
 CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);

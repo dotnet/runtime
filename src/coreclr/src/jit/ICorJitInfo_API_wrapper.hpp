@@ -140,11 +140,11 @@ CorInfoIntrinsics WrapICorJitInfo::getIntrinsicID(
     return temp;
 }
 
-bool WrapICorJitInfo::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+bool WrapICorJitInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-    API_ENTER(isInSIMDModule);
-    bool temp = wrapHnd->isInSIMDModule(classHnd);
-    API_LEAVE(isInSIMDModule);
+    API_ENTER(isIntrinsicType);
+    bool temp = wrapHnd->isIntrinsicType(classHnd);
+    API_LEAVE(isIntrinsicType);
     return temp;
 }
 

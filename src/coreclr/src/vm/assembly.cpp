@@ -190,22 +190,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     if (!m_pManifest->IsReadyToRun())
         CacheManifestExportedTypes(pamTracker);
 
-
-    // Check for the assemblies that contain SIMD Vector types.
-    // If we encounter a non-trusted assembly with these names, we will simply not recognize any of its
-    // methods as intrinsics.
-    LPCUTF8 assemblyName = GetSimpleName();
-    const int length = sizeof("System.Numerics") - 1;
-    if ((strncmp(assemblyName, "System.Numerics", length) == 0) &&
-        ((assemblyName[length] == '\0') || (strcmp(assemblyName+length, ".Vectors") == 0)))
-    {
-        m_fIsSIMDVectorAssembly = true;
-    }
-    else
-    {
-        m_fIsSIMDVectorAssembly = false;
-    }
-
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
     //  loading it entirely.
     //CacheFriendAssemblyInfo();

@@ -177,10 +177,10 @@ CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method,
     return original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
-// Is the given module the System.Numerics.Vectors module?
-bool interceptor_ICJI::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+// Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
+bool interceptor_ICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-    return original_ICorJitInfo->isInSIMDModule(classHnd);
+    return original_ICorJitInfo->isIntrinsicType(classHnd);
 }
 
 // return the unmanaged calling convention for a PInvoke

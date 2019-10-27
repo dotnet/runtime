@@ -27,7 +27,7 @@ struct JitInterfaceCallbacks
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
-    bool (* isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
+    bool (* isIntrinsicType)(void * thisHandle, CorInfoException** ppException, void* classHnd);
     int (* getUnmanagedCallConv)(void * thisHandle, CorInfoException** ppException, void* method);
     int (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoException** ppException, void* method, void* callSiteSig);
     int (* satisfiesMethodConstraints)(void * thisHandle, CorInfoException** ppException, void* parent, void* method);
@@ -349,10 +349,10 @@ public:
         return _ret;
     }
 
-    virtual bool isInSIMDModule(void* classHnd)
+    virtual bool isIntrinsicType(void* classHnd)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _callbacks->isInSIMDModule(_thisHandle, &pException, classHnd);
+        bool _ret = _callbacks->isIntrinsicType(_thisHandle, &pException, classHnd);
         if (pException != nullptr)
             throw pException;
         return _ret;

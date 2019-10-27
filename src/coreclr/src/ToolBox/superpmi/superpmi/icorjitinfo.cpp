@@ -218,11 +218,11 @@ CorInfoIntrinsics MyICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMu
     return jitInstance->mc->repGetIntrinsicID(method, pMustExpand);
 }
 
-// Is the given module the System.Numerics.Vectors module?
-bool MyICJI::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+// Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
+bool MyICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-    jitInstance->mc->cr->AddCall("isInSIMDModule");
-    return jitInstance->mc->repIsInSIMDModule(classHnd) ? true : false;
+    jitInstance->mc->cr->AddCall("isIntrinsicType");
+    return jitInstance->mc->repIsIntrinsicType(classHnd) ? true : false;
 }
 
 // return the unmanaged calling convention for a PInvoke
