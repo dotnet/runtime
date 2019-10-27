@@ -16,8 +16,6 @@
 
 #include "utils.hpp"
 
-#include <shlwapi.h>
-
 #include "strongname.h"
 #include "corpriv.h"
 
@@ -25,125 +23,14 @@ namespace BINDER_SPACE
 {
     namespace
     {
-        inline BOOL IsPathSeparator(WCHAR wcChar)
-        {
-            // Invariant: Valid only for MutateUrlToPath treated pathes
-            return (wcChar == W('\\'));
-        }
-
         inline const WCHAR *GetPlatformPathSeparator()
         {
 #ifdef PLATFORM_UNIX
             return W("/");
 #else
             return W("\\");
-#endif // PLATFORM_UNIX            
-        }
-
-        inline WCHAR ToPlatformPathSepator(WCHAR wcChar)
-        {
-#ifdef PLATFORM_UNIX
-            if (IsPathSeparator(wcChar))
-            {
-                wcChar = W('/');
-            }
 #endif // PLATFORM_UNIX
-
-            return wcChar;
         }
-
-        inline BOOL IsDoublePathSeparator(SString::CIterator &cur)
-        {
-            return (IsPathSeparator(cur[0]) && IsPathSeparator(cur[1]));
-        }
-
-        bool NeedToRemoveDoubleAndNormalizePathSeparators(SString const &path)
-        {
-#ifdef PLATFORM_UNIX
-            return true;
-#else
-            SString::CIterator begin = path.Begin();
-            SString::CIterator end = path.End();
-            SString::CIterator cur = path.Begin();
-
-            while (cur < end)
-            {
-                if ((cur != begin) && ((cur + 2) < end) && IsDoublePathSeparator(cur))
-                {
-                    return true;
-                }
-
-                cur++;
-            }
-
-            return false;
-#endif
-        }
-
-        void RemoveDoubleAndNormalizePathSeparators(SString &path)
-        {
-            BINDER_LOG_ENTER(W("Utils::RemoveDoubleAndNormalizePathSeparators"));
-
-            SString::Iterator begin = path.Begin();
-            SString::Iterator end = path.End();
-            SString::Iterator cur = path.Begin();
-            PathString resultPath;
-
-            BINDER_LOG_STRING(W("path"), path);
-
-            while (cur < end)
-            {
-                if ((cur != begin) && ((cur + 2) < end) && IsDoublePathSeparator(cur))
-                {
-                    // Skip the doublette
-                    cur++;
-                }
-
-                resultPath.Append(ToPlatformPathSepator(cur[0]));
-                cur++;
-            }
-            
-            BINDER_LOG_STRING(W("resultPath"), resultPath);
-
-            path.Set(resultPath);
-
-            BINDER_LOG_LEAVE(W("Utils::RemoveDoubleAndNormalizePathSeparators"));
-        }
-    }
-
-    HRESULT FileOrDirectoryExists(PathString &path)
-    {
-        HRESULT hr = S_FALSE;
-
-        DWORD dwFileAttributes = WszGetFileAttributes(path.GetUnicode());
-        if (dwFileAttributes == INVALID_FILE_ATTRIBUTES)
-        {
-            hr = HRESULT_FROM_GetLastError();
-
-            if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
-                (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)))
-            {
-                hr = S_FALSE;
-            }
-        }
-        else
-        {
-            hr = S_TRUE;
-        }
-
-        return hr;
-    }
-
-    HRESULT FileOrDirectoryExistsLog(PathString &path)
-    {
-        HRESULT hr = S_FALSE;
-        BINDER_LOG_ENTER(W("Utils::FileOrDirectoryExistsLog"));
-        BINDER_LOG_STRING(W("path"), path);
-        
-        hr = FileOrDirectoryExists(path);
-        
-        BINDER_LOG_LEAVE_HR(W("Utils::FileOrDirectoryExistsLog"), hr);
-        return hr;
     }
 
     void MutateUrlToPath(SString &urlOrPath)
@@ -192,21 +79,6 @@ namespace BINDER_SPACE
 
         BINDER_LOG_STRING(W("Path"), urlOrPath);
         BINDER_LOG_LEAVE(W("Utils::MutateUrlToPath"));
-    }
-
-    void PlatformPath(SString &path)
-    {
-        BINDER_LOG_ENTER(W("Utils::PlatformPath"));
-        BINDER_LOG_STRING(W("input path"), path);
-
-        // Create platform representation
-        MutateUrlToPath(path);
-        if (NeedToRemoveDoubleAndNormalizePathSeparators(path))
-            RemoveDoubleAndNormalizePathSeparators(path);
-
-        BINDER_LOG_STRING(W("platform path"), path);
-
-        BINDER_LOG_LEAVE(W("Utils::PlatformPath"));
     }
 
     void CombinePath(SString &pathA,

@@ -55,8 +55,6 @@ namespace BINDER_SPACE
 {
     namespace
     {
-        BOOL fAssemblyBinderInitialized = FALSE;
-
         //
         // This defines the assembly equivalence relation
         //
@@ -362,19 +360,17 @@ namespace BINDER_SPACE
     /* static */
     HRESULT AssemblyBinder::Startup()
     {
+        STATIC_CONTRACT_NOTHROW;
+
         HRESULT hr = S_OK;
  
-       if (!BINDER_SPACE::fAssemblyBinderInitialized)
-        {
-            g_BinderVariables = new Variables();
-            IF_FAIL_GO(g_BinderVariables->Init());
+        // This should only be called once
+        _ASSERTE(g_BinderVariables == NULL);
+        g_BinderVariables = new Variables();
+        IF_FAIL_GO(g_BinderVariables->Init());
 
-            // Setup Debug log
-            BINDER_LOG_STARTUP();
-
-            // We're done
-            BINDER_SPACE::fAssemblyBinderInitialized = TRUE;
-        }
+        // Setup Debug log
+        BINDER_LOG_STARTUP();
 
     Exit:
         return hr;
@@ -576,7 +572,8 @@ namespace BINDER_SPACE
                                          Assembly **ppSystemAssembly,
                                          bool       fBindToNativeImage)
     {
-        _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
+        // Indirect check that binder was initialized.
+        _ASSERTE(g_BinderVariables != NULL);
 
         HRESULT hr = S_OK;
         BINDER_LOG_ENTER(W("AssemblyBinder:BindToSystem"));
@@ -596,10 +593,9 @@ namespace BINDER_SPACE
         // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
         sCoreLib = sCoreLibDir;
         sCoreLib.Append(CoreLibName_IL_W);
-        BOOL fExplicitBindToNativeImage = (fBindToNativeImage == true)? TRUE:FALSE;
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                TRUE /* fIsInGAC */,
-                                               fExplicitBindToNativeImage,
+                                               fBindToNativeImage,
                                                &pSystemAssembly));
         
         *ppSystemAssembly = pSystemAssembly.Extract();
@@ -616,7 +612,8 @@ namespace BINDER_SPACE
                                                   SString   &cultureName,
                                                   Assembly **ppSystemAssembly)
     {
-        _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
+        // Indirect check that binder was initialized.
+        _ASSERTE(g_BinderVariables != NULL);
 
         HRESULT hr = S_OK;
         BINDER_LOG_ENTER(W("AssemblyBinder:BindToSystemSatellite"));
@@ -1530,7 +1527,8 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
     HRESULT hr = E_FAIL;
     BINDER_LOG_ENTER(W("AssemblyBinder::BindUsingPEImage"));
     
-    _ASSERTE(BINDER_SPACE::fAssemblyBinderInitialized == TRUE);
+    // Indirect check that binder was initialized.
+    _ASSERTE(g_BinderVariables != NULL);
 
     LONG kContextVersion = 0;
     BindResult bindResult;
