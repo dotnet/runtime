@@ -23,15 +23,15 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
 #include "ole2.h"
 #endif /*COM_NO_WINDOWS_H*/
 
-#ifndef __CLRPrivBinding_h__
-#define __CLRPrivBinding_h__
+#ifndef __clrprivbinding_h__
+#define __clrprivbinding_h__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -67,20 +67,6 @@ typedef interface ICLRPrivResourcePath ICLRPrivResourcePath;
 #endif 	/* __ICLRPrivResourcePath_FWD_DEFINED__ */
 
 
-#ifndef __ICLRPrivResourceStream_FWD_DEFINED__
-#define __ICLRPrivResourceStream_FWD_DEFINED__
-typedef interface ICLRPrivResourceStream ICLRPrivResourceStream;
-
-#endif 	/* __ICLRPrivResourceStream_FWD_DEFINED__ */
-
-
-#ifndef __ICLRPrivResourceHMODULE_FWD_DEFINED__
-#define __ICLRPrivResourceHMODULE_FWD_DEFINED__
-typedef interface ICLRPrivResourceHMODULE ICLRPrivResourceHMODULE;
-
-#endif 	/* __ICLRPrivResourceHMODULE_FWD_DEFINED__ */
-
-
 #ifndef __ICLRPrivResourceAssembly_FWD_DEFINED__
 #define __ICLRPrivResourceAssembly_FWD_DEFINED__
 typedef interface ICLRPrivResourceAssembly ICLRPrivResourceAssembly;
@@ -102,13 +88,6 @@ typedef interface ICLRPrivAssemblyID_WinRT ICLRPrivAssemblyID_WinRT;
 #endif 	/* __ICLRPrivAssemblyID_WinRT_FWD_DEFINED__ */
 
 
-#ifndef __ICLRPrivWinRtTypeBinder_FWD_DEFINED__
-#define __ICLRPrivWinRtTypeBinder_FWD_DEFINED__
-typedef interface ICLRPrivWinRtTypeBinder ICLRPrivWinRtTypeBinder;
-
-#endif 	/* __ICLRPrivWinRtTypeBinder_FWD_DEFINED__ */
-
-
 /* header files for imported files */
 #include "unknwn.h"
 #include "objidl.h"
@@ -119,10 +98,8 @@ extern "C"{
 #endif 
 
 
-/* interface __MIDL_itf_CLRPrivBinding_0000_0000 */
+/* interface __MIDL_itf_clrprivbinding_0000_0000 */
 /* [local] */ 
-
-
 
 
 
@@ -133,8 +110,8 @@ typedef LPCSTR LPCUTF8;
 
 
 
-extern RPC_IF_HANDLE __MIDL_itf_CLRPrivBinding_0000_0000_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_CLRPrivBinding_0000_0000_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0000_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0000_v0_0_s_ifspec;
 
 #ifndef __ICLRPrivBinder_INTERFACE_DEFINED__
 #define __ICLRPrivBinder_INTERFACE_DEFINED__
@@ -158,8 +135,9 @@ EXTERN_C const IID IID_ICLRPrivBinder;
         virtual HRESULT STDMETHODCALLTYPE GetBinderID( 
             /* [retval][out] */ UINT_PTR *pBinderId) = 0;
         
-        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocator(
-            /* [retval][out] */ LPVOID* pLoaderAllocator) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocator( 
+            /* [retval][out] */ LPVOID *pLoaderAllocator) = 0;
+        
     };
     
     
@@ -190,10 +168,10 @@ EXTERN_C const IID IID_ICLRPrivBinder;
             ICLRPrivBinder * This,
             /* [retval][out] */ UINT_PTR *pBinderId);
         
-        HRESULT(STDMETHODCALLTYPE *GetLoaderAllocator)(
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocator )( 
             ICLRPrivBinder * This,
-            /* [retval][out] */ LPVOID *pLoaderAllocator) = 0;
-
+            /* [retval][out] */ LPVOID *pLoaderAllocator);
+        
         END_INTERFACE
     } ICLRPrivBinderVtbl;
 
@@ -223,6 +201,9 @@ EXTERN_C const IID IID_ICLRPrivBinder;
 #define ICLRPrivBinder_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 
 
+#define ICLRPrivBinder_GetLoaderAllocator(This,pLoaderAllocator)	\
+    ( (This)->lpVtbl -> GetLoaderAllocator(This,pLoaderAllocator) ) 
+
 #endif /* COBJMACROS */
 
 
@@ -234,7 +215,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
 #endif 	/* __ICLRPrivBinder_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_CLRPrivBinding_0000_0001 */
+/* interface __MIDL_itf_clrprivbinding_0000_0001 */
 /* [local] */ 
 
 
@@ -247,8 +228,8 @@ enum ASSEMBLY_IMAGE_TYPES
     } ;
 
 
-extern RPC_IF_HANDLE __MIDL_itf_CLRPrivBinding_0000_0001_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_CLRPrivBinding_0000_0001_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0001_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrprivbinding_0000_0001_v0_0_s_ifspec;
 
 #ifndef __ICLRPrivAssembly_INTERFACE_DEFINED__
 #define __ICLRPrivAssembly_INTERFACE_DEFINED__
@@ -265,9 +246,6 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
     ICLRPrivAssembly : public ICLRPrivBinder
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE IsShareable( 
-            /* [retval][out] */ BOOL *pbIsShareable) = 0;
-        
         virtual HRESULT STDMETHODCALLTYPE GetAvailableImageTypes( 
             /* [retval][out] */ LPDWORD pdwImageTypes) = 0;
         
@@ -306,9 +284,9 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
             ICLRPrivAssembly * This,
             /* [retval][out] */ UINT_PTR *pBinderId);
         
-        HRESULT ( STDMETHODCALLTYPE *IsShareable )( 
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocator )( 
             ICLRPrivAssembly * This,
-            /* [retval][out] */ BOOL *pbIsShareable);
+            /* [retval][out] */ LPVOID *pLoaderAllocator);
         
         HRESULT ( STDMETHODCALLTYPE *GetAvailableImageTypes )( 
             ICLRPrivAssembly * This,
@@ -349,9 +327,9 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
 #define ICLRPrivAssembly_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 
 
+#define ICLRPrivAssembly_GetLoaderAllocator(This,pLoaderAllocator)	\
+    ( (This)->lpVtbl -> GetLoaderAllocator(This,pLoaderAllocator) ) 
 
-#define ICLRPrivAssembly_IsShareable(This,pbIsShareable)	\
-    ( (This)->lpVtbl -> IsShareable(This,pbIsShareable) ) 
 
 #define ICLRPrivAssembly_GetAvailableImageTypes(This,pdwImageTypes)	\
     ( (This)->lpVtbl -> GetAvailableImageTypes(This,pdwImageTypes) ) 
@@ -532,168 +510,6 @@ EXTERN_C const IID IID_ICLRPrivResourcePath;
 
 
 #endif 	/* __ICLRPrivResourcePath_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICLRPrivResourceStream_INTERFACE_DEFINED__
-#define __ICLRPrivResourceStream_INTERFACE_DEFINED__
-
-/* interface ICLRPrivResourceStream */
-/* [object][local][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRPrivResourceStream;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("2601F621-E462-404C-B299-3E1DE72F8545")
-    ICLRPrivResourceStream : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE GetStream( 
-            /* [in] */ REFIID riid,
-            /* [retval][iid_is][out] */ LPVOID *ppvStream) = 0;
-        
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRPrivResourceStreamVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRPrivResourceStream * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRPrivResourceStream * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRPrivResourceStream * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetStream )( 
-            ICLRPrivResourceStream * This,
-            /* [in] */ REFIID riid,
-            /* [retval][iid_is][out] */ LPVOID *ppvStream);
-        
-        END_INTERFACE
-    } ICLRPrivResourceStreamVtbl;
-
-    interface ICLRPrivResourceStream
-    {
-        CONST_VTBL struct ICLRPrivResourceStreamVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRPrivResourceStream_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRPrivResourceStream_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRPrivResourceStream_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICLRPrivResourceStream_GetStream(This,riid,ppvStream)	\
-    ( (This)->lpVtbl -> GetStream(This,riid,ppvStream) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRPrivResourceStream_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICLRPrivResourceHMODULE_INTERFACE_DEFINED__
-#define __ICLRPrivResourceHMODULE_INTERFACE_DEFINED__
-
-/* interface ICLRPrivResourceHMODULE */
-/* [object][local][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRPrivResourceHMODULE;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("2601F621-E462-404C-B299-3E1DE72F8546")
-    ICLRPrivResourceHMODULE : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE GetHMODULE( 
-            /* [retval][out] */ HMODULE *phModule) = 0;
-        
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRPrivResourceHMODULEVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRPrivResourceHMODULE * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRPrivResourceHMODULE * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRPrivResourceHMODULE * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *GetHMODULE )( 
-            ICLRPrivResourceHMODULE * This,
-            /* [retval][out] */ HMODULE *phModule);
-        
-        END_INTERFACE
-    } ICLRPrivResourceHMODULEVtbl;
-
-    interface ICLRPrivResourceHMODULE
-    {
-        CONST_VTBL struct ICLRPrivResourceHMODULEVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRPrivResourceHMODULE_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRPrivResourceHMODULE_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRPrivResourceHMODULE_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICLRPrivResourceHMODULE_GetHMODULE(This,phModule)	\
-    ( (This)->lpVtbl -> GetHMODULE(This,phModule) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRPrivResourceHMODULE_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICLRPrivResourceAssembly_INTERFACE_DEFINED__
@@ -958,90 +774,6 @@ EXTERN_C const IID IID_ICLRPrivAssemblyID_WinRT;
 
 
 #endif 	/* __ICLRPrivAssemblyID_WinRT_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICLRPrivWinRtTypeBinder_INTERFACE_DEFINED__
-#define __ICLRPrivWinRtTypeBinder_INTERFACE_DEFINED__
-
-/* interface ICLRPrivWinRtTypeBinder */
-/* [object][local][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRPrivWinRtTypeBinder;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("6DE2A085-EFF4-4078-9F60-B9D366736398")
-    ICLRPrivWinRtTypeBinder : public IUnknown
-    {
-    public:
-        virtual void *STDMETHODCALLTYPE FindAssemblyForWinRtTypeIfLoaded( 
-            void *pAppDomain,
-            LPCUTF8 szNamespace,
-            LPCUTF8 szClassName) = 0;
-        
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRPrivWinRtTypeBinderVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRPrivWinRtTypeBinder * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRPrivWinRtTypeBinder * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRPrivWinRtTypeBinder * This);
-        
-        void *( STDMETHODCALLTYPE *FindAssemblyForWinRtTypeIfLoaded )( 
-            ICLRPrivWinRtTypeBinder * This,
-            void *pAppDomain,
-            LPCUTF8 szNamespace,
-            LPCUTF8 szClassName);
-        
-        END_INTERFACE
-    } ICLRPrivWinRtTypeBinderVtbl;
-
-    interface ICLRPrivWinRtTypeBinder
-    {
-        CONST_VTBL struct ICLRPrivWinRtTypeBinderVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRPrivWinRtTypeBinder_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRPrivWinRtTypeBinder_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRPrivWinRtTypeBinder_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICLRPrivWinRtTypeBinder_FindAssemblyForWinRtTypeIfLoaded(This,pAppDomain,szNamespace,szClassName)	\
-    ( (This)->lpVtbl -> FindAssemblyForWinRtTypeIfLoaded(This,pAppDomain,szNamespace,szClassName) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRPrivWinRtTypeBinder_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

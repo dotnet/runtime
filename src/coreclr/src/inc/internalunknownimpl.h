@@ -373,115 +373,6 @@ namespace ComUtil
         { WRAPPER_NO_CONTRACT; }
     };
 
-    //---------------------------------------------------------------------------------------------
-    // IUnknownCommonExternal
-    //
-    //   T0-T9 - the list of interfaces to implement.
-    template
-    <
-        typename T0 = mpl::null_type,
-        typename T1 = mpl::null_type,
-        typename T2 = mpl::null_type,
-        typename T3 = mpl::null_type,
-        typename T4 = mpl::null_type,
-        typename T5 = mpl::null_type,
-        typename T6 = mpl::null_type,
-        typename T7 = mpl::null_type,
-        typename T8 = mpl::null_type,
-        typename T9 = mpl::null_type
-    >
-    class IUnknownCommonExternal :
-        virtual protected detail::IUnknownCommonRef,
-        public detail::DeriveTypeList< typename mpl::make_type_list<
-            T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type >
-    {
-    public:
-        typedef typename mpl::make_type_list<
-            T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type InterfaceListT;
-
-        // Standard AddRef implementation
-        STDMETHOD_(ULONG, AddRef())
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            STATIC_CONTRACT_ENTRY_POINT;
-
-            return InterlockedIncrement(&m_cRef);
-        }
-
-        // Standard Release implementation.
-        // Should be called outside VM only
-        STDMETHOD_(ULONG, Release())
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            STATIC_CONTRACT_ENTRY_POINT;
-
-            _ASSERTE(m_cRef > 0);
-
-            ULONG cRef = InterlockedDecrement(&m_cRef);
-            
-            if (cRef == 0)
-            {
-                Cleanup();          // Cleans up the object
-                delete this;
-            }
-            
-            return cRef;
-        }
-
-        // Internal release
-        // Should be called inside VM only
-        STDMETHOD_(ULONG, InternalRelease())
-        {
-            LIMITED_METHOD_CONTRACT;
-            
-            _ASSERTE(m_cRef > 0);
-
-            ULONG cRef = InterlockedDecrement(&m_cRef);
-            
-            if (cRef == 0)
-            {
-                InternalCleanup();  // Cleans up the object, internal version
-                delete this;
-            }
-            
-            return cRef;
-        }
-        
-        // Uses detail::QIHelper for implementation.
-        STDMETHOD(QueryInterface(REFIID riid, void **ppvObject))
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            STATIC_CONTRACT_ENTRY_POINT;
-
-            if (ppvObject == nullptr)
-                return E_INVALIDARG;
-
-            *ppvObject = nullptr;
-
-            return detail::QIHelper<InterfaceListT>::QI(
-                riid, ppvObject, this);
-        }
-
-        template <typename ItfT>
-        HRESULT QueryInterface(ItfT **ppItf)
-        {
-            return QueryInterface(__uuidof(ItfT), reinterpret_cast<void**>(ppItf));
-        }
-
-    protected:
-        // May only be constructed as a base type.
-        inline IUnknownCommonExternal() :
-            IUnknownCommonRef()
-        { WRAPPER_NO_CONTRACT; }
-
-        // Internal version of cleanup
-        virtual void InternalCleanup() = 0;
-
-        // External version of cleanup
-        // Not surprisingly, this should call InternalCleanup to avoid duplicate code
-        // Not implemented here to avoid bringing too much into this header file
-        virtual void Cleanup() = 0;
-    };
 }
 
 #undef COMUTIL_IIDOF
@@ -489,6 +380,5 @@ namespace ComUtil
 using ComUtil::NoDerive;
 using ComUtil::ItfBase;
 using ComUtil::IUnknownCommon;
-using ComUtil::IUnknownCommonExternal;
 
 #endif // __InternalUnknownImpl_h__

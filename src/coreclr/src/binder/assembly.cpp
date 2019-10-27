@@ -206,16 +206,6 @@ namespace BINDER_SPACE
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetLoaderAllocator(pLoaderAllocator);
     }
 
-    HRESULT Assembly::IsShareable(
-        BOOL * pbIsShareable)
-    {
-        if(pbIsShareable == nullptr)
-            return E_INVALIDARG;
-
-        *pbIsShareable = GetIsSharable();
-        return S_OK;
-    }
-
     HRESULT Assembly::GetAvailableImageTypes(
         LPDWORD pdwImageTypes)
     {
