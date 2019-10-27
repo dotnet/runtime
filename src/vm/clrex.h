@@ -668,13 +668,11 @@ class EEFileLoadException : public EEException
     
   private:
     SString m_name;
-    void  *m_pFusionLog;
     HRESULT m_hr;       
-                        
 
   public:
 
-    EEFileLoadException(const SString &name, HRESULT hr, void *pFusionLog = NULL,  Exception *pInnerException = NULL);
+    EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
     ~EEFileLoadException();
 
     // virtual overrides
@@ -698,12 +696,12 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr, m_pFusionLog);
+        return new EEFileLoadException(m_name, m_hr);
     }
 
  private:
 #ifdef _DEBUG    
-    EEFileLoadException() : m_pFusionLog(NULL)
+    EEFileLoadException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
         // We need a variant which does not allocate memory.
