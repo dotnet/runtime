@@ -750,8 +750,7 @@ void EEStartupHelper(COINITIEE fFlags)
         InitEventStore();
 #endif
 
-        // Fusion
-        // Initialize the general Assembly Binder infrastructure
+        // Initialize the default Assembly Binder and the binder infrastructure
         IfFailGoLog(CCoreCLRBinderHelper::Init());
 
         if (g_pConfig != NULL)
