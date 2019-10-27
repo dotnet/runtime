@@ -3,7 +3,7 @@
     <RootNamespace>Microsoft.SqlServer.TDS</RootNamespace>
     <AssemblyName>Microsoft.SqlServer.TDS</AssemblyName>
     <ClsCompliant>false</ClsCompliant>
-    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AllHeaders\TDSQueryNotificationsHeader.cs" />

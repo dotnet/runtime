@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Metadata.cs" />

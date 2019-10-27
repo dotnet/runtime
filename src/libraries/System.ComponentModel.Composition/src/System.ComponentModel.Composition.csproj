@@ -5,14 +5,13 @@
     </RootNamespace>
     <!-- CommonStrings needs RootNamespace to be empty -->
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.CollectionOfObject.cs" />
@@ -187,7 +186,7 @@
       <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />

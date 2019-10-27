@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <Configurations>netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Tasks.Dataflow.cs" />

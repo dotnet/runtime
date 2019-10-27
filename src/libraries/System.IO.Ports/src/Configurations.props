@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
     <PackageConfigurations>
-      netstandard-Windows_NT;
-      netstandard-Linux;
-      netstandard-OSX;
-      netstandard;
+      netstandard2.0-Windows_NT;
+      netstandard2.0-Linux;
+      netstandard2.0-OSX;
+      netstandard2.0;
       net461-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>

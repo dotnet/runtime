@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard1.1;
-      netstandard;
+      netstandard2.0;
       netcoreapp3.0-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>

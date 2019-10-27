@@ -4,7 +4,7 @@
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.0.1.0</AssemblyVersion>
-    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Ports.cs" />

@@ -7,7 +7,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netstandard;
+      netstandard2.0;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

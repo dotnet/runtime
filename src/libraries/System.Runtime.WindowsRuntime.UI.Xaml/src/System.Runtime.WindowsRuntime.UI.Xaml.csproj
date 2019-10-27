@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>System.Runtime.WindowsRuntime.UI.Xaml</AssemblyName>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' or '$(TargetGroup)' == 'netstandard'">
+  <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\HResults.cs" />

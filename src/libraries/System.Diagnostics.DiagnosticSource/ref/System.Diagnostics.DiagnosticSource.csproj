@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>net45-Debug;net45-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Configurations>net45-Debug;net45-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
   </PropertyGroup>

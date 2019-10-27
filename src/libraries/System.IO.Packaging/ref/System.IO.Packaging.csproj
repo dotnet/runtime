@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
-    <Configurations>net46-Debug;net46-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Configurations>net46-Debug;net46-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Packaging.cs" />

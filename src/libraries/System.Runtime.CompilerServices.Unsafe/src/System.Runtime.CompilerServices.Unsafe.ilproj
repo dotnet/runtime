@@ -8,9 +8,9 @@
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
     <IncludePath>include\$(TargetGroup)</IncludePath>
-    <IncludePath Condition="'$(TargetGroup)' == 'netcoreapp2.0'">include\netcoreapp</IncludePath>
+    <IncludePath Condition="'$(TargetFramework)' == 'netcoreapp2.0'">include\netcoreapp</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

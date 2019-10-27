@@ -1,9 +1,9 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <PackageConfigurations>
-      netstandard;
+      netstandard2.0;
       netcoreapp2.0-Windows_NT;
-      netstandard-Windows_NT;
+      netstandard2.0-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

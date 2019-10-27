@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.1.0.0</AssemblyVersion>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);netcoreapp</DefineConstants>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->
-    <PackageTargetRuntime>
-    </PackageTargetRuntime>
+    <PackageTargetRuntime />
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsUnix)' == 'true' " />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

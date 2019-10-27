@@ -1,16 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">Windows_NT</OSGroup>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyName>System.Security.Cryptography.ProtectedData</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyProtectedData</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyProtectedData</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND ('$(TargetGroup)' != 'netstandard' OR '$(TargetsWindows)' == 'true')">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and ('$(TargetsNetStandard)' != 'true' or '$(TargetsWindows)' == 'true')">
     <Compile Include="System\Security\Cryptography\DataProtectionScope.cs" />
     <Compile Include="System\Security\Cryptography\ProtectedData.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectData.cs">

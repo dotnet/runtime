@@ -2,10 +2,10 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Linux-Debug;netstandard-Linux-Release;netstandard-OSX-Debug;netstandard-OSX-Release;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Linux-Debug;netstandard2.0-Linux-Release;netstandard2.0-OSX-Debug;netstandard2.0-OSX-Release;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND ('$(TargetsWindows)' == 'true' OR '$(TargetsLinux)' == 'true' OR '$(TargetsOSX)' == 'true')">
     <Compile Include="System\IO\Ports\Handshake.cs" />

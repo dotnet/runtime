@@ -6,15 +6,15 @@
     <!-- do not binplace, this is only used to help compile references
          against Windows.winmd.  The real mscorlib comes from src/shims/shims.proj -->
     <BinPlaceRef>false</BinPlaceRef>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.0' and '$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0' or '$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

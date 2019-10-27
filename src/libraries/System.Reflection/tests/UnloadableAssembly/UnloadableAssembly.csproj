@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnloadableAssembly.cs" />
