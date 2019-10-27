@@ -227,43 +227,4 @@ unsigned DbgGetEXETimeStamp();
 
 #endif // _DEBUG && !FEATUREPAL
 
-#ifdef _DEBUG
-namespace clr
-{
-    namespace dbg
-    {
-        // In debug builds, this can be used to write known bad values into
-        // memory. One example is in ComUtil::IUnknownCommon::~IUnknownCommon,
-        // which overwrites its instance memory with a known bad value after
-        // completing its destructor.
-        template < typename T >
-        void PoisonMem(T &val)
-        {
-            ZeroMemory((void*)&val, sizeof(T));
-        }
-
-        template < typename T >
-        void PoisonMem(T* ptr, size_t len)
-        {
-            ZeroMemory((void*)ptr, sizeof(T)* len);
-        }
-    }
-}
-#else
-
-// Empty versions of the functions in retail that will be inlined
-// and completely elided.
-namespace clr
-{
-    namespace dbg
-    {
-        template < typename T >
-        inline void PoisonMem(T &) {}
-
-        template < typename T >
-        void PoisonMem(T* ptr, size_t len){}
-    }
-}
-#endif
-
 #endif 

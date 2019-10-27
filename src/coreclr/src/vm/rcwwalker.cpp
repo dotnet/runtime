@@ -43,7 +43,7 @@ SVAL_IMPL_INIT(BOOL,            RCWWalker, s_bIsGlobalPeggingOn, TRUE);     // D
 #ifndef DACCESS_COMPILE
 
 // Our implementation of ICLRServices provided to Jupiter via IJupiterGCManager::SetReferenceTrackerHost.
-class CLRServicesImpl : public IUnknownCommon<ICLRServices>
+class CLRServicesImpl : public IUnknownCommon<ICLRServices, IID_ICLRServices>
 {
 private:
     // flags for DisconnectUnusedReferenceSources(DWORD dwFlags)

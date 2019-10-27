@@ -1583,7 +1583,7 @@ _____Neuter_Status_Already_Marked = 0;
 //--------------------------------------------------------------------------------
 template< typename ElemType,
           typename ElemPublicType,
-          typename EnumInterfaceType,
+          typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
 class CordbEnumerator : public CordbBase, public EnumInterfaceType
 {
@@ -1622,7 +1622,7 @@ public:
 };
 
 // Converts T to U* by using QueryInterface
-template<typename T, typename U>
+template<typename T, typename U, REFIID iid>
 U* QueryInterfaceConvert(T obj);
 
 // No conversion, just returns the argument
@@ -1652,12 +1652,12 @@ CorDebugGuidToTypeMapping GuidToTypeMappingConvert(RsGuidToTypeMapping m)
 //
 typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThread*,
-                        ICorDebugThreadEnum,
-                        QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread> > CordbThreadEnumerator;
+                        ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
+                        QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
 
 typedef CordbEnumerator<CorDebugBlockingObject,
                         CorDebugBlockingObject,
-                        ICorDebugBlockingObjectEnum,
+                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
                         IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // Template classes must be fully defined rather than just declared in the header
@@ -1666,23 +1666,23 @@ typedef CordbEnumerator<CorDebugBlockingObject,
 
 typedef CordbEnumerator<COR_SEGMENT,
                         COR_SEGMENT,
-                        ICorDebugHeapSegmentEnum,
+                        ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
 
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
-                        ICorDebugExceptionObjectCallStackEnum,
+                        ICorDebugExceptionObjectCallStackEnum, IID_ICorDebugExceptionObjectCallStackEnum,
                         IdentityConvert<CorDebugExceptionObjectStackFrame> > CordbExceptionObjectCallStackEnumerator;
 
 typedef CordbEnumerator<RsGuidToTypeMapping,
                         CorDebugGuidToTypeMapping,
-                        ICorDebugGuidToTypeEnum,
+                        ICorDebugGuidToTypeEnum, IID_ICorDebugGuidToTypeEnum,
                         GuidToTypeMappingConvert > CordbGuidToTypeEnumerator;
 
 typedef CordbEnumerator<RSSmartPtr<CordbVariableHome>,
                         ICorDebugVariableHome*,
-                        ICorDebugVariableHomeEnum,
-                        QueryInterfaceConvert<RSSmartPtr<CordbVariableHome>, ICorDebugVariableHome> > CordbVariableHomeEnumerator;
+                        ICorDebugVariableHomeEnum, IID_ICorDebugVariableHomeEnum,
+                        QueryInterfaceConvert<RSSmartPtr<CordbVariableHome>, ICorDebugVariableHome, IID_ICorDebugVariableHome> > CordbVariableHomeEnumerator;
 
 // ----------------------------------------------------------------------------
 // Hash table for CordbBase objects.
