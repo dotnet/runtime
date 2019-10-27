@@ -7,12 +7,11 @@ namespace System
     public partial class BadImageFormatException
     {
         // Do not delete: this is invoked from native code.
-        private BadImageFormatException(string? fileName, string? fusionLog, int hResult)
+        private BadImageFormatException(string? fileName, int hResult)
             : base(null)
         {
             HResult = hResult;
             _fileName = fileName;
-            _fusionLog = fusionLog;
             SetMessageField();
         }
     }

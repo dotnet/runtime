@@ -3801,7 +3801,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             {
                 StackSString name;
                 pSpec->GetFileOrDisplayName(0, name);
-                pEx=new EEFileLoadException(name, pEx->GetHR(), NULL, pEx);
+                pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
                 PAL_CPP_THROW(Exception *, pEx);
             }

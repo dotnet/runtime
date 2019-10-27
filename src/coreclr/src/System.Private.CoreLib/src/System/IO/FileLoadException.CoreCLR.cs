@@ -10,12 +10,11 @@ namespace System.IO
     public partial class FileLoadException
     {
         // Do not delete: this is invoked from native code.
-        private FileLoadException(string? fileName, string? fusionLog, int hResult)
+        private FileLoadException(string? fileName, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
-            FusionLog = fusionLog;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 
