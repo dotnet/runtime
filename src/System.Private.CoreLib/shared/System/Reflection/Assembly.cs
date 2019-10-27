@@ -217,7 +217,7 @@ namespace System.Reflection
 
             if (PathInternal.IsPartiallyQualified(path))
             {
-                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(path));
+                throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, path), nameof(path));
             }
 
             string normalizedPath = Path.GetFullPath(path);

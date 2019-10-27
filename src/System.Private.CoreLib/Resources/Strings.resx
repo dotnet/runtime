@@ -797,7 +797,7 @@
     <value>The value "{0}" is not of type "{1}" and cannot be used in this generic collection.</value>
   </data>
   <data name="Argument_AbsolutePathRequired" xml:space="preserve">
-    <value>Absolute path information is required.</value>
+    <value>Path "{0}" is not an absolute path.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added.</value>
