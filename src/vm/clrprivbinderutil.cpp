@@ -67,23 +67,6 @@ namespace CLRPrivBinderUtil
         return hr;
     }
 
-    //---------------------------------------------------------------------------------------------
-    CLRPrivResourceStreamImpl::CLRPrivResourceStreamImpl(IStream * pStream)
-        : m_pStream(pStream)
-    {
-        LIMITED_METHOD_CONTRACT;
-        pStream->AddRef();
-    }
-
-    //---------------------------------------------------------------------------------------------
-    HRESULT CLRPrivResourceStreamImpl::GetStream(
-        REFIID riid,
-        LPVOID * ppvStream)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStream->QueryInterface(riid, ppvStream);
-    }
-
     //=====================================================================================================================
     // Destroys list of strings (code:WStringList).
     void 

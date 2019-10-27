@@ -979,7 +979,6 @@ CLRPrivAssemblyWinRT::CLRPrivAssemblyWinRT(
       m_pResourceIL(nullptr),
       m_pIResourceNI(nullptr),
       m_pIBindResult(nullptr),
-      m_fShareable(fShareable),
       m_dwImageTypes(0),
       m_FallbackBinder(nullptr)
 {
@@ -1035,20 +1034,6 @@ ULONG CLRPrivAssemblyWinRT::Release()
     
     return cRef;
 } // CLRPrivAssemblyWinRT::Release
-
-//=====================================================================================================================
-// Implements interface method code:ICLRPrivAssembly::IsShareable.
-// 
-HRESULT CLRPrivAssemblyWinRT::IsShareable(
-    BOOL * pbIsShareable)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    VALIDATE_ARG_RET(pbIsShareable != nullptr);
-
-    *pbIsShareable = m_fShareable;
-    return S_OK;
-}
 
 //=====================================================================================================================
 // Implements interface method code:ICLRPrivAssembly::GetAvailableImageTypes.

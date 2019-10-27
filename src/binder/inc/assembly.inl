@@ -117,23 +117,6 @@ void Assembly::SetIsByteArray(BOOL fIsByteArray)
     }
 }
 
-BOOL Assembly::GetIsSharable()
-{
-    return ((m_dwAssemblyFlags & FLAG_IS_SHARABLE) != 0);
-}
-
-void Assembly::SetIsSharable(BOOL fIsSharable)
-{
-    if (fIsSharable)
-    {
-        m_dwAssemblyFlags |= FLAG_IS_SHARABLE;
-    }
-    else
-    {
-        m_dwAssemblyFlags &= ~FLAG_IS_SHARABLE;
-    }
-}
-
 SString &Assembly::GetPath()
 {
     return m_assemblyPath;

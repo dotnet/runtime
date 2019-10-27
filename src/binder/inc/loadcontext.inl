@@ -71,7 +71,6 @@ HRESULT LoadContext<dwIncludeFlags>::Register(BindResult *pBindResult)
     SAFE_NEW(pContextEntry, ContextEntry);
 
     pContextEntry->SetIsInGAC(pBindResult->GetIsInGAC());
-    pContextEntry->SetIsSharable(pBindResult->GetIsSharable());
     pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
     pContextEntry->SetAssembly(pBindResult->GetAssembly());
 

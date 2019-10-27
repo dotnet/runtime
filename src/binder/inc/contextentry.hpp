@@ -31,7 +31,6 @@ namespace BINDER_SPACE
             //RESULT_FLAG_FROM_MANIFEST    = 0x04,
             RESULT_FLAG_CONTEXT_BOUND    = 0x08,
             RESULT_FLAG_FIRST_REQUEST    = 0x10,
-            RESULT_FLAG_IS_SHARABLE      = 0x20
         } ResultFlags;
 
         ContextEntry() : AssemblyEntry()
@@ -76,23 +75,6 @@ namespace BINDER_SPACE
             else
             {
                 m_dwResultFlags &= ~RESULT_FLAG_FIRST_REQUEST;
-            }
-        }
-
-        BOOL GetIsSharable()
-        {
-            return ((m_dwResultFlags & RESULT_FLAG_IS_SHARABLE) != 0);
-        }
-
-        void SetIsSharable(BOOL fIsSharable)
-        {
-            if (fIsSharable)
-            {
-                m_dwResultFlags |= RESULT_FLAG_IS_SHARABLE;
-            }
-            else
-            {
-                m_dwResultFlags &= ~RESULT_FLAG_IS_SHARABLE;
             }
         }
 

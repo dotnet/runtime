@@ -223,24 +223,8 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define THIS_
 #define THIS                void
 
-#ifndef _DECLSPEC_DEFINED_
-#define _DECLSPEC_DEFINED_
-
-#if  defined(_MSC_VER)
-#define DECLSPEC_NOVTABLE   __declspec(novtable)
-#define DECLSPEC_IMPORT     __declspec(dllimport)
-#define DECLSPEC_SELECTANY  __declspec(selectany)
-#elif defined(__GNUC__)
 #define DECLSPEC_NOVTABLE
-#define DECLSPEC_IMPORT     
 #define DECLSPEC_SELECTANY  __attribute__((weak))
-#else
-#define DECLSPEC_NOVTABLE
-#define DECLSPEC_IMPORT
-#define DECLSPEC_SELECTANY
-#endif
-
-#endif // !_DECLSPEC_DEFINED_
 
 #define DECLARE_INTERFACE(iface)    interface DECLSPEC_NOVTABLE iface
 #define DECLARE_INTERFACE_(iface, baseiface)    interface DECLSPEC_NOVTABLE iface : public baseiface

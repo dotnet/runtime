@@ -1467,17 +1467,6 @@ PEImage * PEImage::OpenImage(
         IfFailThrow(pIResourcePath->GetPath(cchPath, &cchPath, wzPath));
         pPEImage = PEImage::OpenImage(wzPath, flags);
     }
-#ifndef FEATURE_PAL
-    else if (iidResource ==__uuidof(ICLRPrivResourceHMODULE))
-    {
-        ReleaseHolder<ICLRPrivResourceHMODULE> pIResourceHMODULE;
-        _ASSERTE(flags == MDInternalImport_Default);
-        IfFailThrow(pIResource->QueryInterface(__uuidof(ICLRPrivResourceHMODULE), (LPVOID*)&pIResourceHMODULE));
-        HMODULE hMod;
-        IfFailThrow(pIResourceHMODULE->GetHMODULE(&hMod));
-        pPEImage = PEImage::LoadImage(hMod);
-    }
-#endif // !FEATURE_PAL    
     else
     {
         ThrowHR(COR_E_BADIMAGEFORMAT);
