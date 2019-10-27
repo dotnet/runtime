@@ -24,7 +24,7 @@ class Assembly;
 class LoaderAllocator;
 
 class CLRPrivBinderAssemblyLoadContext :
-    public IUnknownCommon<ICLRPrivBinder>
+    public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
 {
 public:
 

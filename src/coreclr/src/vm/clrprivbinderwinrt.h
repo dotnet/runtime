@@ -42,8 +42,7 @@ IsWindowsNamespace(const char * wszNamespace);
 //=====================================================================================================================
 //=====================================================================================================================
 class CLRPrivBinderWinRT : 
-    public IUnknownCommon<ICLRPrivBinder
-    >
+    public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
 {
     friend class CLRPrivAssemblyWinRT;
     
@@ -247,7 +246,7 @@ private:
 //=====================================================================================================================
 //=====================================================================================================================
 class CLRPrivAssemblyWinRT :
-    public IUnknownCommon<ICLRPrivAssembly, ICLRPrivAssemblyID_WinRT>
+    public IUnknownCommon2<ICLRPrivAssembly, IID_ICLRPrivAssembly, ICLRPrivAssemblyID_WinRT, IID_ICLRPrivAssemblyID_WinRT>
 {
     friend class CLRPrivBinderWinRT;
     

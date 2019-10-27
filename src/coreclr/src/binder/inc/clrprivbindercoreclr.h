@@ -14,7 +14,7 @@ namespace BINDER_SPACE
     class AssemblyIdentityUTF8;
 };
 
-class CLRPrivBinderCoreCLR : public IUnknownCommon<ICLRPrivBinder>
+class CLRPrivBinderCoreCLR : public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
 {
 public:
 

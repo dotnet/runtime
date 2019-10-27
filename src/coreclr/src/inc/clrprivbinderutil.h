@@ -50,7 +50,7 @@ namespace CLRPrivBinderUtil
 {
     //=================================================================================================================
     class CLRPrivResourcePathImpl :
-        public IUnknownCommon<ICLRPrivResource, ICLRPrivResourcePath >
+        public IUnknownCommon2<ICLRPrivResource, IID_ICLRPrivResource, ICLRPrivResourcePath, IID_ICLRPrivResourcePath>
     {
     public:
         //---------------------------------------------------------------------------------------------
