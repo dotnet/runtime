@@ -29,8 +29,6 @@ namespace BINDER_SPACE
         inline IUnknown *GetAssembly(BOOL fAddRef = FALSE);
         inline Assembly *GetAsAssembly(BOOL fAddRef = FALSE);
 
-        inline BOOL GetIsDynamicBind();
-        inline void SetIsDynamicBind(BOOL fIsDynamicBind);
         inline BOOL GetIsInGAC();
         inline void SetIsInGAC(BOOL fIsInGAC);
         inline BOOL GetIsContextBound();
