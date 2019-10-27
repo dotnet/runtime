@@ -1326,7 +1326,7 @@ typedef DPTR(class WeakReferenceImpl) PTR_WeakReferenceImpl;
 //
 // Represents a domain-bound weak reference to the object (not the CCW)
 //
-class WeakReferenceImpl : public IUnknownCommon<IWeakReference>
+class WeakReferenceImpl : public IUnknownCommon<IWeakReference, IID_IWeakReference>
 {
 private:
     OBJECTHANDLE        m_ppObject;             // Short weak global handle points back to the object, 
