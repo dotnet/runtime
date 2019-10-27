@@ -82,6 +82,8 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+      <!-- keep PreserveDependencyAttribute -->
+      <ILLinkArgs>$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
