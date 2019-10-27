@@ -3,7 +3,7 @@
     <PackageConfigurations>
       net461-Windows_NT;
       netcoreapp2.0-Windows_NT;
-      netstandard;
+      netstandard2.0;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

@@ -3,7 +3,7 @@
     <BuildConfigurations>
       netfx;
       net461;
-      netstandard;
+      netstandard2.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

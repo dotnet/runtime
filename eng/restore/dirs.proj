@@ -2,7 +2,7 @@
   <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard2.0-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
   </PropertyGroup>
 
   <ItemGroup>

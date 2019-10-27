@@ -3,7 +3,7 @@
     <PackageConfigurations>
       netcoreapp3.0-Unix;
       netcoreapp3.0;
-      netstandard;
+      netstandard2.0;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

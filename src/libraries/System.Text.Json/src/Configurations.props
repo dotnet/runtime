@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <PackageConfigurations>
-      netstandard;
+      netstandard2.0;
       netcoreapp3.0;
       net461;
     </PackageConfigurations>

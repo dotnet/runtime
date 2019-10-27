@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
-      netstandard;
+      netstandard2.0;
       netstandard1.0;
     </BuildConfigurations>
   </PropertyGroup>

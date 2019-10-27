@@ -3,10 +3,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true'">true</IsPartialFacadeAssembly>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
-    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.PlatformNotSupported.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeProvider.cs" />

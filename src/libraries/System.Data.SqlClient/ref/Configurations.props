@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp2.1;
-      netstandard;
+      netstandard2.0;
       net461;
     </PackageConfigurations>
     <BuildConfigurations>

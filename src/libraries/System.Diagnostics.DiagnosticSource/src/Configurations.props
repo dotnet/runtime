@@ -9,7 +9,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
-      netstandard;
+      netstandard2.0;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

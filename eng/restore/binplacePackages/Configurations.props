@@ -10,7 +10,7 @@
       netstandard1.5;
       netstandard1.6;
       netstandard2.0;
-      netstandard;
+      netstandard2.0;
       netcoreapp2.0;
       netcoreapp3.0;
       netcoreapp;

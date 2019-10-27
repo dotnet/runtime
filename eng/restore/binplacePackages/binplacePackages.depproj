@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BinPlaceRef>true</BinPlaceRef>
     <BinPlaceRuntime>true</BinPlaceRuntime>
-    <NETStandardVersion Condition="$(TargetFramework.StartsWith('netstandard'))">$(TargetFramework.SubString(11))</NETStandardVersion>
+    <NETStandardVersion Condition="'$(TargetsNetStandard)' == 'true'">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
   </PropertyGroup>

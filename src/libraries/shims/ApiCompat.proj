@@ -84,7 +84,7 @@
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
 
     <!-- TODO: Once the repo targets netstandard2.1, have this instance of APICompat run against NetStandard21RefPath -->
-    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandard20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
