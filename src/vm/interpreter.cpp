@@ -9050,15 +9050,15 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // Check for the simd class...
             assert(exactClass != NULL);
             GCX_PREEMP();
-            bool isSIMD = m_interpCeeInfo.isInSIMDModule(exactClass);
+            bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
 
-            if (isSIMD)
+            if (isIntrinsicType)
             {
                 // SIMD intrinsics are recognized by name.
                 const char* namespaceName = NULL;
                 const char* className = NULL;
                 const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
-                if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+                if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
                 {
                     GCX_COOP();
                     DoSIMDHwAccelerated();

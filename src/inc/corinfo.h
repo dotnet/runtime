@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 1ce51eeb-dfd0-4450-ba2c-ea0d2d863df5 */
-    0x1ce51eeb,
-    0xdfd0,
-    0x4450,
-    {0xba, 0x2c, 0xea, 0x0d, 0x2d, 0x86, 0x3d, 0xf5}
+SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d84e90bd2 */
+    0xaec2498a,
+    0xca70,
+    0x408e,
+    {0x90, 0x3e, 0x1e, 0x6d, 0x84, 0xe9, 0x0b, 0xd2}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2171,9 +2171,9 @@ public:
             bool*                       pMustExpand = NULL      /* OUT */
             ) = 0;
 
-    // Is the given module the System.Numerics.Vectors module?
+    // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
     // This defaults to false.
-    virtual bool isInSIMDModule(
+    virtual bool isIntrinsicType(
             CORINFO_CLASS_HANDLE        classHnd
             ) { return false; }
 

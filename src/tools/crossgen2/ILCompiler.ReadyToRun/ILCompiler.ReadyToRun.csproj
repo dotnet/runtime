@@ -89,7 +89,6 @@
     <Compile Include="..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
     <Compile Include="..\Common\Compiler\ReadyToRun.cs" Link="Compiler\ReadyToRun.cs" />
-    <Compile Include="..\Common\Compiler\SimdHelper.cs" Link="Compiler\SimdHelper.cs" />
     <Compile Include="..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />

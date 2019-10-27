@@ -284,12 +284,12 @@ CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method,
     return temp;
 }
 
-// Is the given module the System.Numerics.Vectors module?
-bool interceptor_ICJI::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+// Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
+bool interceptor_ICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-    mc->cr->AddCall("isInSIMDModule");
-    bool temp = original_ICorJitInfo->isInSIMDModule(classHnd);
-    mc->recIsInSIMDModule(classHnd, temp);
+    mc->cr->AddCall("isIntrinsicType");
+    bool temp = original_ICorJitInfo->isIntrinsicType(classHnd);
+    mc->recIsIntrinsicType(classHnd, temp);
     return temp;
 }
 

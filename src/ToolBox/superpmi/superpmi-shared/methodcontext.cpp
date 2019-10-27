@@ -1577,25 +1577,25 @@ CorInfoIntrinsics MethodContext::repGetIntrinsicID(CORINFO_METHOD_HANDLE method,
     return result;
 }
 
-void MethodContext::recIsInSIMDModule(CORINFO_CLASS_HANDLE cls, BOOL result)
+void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, BOOL result)
 {
-    if (IsInSIMDModule == nullptr)
-        IsInSIMDModule = new LightWeightMap<DWORDLONG, DWORD>();
+    if (IsIntrinsicType == nullptr)
+        IsIntrinsicType = new LightWeightMap<DWORDLONG, DWORD>();
 
-    IsInSIMDModule->Add((DWORDLONG)cls, (DWORD)result);
-    DEBUG_REC(dmpIsInSIMDModule((DWORDLONG)cls, (DWORD)result));
+    IsIntrinsicType->Add((DWORDLONG)cls, (DWORD)result);
+    DEBUG_REC(dmpIsIntrinsicType((DWORDLONG)cls, (DWORD)result));
 }
-void MethodContext::dmpIsInSIMDModule(DWORDLONG key, DWORD value)
+void MethodContext::dmpIsIntrinsicType(DWORDLONG key, DWORD value)
 {
-    printf("IsInSIMDModule key mth-%016llX, value intr-%u", key, value);
+    printf("IsIntrinsicType key mth-%016llX, value intr-%u", key, value);
 }
-BOOL MethodContext::repIsInSIMDModule(CORINFO_CLASS_HANDLE cls)
+BOOL MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
 {
-    AssertCodeMsg(IsInSIMDModule != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
-    AssertCodeMsg(IsInSIMDModule->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
+    AssertCodeMsg(IsIntrinsicType != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)cls);
+    AssertCodeMsg(IsIntrinsicType->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)cls);
-    BOOL result = (BOOL)IsInSIMDModule->Get((DWORDLONG)cls);
-    DEBUG_REP(dmpIsInSIMDModule((DWORDLONG)cls, (DWORD)result));
+    BOOL result = (BOOL)IsIntrinsicType->Get((DWORDLONG)cls);
+    DEBUG_REP(dmpIsIntrinsicType((DWORDLONG)cls, (DWORD)result));
     return result;
 }
 

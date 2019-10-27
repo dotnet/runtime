@@ -1163,7 +1163,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     STANDARD_VM_CONTRACT;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-    if (!(GetAssembly()->IsSIMDVectorAssembly() || bmtProp->fIsIntrinsicType))
+    if (!bmtProp->fIsIntrinsicType)
         return false;
 
     if (bmtFP->NumInstanceFieldBytes != 16)
@@ -1485,7 +1485,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // SIMD types have [Intrinsic] attribute, for example
     //
     // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
-    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
+    if (GetModule()->IsSystem())
     {
         HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
             WellKnownAttribute::Intrinsic,
@@ -5134,7 +5134,7 @@ MethodTableBuilder::InitNewMethodDesc(
     }
 
     // Check for methods marked as [Intrinsic]
-    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
+    if (GetModule()->IsSystem())
     {
         if (bmtProp->fIsHardwareIntrinsic || (S_OK == GetCustomAttribute(pMethod->GetMethodSignature().GetToken(),
                                                     WellKnownAttribute::Intrinsic,
