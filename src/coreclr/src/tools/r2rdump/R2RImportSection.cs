@@ -126,16 +126,29 @@ namespace R2RDump
             AuxiliaryDataSize = 0;
             if (AuxiliaryDataRVA != 0)
             {
-                int startOffset = auxDataOffset + BitConverter.ToInt32(reader.Image, auxDataOffset);
+                int endOffset = auxDataOffset + BitConverter.ToInt32(reader.Image, auxDataOffset);
 
                 for (int i = 0; i < Entries.Count; i++)
                 {
-                    GCRefMapDecoder decoder = new GCRefMapDecoder(reader, startOffset);
+                    int entryStartOffset = auxDataOffset + BitConverter.ToInt32(reader.Image, auxDataOffset + sizeof(int) * (Entries[i].Index / GCRefMap.GCREFMAP_LOOKUP_STRIDE));
+                    int remaining = Entries[i].Index % GCRefMap.GCREFMAP_LOOKUP_STRIDE;
+                    while (remaining != 0)
+                    {
+                        while ((reader.Image[entryStartOffset] & 0x80) != 0)
+                        {
+                            entryStartOffset++;
+                        }
+
+                        entryStartOffset++;
+                        remaining--;
+                    }
+
+                    GCRefMapDecoder decoder = new GCRefMapDecoder(reader, entryStartOffset);
                     Entries[i].GCRefMap = decoder.ReadMap();
-                    startOffset = decoder.GetOffset();
+                    endOffset = decoder.GetOffset();
                 }
 
-                AuxiliaryDataSize = startOffset - auxDataOffset;
+                AuxiliaryDataSize = endOffset - auxDataOffset;
             }
         }
 
