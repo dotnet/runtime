@@ -290,22 +290,22 @@ BOOL IsStructMarshalable(TypeHandle th)
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor()
-    :m_nativeSize(1),
-    m_alignmentRequirement(1),
-    m_offset(0),
+    :m_offset(0),
     m_flags(NATIVE_FIELD_CATEGORY_ILLEGAL),
     m_isNestedType(false)
 {
+    nativeSizeAndAlignment.m_nativeSize = 1;
+    nativeSizeAndAlignment.m_alignmentRequirement = 1;
     m_pFD.SetValueMaybeNull(nullptr);
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor(NativeFieldFlags flags, ULONG nativeSize, ULONG alignment)
-    :m_nativeSize(nativeSize),
-    m_alignmentRequirement(alignment),
-    m_offset(0),
+    :m_offset(0),
     m_flags(flags),
     m_isNestedType(false)
 {
+    nativeSizeAndAlignment.m_nativeSize = nativeSize;
+    nativeSizeAndAlignment.m_alignmentRequirement = alignment;
     m_pFD.SetValueMaybeNull(nullptr);
 }
 
@@ -320,8 +320,8 @@ NativeFieldDescriptor::NativeFieldDescriptor(PTR_MethodTable pMT, int numElement
     CONTRACTL_END;
 
     m_pFD.SetValueMaybeNull(nullptr);
-    m_pNestedType.SetValue(pMT);
-    m_numElements = numElements;
+    nestedTypeAndCount.m_pNestedType.SetValue(pMT);
+    nestedTypeAndCount.m_numElements = numElements;
     m_flags = isBlittable ? NATIVE_FIELD_CATEGORY_NESTED_BLITTABLE : NATIVE_FIELD_CATEGORY_NESTED;
     m_isNestedType = true;
 }
@@ -334,13 +334,13 @@ NativeFieldDescriptor::NativeFieldDescriptor(const NativeFieldDescriptor& other)
     m_pFD.SetValueMaybeNull(other.m_pFD.GetValueMaybeNull());
     if (m_isNestedType)
     {
-        m_pNestedType.SetValueMaybeNull(other.m_pNestedType.GetValueMaybeNull());
-        m_numElements = other.m_numElements;
+        nestedTypeAndCount.m_pNestedType.SetValueMaybeNull(other.nestedTypeAndCount.m_pNestedType.GetValueMaybeNull());
+        nestedTypeAndCount.m_numElements = other.nestedTypeAndCount.m_numElements;
     }
     else
     {
-        m_nativeSize = other.m_nativeSize;
-        m_alignmentRequirement = other.m_alignmentRequirement;
+        nativeSizeAndAlignment.m_nativeSize = other.nativeSizeAndAlignment.m_nativeSize;
+        nativeSizeAndAlignment.m_alignmentRequirement = other.nativeSizeAndAlignment.m_alignmentRequirement;
     }
 }
 
@@ -353,13 +353,13 @@ NativeFieldDescriptor& NativeFieldDescriptor::operator=(const NativeFieldDescrip
 
     if (m_isNestedType)
     {
-        m_pNestedType.SetValueMaybeNull(other.m_pNestedType.GetValueMaybeNull());
-        m_numElements = other.m_numElements;
+        nestedTypeAndCount.m_pNestedType.SetValueMaybeNull(other.nestedTypeAndCount.m_pNestedType.GetValueMaybeNull());
+        nestedTypeAndCount.m_numElements = other.nestedTypeAndCount.m_numElements;
     }
     else
     {
-        m_nativeSize = other.m_nativeSize;
-        m_alignmentRequirement = other.m_alignmentRequirement;
+        nativeSizeAndAlignment.m_nativeSize = other.nativeSizeAndAlignment.m_nativeSize;
+        nativeSizeAndAlignment.m_alignmentRequirement = other.nativeSizeAndAlignment.m_alignmentRequirement;
     }
 
     return *this;
@@ -378,7 +378,7 @@ PTR_MethodTable NativeFieldDescriptor::GetNestedNativeMethodTable() const
     }
     CONTRACT_END;
 
-    RETURN m_pNestedType.GetValue();
+    RETURN nestedTypeAndCount.m_pNestedType.GetValue();
 }
 
 PTR_FieldDesc NativeFieldDescriptor::GetFieldDesc() const
@@ -401,7 +401,7 @@ BOOL NativeFieldDescriptor::IsRestored() const
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_PREJIT
-    return m_pNestedType.IsNull() || (!m_pNestedType.IsTagged() && m_pNestedType.GetValue()->IsRestored());
+    return nestedTypeAndCount.m_pNestedType.IsNull() || (!nestedTypeAndCount.m_pNestedType.IsTagged() && nestedTypeAndCount.m_pNestedType.GetValue()->IsRestored());
 #else // FEATURE_PREJIT
     // putting the IsFullyLoaded check here is tempting but incorrect
     return TRUE;
@@ -416,7 +416,7 @@ void NativeFieldDescriptor::Restore()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!m_isNestedType || CheckPointer(m_pNestedType.GetValue()));
+        PRECONDITION(!m_isNestedType || CheckPointer(nestedTypeAndCount.m_pNestedType.GetValue()));
     }
     CONTRACTL_END;
 
@@ -429,10 +429,10 @@ void NativeFieldDescriptor::Restore()
     {
 
 #ifdef FEATURE_PREJIT
-        Module::RestoreMethodTablePointer(&m_pNestedType);
+        Module::RestoreMethodTablePointer(&nestedTypeAndCount.m_pNestedType);
 #else // FEATURE_PREJIT
         // without NGEN we only have to make sure that the type is fully loaded
-        PTR_MethodTable pMT = m_pNestedType.GetValue();
+        PTR_MethodTable pMT = nestedTypeAndCount.m_pNestedType.GetValue();
         if (pMT != NULL)
             ClassLoader::EnsureLoaded(pMT);
 #endif // FEATURE_PREJIT
