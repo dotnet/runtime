@@ -119,7 +119,7 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                WriteEvent(RemoteCertificateId, remoteCertificate?.ToString(true));
+                RemoteCertificate(remoteCertificate?.ToString(true));
             }
         }
         [Event(RemoteCertificateId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
@@ -239,7 +239,7 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                WriteEvent(UsingCachedCredentialId, GetHashCode(secureChannel));
+                UsingCachedCredential(GetHashCode(secureChannel));
             }
         }
         [Event(UsingCachedCredentialId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
