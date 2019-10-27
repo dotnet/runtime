@@ -4017,9 +4017,9 @@ CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
     return intrinsicID;
 }
 
-bool ZapInfo::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+bool ZapInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-    return m_pEEJitInfo->isInSIMDModule(classHnd);
+    return m_pEEJitInfo->isIntrinsicType(classHnd);
 }
 
 CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE method)

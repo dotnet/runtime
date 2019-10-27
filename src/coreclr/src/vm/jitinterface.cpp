@@ -8947,10 +8947,9 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
-// TODO: This method should probably be renamed to something like "isSIMDType"
-bool CEEInfo::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
+bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
-CONTRACTL {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
@@ -8961,28 +8960,9 @@ CONTRACTL {
 
     TypeHandle VMClsHnd(classHnd);
     PTR_MethodTable methodTable = VMClsHnd.GetMethodTable();
-    if (methodTable->GetAssembly()->IsSIMDVectorAssembly())
-    {
-        result = true;
-    }
-    else if (methodTable->IsIntrinsicType())
-    {
-        LPCUTF8 namespaceName;
-        LPCUTF8 className = methodTable->GetFullyQualifiedNameInfo(&namespaceName);
+    result = methodTable->IsIntrinsicType();
 
-        if (strncmp(className, "Vector", 6) == 0)
-        {
-            className += 6;
-
-            if ((className[0] == '\0') || (strcmp(className, "`1") == 0) || (strcmp(className, "2") == 0) || (strcmp(className, "3") == 0) || (strcmp(className, "4") == 0))
-            {
-                assert(strcmp(namespaceName, "System.Numerics") == 0);
-                result = true;
-            }
-        }
-    }
     EE_TO_JIT_TRANSITION_LEAF();
-
     return result;
 }
 

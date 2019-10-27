@@ -46,7 +46,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoIntrinsics __getIntrinsicID(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, byte* pMustExpand);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.I1)]delegate bool __isInSIMDModule(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd);
+        [return: MarshalAs(UnmanagedType.I1)]delegate bool __isIntrinsicType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoUnmanagedCallConv __getUnmanagedCallConv(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -601,12 +601,12 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.I1)]static bool _isInSIMDModule(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd)
+        [return: MarshalAs(UnmanagedType.I1)]static bool _isIntrinsicType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isInSIMDModule(classHnd);
+                return _this.isIntrinsicType(classHnd);
             }
             catch (Exception ex)
             {
@@ -2887,7 +2887,7 @@ namespace Internal.JitInterface
             var d16 = new __getIntrinsicID(_getIntrinsicID);
             callbacks[16] = Marshal.GetFunctionPointerForDelegate(d16);
             delegates[16] = d16;
-            var d17 = new __isInSIMDModule(_isInSIMDModule);
+            var d17 = new __isIntrinsicType(_isIntrinsicType);
             callbacks[17] = Marshal.GetFunctionPointerForDelegate(d17);
             delegates[17] = d17;
             var d18 = new __getUnmanagedCallConv(_getUnmanagedCallConv);
