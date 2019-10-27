@@ -100,23 +100,6 @@ void Assembly::SetIsInGAC(BOOL fIsInGAC)
     }
 }
 
-BOOL Assembly::GetIsDynamicBind()
-{
-    return ((m_dwAssemblyFlags & FLAG_IS_DYNAMIC_BIND) != 0);
-}
-
-void Assembly::SetIsDynamicBind(BOOL fIsDynamicBind)
-{
-    if (fIsDynamicBind)
-    {
-        m_dwAssemblyFlags |= FLAG_IS_DYNAMIC_BIND;
-    }
-    else
-    {
-        m_dwAssemblyFlags &= ~FLAG_IS_DYNAMIC_BIND;
-    }
-}
-
 BOOL Assembly::GetIsByteArray()
 {
     return ((m_dwAssemblyFlags & FLAG_IS_BYTE_ARRAY) != 0);

@@ -61,23 +61,6 @@ Assembly *BindResult::GetAsAssembly(BOOL fAddRef /* = FALSE */)
     return static_cast<Assembly *>(GetAssembly(fAddRef));
 }
 
-BOOL BindResult::GetIsDynamicBind()
-{
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_DYNAMIC_BIND) != 0);
-}
-
-void BindResult::SetIsDynamicBind(BOOL fIsDynamicBind)
-{
-    if (fIsDynamicBind)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_IS_DYNAMIC_BIND;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_IS_DYNAMIC_BIND;
-    }
-}
-
 BOOL BindResult::GetIsInGAC()
 {
     return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_IN_GAC) != 0);
@@ -150,7 +133,6 @@ void BindResult::SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound /* 
 {
     _ASSERTE(pContextEntry != NULL);
 
-    SetIsDynamicBind(pContextEntry->GetIsDynamicBind());
     SetIsInGAC(pContextEntry->GetIsInGAC());
     SetIsContextBound(fIsContextBound);
     SetIsSharable(pContextEntry->GetIsSharable());
@@ -163,7 +145,6 @@ void BindResult::SetResult(Assembly *pAssembly)
 {
     _ASSERTE(pAssembly != NULL);
 
-    SetIsDynamicBind(pAssembly->GetIsDynamicBind());
     SetIsInGAC(pAssembly->GetIsInGAC());
     SetIsSharable(pAssembly->GetIsSharable());
     SAFE_RELEASE(m_pAssemblyName);
