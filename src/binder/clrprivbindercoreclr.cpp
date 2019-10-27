@@ -138,8 +138,6 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
         
-        // Ensure we are not being asked to bind to a TPA assembly
-        //
         // Easy out for mscorlib
         if (pAssemblyName->IsMscorlib())
         {
@@ -147,8 +145,10 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
         }
 
         {
+            // Ensure we are not being asked to bind to a TPA assembly
+            //
             SString& simpleName = pAssemblyName->GetSimpleName();
-            SimpleNameToFileNameMap * tpaMap = GetAppContext()->GetTpaList();
+            SimpleNameToFileNameMap* tpaMap = GetAppContext()->GetTpaList();
             if (tpaMap->LookupPtr(simpleName.GetUnicode()) != NULL)
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
@@ -159,18 +159,18 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                     if (pCoreCLRFoundAssembly->GetIsInGAC())
                     {
                         *ppAssembly = pCoreCLRFoundAssembly.Extract();
-                        goto Exit;                        
+                        goto Exit;
                     }
                 }
             }
+        }
             
-            hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
-            if (hr == S_OK)
-            {
-                _ASSERTE(pCoreCLRFoundAssembly != NULL);
-                pCoreCLRFoundAssembly->SetBinder(this);
-                *ppAssembly = pCoreCLRFoundAssembly.Extract();
-            }
+        hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        if (hr == S_OK)
+        {
+            _ASSERTE(pCoreCLRFoundAssembly != NULL);
+            pCoreCLRFoundAssembly->SetBinder(this);
+            *ppAssembly = pCoreCLRFoundAssembly.Extract();
         }
 Exit:;        
     }

@@ -6620,8 +6620,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
             }
                 
-            // Is the assembly already bound using a binding context that will be incompatible?
-            // An example is attempting to consume an assembly bound to WinRT binder.
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
         }
             
@@ -6630,6 +6628,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             _ASSERTE(pResolvedAssembly != NULL);
 
 #ifdef FEATURE_COMINTEROP
+            // Is the assembly already bound using a binding context that will be incompatible?
+            // An example is attempting to consume an assembly bound to WinRT binder.
             if (AreSameBinderInstance(pResolvedAssembly, GetAppDomain()->GetWinRtBinder()))
             {
                 // It is invalid to return an assembly bound to an incompatible binder
