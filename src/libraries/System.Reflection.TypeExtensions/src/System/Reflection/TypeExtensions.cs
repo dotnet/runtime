@@ -15,7 +15,7 @@ namespace System.Reflection
 {
     public static class TypeExtensions
     {
-        public static ConstructorInfo GetConstructor(Type type, Type[] types)
+        public static ConstructorInfo? GetConstructor(Type type, Type[] types)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetConstructor(types);
@@ -39,13 +39,13 @@ namespace System.Reflection
             return type.GetDefaultMembers();
         }
 
-        public static EventInfo GetEvent(Type type, string name)
+        public static EventInfo? GetEvent(Type type, string name)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetEvent(name);
         }
 
-        public static EventInfo GetEvent(Type type, string name, BindingFlags bindingAttr)
+        public static EventInfo? GetEvent(Type type, string name, BindingFlags bindingAttr)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetEvent(name, bindingAttr);
@@ -63,13 +63,13 @@ namespace System.Reflection
             return type.GetEvents(bindingAttr);
         }
 
-        public static FieldInfo GetField(Type type, string name)
+        public static FieldInfo? GetField(Type type, string name)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetField(name);
         }
 
-        public static FieldInfo GetField(Type type, string name, BindingFlags bindingAttr)
+        public static FieldInfo? GetField(Type type, string name, BindingFlags bindingAttr)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetField(name, bindingAttr);
@@ -123,19 +123,19 @@ namespace System.Reflection
             return type.GetMembers(bindingAttr);
         }
 
-        public static MethodInfo GetMethod(Type type, string name)
+        public static MethodInfo? GetMethod(Type type, string name)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetMethod(name);
         }
 
-        public static MethodInfo GetMethod(Type type, string name, BindingFlags bindingAttr)
+        public static MethodInfo? GetMethod(Type type, string name, BindingFlags bindingAttr)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetMethod(name, bindingAttr);
         }
 
-        public static MethodInfo GetMethod(Type type, string name, Type[] types)
+        public static MethodInfo? GetMethod(Type type, string name, Type[] types)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetMethod(name, types);
@@ -153,7 +153,7 @@ namespace System.Reflection
             return type.GetMethods(bindingAttr);
         }
 
-        public static Type GetNestedType(Type type, string name, BindingFlags bindingAttr)
+        public static Type? GetNestedType(Type type, string name, BindingFlags bindingAttr)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetNestedType(name, bindingAttr);
@@ -177,37 +177,37 @@ namespace System.Reflection
             return type.GetProperties(bindingAttr);
         }
 
-        public static PropertyInfo GetProperty(Type type, string name)
+        public static PropertyInfo? GetProperty(Type type, string name)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetProperty(name);
         }
 
-        public static PropertyInfo GetProperty(Type type, string name, BindingFlags bindingAttr)
+        public static PropertyInfo? GetProperty(Type type, string name, BindingFlags bindingAttr)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetProperty(name, bindingAttr);
         }
 
-        public static PropertyInfo GetProperty(Type type, string name, Type returnType)
+        public static PropertyInfo? GetProperty(Type type, string name, Type? returnType)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetProperty(name, returnType);
         }
 
-        public static PropertyInfo GetProperty(Type type, string name, Type returnType, Type[] types)
+        public static PropertyInfo? GetProperty(Type type, string name, Type? returnType, Type[] types)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetProperty(name, returnType, types);
         }
 
-        public static bool IsAssignableFrom(Type type, Type c)
+        public static bool IsAssignableFrom(Type type, Type? c)
         {
             Requires.NotNull(type, nameof(type));
             return type.IsAssignableFrom(c);
         }
 
-        public static bool IsInstanceOfType(Type type, object o)
+        public static bool IsInstanceOfType(Type type, object? o)
         {
             Requires.NotNull(type, nameof(type));
             return type.IsInstanceOfType(o);
@@ -237,37 +237,37 @@ namespace System.Reflection
 
     public static class EventInfoExtensions
     {
-        public static MethodInfo GetAddMethod(EventInfo eventInfo)
+        public static MethodInfo? GetAddMethod(EventInfo eventInfo)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetAddMethod();
         }
 
-        public static MethodInfo GetAddMethod(EventInfo eventInfo, bool nonPublic)
+        public static MethodInfo? GetAddMethod(EventInfo eventInfo, bool nonPublic)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetAddMethod(nonPublic);
         }
 
-        public static MethodInfo GetRaiseMethod(EventInfo eventInfo)
+        public static MethodInfo? GetRaiseMethod(EventInfo eventInfo)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRaiseMethod();
         }
 
-        public static MethodInfo GetRaiseMethod(EventInfo eventInfo, bool nonPublic)
+        public static MethodInfo? GetRaiseMethod(EventInfo eventInfo, bool nonPublic)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRaiseMethod(nonPublic);
         }
 
-        public static MethodInfo GetRemoveMethod(EventInfo eventInfo)
+        public static MethodInfo? GetRemoveMethod(EventInfo eventInfo)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRemoveMethod();
         }
 
-        public static MethodInfo GetRemoveMethod(EventInfo eventInfo, bool nonPublic)
+        public static MethodInfo? GetRemoveMethod(EventInfo eventInfo, bool nonPublic)
         {
             Requires.NotNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRemoveMethod(nonPublic);
@@ -373,25 +373,25 @@ namespace System.Reflection
             return property.GetAccessors(nonPublic);
         }
 
-        public static MethodInfo GetGetMethod(PropertyInfo property)
+        public static MethodInfo? GetGetMethod(PropertyInfo property)
         {
             Requires.NotNull(property, nameof(property));
             return property.GetGetMethod();
         }
 
-        public static MethodInfo GetGetMethod(PropertyInfo property, bool nonPublic)
+        public static MethodInfo? GetGetMethod(PropertyInfo property, bool nonPublic)
         {
             Requires.NotNull(property, nameof(property));
             return property.GetGetMethod(nonPublic);
         }
 
-        public static MethodInfo GetSetMethod(PropertyInfo property)
+        public static MethodInfo? GetSetMethod(PropertyInfo property)
         {
             Requires.NotNull(property, nameof(property));
             return property.GetSetMethod();
         }
 
-        public static MethodInfo GetSetMethod(PropertyInfo property, bool nonPublic)
+        public static MethodInfo? GetSetMethod(PropertyInfo property, bool nonPublic)
         {
             Requires.NotNull(property, nameof(property));
             return property.GetSetMethod(nonPublic);
