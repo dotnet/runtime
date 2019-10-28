@@ -219,17 +219,3 @@ void SafeHandle::RunReleaseMethod(SafeHandle* psh)
 
     GCPROTECT_END();
 }
-
-FCIMPL1(void, CriticalHandle::FireCustomerDebugProbe, CriticalHandle* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    CRITICALHANDLEREF ch(refThisUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_1(ch);
-
-    FCUnique(0x53);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
