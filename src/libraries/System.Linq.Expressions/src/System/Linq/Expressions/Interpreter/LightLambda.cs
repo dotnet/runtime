@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
@@ -12,6 +13,7 @@ using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
+    [DebuggerDisplay("{DebugView,nq}")]
     public partial class LightLambda
     {
         private readonly IStrongBox[] _closure;
@@ -30,7 +32,7 @@ namespace System.Linq.Expressions.Interpreter
             _interpreter = delegateCreator.Interpreter;
         }
 
-        internal string DebugView => new DebugViewPrinter(_interpreter).ToString();
+        private string DebugView => new DebugViewPrinter(_interpreter).ToString();
 
         private class DebugViewPrinter
         {
