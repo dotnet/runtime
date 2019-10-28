@@ -3026,8 +3026,7 @@ ILSafeHandleMarshaler::ReturnOverride(
     
     if (!pMT->HasDefaultConstructor())
     {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
+        COMPlusThrowNonLocalized(kMissingMethodException, COR_CTOR_METHOD_NAME_W);
     }
 
     // 2) prealloc a safehandle

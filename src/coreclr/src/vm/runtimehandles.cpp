@@ -135,6 +135,21 @@ BOOL QCALLTYPE RuntimeMethodHandle::IsCAVisibleFromDecoratedType(
         targetHandle.IsTypeDesc())
         COMPlusThrowArgumentNull(NULL, W("Arg_InvalidHandle"));
 
+    if (pTargetCtor == NULL)
+    {
+        MethodTable* pTargetMT = targetHandle.AsMethodTable();
+
+        if (pTargetMT->HasDefaultConstructor())
+        {
+            pTargetCtor = pTargetMT->GetDefaultConstructor();
+        }
+        else
+        {
+            if (!pTargetMT->IsValueType())
+                COMPlusThrowNonLocalized(kMissingMethodException, COR_CTOR_METHOD_NAME_W);
+        }
+    }
+
     bResult = CheckCAVisibilityFromDecoratedType(targetHandle.AsMethodTable(), pTargetCtor, sourceHandle.AsMethodTable(), sourceModuleHandle);
     END_QCALL;
 
@@ -1158,45 +1173,18 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(QCall:
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
     TypeHandle thOwnerOfMD = pOwner.AsTypeHandle();
 
-        // Ok to have INVALID_SLOT in the case where abstract class does not implement an interface method.
-        // This case can not be reproed using C# "implements" all interface methods
-        // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
-        //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
-        //@TODO:              be done faster - just need to make a function FindDispatchDecl.
-        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, FALSE /* throwOnConflict */));
+    // Ok to have INVALID_SLOT in the case where abstract class does not implement an interface method.
+    // This case can not be reproed using C# "implements" all interface methods
+    // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
+    //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
+    //@TODO:              be done faster - just need to make a function FindDispatchDecl.
+    DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, FALSE /* throwOnConflict */));
     if (!slot.IsNull())
-            pResult = slot.GetMethodDesc();
+        pResult = slot.GetMethodDesc();
 
     END_QCALL;
     
     return pResult;
-    }
-    
-void QCALLTYPE RuntimeTypeHandle::GetDefaultConstructor(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retMethod)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    
-    MethodDesc* pCtor = NULL;
-    
-    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
-
-    if (!typeHandle.IsTypeDesc())
-    {
-        MethodTable* pMethodTable = typeHandle.AsMethodTable();
-        if (pMethodTable->HasDefaultConstructor())
-            pCtor = pMethodTable->GetDefaultConstructor();
-    }
-
-    if (pCtor != NULL)
-    {
-        GCX_COOP();
-        retMethod.Set(pCtor->GetStubMethodInfo());
-    }
-    END_QCALL;
-
-    return;
 }
 
 FCIMPL1(ReflectMethodObject*, RuntimeTypeHandle::GetDeclaringMethod, ReflectClassBaseObject *pTypeUNSAFE) {

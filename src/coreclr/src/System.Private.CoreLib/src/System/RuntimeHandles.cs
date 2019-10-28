@@ -202,9 +202,6 @@ namespace System
         internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool hasNoDefaultCtor);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo? ctor);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object Allocate(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -394,17 +391,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetDefaultConstructor(QCallTypeHandle handle, ObjectHandleOnStack method);
-
-        internal IRuntimeMethodInfo? GetDefaultConstructor()
-        {
-            IRuntimeMethodInfo? ctor = null;
-            RuntimeTypeHandle nativeHandle = GetNativeHandle();
-            GetDefaultConstructor(JitHelpers.GetQCallTypeHandleOnStack(ref nativeHandle), JitHelpers.GetObjectHandleOnStack(ref ctor));
-            return ctor;
-        }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
