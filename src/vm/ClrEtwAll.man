@@ -17,8 +17,8 @@
                              message="$(string.RuntimePublisher.GCKeywordMessage)" symbol="CLR_GC_KEYWORD"/>
                     <keyword name="GCHandleKeyword" mask="0x2"
                              message="$(string.RuntimePublisher.GCHandleKeywordMessage)" symbol="CLR_GCHANDLE_KEYWORD"/>
-                    <keyword name="FusionKeyword" mask="0x4"
-                             message="$(string.RuntimePublisher.FusionKeywordMessage)" symbol="CLR_FUSION_KEYWORD"/>
+                    <keyword name="AssemblyLoaderKeyword" mask="0x4"
+                             message="$(string.RuntimePublisher.AssemblyLoaderKeywordMessage)" symbol="CLR_ASSEMBLY_LOADER_KEYWORD"/>
                     <keyword name="LoaderKeyword" mask="0x8"
                              message="$(string.RuntimePublisher.LoaderKeywordMessage)" symbol="CLR_LOADER_KEYWORD"/>
                     <keyword name="JitKeyword" mask="0x10"
@@ -386,7 +386,14 @@
                             <opcode name="Resume" message="$(string.RuntimePublisher.TieredCompilationResumeOpcodeMessage)" symbol="CLR_TIERED_COMPILATION_RESUME_OPCODE" value="13"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 32-->
+
+                    <task name="AssemblyLoader" symbol="CLR_ASSEMBLY_LOADER_TASK"
+                          value="32" eventGUID="{BCF2339E-B0A6-452D-966C-33AC9DD82573}"
+                          message="$(string.RuntimePublisher.AssemblyLoaderTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 33-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -1622,6 +1629,48 @@
                                 <AppDomainIndex> %4 </AppDomainIndex>
                                 <ClrInstanceID> %5 </ClrInstanceID>
                             </AppDomainLoadUnload_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="AssemblyLoadStart">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="AssemblyName" inType="win:UnicodeString" />
+                        <data name="AssemblyPath" inType="win:UnicodeString" />
+                        <data name="RequestingAssembly" inType="win:UnicodeString" />
+                        <data name="AssemblyLoadContext" inType="win:UnicodeString" />
+                        <UserData>
+                            <AssemblyLoadStart xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <AssemblyName> %2 </AssemblyName>
+                                <AssemblyPath> %3 </AssemblyPath>
+                                <RequestingAssembly> %4 </RequestingAssembly>
+                                <AssemblyLoadContext> %5 </AssemblyLoadContext>
+                            </AssemblyLoadStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="AssemblyLoadStop">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="AssemblyName" inType="win:UnicodeString" />
+                        <data name="AssemblyPath" inType="win:UnicodeString" />
+                        <data name="RequestingAssembly" inType="win:UnicodeString" />
+                        <data name="AssemblyLoadContext" inType="win:UnicodeString" />
+                        <data name="Success" inType="win:Boolean" />
+                        <data name="ResultAssemblyName" inType="win:UnicodeString" />
+                        <data name="ResultAssemblyPath" inType="win:UnicodeString" />
+                        <data name="Cached" inType="win:Boolean" />
+                        <UserData>
+                            <AssemblyLoadStop xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <AssemblyName> %2 </AssemblyName>
+                                <AssemblyPath> %3 </AssemblyPath>
+                                <RequestingAssembly> %4 </RequestingAssembly>
+                                <AssemblyLoadContext> %5 </AssemblyLoadContext>
+                                <Success> %6 </Success>
+                                <ResultAssemblyName> %7 </ResultAssemblyName>
+                                <ResultAssemblyPath> %8 </ResultAssemblyPath>
+                                <Cached> %9 </Cached>
+                            </AssemblyLoadStop>
                         </UserData>
                     </template>
 
@@ -3404,6 +3453,18 @@
                     <event value="284" version="0" level="win:Informational" template="TieredCompilationBackgroundJitStop"
                            keywords="CompilationKeyword" task="TieredCompilation" opcode="win:Stop"
                            symbol="TieredCompilationBackgroundJitStop" message="$(string.RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage)"/>
+
+                    <!-- Assembly loader events 290-299 -->
+                    <event value="290" version="0" level="win:Informational"  template="AssemblyLoadStart"
+                           keywords ="AssemblyLoaderKeyword" opcode="win:Start"
+                           task="AssemblyLoader"
+                           symbol="AssemblyLoadStart" message="$(string.RuntimePublisher.AssemblyLoadStartEventMessage)"/>
+
+                    <event value="291" version="0" level="win:Informational"  template="AssemblyLoadStop"
+                           keywords ="AssemblyLoaderKeyword" opcode="win:Stop"
+                           task="AssemblyLoader"
+                           symbol="AssemblyLoadStop" message="$(string.RuntimePublisher.AssemblyLoadStopEventMessage)"/>
+
                 </events>
             </provider>
 
@@ -6598,6 +6659,8 @@
                 <string id="RuntimePublisher.AppDomainLoad_V1EventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3;%nAppDomainIndex=%4;%nClrInstanceID=%5" />
                 <string id="RuntimePublisher.AppDomainUnloadEventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3" />
                 <string id="RuntimePublisher.AppDomainUnload_V1EventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3;%nAppDomainIndex=%4;%nClrInstanceID=%5" />
+                <string id="RuntimePublisher.AssemblyLoadStartEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5" />
+                <string id="RuntimePublisher.AssemblyLoadStopEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5;%nSuccess=%6;%nResultAssemblyName=%7;%nResultAssemblyPath=%8;%nCached=%9" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedEventMessage" value="AppDomainID=%1;%nSurvived=%2;%nProcessSurvived=%3;%nClrInstanceID=%4" />
@@ -6789,6 +6852,7 @@
                 <string id="RuntimePublisher.DebugExceptionProcessingTaskMessage" value="DebugExceptionProcessing" />
                 <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
+                <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
               
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7059,7 +7123,7 @@
                 <!-- Keyword Messages -->
                 <string id="RuntimePublisher.GCKeywordMessage" value="GC" />
                 <string id="RuntimePublisher.ThreadingKeywordMessage" value="Threading" />
-                <string id="RuntimePublisher.FusionKeywordMessage" value="Binder" />
+                <string id="RuntimePublisher.AssemblyLoaderKeywordMessage" value="AssemblyLoader" />
                 <string id="RuntimePublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RuntimePublisher.JitKeywordMessage" value="Jit" />
                 <string id="RuntimePublisher.JittedMethodILToNativeMapKeywordMessage" value="JittedMethodILToNativeMap" />

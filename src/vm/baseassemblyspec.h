@@ -93,7 +93,7 @@ public:
     void SetName(LPCSTR szName);
     void SetName(SString const & ssName);
 
-    LPCWSTR GetCodeBase();
+    LPCWSTR GetCodeBase() const;
     void SetCodeBase(LPCWSTR szCodeBase);
 
     VOID SetCulture(LPCSTR szCulture);
@@ -109,7 +109,7 @@ public:
     BOOL IsStrongNamed() const;
     BOOL HasPublicKey() const;
     BOOL HasPublicKeyToken() const;
-    BOOL IsMscorlibSatellite();
+    BOOL IsMscorlibSatellite() const;
     BOOL IsMscorlib();
 
     //

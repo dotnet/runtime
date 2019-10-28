@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BinderTracingTest.cs" />
+    <Compile Include="BinderEventListener.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+</Project>

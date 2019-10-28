@@ -31,6 +31,9 @@ namespace System.Runtime.Loader
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Assembly[] GetLoadedAssemblies();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsTracingEnabled();
+
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
