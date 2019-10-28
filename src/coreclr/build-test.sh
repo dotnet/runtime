@@ -177,10 +177,11 @@ precompile_coreroot_fx()
 
     # Read the exclusion file for this platform
     skipCrossGenFiles=($(read_array "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt"))
+    skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
 
     local overlayDir=$CORE_ROOT
 
-    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f -maxdepth 0)
+    filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
     for fileToPrecompile in ${filesToPrecompile}
     do
         local filename=${fileToPrecompile}

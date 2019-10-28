@@ -93,7 +93,28 @@ stages:
     #
     - template: /eng/platform-matrix.yml
       parameters:
-        jobTemplate: test-job.yml
+        jobTemplate: build-test-job.yml
+        buildConfig: release
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+        - Windows_NT_x86
+        helixQueueGroup: all
+        stagedBuild: true
+        jobParameters:
+          testGroup: outerloop
+          condition: ne(variables['_BypassTesting'], 'true')
+
+    #
+    # Release JIT test executions
+    #
+    - template: /eng/platform-matrix.yml
+      parameters:
+        jobTemplate: run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
@@ -103,18 +124,17 @@ stages:
           condition: ne(variables['_BypassTesting'], 'true')
 
     #
-    # ReadyToRun test builds
+    # Release R2R test executions
     #
     - template: /eng/platform-matrix.yml
       parameters:
-        jobTemplate: test-job.yml
+        jobTemplate: run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
         stagedBuild: true
         jobParameters:
-          testGroup: outerloop
           readyToRun: true
           displayNameArgs: R2R
+          testGroup: outerloop
           condition: ne(variables['_BypassTesting'], 'true')
-          

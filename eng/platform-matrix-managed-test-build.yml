@@ -229,6 +229,7 @@ jobs:
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
       helixQueues:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
         - Windows.10.Amd64.Open
@@ -254,6 +255,7 @@ jobs:
       buildConfig: ${{ parameters.buildConfig }}
       archType: x86
       osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
       helixQueues:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
         - Windows.10.Amd64.Open
@@ -277,6 +279,7 @@ jobs:
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm
       osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
       helixQueues:
       # NOTE: there are no queues specified for Windows_NT_arm public with helixQueueGroup='pr'. This means that specifying
       # Windows_NT_arm for a PR job causes a build, but no test run. If the test build and test runs were separate jobs,
@@ -296,6 +299,7 @@ jobs:
       buildConfig: ${{ parameters.buildConfig }}
       archType: arm64
       osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
       helixQueues:
       # TODO: Consider adding Windows.10.Arm64.Open here if capacity is enough for handling both Windows_NT/arm and Windows_NT/arm64 testing
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
