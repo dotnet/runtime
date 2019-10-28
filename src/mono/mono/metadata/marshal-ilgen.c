@@ -1865,11 +1865,12 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
  * \param method if non-NULL, the pinvoke method to call
  * \param check_exceptions Whenever to check for pending exceptions after the native call
  * \param func_param the function to call is passed as a boxed IntPtr as the first parameter
+ * \param skip_gc_trans Whenever to skip GC transitions
  *
  * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
 static void
-emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -1884,7 +1885,8 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	m.sig = sig;
 	m.piinfo = piinfo;
 
-	need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, func_param);
+	if (!skip_gc_trans)
+		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, func_param);
 
 	/* we copy the signature, so that we can set pinvoke to 0 */
 	if (func_param) {
