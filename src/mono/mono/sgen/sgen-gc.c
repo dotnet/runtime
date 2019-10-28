@@ -1777,13 +1777,18 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	sgen_client_pinning_end ();
 
 	remset.start_scan_remsets ();
-
-	enqueue_scan_remembered_set_jobs (&gc_thread_gray_queue, is_parallel ? NULL : object_ops_nopar, is_parallel);
-
-	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
-	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
-	SGEN_LOG (2, "Old generation scan: %lld usecs", (long long)(TV_ELAPSED (atv, btv) / 10));
+
+	SGEN_LOG (2, "Minor scan copy/clear remsets: %lld usecs", (long long)(TV_ELAPSED (atv, btv) / 10));
+
+	TV_GETTIME (atv);
+	enqueue_scan_remembered_set_jobs (&gc_thread_gray_queue, is_parallel ? NULL : object_ops_nopar, is_parallel);
+	TV_GETTIME (btv);
+
+	if (!is_parallel) {
+		time_minor_scan_remsets += TV_ELAPSED (atv, btv);
+		SGEN_LOG (2, "Minor scan remsets: %lld usecs", (long long)(TV_ELAPSED (atv, btv)/10));
+	}
 
 	sgen_pin_stats_report ();
 	sgen_gchandle_stats_report ();
@@ -1800,7 +1805,20 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	}
 
 	TV_GETTIME (btv);
-	time_minor_scan_roots += TV_ELAPSED (atv, btv);
+	if (!is_parallel) {
+		time_minor_scan_roots += TV_ELAPSED (atv, btv);
+
+		SGEN_LOG (2, "Minor scan roots: %lld usecs",
+			(long long)(TV_ELAPSED (atv, btv) / 10));
+	} else {
+		SGEN_LOG (2, "Minor scan remsets + roots: %lld usecs",
+			(long long)(TV_ELAPSED (atv, btv) / 10));
+
+		SGEN_LOG (2, "Minor scan remsets: accumulated major scan=%lld usecs, accumulated los scan=%lld usecs, workers=%d",
+			(long long)((time_minor_scan_major_blocks - major_scan_start) / 10),
+			(long long)((time_minor_scan_los - los_scan_start) / 10),
+			sgen_workers_get_active_worker_count (GENERATION_NURSERY));
+	}
 
 	finish_gray_stack (GENERATION_NURSERY, ctx);
 

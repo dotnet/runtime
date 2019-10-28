@@ -593,6 +593,12 @@ sgen_workers_get_job_split_count (int generation)
 	return (worker_contexts [generation].active_workers_num > 1) ? worker_contexts [generation].active_workers_num * 4 : 1;
 }
 
+int
+sgen_workers_get_active_worker_count (int generation)
+{
+	return (worker_contexts [generation].active_workers_num);
+}
+
 void
 sgen_workers_foreach (int generation, SgenWorkerCallback callback)
 {
@@ -649,6 +655,12 @@ int
 sgen_workers_get_job_split_count (int generation)
 {
 	return 1;
+}
+
+int
+sgen_workers_get_active_worker_count (int generation)
+{
+	return 0;
 }
 
 gboolean

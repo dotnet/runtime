@@ -87,6 +87,7 @@ void sgen_workers_assert_gray_queue_is_empty (int generation);
 void sgen_workers_take_from_queue (int generation, SgenGrayQueue *queue);
 SgenObjectOperations* sgen_workers_get_idle_func_object_ops (WorkerData *worker);
 int sgen_workers_get_job_split_count (int generation);
+int sgen_workers_get_active_worker_count (int generation);
 void sgen_workers_foreach (int generation, SgenWorkerCallback callback);
 gboolean sgen_workers_is_worker_thread (MonoNativeThreadId id);
 
