@@ -1374,6 +1374,77 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     return block;
 }
 
+//------------------------------------------------------------------------
+// hasEHBoundaryIn: Determine if this block begins at an EH boundary.
+//
+// Return Value:
+//    True iff the block is the target of an EH edge; false otherwise.
+//
+// Notes:
+//    For the purposes of this method (and its callers), an EH edge is one on
+//    which the EH flow model requires that all lclVars must be reloaded from
+//    the stack before use, since control flow may transfer to this block through
+//    control flow that is not reflected in the flowgraph.
+//    Note that having a predecessor in a different EH region doesn't require
+//    that lclVars must be reloaded from the stack. That's only required when
+//    this block might be entered via flow that is not represented by an edge
+//    in the flowgraph.
+//
+bool BasicBlock::hasEHBoundaryIn()
+{
+    bool returnVal = (bbCatchTyp != BBCT_NONE);
+    if (!returnVal)
+    {
+#if FEATURE_EH_FUNCLETS
+        assert((bbFlags & BBF_FUNCLET_BEG) == 0);
+#endif // FEATURE_EH_FUNCLETS
+    }
+    return returnVal;
+}
+
+//------------------------------------------------------------------------
+// hasEHBoundaryOut: Determine if this block ends in an EH boundary.
+//
+// Return Value:
+//    True iff the block ends in an exception boundary that requires that no lclVars
+//    are live in registers; false otherwise.
+//
+// Notes:
+//    We may have a successor in a different EH region, but it is OK to have lclVars
+//    live in registers if any successor is a normal flow edge. That's because the
+//    EH write-thru semantics ensure that we always have an up-to-date value on the stack.
+//
+bool BasicBlock::hasEHBoundaryOut()
+{
+    bool returnVal = false;
+    // If a block is marked BBF_KEEP_BBJ_ALWAYS, it is always paired with its predecessor which is an
+    // EH boundary block. It must remain empty, and we must not have any live incoming vars in registers,
+    // in particular because we can't perform resolution if there are mismatches across edges.
+    if ((bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0)
+    {
+        returnVal = true;
+    }
+
+    if (bbJumpKind == BBJ_EHFILTERRET)
+    {
+        returnVal = true;
+    }
+
+    if (bbJumpKind == BBJ_EHFINALLYRET)
+    {
+        returnVal = true;
+    }
+
+#if FEATURE_EH_FUNCLETS
+    if (bbJumpKind == BBJ_EHCATCHRET)
+    {
+        returnVal = true;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    return returnVal;
+}
+
 //------------------------------------------------------------------------------
 // DisplayStaticSizes: display various static sizes of the BasicBlock data structure.
 //
