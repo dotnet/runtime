@@ -4594,8 +4594,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
 
 #ifdef __cplusplus
 
-#include "pal_unwind.h"
-
 PALIMPORT
 VOID
 PALAPI
