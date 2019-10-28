@@ -29,9 +29,8 @@
 #include "typeparse.h"
 
 #include "appdomainnative.hpp"
+#include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
-
-
 
 FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
         StringObject* codeBaseUNSAFE, 
@@ -190,6 +189,8 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), pCallersAssembly);
     spec.SetBindingContext(pBinderContext);
     
+    BinderTracing::AssemblyBindOperation bindOperation(&spec);
+
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
     CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
@@ -222,6 +223,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     assem = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pAssembly);
     
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly));
+    bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     RETURN pDomainAssembly->GetAssembly();
@@ -1416,3 +1418,12 @@ BOOL QCALLTYPE AssemblyNative::InternalTryGetRawMetadata(
 
     return metadata != nullptr;
 }
+
+// static
+FCIMPL0(FC_BOOL_RET, AssemblyNative::IsTracingEnabled)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(BinderTracing::IsEnabled());
+}
+FCIMPLEND

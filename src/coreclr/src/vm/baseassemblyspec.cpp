@@ -155,7 +155,7 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 // mscorlib.debug.resources.dll and uses the same public key as mscorlib.
 // It does not necessarily have the same version, and the Culture will 
 // always be set to something like "jp-JP".
-BOOL BaseAssemblySpec::IsMscorlibSatellite()
+BOOL BaseAssemblySpec::IsMscorlibSatellite() const
 {
     CONTRACTL
     {

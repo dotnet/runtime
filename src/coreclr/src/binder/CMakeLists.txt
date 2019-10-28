@@ -21,6 +21,7 @@ set(BINDER_COMMON_SOURCES
     assemblyidentitycache.cpp
     coreclrbindercommon.cpp
     fusionassemblyname.cpp
+    bindertracing.cpp
 )
 
 set(BINDER_COMMON_HEADERS
@@ -38,6 +39,7 @@ set(BINDER_COMMON_HEADERS
     inc/assemblyversion.hpp
     inc/assemblyversion.inl
     inc/bindertypes.hpp
+    inc/bindertracing.h
     inc/bindinglog.hpp
     inc/bindinglog.inl
     inc/bindresult.hpp
@@ -64,11 +66,13 @@ set(BINDER_COMMON_HEADERS
 
 set(BINDER_SOURCES
     ${BINDER_COMMON_SOURCES}
+    activitytracker.cpp
     clrprivbinderassemblyloadcontext.cpp
 )
 
 set(BINDER_HEADERS
     ${BINDER_COMMON_HEADERS}
+    inc/activitytracker.h
     inc/clrprivbinderassemblyloadcontext.h
     inc/contextentry.hpp
 )
