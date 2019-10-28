@@ -382,6 +382,8 @@ struct LsraBlockInfo
     BasicBlock::weight_t weight;
     bool                 hasCriticalInEdge;
     bool                 hasCriticalOutEdge;
+    bool                 hasEHBoundaryIn;
+    bool                 hasEHBoundaryOut;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
@@ -1464,6 +1466,9 @@ private:
     VARSET_TP splitOrSpilledVars;
     // Set of floating point variables to consider for callee-save registers.
     VARSET_TP fpCalleeSaveCandidateVars;
+    // Set of variables exposed on EH flow edges.
+    VARSET_TP exceptVars;
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(_TARGET_AMD64_)
     static bool varTypeNeedsPartialCalleeSave(var_types type)

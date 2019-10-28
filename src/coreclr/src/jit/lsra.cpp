@@ -814,13 +814,15 @@ void LinearScan::setBlockSequence()
         nextBlock = nullptr;
 
         // Initialize the blockInfo.
-        // predBBNum will be set later.  0 is never used as a bbNum.
-        assert(block->bbNum != 0);
+        // predBBNum will be set later.
+        // 0 is never used as a bbNum, but is used in blockInfo to designate an exception entry block.
         blockInfo[block->bbNum].predBBNum = 0;
         // We check for critical edges below, but initialize to false.
         blockInfo[block->bbNum].hasCriticalInEdge  = false;
         blockInfo[block->bbNum].hasCriticalOutEdge = false;
         blockInfo[block->bbNum].weight             = block->getBBWeight(compiler);
+        blockInfo[block->bbNum].hasEHBoundaryIn    = block->hasEHBoundaryIn();
+        blockInfo[block->bbNum].hasEHBoundaryOut   = block->hasEHBoundaryOut();
 
 #if TRACK_LSRA_STATS
         blockInfo[block->bbNum].spillCount         = 0;
@@ -829,21 +831,28 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].splitEdgeCount     = 0;
 #endif // TRACK_LSRA_STATS
 
-        if (block->GetUniquePred(compiler) == nullptr)
+        bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
+        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            BasicBlock* predBlock = pred->flBlock;
+            if (!hasUniquePred)
             {
-                BasicBlock* predBlock = pred->flBlock;
                 if (predBlock->NumSucc(compiler) > 1)
                 {
                     blockInfo[block->bbNum].hasCriticalInEdge = true;
                     hasCriticalEdges                          = true;
-                    break;
                 }
                 else if (predBlock->bbJumpKind == BBJ_SWITCH)
                 {
                     assert(!"Switch with single successor");
                 }
+            }
+            if (((predBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) || (hasUniquePred && predBlock->hasEHBoundaryOut()))
+            {
+                // Treat this as having incoming EH flow, since we can't insert resolution moves into
+                // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't
+                // allow us to keep any variables enregistered.
+                blockInfo[block->bbNum].hasEHBoundaryIn = true;
             }
         }
 
@@ -957,12 +966,17 @@ void LinearScan::setBlockSequence()
             JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
         }
 
-        if (i % 10 == 0)
+        if (blockInfo[block->bbNum].hasEHBoundaryIn)
         {
-            JITDUMP("\n                     ");
+            JITDUMP(" EH-in");
         }
+        if (blockInfo[block->bbNum].hasEHBoundaryOut)
+        {
+            JITDUMP(" EH-out");
+        }
+        JITDUMP("\n");
     }
-    JITDUMP("\n\n");
+    JITDUMP("\n");
 #endif
 }
 
@@ -1329,58 +1343,55 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
     this->varNum     = lclNum;
 }
 
-// identify the candidates which we are not going to enregister due to
-// being used in EH in a way we don't want to deal with
-// this logic cloned from fgInterBlockLocalVarLiveness
+//------------------------------------------------------------------------
+// LinearScan:identifyCandidatesExceptionDataflow: Build the set of variables exposed on EH flow edges
+//
+// Notes:
+//    This logic was originally cloned from fgInterBlockLocalVarLiveness.
+//
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    VARSET_TP   exceptVars(VarSetOps::MakeEmpty(compiler));
-    VARSET_TP   filterVars(VarSetOps::MakeEmpty(compiler));
-    VARSET_TP   finallyVars(VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
+#ifdef DEBUG
+    VARSET_TP finallyVars(VarSetOps::MakeEmpty(compiler));
+#endif
     BasicBlock* block;
 
     foreach_block(compiler, block)
     {
-        if (block->bbCatchTyp != BBCT_NONE)
+        if (block->hasEHBoundaryIn())
         {
             // live on entry to handler
             VarSetOps::UnionD(compiler, exceptVars, block->bbLiveIn);
         }
 
-        if (block->bbJumpKind == BBJ_EHFILTERRET)
-        {
-            // live on exit from filter
-            VarSetOps::UnionD(compiler, filterVars, block->bbLiveOut);
-        }
-        else if (block->bbJumpKind == BBJ_EHFINALLYRET)
-        {
-            // live on exit from finally
-            VarSetOps::UnionD(compiler, finallyVars, block->bbLiveOut);
-        }
-#if defined(FEATURE_EH_FUNCLETS)
-        // Funclets are called and returned from, as such we can only count on the frame
-        // pointer being restored, and thus everything live in or live out must be on the
-        // stack
-        if (block->bbFlags & BBF_FUNCLET_BEG)
-        {
-            VarSetOps::UnionD(compiler, exceptVars, block->bbLiveIn);
-        }
-        if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET) ||
-            (block->bbJumpKind == BBJ_EHCATCHRET))
+        if (block->hasEHBoundaryOut())
         {
             VarSetOps::UnionD(compiler, exceptVars, block->bbLiveOut);
+#ifdef DEBUG
+            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            {
+                // live on exit from finally.
+                // We track these separately because, in addition to having EH live-out semantics,
+                // we want to verify that they are must-init.
+                VarSetOps::UnionD(compiler, finallyVars, block->bbLiveOut);
+            }
+#endif
         }
-#endif // FEATURE_EH_FUNCLETS
     }
 
-    // slam them all together (there was really no need to use more than 2 bitvectors here)
-    VarSetOps::UnionD(compiler, exceptVars, filterVars);
-    VarSetOps::UnionD(compiler, exceptVars, finallyVars);
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        JITDUMP("EH Vars: ");
+        INDEBUG(dumpConvertedVarSet(compiler, exceptVars));
+        JITDUMP("\nFinally Vars: ");
+        INDEBUG(dumpConvertedVarSet(compiler, finallyVars));
+        JITDUMP("\n\n");
+    }
 
-    /* Mark all pointer variables live on exit from a 'finally'
-        block as either volatile for non-GC ref types or as
-        'explicitly initialized' (volatile and must-init) for GC-ref types */
-
+    // All variables live on exit from a 'finally' block should be marked lvLiveInOutOfHndlr.
+    // and as 'explicitly initialized' (must-init) for GC-ref types.
     VarSetOps::Iter iter(compiler, exceptVars);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -1388,16 +1399,14 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         unsigned   varNum = compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-        compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
+        assert(varDsc->lvLiveInOutOfHndlr);
 
-        if (varTypeIsGC(varDsc))
+        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam)
         {
-            if (VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam)
-            {
-                varDsc->lvMustInit = true;
-            }
+            assert(varDsc->lvMustInit);
         }
     }
+#endif
 }
 
 bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
@@ -1842,6 +1851,12 @@ void LinearScan::identifyCandidates()
         VarSetOps::UnionD(compiler, fpCalleeSaveCandidateVars, fpMaybeCandidateVars);
     }
 
+    // From here on, we're only interested in the exceptVars that are candidates.
+    if (enregisterLocalVars && (compiler->compHndBBtabCount > 0))
+    {
+        VarSetOps::IntersectionD(compiler, exceptVars, registerCandidateVars);
+    }
+
 #ifdef _TARGET_ARM_
 #ifdef DEBUG
     if (VERBOSE)
@@ -1963,6 +1978,10 @@ VarToRegMap LinearScan::getOutVarToRegMap(unsigned int bbNum)
 {
     assert(enregisterLocalVars);
     assert(bbNum <= compiler->fgBBNumMax);
+    if (bbNum == 0)
+    {
+        return nullptr;
+    }
     // For the blocks inserted to split critical edges, the outVarToRegMap is
     // equal to the inVarToRegMap at the target.
     if (bbNum > bbNumMaxBeforeResolution)
@@ -2204,6 +2223,14 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                                                BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
     BasicBlock* predBlock = nullptr;
+
+    // Blocks with exception flow on entry use no predecessor blocks, as all incoming vars
+    // are on the stack.
+    if (blockInfo[block->bbNum].hasEHBoundaryIn)
+    {
+        return nullptr;
+    }
+
 #ifdef DEBUG
     assert(*pPredBlockIsAllocated == false);
     if (getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_LAYOUT)
@@ -2220,6 +2247,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         predBlock = block->GetUniquePred(compiler);
         if (predBlock != nullptr)
         {
+            // We should already have returned null if this block has a single incoming EH boundary edge.
+            assert(!predBlock->hasEHBoundaryOut());
             if (isBlockVisited(predBlock))
             {
                 if (predBlock->bbJumpKind == BBJ_COND)
@@ -2268,9 +2297,10 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
                 BasicBlock* candidatePredBlock = pred->flBlock;
+
                 if (isBlockVisited(candidatePredBlock))
                 {
-                    if (predBlock == nullptr || predBlock->bbWeight < candidatePredBlock->bbWeight)
+                    if ((predBlock == nullptr) || (predBlock->bbWeight < candidatePredBlock->bbWeight))
                     {
                         predBlock = candidatePredBlock;
                         INDEBUG(*pPredBlockIsAllocated = true;)
@@ -4711,6 +4741,19 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     VarToRegMap inVarToRegMap     = getInVarToRegMap(currentBlock->bbNum);
     bool        hasCriticalInEdge = blockInfo[currentBlock->bbNum].hasCriticalInEdge;
 
+    // If this block enters an exception region, all incoming vars are on the stack.
+    if (predBBNum == 0)
+    {
+#if DEBUG
+        // This should still be in its initialized empty state.
+        for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+        {
+            assert(inVarToRegMap[varIndex] == REG_STK);
+        }
+#endif // DEBUG
+        predVarToRegMap = inVarToRegMap;
+    }
+
     VarSetOps::AssignNoCopy(compiler, currentLiveVars,
                             VarSetOps::Intersection(compiler, registerCandidateVars, currentBlock->bbLiveIn));
 #ifdef DEBUG
@@ -4787,6 +4830,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
             }
             // Else case #3 or #4, we retain targetReg and nothing further to do or assert.
         }
+
         if (interval->physReg == targetReg)
         {
             if (interval->isActive)
@@ -5062,6 +5106,12 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
     }
 }
 
+//------------------------------------------------------------------------
+// LinearScan::freeRegisters: Free the registers in 'regsToFree'
+//
+// Arguments:
+//    regsToFree         - the mask of registers to free
+//
 void LinearScan::freeRegisters(regMaskTP regsToFree)
 {
     if (regsToFree == RBM_NONE)
@@ -5079,9 +5129,9 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
     }
 }
 
-// Actual register allocation, accomplished by iterating over all of the previously
-// constructed Intervals
-// Loosely based on raAssignVars()
+//------------------------------------------------------------------------
+// LinearScan::allocateRegisters: Perform the actual register allocation by iterating over
+//                                all of the previously constructed Intervals
 //
 void LinearScan::allocateRegisters()
 {
@@ -5156,6 +5206,7 @@ void LinearScan::allocateRegisters()
     for (RefPosition& refPositionIterator : refPositions)
     {
         RefPosition* currentRefPosition = &refPositionIterator;
+        RefPosition* nextRefPosition    = currentRefPosition->nextRefPosition;
 
 #ifdef DEBUG
         // Set the activeRefPosition to null until we're done with any boundary handling.
@@ -5349,7 +5400,7 @@ void LinearScan::allocateRegisters()
                 // If it has no actual references, mark it as "lastUse"; since they're not actually part
                 // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
                 // register we won't unassign it.
-                else if (currentRefPosition->nextRefPosition == nullptr)
+                else if (nextRefPosition == nullptr)
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
                     currentRefPosition->lastUse = true;
@@ -5553,10 +5604,9 @@ void LinearScan::allocateRegisters()
                     // and ensure that the next use of this localVar does not occur after the nextPhysRegRefPos
                     // There must be a next RefPosition, because we know that the Interval extends beyond the
                     // nextPhysRegRefPos.
-                    RefPosition* nextLclVarRefPos = currentRefPosition->nextRefPosition;
-                    assert(nextLclVarRefPos != nullptr);
-                    if (!matchesPreferences || nextPhysRegRefPos->nodeLocation < nextLclVarRefPos->nodeLocation ||
-                        physRegRecord->conflictingFixedRegReference(nextLclVarRefPos))
+                    assert(nextRefPosition != nullptr);
+                    if (!matchesPreferences || nextPhysRegRefPos->nodeLocation < nextRefPosition->nodeLocation ||
+                        physRegRecord->conflictingFixedRegReference(nextRefPosition))
                     {
                         keepAssignment = false;
                     }
@@ -5836,7 +5886,6 @@ void LinearScan::allocateRegisters()
                     {
                         currentInterval->isActive = false;
                     }
-
                     // Update the register preferences for the relatedInterval, if this is 'preferencedToDef'.
                     // Don't propagate to subsequent relatedIntervals; that will happen as they are allocated, and we
                     // don't know yet whether the register will be retained.
@@ -7195,7 +7244,17 @@ void LinearScan::resolveRegisters()
             printf("Prior to Resolution\n");
             foreach_block(compiler, block)
             {
-                printf("\n" FMT_BB " use def in out\n", block->bbNum);
+                printf("\n" FMT_BB, block->bbNum);
+                if (block->hasEHBoundaryIn())
+                {
+                    JITDUMP("  EH flow in");
+                }
+                if (block->hasEHBoundaryOut())
+                {
+                    JITDUMP("  EH flow out");
+                }
+
+                printf("\nuse def in out\n");
                 dumpConvertedVarSet(compiler, block->bbVarUse);
                 printf("\n");
                 dumpConvertedVarSet(compiler, block->bbVarDef);
