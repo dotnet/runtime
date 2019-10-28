@@ -46,7 +46,7 @@ namespace ILCompiler
         {
             var builder = new ArrayBuilder<KeyValuePair<string, string>>();
 
-            foreach (string param in options)
+            foreach (string param in options ?? Array.Empty<string>())
             {
                 int indexOfEquals = param.IndexOf('=');
 
