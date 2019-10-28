@@ -13,7 +13,6 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\Common\TextEncoderExtensions.cs" />
     <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
