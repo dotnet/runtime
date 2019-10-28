@@ -14,11 +14,14 @@
       Condition="
         '$(ReleaseBrandSuffix)' == '' and
         '$(PreReleaseVersionLabel)' != '' and
-        $(PreReleaseVersionLabel.StartsWith('preview'))">
-      <!-- Convert 'preview7' to 'Preview 7'. -->
+        '$(PreReleaseVersionIteration)' != ''">
+      <!-- Convert 'preview.7' to 'Preview 7'.
+          'preview' will come from the pre-release version iteration and the numeric value
+          will be the PreReleaseVersionIteration. -->
+
       <ReleaseBrandSuffix>$(PreReleaseVersionLabel.Substring(0,1).ToUpperInvariant())</ReleaseBrandSuffix>
-      <ReleaseBrandSuffix>$(ReleaseBrandSuffix)$(PreReleaseVersionLabel.Substring(1,6))</ReleaseBrandSuffix>
-      <ReleaseBrandSuffix>$(ReleaseBrandSuffix) $(PreReleaseVersionLabel.Substring(7))</ReleaseBrandSuffix>
+      <ReleaseBrandSuffix>$(ReleaseBrandSuffix)$(PreReleaseVersionLabel.Substring(1))</ReleaseBrandSuffix>
+      <ReleaseBrandSuffix>$(ReleaseBrandSuffix) $(PreReleaseVersionIteration)</ReleaseBrandSuffix>
     </PropertyGroup>
 
     <PropertyGroup>
