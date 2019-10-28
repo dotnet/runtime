@@ -2128,8 +2128,6 @@ class CriticalHandle : public Object
     static size_t GetHandleOffset() { LIMITED_METHOD_CONTRACT; return offsetof(CriticalHandle, m_handle); }
 
     void SetHandle(LPVOID handle) { LIMITED_METHOD_CONTRACT; m_handle = handle; }
-
-    static FCDECL1(void, FireCustomerDebugProbe, CriticalHandle* refThisUNSAFE);
 };
 
 
