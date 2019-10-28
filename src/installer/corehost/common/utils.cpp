@@ -272,7 +272,9 @@ bool multilevel_lookup_enabled()
     {
         auto env_val = pal::xtoi(env_lookup.c_str());
         multilevel_lookup = (env_val == 1);
+        trace::verbose(_X("DOTNET_MULTILEVEL_LOOKUP is set to %s"), env_lookup.c_str());
     }
+    trace::info(_X("Multilevel lookup is %s"), multilevel_lookup ? _X("true") : _X("false"));
     return multilevel_lookup;
 }
 
