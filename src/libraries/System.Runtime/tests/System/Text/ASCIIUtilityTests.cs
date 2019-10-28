@@ -13,7 +13,7 @@ namespace System.Text.Tests
 {
     // Since many of the methods we'll be testing are internal, we'll need to invoke
     // them via reflection.
-    public static unsafe partial class AsciiUtilityTests
+    public static unsafe class AsciiUtilityTests
     {
         private const int SizeOfVector128 = 128 / 8;
 

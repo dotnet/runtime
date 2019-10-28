@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Collections.Generic.Tests
 {
-    public partial class KeyValuePairTests
+    public class KeyValuePairTests
     {
         [Fact]
         public void Ctor_KeyValue_ReturnsExpected()
@@ -42,6 +42,14 @@ namespace System.Collections.Generic.Tests
         {
             var keyValuePair = new KeyValuePair<string, string>(null, null);
             Assert.Equal("[, ]", keyValuePair.ToString());
+        }
+
+        [Fact]
+        public void Create_ReturnsExpected()
+        {
+            KeyValuePair<int, string> keyValuePair = KeyValuePair.Create(1, "2");
+            Assert.Equal(1, keyValuePair.Key);
+            Assert.Equal("2", keyValuePair.Value);
         }
     }
 }

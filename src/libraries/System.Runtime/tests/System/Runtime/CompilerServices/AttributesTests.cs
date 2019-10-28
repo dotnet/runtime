@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
 {
-    public static partial class AttributesTests
+    public static class AttributesTests
     {
         [Fact]
         public static void AccessedThroughPropertyAttributeTests()
@@ -251,6 +251,34 @@ namespace System.Runtime.CompilerServices.Tests
         public static void UnsafeValueTypeAttributeTests()
         {
             new UnsafeValueTypeAttribute();
+        }
+
+        [Fact]
+        public static void AsyncMethodBuilderAttributeTests()
+        {
+            var attr1 = new AsyncMethodBuilderAttribute(null);
+            Assert.Null(attr1.BuilderType);
+
+            var attr2 = new AsyncMethodBuilderAttribute(typeof(AttributesTests));
+            Assert.Equal(typeof(AttributesTests), attr2.BuilderType);
+        }
+
+        [Fact]
+        public static void IsByRefLikeAttributeTests()
+        {
+            new IsByRefLikeAttribute();
+        }
+
+        [Fact]
+        public static void IsReadOnlyAttributeTests()
+        {
+            new IsReadOnlyAttribute();
+        }
+
+        [Fact]
+        public static void EnumeratorCancellationAttributeTests()
+        {
+            new EnumeratorCancellationAttribute();
         }
     }
 }

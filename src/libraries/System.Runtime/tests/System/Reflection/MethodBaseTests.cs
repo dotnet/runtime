@@ -23,19 +23,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void Test_GetCurrentMethod_GenericMethodDefinition()
-        {
-            MethodBase m = MyFakeGenericMethod<byte>();
-
-            Assert.Equal("MyFakeGenericMethod", m.Name);
-            Assert.Equal("MethodBaseTests", m.ReflectedType.Name);
-            Assert.True(m.IsGenericMethod);
-            Assert.True(m.IsGenericMethodDefinition);
-            Assert.Equal(1, m.GetGenericArguments().Length);
-            Assert.Equal("T", m.GetGenericArguments()[0].Name);
-        }
-
-        [Fact]
         public static void Test_GetCurrentMethod_Inlineable()
         {
             // Verify that the result is not affected by inlining optimizations
@@ -91,12 +78,6 @@ namespace System.Reflection.Tests
 #endif
         }
 
-        public static MethodBase MyFakeGenericMethod<T>()
-        {
-            MethodBase m = MethodBase.GetCurrentMethod();
-            return m;
-        }
-
         private static int MyAnotherMethod(int x)
         {
             return x+1;
@@ -119,5 +100,38 @@ namespace System.Reflection.Tests
             }
         }
 #pragma warning restore xUnit1013 // Public method should be marked as test
+
+        [Fact]
+        public static void Test_GetCurrentMethod_ConstructedGenericMethod()
+        {
+            MethodInfo mi = typeof(MethodBaseTests).GetMethod(nameof(MyFakeGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
+            MethodBase m = mi.MakeGenericMethod(typeof(byte));
+
+            Assert.Equal(nameof(MyFakeGenericMethod), m.Name);
+            Assert.Equal(typeof(MethodBaseTests), m.ReflectedType);
+            Assert.True(m.IsGenericMethod);
+            Assert.False(m.IsGenericMethodDefinition);
+            Assert.True(m.IsConstructedGenericMethod);
+            Assert.Equal(1, m.GetGenericArguments().Length);
+            Assert.Equal(typeof(byte), m.GetGenericArguments()[0]);
+        }
+
+        [Fact]
+        public static void Test_GetCurrentMethod_GenericMethodDefinition()
+        {
+            MethodBase m = typeof(MethodBaseTests).GetMethod(nameof(MyFakeGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
+
+            Assert.Equal(nameof(MyFakeGenericMethod), m.Name);
+            Assert.Equal(typeof(MethodBaseTests), m.ReflectedType);
+            Assert.True(m.IsGenericMethod);
+            Assert.True(m.IsGenericMethodDefinition);
+            Assert.False(m.IsConstructedGenericMethod);
+            Assert.Equal(1, m.GetGenericArguments().Length);
+            Assert.Equal("T", m.GetGenericArguments()[0].Name);
+        }
+
+        private static void MyFakeGenericMethod<T>()
+        {
+        }
     }
 }
