@@ -134,35 +134,57 @@ stages:
             - linuxArm64Queues: \(Ubuntu.1604.Arm64.Open\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-a45aeeb-20190620160300
 
       # Legs without helix testing
-      # Only run this leg in PRs.
-      - ${{ if and(eq(parameters.fullMatrix, 'false'), and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all'))) }}:
+      # Don't run these legs in outerloop builds
+      - ${{ if and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all')) }}:
         - job: LinuxNoTest
           displayName: Build
           strategy:
             matrix:
-              arm_Debug:
-                _BuildConfig: Debug
-                _architecture: arm
+              wasm_Release:
+                _BuildConfig: Release
+                _architecture: wasm
                 _framework: netcoreapp
-                _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04 -warnAsError false
-                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
-                _dockerContainer: ubuntu_1604_arm_cross_container
+                _dockerContainer: ubuntu_1604
+                _emsdkPath: $(Build.BinariesDirectory)/emsdk
+                _buildScriptPrefix: 'EMSDK_PATH=$(_emsdkPath) '
+                _buildExtraArguments: -os WebAssembly -warnAsError false
+                _installEmscripten: true
 
-              musl_arm64_Debug:
-                _BuildConfig: Debug
-                _architecture: arm64
-                _framework: netcoreapp
-                _dockerContainer: alpine_37_arm64_container
-                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-                _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
+              # Only run these legs in PRs.
+              ${{ if eq(parameters.fullMatrix, 'false') }}:
+                arm_Debug:
+                  _BuildConfig: Debug
+                  _architecture: arm
+                  _framework: netcoreapp
+                  _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04 -warnAsError false
+                  _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
+                  _dockerContainer: ubuntu_1604_arm_cross_container
 
-              arm64_Debug:
-                _BuildConfig: Debug
-                _architecture: arm64
-                _framework: netcoreapp
-                _dockerContainer: ubuntu_1604_arm64_cross_container
-                _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-                _buildExtraArguments: --warnAsError false
+                musl_arm64_Debug:
+                  _BuildConfig: Debug
+                  _architecture: arm64
+                  _framework: netcoreapp
+                  _dockerContainer: alpine_37_arm64_container
+                  _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                  _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
+
+                arm64_Debug:
+                  _BuildConfig: Debug
+                  _architecture: arm64
+                  _framework: netcoreapp
+                  _dockerContainer: ubuntu_1604_arm64_cross_container
+                  _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+                  _buildExtraArguments: --warnAsError false
+
+          preBuildSteps:
+            - script: |
+                EMSCRIPTEN_VERSION=1.38.47
+                git clone https://github.com/emscripten-core/emsdk.git $(_emsdkPath)
+                cd $(_emsdkPath)
+                ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
+                ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
+              displayName: Install Emscripten
+              condition: and(succeeded(), eq(variables['_installEmscripten'], 'true'))
 
           pool:
             name: Hosted Ubuntu 1604

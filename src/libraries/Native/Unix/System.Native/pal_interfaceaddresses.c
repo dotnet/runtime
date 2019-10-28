@@ -22,12 +22,12 @@
 #endif
 #if HAVE_ETHTOOL_H
 #include <linux/ethtool.h>
-#include <sys/ioctl.h>
 #include <linux/sockios.h>
 #include <arpa/inet.h>
 #endif
 
 #if defined(AF_PACKET)
+#include <sys/ioctl.h>
 #if defined(_WASM_)
 #include <netpacket/packet.h>
 #else // _WASM_

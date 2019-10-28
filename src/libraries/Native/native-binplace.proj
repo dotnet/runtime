@@ -19,6 +19,7 @@
       <BinPlaceItem Include="$(NativeBinDir)/*.pdb" />
       <BinPlaceItem Include="$(NativeBinDir)/*.lib" />
       <BinPlaceItem Include="$(NativeBinDir)/*.a" />
+      <BinPlaceItem Include="$(NativeBinDir)/*.bc" />
       <BinPlaceItem Include="$(NativeBinDir)/*.so" />
       <BinPlaceItem Include="$(NativeBinDir)/*.dbg" />
       <BinPlaceItem Include="$(NativeBinDir)/*.dylib" />
