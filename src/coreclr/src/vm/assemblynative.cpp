@@ -252,13 +252,13 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         
         // Need to verify that this is a valid CLR assembly. 
         if (!pILImage->CheckILFormat())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
+            THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
         LoaderAllocator* pLoaderAllocator = NULL;
         if (SUCCEEDED(pBinderContext->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)) && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_IJW_IN_COLLECTIBLE_ALC);
+            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
         }
     }
     
@@ -272,7 +272,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         {
             // ReadyToRun images are treated as IL images by the rest of the system
             if (!pNIImage->CheckILFormat())
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                THROW_BAD_FORMAT(COR_E_BADIMAGEFORMAT, pNIImage.GetValue());
 
             pILImage = pNIImage.Extract();
             pNIImage = NULL;
@@ -280,7 +280,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         else
         {
             if (!pNIImage->CheckNativeFormat())
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                THROW_BAD_FORMAT(COR_E_BADIMAGEFORMAT, pNIImage.GetValue());
         }
     }
 #endif // FEATURE_PREJIT
