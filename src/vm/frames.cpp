@@ -879,19 +879,6 @@ ComPrestubMethodFrame::Init()
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    Init(GetThread(), pObjRefs, numObjRefs, maybeInterior);
-}
-
 GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
 {
     CONTRACTL
@@ -902,7 +889,47 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
-    Init(pThread, pObjRefs, numObjRefs, maybeInterior);
+#ifdef USE_CHECKED_OBJECTREFS
+    if (!maybeInterior) {
+        UINT i;
+        for(i = 0; i < numObjRefs; i++)
+            Thread::ObjectRefProtected(&pObjRefs[i]);
+
+        for (i = 0; i < numObjRefs; i++) {
+            pObjRefs[i].Validate();
+        }
+    }
+
+#if 0  // We'll want to restore this goodness check at some time. For now, the fact that we use
+       // this as temporary backstops in our loader exception conversions means we're highly
+       // exposed to infinite stack recursion should the loader be invoked during a stackwalk.
+       // So we'll do without.
+
+    if (g_pConfig->GetGCStressLevel() != 0 && IsProtectedByGCFrame(pObjRefs)) {
+        _ASSERTE(!"This objectref is already protected by a GCFrame. Protecting it twice will corrupt the GC.");
+    }
+#endif
+
+#endif // USE_CHECKED_OBJECTREFS
+
+    m_pObjRefs      = pObjRefs;
+    m_numObjRefs    = numObjRefs;
+    m_pCurThread    = pThread;
+    m_MaybeInterior = maybeInterior;
+
+    // Push the GC frame to the per-thread list
+    m_Next = pThread->GetGCFrame();
+
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // declared in the same source function. We cannot predict the order
+    // in which the C compiler will lay them out in the stack frame.
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // with multiple Frames in mscorwks.dll
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a GCFrame out of order ?");
+
+    pThread->SetGCFrame(this);
 }
 
 GCFrame::~GCFrame()
@@ -925,54 +952,23 @@ GCFrame::~GCFrame()
 
     // When the frame is destroyed, make sure it is no longer in the
     // frame chain managed by the Thread.
+    // It also cancels the GC protection provided by the frame.
 
-    Pop();
+    _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
+
+    m_pCurThread->SetGCFrame(m_Next);
+    m_Next = NULL;
+
+#ifdef _DEBUG
+    m_pCurThread->EnableStressHeap();
+    for(UINT i = 0; i < m_numObjRefs; i++)
+        Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+#endif
 
     if (!wasCoop)
     {
         m_pCurThread->EnablePreemptiveGC();
     }
-}
-
-void GCFrame::Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef USE_CHECKED_OBJECTREFS
-    if (!maybeInterior) {
-        UINT i;
-        for(i = 0; i < numObjRefs; i++)
-            Thread::ObjectRefProtected(&pObjRefs[i]);
-        
-        for (i = 0; i < numObjRefs; i++) {
-            pObjRefs[i].Validate();
-        }
-    }
-
-#if 0  // We'll want to restore this goodness check at some time. For now, the fact that we use
-       // this as temporary backstops in our loader exception conversions means we're highly
-       // exposed to infinite stack recursion should the loader be invoked during a stackwalk.
-       // So we'll do without.
-
-    if (g_pConfig->GetGCStressLevel() != 0 && IsProtectedByGCFrame(pObjRefs)) {
-        _ASSERTE(!"This objectref is already protected by a GCFrame. Protecting it twice will corrupt the GC.");
-    }
-#endif
-
-#endif
-
-    m_pObjRefs      = pObjRefs;
-    m_numObjRefs    = numObjRefs;
-    m_pCurThread    = pThread;
-    m_MaybeInterior = maybeInterior;
-
-    Push(m_pCurThread);
 }
 
 //
@@ -1011,49 +1007,6 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 
 #ifndef DACCESS_COMPILE
-
-void GCFrame::Push(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    m_Next = pThread->GetGCFrame();
-
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
-    // declared in the same source function. We cannot predict the order
-    // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
-    _ASSERTE(((m_Next == NULL) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
-             "Pushing a GCFrame out of order ?");
-
-    pThread->SetGCFrame(this);
-}
-
-//--------------------------------------------------------------------
-// Pops the GCFrame and cancels the GC protection.
-//--------------------------------------------------------------------
-VOID GCFrame::Pop()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
-
-    m_pCurThread->SetGCFrame(m_Next);
-    m_Next = NULL;
-
-#ifdef _DEBUG
-    m_pCurThread->EnableStressHeap();
-    for(UINT i = 0; i < m_numObjRefs; i++)
-        Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
-#endif
-}
 
 #ifdef FEATURE_INTERPRETER
 // Methods of IntepreterFrame.
