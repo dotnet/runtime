@@ -5839,6 +5839,16 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
 
 #ifdef FEATURE_PAL
 
+typedef enum
+{
+    _URC_FATAL_PHASE1_ERROR = 3,
+} _Unwind_Reason_Code;
+typedef enum
+{
+} _Unwind_Action;
+struct _Unwind_Context;
+struct _Unwind_Exception;
+
 // This is a personality routine for TheUMEntryPrestub and UMThunkStub Unix asm stubs.
 // An exception propagating through these stubs is an unhandled exception.
 // This function dumps managed stack trace and terminates the current process.
