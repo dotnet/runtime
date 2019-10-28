@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
 {
-    public static partial class RuntimeFeatureTests
+    public static class RuntimeFeatureTests
     {
         [Fact]
         public static void PortablePdb()

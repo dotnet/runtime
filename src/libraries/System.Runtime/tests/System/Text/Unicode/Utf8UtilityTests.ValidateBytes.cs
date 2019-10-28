@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Text.Unicode.Tests
 {
-    public partial class Utf8UtilityTests
+    public class Utf8UtilityTests
     {
         private unsafe delegate byte* GetPointerToFirstInvalidByteDel(byte* pInputBuffer, int inputLength, out int utf16CodeUnitCountAdjustment, out int scalarCountAdjustment);
         private static readonly Lazy<GetPointerToFirstInvalidByteDel> _getPointerToFirstInvalidByteFn = CreateGetPointerToFirstInvalidByteFn();

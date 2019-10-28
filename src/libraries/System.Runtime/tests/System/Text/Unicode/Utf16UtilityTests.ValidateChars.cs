@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Text.Unicode.Tests
 {
-    public partial class Utf16UtilityTests
+    public class Utf16UtilityTests
     {
         private unsafe delegate char* GetPointerToFirstInvalidCharDel(char* pInputBuffer, int inputLength, out long utf8CodeUnitCountAdjustment, out int scalarCountAdjustment);
         private static readonly Lazy<GetPointerToFirstInvalidCharDel> _getPointerToFirstInvalidCharFn = CreateGetPointerToFirstInvalidCharFn();

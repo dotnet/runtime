@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public partial class DefaultValueAttributeTests
+    public class DefaultValueAttributeTests
     {
         [Fact]
         public static void Ctor()
@@ -23,9 +23,16 @@ namespace System.ComponentModel.Tests
             Assert.Equal(3.14f, new DefaultValueAttribute(3.14f).Value);
 
             Assert.Equal((byte)1, new DefaultValueAttribute((byte)1).Value);
+            Assert.Equal((sbyte)42, new DefaultValueAttribute((sbyte)42).Value);
+
             Assert.Equal(42, new DefaultValueAttribute(42).Value);
+            Assert.Equal((uint)42, new DefaultValueAttribute((uint)42).Value);
+
             Assert.Equal(42L, new DefaultValueAttribute(42L).Value);
+            Assert.Equal((ulong)42, new DefaultValueAttribute((ulong)42).Value);
+
             Assert.Equal((short)42, new DefaultValueAttribute((short)42).Value);
+            Assert.Equal((ushort)42, new DefaultValueAttribute((ushort)42).Value);
 
             Assert.Equal('c', new DefaultValueAttribute('c').Value);
             Assert.Equal("test", new DefaultValueAttribute("test").Value);

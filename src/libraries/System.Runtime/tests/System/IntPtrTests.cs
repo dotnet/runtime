@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class IntPtrTests
+    public static class IntPtrTests
     {
         private static unsafe bool Is64Bit => sizeof(void*) == 8;
 
@@ -116,6 +116,9 @@ namespace System.Tests
                 Assert.Equal(expected, ptr1 == ptr2);
                 Assert.Equal(!expected, ptr1 != ptr2);
                 Assert.Equal(expected, ptr1.GetHashCode().Equals(ptr2.GetHashCode()));
+
+                IEquatable<IntPtr> iEquatable = ptr1;
+                Assert.Equal(expected, iEquatable.Equals((IntPtr)obj));
             }
             Assert.Equal(expected, ptr1.Equals(obj));
             Assert.Equal(ptr1.GetHashCode(), ptr1.GetHashCode());

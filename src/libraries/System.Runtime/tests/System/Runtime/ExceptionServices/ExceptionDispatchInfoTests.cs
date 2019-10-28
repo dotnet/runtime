@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Runtime.ExceptionServices.Tests
 {
-    public partial class ExceptionDispatchInfoTests
+    public class ExceptionDispatchInfoTests
     {
         [Fact]
         public static void StaticThrow_NullArgument_ThrowArgumentNullException()

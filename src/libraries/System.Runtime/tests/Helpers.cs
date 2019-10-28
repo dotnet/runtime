@@ -9,7 +9,7 @@ using System.Reflection.Emit;
 
 namespace System.Tests
 {
-    public static partial class Helpers
+    public static class Helpers
     {
         private static Type s_refEmitType;
 
