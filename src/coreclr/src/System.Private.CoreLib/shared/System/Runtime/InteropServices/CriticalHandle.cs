@@ -149,8 +149,7 @@ namespace System.Runtime.InteropServices
             // occur implicitly as part of unmarshaling another P/Invoke).
             int lastError = Marshal.GetLastWin32Error();
 
-            if (!ReleaseHandle())
-                ReleaseHandleFailed();
+            ReleaseHandle();
 
             Marshal.SetLastWin32Error(lastError);
             GC.SuppressFinalize(this);

@@ -454,7 +454,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_compile_options(-fno-omit-frame-pointer)
 
   # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
-  add_compile_options(-fms-extensions )
+  add_compile_options(-fms-extensions)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
@@ -511,9 +511,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
   else()
-    add_compile_options(-Wno-unused-variable)
     add_compile_options(-Wno-unused-but-set-variable)
-    add_compile_options(-fms-extensions)
     add_compile_options(-Wno-unknown-pragmas)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
       add_compile_options(-Wno-nonnull-compare)
