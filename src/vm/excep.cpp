@@ -12327,19 +12327,24 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const ch
 #ifndef DACCESS_COMPILE
     SString msgStr;
 
-    if ((imageName != NULL) && (imageName[0] != 0))
-    {
-        msgStr += W("[");
-        msgStr += imageName;
-        msgStr += W("] ");
-    }
-
     SString resStr;
     if (resID == 0 || !resStr.LoadResource(CCompRC::Optional, resID))
     {
-        resStr.LoadResource(CCompRC::Error, MSG_FOR_URT_HR(COR_E_BADIMAGEFORMAT));
+        resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
     msgStr += resStr;
+
+    if ((imageName != NULL) && (imageName[0] != 0))
+    {
+        SString suffixResStr;
+        if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
+        {
+            SString suffixMsgStr;
+            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, imageName);
+            msgStr.AppendASCII(" ");
+            msgStr += suffixMsgStr;
+        }
+    }
 
 #ifdef _DEBUG
     if (0 != strcmp(cond, "FALSE"))
