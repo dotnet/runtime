@@ -15,7 +15,7 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 #include "hwintrinsiclistxarch.h"
 #elif defined (_TARGET_ARM64_)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, ival, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
