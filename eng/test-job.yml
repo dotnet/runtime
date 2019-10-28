@@ -23,21 +23,15 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- ${{ if and(eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), or(eq(parameters.osGroup, parameters.managedTestBuildOsGroup), eq(parameters.managedTestBuildOsGroup, ''))) }}:
+- ${{ if and(ne(parameters.corefxTests, true), eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), eq(parameters.osGroup, parameters.managedTestBuildOsGroup)) }}:
   - template: build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
       archType: ${{ parameters.archType }}
-      ${{ if ne(parameters.managedTestBuildOsGroup, '') }}:
-        osGroup: ${{ parameters.managedTestBuildOsGroup }}
-      ${{ if eq(parameters.managedTestBuildOsGroup, '') }}:
-        osGroup: ${{ parameters.osGroup }}
+      osGroup: ${{ parameters.managedTestBuildOsGroup }}
       osSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
       container: ${{ parameters.container }}
       testGroup: ${{ parameters.testGroup }}
-      readyToRun: ${{ parameters.readyToRun }}
-      crossrootfsDir: ${{ parameters.crossrootfsDir }}
-      corefxTests: ${{ parameters.coreFxTests }}
       displayNameArgs: ${{ parameters.displayNameArgs }}
       condition: ${{ parameters.condition }}
       stagedBuild: ${{ parameters.stagedBuild }}
@@ -48,13 +42,11 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    ${{ if ne(parameters.managedTestBuildOsGroup, '') }}:
-      managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
-    ${{ if eq(parameters.managedTestBuildOsGroup, '') }}:
-      managedTestBuildOsGroup: ${{ parameters.osGroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
     managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     readyToRun: ${{ parameters.readyToRun }}
     helixQueues: ${{ parameters.helixQueues }}
     corefxTests: ${{ parameters.coreFxTests }}

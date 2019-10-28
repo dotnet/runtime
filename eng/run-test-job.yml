@@ -7,6 +7,7 @@ parameters:
   managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
+  crossrootfsDir: ''
   readyToRun: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
@@ -31,7 +32,7 @@ jobs:
     managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
-    readyToRun: ${{ parameters.readyToRun }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'build/tests/'
@@ -40,40 +41,37 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
+    dependsOn:
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+        - 'build_test_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+        - 'build_test_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+    - ${{ if ne(parameters.stagedBuild, true) }}:
+      - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
     # Compute job name from template parameters
-    ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn:
-      - 'build_test_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: 'Run Test Pri0 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-
-    ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.displayNameArgs, '')) }}:
-      name: 'run_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn:
-      - 'build_test_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: 'Run Test Pri1 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-
-    ${{ if and(eq(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn:
-      - 'build_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri0 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
-    ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.displayNameArgs, '')) }}:
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      dependsOn:
-      - 'build_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'      
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: 'Run Test Pri1 ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
+    - name: testhostArg
+      value: 'generatetesthostonly'
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: testhostArg
+        value: 'buildtesthostonly'
+
+    - name: crossgenArg
+      value: ''
+    - ${{ if eq(parameters.readyToRun, true) }}:
+      - name: crossgenArg
+        value: 'crossgen'
+
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
 
@@ -92,24 +90,26 @@ jobs:
     steps:
 
     # Download and unzip managed test artifacts
-    - template: /eng/download-artifact-step.yml
-      parameters:
-        downloadFolder: '$(binTestsPath)/tmp'
-        unpackFolder: '$(testRootFolderPath)'
-        artifactFileName: '$(testArtifactName)$(archiveExtension)'
-        artifactName: '$(testArtifactName)'
-        displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/download-artifact-step.yml
+        parameters:
+          downloadFolder: '$(binTestsPath)/tmp'
+          unpackFolder: '$(testRootFolderPath)'
+          artifactFileName: '$(testArtifactName)$(archiveExtension)'
+          artifactName: '$(testArtifactName)'
+          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
     # Download and unzip test build tree
-    - template: /eng/download-artifact-step.yml
-      parameters:
-        downloadFolder: '$(binTestsPath)/tmp'
-        unpackFolder: '$(testBuildRootFolderPath)'
-        cleanUnpackFolder: false
-        artifactFileName: '$(testBuildArtifactName)$(archiveExtension)'
-        artifactName: '$(testBuildArtifactName)'
-        displayName: 'test build tree'
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/download-artifact-step.yml
+        parameters:
+          downloadFolder: '$(binTestsPath)/tmp'
+          unpackFolder: '$(testBuildRootFolderPath)'
+          cleanUnpackFolder: false
+          artifactFileName: '$(testBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(testBuildArtifactName)'
+          displayName: 'test build tree'
 
 
     # Download product binaries directory
@@ -144,13 +144,14 @@ jobs:
 
 
     # Download and unzip native test artifacts
-    - template: /eng/download-artifact-step.yml
-      parameters:
-        downloadFolder: '$(binTestsPath)/tmp'
-        unpackFolder: '$(testNativeRootFolderPath)'
-        artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
-        artifactName: '$(testNativeArtifactName)'
-        displayName: 'native test artifacts'
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - template: /eng/download-artifact-step.yml
+        parameters:
+          downloadFolder: '$(binTestsPath)/tmp'
+          unpackFolder: '$(testNativeRootFolderPath)'
+          artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
+          artifactName: '$(testNativeArtifactName)'
+          displayName: 'native test artifacts'
 
 
     # Publish native test components to test output folder. Sadly we cannot do this
@@ -165,6 +166,26 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - script: build-test.cmd copynativeonly $(buildConfig) $(archType) $(priorityArg)
           displayName: Copy native test components to test output folder
+
+
+    # Generate test host
+    - ${{ if eq(parameters.corefxTests, true) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./build-test.sh skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+          displayName: Generate test host
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - script: build-test.cmd skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(priorityArg)
+          displayName: Generate test host
+
+
+    # Crossgen framework assemblies prior to triggering readyToRun execution runs.
+    - ${{ if eq(parameters.readyToRun, true) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./build-test.sh skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+          displayName: Crossgen framework assemblies
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - script: build-test.cmd skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(priorityArg)
+          displayName: Crossgen framework assemblies
 
 
     # Send tests to Helix
