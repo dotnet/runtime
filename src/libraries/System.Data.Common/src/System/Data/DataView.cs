@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Data
@@ -475,7 +476,9 @@ namespace System.Data
         [RefreshProperties(RefreshProperties.All)]
         public DataTable Table
         {
+            [PreserveDependency(".ctor", "System.Data.DataTableTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get { return _table; }
+            [PreserveDependency(".ctor", "System.Data.DataTableTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Table|API> {0}, {1}", ObjectID, (value != null) ? value.ObjectID : 0);
