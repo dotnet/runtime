@@ -55,6 +55,9 @@ resources:
   - container: ubuntu_1604_arm_cross_container
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
 
+  - container: ubuntu_1604
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-bd0fe7c-20190923200211
+
 variables:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - group: DotNet-Blob-Feed

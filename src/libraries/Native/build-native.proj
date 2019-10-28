@@ -20,7 +20,7 @@
         then we should consider calling Environment.ProcessorCount
       -->
       <_ProcessorCountArg> --numproc $(MSBuildNodeCount)</_ProcessorCountArg>
-      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true'"> stripsymbols</_StripSymbolsArg>
+      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(OSGroup)' != 'WebAssembly'"> stripsymbols</_StripSymbolsArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' == 'true'"> -portable</_PortableBuildArg>
 
       <!--

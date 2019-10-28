@@ -3,7 +3,7 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <CoverageSupported>false</CoverageSupported>
-    <SkipTestsOnPlatform Condition="'$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64' OR '$(ArchGroup)' == 'armel'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'armel' or '$(ArchGroup)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Reuse the same runtimeconfig used by MSBuild. -->
