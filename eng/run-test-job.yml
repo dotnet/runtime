@@ -82,7 +82,7 @@ jobs:
       timeoutInMinutes: 150
     ${{ if in(parameters.testGroup, 'outerloop') }}:
       timeoutInMinutes: 270
-    ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
+    ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 390
@@ -217,7 +217,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
+        ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
           timeoutPerTestCollectionInMinutes: 360
           # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
           timeoutPerTestInMinutes: 240
@@ -349,6 +349,10 @@ jobs:
           - gcstress15
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
+          scenarios:
+          - normal
+        ${{ if in(parameters.testGroup, 'gc-simulator') }}:
+          gcSimulatorTests: true
           scenarios:
           - normal
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
