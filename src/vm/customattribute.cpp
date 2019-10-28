@@ -665,68 +665,6 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
 }
 FCIMPLEND
 
-
-FCIMPL2(Object*, RuntimeTypeHandle::CreateCaInstance, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject* pCtorUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pCaTypeUNSAFE));
-        PRECONDITION(!pCaTypeUNSAFE->GetType().IsGenericVariable());
-        PRECONDITION(pCaTypeUNSAFE->GetType().IsValueType() || CheckPointer(pCtorUNSAFE));
-    }
-    CONTRACTL_END;
-
-    struct _gc
-    {
-        REFLECTCLASSBASEREF refCaType;
-        OBJECTREF o;
-        REFLECTMETHODREF refCtor;
-    } gc;
-
-    gc.refCaType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pCaTypeUNSAFE);
-    MethodTable* pCaMT = gc.refCaType->GetType().GetMethodTable();
-
-    gc.o = NULL;
-    gc.refCtor = (REFLECTMETHODREF)ObjectToOBJECTREF(pCtorUNSAFE);
-    MethodDesc *pCtor = gc.refCtor != NULL ? gc.refCtor->GetMethod() : NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        PRECONDITION(
-            (!pCtor && gc.refCaType->GetType().IsValueType() && !gc.refCaType->GetType().GetMethodTable()->HasDefaultConstructor()) || 
-            (pCtor == gc.refCaType->GetType().GetMethodTable()->GetDefaultConstructor()));
-        
-        gc.o = pCaMT->Allocate();
-
-        if (pCtor)
-        {
-            
-            ARG_SLOT args;
-            
-            if (pCaMT->IsValueType())
-            {
-                MethodDescCallSite ctor(pCtor, &gc.o);
-                args = PtrToArgSlot(gc.o->UnBox());
-                ctor.CallWithValueTypes(&args);
-            }
-            else
-            {
-
-                PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pCtor);
-                DECLARE_ARGHOLDER_ARRAY(CtorArgs, 1);
-                CtorArgs[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(gc.o);
-
-                // Call the ctor...
-                CALL_MANAGED_METHOD_NORET(CtorArgs);
-            }
-            
-        }
-    }
-    HELPER_METHOD_FRAME_END();
-    
-    return OBJECTREFToObject(gc.o);
-}
-FCIMPLEND
-
 FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
 {
     FCALL_CONTRACT;

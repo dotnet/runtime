@@ -1124,7 +1124,7 @@ namespace System.Reflection
                 {
                     if (FilterCustomAttributeRecord(car[i].tkCtor, in scope,
                         decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, ref derivedAttributes,
-                        out _, out _, out _, out _))
+                        out _, out _, out _))
                         return true;
                 }
             }
@@ -1186,7 +1186,7 @@ namespace System.Reflection
                 if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
                                                  ref derivedAttributes,
-                                                 out RuntimeType attributeType, out IRuntimeMethodInfo? ctor, out bool ctorHasParameters, out bool isVarArg))
+                                                 out RuntimeType attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
                 {
                     continue;
                 }
@@ -1197,13 +1197,13 @@ namespace System.Reflection
                 // Create custom attribute object
                 int cNamedArgs;
                 object attribute;
-                if (ctorHasParameters)
+                if (ctorWithParameters != null)
                 {
-                    attribute = CreateCaObject(decoratedModule, attributeType, ctor!, ref blobStart, blobEnd, out cNamedArgs);
+                    attribute = CreateCaObject(decoratedModule, attributeType, ctorWithParameters, ref blobStart, blobEnd, out cNamedArgs);
                 }
                 else
                 {
-                    attribute = RuntimeTypeHandle.CreateCaInstance(attributeType, ctor);
+                    attribute = attributeType.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: true, fillCache: true, wrapExceptions: false);
 
                     // It is allowed by the ECMA spec to have an empty signature blob
                     int blobLen = (int)((byte*)blobEnd - (byte*)blobStart);
@@ -1304,12 +1304,10 @@ namespace System.Reflection
             bool mustBeInheritable,
             ref RuntimeType.ListBuilder<object> derivedAttributes,
             out RuntimeType attributeType,
-            out IRuntimeMethodInfo? ctor,
-            out bool ctorHasParameters,
+            out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
         {
-            ctor = null;
-            ctorHasParameters = false;
+            ctorWithParameters = null;
             isVarArg = false;
 
             // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
@@ -1334,7 +1332,7 @@ namespace System.Reflection
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caCtorToken);
             isVarArg = (ctorSig[0] & 0x05) != 0;
-            ctorHasParameters = ctorSig[1] != 0;
+            bool ctorHasParameters = ctorSig[1] != 0;
 
             if (ctorHasParameters)
             {
@@ -1342,20 +1340,12 @@ namespace System.Reflection
                 // See https://github.com/dotnet/coreclr/issues/21456 for why we fast-path non-generics here (fewer allocations)
                 if (attributeType.IsGenericType)
                 {
-                    ctor = decoratedModule.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
+                    ctorWithParameters = decoratedModule.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
                 }
                 else
                 {
-                    ctor = ModuleHandle.ResolveMethodHandleInternal(decoratedModule.GetNativeHandle(), caCtorToken);
+                    ctorWithParameters = ModuleHandle.ResolveMethodHandleInternal(decoratedModule.GetNativeHandle(), caCtorToken);
                 }
-            }
-            else
-            {
-                // Resolve method ctor token from decorated decoratedModule scope
-                ctor = attributeType.GetTypeHandleInternal().GetDefaultConstructor();
-
-                if (ctor == null && !attributeType.IsValueType)
-                    throw new MissingMethodException(".ctor");
             }
 
             // Visibility checks
@@ -1398,11 +1388,11 @@ namespace System.Reflection
             RuntimeTypeHandle attributeTypeHandle = attributeType.TypeHandle;
 
             bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(JitHelpers.GetQCallTypeHandleOnStack(ref attributeTypeHandle),
-                                                                    ctor != null ? ctor.Value : RuntimeMethodHandleInternal.EmptyHandle,
+                                                                    ctorWithParameters != null ? ctorWithParameters.Value : RuntimeMethodHandleInternal.EmptyHandle,
                                                                     JitHelpers.GetQCallTypeHandleOnStack(ref parentTypeHandle),
                                                                     JitHelpers.GetQCallModuleOnStack(ref decoratedModule)) != Interop.BOOL.FALSE;
 
-            GC.KeepAlive(ctor);
+            GC.KeepAlive(ctorWithParameters);
             return result;
         }
         #endregion
