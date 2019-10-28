@@ -561,14 +561,6 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Shim function which can call virtual method <see cref="EncodeUtf8"/> using fast dispatch.
-        /// </summary>
-        internal static OperationStatus EncodeUtf8Shim(TextEncoder encoder, ReadOnlySpan<byte> utf8Source, Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
-        {
-            return encoder.EncodeUtf8(utf8Source, utf8Destination, out bytesConsumed, out bytesWritten, isFinalBlock);
-        }
-
-        /// <summary>
         /// Encodes the supplied characters.
         /// </summary>
         /// <param name="source">A source buffer containing the characters to encode.</param>
@@ -826,14 +818,6 @@ namespace System.Text.Encodings.Web
             Return:
                 return idx;
             }
-        }
-
-        /// <summary>
-        /// Shim function which can call virtual method <see cref="FindFirstCharacterToEncodeUtf8"/> using fast dispatch.
-        /// </summary>
-        internal static int FindFirstCharacterToEncodeUtf8Shim(TextEncoder encoder, ReadOnlySpan<byte> utf8Text)
-        {
-            return encoder.FindFirstCharacterToEncodeUtf8(utf8Text);
         }
 
         internal static unsafe bool TryCopyCharacters(char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
