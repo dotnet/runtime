@@ -26,7 +26,16 @@ jobs:
 
 - template: /eng/platform-matrix.yml
   parameters:
-    jobTemplate: test-job.yml
+    jobTemplate: build-test-job.yml
+    buildConfig: checked
+    platformGroup: all
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: jitstressregs
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
