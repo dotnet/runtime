@@ -109,7 +109,11 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile()
         {
-            return Compile(preferInterpretation: false);
+#if FEATURE_COMPILE
+            return Compiler.LambdaCompiler.Compile(this);
+#else
+            return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+#endif
         }
 
         /// <summary>
@@ -119,17 +123,13 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile(bool preferInterpretation)
         {
-#if FEATURE_COMPILE
-#if FEATURE_INTERPRET
+#if FEATURE_COMPILE && FEATURE_INTERPRET
             if (preferInterpretation)
             {
                 return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
 #endif
-            return Compiler.LambdaCompiler.Compile(this);
-#else
-            return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
-#endif
+            return Compile();
         }
 
 #if FEATURE_COMPILE_TO_METHODBUILDER
@@ -189,7 +189,11 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile()
         {
-            return Compile(preferInterpretation: false);
+#if FEATURE_COMPILE
+            return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
+#else
+            return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+#endif
         }
 
         /// <summary>
@@ -199,17 +203,13 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile(bool preferInterpretation)
         {
-#if FEATURE_COMPILE
-#if FEATURE_INTERPRET
+#if FEATURE_COMPILE && FEATURE_INTERPRET
             if (preferInterpretation)
             {
                 return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
 #endif
-            return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
-#else
-            return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
-#endif
+            return Compile();
         }
 
         /// <summary>
