@@ -544,7 +544,7 @@ inline void BaseAssemblySpec::SetCodeBase(LPCWSTR szCodeBase)
     m_wszCodeBase=szCodeBase;
 }
 
-inline LPCWSTR BaseAssemblySpec::GetCodeBase()
+inline LPCWSTR BaseAssemblySpec::GetCodeBase() const
 {
     LIMITED_METHOD_CONTRACT;
     return m_wszCodeBase;

@@ -560,6 +560,10 @@ DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT
 DEFINE_METASIG_T(IM(RefGuid_OutIntPtr_RetCustomQueryInterfaceResult, r(g(GUID)) r(I), g(CUSTOMQUERYINTERFACERESULT)))
 #endif //FEATURE_COMINTEROP
 
+// Activity Tracker
+DEFINE_METASIG_T(SM(RefGuid_RefGuid_RetVoid, r(g(GUID)) r(g(GUID)) , v))
+DEFINE_METASIG_T(SM(RefGuid_RetVoid, r(g(GUID)), v))
+
 DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssemblyBase, I C(ASSEMBLY_NAME), C(ASSEMBLYBASE)))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K, I))
