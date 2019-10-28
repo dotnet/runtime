@@ -277,7 +277,7 @@ BOOL Object::SupportsInterface(OBJECTREF pObj, MethodTable* pInterfaceMT)
     UNREACHABLE();
 }
 
-GCFrame::GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+GCFrame::GCFrame(Thread* pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
 {
 }
 
@@ -289,10 +289,6 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     UNREACHABLE();
-}
-
-VOID GCFrame::Pop()
-{
 }
 
 void Frame::Push()

@@ -2468,32 +2468,22 @@ class GCFrame
 {
 public:
 
-
+#ifndef DACCESS_COMPILE
     //--------------------------------------------------------------------
     // This constructor pushes a new GCFrame on the GC frame chain.
     //--------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    GCFrame() {
-        LIMITED_METHOD_CONTRACT;
-    };
+    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+        : GCFrame(GetThread(), pObjRefs, numObjRefs, maybeInterior)
+    {
+        WRAPPER_NO_CONTRACT;
+    }
 
-    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
 #ifndef CROSSGEN_COMPILE
     ~GCFrame();
 #endif // CROSSGEN_COMPILE
 
 #endif // DACCESS_COMPILE
-
-    void Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
-
-    void Push(Thread *pThread);
-
-    //--------------------------------------------------------------------
-    // Pops the GCFrame and cancels the GC protection. Also
-    // trashes the contents of pObjRef's in _DEBUG.
-    //--------------------------------------------------------------------
-    VOID Pop();
 
     void GcScanRoots(promote_func *fn, ScanContext* sc);
 
@@ -2507,14 +2497,6 @@ public:
             }
         }
         return FALSE;
-    }
-#endif
-
-#ifndef DACCESS_COMPILE
-    void *operator new (size_t sz, void* p)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return p ;
     }
 #endif
 
