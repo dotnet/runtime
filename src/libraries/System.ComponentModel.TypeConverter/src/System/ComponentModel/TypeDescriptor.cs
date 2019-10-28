@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -84,7 +85,11 @@ namespace System.ComponentModel
         /// AddProvider methods to define a type description provider for interface types.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type InterfaceType => typeof(TypeDescriptorInterface);
+        public static Type InterfaceType
+        {
+            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorInterface")]
+            get => typeof(TypeDescriptorInterface);
+        }
 
         /// <summary>
         /// This value increments each time someone refreshes or changes metadata.
@@ -2312,7 +2317,12 @@ namespace System.ComponentModel
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type ComObjectType => typeof(TypeDescriptorComObject);
+        public static Type ComObjectType
+        {
+            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorComObject")]
+            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy")] // TODO: https://github.com/mono/linker/issues/801
+            get => typeof(TypeDescriptorComObject);
+        }
 
         public static IDesigner CreateDesigner(IComponent component, Type designerBaseType)
         {
