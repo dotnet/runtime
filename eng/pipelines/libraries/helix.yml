@@ -13,7 +13,7 @@ parameters:
 
 steps:
   - script: ${{ parameters.msbuildScript }}
-            eng/sendtohelix.proj
+            src/sendtohelix.proj
             /t:test
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}

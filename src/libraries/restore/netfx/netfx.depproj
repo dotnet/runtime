@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(SourceDir)\shims\netfxreference.props" />
+  <Import Project="$(LibrariesProjectRoot)shims\netfxreference.props" />
   <PropertyGroup>
     <BinPlaceRef>true</BinPlaceRef>
     <BinPlaceRuntime>true</BinPlaceRuntime>

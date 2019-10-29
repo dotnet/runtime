@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <!-- Import PackageReferences containing analyzers -->
-  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
+  <Import Project="$(RepositoryEngineeringDir)analyzers.props" />
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
 

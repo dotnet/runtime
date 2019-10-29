@@ -1,16 +1,15 @@
 <Project>
   <PropertyGroup>
-    <PackageDescriptionFile>$(RepoRoot)pkg/descriptions.json</PackageDescriptionFile>
+    <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <RuntimeIdGraphDefinitionFile>$(RepoRoot)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(PkgDir)Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-    <ProjectUrl>https://github.com/dotnet/corefx</ProjectUrl>
-    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
+    <ProjectUrl Condition="'$(ProjectUrl)' == ''">https://github.com/dotnet/corefx</ProjectUrl>
+    <LicenseUrl Condition="'$(LicenseUrl)' == ''">https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
-    <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
 
     <!-- Used by PackageLibs.targets -->
     <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackageId)/$(MicrosoftPrivateIntellisensePackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
@@ -45,7 +44,7 @@
     <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
   </PropertyGroup>
 
-  <Import Condition="Exists('../pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="../pkg/baseline/baseline.props" />
+  <Import Condition="Exists('$(PkgDir)baseline\baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
@@ -75,7 +74,7 @@
 
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <File Condition="'$(IncludeDesignerMarker)' != 'false'"
-          Include="$(RepoRoot)pkg/useSharedDesignerContext.txt">
+          Include="$(PkgDir)useSharedDesignerContext.txt">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>

@@ -42,7 +42,7 @@
     <TestSupportFiles Include="$(DotNetRoot)**\*.*" Exclude="$(DotNetRoot)sdk\NuGetFallbackFolder\**\*.*">
       <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">
+    <TestSupportFiles Include="$(LibrariesProjectRoot)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">

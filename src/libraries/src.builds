@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
     <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard2.0-$(ConfigurationGroup)</AdditionalBuildConfigurations>
@@ -15,5 +15,5 @@
     <Project Include="$(DirectoryToBuild)\src\*.*proj" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
 </Project>

@@ -77,7 +77,7 @@ stages:
                       /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/PublishToArtifacts.binlog
               displayName: Publish to artifacts and produce manifest
 
-            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 build.proj
+            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 src\build.proj
                       -warnaserror:0 -ci
                       /t:UpdatePublishedVersions
                       /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
