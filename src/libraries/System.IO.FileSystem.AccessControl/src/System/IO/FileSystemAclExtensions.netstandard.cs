@@ -8,6 +8,11 @@ namespace System.IO
 {
     public static partial class FileSystemAclExtensions
     {
+        public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             throw new PlatformNotSupportedException();

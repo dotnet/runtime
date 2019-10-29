@@ -18,8 +18,6 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        internal const int GENERIC_READ = unchecked((int)0x80000000);
-
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
@@ -32,7 +30,7 @@ namespace System.IO
                 {
                     // For a number of error codes (sharing violation, path not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.Kernel32.CreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, FileMode.Open, 0))
+                    using (SafeFileHandle handle = Interop.Kernel32.CreateFile(sourceFullPath, Interop.Kernel32.GenericOperations.GENERIC_READ, FileShare.Read, FileMode.Open, 0))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;

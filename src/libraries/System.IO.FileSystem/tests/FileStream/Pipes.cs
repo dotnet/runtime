@@ -109,7 +109,7 @@ namespace System.IO.Tests
                 });
 
                 WaitNamedPipeW(@"\\.\pipe\" + name, -1);
-                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, GENERIC_WRITE, FileShare.None, IntPtr.Zero, FileMode.Open, (int)PipeOptions.Asynchronous, IntPtr.Zero))
+                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, Interop.Kernel32.GenericOperations.GENERIC_WRITE, FileShare.None, IntPtr.Zero, FileMode.Open, (int)PipeOptions.Asynchronous, IntPtr.Zero))
                 using (var client = new FileStream(clientHandle, FileAccess.Write, bufferSize: 3, isAsync: true))
                 {
                     var data = new[] { new byte[] { 0, 1 }, new byte[] { 2, 3 }, new byte[] { 4, 5 } };
@@ -142,7 +142,7 @@ namespace System.IO.Tests
                 });
 
                 WaitNamedPipeW(@"\\.\pipe\" + name, -1);
-                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, GENERIC_READ, FileShare.None, IntPtr.Zero, FileMode.Open, (int)PipeOptions.Asynchronous, IntPtr.Zero))
+                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, Interop.Kernel32.GenericOperations.GENERIC_READ, FileShare.None, IntPtr.Zero, FileMode.Open, (int)PipeOptions.Asynchronous, IntPtr.Zero))
                 using (var client = new FileStream(clientHandle, FileAccess.Read, bufferSize: 3, isAsync: true))
                 {
                     var arr = new byte[1];
@@ -174,8 +174,6 @@ namespace System.IO.Tests
             string lpFileName, int dwDesiredAccess, FileShare dwShareMode,
             IntPtr securityAttrs, FileMode dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
 
-        internal const int GENERIC_READ = unchecked((int)0x80000000);
-        internal const int GENERIC_WRITE = 0x40000000;
         #endregion
     }
 }

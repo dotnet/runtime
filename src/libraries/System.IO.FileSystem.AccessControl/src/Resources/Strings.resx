@@ -188,4 +188,10 @@
   <data name="Arg_PathEmpty" xml:space="preserve">
     <value>The path is empty.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="Argument_InvalidFileModeAndFileSystemRightsCombo" xml:space="preserve">
+    <value>Combining FileMode.{0} with FileSystemRights.{1} is invalid.</value>
+  </data>
 </root>
