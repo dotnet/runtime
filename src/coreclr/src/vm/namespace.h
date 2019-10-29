@@ -21,7 +21,6 @@
 #define g_ResourcesNS       g_SystemNS ".Resources"
 #define g_DiagnosticsNS     g_SystemNS ".Diagnostics"
 #define g_CodeContractsNS   g_DiagnosticsNS ".Contracts"
-#define g_TracingNS         g_DiagnosticsNS ".Tracing"
 #define g_AssembliesNS      g_SystemNS ".Configuration.Assemblies"
 #define g_GlobalizationNS   g_SystemNS ".Globalization"
 #define g_IsolatedStorageNS g_SystemNS ".IO.IsolatedStorage"

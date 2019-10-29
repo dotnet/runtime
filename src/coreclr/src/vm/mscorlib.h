@@ -908,6 +908,8 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,       OnAssemblyLoad, SM_A
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,    OnResourceResolve, SM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,        OnTypeResolve, SM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,    OnAssemblyResolve, SM_Assembly_Str_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,    StartAssemblyLoad,    SM_RefGuid_RefGuid_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,     StopAssemblyLoad,     SM_RefGuid_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMETATADA, WinRT, WindowsRuntimeMetadata) 
@@ -1377,10 +1379,6 @@ DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptio
 DEFINE_FIELD_U(_kind,               ContractExceptionObject,    _Kind)
 DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
-
-DEFINE_CLASS(ACTIVITY_TRACKER,      Tracing,                ActivityTracker)
-DEFINE_METHOD(ACTIVITY_TRACKER,     START_ASSEMBLY_LOAD,    StartAssemblyLoad,    SM_RefGuid_RefGuid_RetVoid)
-DEFINE_METHOD(ACTIVITY_TRACKER,     STOP_ASSEMBLY_LOAD,     StopAssemblyLoad,     SM_RefGuid_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(CAUSALITY_TRACE_LEVEL, WindowsFoundationDiag,   CausalityTraceLevel)
