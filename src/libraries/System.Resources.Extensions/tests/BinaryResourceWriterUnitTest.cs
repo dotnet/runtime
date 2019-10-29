@@ -267,23 +267,7 @@ namespace System.Resources.Extensions.Tests
         public static void BinaryFormattedResources()
         {
             var values = TestData.BinaryFormatted;
-            byte[] writerBuffer, binaryWriterBuffer;
-            using (MemoryStream ms = new MemoryStream())
-            using (ResourceWriter writer = new ResourceWriter(ms))
-            {
-                BinaryFormatter binaryFormatter = new BinaryFormatter();
-
-                foreach (var pair in values)
-                {
-                    using (MemoryStream memoryStream = new MemoryStream())
-                    {
-                        binaryFormatter.Serialize(memoryStream, pair.Value);
-                        writer.AddResourceData(pair.Key, TestData.GetSerializationTypeName(pair.Value.GetType()), memoryStream.ToArray());
-                    }
-                }
-                writer.Generate();
-                writerBuffer = ms.ToArray();
-            }
+            byte[] binaryWriterBuffer;
 
             using (MemoryStream ms = new MemoryStream())
             using (PreserializedResourceWriter writer = new PreserializedResourceWriter(ms))
@@ -302,24 +286,8 @@ namespace System.Resources.Extensions.Tests
                 binaryWriterBuffer = ms.ToArray();
             }
 
-            // PreserializedResourceWriter should write ResourceWriter/ResourceReader format
-            Assert.Equal(writerBuffer, binaryWriterBuffer);
-
-            using (MemoryStream ms = new MemoryStream(writerBuffer, false))
-            using (ResourceReader reader = new ResourceReader(ms))
-            {
-                typeof(ResourceReader).GetField("_permitDeserialization", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(reader, true);
-
-                IDictionaryEnumerator dictEnum = reader.GetEnumerator();
-
-                while (dictEnum.MoveNext())
-                {
-                    ResourceValueEquals(values[(string)dictEnum.Key], dictEnum.Value);
-                }
-            }
-
-            // DeserializingResourceReader can read ResourceReader format
-            using (MemoryStream ms = new MemoryStream(writerBuffer, false))
+            // DeserializingResourceReader can read BinaryFormatted resources with type names.
+            using (MemoryStream ms = new MemoryStream(binaryWriterBuffer, false))
             using (DeserializingResourceReader reader = new DeserializingResourceReader(ms))
             {
                 IDictionaryEnumerator dictEnum = reader.GetEnumerator();
@@ -510,7 +478,13 @@ namespace System.Resources.Extensions.Tests
             {
                 TestData.WriteResourcesStream(actualData);
                 resourcesStream.CopyTo(expectedData);
-                Assert.Equal(expectedData.ToArray(), actualData.ToArray());
+
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    // Some types rely on SerializationInfo.SetType on .NETCore
+                    // which result in a different binary format
+                    Assert.Equal(expectedData.ToArray(), actualData.ToArray());
+                }
             }
         }
 

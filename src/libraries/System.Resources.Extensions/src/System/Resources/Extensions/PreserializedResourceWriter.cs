@@ -155,12 +155,14 @@ namespace System.Resources.Extensions
                 // and reserializing when writing the resources.  We don't want to do that so instead
                 // we just omit the type.
                 typeName = UnknownObjectTypeName;
-
-                // ResourceReader will validate the type so we must use the new reader.
-                _requiresDeserializingResourceReader = true;
             }
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.BinaryFormatter, value));
+
+            // Even though ResourceReader can handle BinaryFormatted resources, the resource may contain
+            // type names that were mangled by the ResXWriter's SerializationBinder, which we need to fix
+
+            _requiresDeserializingResourceReader = true;
         }
 
         /// <summary>

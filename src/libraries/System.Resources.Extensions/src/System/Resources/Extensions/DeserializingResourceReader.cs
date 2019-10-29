@@ -5,6 +5,7 @@
 #nullable enable
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace System.Resources.Extensions
@@ -38,10 +39,69 @@ namespace System.Resources.Extensions
         {
             if (_formatter == null)
             {
-                _formatter = new BinaryFormatter();
+                _formatter = new BinaryFormatter()
+                {
+                    Binder = new UndoTruncatedTypeNameSerializationBinder()
+                };
             }
 
             return _formatter.Deserialize(_store.BaseStream);
+        }
+
+
+        internal class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
+        {
+            public override Type BindToType(string assemblyName, string typeName)
+            {
+                Type type = null;
+
+                // determine if we have a mangled generic type name
+                if (typeName != null && assemblyName != null && !AreBracketsBalanced(typeName))
+                {
+                    // undo the mangling that may have happened with .NETFramework's
+                    // incorrect ResXSerialization binder.
+                    typeName = typeName + ", " + assemblyName;
+
+                    type = Type.GetType(typeName, throwOnError: false, ignoreCase:false);
+                }
+
+                // if type is null we'll fall back to the default type binder which is preferable
+                // since it is backed by a cache
+                return type;
+            }
+
+            private static bool AreBracketsBalanced(string typeName)
+            {
+                // make sure brackets are balanced
+                int firstBracket = typeName.IndexOf('[');
+
+                if (firstBracket == -1)
+                {
+                    return true;
+                }
+
+                int brackets = 1;
+                for (int i = firstBracket + 1; i < typeName.Length; i++)
+                {
+                    if (typeName[i] == '[')
+                    {
+                        brackets++;
+                    }
+                    else if (typeName[i] == ']')
+                    {
+                        brackets--;
+
+                        if (brackets < 0)
+                        {
+                            // unbalanced, closing bracket without opening
+                            break;
+                        }
+                    }
+                }
+
+                return brackets == 0;
+            }
+
         }
 
         private object DeserializeObject(int typeIndex)
