@@ -72,8 +72,8 @@
     <!-- Cleanup old version file -->
     <Delete Files="$(IbcDataPackagePathOutputFile)" Condition="Exists('$(IbcDataPackagePathOutputFile)')" />
 
-    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="$(IbcPackagePath)" Condition="Exists('$(IbcDataPackagePathOutputFile)')" Overwrite="true"/>
-    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="" Condition="!Exists('$(IbcDataPackagePathOutputFile)')" Overwrite="true"/>
+    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="$(IbcPackagePath)" Condition="'$(OptimizationDataSupported)' == 'True'" Overwrite="true"/>
+    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="" Condition="'$(OptimizationDataSupported)' != 'True'" Overwrite="true"/>
     <Message Text="optimizationIBCCoreCLRVersion: $(IbcPackagePath) written to: $(IbcDataPackagePathOutputFile)" Importance="High" />
   </Target>
 
