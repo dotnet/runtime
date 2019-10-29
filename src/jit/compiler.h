@@ -4827,7 +4827,7 @@ public:
     bool fgGCPollsCreated;
     void fgMarkGCPollBlocks();
     void fgCreateGCPolls();
-    bool fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
+    bool fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt = nullptr);
 
     // Requires that "block" is a block that returns from
     // a finally.  Returns the number of successors (jump targets of
