@@ -3858,7 +3858,7 @@ void Compiler::fgCreateGCPolls()
  *  a basic block.
  */
 
-bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
+bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt)
 {
     bool createdPollBlocks;
 
@@ -3883,15 +3883,44 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         pollType = GCPOLL_CALL;
     }
 
+#ifdef DEBUG
+    // If a statment was supplied it should be contained in the block.
+    if (stmt != nullptr)
+    {
+        bool containsStmt = false;
+        for (Statement* stmtMaybe : block->Statements())
+        {
+            containsStmt = (stmtMaybe == stmt);
+            if (containsStmt)
+            {
+                break;
+            }
+        }
+
+        assert(containsStmt);
+    }
+#endif
+
     if (GCPOLL_CALL == pollType)
     {
         createdPollBlocks = false;
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
         GenTree*     temp = fgMorphCall(call);
 
-        // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
-        if (block->bbJumpKind == BBJ_ALWAYS)
+        if (stmt != nullptr)
         {
+            // The GC_POLL should be inserted relative to the supplied statement. The safer
+            // location for the insertion is prior to the current statement since the supplied
+            // statement could be a GT_JTRUE (see fgNewStmtNearEnd() for more details).
+            Statement* newStmt = gtNewStmt(temp);
+
+            // Set the GC_POLL statement to have the same IL offset at the subsequent one.
+            newStmt->SetILOffsetX(stmt->GetILOffsetX());
+            fgInsertStmtBefore(block, stmt, newStmt);
+        }
+        else if (block->bbJumpKind == BBJ_ALWAYS)
+        {
+            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
             fgNewStmtAtEnd(block, temp);
         }
         else
