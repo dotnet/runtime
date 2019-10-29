@@ -1187,6 +1187,12 @@ typedef unsigned char   regNumberSmall;
   // The first thing in an ARM32 prolog pushes LR to the stack, so this can be 0.
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
+  #define REG_STACK_PROBE_HELPER_ARG         REG_R4
+  #define RBM_STACK_PROBE_HELPER_ARG         RBM_R4
+  #define REG_STACK_PROBE_HELPER_CALL_TARGET REG_R5
+  #define RBM_STACK_PROBE_HELPER_CALL_TARGET RBM_R5
+  #define RBM_STACK_PROBE_HELPER_TRASH       (RBM_R5 | RBM_LR)
+
 #elif defined(_TARGET_ARM64_)
 
   #define CPU_LOAD_STORE_ARCH      1
