@@ -133,13 +133,6 @@ struct Limit
             case keDependent:
                 return true;
             case keBinOpArray:
-                if (IntAddOverflows(cns, i))
-                {
-                    return false;
-                }
-                cns += i;
-                return true;
-
             case keConstant:
                 if (IntAddOverflows(cns, i))
                 {
@@ -147,7 +140,6 @@ struct Limit
                 }
                 cns += i;
                 return true;
-
             case keUndef:
             case keUnknown:
                 // For these values of 'type', conservatively return false

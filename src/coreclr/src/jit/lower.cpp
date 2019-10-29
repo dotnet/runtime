@@ -1008,8 +1008,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 
     GenTree* putArg = nullptr;
 
-    bool isOnStack = true;
-    isOnStack      = info->GetRegNum() == REG_STK;
+    bool isOnStack = (info->GetRegNum() == REG_STK);
 
 #ifdef _TARGET_ARMARCH_
     // Mark contained when we pass struct

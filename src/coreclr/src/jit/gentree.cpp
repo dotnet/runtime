@@ -17934,13 +17934,11 @@ CORINFO_FIELD_HANDLE FieldSeqStore::ConstantIndexPseudoField =
 
 bool FieldSeqNode::IsFirstElemFieldSeq()
 {
-    // this must be non-null per ISO C++
     return m_fieldHnd == FieldSeqStore::FirstElemPseudoField;
 }
 
 bool FieldSeqNode::IsConstantIndexFieldSeq()
 {
-    // this must be non-null per ISO C++
     return m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
 }
 

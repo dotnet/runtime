@@ -1794,7 +1794,7 @@ void hashBv::InorderTraverseTwo(hashBv* other, dualNodeAction a)
         // nodes are left in both so determine if the lowest ones
         // match.  if so process them in a pair.  if not then
         // process the lower of the two alone
-        else if (nodeThis && nodeOther)
+        else
         {
             if (nodeThis->baseIndex == nodeOther->baseIndex)
             {

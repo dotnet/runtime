@@ -3059,7 +3059,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             score |= RELATED_PREFERENCE;
         }
 
-        if ((preferCalleeSave && physRegRecord->isCalleeSave) || (!preferCalleeSave && !physRegRecord->isCalleeSave))
+        if (preferCalleeSave == physRegRecord->isCalleeSave)
         {
             score |= CALLER_CALLEE;
         }
@@ -4058,7 +4058,7 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 //
 // Arguments:
 //    fromRefPosition - The RefPosition at which the Interval is to be spilled
-//    toRefPosition   - The RefPosition at which it must be reloaded
+//    toRefPosition   - The RefPosition at which it must be reloaded (debug only arg)
 //
 // Return Value:
 //    None.
@@ -4066,7 +4066,7 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 // Assumptions:
 //    fromRefPosition and toRefPosition must not be null
 //
-void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition, RefPosition* toRefPosition)
+void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition))
 {
     assert(fromRefPosition != nullptr && toRefPosition != nullptr);
     assert(fromRefPosition->getInterval() == interval && toRefPosition->getInterval() == interval);
@@ -4361,7 +4361,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         else
 #endif // DEBUG
         {
-            spillInterval(assignedInterval, spillRefPosition, nextRefPosition);
+            spillInterval(assignedInterval, spillRefPosition DEBUGARG(nextRefPosition));
         }
     }
     // Maintain the association with the interval, if it has more references.
@@ -9139,8 +9139,6 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
     switch (mode)
     {
         case LinearScan::LSRA_DUMP_PRE:
-            _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtTreeID, lastUseChar);
-            break;
         case LinearScan::LSRA_DUMP_REFPOS:
             _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtTreeID, lastUseChar);
             break;

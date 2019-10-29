@@ -7375,7 +7375,7 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
            stack, but they are effectively dead. For fully-interruptible
            methods, we need to report that */
 
-        if (emitFullGCinfo && gcCnt.Value())
+        if (gcCnt.Value())
         {
             /* Allocate a new ptr arg entry and fill it in */
 

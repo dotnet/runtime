@@ -1082,28 +1082,6 @@ private:
     void insertSwap(
         BasicBlock* block, GenTree* insertionPoint, unsigned lclNum1, regNumber reg1, unsigned lclNum2, regNumber reg2);
 
-public:
-    // TODO-Cleanup: unused?
-    class PhysRegIntervalIterator
-    {
-    public:
-        PhysRegIntervalIterator(LinearScan* theLinearScan)
-        {
-            nextRegNumber = (regNumber)0;
-            linearScan    = theLinearScan;
-        }
-        RegRecord* GetNext()
-        {
-            return &linearScan->physRegs[nextRegNumber];
-        }
-
-    private:
-        // This assumes that the physical registers are contiguous, starting
-        // with a register number of 0
-        regNumber   nextRegNumber;
-        LinearScan* linearScan;
-    };
-
 private:
     Interval* newInterval(RegisterType regType);
 
@@ -1183,7 +1161,7 @@ private:
 
     void setIntervalAsSpilled(Interval* interval);
     void setIntervalAsSplit(Interval* interval);
-    void spillInterval(Interval* interval, RefPosition* fromRefPosition, RefPosition* toRefPosition);
+    void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void spillGCRefs(RefPosition* killRefPosition);
 

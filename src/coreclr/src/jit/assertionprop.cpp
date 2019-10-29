@@ -85,7 +85,7 @@ void Compiler::optAddCopies()
            tracks simple assignments. The same goes for lvNormalizedOnStore as
            the cast is generated in fgMorphSmpOpAsg. This boils down to not having
            a copy until optAssertionGen handles this*/
-        if (varDsc->lvNormalizeOnLoad() || varDsc->lvNormalizeOnStore() || typ == TYP_BOOL)
+        if (varDsc->lvNormalizeOnLoad() || varDsc->lvNormalizeOnStore())
         {
             continue;
         }

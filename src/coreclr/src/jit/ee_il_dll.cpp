@@ -1308,7 +1308,7 @@ static LONG FilterSuperPMIExceptions_ee_il(PEXCEPTION_POINTERS pExceptionPointer
 
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {
-    if (eeGetHelperNum(method))
+    if (eeGetHelperNum(method) != CORINFO_HELP_UNDEF)
     {
         if (classNamePtr != nullptr)
         {

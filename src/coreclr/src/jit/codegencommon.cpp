@@ -10183,8 +10183,8 @@ void CodeGen::genSetScopeInfoUsingsiScope()
         LclVarDsc* varDsc = compiler->lvaGetDesc(scopeL->scVarNum);
         siVarLoc   varLoc = getSiVarLoc(varDsc, scopeL);
 
-        genSetScopeInfo(psiScopeCnt + i, startOffs, endOffs - startOffs, scopeL->scVarNum, scopeL->scLVnum,
-                        scopeL->scAvailable, &varLoc);
+        genSetScopeInfo(psiScopeCnt + i, startOffs, endOffs - startOffs, scopeL->scVarNum, scopeL->scLVnum, false,
+                        &varLoc);
     }
 }
 #endif // USING_SCOPE_INFO
