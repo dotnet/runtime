@@ -220,8 +220,6 @@ REDO:
      */
     void Cleanup()
     {
-        if (this == NULL)
-            return ;
         if (lChild != NULL)
         {
             lChild->Cleanup();

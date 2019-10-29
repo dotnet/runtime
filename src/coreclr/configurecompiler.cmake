@@ -256,7 +256,7 @@ if (MSVC)
   add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}>)
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
-  
+
   add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/DEBUG>)
   add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/PDBCOMPRESS>)
   add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:1572864>)
@@ -312,7 +312,7 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
       endif ()
       if (${__UBSAN_POS} GREATER -1)
         # all sanitizier flags are enabled except alignment (due to heavy use of __unaligned modifier)
-        list(APPEND CLR_CXX_SANITIZERS 
+        list(APPEND CLR_CXX_SANITIZERS
           "bool"
           bounds
           enum
@@ -513,9 +513,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   else()
     add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-unknown-pragmas)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
-      add_compile_options(-Wno-nonnull-compare)
-    endif()
     if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
       add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
     endif()

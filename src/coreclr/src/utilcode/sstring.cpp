@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // SString.cpp
-// 
+//
 
 // ---------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ void SString::Startup()
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     if (s_ACP == 0)
-    {        
+    {
         UINT ACP = GetACP();
 
 #ifndef DACCESS_COMPILE
@@ -72,10 +72,10 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
     WCHAR                     wTmp;
 
 #ifndef FEATURE_PAL
-    
+
     int iRet = ::LCMapStringEx(LOCALE_NAME_INVARIANT, dwFlags, &wc, 1, &wTmp, 1, NULL, NULL, 0);
     if (!iRet) {
-        // This can fail in non-exceptional cases becauseof unknown unicode characters. 
+        // This can fail in non-exceptional cases becauseof unknown unicode characters.
         wTmp = wc;
     }
 
@@ -128,21 +128,21 @@ int SString::CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT
         WCHAR ch1 = *buffer1++;
         WCHAR ch2 = *buffer2++;
         diff = ch1 - ch2;
-        if ((ch1 == 0) || (ch2 == 0)) 
+        if ((ch1 == 0) || (ch2 == 0))
         {
-            if  (diff != 0 || stopOnNull) 
+            if  (diff != 0 || stopOnNull)
             {
                 break;
             }
         }
-        else 
+        else
         {
             if (diff != 0)
             {
                 diff = ((CAN_SIMPLE_UPCASE(ch1) ? SIMPLE_UPCASE(ch1) : MapChar(ch1, LCMAP_UPPERCASE))
                         - (CAN_SIMPLE_UPCASE(ch2) ? SIMPLE_UPCASE(ch2) : MapChar(ch2, LCMAP_UPPERCASE)));
             }
-            if (diff != 0) 
+            if (diff != 0)
             {
                 break;
             }
@@ -159,24 +159,24 @@ int SString::CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT
 int GetCaseInsensitiveValueA(const CHAR *buffer, int length) {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(buffer != NULL);
-    _ASSERTE(length == 1 || ((length == 2) && IsDBCSLeadByte(*buffer)));    
+    _ASSERTE(length == 1 || ((length == 2) && IsDBCSLeadByte(*buffer)));
 
     WCHAR wideCh;
     int sortValue;
-    int conversionReturn = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, buffer, length, &wideCh, 1);            
-    if (conversionReturn == 0) 
+    int conversionReturn = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, buffer, length, &wideCh, 1);
+    if (conversionReturn == 0)
     {
         // An invalid sequence should only compare equal to itself, so use a negative mapping.
-        if (length == 1) 
+        if (length == 1)
         {
             sortValue = -((int)((unsigned char)(*buffer)));
         }
-        else 
+        else
         {
-            sortValue = -(((((int)((unsigned char)(*buffer))) << 8) | ((int)((unsigned char)(*(buffer + 1))))));        
-        }        
+            sortValue = -(((((int)((unsigned char)(*buffer))) << 8) | ((int)((unsigned char)(*(buffer + 1))))));
+        }
     }
-    else 
+    else
     {
         _ASSERTE(conversionReturn == 1);
         sortValue = MapChar(wideCh, LCMAP_UPPERCASE);
@@ -188,7 +188,7 @@ int GetCaseInsensitiveValueA(const CHAR *buffer, int length) {
 int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     _ASSERTE(stopOnNull || stopOnCount);
 
     const CHAR *buffer1End = buffer1 + count;
@@ -198,20 +198,20 @@ int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_
     {
         CHAR ch1 = *buffer1;
         CHAR ch2 = *buffer2;
-        if ((ch1 == 0) || (ch2 == 0)) 
+        if ((ch1 == 0) || (ch2 == 0))
         {
             diff = ch1 - ch2;
-            if  (diff != 0 || stopOnNull) 
+            if  (diff != 0 || stopOnNull)
             {
                 break;
             }
             buffer1++;
             buffer2++;
         }
-        else if (CAN_SIMPLE_UPCASE_ANSI(ch1) && CAN_SIMPLE_UPCASE_ANSI(ch2)) 
+        else if (CAN_SIMPLE_UPCASE_ANSI(ch1) && CAN_SIMPLE_UPCASE_ANSI(ch2))
         {
             diff = ch1 - ch2;
-            if (diff != 0) 
+            if (diff != 0)
             {
                 diff = (SIMPLE_UPCASE_ANSI(ch1) - SIMPLE_UPCASE_ANSI(ch2));
                 if (diff != 0)
@@ -222,19 +222,19 @@ int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_
             buffer1++;
             buffer2++;
         }
-        else 
+        else
         {
             int length = 1;
-            if (IsDBCSLeadByte(ch1) 
+            if (IsDBCSLeadByte(ch1)
                 && IsDBCSLeadByte(ch2)
-                && (!stopOnCount || ((buffer1 + 1) < buffer1End))) 
+                && (!stopOnCount || ((buffer1 + 1) < buffer1End)))
             {
                 length = 2;
             }
             int sortValue1 = GetCaseInsensitiveValueA(buffer1, length);
             int sortValue2 = GetCaseInsensitiveValueA(buffer2, length);
             diff = sortValue1 - sortValue2;
-            if (diff != 0) 
+            if (diff != 0)
             {
                 break;
             }
@@ -338,7 +338,7 @@ void SString::Set(const WCHAR *string, COUNT_T count)
 
 //-----------------------------------------------------------------------------
 // Set this string to a point to the first count characters of the given
-// preallocated unicode string (shallow copy). 
+// preallocated unicode string (shallow copy).
 //-----------------------------------------------------------------------------
 void SString::SetPreallocated(const WCHAR *string, COUNT_T count)
 {
@@ -727,7 +727,7 @@ void SString::ConvertASCIIToUnicode(SString &dest) const
     CONSISTENCY_CHECK(CheckPointer(GetRawASCII()));
     CONSISTENCY_CHECK(GetRawCount() > 0);
 
-    // If dest is the same as this, then we need to preserve on resize. 
+    // If dest is the same as this, then we need to preserve on resize.
     dest.Resize(GetRawCount(), REPRESENTATION_UNICODE,
                 this == &dest ? PRESERVE : DONT_PRESERVE);
 
@@ -1750,7 +1750,7 @@ BOOL SString::MatchCaseInsensitive(const CIterator &i, WCHAR c) const
 
 //-----------------------------------------------------------------------------
 // Convert string to unicode lowercase using the invariant culture
-// Note: Please don't use it in PATH as multiple character can map to the same 
+// Note: Please don't use it in PATH as multiple character can map to the same
 // lower case symbol
 //-----------------------------------------------------------------------------
 void SString::LowerCase()
@@ -1764,7 +1764,7 @@ void SString::LowerCase()
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
-    
+
     ConvertToUnicode();
 
     for (WCHAR *pwch = GetRawUnicode(); pwch < GetRawUnicode() + GetRawCount(); ++pwch)
@@ -1776,7 +1776,7 @@ void SString::LowerCase()
 //-----------------------------------------------------------------------------
 // Convert null-terminated string to lowercase using the invariant culture
 //-----------------------------------------------------------------------------
-//static 
+//static
 void SString::LowerCase(__inout_z LPWSTR wszString)
 {
     SS_CONTRACT_VOID
@@ -1786,12 +1786,12 @@ void SString::LowerCase(__inout_z LPWSTR wszString)
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
-    
+
     if (wszString == NULL)
     {
         return;
     }
-    
+
     for (WCHAR * pwch = wszString; *pwch != '\0'; ++pwch)
     {
         *pwch = (CAN_SIMPLE_DOWNCASE(*pwch) ? SIMPLE_DOWNCASE(*pwch) : MapChar(*pwch, LCMAP_LOWERCASE));
@@ -1800,7 +1800,7 @@ void SString::LowerCase(__inout_z LPWSTR wszString)
 
 //-----------------------------------------------------------------------------
 // Convert string to unicode uppercase using the invariant culture
-// Note: Please don't use it in PATH as multiple character can map to the same 
+// Note: Please don't use it in PATH as multiple character can map to the same
 // upper case symbol
 //-----------------------------------------------------------------------------
 void SString::UpperCase()
@@ -1815,7 +1815,7 @@ void SString::UpperCase()
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
-    
+
     ConvertToUnicode();
 
     for (WCHAR *pwch = GetRawUnicode(); pwch < GetRawUnicode() + GetRawCount(); ++pwch)
@@ -1837,9 +1837,6 @@ const CHAR *SString::GetANSI(AbstractScratchBuffer &scratch) const
     }
     SS_CONTRACT_END;
 
-    if (this == NULL)
-        SS_RETURN NULL;
-
     if (IsRepresentation(REPRESENTATION_ANSI))
         SS_RETURN GetRawANSI();
 
@@ -1860,9 +1857,6 @@ const UTF8 *SString::GetUTF8(AbstractScratchBuffer &scratch) const
     }
     CONTRACT_END;
 
-    if (this == NULL)
-        RETURN NULL;
-
     if (IsRepresentation(REPRESENTATION_UTF8))
         RETURN GetRawUTF8();
 
@@ -1879,9 +1873,6 @@ const UTF8 *SString::GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) c
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-
-    if (this == NULL)
-        RETURN NULL;
 
     if (IsRepresentation(REPRESENTATION_UTF8))
     {
@@ -1906,9 +1897,6 @@ const UTF8 *SString::GetUTF8NoConvert() const
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-
-    if (this == NULL)
-        RETURN NULL;
 
     if (IsRepresentation(REPRESENTATION_UTF8))
         RETURN GetRawUTF8();
@@ -2031,7 +2019,7 @@ void SString::VPrintf(const CHAR *format, va_list args)
 
         if (result >=0)
         {
-            // Succeeded in writing. Now resize - 
+            // Succeeded in writing. Now resize -
             Resize(result, REPRESENTATION_ANSI, PRESERVE);
             SString sss(Ansi, format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
@@ -2107,7 +2095,7 @@ void SString::PPrintf(const WCHAR *format, ...)
     va_list argItr;
     va_start(argItr, format);
     PVPrintf(format, argItr);
-    va_end(argItr);    
+    va_end(argItr);
 
     RETURN;
 }
