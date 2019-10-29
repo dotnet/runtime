@@ -505,17 +505,11 @@
 # https://github.com/mono/mono/issues/15152
 -nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
 
-# GC.GetTotalAllocatedBytes is not implemented
--nomethod System.Tests.GCTests.GetTotalAllocatedBytes
-
-# GC.GetAllocatedBytesForCurrentThread is not implemented
--nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
-
 # GCSettings.LatencyMode is not implemented
 -nomethod System.Tests.GCTests.LatencyRoundtrips
 
 # GC.GetGCMemoryInfo is not implemented
--nomethod System.Tests.GCTests.GetGCMemoryInfo
+-nomethod System.Tests.GCExtendedTests.GetGCMemoryInfo
 
 # flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
 -nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
