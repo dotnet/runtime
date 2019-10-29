@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class PathTestsBase
+    public class PathTestsBase
     {
         protected static string Sep = Path.DirectorySeparatorChar.ToString();
         protected static string AltSep = Path.AltDirectorySeparatorChar.ToString();
@@ -220,6 +219,21 @@ namespace System.IO.Tests
             {
                 Environment.SetEnvironmentVariable(envVar, original);
                 Assert.Equal(original, Path.GetTempPath());
+            }
+        }
+
+        protected static class PathAssert
+        {
+            public static void Equal(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual)
+            {
+                if (!actual.SequenceEqual(expected))
+                    throw new Xunit.Sdk.EqualException(new string(expected), new string(actual));
+            }
+
+            public static void Empty(ReadOnlySpan<char> actual)
+            {
+                if (actual.Length > 0)
+                    throw new Xunit.Sdk.NotEmptyException();
             }
         }
     }

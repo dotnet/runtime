@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class BitConverterTests
+    public static class BitConverterTests
     {
         [Fact]
         public static unsafe void IsLittleEndian()
@@ -261,6 +261,16 @@ namespace System.Tests
             longerBytes[0] = 0;
             Array.Copy(bytes, 0, longerBytes, 1, bytes.Length);
             Assert.Equal(input, convertBack(longerBytes, 1));
+        }
+
+        [Fact]
+        public static void SingleToInt32Bits()
+        {
+            float input = 12345.63f;
+            int result = BitConverter.SingleToInt32Bits(input);
+            Assert.Equal(1178658437, result);
+            float roundtripped = BitConverter.Int32BitsToSingle(result);
+            Assert.Equal(input, roundtripped);
         }
     }
 }

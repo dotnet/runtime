@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace System.Tests
 {
-    public static partial class MathFTests
+    public static class MathFTests
     {
         // binary32 (float) has a machine epsilon of 2^-23 (approx. 1.19e-07). However, this
         // is slightly too accurate when writing tests meant to run against libm implementations

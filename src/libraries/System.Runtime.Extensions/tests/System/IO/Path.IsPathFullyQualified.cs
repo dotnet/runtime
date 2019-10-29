@@ -18,6 +18,7 @@ namespace System.IO.Tests
         public static void IsPathFullyQualified_Empty()
         {
             Assert.False(Path.IsPathFullyQualified(""));
+            Assert.False(Path.IsPathFullyQualified(ReadOnlySpan<char>.Empty));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -30,6 +31,7 @@ namespace System.IO.Tests
         public static void IsPathFullyQualified_Windows_Invalid(string path)
         {
             Assert.False(Path.IsPathFullyQualified(path));
+            Assert.False(Path.IsPathFullyQualified(path.AsSpan()));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -51,6 +53,7 @@ namespace System.IO.Tests
         public static void IsPathFullyQualified_Windows_Valid(string path)
         {
             Assert.True(Path.IsPathFullyQualified(path));
+            Assert.True(Path.IsPathFullyQualified(path.AsSpan()));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
