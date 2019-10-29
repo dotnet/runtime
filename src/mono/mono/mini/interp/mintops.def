@@ -734,6 +734,7 @@ OPDEF(MINT_ICALL_PPPPPP_V, "mono_icall_pppppp_v", 2, Pop6, Push0, MintOpClassTok
 OPDEF(MINT_ICALL_PPPPPP_P, "mono_icall_pppppp_p", 2, Pop6, Push1, MintOpClassToken)
 // FIXME: MintOp
 OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, VarPop, VarPush, MintOpNoArgs)
+OPDEF(MINT_JIT_CALL2, "mono_jit_call2", 5, VarPop, VarPush, MintOpNoArgs)
 
 OPDEF(MINT_MONO_LDPTR, "mono_ldptr", 2, Pop0, Push1, MintOpClassToken)
 OPDEF(MINT_MONO_SGEN_THREAD_INFO, "mono_sgen_thread_info", 1, Pop0, Push1, MintOpNoArgs)

@@ -232,7 +232,9 @@ mono_get_method_from_ip (void *ip)
 	if (location)
 		file_loc = g_strdup_printf ("[%s :: %du]", location->source_file, location->row);
 
-	res = g_strdup_printf (" %s [{%p} + 0x%x] %s (%p %p) [%p - %s]", method_name, method, (int)((char*)ip - (char*)ji->code_start), file_loc ? file_loc : "", ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+	const char *in_interp = ji->is_interp ? " interp" : "";
+
+	res = g_strdup_printf (" %s [{%p} + 0x%x%s] %s (%p %p) [%p - %s]", method_name, method, (int)((char*)ip - (char*)ji->code_start), in_interp, file_loc ? file_loc : "", ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	mono_debug_free_source_location (location);
 	g_free (method_name);
@@ -4382,6 +4384,13 @@ mini_init (const char *filename, const char *runtime_version)
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
 
+#ifdef ENABLE_EXPERIMENT_TIERED
+	if (!mono_compile_aot) {
+		/* create compilation thread in background */
+		mini_tiered_init ();
+	}
+#endif
+
 	if (mono_profiler_sampling_enabled ())
 		mono_runtime_setup_stat_profiler ();
 
@@ -4421,8 +4430,8 @@ register_icalls (void)
 	register_icall (mono_profiler_raise_method_tail_call, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
 
-	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr, TRUE);
-	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
+	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
 	register_icall (mono_jit_set_domain, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mono_domain_get, mono_icall_sig_ptr, TRUE);

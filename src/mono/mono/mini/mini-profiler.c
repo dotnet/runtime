@@ -92,16 +92,17 @@ mini_profiler_emit_enter (MonoCompile *cfg)
 	if (cfg->current_method != cfg->method)
 		return;
 
-	MonoInst *iargs [2];
+	MonoInst *iargs [3];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	if (MONO_CFG_PROFILE (cfg, ENTER_CONTEXT))
-		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], NULL);
+		iargs [2] = emit_fill_call_ctx (cfg, iargs [0], NULL);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 
-	/* void mono_profiler_raise_method_enter (MonoMethod *method, MonoProfilerCallContext *ctx) */
+	/* void mono_profiler_raise_method_enter (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx) */
 	if (trace)
 		mono_emit_jit_icall (cfg, mono_trace_enter_method, iargs);
 	else
@@ -116,16 +117,17 @@ mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 	if (!MONO_CFG_PROFILE (cfg, LEAVE) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method)))
 		return;
 
-	MonoInst *iargs [2];
+	MonoInst *iargs [3];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	if (MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
-		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], ret);
+		iargs [2] = emit_fill_call_ctx (cfg, iargs [0], ret);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 
-	/* void mono_profiler_raise_method_leave (MonoMethod *method, MonoProfilerCallContext *ctx) */
+	/* void mono_profiler_raise_method_leave (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx) */
 	if (trace)
 		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
 	else
@@ -142,14 +144,15 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 
 	g_assert (cfg->current_method == cfg->method);
 
-	MonoInst *iargs [2];
+	MonoInst *iargs [3];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	if (target)
-		EMIT_NEW_METHODCONST (cfg, iargs [1], target);
+		EMIT_NEW_METHODCONST (cfg, iargs [2], target);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 
 	/* void mono_profiler_raise_method_tail_call (MonoMethod *method, MonoMethod *target) */
 	if (trace)

@@ -314,6 +314,7 @@ mono_trace_set_mask_string (const char *value)
 		{ "w32handle", MONO_TRACE_IO_LAYER_HANDLE },
 		{ "tailcall", MONO_TRACE_TAILCALL },
 		{ "profiler", MONO_TRACE_PROFILER },
+		{ "tiered", MONO_TRACE_TIERED },
 		{ "all", (MonoTraceMask)~0 }, // FIXMEcxx there is a better way -- operator overloads of enums
 		{ NULL, (MonoTraceMask)0 },
 	};

@@ -52,6 +52,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mini-unwind.h"
 #include "jit.h"
 #include "cfgdump.h"
+#include "tiered.h"
 
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"

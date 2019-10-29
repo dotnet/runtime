@@ -572,6 +572,7 @@ section_names [][12] = {
 	"", // MONO_COUNTER_PERFCOUNTERS - not used.
 	"Profiler",
 	"Interp",
+	"Tiered",
 };
 
 static void

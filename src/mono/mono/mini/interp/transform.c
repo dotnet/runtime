@@ -36,6 +36,7 @@
 #define INTERP_INST_FLAG_SEQ_POINT_METHOD_ENTRY 2
 #define INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT 4
 #define INTERP_INST_FLAG_SEQ_POINT_NESTED_CALL 8
+#define INTERP_INST_FLAG_RECORD_CALL_PATCH 16
 
 #define INTERP_LOCAL_FLAG_INDIRECT 1
 #define INTERP_LOCAL_FLAG_DEAD 2
@@ -157,6 +158,9 @@ typedef struct
 	int max_data_items;
 	void **data_items;
 	GHashTable *data_hash;
+#ifdef ENABLE_EXPERIMENT_TIERED
+	GHashTable *patchsite_hash;
+#endif
 	int *clause_indexes;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
@@ -437,6 +441,14 @@ interp_prev_ins (InterpInst *ins)
 		(ins)->data [index + 1] = * ((guint16 *)(v) + 1); \
 	} while (0)
 
+#define WRITE64(ins, v) \
+	do { \
+		*((ins) + 0) = * ((guint16 *)(v) + 0); \
+		*((ins) + 1) = * ((guint16 *)(v) + 1); \
+		*((ins) + 2) = * ((guint16 *)(v) + 2); \
+		*((ins) + 3) = * ((guint16 *)(v) + 3); \
+	} while (0)
+
 #define WRITE64_INS(ins, index, v) \
 	do { \
 		(ins)->data [index] = * (guint16 *)(v); \
@@ -455,6 +467,11 @@ interp_prev_ins (InterpInst *ins)
 		* (guint32 *)(&(ins)->data [index]) = * (guint32 *)(v); \
 	} while (0)
 
+#define WRITE64(ip, v) \
+	do { \
+		* (guint64*)(ip) = * (guint64 *)(v); \
+		(ip) += 4; \
+	} while (0)
 #define WRITE64_INS(ins, index, v) \
 	do { \
 		* (guint64 *)(&(ins)->data [index]) = * (guint64 *)(v); \
@@ -886,6 +903,27 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	//return TRUE;
 	return FALSE;
 }
+
+#ifdef ENABLE_EXPERIMENT_TIERED
+static gboolean
+jit_call2_supported (MonoMethod *method, MonoMethodSignature *sig)
+{
+	if (sig->param_count > 6)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+
+	return TRUE;
+}
+#endif
 
 static int mono_class_get_magic_index (MonoClass *k)
 {
@@ -2451,6 +2489,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 		} else {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
+#ifdef ENABLE_EXPERIMENT_TIERED
+			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
+				g_assert (!calli && !is_virtual);
+				td->last_ins->flags |= INTERP_INST_FLAG_RECORD_CALL_PATCH;
+				g_hash_table_insert (td->patchsite_hash, td->last_ins, target_method);
+			}
+#endif
 			return_val_if_nok (error, FALSE);
 			if (csignature->call_convention == MONO_CALL_VARARG)
 				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
@@ -3274,7 +3319,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 	if (sym_seq_points) {
 		last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
-		last_seq_point->flags = INTERP_INST_FLAG_SEQ_POINT_METHOD_ENTRY;
+		last_seq_point->flags |= INTERP_INST_FLAG_SEQ_POINT_METHOD_ENTRY;
 	}
 
 	if (mono_debugger_method_has_breakpoint (method))
@@ -3685,7 +3730,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			if (sym_seq_points) {
 				last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
-				td->last_ins->flags = INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT;
+				td->last_ins->flags |= INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT;
 			}
 
 			if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
@@ -6207,6 +6252,10 @@ get_inst_length (InterpInst *ins)
 {
 	if (ins->opcode == MINT_SWITCH)
 		return MINT_SWITCH_LEN (READ32 (&ins->data [0]));
+#ifdef ENABLE_EXPERIMENT_TIERED
+	else if (MINT_IS_PATCHABLE_CALL (ins->opcode))
+		return MAX (mono_interp_oplen [MINT_JIT_CALL2], mono_interp_oplen [ins->opcode]);
+#endif
 	else
 		return mono_interp_oplen [ins->opcode];
 }
@@ -6397,6 +6446,30 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		cbb->seq_points = g_slist_prepend_mempool (td->mempool, cbb->seq_points, seqp);
 		cbb->last_seq_point = seqp;
+#ifdef ENABLE_EXPERIMENT_TIERED
+	} else if (ins->flags & INTERP_INST_FLAG_RECORD_CALL_PATCH) {
+		g_assert (MINT_IS_PATCHABLE_CALL (opcode));
+
+		/* TODO: could `ins` be removed by any interp optimization? */
+		MonoMethod *target_method = (MonoMethod *) g_hash_table_lookup (td->patchsite_hash, ins);
+		g_assert (target_method);
+		g_hash_table_remove (td->patchsite_hash, ins);
+
+		mini_tiered_record_callsite (start_ip, target_method, TIERED_PATCH_KIND_INTERP);
+
+		int size = mono_interp_oplen [ins->opcode];
+		int jit_call2_size = mono_interp_oplen [MINT_JIT_CALL2];
+
+		g_assert (size < jit_call2_size);
+
+		// Emit the rest of the data
+		for (int i = 0; i < size - 1; i++)
+			*ip++ = ins->data [i];
+
+		/* intentional padding so we can patch a MINT_JIT_CALL2 here */
+		for (int i = size - 1; i < (jit_call2_size - 1); i++)
+			*ip++ = MINT_NIY;
+#endif
 	} else {
 		if (MINT_IS_LDLOC (opcode) || MINT_IS_STLOC (opcode) || MINT_IS_STLOC_NP (opcode) || opcode == MINT_LDLOCA_S ||
 				MINT_IS_LDLOCFLD (opcode) || MINT_IS_LOCUNOP (opcode) || MINT_IS_STLOCFLD (opcode)) {
@@ -7245,6 +7318,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->max_data_items = 0;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
+#ifdef ENABLE_EXPERIMENT_TIERED
+	td->patchsite_hash = g_hash_table_new (NULL, NULL);
+#endif
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
@@ -7353,6 +7429,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	}
 
 	save_seq_points (td, jinfo);
+#ifdef ENABLE_EXPERIMENT_TIERED
+	/* debugging aid, it makes `mono_pmip` work. */
+	mono_jit_info_table_add (domain, jinfo);
+#endif
 
 exit:
 	g_free (td->in_offsets);
@@ -7367,6 +7447,9 @@ exit:
 	g_free (td->is_bb_start);
 	g_free (td->locals);
 	g_hash_table_destroy (td->data_hash);
+#ifdef ENABLE_EXPERIMENT_TIERED
+	g_hash_table_destroy (td->patchsite_hash);
+#endif
 	g_ptr_array_free (td->seq_points, TRUE);
 	g_array_free (td->line_numbers, TRUE);
 	mono_mempool_destroy (td->mempool);
@@ -7374,10 +7457,40 @@ exit:
 
 static mono_mutex_t calc_section;
 
+#ifdef ENABLE_EXPERIMENT_TIERED
+static gboolean
+tiered_patcher (MiniTieredPatchPointContext *ctx, gpointer patchsite)
+{
+	ERROR_DECL (error);
+	MonoMethod *m = ctx->target_method;
+
+	if (!jit_call2_supported (m, mono_method_signature_internal (m)))
+		return FALSE;
+
+	/* TODO: Force compilation here. Currently the JIT will be invoked upon
+	 *       first execution of `MINT_JIT_CALL2`. */
+	InterpMethod *rmethod = mono_interp_get_imethod (ctx->domain, m, error);
+	mono_error_assert_ok (error);
+
+	guint16 *ip = ((guint16 *) patchsite);
+	*ip++ = MINT_JIT_CALL2;
+	/* FIXME: this only works on 64bit */
+	WRITE64 (ip, &rmethod);
+	mono_memory_barrier ();
+
+	return TRUE;
+}
+#endif
+
+
 void 
 mono_interp_transform_init (void)
 {
 	mono_os_mutex_init_recursive(&calc_section);
+
+#ifdef ENABLE_EXPERIMENT_TIERED
+	mini_tiered_register_callsite_patcher (tiered_patcher, TIERED_PATCH_KIND_INTERP);
+#endif
 }
 
 void
@@ -7459,6 +7572,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			imethod->alloca_size = imethod->stack_size;
 			mono_memory_barrier ();
 			imethod->transformed = TRUE;
+			mono_interp_stats.methods_transformed++;
 			mono_os_mutex_unlock (&calc_section);
 			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return;
@@ -7497,6 +7611,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		memcpy ((char*)imethod + start_offset, (char*)&tmp_imethod + start_offset, sizeof (InterpMethod) - start_offset);
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
+		mono_interp_stats.methods_transformed++;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 
 	}

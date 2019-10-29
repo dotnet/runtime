@@ -551,6 +551,8 @@ common_sources = \
 	llvmonly-runtime.c \
 	aot-runtime.h	\
 	ee.h \
+	tiered.h \
+	tiered.c \
 	mini-runtime.h
 
 endif # !ENABLE_MSVC_ONLY

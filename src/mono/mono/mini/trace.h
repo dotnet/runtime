@@ -10,11 +10,11 @@
 
 ICALL_EXTERN_C
 void
-mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx);
+mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 ICALL_EXTERN_C
 void 
-mono_trace_leave_method (MonoMethod *method, MonoProfilerCallContext *ctx);
+mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 void mono_trace_enable (gboolean enable);
 gboolean mono_trace_is_enabled (void);
