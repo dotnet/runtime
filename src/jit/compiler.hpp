@@ -3592,7 +3592,7 @@ inline CORINFO_METHOD_HANDLE Compiler::eeFindHelper(unsigned helper)
     /* Helpers are marked by the fact that they are odd numbers
      * force this to be an odd number (will shift it back to extract) */
 
-    return ((CORINFO_METHOD_HANDLE)(size_t)((helper << 2) + 1));
+    return ((CORINFO_METHOD_HANDLE)((((size_t)helper) << 2) + 1));
 }
 
 inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)

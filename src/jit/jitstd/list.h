@@ -190,7 +190,6 @@ public:
     const_iterator end() const;
 
     iterator erase(iterator position);
-    iterator erase(iterator first, iterator last);
 
     reference front();
     const_reference front() const;
@@ -448,15 +447,6 @@ typename list<T, Allocator>::iterator list<T, Allocator>::erase(iterator positio
 
     m_nodeAllocator.deallocate(pNode, 1);
     return iterator(pNext);
-}
-
-template <typename T, typename Allocator>
-typename list<T, Allocator>::iterator list<T, Allocator>::erase(iterator first, iterator last)
-{
-    for (; first != last; first++)
-    {
-        erase(first);
-    }
 }
 
 template <typename T, typename Allocator>

@@ -576,6 +576,11 @@ vector<T, Allocator>& vector<T, Allocator>::operator=(const vector<Alt, AltAlloc
 template <typename T, typename Allocator>
 vector<T, Allocator>& vector<T, Allocator>::operator=(const vector<T, Allocator>& vec)
 {
+    if (this == &vec)
+    {
+        return *this;
+    }
+
     // We'll not observe copy-on-write for now.
     m_allocator = vec.m_allocator;
     ensure_capacity(vec.m_nSize);

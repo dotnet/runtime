@@ -81,23 +81,18 @@ void* ArenaAllocator::allocateNewPage(size_t size)
         m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
     }
 
-    PageDescriptor* newPage = nullptr;
-
     if (!bypassHostAllocator())
     {
         // Round to the nearest multiple of default page size
         pageSize = roundUp(pageSize, DEFAULT_PAGE_SIZE);
     }
 
+    // Allocate the new page
+    PageDescriptor* newPage = static_cast<PageDescriptor*>(allocateHostMemory(pageSize, &pageSize));
+
     if (newPage == nullptr)
     {
-        // Allocate the new page
-        newPage = static_cast<PageDescriptor*>(allocateHostMemory(pageSize, &pageSize));
-
-        if (newPage == nullptr)
-        {
-            NOMEM();
-        }
+        NOMEM();
     }
 
     // Append the new page to the end of the list

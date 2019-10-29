@@ -3680,9 +3680,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
                 // - This is irrelevant for X86, since structs are always passed by value on the stack.
 
-                GenTree** parentOfArgObj = parentArgx;
-                GenTree*  lclVar         = fgIsIndirOfAddrOfLocal(argObj);
-                bool      canTransform   = false;
+                GenTree* lclVar       = fgIsIndirOfAddrOfLocal(argObj);
+                bool     canTransform = false;
 
                 if (structBaseType != TYP_STRUCT)
                 {
@@ -3804,14 +3803,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             DEBUG_DESTROY_NODE(argObj->AsOp()->gtOp1); // GT_ADDR
                             DEBUG_DESTROY_NODE(argObj);                // GT_IND
 
-                            argObj          = temp;
-                            *parentOfArgObj = temp;
-
-                            // If the OBJ had been the top level node, we've now changed argx.
-                            if (parentOfArgObj == parentArgx)
-                            {
-                                argx = temp;
-                            }
+                            argObj      = temp;
+                            *parentArgx = temp;
+                            argx        = temp;
                         }
                     }
                     if (argObj->gtOper == GT_LCL_VAR)
