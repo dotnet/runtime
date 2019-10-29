@@ -20,15 +20,13 @@ jobs:
     pool: 
       # Hosted Linux Build Pool
       ${{ if eq(parameters.osGroup, 'Linux') }}:
-        pool:  Hosted Ubuntu 1604
-        queue: Ubuntu.1804.Amd64.Open
-        osGroup: Linux
+        name:  NetCoreInternal-Pool
+        queue: BuildPool.Ubuntu.1604.Amd64
       # Hosted Windows Build Pool
       ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        pool: Hosted VS2017
-        queue: BuildPool.Windows.10.Amd64.VS2017.Open
-        osGroup: Windows_NT
-
+        name: NetCoreInternal-Pool
+        queue: BuildPool.Windows.10.Amd64.VS2019
+    osGroup: ${{ parameters.osGroup }}
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       
