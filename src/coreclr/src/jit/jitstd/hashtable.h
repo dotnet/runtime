@@ -162,7 +162,6 @@ protected:
     size_type hash_helper(const key_type& value, size_type buckets) const;
     pair<iterator, bool> insert_helper(const value_type& value, Buckets& buckets, Elements& elements, bool fRehashing);
     iterator erase_helper(const_iterator position);
-    void dump_helper();
     void debug_check();
 
 private:
@@ -186,25 +185,6 @@ private:
 
 namespace jitstd
 {
-
-template <typename Key, typename Value, typename Hash, typename Pred, typename Alloc, typename KeyOf>
-void hashtable<Key, Value, Hash, Pred, Alloc, KeyOf>::dump_helper()
-{
-    for (size_type i = 0; i < m_buckets.size(); ++i)
-    {
-        printf("\n");
-        printf("--------------=BEGIN=--------------\n");
-        printf("Load factor = %f\n", load_factor());
-        printf("-----------------------------------\n");
-        printf("Bucket number = %d %p %p\n", i, *((ptrdiff_t*)&(m_buckets[i].first)), *((ptrdiff_t*)&(m_buckets[i].second)));
-        printf("-----------------------------------\n");
-        for (typename Elements::iterator value = (m_buckets[i]).first; value != (m_buckets[i]).second; ++value)
-        {
-            printf("%d, ", *((ptrdiff_t*)&value), *value);
-        }
-        printf("-----------------------------------\n");
-    }
-}
 
 // We can't leave this permanently enabled -- it makes algorithms cubic, and causes tests to time out.
 // Enable when/if you have reason to believe there's a problem in hashtable.

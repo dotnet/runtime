@@ -714,19 +714,13 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         switch (cmpOper)
         {
             case GT_LT:
+            case GT_LE:
                 pRange->uLimit = limit;
                 break;
 
             case GT_GT:
-                pRange->lLimit = limit;
-                break;
-
             case GT_GE:
                 pRange->lLimit = limit;
-                break;
-
-            case GT_LE:
-                pRange->uLimit = limit;
                 break;
 
             default:

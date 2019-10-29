@@ -524,6 +524,7 @@ public:
                         }
 
 #ifdef _MSC_VER
+#pragma warning(push)
 #pragma warning( disable : 4146 )   // unary minus applied to unsigned is still unsigned
 #endif
                         if(MaxInt()/(-lhs) < (-rhs) )
@@ -532,7 +533,7 @@ public:
                             return false;
                         }
 #ifdef _MSC_VER
-#pragma warning( default : 4146 )
+#pragma warning(pop)
 #endif
                     }
                 }

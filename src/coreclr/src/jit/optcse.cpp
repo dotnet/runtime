@@ -1574,17 +1574,16 @@ public:
 
         void InitializeCounts()
         {
+            m_Size = Expr()->GetCostSz(); // always the GetCostSz()
             if (m_context->CodeOptKind() == Compiler::SMALL_CODE)
             {
-                m_Cost     = Expr()->GetCostSz();   // the estimated code size
-                m_Size     = Expr()->GetCostSz();   // always the GetCostSz()
+                m_Cost     = m_Size;                // the estimated code size
                 m_defCount = m_CseDsc->csdDefCount; // def count
                 m_useCount = m_CseDsc->csdUseCount; // use count (excluding the implicit uses at defs)
             }
             else
             {
                 m_Cost     = Expr()->GetCostEx();   // the estimated execution cost
-                m_Size     = Expr()->GetCostSz();   // always the GetCostSz()
                 m_defCount = m_CseDsc->csdDefWtCnt; // weighted def count
                 m_useCount = m_CseDsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
             }
