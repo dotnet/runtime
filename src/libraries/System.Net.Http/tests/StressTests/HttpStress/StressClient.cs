@@ -21,6 +21,7 @@ namespace HttpStress
         private const string UNENCRYPTED_HTTP2_ENV_VAR = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT";
 
         private readonly (string name, Func<RequestContext, Task> operation)[] _clientOperations;
+        private readonly Uri _baseAddress;
         private readonly Configuration _config;
         private readonly StressResultAggregator _aggregator;
         private readonly Stopwatch _stopwatch = new Stopwatch();
@@ -33,6 +34,7 @@ namespace HttpStress
         {
             _clientOperations = clientOperations;
             _config = configuration;
+            _baseAddress = new Uri(configuration.ServerUri);
             _aggregator = new StressResultAggregator(clientOperations);
         }
 
@@ -80,7 +82,7 @@ namespace HttpStress
 
         private async Task StartCore()
         {
-            if (_config.ServerUri.Scheme == "http")
+            if (_baseAddress.Scheme == "http")
             {
                 Environment.SetEnvironmentVariable(UNENCRYPTED_HTTP2_ENV_VAR, "1");
             }
@@ -107,7 +109,34 @@ namespace HttpStress
                 }
             }
 
-            using var client = new HttpClient(CreateHttpHandler()) { BaseAddress = _config.ServerUri, Timeout = _config.DefaultTimeout };
+            HttpClient CreateHttpClient() => 
+                new HttpClient(CreateHttpHandler()) 
+                { 
+                    BaseAddress = _baseAddress,
+                    Timeout = _config.DefaultTimeout,
+                    DefaultRequestVersion = _config.HttpVersion,
+                };
+
+            using HttpClient client = CreateHttpClient();
+
+            // Before starting the full-blown test, make sure can communicate with the server
+            // Needed for scenaria where we're deploying server & client in separate containers, simultaneously.
+            await SendTestRequestToServer(maxRetries: 10);
+
+            // Spin up a thread dedicated to outputting stats for each defined interval
+            new Thread(() =>
+            {
+                while (!_cts.IsCancellationRequested)
+                {
+                    Thread.Sleep(_config.DisplayInterval);
+                    lock (Console.Out) { _aggregator.PrintCurrentResults(_stopwatch.Elapsed); }
+                }
+            })
+            { IsBackground = true }.Start();
+
+            // Start N workers, each of which sits in a loop making requests.
+            Task[] tasks = Enumerable.Range(0, _config.ConcurrentRequests).Select(RunWorker).ToArray();
+            await Task.WhenAll(tasks);
 
             async Task RunWorker(int taskNum)
             {
@@ -147,21 +176,24 @@ namespace HttpStress
                     return ((int)rol5 + h1) ^ h2;
                 }
             }
-
-            // Spin up a thread dedicated to outputting stats for each defined interval
-            new Thread(() =>
+            
+            async Task SendTestRequestToServer(int maxRetries)
             {
-                while (!_cts.IsCancellationRequested)
+                using HttpClient client = CreateHttpClient();
+                for (int remainingRetries = maxRetries; ; remainingRetries--)
                 {
-                    Thread.Sleep(_config.DisplayInterval);
-                    lock (Console.Out) { _aggregator.PrintCurrentResults(_stopwatch.Elapsed); }
+                    try
+                    {
+                        await client.GetAsync("/");
+                        break;
+                    }
+                    catch (HttpRequestException) when (remainingRetries > 0)
+                    {
+                        Console.WriteLine($"Stress client could not connect to host {_baseAddress}, {remainingRetries} attempts remaining");
+                        await Task.Delay(millisecondsDelay: 1000);
+                    }
                 }
-            })
-            { IsBackground = true }.Start();
-
-            // Start N workers, each of which sits in a loop making requests.
-            Task[] tasks = Enumerable.Range(0, _config.ConcurrentRequests).Select(RunWorker).ToArray();
-            await Task.WhenAll(tasks);
+            }
         }
 
         /// <summary>Aggregate view of a particular stress failure type</summary>
