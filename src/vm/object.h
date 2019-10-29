@@ -5,7 +5,7 @@
 // OBJECT.H
 //
 // Definitions of a Com+ Object
-// 
+//
 
 // See code:EEStartup#TableOfContents for overview
 
@@ -26,7 +26,7 @@ extern "C" void __fastcall ZeroMemoryInGCHeap(void*, size_t);
 void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 /*
- #ObjectModel 
+ #ObjectModel
  * COM+ Internal Object Model
  *
  *
@@ -53,7 +53,7 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |       |   ...
  *  |       |
  *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
- *  |              
+ *  |
  *  +-- code:AssemblyBaseObject - The base object for the class Assembly
  *
  *
@@ -77,7 +77,7 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  */
 
 // <TODO>
-// @TODO:  #define COW         0x04     
+// @TODO:  #define COW         0x04
 // @TODO: MOO, MOO - no, not bovine, really Copy On Write bit for StringBuffer, requires 8 byte align MT
 // @TODL: which we don't have yet</TODO>
 
@@ -111,7 +111,7 @@ struct RCW;
 
 //
 // The generational GC requires that every object be at least 12 bytes
-// in size.   
+// in size.
 
 #define MIN_OBJECT_SIZE     (2*TARGET_POINTER_SIZE + OBJHEADER_SIZE)
 
@@ -123,15 +123,15 @@ struct RCW;
 #endif //!PtrAlign
 
 // code:Object is the respesentation of an managed object on the GC heap.
-//   
-// See  code:#ObjectModel for some important subclasses of code:Object 
-// 
+//
+// See  code:#ObjectModel for some important subclasses of code:Object
+//
 // The only fields mandated by all objects are
-// 
+//
 //     * a pointer to the code:MethodTable at offset 0
 //     * a poiner to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
-//         any addition information that we might need to attach to arbitrary objects. 
-// 
+//         any addition information that we might need to attach to arbitrary objects.
+//
 class Object
 {
   protected:
@@ -140,7 +140,7 @@ class Object
   protected:
     Object() { LIMITED_METHOD_CONTRACT; };
    ~Object() { LIMITED_METHOD_CONTRACT; };
-   
+
   public:
     MethodTable *RawGetMethodTable() const
     {
@@ -156,9 +156,9 @@ class Object
 
     VOID SetMethodTable(MethodTable *pMT
                         DEBUG_ARG(BOOL bAllowArray = FALSE))
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
-        m_pMethTab = pMT; 
+        m_pMethTab = pMT;
 
 #ifdef _DEBUG
         if (!bAllowArray)
@@ -186,13 +186,13 @@ class Object
 
 #define MARKED_BIT 0x1
 
-    PTR_MethodTable GetMethodTable() const              
-    { 
+    PTR_MethodTable GetMethodTable() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-        // We should always use GetGCSafeMethodTable() if we're running during a GC. 
-        // If the mark bit is set then we're running during a GC     
+        // We should always use GetGCSafeMethodTable() if we're running during a GC.
+        // If the mark bit is set then we're running during a GC
         _ASSERTE((dac_cast<TADDR>(m_pMethTab) & MARKED_BIT) == 0);
 
         return m_pMethTab;
@@ -219,10 +219,10 @@ class Object
     inline DWORD    GetNumComponents();
     inline SIZE_T   GetSize();
 
-    CGCDesc*        GetSlotMap()                        
-    { 
+    CGCDesc*        GetSlotMap()
+    {
         WRAPPER_NO_CONTRACT;
-        return( CGCDesc::GetCGCDescFromMT(GetMethodTable())); 
+        return( CGCDesc::GetCGCDescFromMT(GetMethodTable()));
     }
 
     // Sync Block & Synchronization services
@@ -267,13 +267,13 @@ class Object
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
     // DO NOT USE THIS METHOD.
-    // Yes folks, for better or worse the debugger pokes supposed object addresses 
+    // Yes folks, for better or worse the debugger pokes supposed object addresses
     // to try to see if objects are valid, possibly firing an AccessViolation or worse,
     // and then catches the AV and reports a failure to the debug client.  This makes
     // the debugger slightly more robust should any corrupted object references appear
-    // in a session. Thus it is "correct" behaviour for this to AV when used with 
+    // in a session. Thus it is "correct" behaviour for this to AV when used with
     // an invalid object pointer, and incorrect behaviour for it to
-    // assert.  
+    // assert.
     BOOL ValidateObjectWithPossibleAV();
 
     // Validate an object ref out of the Promote routine in the GC
@@ -290,10 +290,10 @@ class Object
 
     static DWORD ComputeHashCode();
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
-    
+
     // Synchronization
 #ifndef DACCESS_COMPILE
 
@@ -328,7 +328,7 @@ class Object
         WRAPPER_NO_CONTRACT;
         return GetHeader()->LeaveObjMonitor();
     }
-    
+
     // should be called only from unwind code; used in the
     // case where EnterObjMonitor failed to allocate the
     // sync-object.
@@ -376,7 +376,7 @@ class Object
     }
 
    PTR_VOID UnBox();      // if it is a value class, get the pointer to the first field
-  
+
     PTR_BYTE   GetData(void)
     {
         LIMITED_METHOD_CONTRACT;
@@ -391,25 +391,25 @@ class Object
     }
 
     DWORD   GetOffset32(DWORD dwOffset)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return * PTR_DWORD(GetData() + dwOffset);
     }
 
     USHORT  GetOffset16(DWORD dwOffset)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return * PTR_USHORT(GetData() + dwOffset);
     }
 
     BYTE    GetOffset8(DWORD dwOffset)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
     __int64 GetOffset64(DWORD dwOffset)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return (__int64) * PTR_ULONG64(GetData() + dwOffset);
     }
@@ -421,7 +421,7 @@ class Object
     }
 
 #ifndef DACCESS_COMPILE
-    
+
     void SetOffsetObjectRef(DWORD dwOffset, size_t dwValue);
 
     void SetOffsetPtr(DWORD dwOffset, LPVOID value)
@@ -429,27 +429,27 @@ class Object
         WRAPPER_NO_CONTRACT;
         *(LPVOID *) &GetData()[dwOffset] = value;
     }
-        
+
     void SetOffset32(DWORD dwOffset, DWORD dwValue)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         *(DWORD *) &GetData()[dwOffset] = dwValue;
     }
 
     void SetOffset16(DWORD dwOffset, DWORD dwValue)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         *(USHORT *) &GetData()[dwOffset] = (USHORT) dwValue;
     }
 
     void SetOffset8(DWORD dwOffset, DWORD dwValue)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
     void SetOffset64(DWORD dwOffset, __int64 qwValue)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         *(__int64 *) &GetData()[dwOffset] = qwValue;
     }
@@ -464,7 +464,7 @@ class Object
         SUPPORTS_DAC;
 
         // lose GC marking bit and the reserved bit
-        // A method table pointer should always be aligned.  During GC we set the least 
+        // A method table pointer should always be aligned.  During GC we set the least
         // significant bit for marked objects, and the second to least significant
         // bit is reserved.  So if we want the actual MT pointer during a GC
         // we must zero out the lowest 2 bits.
@@ -474,13 +474,13 @@ class Object
     // There are some cases where it is unsafe to get the type handle during a GC.
     // This occurs when the type has already been unloaded as part of an in-progress appdomain shutdown.
     TypeHandle GetGCSafeTypeHandleIfPossible() const;
-    
+
     inline TypeHandle GetGCSafeTypeHandle() const;
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(void);
 #endif
-    
+
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
@@ -496,7 +496,7 @@ class Object
 };
 
 /*
- * Object ref setting routines.  You must use these to do 
+ * Object ref setting routines.  You must use these to do
  * proper write barrier support.
  */
 
@@ -509,10 +509,10 @@ void EnableStressHeapHelper();
 #endif
 
 //Used to clear the object reference
-inline void ClearObjectReference(OBJECTREF* dst) 
-{ 
+inline void ClearObjectReference(OBJECTREF* dst)
+{
     LIMITED_METHOD_CONTRACT;
-    *(void**)(dst) = NULL; 
+    *(void**)(dst) = NULL;
 }
 
 // CopyValueClass sets a value class field
@@ -521,7 +521,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
 void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
-{ 
+{
     WRAPPER_NO_CONTRACT;
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
@@ -530,8 +530,8 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
 void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
-#define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)       
-#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)       
+#define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
+#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
 
 #include <pshpack4.h>
 
@@ -543,7 +543,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 // In addition the layout of an array in memory is also affected by
 // whether the method table is shared (eg in the case of arrays of object refs)
 // or not.  In the shared case, the array has to hold the type handle of
-// the element type.  
+// the element type.
 //
 // ArrayBase encapuslates all of these details.  In theory you should never
 // have to peek inside this abstraction
@@ -554,7 +554,7 @@ class ArrayBase : public Object
     friend class CObjectHeader;
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap);
     friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
@@ -564,7 +564,7 @@ class ArrayBase : public Object
 private:
     // This MUST be the first field, so that it directly follows Object.  This is because
     // Object::GetSize() looks at m_NumComponents even though it may not be an array (the
-    // values is shifted out if not an array, so it's ok). 
+    // values is shifted out if not an array, so it's ok).
     DWORD       m_NumComponents;
 #ifdef _TARGET_64BIT_
     DWORD       pad;
@@ -573,7 +573,7 @@ private:
     SVAL_DECL(INT32, s_arrayBoundsZero); // = 0
 
     // What comes after this conceputally is:
-    // INT32      bounds[rank];       The bounds are only present for Multidimensional arrays   
+    // INT32      bounds[rank];       The bounds are only present for Multidimensional arrays
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
@@ -626,7 +626,7 @@ public:
         return pMT->RawGetComponentSize();
     }
 
-        // Note that this can be a multidimensional array of rank 1 
+        // Note that this can be a multidimensional array of rank 1
         // (for example if we had a 1-D array with lower bounds
     BOOL IsMultiDimArray() const {
         WRAPPER_NO_CONTRACT;
@@ -635,11 +635,11 @@ public:
     }
 
         // Get pointer to the begining of the bounds (counts for each dim)
-        // Works for any array type 
+        // Works for any array type
     PTR_INT32 GetBoundsPtr() const {
         WRAPPER_NO_CONTRACT;
         MethodTable * pMT = GetMethodTable();
-        if (pMT->IsMultiDimArray()) 
+        if (pMT->IsMultiDimArray())
         {
             return dac_cast<PTR_INT32>(
                 dac_cast<TADDR>(this) + sizeof(*this));
@@ -651,7 +651,7 @@ public:
         }
     }
 
-        // Works for any array type 
+        // Works for any array type
     PTR_INT32 GetLowerBoundsPtr() const {
         WRAPPER_NO_CONTRACT;
         if (IsMultiDimArray())
@@ -691,25 +691,25 @@ template < class KIND >
 class Array : public ArrayBase
 {
   public:
-      
+
     typedef DPTR(KIND) PTR_KIND;
     typedef DPTR(const KIND) PTR_CKIND;
 
     KIND          m_Array[1];
 
     PTR_KIND        GetDirectPointerToNonObjectElements()
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        // return m_Array; 
+        // return m_Array;
         return PTR_KIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
 
     }
 
     PTR_CKIND  GetDirectConstPointerToNonObjectElements() const
-    { 
+    {
         WRAPPER_NO_CONTRACT;
-        // return m_Array; 
+        // return m_Array;
         return PTR_CKIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
     }
 };
@@ -720,7 +720,7 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags, BOOL bAllocateInLargeHeap); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags, BOOL bAllocateInLargeHeap);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
@@ -791,15 +791,15 @@ public:
 
 #define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
 
-/* a TypedByRef is a structure that is used to implement VB's BYREF variants.  
+/* a TypedByRef is a structure that is used to implement VB's BYREF variants.
    it is basically a tuple of an address of some data along with a TypeHandle
    that indicates the type of the address */
-class TypedByRef 
+class TypedByRef
 {
 public:
 
     PTR_VOID data;
-    TypeHandle type;  
+    TypeHandle type;
 };
 
 typedef DPTR(TypedByRef) PTR_TypedByRef;
@@ -817,7 +817,7 @@ typedef Array<WCHAR>   CHARArray;
 typedef Array<U4>   U4Array;
 typedef Array<U8>   U8Array;
 typedef Array<UPTR> UPTRArray;
-typedef PtrArray    PTRArray;  
+typedef PtrArray    PTRArray;
 
 typedef DPTR(I1Array)   PTR_I1Array;
 typedef DPTR(I2Array)   PTR_I2Array;
@@ -891,7 +891,7 @@ typedef PTR_Utf8StringObject UTF8STRINGREF;
 /*
  * StringObject
  *
- * Special String implementation for performance.   
+ * Special String implementation for performance.
  *
  *   m_StringLength - Length of string in number of WCHARs
  *   m_FirstChar    - The string buffer
@@ -919,13 +919,13 @@ class StringObject : public Object
   protected:
     StringObject() {LIMITED_METHOD_CONTRACT; }
    ~StringObject() {LIMITED_METHOD_CONTRACT; }
-   
+
   public:
     static DWORD GetBaseSize();
     static SIZE_T GetSize(DWORD stringLength);
 
     DWORD   GetStringLength()                           { LIMITED_METHOD_DAC_CONTRACT; return( m_StringLength );}
-    WCHAR*  GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this != nullptr); return (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_FirstChar) );  }
+    WCHAR*  GetBuffer()                                 { LIMITED_METHOD_CONTRACT; return (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_FirstChar) );  }
 
     static UINT GetBufferOffset()
     {
@@ -978,7 +978,7 @@ class StringObject : public Object
     // !!!! sure that you have a pin handle on ref, or use GCPROTECT_BEGINPINNING on ref.
     void RefInterpretGetStringValuesDangerousForGC(__deref_out_ecount(*length + 1) WCHAR **chars, int *length) {
         WRAPPER_NO_CONTRACT;
-    
+
         _ASSERTE(GetGCSafeMethodTable() == g_pStringClass);
         *length = GetStringLength();
         *chars  = GetBuffer();
@@ -1035,7 +1035,7 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr() {
     return refptr;
 }
 
-// This is used to account for the remoting cache on RuntimeType, 
+// This is used to account for the remoting cache on RuntimeType,
 // RuntimeMethodInfo, and RtFieldInfo.
 class BaseObjectWithCachedData : public Object
 {
@@ -1152,7 +1152,7 @@ public:
     // !!!! sure that you have a pin handle on ref, or use GCPROTECT_BEGINPINNING on ref.
     void RefInterpretGetStringValuesDangerousForGC(__deref_out_ecount(*length + 1) CHAR **chars, int *length) {
         WRAPPER_NO_CONTRACT;
-    
+
         _ASSERTE(GetGCSafeMethodTable() == g_pUtf8StringClass);
         *length = GetStringLength();
         *chars  = GetBuffer();
@@ -1162,7 +1162,7 @@ public:
     }
 
     DWORD   GetStringLength()                           { LIMITED_METHOD_DAC_CONTRACT; return( m_StringLength );}
-    CHAR*   GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this != nullptr); return (CHAR*)( dac_cast<TADDR>(this) + offsetof(Utf8StringObject, m_FirstChar) );  }
+    CHAR*   GetBuffer()                                 { LIMITED_METHOD_CONTRACT;  return (CHAR*)( dac_cast<TADDR>(this) + offsetof(Utf8StringObject, m_FirstChar) );  }
 
     static DWORD GetBaseSize();
     static SIZE_T GetSize(DWORD stringLength);
@@ -1173,7 +1173,7 @@ public:
 //  A Method has adddition information.
 //   m_pMD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
-// This structure matches the structure up to the m_pMD for several different managed types. 
+// This structure matches the structure up to the m_pMD for several different managed types.
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that that interface is not attached to any
 // type that does not sufficiently match this data structure.
@@ -1216,7 +1216,7 @@ public:
 //  A Method has adddition information.
 //   m_pFD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
-// This structure matches the structure up to the m_pFD for several different managed types. 
+// This structure matches the structure up to the m_pFD for several different managed types.
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that that interface is not attached to any
 // type that does not sufficiently match this data structure.
@@ -1251,13 +1251,13 @@ public:
     }
 };
 
-// ReflectModuleBaseObject 
+// ReflectModuleBaseObject
 // This class is the base class for managed Module.
 //  This class will connect the Object back to the underlying VM representation
 //  m_ReflectClass -- This is the real Class that was used for reflection
 //      This class was used to get at this object
 //  m_pData -- this is a generic pointer which usually points CorModule
-//  
+//
 class ReflectModuleBaseObject : public Object
 {
     friend class MscorlibBinder;
@@ -1266,7 +1266,7 @@ class ReflectModuleBaseObject : public Object
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
-    OBJECTREF          m_runtimeType;    
+    OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
     void*              m_ReflectClass;  // Pointer to the ReflectClass structure
     Module*            m_pData;         // Pointer to the Module
@@ -1276,7 +1276,7 @@ class ReflectModuleBaseObject : public Object
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
    ~ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
-   
+
   public:
     void SetModule(Module* p) {
         LIMITED_METHOD_CONTRACT;
@@ -1316,7 +1316,7 @@ private:
     // These field are also defined in the managed representation.  (SecurityContext.cs)If you
     // add or change these field you must also change the managed code so that
     // it matches these.  This is necessary so that the object is the proper
-    // size. 
+    // size.
     CLR_BOOL _requireWaitNotification;
 public:
     BOOL IsWaitNotificationRequired() const
@@ -1421,7 +1421,7 @@ private:
     // m_InternalThread is always valid -- unless the thread has finalized and been
     // resurrected.  (The thread stopped running before it was finalized).
     Thread       *m_InternalThread;
-    INT32         m_Priority;    
+    INT32         m_Priority;
 
     //We need to cache the thread id in managed code for perf reasons.
     INT32         m_ManagedThreadId;
@@ -1454,15 +1454,15 @@ public:
     }
 
     OBJECTREF GetThreadStartArg() { LIMITED_METHOD_CONTRACT; return m_ThreadStartArg; }
-    void SetThreadStartArg(OBJECTREF newThreadStartArg) 
+    void SetThreadStartArg(OBJECTREF newThreadStartArg)
     {
         WRAPPER_NO_CONTRACT;
-    
+
         _ASSERTE(newThreadStartArg == NULL);
-        // Note: this is an unchecked assignment.  We are cleaning out the ThreadStartArg field when 
+        // Note: this is an unchecked assignment.  We are cleaning out the ThreadStartArg field when
         // a thread starts so that ADU does not cause problems
         SetObjectReference( (OBJECTREF *)&m_ThreadStartArg, newThreadStartArg);
-    
+
     }
 
     STRINGREF GetName() {
@@ -1488,13 +1488,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_Name = NULL;
     }
-  
+
     void SetPriority(INT32 priority)
     {
         LIMITED_METHOD_CONTRACT;
         m_Priority = priority;
     }
-    
+
     INT32 GetPriority() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -1502,16 +1502,16 @@ public:
     }
 };
 
-// MarshalByRefObjectBaseObject 
+// MarshalByRefObjectBaseObject
 // This class is the base class for MarshalByRefObject
-//  
+//
 class MarshalByRefObjectBaseObject : public Object
 {
 };
 
-// AssemblyBaseObject 
+// AssemblyBaseObject
 // This class is the base class for assemblies
-//  
+//
 class AssemblyBaseObject : public Object
 {
     friend class Assembly;
@@ -1529,16 +1529,16 @@ class AssemblyBaseObject : public Object
   protected:
     AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
    ~AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
-   
+
   public:
 
-    void SetAssembly(DomainAssembly* p) 
+    void SetAssembly(DomainAssembly* p)
     {
         LIMITED_METHOD_CONTRACT;
         m_pAssembly = p;
     }
 
-    DomainAssembly* GetDomainAssembly() 
+    DomainAssembly* GetDomainAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pAssembly;
@@ -1602,9 +1602,9 @@ class AssemblyLoadContextBaseObject : public Object
 #include "poppack.h"
 #endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
-// AssemblyNameBaseObject 
+// AssemblyNameBaseObject
 // This class is the base class for assembly names
-//  
+//
 class AssemblyNameBaseObject : public Object
 {
     friend class AssemblyNative;
@@ -1616,7 +1616,7 @@ class AssemblyNameBaseObject : public Object
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
 
-    OBJECTREF     _name; 
+    OBJECTREF     _name;
     U1ARRAYREF    _publicKey;
     U1ARRAYREF    _publicKeyToken;
     OBJECTREF     _cultureInfo;
@@ -1630,7 +1630,7 @@ class AssemblyNameBaseObject : public Object
   protected:
     AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
    ~AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
-   
+
   public:
     OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return _name; }
     U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return _publicKey; }
@@ -1659,11 +1659,11 @@ class VersionBaseObject : public Object
     int m_Minor;
     int m_Build;
     int m_Revision;
- 
+
     VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
    ~VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
 
-  public:    
+  public:
     int GetMajor() { LIMITED_METHOD_CONTRACT; return m_Major; }
     int GetMinor() { LIMITED_METHOD_CONTRACT; return m_Minor; }
     int GetBuild() { LIMITED_METHOD_CONTRACT; return m_Build; }
@@ -1771,8 +1771,8 @@ CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
 //-------------------------------------------------------------
 // class ComObject, Exposed class __ComObject
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class ComObject : public MarshalByRefObjectBaseObject
 {
@@ -1814,17 +1814,17 @@ public:
     //-----------------------------------------------------------
     // Redirection for ToString
     static FCDECL1(MethodDesc *, GetRedirectedToStringMD, Object *pThisUNSAFE);
-    static FCDECL2(StringObject *, RedirectToString, Object *pThisUNSAFE, MethodDesc *pToStringMD);    
+    static FCDECL2(StringObject *, RedirectToString, Object *pThisUNSAFE, MethodDesc *pToStringMD);
 
     //-----------------------------------------------------------
     // Redirection for GetHashCode
     static FCDECL1(MethodDesc *, GetRedirectedGetHashCodeMD, Object *pThisUNSAFE);
-    static FCDECL2(int, RedirectGetHashCode, Object *pThisUNSAFE, MethodDesc *pGetHashCodeMD);    
+    static FCDECL2(int, RedirectGetHashCode, Object *pThisUNSAFE, MethodDesc *pGetHashCodeMD);
 
     //-----------------------------------------------------------
     // Redirection for Equals
     static FCDECL1(MethodDesc *, GetRedirectedEqualsMD, Object *pThisUNSAFE);
-    static FCDECL3(FC_BOOL_RET, RedirectEquals, Object *pThisUNSAFE, Object *pOtherUNSAFE, MethodDesc *pEqualsMD);    
+    static FCDECL3(FC_BOOL_RET, RedirectEquals, Object *pThisUNSAFE, Object *pOtherUNSAFE, MethodDesc *pEqualsMD);
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -1836,8 +1836,8 @@ typedef ComObject*     COMOBJECTREF;
 
 //-------------------------------------------------------------
 // class UnknownWrapper, Exposed class UnknownWrapper
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class UnknownWrapper : public Object
 {
@@ -1872,8 +1872,8 @@ typedef UnknownWrapper*     UNKNOWNWRAPPEROBJECTREF;
 
 //-------------------------------------------------------------
 // class DispatchWrapper, Exposed class DispatchWrapper
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class DispatchWrapper : public Object
 {
@@ -1908,8 +1908,8 @@ typedef DispatchWrapper*     DISPATCHWRAPPEROBJECTREF;
 
 //-------------------------------------------------------------
 // class VariantWrapper, Exposed class VARIANTWRAPPEROBJECTREF
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class VariantWrapper : public Object
 {
@@ -1944,8 +1944,8 @@ typedef VariantWrapper*     VARIANTWRAPPEROBJECTREF;
 
 //-------------------------------------------------------------
 // class ErrorWrapper, Exposed class ErrorWrapper
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class ErrorWrapper : public Object
 {
@@ -1980,8 +1980,8 @@ typedef ErrorWrapper*     ERRORWRAPPEROBJECTREF;
 
 //-------------------------------------------------------------
 // class CurrencyWrapper, Exposed class CurrencyWrapper
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 
 // Keep this in sync with code:MethodTableBuilder.CheckForSystemTypes where
@@ -2026,8 +2026,8 @@ typedef CurrencyWrapper*     CURRENCYWRAPPEROBJECTREF;
 
 //-------------------------------------------------------------
 // class BStrWrapper, Exposed class BSTRWRAPPEROBJECTREF
-// 
-// 
+//
+//
 //-------------------------------------------------------------
 class BStrWrapper : public Object
 {
@@ -2095,7 +2095,7 @@ class SafeHandle : public Object
 
     // To use the SafeHandle from native, look at the SafeHandleHolder, which
     // will do the AddRef & Release for you.
-    LPVOID GetHandle() const { 
+    LPVOID GetHandle() const {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(((unsigned int) m_state) >= SH_RefCountOne);
         return m_handle;
@@ -2140,7 +2140,7 @@ typedef CriticalHandle * CRITICALHANDLEREF;
 #endif // USE_CHECKED_OBJECTREFS
 
 // WaitHandleBase
-// Base class for WaitHandle 
+// Base class for WaitHandle
 class WaitHandleBase :public MarshalByRefObjectBaseObject
 {
     friend class MscorlibBinder;
@@ -2171,7 +2171,7 @@ class DelegateObject : public Object
 
 public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
-    
+
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
@@ -2195,7 +2195,7 @@ public:
     void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase); }
 
     // README:
-    // If you modify the order of these fields, make sure to update the definition in 
+    // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
     // System.Delegate
@@ -2241,7 +2241,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     StackTraceArray(I1ARRAYREF array)
         : m_array(array)
     {
@@ -2262,7 +2262,7 @@ public:
         m_array = rhs.m_array;
         rhs.m_array = t;
     }
-    
+
     size_t Size() const
     {
         WRAPPER_NO_CONTRACT;
@@ -2271,7 +2271,7 @@ public:
         else
             return GetSize();
     }
-    
+
     StackTraceElement const & operator[](size_t index) const;
     StackTraceElement & operator[](size_t index);
 
@@ -2285,7 +2285,7 @@ public:
 
     // Deep copies the array
     void CopyFrom(StackTraceArray const & src);
-    
+
 private:
     StackTraceArray(StackTraceArray const & rhs) = delete;
 
@@ -2302,7 +2302,7 @@ private:
 
         return m_array->GetNumComponents();
     }
-    
+
     size_t GetSize() const
     {
         WRAPPER_NO_CONTRACT;
@@ -2436,7 +2436,7 @@ public:
     }
 
     // README:
-    // If you modify the order of these fields, make sure to update the definition in 
+    // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 protected:
     LOADERALLOCATORSCOUTREF m_pLoaderAllocatorScout;
@@ -2619,7 +2619,7 @@ public:
         return _watsonBuckets;
     }
 
-    // This method will return a BOOL to indicate if the 
+    // This method will return a BOOL to indicate if the
     // watson buckets are present or not.
     BOOL AreWatsonBucketsPresent()
     {
@@ -2653,7 +2653,7 @@ public:
     }
 
     // README:
-    // If you modify the order of these fields, make sure to update the definition in 
+    // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
     OBJECTREF   _exceptionMethod;  //Needed for serialization.
@@ -2715,53 +2715,53 @@ typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
 //===============================================================================
 // #NullableFeature
 // #NullableArchitecture
-// 
+//
 // In a nutshell it is counterintuitive to have a boxed Nullable<T>, since a boxed
-// object already has a representation for null (the null pointer), and having 
+// object already has a representation for null (the null pointer), and having
 // multiple representations for the 'not present' value just causes grief.  Thus the
 // feature is build make Nullable<T> box to a boxed<T> (not boxed<Nullable<T>).
 //
-// We want to do this in a way that does not impact the perf of the runtime in the 
-// non-nullable case.  
+// We want to do this in a way that does not impact the perf of the runtime in the
+// non-nullable case.
 //
-// To do this we need to 
+// To do this we need to
 //     * Modify the boxing helper code:JIT_Box (we don't need a special one because
 //           the JIT inlines the common case, so this only gets call in uncommon cases)
 //     * Make a new helper for the Unbox case (see code:JIT_Unbox_Nullable)
-//     * Plumb the JIT to ask for what kind of Boxing helper is needed 
+//     * Plumb the JIT to ask for what kind of Boxing helper is needed
 //          (see code:CEEInfo.getBoxHelper, code:CEEInfo.getUnBoxHelper
 //     * change all the places in the CLR where we box or unbox by hand, and force
-//          them to use code:MethodTable.Box, and code:MethodTable.Unbox which in 
-//          turn call code:Nullable.Box and code:Nullable.UnBox, most of these 
+//          them to use code:MethodTable.Box, and code:MethodTable.Unbox which in
+//          turn call code:Nullable.Box and code:Nullable.UnBox, most of these
 //          are in reflection, and remoting (passing and returning value types).
 //
 // #NullableVerification
 //
 // Sadly, the IL Verifier also needs to know about this change.  Basically the 'box'
-// instruction returns a boxed(T) (not a boxed(Nullable<T>)) for the purposes of 
+// instruction returns a boxed(T) (not a boxed(Nullable<T>)) for the purposes of
 // verfication.  The JIT finds out what box returns by calling back to the EE with
-// the code:CEEInfo.getTypeForBox API.  
+// the code:CEEInfo.getTypeForBox API.
 //
-// #NullableDebugging 
+// #NullableDebugging
 //
-// Sadly, because the debugger also does its own boxing 'by hand' for expression 
+// Sadly, because the debugger also does its own boxing 'by hand' for expression
 // evaluation inside visual studio, it measn that debuggers also need to be aware
 // of the fact that Nullable<T> boxes to a boxed<T>.  It is the responcibility of
-// debuggers to follow this convention (which is why this is sad). 
-// 
+// debuggers to follow this convention (which is why this is sad).
+//
 
 //===============================================================================
-// Nullable represents the managed generic value type Nullable<T> 
+// Nullable represents the managed generic value type Nullable<T>
 //
 // The runtime has special logic for this value class.  When it is boxed
 // it becomes either null or a boxed T.   Similarly a boxed T can be unboxed
 // either as a T (as normal), or as a Nullable<T>
 //
-// See code:Nullable#NullableArchitecture for more. 
+// See code:Nullable#NullableArchitecture for more.
 //
 class Nullable {
     Nullable();   // This is purposefully undefined.  Do not make instances
-                  // of this class.  
+                  // of this class.
 public:
     static void CheckFieldOffsets(TypeHandle nullableType);
     static BOOL IsNullableType(TypeHandle nullableType);
@@ -2789,7 +2789,7 @@ public:
         Nullable *nullable = (Nullable *)src;
         return nullable->ValueAddr(nullableMT);
     }
-    
+
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
     static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);
@@ -2824,7 +2824,7 @@ class GCHeapHashObject : public Object
     INT32 GetCount() { LIMITED_METHOD_CONTRACT; return _count; }
     void IncrementCount(bool replacingDeletedItem)
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
         ++_count;
         if (replacingDeletedItem)
             --_deletedCount;
@@ -2882,7 +2882,7 @@ class LAHashDependentHashTrackerObject : public Object
     {
         if (pLoaderAllocator != _loaderAllocator)
             return false;
-        
+
         return IsLoaderAllocatorLive();
     }
 
@@ -2913,7 +2913,7 @@ class LAHashKeyToTrackersObject : public Object
     public:
     // _trackerOrTrackerSet is either a reference to a LAHashDependentHashTracker, or to a GCHeapHash of LAHashDependentHashTracker objects.
     OBJECTREF _trackerOrTrackerSet;
-    // _laLocalKeyValueStore holds an object that represents a Key value (which must always be valid for the lifetime of the 
+    // _laLocalKeyValueStore holds an object that represents a Key value (which must always be valid for the lifetime of the
     // CrossLoaderAllocatorHeapHash, and the values which must also be valid for that entire lifetime. When a value might
     // have a shorter lifetime it is accessed through the _trackerOrTrackerSet variable, which allows access to hashtables which
     // are associated with that remote loaderallocator through a dependent handle, so that lifetime can be managed.

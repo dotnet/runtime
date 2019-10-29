@@ -23,14 +23,14 @@
 #include "eventtrace.h"
 #include "threadsuspend.h"
 
-#if defined(_DEBUG) && !defined (WRITE_BARRIER_CHECK) 
+#if defined(_DEBUG) && !defined (WRITE_BARRIER_CHECK)
 #define WRITE_BARRIER_CHECK 1
 #endif
 
 // To test with MON_DEBUG off, comment out the following line. DO NOT simply define
 // to be 0 as the checks are for #ifdef not #if 0.
-// 
-#ifdef _DEBUG 
+//
+#ifdef _DEBUG
 #define MON_DEBUG 1
 #endif
 
@@ -64,7 +64,7 @@ extern "C" LONG g_global_alloc_lock;
 extern "C" void STDCALL JIT_WriteBarrierReg_PreGrow();// JIThelp.asm/JIThelp.s
 extern "C" void STDCALL JIT_WriteBarrierReg_PostGrow();// JIThelp.asm/JIThelp.s
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 {
     WRAPPER_NO_CONTRACT;
@@ -76,8 +76,11 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
     if (fVerifyHeap)
     {
-        obj->Validate(FALSE);
-        if(GCHeapUtilities::GetGCHeap()->IsHeapPointer(ptr))
+        if (obj)
+        {
+            obj->Validate(FALSE);
+        }
+        if (GCHeapUtilities::GetGCHeap()->IsHeapPointer(ptr))
         {
             Object* pObj = *(Object**)ptr;
             _ASSERTE (pObj == NULL || GCHeapUtilities::GetGCHeap()->IsHeapPointer(pObj));
@@ -246,7 +249,7 @@ extern "C" __declspec(naked) Object* F_CALL_CONV JIT_IsInstanceOfClass(MethodTab
 #if defined(FEATURE_TYPEEQUIVALENCE)
     SlowPath:
         jmp             JITutil_IsInstanceOfAny
-#endif            
+#endif
     }
 }
 
@@ -581,7 +584,7 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
     }
 
 
-#ifdef INCREMENTAL_MEMCLR 
+#ifdef INCREMENTAL_MEMCLR
     // <TODO>We're planning to get rid of this anyhow according to Patrick</TODO>
     _ASSERTE(!"NYI");
 #endif // INCREMENTAL_MEMCLR
@@ -860,7 +863,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
         sl.X86EmitCondJump(noLock, X86CondCode::kJA);
     }
 
-#if DATA_ALIGNMENT == 4 
+#if DATA_ALIGNMENT == 4
     if (flags & OBJ_ARRAY)
     {
         // No need for rounding in this case - element size is 4, and m_BaseSize is guaranteed
@@ -1151,7 +1154,7 @@ static const void * const c_rgWriteBarriers[NUM_WRITE_BARRIERS] = {
     (void *)JIT_WriteBarrierEBP,
 };
 
-#ifdef WRITE_BARRIER_CHECK 
+#ifdef WRITE_BARRIER_CHECK
 static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
     (void *)JIT_DebugWriteBarrierEAX,
     (void *)JIT_DebugWriteBarrierECX,
@@ -1227,9 +1230,9 @@ void InitJITHelpers1()
         }
     }
 
-    if (!(TrackAllocationsEnabled() 
+    if (!(TrackAllocationsEnabled()
         || LoggingOn(LF_GCALLOC, LL_INFO10)
-#ifdef _DEBUG 
+#ifdef _DEBUG
         || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
 #endif
          )
@@ -1311,7 +1314,7 @@ void InitJITHelpers1()
         pBuf[3] &= 0xf8;
         pBuf[3] |= reg;
 
-#ifdef WRITE_BARRIER_CHECK 
+#ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
         // Use the slow one from time to time in a debug build because
         // there are some good asserts in the unoptimized one
@@ -1347,7 +1350,7 @@ const int PostGrow_CardTableFirstLocation = 24;
 const int PostGrow_CardTableSecondLocation = 36;
 
 
-#ifndef CODECOVERAGE        // Deactivate alignment validation for code coverage builds 
+#ifndef CODECOVERAGE        // Deactivate alignment validation for code coverage builds
                             // because the instrumented binaries will not preserve alignment constraints and we will fail.
 
 void ValidateWriteBarrierHelpers()
@@ -1361,7 +1364,7 @@ void ValidateWriteBarrierHelpers()
     if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK)
         return;
 #endif // WRITE_BARRIER_CHECK
-    
+
     // first validate the PreGrow helper
     BYTE* pWriteBarrierFunc = reinterpret_cast<BYTE*>(JIT_WriteBarrierEAX);
 
@@ -1417,7 +1420,7 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
     int stompWBCompleteActions = SWB_PASS;
 
-#ifdef WRITE_BARRIER_CHECK 
+#ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
         return stompWBCompleteActions;
@@ -1473,7 +1476,7 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     int stompWBCompleteActions = SWB_PASS;
 
-#ifdef WRITE_BARRIER_CHECK 
+#ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if (((BYTE *)JIT_WriteBarrierEAX)[0] == 0xE9)  // we are using slow write barrier
         return stompWBCompleteActions;

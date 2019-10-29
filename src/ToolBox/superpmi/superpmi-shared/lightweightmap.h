@@ -373,7 +373,6 @@ public:
 
     int GetIndex(_Key key)
     {
-        AssertCodeMsg(this != nullptr, EXCEPTIONCODE_MC, "There is no such LWM (in GetIndex)");
         if (numItems == 0)
             return -1;
 

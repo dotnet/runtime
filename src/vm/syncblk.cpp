@@ -548,12 +548,12 @@ SyncBlockCache::~SyncBlockCache()
 }
 
 
-// When the GC determines that an object is dead the low bit of the 
-// m_Object field of SyncTableEntry is set, however it is not 
+// When the GC determines that an object is dead the low bit of the
+// m_Object field of SyncTableEntry is set, however it is not
 // cleaned up because we cant do the COM interop cleanup at GC time.
 // It is put on a cleanup list and at a later time (typically during
-// finalization, this list is cleaned up. 
-// 
+// finalization, this list is cleaned up.
+//
 void SyncBlockCache::CleanupSyncBlocks()
 {
     STATIC_CONTRACT_THROWS;
@@ -616,7 +616,7 @@ void SyncBlockCache::CleanupSyncBlocks()
                 FinalizerThread::GetFinalizerThread()->PulseGCMode();
             }
         }
-        
+
 #ifdef FEATURE_COMINTEROP
         // Now clean up the rcw's sorted by context
         if (g_pRCWCleanupList != NULL)
@@ -631,7 +631,7 @@ void SyncBlockCache::CleanupSyncBlocks()
 #ifdef FEATURE_COMINTEROP
         if (param.pRCW)
             param.pRCW->Cleanup();
-#endif        
+#endif
 
         if (param.psb)
             DeleteSyncBlock(param.psb);
@@ -667,7 +667,7 @@ void SyncBlockCache::Start()
     for (int i=0; i<SYNC_TABLE_INITIAL_SIZE+1; i++) {
         SyncTableEntry::GetSyncTableEntry()[i].m_SyncBlock = NULL;
     }
-#endif    
+#endif
 
     SyncTableEntry::GetSyncTableEntry()[0].m_SyncBlock = 0;
     SyncBlockCache::GetSyncBlockCache() = new (&g_SyncBlockCacheInstance) SyncBlockCache;
@@ -834,7 +834,7 @@ void SyncBlockCache::Grow()
     CONTRACTL_END;
 
     STRESS_LOG0(LF_SYNC, LL_INFO10000, "SyncBlockCache::NewSyncBlockSlot growing SyncBlockCache \n");
-        
+
     NewArrayHolder<SyncTableEntry> newSyncTable (NULL);
     NewArrayHolder<DWORD>          newBitMap    (NULL);
     DWORD *                        oldBitMap;
@@ -926,7 +926,7 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    _ASSERTE(m_CacheLock.OwnedByCurrentThread()); // GetSyncBlock takes the lock, make sure no one else does.  
+    _ASSERTE(m_CacheLock.OwnedByCurrentThread()); // GetSyncBlock takes the lock, make sure no one else does.
 
     DWORD indexNewEntry;
     if (m_FreeSyncTableList)
@@ -937,7 +937,7 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
     }
     else if ((indexNewEntry = (DWORD)(m_FreeSyncTableIndex)) >= m_SyncTableSize)
     {
-        // This is kept out of line to keep stuff like the C++ EH prolog (needed for holders) off 
+        // This is kept out of line to keep stuff like the C++ EH prolog (needed for holders) off
         // of the common path.
         Grow();
     }
@@ -961,8 +961,8 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
 
     CardTableSetBit (indexNewEntry);
 
-    // In debug builds the m_SyncBlock at indexNewEntry should already be null, since we should 
-    // start out with a null table and always null it out on delete. 
+    // In debug builds the m_SyncBlock at indexNewEntry should already be null, since we should
+    // start out with a null table and always null it out on delete.
     _ASSERTE(SyncTableEntry::GetSyncTableEntry() [indexNewEntry].m_SyncBlock == NULL);
     SyncTableEntry::GetSyncTableEntry() [indexNewEntry].m_SyncBlock = NULL;
     SyncTableEntry::GetSyncTableEntry() [indexNewEntry].m_Object = obj;
@@ -973,7 +973,7 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
 }
 
 
-// free a used sync block, only called from CleanupSyncBlocks.  
+// free a used sync block, only called from CleanupSyncBlocks.
 void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
 {
     CONTRACTL
@@ -1106,9 +1106,9 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
    if (GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration() < GCHeapUtilities::GetGCHeap()->GetMaxGeneration())
    {
 #ifdef VERIFY_HEAP
-        //for VSW 294550: we saw stale obeject reference in SyncBlkCache, so we want to make sure the card 
-        //table logic above works correctly so that every ephemeral entry is promoted. 
-        //For verification, we make a copy of the sync table in relocation phase and promote it use the 
+        //for VSW 294550: we saw stale obeject reference in SyncBlkCache, so we want to make sure the card
+        //table logic above works correctly so that every ephemeral entry is promoted.
+        //For verification, we make a copy of the sync table in relocation phase and promote it use the
         //slow approach and compare the result with the original one
         DWORD freeSyncTalbeIndexCopy = m_FreeSyncTableIndex;
         SyncTableEntry * syncTableShadow = NULL;
@@ -1117,7 +1117,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
             syncTableShadow = new(nothrow) SyncTableEntry [m_FreeSyncTableIndex];
             if (syncTableShadow)
             {
-                memcpy (syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));                
+                memcpy (syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));
             }
         }
 #endif //VERIFY_HEAP
@@ -1166,10 +1166,10 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
             else
                 break;
         }
-        
+
 #ifdef VERIFY_HEAP
-        //for VSW 294550: we saw stale obeject reference in SyncBlkCache, so we want to make sure the card 
-        //table logic above works correctly so that every ephemeral entry is promoted. To verify, we make a 
+        //for VSW 294550: we saw stale obeject reference in SyncBlkCache, so we want to make sure the card
+        //table logic above works correctly so that every ephemeral entry is promoted. To verify, we make a
         //copy of the sync table and promote it use the slow approach and compare the result with the real one
         if (g_pConfig->GetHeapVerifyLevel()& EEConfig::HEAPVERIFY_SYNCBLK)
         {
@@ -1189,7 +1189,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                                 DebugBreak ();
                         }
                     }
-                } 
+                }
                 delete []syncTableShadow;
                 syncTableShadow = NULL;
             }
@@ -1225,7 +1225,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
             for (int nb = 1; nb < (int)m_FreeSyncTableIndex; nb++)
             {
                 Object* o = SyncTableEntry::GetSyncTableEntry()[nb].m_Object;
-                if (((size_t)o & 1) == 0)
+                if (o && ((size_t)o & 1) == 0)
                 {
                     o->Validate();
                 }
@@ -1345,15 +1345,15 @@ void SyncBlockCache::GCDone(BOOL demoting, int max_gen)
     }
     CONTRACTL_END;
 
-    if (demoting && 
-        (GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration() == 
+    if (demoting &&
+        (GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration() ==
          GCHeapUtilities::GetGCHeap()->GetMaxGeneration()))
     {
         //scan the bitmap
         size_t dw = 0;
         while (1)
         {
-            while (dw < BitMapSize (m_SyncTableSize) && 
+            while (dw < BitMapSize (m_SyncTableSize) &&
                    (m_EphemeralBitmap[dw]==(DWORD)~0))
             {
                 dw++;
@@ -1418,7 +1418,7 @@ void SyncBlockCache::VerifySyncTableEntry()
     {
         Object* o = SyncTableEntry::GetSyncTableEntry()[nb].m_Object;
         // if the slot was just allocated, the object may still be null
-        if (o && (((size_t)o & 1) == 0)) 
+        if (o && (((size_t)o & 1) == 0))
         {
             //there is no need to verify next object's header because this is called
             //from verify_heap, which will verify every object anyway
@@ -1431,7 +1431,7 @@ void SyncBlockCache::VerifySyncTableEntry()
             //
             static const DWORD max_iterations = 100;
             DWORD loop = 0;
-            
+
             for (; loop < max_iterations; loop++)
             {
                 // The syncblock index may be updating by another thread.
@@ -1441,7 +1441,7 @@ void SyncBlockCache::VerifySyncTableEntry()
                 }
                 __SwitchToThread(0, CALLER_LIMITS_SPINNING);
             }
-            
+
             DWORD idx = o->GetHeader()->GetHeaderSyncBlockIndex();
             _ASSERTE(idx == nb || ((0 == idx) && (loop == max_iterations)));
             _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsEphemeral(o) || CardSetP(CardOf(nb)));
@@ -1744,7 +1744,7 @@ BOOL ObjHeader::LeaveObjMonitor()
     }
 }
 
-// The only difference between LeaveObjMonitor and LeaveObjMonitorAtException is switch 
+// The only difference between LeaveObjMonitor and LeaveObjMonitorAtException is switch
 // to preemptive mode around __SwitchToThread
 BOOL ObjHeader::LeaveObjMonitorAtException()
 {
@@ -1781,7 +1781,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
         case AwareLock::LeaveHelperAction_Contention:
             // Some thread is updating the syncblock value.
             //
-            // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC 
+            // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC
             // in EnterSpinLock/ReleaseSpinLock ensures it). Thus we do not need to switch to preemptive
             // while waiting on the spinlock.
             //
@@ -1905,11 +1905,11 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 #ifdef _DEBUG
 #ifdef BIT64
         // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
-        // needlessly in CLRSTRESS. 
+        // needlessly in CLRSTRESS.
         if (i++ > 30000)
-#else            
+#else
         if (i++ > 10000)
-#endif // BIT64            
+#endif // BIT64
             _ASSERTE(!"ObjHeader::EnterLock timed out");
 #endif
         // get the value so that it doesn't get changed under us.
@@ -2081,18 +2081,18 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     }
 
     //Don't know how to verify BIT_SBLK_SPIN_LOCK (0x10000000)
-    
+
     //BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX (0x08000000)
     if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
     {
-        //if BIT_SBLK_IS_HASHCODE (0x04000000) is not set, 
+        //if BIT_SBLK_IS_HASHCODE (0x04000000) is not set,
         //rest of the DWORD is SyncBlk Index
         if (!(bits & BIT_SBLK_IS_HASHCODE))
         {
             if (bVerifySyncBlkIndex  && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid ())
             {
                 DWORD sbIndex = bits & MASK_SYNCBLOCKINDEX;
-                ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);             
+                ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);
             }
         }
         else
@@ -2102,15 +2102,15 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     }
     else
     {
-        //if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, rest of DWORD is thin lock thread ID, 
+        //if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, rest of DWORD is thin lock thread ID,
         //thin lock recursion level and appdomain index
         DWORD lockThreadId = bits & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (bits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         //if thread ID is 0, recursionLeve got to be zero
         //but thread ID doesn't have to be valid because the lock could be orphanend
-        ASSERT_AND_CHECK (lockThreadId != 0 || recursionLevel == 0 );     
+        ASSERT_AND_CHECK (lockThreadId != 0 || recursionLevel == 0 );
     }
-    
+
     return TRUE;
 }
 
@@ -2155,7 +2155,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
     if (syncBlock)
     {
-#ifdef _DEBUG 
+#ifdef _DEBUG
         // Has our backpointer been correctly updated through every GC?
         PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntry());
         _ASSERTE(pEntries[GetHeaderSyncBlockIndex()].m_Object == GetBaseObject());
@@ -2941,8 +2941,8 @@ bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
     // We could be agile, but not have noticed yet.  We can't assert here
     //  that we live in any given domain, nor is this an appropriate place
     //  to re-parent the syncblock.
-/*    _ASSERTE (m_dwAppDomainIndex.m_dwIndex == 0 || 
-              m_dwAppDomainIndex == SystemDomain::System()->DefaultDomain()->GetIndex() || 
+/*    _ASSERTE (m_dwAppDomainIndex.m_dwIndex == 0 ||
+              m_dwAppDomainIndex == SystemDomain::System()->DefaultDomain()->GetIndex() ||
               m_dwAppDomainIndex == GetAppDomain()->GetIndex());
     m_dwAppDomainIndex = GetAppDomain()->GetIndex();
 */
@@ -2954,7 +2954,7 @@ bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
 #ifdef EnC_SUPPORTED
 // Store information about fields added to this object by EnC
 // This must be called from a thread in the AppDomain of this object instance
-void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo) 
+void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
 {
     WRAPPER_NO_CONTRACT;
 

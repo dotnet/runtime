@@ -64,10 +64,10 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 #endif // _TARGET_X86_
 
-// The stride is choosen as maximum value that still gives good page locality of RUNTIME_FUNCTION table touches (only one page of 
+// The stride is choosen as maximum value that still gives good page locality of RUNTIME_FUNCTION table touches (only one page of
 // RUNTIME_FUNCTION table is going to be touched during most IP2MD lookups).
 //
-// Smaller stride values also improve speed of IP2MD lookups, but this improvement is not significant (5% when going 
+// Smaller stride values also improve speed of IP2MD lookups, but this improvement is not significant (5% when going
 // from 8192 to 1024), so the working set / page locality was used as the metric to choose the optimum value.
 //
 #define RUNTIME_FUNCTION_LOOKUP_STRIDE  8192
@@ -88,7 +88,7 @@ typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
 //
 // CORCOMPILE_IMPORT_SECTION describes image range with references to other assemblies or runtime data structures
 //
-// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry 
+// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry
 // vs. lazily initialized on first use; hot vs. cold, handles vs. code pointers, etc.
 //
 struct CORCOMPILE_IMPORT_SECTION
@@ -205,7 +205,7 @@ enum CorCompileHeaderFlags
     CORCOMPILE_HEADER_IS_READY_TO_RUN           = 0x00000004,
 };
 
-// 
+//
 // !!! INCREMENT THE MAJOR VERSION ANY TIME THERE IS CHANGE IN CORCOMPILE_HEADER STRUCTURE !!!
 //
 #define CORCOMPILE_SIGNATURE     0x0045474E     // 'NGEN'
@@ -263,8 +263,8 @@ struct CORCOMPILE_HEADER
     IMAGE_DATA_DIRECTORY    Dummy4;
 };
 
-// CORCOMPILE_VIRTUAL_SECTION_INFO describes virtual section ranges. This data is used by nidump 
-// and to fire ETW that are used for diagnostics and performance purposes. Some of the questions 
+// CORCOMPILE_VIRTUAL_SECTION_INFO describes virtual section ranges. This data is used by nidump
+// and to fire ETW that are used for diagnostics and performance purposes. Some of the questions
 // these events help answer are like : how effective is IBC training data.
 struct CORCOMPILE_VIRTUAL_SECTION_INFO
 {
@@ -324,7 +324,7 @@ struct CORCOMPILE_VIRTUAL_SECTION_INFO
 // Hot: Items are frequently accessed ( Indicated by either IBC data, or
 //      statically known )
 
-// Warm : Items are less frequently accessed, or frequently accessed 
+// Warm : Items are less frequently accessed, or frequently accessed
 //        but were not touched during IBC profiling.
 
 // Cold : Least frequently accessed /shouldn't not be accessed
@@ -332,7 +332,7 @@ struct CORCOMPILE_VIRTUAL_SECTION_INFO
 //        training ( training scenario )
 
 // HotColdSorted : Sections marked with this category means they contain both
-//                 Hot items and Cold items. The hot items are placed before 
+//                 Hot items and Cold items. The hot items are placed before
 //                 the cold items (Sorted)
 
 #define CORCOMPILE_SECTION_RANGE_TYPES()                     \
@@ -344,12 +344,12 @@ struct CORCOMPILE_VIRTUAL_SECTION_INFO
 
 // IBCUnProfiled: Items in this VirtualSection are statically determined to be cold.
 //                 (IBC Profiling wouldn't have helped put these item in a hot section).
-//                 Items that currently doesn't have IBC probs, or are always put in a specific section 
+//                 Items that currently doesn't have IBC probs, or are always put in a specific section
 //                 regardless of IBC data should fall in this category.
 
 // IBCProfiled: IBC profiling placed items in this section, or
 //              items are NOT placed into a hot section they didn't have IBC profiling data
-//              ( IBC profiling would have helped put these items in a hot section ) 
+//              ( IBC profiling would have helped put these items in a hot section )
 
 #define CORCOMPILE_SECTION_IBCTYPES()                       \
     CORCOMPILE_SECTION_IBCTYPE(IBCUnProfiled, 0x01000000)  \
@@ -364,42 +364,42 @@ struct CORCOMPILE_VIRTUAL_SECTION_INFO
 // 1 byte       1 byte      2 bytes                 --
 // <IBCType> <RangeType> <VirtualSectionType>       --
 // ---------------------------------------------------
-// 
-// 
+//
+//
 // VirtualSections are a CLR concept to aggregate data
 // items that share common properties together (Hot/Cold/Warm, Writeable/
 // Readonly ...etc.). VirtualSections are tagged with some categories when they
 // are created (code:NewVirtualSection)
 // The VirtualSection categorize are described more in VirtualSectionType enum.
 // The categories describe 2 important aspects for each VirtualSection
-// 
+//
 // ***********************************************
 // IBCProfiled v.s NonIBCProfiled Categories.
 // **********************************************
-// 
-// IBCProfiled: Distinguish between sections that IBC profiling data has been used 
-//               to decide the layout of the data items in this section. 
+//
+// IBCProfiled: Distinguish between sections that IBC profiling data has been used
+//               to decide the layout of the data items in this section.
 // NonIBCProfiled: We don't have IBC data for all our datastructures.
 //                  The access pattern/frequency for some data structures
-//                  are statically determined. Sections that contain these data items 
-//                  are marked as NonIBCProfiled. 
+//                  are statically determined. Sections that contain these data items
+//                  are marked as NonIBCProfiled.
 //
 //***************************************************
-// Access Frequency categories 
+// Access Frequency categories
 // **************************************************
 // Hot: Data is frequently accessed
 // Warm: Less frequently accessed than Hot
 // Cold: Should be rarely accessed.
-// 
-// The combination of these 2 sub-categories gives us the following valid categories 
+//
+// The combination of these 2 sub-categories gives us the following valid categories
 // 1-IBCProfiled | Hot: Hot based on IBC profiling data.
 // 2-IBCProfiled | Cold: IBC profiling could have helped make this section hot.
 // 3-NonIBCProfiled | Hot: Statically determined hot.
 // 4-NonIBCProfiled | Warm: Staticaly determined warm.
 // 5-NonIBCProfiled | Cold: Statically determined cold.
-// 
-// We should try to place data items into the correct section based on 
-// the above categorization, this could mean that we might split 
+//
+// We should try to place data items into the correct section based on
+// the above categorization, this could mean that we might split
 // a virtual section into 2 sections if it contains multiple heterogeneous items.
 
 enum ZapVirtualSectionType
@@ -409,7 +409,7 @@ enum ZapVirtualSectionType
 #define CORCOMPILE_SECTION_IBCTYPE(ibcType, flag) ibcType##Section = flag,
     CORCOMPILE_SECTION_IBCTYPES()
 #undef CORCOMPILE_SECTION_IBCTYPE
-    
+
     // <RangeType>
     RangeTypeReservedFlag = 0x00FF0000,
 #define CORCOMPILE_SECTION_RANGE_TYPE(rangeType, flag) rangeType##Range = flag,
@@ -433,9 +433,9 @@ public :
     static UINT8 IBCType(DWORD sectionType) { return (UINT8) ((sectionType & IBCTypeReservedFlag) >> 24); }
     static UINT8 RangeType(DWORD sectionType) { return (UINT8) ((sectionType & RangeTypeReservedFlag) >> 16); }
     static UINT16 VirtualSectionType(DWORD sectionType) { return (UINT16) ((sectionType & VirtualSectionTypeReservedFlag)); }
-    static BOOL IsIBCProfiledColdSection(DWORD sectionType) 
+    static BOOL IsIBCProfiledColdSection(DWORD sectionType)
     {
-        return ((sectionType & ColdRange) == ColdRange) && ((sectionType & IBCProfiledSection) == IBCProfiledSection); 
+        return ((sectionType & ColdRange) == ColdRange) && ((sectionType & IBCProfiledSection) == IBCProfiledSection);
     }
 };
 
@@ -581,14 +581,14 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
         // Post patchup by the stub, it will point to the actual method body.
         PCODE               m_pTarget;
     };
-	
+
 #elif defined(_TARGET_ARM64_)
     struct  CORCOMPILE_VIRTUAL_IMPORT_THUNK
     {
         // Array of words to do the following:
         //
         // adr         x12, #0            ; Save the current address relative to which we will get slot ID and address to patch.
-        // ldr         x10, [x12, #16]    ; Load the target address. 
+        // ldr         x10, [x12, #16]    ; Load the target address.
         // br          x10                ; Jump to the target
         DWORD                m_rgCode[3];
 
@@ -604,7 +604,7 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
     {
         // Array of words to do the following:
         // adr         x12, #0            ; Save the current address relative to which we will get slot ID and address to patch.
-        // ldr         x10, [x12, #16]    ; Load the target address. 
+        // ldr         x10, [x12, #16]    ; Load the target address.
         // br          x10                ; Jump to the target
         DWORD                m_rgCode[3];
 
@@ -619,7 +619,7 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
 
 //
 // GCRefMap blob starts with DWORDs lookup index of relative offsets into the blob. This lookup index is used to limit amount
-// of linear scanning required to find entry in the GCRefMap. The size of this lookup index is 
+// of linear scanning required to find entry in the GCRefMap. The size of this lookup index is
 // <totalNumberOfEntries in the GCRefMap> / GCREFMAP_LOOKUP_STRIDE.
 //
 #define GCREFMAP_LOOKUP_STRIDE 1024
@@ -638,7 +638,7 @@ enum CORCOMPILE_GCREFMAP_TOKENS
 enum CORCOMPILE_FIXUP_BLOB_KIND
 {
     ENCODE_NONE                         = 0,
-    
+
     ENCODE_MODULE_OVERRIDE              = 0x80,     /* When the high bit is set, override of the module immediately follows */
 
     ENCODE_DICTIONARY_LOOKUP_THISOBJ    = 0x07,
@@ -739,7 +739,7 @@ struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY
 
 struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE
 {
-    // pointer to the first element of m_numLookupEntries elements 
+    // pointer to the first element of m_numLookupEntries elements
     CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY m_Entries[1];
 
     CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY* ExceptionLookupEntry(unsigned i)
@@ -754,12 +754,12 @@ struct CORCOMPILE_EXCEPTION_CLAUSE
     CorExceptionFlag    Flags;
     DWORD               TryStartPC;
     DWORD               TryEndPC;
-    DWORD               HandlerStartPC;  
-    DWORD               HandlerEndPC;  
+    DWORD               HandlerStartPC;
+    DWORD               HandlerEndPC;
     union {
         mdToken         ClassToken;
         DWORD           FilterOffset;
-    };  
+    };
 };
 
 //lower order bit (HAS_EXCEPTION_INFO_MASK) used to determine if the method has any exception handling
@@ -900,22 +900,16 @@ public:
 
     struct CORBBTPROF_TOKEN_INFO *  GetTokenFlagsData(SectionFormat section)
     {
-        if (this == NULL)
-            return NULL;
         return this->profilingTokenFlagsData[section].data;
     }
 
     DWORD GetTokenFlagsCount(SectionFormat section)
     {
-        if (this == NULL)
-            return 0;
         return this->profilingTokenFlagsData[section].count;
     }
 
     CORBBTPROF_BLOB_ENTRY *  GetBlobStream()
     {
-        if (this == NULL)
-            return NULL;
         return this->blobStream;
     }
 
@@ -1278,11 +1272,11 @@ class ICorCompilePreloader
             ) = 0;
 
     virtual void NoteDeduplicatedCode(
-            CORINFO_METHOD_HANDLE method, 
+            CORINFO_METHOD_HANDLE method,
             CORINFO_METHOD_HANDLE duplicateMethod) = 0;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    // Returns a compressed encoding of the inline tracking map 
+    // Returns a compressed encoding of the inline tracking map
     // for this compilation
     virtual void GetSerializedInlineTrackingMap(
             IN OUT SBuffer    * pSerializedInlineTrackingMap
@@ -1465,7 +1459,7 @@ class ICorCompileInfo
 #ifdef FEATURE_COMINTEROP
     // Loads a WinRT typeref into the EE and returns
     // a handle to it.  We have to load all typerefs
-    // during dependency computation since assemblyrefs 
+    // during dependency computation since assemblyrefs
     // are meaningless to WinRT.
     virtual HRESULT LoadTypeRefWinRT(
             IMDInternalImport       *pAssemblyImport,
@@ -1641,7 +1635,7 @@ class ICorCompileInfo
 
     // Returns non-null methoddef or memberref token if it is sufficient to encode the method (no generic instantiations, etc.)
     virtual mdToken TryEncodeMethodAsToken(
-            CORINFO_METHOD_HANDLE handle, 
+            CORINFO_METHOD_HANDLE handle,
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_MODULE_HANDLE * referencingModule) = 0;
 
@@ -1741,7 +1735,7 @@ class ICorCompileInfo
 
 #ifdef FEATURE_READYTORUN_COMPILER
     virtual CORCOMPILE_FIXUP_BLOB_KIND GetFieldBaseOffset(
-            CORINFO_CLASS_HANDLE classHnd, 
+            CORINFO_CLASS_HANDLE classHnd,
             DWORD * pBaseOffset
             ) = 0;
 

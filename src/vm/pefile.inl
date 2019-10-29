@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEFile.inl
-// 
+//
 
 // --------------------------------------------------------------------------------
 
@@ -80,12 +80,12 @@ inline ULONG PEFile::Release()
         MODE_ANY;
     }
     CONTRACT_END;
-    
+
     LONG result = FastInterlockDecrement(&m_refCount);
     _ASSERTE(result >= 0);
     if (result == 0)
         delete this;
-    
+
     RETURN result;
 }
 
@@ -135,7 +135,7 @@ inline void PEFile::ValidateForExecution()
     //
     // Ensure platform is valid for execution
     //
-    if (!IsDynamic() && !IsResource()) 
+    if (!IsDynamic() && !IsResource())
     {
         if (IsMarkedAsNoPlatform())
         {
@@ -175,7 +175,7 @@ inline void PEFile::GetMVID(GUID *pMvid)
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     IfFailThrow(GetPersistentMDImport()->GetScopeProps(NULL, pMvid));
 }
 
@@ -238,7 +238,7 @@ inline LPCWSTR PEFile::GetDebugName()
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
-    
+
 #ifdef _DEBUG
     return m_pDebugName;
 #else
@@ -262,8 +262,6 @@ inline PTR_PEAssembly PEFile::AsAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (this == nullptr)
-        return dac_cast<PTR_PEAssembly>(nullptr);
     if (IsAssembly())
         return dac_cast<PTR_PEAssembly>(this);
     else
@@ -282,8 +280,6 @@ inline PTR_PEModule PEFile::AsModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (this == nullptr)
-        return dac_cast<PTR_PEModule>(nullptr);
     if (IsModule())
         return dac_cast<PTR_PEModule>(this);
     else
@@ -360,7 +356,7 @@ inline IMDInternalImportHolder PEFile::GetMDImport()
 inline IMDInternalImport* PEFile::GetPersistentMDImport()
 {
 /*
-    CONTRACT(IMDInternalImport *) 
+    CONTRACT(IMDInternalImport *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsResource());
@@ -389,7 +385,7 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
 inline IMDInternalImport *PEFile::GetMDImportWithRef()
 {
 /*
-    CONTRACT(IMDInternalImport *) 
+    CONTRACT(IMDInternalImport *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsResource());
@@ -428,7 +424,7 @@ inline IMDInternalImport *PEFile::GetMDImportWithRef()
 
 inline IMetaDataImport2 *PEFile::GetRWImporter()
 {
-    CONTRACT(IMetaDataImport2 *) 
+    CONTRACT(IMetaDataImport2 *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsResource());
@@ -448,7 +444,7 @@ inline IMetaDataImport2 *PEFile::GetRWImporter()
 
 inline IMetaDataEmit *PEFile::GetEmitter()
 {
-    CONTRACT(IMetaDataEmit *) 
+    CONTRACT(IMetaDataEmit *)
     {
         INSTANCE_CHECK;
         MODE_ANY;
@@ -487,12 +483,12 @@ inline LPCUTF8 PEFile::GetSimpleName()
 
     if (IsAssembly())
         RETURN dac_cast<PTR_PEAssembly>(this)->GetSimpleName();
-    else 
+    else
     {
         LPCUTF8 szScopeName;
         if (FAILED(GetScopeName(&szScopeName)))
         {
-            szScopeName = ""; 
+            szScopeName = "";
         }
         RETURN szScopeName;
     }
@@ -592,7 +588,7 @@ inline WORD PEFile::GetSubsystem()
     }
 #endif // DACCESS_COMPILE
 #endif // FEATURE_PREJIT
- 
+
     return GetLoadedIL()->GetSubsystem();
 }
 
@@ -640,7 +636,7 @@ inline BOOL PEFile::IsNativeLoaded()
 inline void PEFile::MarkNativeImageInvalidIfOwned()
 {
     WRAPPER_NO_CONTRACT;
-    // If owned, mark the PEFile as dummy, so the image does not get reused 
+    // If owned, mark the PEFile as dummy, so the image does not get reused
     PEImageHolder nativeImage(GetNativeImageWithRef());
     Module * pNativeModule = nativeImage->GetLoadedLayout()->GetPersistedModuleImage();
     PEFile ** ppNativeFile = (PEFile**) (PBYTE(pNativeModule) + Module::GetFileOffset());
@@ -659,7 +655,7 @@ inline BOOL PEFile::IsILOnly()
     SUPPORTS_DAC;
 
     CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
-    
+
     if (IsResource() || IsDynamic())
         return FALSE;
 
@@ -736,9 +732,9 @@ inline PTR_VOID PEFile::GetRvaField(RVA field)
     }
     CONTRACT_END;
 
-    // Note that the native image Rva fields are currently cut off before 
+    // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
-    
+
     RETURN dac_cast<PTR_VOID>(GetLoadedIL()->GetRvaData(field,NULL_OK));
 }
 
@@ -755,10 +751,10 @@ inline CHECK PEFile::CheckRvaField(RVA field)
         MODE_ANY;
     }
     CONTRACT_CHECK_END;
-        
-    // Note that the native image Rva fields are currently cut off before 
+
+    // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
-    
+
     CHECK(GetLoadedIL()->CheckRva(field,NULL_OK));
     CHECK_OK;
 }
@@ -777,9 +773,9 @@ inline CHECK PEFile::CheckRvaField(RVA field, COUNT_T size)
     }
     CONTRACT_CHECK_END;
 
-    // Note that the native image Rva fields are currently cut off before 
+    // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
-    
+
     CHECK(GetLoadedIL()->CheckRva(field, size,0,NULL_OK));
     CHECK_OK;
 }
@@ -846,11 +842,11 @@ inline UINT32 PEFile::GetFieldTlsOffset(RVA field)
         MODE_ANY;
     }
     CONTRACTL_END;
-        
-    return (UINT32)(dac_cast<PTR_BYTE>(GetRvaField(field)) - 
+
+    return (UINT32)(dac_cast<PTR_BYTE>(GetRvaField(field)) -
                                 dac_cast<PTR_BYTE>(GetLoadedIL()->GetTlsRange()));
 }
-        
+
 inline UINT32 PEFile::GetTlsIndex()
 {
     CONTRACTL
@@ -902,7 +898,7 @@ inline CHECK PEFile::CheckInternalPInvokeTarget(RVA target)
 
     CHECK(!IsILOnly());
     CHECK(GetLoadedIL()->CheckRva(target));
-    
+
     CHECK_OK;
 }
 
@@ -981,7 +977,7 @@ inline PTR_VOID PEFile::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
     }
     CONTRACT_END;
 
-    // We cannot in general force a LoadLibrary; we might be in the 
+    // We cannot in general force a LoadLibrary; we might be in the
     // helper thread.  The debugger will have to expect a zero base
     // in some circumstances.
 
@@ -1045,14 +1041,14 @@ inline const void *PEFile::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
     }
     CONTRACT_END;
 
-    // Right now, we will trigger a LoadLibrary for the caller's sake, 
+    // Right now, we will trigger a LoadLibrary for the caller's sake,
     // even if we are in a scenario where we could normally avoid it.
     LoadLibrary(FALSE);
 
     if (pSize != NULL)
         *pSize = GetLoadedIL()->GetSize();
 
-    
+
     RETURN GetLoadedIL()->GetBase();
 }
 #endif // DACCESS_COMPILE
@@ -1130,7 +1126,7 @@ inline BOOL PEFile::HasNativeOrReadyToRunImage()
     return (HasNativeImage() || IsILImageReadyToRun());
 }
 
-inline PTR_PEImageLayout PEFile::GetLoadedIL() 
+inline PTR_PEImageLayout PEFile::GetLoadedIL()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -1140,14 +1136,14 @@ inline PTR_PEImageLayout PEFile::GetLoadedIL()
     return GetOpenedILimage()->GetLoadedLayout();
 };
 
-inline PTR_PEImageLayout PEFile::GetAnyILWithRef() 
+inline PTR_PEImageLayout PEFile::GetAnyILWithRef()
 {
     WRAPPER_NO_CONTRACT;
     return GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED);
 };
 
 
-inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/) 
+inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
 {
     CONTRACTL
     {
@@ -1170,7 +1166,7 @@ inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
 };
 
 
-inline PTR_PEImageLayout PEFile::GetLoaded() 
+inline PTR_PEImageLayout PEFile::GetLoaded()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -1226,7 +1222,7 @@ inline PEImage *PEFile::GetNativeImageWithRef()
     {
         INSTANCE_CHECK;
         NOTHROW;
-        GC_TRIGGERS; 
+        GC_TRIGGERS;
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
     }
@@ -1281,25 +1277,25 @@ inline BOOL PEFile::HasNativeImageMetadata()
         PBYTE pbPublicKey;
         DWORD cbPublicKey;
         if (FAILED(pImport->GetAssemblyProps(
-            mda, 
-            (const void **) &pbPublicKey, 
-            &cbPublicKey, 
-            NULL, 
-            &name, 
-            &context, 
+            mda,
+            (const void **) &pbPublicKey,
+            &cbPublicKey,
+            NULL,
+            &name,
+            &context,
             &dwFlags)))
         {
             _ASSERTE(!"If this fires, then we have to throw for corrupted images");
             result.SetUTF8("");
             return;
         }
-        
+
         result.SetUTF8(name);
-        
+
         result.AppendPrintf(W(", Version=%u.%u.%u.%u"),
                             context.usMajorVersion, context.usMinorVersion,
                             context.usBuildNumber, context.usRevisionNumber);
-        
+
         result.Append(W(", Culture="));
         if (!*context.szLocale)
         {
@@ -1309,7 +1305,7 @@ inline BOOL PEFile::HasNativeImageMetadata()
         {
             result.AppendUTF8(context.szLocale);
         }
-        
+
         if (cbPublicKey != 0)
         {
 #ifndef DACCESS_COMPILE
@@ -1317,7 +1313,7 @@ inline BOOL PEFile::HasNativeImageMetadata()
             StrongNameBufferHolder<BYTE> pbToken;
             DWORD cbToken;
             CQuickBytes qb;
-            
+
             if (StrongNameTokenFromPublicKey(pbPublicKey, cbPublicKey,
                                              &pbToken, &cbToken))
             {
@@ -1333,10 +1329,10 @@ inline BOOL PEFile::HasNativeImageMetadata()
                         WCHAR v = static_cast<WCHAR>(pbToken[x] >> 4);
                         szToken[y++] = TOHEX( v );
                         v = static_cast<WCHAR>(pbToken[x] & 0x0F);
-                        szToken[y++] = TOHEX( v ); 
+                        szToken[y++] = TOHEX( v );
                     }
                     szToken[y] = L'\0';
-                    
+
                     result.Append(W(", PublicKeyToken="));
                     result.Append(szToken);
 #undef TOHEX
@@ -1349,11 +1345,11 @@ inline BOOL PEFile::HasNativeImageMetadata()
         {
             result.Append(W(", PublicKeyToken=null"));
         }
-        
+
         if (dwFlags & afPA_Mask)
         {
             result.Append(W(", ProcessorArchitecture="));
-            
+
             if (dwFlags & afPA_MSIL)
                 result.Append(W("MSIL"));
             else if (dwFlags & afPA_x86)
@@ -1367,8 +1363,8 @@ inline BOOL PEFile::HasNativeImageMetadata()
         }
     }
 }
- 
- 
+
+
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
@@ -1386,7 +1382,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
         MODE_ANY;
     }
     CONTRACTL_END;
- 
+
 #ifndef DACCESS_COMPILE
 
     if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
@@ -1421,7 +1417,7 @@ inline LPCSTR PEAssembly::GetSimpleName()
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     LPCSTR name = "";
     IMDInternalImportHolder pImport = GetMDImport();
     if (pImport != NULL)
@@ -1444,7 +1440,7 @@ inline BOOL PEFile::IsStrongNamed()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     DWORD flags = 0;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, &flags));
     return (flags & afPublicKey) != NULL;
@@ -1466,7 +1462,7 @@ inline const void *PEFile::GetPublicKey(DWORD *pcbPK)
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     const void *pPK;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), &pPK, pcbPK, NULL, NULL, NULL, NULL));
     return pPK;
@@ -1481,7 +1477,7 @@ inline ULONG PEFile::GetHashAlgId()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     ULONG hashAlgId;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, &hashAlgId, NULL, NULL, NULL));
     return hashAlgId;
@@ -1496,7 +1492,7 @@ inline LPCSTR PEFile::GetLocale()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     AssemblyMetaDataInternal md;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, &md, NULL));
     return md.szLocale;
@@ -1558,7 +1554,7 @@ inline void PEFile::RestoreMDImport(IMDInternalImport* pImport)
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(m_pMetadataLock->LockTaken() && m_pMetadataLock->IsWriterLock());
     if (m_pMDImport != NULL)
         return;
@@ -1605,7 +1601,7 @@ inline bool PEAssembly::IsWindowsRuntime()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     return IsAfContentType_WindowsRuntime(GetFlags());
 }
 

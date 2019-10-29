@@ -4,7 +4,7 @@
 
 //*****************************************************************************
 // File: module.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -46,7 +46,7 @@ STDAPI ReOpenMetaDataWithMemoryEx(
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
-// 
+//
 // Arguments:
 //    pProcess - process that this module lives in
 //    vmDomainFile - CLR cookie for module.
@@ -54,7 +54,7 @@ CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
     VMPTR_DomainFile    vmDomainFile)
-: CordbBase(pProcess, vmDomainFile.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainFile), enumCordbModule), 
+: CordbBase(pProcess, vmDomainFile.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainFile), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
@@ -89,9 +89,9 @@ CordbModule::CordbModule(
     if (!vmDomainFile.IsNull())
     {
         DomainFileInfo dfInfo;
-        
+
         pProcess->GetDAC()->GetDomainFileData(vmDomainFile, &dfInfo); // throws
-        
+
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
     }
@@ -115,11 +115,11 @@ CordbModule::CordbModule(
 #ifdef _DEBUG
 //---------------------------------------------------------------------------------------
 // Callback helper for code:CordbModule::DbgAssertModuleDeleted
-// 
+//
 // Arguments
 //    vmDomainFile - domain file in the enumeration
 //    pUserData - pointer to the CordbModule that we just got an exit event for.
-//    
+//
 void DbgAssertModuleDeletedCallback(VMPTR_DomainFile vmDomainFile, void * pUserData)
 {
     CordbModule * pThis = reinterpret_cast<CordbModule *>(pUserData);
@@ -128,9 +128,9 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainFile vmDomainFile, void * pUserD
     if (!pThis->m_vmDomainFile.IsNull())
     {
         VMPTR_DomainFile vmDomainFileDeleted = pThis->m_vmDomainFile;
-        
-        CONSISTENCY_CHECK_MSGF((vmDomainFileDeleted != vmDomainFile), 
-            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainFileDeleted=%p\n", 
+
+        CONSISTENCY_CHECK_MSGF((vmDomainFileDeleted != vmDomainFile),
+            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainFileDeleted=%p\n",
             VmPtrToCookie(vmDomainFileDeleted)));
     }
 }
@@ -140,8 +140,8 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainFile vmDomainFile, void * pUserD
 //
 // Notes:
 //   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   This is a debug only method. It's conceptually similar to 
-//   code:CordbProcess::DbgAssertAppDomainDeleted. 
+//   This is a debug only method. It's conceptually similar to
+//   code:CordbProcess::DbgAssertAppDomainDeleted.
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
@@ -179,21 +179,21 @@ void CordbModule::Neuter()
 
 //
 // Creates an IStream based off the memory described by the TargetBuffer.
-// 
+//
 // Arguments:
 //   pProcess - process that buffer is valid in.
 //   buffer - memory range in target
 //   ppStream - out parameter to receive the new stream. *ppStream == NULL on input.
 //      caller owns the new object and must call Release.
-//   
+//
 // Returns:
-//    Throws on error. 
+//    Throws on error.
 //    Common errors include if memory is missing in the target.
-//    
+//
 // Notes:
-//   This will copy the memory over from the TargetBuffer, and then create a new IStream 
-//   object around it. 
-//   
+//   This will copy the memory over from the TargetBuffer, and then create a new IStream
+//   object around it.
+//
 void GetStreamFromTargetBuffer(CordbProcess * pProcess, TargetBuffer buffer, IStream ** ppStream)
 {
     CONTRACTL
@@ -204,10 +204,10 @@ void GetStreamFromTargetBuffer(CordbProcess * pProcess, TargetBuffer buffer, ISt
 
     _ASSERTE(ppStream != NULL);
     _ASSERTE(*ppStream == NULL);
-    
+
     int cbSize = buffer.cbSize;
     NewArrayHolder<BYTE> localBuffer(new BYTE[cbSize]);
-    
+
     pProcess->SafeReadBuffer(buffer, localBuffer);
 
     HRESULT hr = E_FAIL;
@@ -218,21 +218,21 @@ void GetStreamFromTargetBuffer(CordbProcess * pProcess, TargetBuffer buffer, ISt
 
 //
 // Helper API to get in-memory symbols from the target into a host stream object.
-// 
+//
 // Arguments:
 //   ppStream - out parameter to receive the new stream. *ppStream == NULL on input.
 //      caller owns the new object and must call Release.
-//      
+//
 // Returns:
-//   kSymbolFormatNone if no PDB stream is present. This is a common case for 
-//     file-based modules, and also for dynamic modules that just aren't tracking 
-//     debug information. 
+//   kSymbolFormatNone if no PDB stream is present. This is a common case for
+//     file-based modules, and also for dynamic modules that just aren't tracking
+//     debug information.
 //   The format of the symbols stored into ppStream. This is common:
 //      - Ref.Emit modules if the debuggee generated debug symbols,
 //      - in-memory modules (such as Load(Byte[], Byte[])
 //      - hosted modules.
 //   Throws on error
-// 
+//
 IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** ppStream)
 {
     // @dbgtodo : add a PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM contract
@@ -286,7 +286,7 @@ VMPTR_PEFile CordbModule::GetPEFile()
 // Top-level getter for the public metadata importer for this module
 //
 // Returns:
-//     metadata importer. 
+//     metadata importer.
 //     Never returns NULL. Will throw some hr (likely CORDBG_E_MISSING_METADATA) instead.
 //
 // Notes:
@@ -301,7 +301,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
 
 
     // If we already have it, then we're done.
-    // This is critical to do at the top of this function to avoid potential recursion. 
+    // This is critical to do at the top of this function to avoid potential recursion.
     if (m_pIMImport != NULL)
     {
         return m_pIMImport;
@@ -352,7 +352,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
 //
 // Notes:
 //    In profiler case, this may be referred to new rows and we may need to update the metadata
-//    This only supports StandAloneSigs. 
+//    This only supports StandAloneSigs.
 //
 void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
 {
@@ -368,7 +368,7 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
     // then we should avoid this temporary update mechanism entirely
     if(GetProcess()->GetWriteableMetadataUpdateMode() != LegacyCompatPolicy)
     {
-        return; 
+        return;
     }
 
     // the metadata in WinMD is currently static since there's no
@@ -380,23 +380,23 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
     }
 
     //
-    // 1) Check if in-range? Compare against tables, etc. 
-    // 
+    // 1) Check if in-range? Compare against tables, etc.
+    //
     if(CheckIfTokenInMetaData(token))
     {
         LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN token was present\n"));
         return;
     }
 
-    // 
+    //
     // 2) Copy over new MetaData. From now on we assume that the profiler is
     //    modifying module metadata and that we need to serialize in process
     //    at each refresh
-    // 
+    //
     LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN token was not present, refreshing\n"));
     m_fForceMetaDataSerialize = TRUE;
     RefreshMetaData();
-    
+
     // If we are dump debugging, we may still not have it. Nothing to be done.
 }
 
@@ -409,7 +409,7 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     }
     CONTRACTL_END;
     LOG((LF_CORDB,LL_INFO10000, "CM::CITIM token=0x%x\n", token));
-    _ASSERTE(TypeFromToken(token) == mdtSignature);    
+    _ASSERTE(TypeFromToken(token) == mdtSignature);
     // we shouldn't be doing this on WinMD modules since they don't implement IID_IMetaDataTables
     _ASSERTE(!IsWinMD());
     RSExtSmartPtr<IMetaDataTables> pTable;
@@ -423,20 +423,20 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     }
 
     ULONG cbRowsAvailable; // number of rows in the table
-    
-    hr = pTable->GetTableInfo(    
+
+    hr = pTable->GetTableInfo(
         mdtSignature >> 24,                      // [IN] Which table.
         NULL,                    // [OUT] Size of a row, bytes.
         &cbRowsAvailable,                    // [OUT] Number of rows.
         NULL,                    // [OUT] Number of columns in each row.
         NULL,                     // [OUT] Key column, or -1 if none.
         NULL);          // [OUT] Name of the table.
-    
+
     _ASSERTE(SUCCEEDED(hr));
     if (FAILED(hr))
     {
         ThrowHR(hr);
-    }    
+    }
 
 
     // Rows start counting with number 1.
@@ -455,7 +455,7 @@ public:
     TargetBuffer bufferMetaData;
     BOOL fDoCleanup;
 
-    CleanupRemoteBuffer() : 
+    CleanupRemoteBuffer() :
     fDoCleanup(FALSE) { }
 
     ~CleanupRemoteBuffer()
@@ -500,7 +500,7 @@ void CordbModule::RefreshMetaData()
     //    an error reading by file we can fall back to case #2 for these modules
     // 2) Most modules have a buffer in target memory that represents their
     //    metadata. We copy that data over the RS and construct an in-memory
-    //    importer on top of it. 
+    //    importer on top of it.
     // 3) The only modules that don't have a suitable buffer (case #2) are those
     //    modified in memory via the profiling API (or ENC). A message can be sent from
     //    the debugger to the debuggee instructing it to allocate a buffer and
@@ -543,7 +543,7 @@ void CordbModule::RefreshMetaData()
         if (remoteMDInternalRWAddr != NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
-            _ASSERTE(m_pIMImport == NULL); 
+            _ASSERTE(m_pIMImport == NULL);
             ULONG32 mdStructuresVersion;
             HRESULT hr = GetProcess()->GetDAC()->GetMDStructuresVersion(&mdStructuresVersion);
             IfFailThrow(hr);
@@ -567,7 +567,7 @@ void CordbModule::RefreshMetaData()
     if(!m_fForceMetaDataSerialize) // case 1 and 2
     {
         LOG((LF_CORDB,LL_INFO10000, "CM::RM !m_fForceMetaDataSerialize case\n"));
-        GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData); // throws 
+        GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData); // throws
     }
     else if (GetProcess()->GetShim() == NULL) // case 3 won't work on a dump so don't try
     {
@@ -604,7 +604,7 @@ void CordbModule::RefreshMetaData()
         cleanup.fDoCleanup = TRUE;
     }
 
-    InitMetaData(bufferMetaData, IsFileMetaDataValid()); // throws 
+    InitMetaData(bufferMetaData, IsFileMetaDataValid()); // throws
 }
 
 // Determines whether the on-disk metadata for this module is usable as the
@@ -645,16 +645,16 @@ BOOL CordbModule::IsFileMetaDataValid()
 
 //---------------------------------------------------------------------------------------
 // Accessor for Internal MetaData importer. This is lazily initialized.
-// 
+//
 // Returns:
 //     Internal MetaDataImporter, which can be handed off to DAC. Not AddRef().
 //     Should be non-null. Throws on error.
 //
 // Notes:
 //     An internal metadata importer is used extensively by DAC-ized code (And Edit-and-continue).
-//     This should not be handed out through ICorDebug. 
+//     This should not be handed out through ICorDebug.
 IMDInternalImport * CordbModule::GetInternalMD()
-{   
+{
     if (m_pInternalMetaDataImport == NULL)
     {
         UpdateInternalMetaData(); // throws
@@ -663,7 +663,7 @@ IMDInternalImport * CordbModule::GetInternalMD()
 }
 
 //---------------------------------------------------------------------------------------
-// The one-stop top-level initialization function the metadata (both public and private) for this module. 
+// The one-stop top-level initialization function the metadata (both public and private) for this module.
 //
 // Arguments:
 //    buffer - valid buffer into target containing the metadata.
@@ -675,7 +675,7 @@ IMDInternalImport * CordbModule::GetInternalMD()
 // Notes:
 //    This will initialize both the internal and public metadata from the buffer in the target.
 //    Only called as a helper from RefreshMetaData()
-// 
+//
 //    This may throw (eg, target buffer is missing).
 //
 void CordbModule::InitMetaData(TargetBuffer buffer, BOOL allowFileMappingOptimization)
@@ -685,8 +685,8 @@ void CordbModule::InitMetaData(TargetBuffer buffer, BOOL allowFileMappingOptimiz
         THROWS;
     }
     CONTRACTL_END;
-    
-    LOG((LF_CORDB,LL_INFO100000, "CM::IM: initing with remote buffer 0x%p length 0x%x\n", 
+
+    LOG((LF_CORDB,LL_INFO100000, "CM::IM: initing with remote buffer 0x%p length 0x%x\n",
         CORDB_ADDRESS_TO_PTR(buffer.pAddress), buffer.cbSize));
 
     // clear all the metadata
@@ -715,7 +715,7 @@ void CordbModule::InitMetaData(TargetBuffer buffer, BOOL allowFileMappingOptimiz
 
         if(!allowFileMappingOptimization || FAILED(hr))
         {
-            // This is where the expensive copy of all metadata content from target memory 
+            // This is where the expensive copy of all metadata content from target memory
             // that we would like to try and avoid happens.
             InitPublicMetaData(buffer);
         }
@@ -741,7 +741,7 @@ void CordbModule::InitMetaData(TargetBuffer buffer, BOOL allowFileMappingOptimiz
 //
 // Assumptions:
 //     Caller has cleared Internal metadata before even updating public metadata.
-//     This way, if the caller fails halfway through updating the public metadata, we don't have 
+//     This way, if the caller fails halfway through updating the public metadata, we don't have
 //     stale internal MetaData.
 void CordbModule::UpdateInternalMetaData()
 {
@@ -758,15 +758,15 @@ void CordbModule::UpdateInternalMetaData()
     IMetaDataImport * pImport = GetMetaDataImporter(); // throws
 
     // If both the public and the private interfaces are NULL on entry to this function, the call above will
-    // recursively call this function.  This can happen if the caller calls GetInternalMD() directly 
+    // recursively call this function.  This can happen if the caller calls GetInternalMD() directly
     // instead of InitMetaData().  In this case, the above function call will have initialized the internal
     // interface as well, so we need to check for it here.
 
     if (m_pInternalMetaDataImport == NULL)
     {
         HRESULT hr = GetMDInternalInterfaceFromPublic(
-            pImport, 
-            IID_IMDInternalImport, 
+            pImport,
+            IID_IMDInternalImport,
             reinterpret_cast<void**> (&m_pInternalMetaDataImport));
 
         if (m_pInternalMetaDataImport == NULL)
@@ -813,7 +813,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
         if (NULL == WszGetModuleHandle(szFullPathName))
-#endif            
+#endif
         {
             szFullPathName = NULL;
             fDebuggerLoadingNgen = false;
@@ -845,7 +845,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     }
 
 
-    // @dbgtodo  metadata  - This is really a CreateFile() call which we can't do. We must offload this to 
+    // @dbgtodo  metadata  - This is really a CreateFile() call which we can't do. We must offload this to
     // the data target for the dump-debugging scenarios.
     //
     // We're opening it as "read". If we QI for an IEmit interface (which we need for EnC),
@@ -856,7 +856,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     // If we know we're never going to need to write (i.e. never do EnC), then we should indicate
     // that to metadata by telling it this interface will always be read-only.  By passing read-only,
     // the metadata library will then also share the VM space for the image when the same image is
-    // opened multiple times for multiple AppDomains.  
+    // opened multiple times for multiple AppDomains.
     // We don't currently have a way to tell absolutely whether this module will support EnC, but we
     // know that NGen modules NEVER support EnC, and NGen is the common case that eats up a lot of VM.
     // So we'll use the heuristic of opening the metadata for all ngen images as read-only.  Ideally
@@ -880,11 +880,11 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
                                                 DWORD dwOpenFlags,
                                                 bool validateFileInfo)
 {
-#ifdef FEATURE_PAL    
+#ifdef FEATURE_PAL
     // UNIXTODO: Some intricate details of file mapping don't work on Linux as on Windows.
-    // We have to revisit this and try to fix it for POSIX system. 
+    // We have to revisit this and try to fix it for POSIX system.
     return E_FAIL;
-#else    
+#else
     if (validateFileInfo)
     {
         // Check that we've got the right file to target.
@@ -899,7 +899,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         bool isNGEN = false; // unused
         StringCopyHolder filePath;
 
-        
+
         _ASSERTE(!m_vmPEFile.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
         if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
@@ -914,12 +914,12 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         // If the timestamp and size don't match, then this is the wrong file!
         // Map the file and check them.
-        HandleHolder hMDFile = WszCreateFile(pszFullPathName, 
-                                              GENERIC_READ, 
-                                              FILE_SHARE_READ, 
+        HandleHolder hMDFile = WszCreateFile(pszFullPathName,
+                                              GENERIC_READ,
+                                              FILE_SHARE_READ,
                                               NULL,                 // default security descriptor
-                                              OPEN_EXISTING, 
-                                              FILE_ATTRIBUTE_NORMAL, 
+                                              OPEN_EXISTING,
+                                              FILE_ATTRIBUTE_NORMAL,
                                               NULL);
 
         if (hMDFile == INVALID_HANDLE_VALUE)
@@ -965,7 +965,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
             (dwImageTimeStamp != pedecoder.GetTimeDateStamp()))
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Validation of \"%s\" failed.  "
-                "Expected size=%x, Expected timestamp=%x, Actual size=%x, Actual timestamp=%x\n", 
+                "Expected size=%x, Expected timestamp=%x, Actual size=%x, Actual timestamp=%x\n",
                 pszFullPathName,
                 pedecoder.GetVirtualSize(),
                 pedecoder.GetTimeDateStamp(),
@@ -988,12 +988,12 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         // This should never happen in normal scenarios.  It could happen if someone has renamed
         // the assembly after it was opened by the debugee process, but this should be rare enough
         // that we don't mind taking the perf. hit and loading from memory.
-        // @dbgtodo  metadata  - would this happen in the shadow-copy scenario? 
+        // @dbgtodo  metadata  - would this happen in the shadow-copy scenario?
         LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't open metadata in file \"%s\" (hr=%x)\n", pszFullPathName, hr));
     }
 
     return hr;
-#endif // FEATURE_PAL     
+#endif // FEATURE_PAL
 }
 
 //---------------------------------------------------------------------------------------
@@ -1003,7 +1003,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 //    buffer - valid buffer into target containing the metadata.
 //
 // Assumptions:
-//    This is an internal function which should only be called once to initialize the 
+//    This is an internal function which should only be called once to initialize the
 //    metadata. Future attempts to re-initialize (in dynamic cases) should call code:CordbModule::UpdatePublicMetaDataFromRemote
 //    After the public metadata is initialized, initialize private metadata via code:CordbModule::UpdateInternalMetaData
 //
@@ -1016,14 +1016,14 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
     CONTRACTL_END;
 
     INTERNAL_API_ENTRY(this->GetProcess());
-    LOG((LF_CORDB,LL_INFO100000, "CM::IPM: initing with remote buffer 0x%p length 0x%x\n", 
+    LOG((LF_CORDB,LL_INFO100000, "CM::IPM: initing with remote buffer 0x%p length 0x%x\n",
         CORDB_ADDRESS_TO_PTR(buffer.pAddress), buffer.cbSize));
     ULONG nMetaDataSize = buffer.cbSize;
 
     if (nMetaDataSize == 0)
     {
-        // We should always have metadata, and if we don't, we want to know. 
-        // @dbgtodo  metadata - we know metadata from dynamic modules doesn't work in V3 
+        // We should always have metadata, and if we don't, we want to know.
+        // @dbgtodo  metadata - we know metadata from dynamic modules doesn't work in V3
         // (non-shim) cases yet.
         // But our caller should already have handled that case.
         SIMPLIFYING_ASSUMPTION(!"Error: missing the metadata");
@@ -1039,8 +1039,8 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
 
     CoTaskMemHolder<VOID> pMetaDataCopy;
     CopyRemoteMetaData(buffer, pMetaDataCopy.GetAddr());
-    
-    
+
+
     //
     // Setup our metadata import object, m_pIMImport
     //
@@ -1067,12 +1067,12 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
     // MetaData has taken ownership -don't free the memory
     pMetaDataCopy.SuppressRelease();
 
-    // Immediately restore the old setting. 
+    // Immediately restore the old setting.
     HRESULT hrRestore = pDisp->SetOption(MetaDataSetUpdate, &valueOld);
     SIMPLIFYING_ASSUMPTION(!FAILED(hrRestore));
 
     // Throw on errors.
-    IfFailThrow(hr);    
+    IfFailThrow(hr);
     IfFailThrow(hrRestore);
 
     // Done!
@@ -1092,11 +1092,11 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
 //     it can OpenScopeOnMemory().
 //
 void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaData)
-{    
+{
     CONTRACTL
     {
-        // @dbgtodo  metadata  - think about the error semantics here. These fails during dispatching an event; so 
-        // address this during event pipeline. 
+        // @dbgtodo  metadata  - think about the error semantics here. These fails during dispatching an event; so
+        // address this during event pipeline.
         THROWS;
     }
     CONTRACTL_END;
@@ -1105,9 +1105,9 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     {
         ThrowHR(E_INVALIDARG);
     }
-    
+
     INTERNAL_API_ENTRY(this->GetProcess()); //
-    LOG((LF_CORDB,LL_INFO100000, "CM::UPMFR: updating with remote buffer 0x%p length 0x%x\n", 
+    LOG((LF_CORDB,LL_INFO100000, "CM::UPMFR: updating with remote buffer 0x%p length 0x%x\n",
         CORDB_ADDRESS_TO_PTR(bufferRemoteMetaData.pAddress), bufferRemoteMetaData.cbSize));
     // We're re-initializing existing metadata.
     _ASSERTE(m_pIMImport != NULL);
@@ -1121,7 +1121,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     CoTaskMemHolder<VOID> pLocalMetaDataPtr;
     CopyRemoteMetaData(bufferRemoteMetaData, pLocalMetaDataPtr.GetAddr());
 
-    IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();    
+    IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
     _ASSERTE(pDisp != NULL); // throws on error.
 
     LOG((LF_CORDB,LL_INFO100000, "CM::RI: converting to new metadata\n"));
@@ -1147,7 +1147,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
-    pLocalMetaDataPtr.SuppressRelease();   
+    pLocalMetaDataPtr.SuppressRelease();
 }
 
 //---------------------------------------------------------------------------------------
@@ -1156,11 +1156,11 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 // Arguments:
 //    pRemoteMetaDataPtr - pointer to remote buffer
 //    dwMetaDataSize - size of buffer.
-//    pLocalBuffer - holder to get local buffer. 
+//    pLocalBuffer - holder to get local buffer.
 //
 // Returns:
 //    pLocalBuffer may be allocated.
-//    Throws on error (pLocalBuffer may contain garbage). 
+//    Throws on error (pLocalBuffer may contain garbage).
 //    Else if successful, pLocalBuffer contains local copy of metadata.
 //
 // Notes:
@@ -1188,7 +1188,7 @@ void CordbModule::CopyRemoteMetaData(
     }
 
     pLocalBuffer->Assign(pRawBuffer);
-    
+
 
 
     // Copy the metadata from the left side
@@ -1317,7 +1317,7 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_pa
 
 //---------------------------------------------------------------------------------------
 // Gets the module pretty name (may be filename or faked up name)
-// 
+//
 // Arguments:
 //   cchName - count of characters in the szName buffer on input.
 //   *pcchName - Optional Out parameter, which gets set to the fully requested size
@@ -1328,7 +1328,7 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_pa
 //   S_OK on success.
 //   S_FALSE if we fabricate the name.
 //   Return failing HR (on common errors) or Throw on exceptional errors.
-// 
+//
 // Note:
 //    Filename isn't necessarily the same as the module name in the metadata.
 //
@@ -1389,7 +1389,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_eco
             hr = HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
 
             // Tempting to use the metadata-scope name, but that's a regression from Whidbey. For manifest modules,
-            // the metadata scope name is not initialized with the string the user supplied to create the 
+            // the metadata scope name is not initialized with the string the user supplied to create the
             // dynamic assembly. So we call into the runtime to use CLR heuristics to get a more accurate name.
             m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer);
             _ASSERTE(buffer.IsSet());
@@ -1409,21 +1409,21 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_eco
 //---------------------------------------------------------------------------------------
 // Gets actual name of loaded module. (no faked names)
 //
-// Returns: 
+// Returns:
 //    string for full path to module name. This is a file that can be opened.
 //    NULL if name is not available (such as in some dynamic module cases)
 //    Throws if failed accessing target
 //
 // Notes:
 //    We avoid using the method name "GetModuleFileName" because winbase.h #defines that
-//    token (along with many others) to have an A or W suffix. 
+//    token (along with many others) to have an A or W suffix.
 const WCHAR * CordbModule::GetModulePath()
 {
-    // Lazily initialize.  Module filenames cannot change, and so once 
+    // Lazily initialize.  Module filenames cannot change, and so once
     // we've retrieved this successfully, it's stored for good.
     if (!m_strModulePath.IsSet())
     {
-        IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws 
+        IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
         pDac->GetModulePath(m_vmModule, &m_strModulePath); // throws
         _ASSERTE(m_strModulePath.IsSet());
     }
@@ -1437,26 +1437,26 @@ const WCHAR * CordbModule::GetModulePath()
 
 //---------------------------------------------------------------------------------------
 // Get and caches ngen image path.
-// 
+//
 // Returns:
-//    Null-terminated string to ngen image path. 
+//    Null-terminated string to ngen image path.
 //    NULL if there is no ngen filename (eg, file is not ngenned).
 //    Throws on error (such as inability to read the path from the target).
 //
 // Notes:
-//    This can be used to get the path to find metadata. For ngenned images, 
-//    the IL (and associated metadata) may not be loaded, so we may want to get the 
+//    This can be used to get the path to find metadata. For ngenned images,
+//    the IL (and associated metadata) may not be loaded, so we may want to get the
 //    metadata out of the ngen image.
 const WCHAR * CordbModule::GetNGenImagePath()
 {
     HRESULT hr = S_OK;
     EX_TRY
     {
-        // Lazily initialize.  Module filenames cannot change, and so once 
+        // Lazily initialize.  Module filenames cannot change, and so once
         // we've retrieved this successfully, it's stored for good.
         if (!m_strNGenImagePath.IsSet())
         {
-            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws 
+            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
             BOOL fNonEmpty = pDac->GetModuleNGenPath(m_vmModule, &m_strNGenImagePath); // throws
             (void)fNonEmpty; //prevent "unused variable" error from GCC
             _ASSERTE(m_strNGenImagePath.IsSet() && (m_strNGenImagePath.IsEmpty() == !fNonEmpty));
@@ -1464,7 +1464,7 @@ const WCHAR * CordbModule::GetNGenImagePath()
     }
     EX_CATCH_HRESULT(hr);
 
-    if (FAILED(hr) || 
+    if (FAILED(hr) ||
         m_strNGenImagePath == NULL ||
         m_strNGenImagePath.IsEmpty())
     {
@@ -1506,7 +1506,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     // loaded on the Left Side.)
     if (m_fDynamic && !bClassLoadCallbacks)
         return E_INVALIDARG;
-        
+
     if (m_vmDomainFile.IsNull())
         return E_UNEXPECTED;
 
@@ -1537,7 +1537,7 @@ HRESULT CordbModule::GetFunctionFromToken(mdMethodDef token,
                                           ICorDebugFunction **ppFunction)
 {
     // This is not reentrant. DBI should call code:CordbModule::LookupOrCreateFunctionLatestVersion instead.
-    PUBLIC_API_ENTRY(this); 
+    PUBLIC_API_ENTRY(this);
     ATT_ALLOW_LIVE_DO_STOPGO(GetProcess()); // @todo - can this be RequiredStop?
 
 
@@ -1639,8 +1639,8 @@ HRESULT CordbModule::GetClassFromToken(mdTypeDef token,
         IfFailThrow(hr);
 
         *ppClass = static_cast<ICorDebugClass*> (pClass);
-        pClass->ExternalAddRef();        
-    } 
+        pClass->ExternalAddRef();
+    }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
@@ -1697,13 +1697,13 @@ HRESULT CordbModule::GetMetaDataInterface(REFIID riid, IUnknown **ppObj)
 }
 
 //-----------------------------------------------------------------------------
-// LookupFunctionLatestVersion finds the latest cached version of an existing CordbFunction 
+// LookupFunctionLatestVersion finds the latest cached version of an existing CordbFunction
 // in the given module. If the function doesn't exist, it returns NULL.
 //
 // Arguments:
 //     funcMetaDataToken - methoddef token for function to lookup
 //
-// 
+//
 // Notes:
 //     If no CordbFunction instance was cached, then this returns NULL.
 //     use code:CordbModule::LookupOrCreateFunctionLatestVersion to do a lookup that will
@@ -1716,13 +1716,13 @@ CordbFunction* CordbModule::LookupFunctionLatestVersion(mdMethodDef funcMetaData
 
 
 //-----------------------------------------------------------------------------
-// Lookup (or create) the CordbFunction for the latest EnC version. 
+// Lookup (or create) the CordbFunction for the latest EnC version.
 //
 // Arguments:
 //     funcMetaDataToken - methoddef token for function to lookup
 //
 // Returns:
-//     CordbFunction instance for that token. This will create an instance if needed, and so never returns null. 
+//     CordbFunction instance for that token. This will create an instance if needed, and so never returns null.
 //     Throws on critical error.
 //
 // Notes:
@@ -1747,7 +1747,7 @@ CordbFunction* CordbModule::LookupOrCreateFunctionLatestVersion(mdMethodDef func
 // LookupOrCreateFunction finds an existing version of CordbFunction in the given module.
 // If the function doesn't exist, it creates it.
 //
-// The outgoing function is not yet fully inititalized. For eg, the Class field is not set. 
+// The outgoing function is not yet fully inititalized. For eg, the Class field is not set.
 // However, ICorDebugFunction::GetClass() will check that and lazily initialize the field.
 //
 // Throws on error.
@@ -1763,7 +1763,7 @@ CordbFunction * CordbModule::LookupOrCreateFunction(mdMethodDef funcMetaDataToke
     // special case non-existance as need to add to the hash table too
     if (pFunction == NULL)
     {
-        // EnC adds each version to the hash. So if the hash lookup fails, 
+        // EnC adds each version to the hash. So if the hash lookup fails,
         // then it must not be an EnC case.
         return CreateFunction(funcMetaDataToken, enCVersion);
     }
@@ -1851,7 +1851,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
     INTERNAL_API_ENTRY(this);
 
     // In EnC cases, the token may not yet be valid. We may be caching the CordbFunction
-    // for a token for an added method before the metadata is updated on the RS. 
+    // for a token for an added method before the metadata is updated on the RS.
     // We rely that our caller has done token validation.
 
     // Create a new CordbFunction object or throw.
@@ -1918,7 +1918,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
         return E_OUTOFMEMORY;
 
     // Chain the 2nd most recent version onto this instance (this will internal addref).
-    pNewVersion->SetPrevVersion(pOldVersion); 
+    pNewVersion->SetPrevVersion(pOldVersion);
 
     // Add the function to the Module's hash of all functions.
     HRESULT hr = m_functions.SwapBase(pOldVersion, pNewVersion);
@@ -1945,7 +1945,7 @@ HRESULT CordbModule::LookupOrCreateClass(mdTypeDef classMetaDataToken,CordbClass
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-    RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  exceptions synchronization- 
+    RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  exceptions synchronization-
                                                                // Push this lock up, convert to exceptions.
 
     HRESULT hr = S_OK;
@@ -1984,7 +1984,7 @@ HRESULT CordbModule::CreateClass(mdTypeDef classMetaDataToken,
     FAIL_IF_NEUTERED(this);
 
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
-    
+
     CordbClass* pClass = new (nothrow) CordbClass(this, classMetaDataToken);
 
     if (pClass == NULL)
@@ -2008,29 +2008,29 @@ HRESULT CordbModule::CreateClass(mdTypeDef classMetaDataToken,
 
 
 // Resolve a type-ref from this module to a CordbClass
-// 
+//
 // Arguments:
 //    token - a Type Ref in this module's scope.
 //    ppClass - out parameter to get the class we resolve to.
-//    
+//
 // Returns:
 //    S_OK on success.
 //    CORDBG_E_CLASS_NOT_LOADED is the TypeRef is not yet resolved because the type it will refer
 //    to is not yet loaded.
-//    
+//
 // Notes:
 //    In general, a TypeRef refers to a type in another module. (Although as a corner case, it could
-//    refer to this module too). This resolves a TypeRef within the current module's scope to a 
+//    refer to this module too). This resolves a TypeRef within the current module's scope to a
 //    (TypeDef, metadata scope), which is in turn encapsulated as a CordbClass.
-//    
+//
 //    A TypeRef has a resolution scope (ModuleRef or AssemblyRef) and string name for the type
 //    within that scope. Resolving means:
-//    1. Determining the actual metadata scope loaded for the resolution scope. 
-//        See also code:CordbModule::ResolveAssemblyInternal 
+//    1. Determining the actual metadata scope loaded for the resolution scope.
+//        See also code:CordbModule::ResolveAssemblyInternal
 //        If the resolved module hasn't been loaded yet, the resolution will fail.
 //    2. Doing a string lookup of the TypeRef's name within that resolved scope to find the TypeDef.
-//    3. Returning the (resolved scope, TypeDef) pair. 
-//    
+//    3. Returning the (resolved scope, TypeDef) pair.
+//
 HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
 {
     FAIL_IF_NEUTERED(this);
@@ -2045,7 +2045,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
     {
         return E_INVALIDARG;
     }
-    
+
     if (m_vmDomainFile.IsNull() || m_pAppDomain == NULL)
     {
         return E_UNEXPECTED;
@@ -2067,17 +2067,17 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
         IfFailThrow(pModule->LookupClassByToken(outData.typeToken, ppClass));
     }
     EX_CATCH_HRESULT(hr);
-    
+
     return hr;
-    
+
 } // CordbModule::ResolveTypeRef
 
 // Resolve a type ref or def to a CordbClass
-// 
+//
 // Arguments:
 //    token - a mdTypeDef or mdTypeRef in this module's scope to be resolved
 //    ppClass - out parameter to get the CordbClass for this type
-//     
+//
 // Notes:
 //    See code:CordbModule::ResolveTypeRef for more details.
 HRESULT CordbModule::ResolveTypeRefOrDef(mdToken token, CordbClass **ppClass)
@@ -2149,14 +2149,14 @@ HRESULT CordbModule::GetEditAndContinueSnapshot(
 //    S_OK on success, various errors on failure
 //
 // Notes:
-//    
-//   
+//
+//
 //    This applies the same changes to the RS's copy of the metadata that the left-side will apply to
 //    it's copy of the metadata. see code:EditAndContinueModule::ApplyEditAndContinue
 //
 HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
-                                  BYTE   pbMetaData[], 
-                                  ULONG  cbIL, 
+                                  BYTE   pbMetaData[],
+                                  ULONG  cbIL,
                                   BYTE   pbIL[])
 {
     PUBLIC_API_ENTRY(this);
@@ -2165,7 +2165,7 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
 
 #ifdef EnC_SUPPORTED
     // We enable EnC back in code:CordbModule::SetJITCompilerFlags.
-    // If EnC isn't enabled, then we'll fail in the LS when we try to ApplyChanges. 
+    // If EnC isn't enabled, then we'll fail in the LS when we try to ApplyChanges.
     // We'd expect a well-behaved debugger to never actually land here.
 
 
@@ -2203,23 +2203,23 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
 
     // The left-side will call this same method on its copy of the metadata.
     hr = pMDImport->ApplyEditAndContinue(pbMetaData, cbMetaData, &pMDImport2);
-    if (pMDImport2 != NULL) 
+    if (pMDImport2 != NULL)
     {
         // ApplyEditAndContinue() expects IMDInternalImport**, but we give it RSExtSmartPtr<IMDInternalImport>
         // Silent cast of RSExtSmartPtr to IMDInternalImport* leads to assignment of a raw pointer
         // without calling AddRef(), thus we need to do it manually.
 
         // @todo -  ApplyEditAndContinue should probably AddRef the out parameter.
-        pMDImport2->AddRef(); 
+        pMDImport2->AddRef();
     }
     IfFailGo(hr);
 
-   
+
     // We're about to get a new importer object, so release the old one.
     m_pIMImport.Clear();
     IfFailGo(GetMDPublicInterfaceFromInternal(pMDImport2, IID_IMetaDataImport, (void **)&m_pIMImport));
     // set the new RVA value
-    
+
     // Send the delta over to the debugee and request that it apply the edit
     IfFailGo( ApplyChangesInternal(cbMetaData, pbMetaData, cbIL, pbIL) );
 
@@ -2229,7 +2229,7 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
         m_pInternalMetaDataImport.Clear();
         UpdateInternalMetaData();
     }
-    EX_CATCH_HRESULT(hr);    
+    EX_CATCH_HRESULT(hr);
     _ASSERTE(SUCCEEDED(hr));
 
 ErrExit:
@@ -2260,9 +2260,9 @@ ErrExit:
 // Return Value:
 //    S_OK on success, various errors on failure
 //
-HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData, 
-                                          BYTE   pbMetaData[], 
-                                          ULONG  cbIL, 
+HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
+                                          BYTE   pbMetaData[],
+                                          ULONG  cbIL,
                                           BYTE   pbIL[])
 {
     CONTRACTL
@@ -2275,7 +2275,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
 
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
-    
+
     if (m_vmDomainFile.IsNull())
         return E_UNEXPECTED;
 
@@ -2307,7 +2307,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
 
         GetProcess()->SafeWriteBuffer(tbMetaData, pbMetaData); // throws
         GetProcess()->SafeWriteBuffer(tbIL, pbIL); // throws
-            
+
         // Send a synchronous event requesting the debugee apply the edit
         event.ApplyChanges.pDeltaMetadata = tbMetaData.pAddress;
         event.ApplyChanges.cbDeltaMetadata = tbMetaData.cbSize;
@@ -2358,8 +2358,8 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 _ASSERTE(NULL != pAppDomain);
                 CordbModule* pModule = NULL;
 
-                
-                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainFile); // throws            
+
+                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainFile); // throws
                 _ASSERTE(pModule != NULL);
 
                 // update to the newest version
@@ -2369,13 +2369,13 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 {
                     // Update the function collection to reflect this edit
                     hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber, NULL);
-                        
+
                 }
                 // mark the class and relevant type as old so we update it next time we try to query it
                 if (retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
                      retEvent->type == DB_IPCE_ENC_ADD_FIELD)
                 {
-                    RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  synchronization -  push this up 
+                    RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  synchronization -  push this up
                     CordbClass* pClass = pModule->LookupClass(retEvent->EnCUpdate.classMetadataToken);
                     // if don't find class, that is fine because it hasn't been loaded yet so doesn't
                     // need to be updated
@@ -2388,13 +2388,13 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         }
 
         LOG((LF_ENC,LL_INFO100, "CordbProcess::ApplyChangesInternal complete.\n"));
-    } 
+    }
     EX_CATCH_HRESULT(hr);
-    
+
     // process may have gone away by the time we get here so don't assume is there.
     CordbProcess *pProcess = GetProcess();
     if (pProcess)
-    {        
+    {
         HRESULT hr2 = pProcess->ReleaseRemoteBuffer(&pRemoteBuf);
         TESTANDRETURNHR(hr2);
     }
@@ -2416,7 +2416,7 @@ HRESULT CordbModule::SetJMCStatus(
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     if (m_vmDomainFile.IsNull())
         return E_UNEXPECTED;
 
@@ -2498,25 +2498,25 @@ HRESULT CordbModule::ResolveAssembly(mdToken tkAssemblyRef,
 
 //---------------------------------------------------------------------------------------
 // Worker to resolve an assembly ref.
-// 
+//
 // Arguments:
 //     tkAssemblyRef - token of assembly ref to resolve
 //
 // Returns:
 //     Assembly that this token resolves to.
-//     NULL if it's a valid token but the assembly has not yet been resolved. 
+//     NULL if it's a valid token but the assembly has not yet been resolved.
 //      (This is a non-exceptional error case).
 //
 // Notes:
 //     MetaData has tokens to represent a reference to another assembly.
 //     But Loader/Fusion policy ultimately decides which specific assembly is actually loaded
-//     for that token. 
+//     for that token.
 //     This does the lookup of actual assembly and reports back to the debugger.
 
 CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
-    
+
     if (TypeFromToken(tkAssemblyRef) != mdtAssemblyRef || tkAssemblyRef == mdAssemblyRefNil)
     {
         // Not a valid token
@@ -2529,7 +2529,7 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
     {
         // Get DAC to do the real work to resolve the assembly
         VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainFile, tkAssemblyRef);
-            
+
         // now find the ICorDebugAssembly corresponding to it
         if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
         {
@@ -2538,15 +2538,15 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
             pAssembly = m_pAppDomain->LookupOrCreateAssembly(vmDomainAssembly);
         }
     }
-    
+
     return pAssembly;
 }
 
 //
 // CreateReaderForInMemorySymbols - create an ISymUnmanagedReader object for symbols
-// which are loaded into memory in the CLR.  See interface definition in cordebug.idl for 
+// which are loaded into memory in the CLR.  See interface definition in cordebug.idl for
 // details.
-// 
+//
 HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
 {
     PUBLIC_API_ENTRY(this);
@@ -2606,17 +2606,17 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         }
 
         // In the attach or dump case, if we attach or take the dump after we have defined a dynamic module, we may
-        // have already set the symbol format to "PDB" by the time we call CreateReaderForInMemorySymbols during initialization 
-        // for loaded modules. (In the launch case, we do this initialization when the module is actually loaded, and before we 
-        // set the symbol format.) When we call CreateReaderForInMemorySymbols, we can't assume the initialization was already 
-        // performed or specifically, that we already have m_pIMImport initialized. We can't call into diasymreader with a NULL 
+        // have already set the symbol format to "PDB" by the time we call CreateReaderForInMemorySymbols during initialization
+        // for loaded modules. (In the launch case, we do this initialization when the module is actually loaded, and before we
+        // set the symbol format.) When we call CreateReaderForInMemorySymbols, we can't assume the initialization was already
+        // performed or specifically, that we already have m_pIMImport initialized. We can't call into diasymreader with a NULL
         // pointer as the value for m_pIMImport, so we need to check that here.
         if (m_pIMImport == NULL)
         {
             ThrowHR(CORDBG_E_SYMBOLS_NOT_AVAILABLE);
         }
 
-        // Now create the symbol reader from the data 
+        // Now create the symbol reader from the data
         ReleaseHolder<ISymUnmanagedReader> pReader;
         IfFailThrow(pBinder->GetReaderFromStream(m_pIMImport, pStream, &pReader));
 
@@ -2626,7 +2626,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         IfFailThrow(pReader->QueryInterface(riid, ppObj));
     }
     EX_CATCH_HRESULT(hr);
-    return hr; 
+    return hr;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -2635,12 +2635,12 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
 
 //---------------------------------------------------------------------------------------
 // Set the continue counter that marks when the module is in its Load event
-//    
+//
 // Notes:
 //    Jit flags can only be changed in the real module Load event. We may
 //    have multiple module load events on different threads coming at the
-//    same time. So each module load tracks its continue counter.  
-//    
+//    same time. So each module load tracks its continue counter.
+//
 //    This can be used by code:CordbModule::EnsureModuleIsInLoadCallback to
 //    properly return CORDBG_E_MUST_BE_IN_LOAD_MODULE
 void CordbModule::SetLoadEventContinueMarker()
@@ -2652,17 +2652,17 @@ void CordbModule::SetLoadEventContinueMarker()
 }
 
 //---------------------------------------------------------------------------------------
-// Return CORDBG_E_MUST_BE_IN_LOAD_MODULE if the module is not in the load module callback. 
-// 
+// Return CORDBG_E_MUST_BE_IN_LOAD_MODULE if the module is not in the load module callback.
+//
 // Notes:
 //   The comparison is done via continue counters. The counter of the load
-//   event is cached via code:CordbModule::SetLoadEventContinueMarker. 
-//   
+//   event is cached via code:CordbModule::SetLoadEventContinueMarker.
+//
 //   This state is currently stored on the RS. Alternatively, it could likely be retreived from the LS state as
 //   well. One disadvantage of the current model is that if we detach during the load-module callback and
 //   then reattach, the RS state is flushed and we lose the fact that we can toggle the jit flags.
 HRESULT CordbModule::EnsureModuleIsInLoadCallback()
-{    
+{
     if (this->m_nLoadEventContinueCounter < GetProcess()->m_continueCounter)
     {
         return CORDBG_E_MUST_BE_IN_LOAD_MODULE;
@@ -2677,7 +2677,7 @@ HRESULT CordbModule::EnsureModuleIsInLoadCallback()
 // See also code:CordbModule::EnableJITDebugging
 HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
 {
-    PUBLIC_REENTRANT_API_ENTRY(this);    
+    PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
     CordbProcess *pProcess = GetProcess();
@@ -2700,7 +2700,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
             BOOL fEnableEnC = ((dwFlags & CORDEBUG_JIT_ENABLE_ENC) == CORDEBUG_JIT_ENABLE_ENC);
 
             // Can only change jit flags when module is first loaded and before there's any jitted code.
-            // This ensures all code in the module is jitted the same way. 
+            // This ensures all code in the module is jitted the same way.
             hr = EnsureModuleIsInLoadCallback();
 
             if (SUCCEEDED(hr))
@@ -2719,7 +2719,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
         hr = GetProcess()->GetShim()->FilterSetJitFlagsHresult(hr);
     }
     return hr;
-    
+
 }
 
 // Implementation of ICorDebugModule2::GetJitCompilerFlags
@@ -2735,15 +2735,15 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
     HRESULT hr = S_OK;
-    
+
     EX_TRY
     {
         BOOL fAllowJitOpts;
         BOOL fEnableEnC;
 
         pProcess->GetDAC()->GetCompilerFlags (
-            GetRuntimeDomainFile(), 
-            &fAllowJitOpts, 
+            GetRuntimeDomainFile(),
+            &fAllowJitOpts,
             &fEnableEnC);
 
         if (fEnableEnC)
@@ -2772,7 +2772,7 @@ BOOL CordbModule::IsWinMD()
     {
         BOOL isWinRT;
         HRESULT hr = E_FAIL;
-        
+
         {
             RSLockHolder processLockHolder(GetProcess()->GetProcessLock());
             hr = GetProcess()->GetDAC()->IsWinRTModule(m_vmModule, isWinRT);
@@ -2891,7 +2891,7 @@ HRESULT CordbCode::GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32 * pcMap, ULON
 //-----------------------------------------------------------------------------
 // CordbCode::IsIL
 // Public method to determine if this Code object represents IL or native code.
-// 
+//
 // Parameters:
 //    pbIL - OUT: on return, set to True if IL code, else False.
 //
@@ -2914,7 +2914,7 @@ HRESULT CordbCode::IsIL(BOOL *pbIL)
 // Public method to get the Function object associated with this Code object.
 // Function:Code = 1:1 for IL, and 1:n for Native. So there is always a single
 // unique Function object to return.
-// 
+//
 // Parameters:
 //   ppFunction - OUT: returns the Function object for this Code.
 //
@@ -2956,8 +2956,8 @@ HRESULT CordbCode::GetSize(ULONG32 *pcBytes)
 
 //-----------------------------------------------------------------------------
 // CordbCode::CreateBreakpoint
-// public method to create a breakpoint in the code. 
-// 
+// public method to create a breakpoint in the code.
+//
 // Parameters:
 //   offset - offset in bytes to set the breakpoint at. If this is a Native
 //      code object (IsIl == false), then units are bytes of native code. If
@@ -3015,14 +3015,14 @@ HRESULT CordbCode::CreateBreakpoint(ULONG32 offset,
 // The units of the offsets are the same as the units on the CordbCode object.
 // (eg, IL offsets for an IL code object, and native offsets for a native code object)
 // This will glue together hot + cold regions into a single blob.
-// 
-// Units are also logical (aka linear) values, which 
+//
+// Units are also logical (aka linear) values, which
 // Parameters:
-//    startOffset - linear offset in Code to start copying from. 
+//    startOffset - linear offset in Code to start copying from.
 //    endOffset - linear offset in Code to end copying from. Total bytes copied would be (endOffset - startOffset)
 //    cBufferAlloc - number of bytes in the buffer supplied by the buffer[] parameter.
 //    buffer - caller allocated storage to copy bytes into.
-//    pcBufferSize - required out-parameter, holds number of bytes copied into buffer. 
+//    pcBufferSize - required out-parameter, holds number of bytes copied into buffer.
 //
 // Returns:
 //    S_OK if copy successful. Else error.
@@ -3083,9 +3083,9 @@ HRESULT CordbCode::GetCode(ULONG32 startOffset,
 // CordbCode::GetVersionNumber
 // Public method to get the EnC version number of the code.
 //
-// Parameters: 
+// Parameters:
 //    nVersion - OUT: on return, set to the version number.
-// 
+//
 // Returns:
 //    S_OK on success.
 //-----------------------------------------------------------------------------
@@ -3130,8 +3130,8 @@ CordbFunction * CordbCode::GetFunction()
 //    Output:
 //        fields of this instance of CordbILCode have been initialized
 //-----------------------------------------------------------------------------
-CordbILCode::CordbILCode(CordbFunction * pFunction, 
-                         TargetBuffer    codeRegionInfo, 
+CordbILCode::CordbILCode(CordbFunction * pFunction,
+                         TargetBuffer    codeRegionInfo,
                          SIZE_T          nVersion,
                          mdSignature     localVarSigToken,
                          UINT_PTR        id)
@@ -3160,11 +3160,11 @@ void CordbILCode::MakeOld()
 //-----------------------------------------------------------------------------
 // CordbILCode::GetAddress
 // Public method to get the Entry address for the code.  This is the address
-// where the method first starts executing. 
+// where the method first starts executing.
 //
 // Parameters:
 //    pStart - out-parameter to hold start address.
-// 
+//
 // Returns:
 //    S_OK if *pStart is properly updated.
 //-----------------------------------------------------------------------------
@@ -3225,12 +3225,12 @@ HRESULT CordbILCode::ReadCodeBytes()
 // Since 1 CordbILCode can map to multiple CordbNativeCode due to generics, we cannot reliably return the
 // mapping information in all cases.  So we always fail with CORDBG_E_NON_NATIVE_FRAME.  The caller should
 // call code:CordbNativeCode::GetILToNativeMapping instead.
-// 
+//
 // Parameters:
 //    cMap - size of incoming map[] array (in elements).
-//    pcMap - OUT: full size of IL-->Native map (in elements). 
+//    pcMap - OUT: full size of IL-->Native map (in elements).
 //    map - caller allocated array to be filled in.
-// 
+//
 // Returns:
 //    CORDBG_E_NON_NATIVE_FRAME in all cases
 //-----------------------------------------------------------------------------
@@ -3344,12 +3344,12 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
 //
 // Parameters:
 //   dwIndex - 0-based index for IL local number.
-//   inst - instantiation information if this is a generic function. Eg, 
+//   inst - instantiation information if this is a generic function. Eg,
 //           if function is List<T>, inst describes T.
 //   res - out parameter, yields to CordbType of the local.
 //
 // Return:
-//   S_OK on success. 
+//   S_OK on success.
 //
 HRESULT CordbILCode::GetLocalVariableType(DWORD dwIndex,
     const Instantiation * pInst,
@@ -3499,7 +3499,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
     {
         return CORDBG_E_TARGET_INCONSISTENT;
     }
-    
+
     m_codeRegionInfo.Init(pIlHeader + headerSize, ilCodeSize);
     m_pLocalIL = new (nothrow) BYTE[ilCodeSize];
     if (m_pLocalIL == NULL)
@@ -3601,7 +3601,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
 //-----------------------------------------------------------------------------
 // CordbReJitILCode::GetEHClauses
 // Public method to get the EH clauses for IL code
-// 
+//
 // Parameters:
 //   cClauses - size of incoming clauses array (in elements).
 //   pcClauses - OUT param: cClauses>0 -> the number of elements written to in the clauses array.
@@ -3717,13 +3717,13 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
 // Linear search through an array of NativeVarInfos, to find the variable of index dwIndex, valid
 // at the given ip. Returns CORDBG_E_IL_VAR_NOT_AVAILABLE if the variable isn't valid at the given ip.
 // Arguments:
-//     input:  dwIndex        - variable number    
-//             ip             - IP 
+//     input:  dwIndex        - variable number
+//             ip             - IP
 //             nativeInfoList - list of instances of NativeVarInfo
 //     output: ppNativeInfo   - the element of nativeInfoList that corresponds to the IP and variable number
-//                              if we find such an element or NULL otherwise 
-// Return value: HRESULT: returns S_OK or CORDBG_E_IL_VAR_NOT_AVAILABLE if the variable isn't found             
-//             
+//                              if we find such an element or NULL otherwise
+// Return value: HRESULT: returns S_OK or CORDBG_E_IL_VAR_NOT_AVAILABLE if the variable isn't found
+//
 HRESULT FindNativeInfoInILVariableArray(DWORD                                               dwIndex,
                                         SIZE_T                                              ip,
                                         const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> * nativeInfoList,
@@ -3759,23 +3759,23 @@ HRESULT FindNativeInfoInILVariableArray(DWORD                                   
     }
 
     // workaround:
-    // 
+    //
     // We didn't find the variable. Was the endOffset of the last range for this variable
     // equal to the current IP? If so, go ahead and "lie" and report that as the
     // variable's home for now.
     //
     // Rationale:
-    // 
+    //
     // * See TODO comment in code:Compiler::siUpdate (jit\scopeinfo.cpp). In optimized
     //     code, the JIT can report var lifetimes as being one instruction too short.
     //     This workaround makes up for that.  Example code:
-    //     
+    //
     //         static void foo(int x)
     //         {
     //             int b = x; // Value of "x" would not be reported in optimized code without the workaround
     //             bar(ref b);
     //         }
-    //         
+    //
     // * Since this is the first instruction after the last range a variable was alive,
     //     we're essentially assuming that since that instruction hasn't been executed
     //     yet, and since there isn't a new home for the variable, that the last home is
@@ -3815,7 +3815,7 @@ CordbVariableHome::CordbVariableHome(CordbNativeCode *pCode,
     CordbBase(pCode->GetModule()->GetProcess(), 0)
 {
     _ASSERTE(pCode != NULL);
-    
+
     m_pCode.Assign(pCode);
     m_nativeVarInfo = nativeVarInfo;
     m_isLocal = isLocal;
@@ -3860,7 +3860,7 @@ HRESULT CordbVariableHome::QueryInterface(REFIID id, void **pInterface)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetCode
 // Public method to get the Code object containing this variable home.
-// 
+//
 // Parameters:
 //   ppCode - OUT: returns the Code object for this variable home.
 //
@@ -3882,7 +3882,7 @@ HRESULT CordbVariableHome::GetCode(ICorDebugCode **ppCode)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetSlotIndex
 // Public method to get the slot index for this variable home.
-// 
+//
 // Parameters:
 //   pSlotIndex - OUT: returns the managed slot-index of this variable home.
 //
@@ -3908,7 +3908,7 @@ HRESULT CordbVariableHome::GetSlotIndex(ULONG32 *pSlotIndex)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetArgumentIndex
 // Public method to get the slot index for this variable home.
-// 
+//
 // Parameters:
 //   pSlotIndex - OUT: returns the managed argument-index of this variable home.
 //
@@ -3934,7 +3934,7 @@ HRESULT CordbVariableHome::GetArgumentIndex(ULONG32 *pArgumentIndex)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetLiveRange
 // Public method to get the native range over which this variable is live.
-// 
+//
 // Parameters:
 //   pStartOffset - OUT: returns the logical offset at which the variable is
 //                  first live
@@ -3961,7 +3961,7 @@ HRESULT CordbVariableHome::GetLiveRange(ULONG32 *pStartOffset,
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetLocationType
 // Public method to get the type of native location for this variable home.
-// 
+//
 // Parameters:
 //   pLocationType - OUT: the type of native location
 //
@@ -3992,7 +3992,7 @@ HRESULT CordbVariableHome::GetLocationType(VariableLocationType *pLocationType)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetRegister
 // Public method to get the register or base register for this variable hom.
-// 
+//
 // Parameters:
 //   pRegister - OUT: for VLT_REGISTER location types, gives the register.
 //                    for VLT_REGISTER_RELATIVE location types, gives the base
@@ -4008,7 +4008,7 @@ HRESULT CordbVariableHome::GetRegister(CorDebugRegister *pRegister)
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pRegister, CorDebugRegister *);
     ATT_REQUIRE_STOPPED_MAY_FAIL(m_pCode->GetProcess());
-    
+
     switch (m_nativeVarInfo.loc.vlType)
     {
     case ICorDebugInfo::VLT_REG:
@@ -4026,7 +4026,7 @@ HRESULT CordbVariableHome::GetRegister(CorDebugRegister *pRegister)
 //-----------------------------------------------------------------------------
 // CordbVariableHome::GetOffset
 // Public method to get the offset from the base register for this variable home.
-// 
+//
 // Parameters:
 //   pOffset - OUT: gives the offset from the base register
 //
@@ -4064,13 +4064,13 @@ HRESULT CordbVariableHome::GetOffset(LONG *pOffset)
 //    Input:
 //        pFunction              - the function for which this is the native code object
 //        pJitData               - the information about this code object retrieved from the DAC
-//        fIsInstantiatedGeneric - indicates whether this code object is an instantiated 
+//        fIsInstantiatedGeneric - indicates whether this code object is an instantiated
 //                                 generic
 //    Output:
 //        fields of this instance of CordbNativeCode have been initialized
 //-----------------------------------------------------------------------------
-CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction, 
-                                 const NativeCodeFunctionData * pJitData, 
+CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
+                                 const NativeCodeFunctionData * pJitData,
                                  BOOL                           fIsInstantiatedGeneric)
   : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, pJitData->encVersion, FALSE),
     m_vmNativeCodeMethodDescToken(pJitData->vmNativeCodeMethodDescToken),
@@ -4078,12 +4078,12 @@ CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
     m_fIsInstantiatedGeneric(fIsInstantiatedGeneric != FALSE)
 {
     _ASSERTE(GetVersion() >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
- 
+
     for (CodeBlobRegion region = kHot; region < MAX_REGIONS; ++region)
     {
         m_rgCodeRegions[region] = pJitData->m_rgCodeRegions[region];
     }
-} //CordbNativeCode::CordbNativeCode 
+} //CordbNativeCode::CordbNativeCode
 
 //-----------------------------------------------------------------------------
 // Public method for IUnknown::QueryInterface.
@@ -4124,11 +4124,11 @@ HRESULT CordbNativeCode::QueryInterface(REFIID id, void ** pInterface)
 //-----------------------------------------------------------------------------
 // CordbNativeCode::GetAddress
 // Public method to get the Entry address for the code.  This is the address
-// where the method first starts executing. 
+// where the method first starts executing.
 //
 // Parameters:
 //    pStart - out-parameter to hold start address.
-// 
+//
 // Returns:
 //    S_OK if *pStart is properly updated.
 //-----------------------------------------------------------------------------
@@ -4203,7 +4203,7 @@ HRESULT CordbNativeCode::ReadCodeBytes()
 
 //-----------------------------------------------------------------------------
 // CordbNativeCode::GetColdSize
-// Get the size of the cold regions in bytes. 
+// Get the size of the cold regions in bytes.
 //
 // Parameters:
 //   none--uses data member m_rgCodeRegions to compute total size.
@@ -4223,7 +4223,7 @@ ULONG32 CordbNativeCode::GetColdSize()
 
 //-----------------------------------------------------------------------------
 // CordbNativeCode::GetSize
-// Get the size of the code in bytes. 
+// Get the size of the code in bytes.
 //
 // Parameters:
 //   none--uses data member m_rgCodeRegions to compute total size.
@@ -4246,14 +4246,14 @@ ULONG32 CordbNativeCode::GetSize()
 // Public method (implements ICorDebugCode) to get the IL-->{ Native Start, Native End} mapping.
 // This can only be retrieved for native code.
 // This will copy as much of the map as can fit in the incoming buffer.
-// 
+//
 // Parameters:
 //    cMap - size of incoming map[] array (in elements).
-//    pcMap - OUT: full size of IL-->Native map (in elements). 
+//    pcMap - OUT: full size of IL-->Native map (in elements).
 //    map - caller allocated array to be filled in.
-// 
+//
 // Returns:
-//    S_OK on successful copying. 
+//    S_OK on successful copying.
 //-----------------------------------------------------------------------------
 HRESULT CordbNativeCode::GetILToNativeMapping(ULONG32                    cMap,
                                               ULONG32 *                  pcMap,
@@ -4300,12 +4300,12 @@ HRESULT CordbNativeCode::GetILToNativeMapping(ULONG32                    cMap,
 //-----------------------------------------------------------------------------
 // CordbNativeCode::GetCodeChunks
 // Public method to get the code regions of code. If the code
-// is broken into discontinuous regions (hot + cold), this lets a debugger 
+// is broken into discontinuous regions (hot + cold), this lets a debugger
 // find the number of regions, and (start,size) of each.
-// 
+//
 // Parameters:
 //   cbufSize - size of incoming chunks array (in elements).
-//   pcnumChunks - OUT param: the number of elements written to in the chunk array.// 
+//   pcnumChunks - OUT param: the number of elements written to in the chunk array.//
 //   chunks - caller allocated storage to hold the code chunks.
 //
 // Returns:
@@ -4353,16 +4353,16 @@ HRESULT CordbNativeCode::GetCodeChunks(
 //-----------------------------------------------------------------------------
 // CordbNativeCode::GetCompilerFlags
 // Public entry point to get code flags for this Code object.
-// Originally, ICDCode had this method implemented independently from the 
-// ICDModule method GetJitCompilerFlags. This was because it was considered that 
-// the flags would be per function, rather than per module. 
-// In addition, GetCompilerFlags did two different things depending on whether 
+// Originally, ICDCode had this method implemented independently from the
+// ICDModule method GetJitCompilerFlags. This was because it was considered that
+// the flags would be per function, rather than per module.
+// In addition, GetCompilerFlags did two different things depending on whether
 // the code had a native image. It turned out that was the wrong thing to do
 // .
-// 
+//
 // Parameters:
 //    pdwFlags - OUT: code gen flags (see CorDebugJITCompilerFlags)
-// 
+//
 // Return value:
 //    S_OK if pdwFlags is set properly.
 //-----------------------------------------------------------------------------
@@ -4398,7 +4398,7 @@ HRESULT CordbNativeCode::ILVariableToNative(DWORD dwIndex,
 HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets)
 {
     HRESULT hr = S_OK;
-    
+
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
@@ -4418,7 +4418,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
 // Public method to get an enumeration of native variable homes. This may
 // include multiple ICorDebugVariableHomes for the same slot or argument index
 // if they have different homes at different points in the function.
-// 
+//
 // Parameters:
 //   ppEnum - OUT: returns the enum of variable homes.
 //
@@ -4431,9 +4431,9 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(ppEnum, ICorDebugVariableHomeEnum **);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     HRESULT hr = S_OK;
-    
+
     // Get the argument count
     ULONG argCount = 0;
     CordbFunction *func = GetFunction();
@@ -4450,14 +4450,14 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
     EX_CATCH_HRESULT(hr);
     IfFailRet(hr);
 #endif
-    
+
     RSSmartPtr<CordbVariableHome> *rsHomes = NULL;
-    
+
     EX_TRY
     {
         CordbProcess *pProcess = GetProcess();
         _ASSERTE(pProcess != NULL);
-        
+
         const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> *pOffsetInfoList = m_nativeVarData.GetOffsetInfoList();
         _ASSERTE(pOffsetInfoList != NULL);
         DWORD countHomes = 0;
@@ -4465,7 +4465,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
         {
             const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
             _ASSERTE(pNativeVarInfo != NULL);
-            
+
             // The variable information list can include variables
             // with special varNumbers representing, for instance, the
             // parameter types for generic methods. Here we are only
@@ -4488,7 +4488,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
             {
                 // determine whether this variable home represents and argument or local variable
                 BOOL isLocal = ((ULONG)pNativeVarInfo->varNumber >= argCount);
-                
+
                 // determine the argument-index or slot-index of this variable home
                 ULONG argOrSlotIndex;
                 if (isLocal) {
@@ -4534,7 +4534,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         return -1;
 
     // Skip instruction prefixes
-    do 
+    do
     {
         switch (*ip)
         {
@@ -4542,7 +4542,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         case 0x26: // ES
         case 0x2E: // CS
         case 0x36: // SS
-        case 0x3E: // DS 
+        case 0x3E: // DS
         case 0x64: // FS
         case 0x65: // GS
 
@@ -4690,12 +4690,12 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         return -1;
 
     // Skip instruction prefixes
-    //@TODO by euzem: 
+    //@TODO by euzem:
     //This "loop" can't be really executed more than once so if CALL can really have more than one prefix we'll crash.
     //Some of these prefixes are not allowed for CALL instruction and we should treat them as invalid code.
     //It appears that this code was mostly copy/pasted from \NDP\clr\src\Debug\EE\amd64\amd64walker.cpp
     //with very minimum fixes.
-    do 
+    do
     {
         switch (prefix)
         {
@@ -4703,7 +4703,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         case 0x26: // ES
         case 0x2E: // CS
         case 0x36: // SS
-        case 0x3E: // DS 
+        case 0x3E: // DS
         case 0x64: // FS
         case 0x65: // GS
 
@@ -4716,13 +4716,13 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
             // String REP prefixes
         case 0xf2: // REPNE/REPNZ
-        case 0xf3: 
+        case 0xf3:
             ip++;
             fContainsPrefix = TRUE;
             continue;
 
             // REX register extension prefixes
-        case 0x40:            
+        case 0x40:
         case 0x41:
         case 0x42:
         case 0x43:
@@ -4738,7 +4738,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         case 0x4d:
         case 0x4e:
         case 0x4f:
-            // make sure to set rex to prefix, not *ip because *ip still represents the 
+            // make sure to set rex to prefix, not *ip because *ip still represents the
             // codestream which has a 0xcc in it.
             rex = prefix;
             ip++;
@@ -4792,18 +4792,18 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
                      return -1;
                  }
 
-                 WORD displace = -1;
+                 SHORT displace = -1;
 
                  // See: Tables A-15,16,17 in AMD Dev Manual 3 for information
                  //      about how the ModRM/SIB/REX bytes interact.
 
-                 switch (mod) 
+                 switch (mod)
                  {
                  case 0:
                  case 1:
-                 case 2:     
+                 case 2:
                      if ((rm & 0x07) == 4) // we have an SIB byte following
-                     {   
+                     {
                          //
                          // Get values from the SIB byte
                          //
@@ -4818,38 +4818,38 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
                          //
                          // Finally add in the offset
                          //
-                         if (mod == 0) 
+                         if (mod == 0)
                          {
-                             if ((base & 0x07) == 5) 
+                             if ((base & 0x07) == 5)
                                  displace = 7;
-                             else 
+                             else
                                  displace = 3;
-                         } 
-                         else if (mod == 1) 
+                         }
+                         else if (mod == 1)
                          {
                              displace = 4;
-                         } 
+                         }
                          else // mod == 2
                          {
                              displace = 7;
                          }
-                     } 
-                     else 
+                     }
+                     else
                      {
                          //
                          // Get the value we need from the register.
                          //
 
                          // Check for RIP-relative addressing mode.
-                         if ((mod == 0) && ((rm & 0x07) == 5)) 
+                         if ((mod == 0) && ((rm & 0x07) == 5))
                          {
                              displace = 6;   // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
-                         } 
-                         else 
+                         }
+                         else
                          {
-                             if (mod == 0) 
+                             if (mod == 0)
                                  displace = 2;
-                             else if (mod == 1) 
+                             else if (mod == 1)
                                  displace = 3;
                              else // mod == 2
                                  displace = 6;
@@ -4876,7 +4876,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
                  // reg == 4 or 5 means that it is not a CALL, but JMP instruction
                  // so we will fall back to ASSERT after break
-                 if ((reg != 4) && (reg != 5)) 
+                 if ((reg != 4) && (reg != 5))
                      return displace;
                  break;
     }
@@ -4977,7 +4977,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
 
         if (returnType != ELEMENT_TYPE_VALUETYPE)
             return META_E_BAD_SIGNATURE;
-        
+
         if (currentInstantiation == NULL)
             return S_OK;  // We will check again when we have the instantiation.
 
@@ -4988,7 +4988,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
         CordbType *pType = 0;
         IfFailRet(CordbType::SigToType(GetModule(), &original, &inst, &pType));
 
-        
+
         IfFailRet(pType->ReturnedByValue());
         if (hr == S_OK) // not S_FALSE
             return S_OK;
@@ -5041,8 +5041,8 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
         // Now recurse with "generics" at the location to continue parsing.
         return EnsureReturnValueAllowedWorker(currentInstantiation, targetClass, generics, methodGenerics, genCount);
     }
-    
-    
+
+
     if (returnType == ELEMENT_TYPE_VAR)
     {
         // Get which type parameter is reference.
@@ -5070,7 +5070,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
         IfFailRet(typeParser.GetElemType(&et));
         if (et != ELEMENT_TYPE_VALUETYPE && et != ELEMENT_TYPE_CLASS)
             return META_E_BAD_SIGNATURE;
-        
+
         IfFailRet(typeParser.GetToken(NULL));
 
         ULONG totalTypeCount = 0;
@@ -5080,7 +5080,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
 
         while (typeParam--)
             IfFailRet(typeParser.SkipExactlyOne());
-        
+
         // This is a temporary workaround for an infinite recursion here.  ALL of this code will
         // go away when we allow struct return values, but in the mean time this avoids a corner
         // case in the type system we haven't solved yet.
@@ -5101,7 +5101,7 @@ HRESULT CordbNativeCode::SkipToReturn(SigParser &parser, ULONG *genCount)
     // Takes a method signature parser (at the beginning of a signature) and skips to the
     // return value.
     HRESULT hr = S_OK;
-    
+
     // Skip calling convention
     ULONG uCallConv;
     IfFailRet(parser.GetCallingConvInfo(&uCallConv));
@@ -5138,7 +5138,7 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
         // tail call case.  We don't allow managed return values for tailcalls.
         return CORDBG_E_INVALID_OPCODE;
     }
-    
+
     // call     - 28    (ECMA III.3.19)
     // callvirt - 6f    (ECMA III.4.2)
     if (instruction != 0x28 && instruction != 0x6f)
@@ -5162,10 +5162,10 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
-        
+
     HRESULT hr = S_OK;
     ULONG32 found = 0;
-    
+
     // verify that the call target actually returns something we allow
     SigParser signature, generics;
     mdToken mdClass = 0;
@@ -5230,7 +5230,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 
     if (pOffsets && found > bufferSize)
         return S_FALSE;
-    
+
     return S_OK;
 }
 
@@ -5245,7 +5245,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 //       methodDesc - the methodDesc for the jitted method
 //       startAddress - the hot code startAddress for this method
 
-// Return value: 
+// Return value:
 //      found or created CordbNativeCode pointer
 // Assumptions: methodToken is in the metadata for this module
 //              methodDesc and startAddress should be consistent for
@@ -5263,7 +5263,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
     NativeCodeFunctionData codeInfo;
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-    // see if we already have this--if not, we'll make an instance, otherwise we'll just return the one we have. 
+    // see if we already have this--if not, we'll make an instance, otherwise we'll just return the one we have.
     pNativeCode = m_nativeCodeTable.GetBase((UINT_PTR) startAddress);
 
     if (pNativeCode == NULL)
@@ -5303,7 +5303,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 void CordbNativeCode::LoadNativeInfo()
 {
     THROW_IF_NEUTERED(this);
-    INTERNAL_API_ENTRY(this->GetProcess()); 
+    INTERNAL_API_ENTRY(this->GetProcess());
 
 
     // If we've either never done this before (no info), or we have, but the version number has increased, we
@@ -5325,7 +5325,7 @@ void CordbNativeCode::LoadNativeInfo()
         RSLockHolder lockHolder(pProcess->GetProcessLock());
         pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
                                                                   GetAddress(),
-                                                                  m_fCodeAvailable, 
+                                                                  m_fCodeAvailable,
                                                                   &m_nativeVarData,
                                                                   &m_sequencePoints);
     }

@@ -1510,7 +1510,7 @@ DomainAssembly * LoadDomainAssembly(
     DomainAssembly *pDomainAssembly = NULL;
 
     StackScratchBuffer buffer;
-    LPCUTF8 szAssemblySpec = psszAssemblySpec->GetUTF8(buffer);
+    LPCUTF8 szAssemblySpec = psszAssemblySpec ? psszAssemblySpec->GetUTF8(buffer) : NULL;
     IfFailThrow(spec.Init(szAssemblySpec));
 
     if (spec.IsContentType_WindowsRuntime())
