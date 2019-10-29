@@ -4,7 +4,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: DebuggerModule.cpp
 //
 // Stuff for tracking DebuggerModules.
@@ -153,7 +153,7 @@ void DebuggerJitInfo::InitFuncletAddress()
     }
 
     // This will get the offsets relative to the parent method start as if
-    // the funclet was in contiguous memory (i.e. not hot/cold split). 
+    // the funclet was in contiguous memory (i.e. not hot/cold split).
     g_pEEInterface->GetFuncletStartOffsets((const BYTE*)m_addrOfCode, m_rgFunclet, m_funcletCount);
 }
 
@@ -289,7 +289,7 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     // We should never even be creating a DJI for one.
     _ASSERTE(!m_nativeCodeVersion.GetMethodDesc()->IsDynamicMethod());
 }
-    
+
 DebuggerILToNativeMap *DebuggerJitInfo::MapILOffsetToMapEntry(SIZE_T offset, BOOL *exact, BOOL fWantFirst)
 {
     CONTRACTL
@@ -403,8 +403,8 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
         }
         else
         {
-            // Initialize the funclet range. 
-            // ASSUMES that funclets are contiguous which they currently are... 
+            // Initialize the funclet range.
+            // ASSUMES that funclets are contiguous which they currently are...
             DWORD funcletStartOffset = GetFuncletOffsetByIndex(ilOffset.m_funcletIndex);
             DWORD funcletEndOffset;
             if (ilOffset.m_funcletIndex < (m_funcletCount - 1))
@@ -725,7 +725,7 @@ void DebuggerJitInfo::MapILRangeToMapEntryRange(SIZE_T startOffset,
          (*end)->nativeStartOffset, (*end)->nativeEndOffset));
 }
 
-// @dbgtodo Microsoft inspection: This function has been replicated in DacDbiStructures so 
+// @dbgtodo Microsoft inspection: This function has been replicated in DacDbiStructures so
 // this version can be deleted when inspection is complete.
 
 // DWORD DebuggerJitInfo::MapNativeOffsetToIL():   Given a native
@@ -803,7 +803,7 @@ DWORD DebuggerJitInfo::MapNativeOffsetToIL(SIZE_T nativeOffsetToMap,
                         nativeOffset = m->nativeEndOffset;
                         continue;
                     }
-                    
+
                     ilOff = 0;
                     (*map) = MAPPING_PROLOG;
                     LOG((LF_CORDB,LL_INFO10000,"DJI::MNOTI: MAPPING_PROLOG\n"));
@@ -932,7 +932,7 @@ void DebuggerJitInfo::LazyInitBounds()
 
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
-        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons 
+        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
         CodeVersionManager::TableLockHolder lockHolder(mdesc->GetCodeVersionManager());
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
@@ -1078,7 +1078,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         // If a ReJIT hasn't happened, check for a profiler provided map.
         mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
     }
-    
+
 
     //
     // <TODO>@todo perf: we could do the vast majority of this
@@ -1115,8 +1115,8 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         // Since the map can only have one entry for 6 old, we remove 44 new.
         if (!mapping.IsNull())
         {
-            int ilThisOld = m_methodInfo->TranslateToInstIL(&mapping, 
-                                                            pMapEntry->ilOffset, 
+            int ilThisOld = m_methodInfo->TranslateToInstIL(&mapping,
+                                                            pMapEntry->ilOffset,
                                                             bInstrumentedToOriginal);
 
             if (ilThisOld == ilPrevOld)
@@ -1129,13 +1129,13 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
             m->ilOffset = ilThisOld;
             ilPrevOld = ilThisOld;
         }
-        
+
         if (m > m_sequenceMap && (m->source & call_inst) != call_inst)
         {
             DebuggerILToNativeMap *last = m-1;
             if ((last->source & call_inst) == call_inst)
                 last = (last > m_sequenceMap) ? last - 1 : NULL;
-                
+
             if (last && (last->source & call_inst) != call_inst && m->ilOffset == last->ilOffset)
             {
                 // JIT gave us an extra entry (probably zero), so mush
@@ -1145,7 +1145,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
                 continue;
             }
         }
-        
+
 
         // Move to next entry in the debugger's table
         m++;
@@ -1166,7 +1166,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         unsigned int j = i + 1;
         while ((m_sequenceMap[j].source & call_inst) == call_inst && j < m_sequenceMapCount-1)
             j++;
-        
+
         m_sequenceMap[i].nativeEndOffset = m_sequenceMap[j].nativeStartOffset;
     }
 
@@ -1181,14 +1181,14 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     isort.Sort();
 
     m_sequenceMapSorted = true;
-    
+
     m_callsiteMapCount = m_sequenceMapCount;
     while (m_sequenceMapCount > 0 && (m_sequenceMap[m_sequenceMapCount-1].source & call_inst) == call_inst)
       m_sequenceMapCount--;
 
     m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
     m_callsiteMapCount -= m_sequenceMapCount;
-    
+
     LOG((LF_CORDB, LL_INFO100000, "DJI::SetBoundaries: this=0x%x boundary count is %d (%d callsites)\n",
          this, m_sequenceMapCount, m_callsiteMapCount));
 
@@ -1217,7 +1217,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
             LOG((LF_CORDB, LL_INFO1000000,
                  "D::sB: 0x%04x (Real:0x%04x) --> 0x%08x -- 0x%08x",
                  m_sequenceMap[count].ilOffset,
-                 m_methodInfo->TranslateToInstIL(&mapping, 
+                 m_methodInfo->TranslateToInstIL(&mapping,
                                                  m_sequenceMap[count].ilOffset,
                                                  bOriginalToInstrumented),
                  m_sequenceMap[count].nativeStartOffset,
@@ -1327,7 +1327,7 @@ DebuggerMethodInfo::~DebuggerMethodInfo()
 
 // Don't interpolate
 ULONG32 DebuggerMethodInfo::TranslateToInstIL(const InstrumentedILOffsetMapping * pMapping,
-                                              ULONG32 offOrig, 
+                                              ULONG32 offOrig,
                                               bool fOrigToInst)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1423,7 +1423,7 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
         CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
- 
+
     LOG((LF_CORDB,LL_EVERYTHING, "DMI::DMI : created at 0x%p\n", this));
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
@@ -1501,7 +1501,7 @@ Module * DebuggerMethodInfo::GetRuntimeModule()
 // of jitted code.  This function does not create the DJI if it does not already exist.
 //
 // Arguments:
-//    pMD                 - the MD to lookup; must be non-NULL 
+//    pMD                 - the MD to lookup; must be non-NULL
 //    addrNativeStartAddr - the native start address of jitted code
 //
 // Return Value:
@@ -1525,7 +1525,7 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
     DebuggerJitInfo * pCheck = m_latestJitInfo;
     while (pCheck != NULL)
     {
-        if ( (pCheck->m_nativeCodeVersion.GetMethodDesc() == dac_cast<PTR_MethodDesc>(pMD)) && 
+        if ( (pCheck->m_nativeCodeVersion.GetMethodDesc() == dac_cast<PTR_MethodDesc>(pMD)) &&
              (pCheck->m_addrOfCode == addrNativeStartAddr) )
         {
             return pCheck;
@@ -1621,7 +1621,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     }
 
     BOOL jitInfoWasCreated;
-    return CreateInitAndAddJitInfo(nativeCodeVersion, startAddr, &jitInfoWasCreated); 
+    return CreateInitAndAddJitInfo(nativeCodeVersion, startAddr, &jitInfoWasCreated);
 }
 
 // Create a DJI around a method-desc. The EE already has all the information we need for a DJI,
@@ -1863,7 +1863,7 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
         if ((m_pMethodDescFilter != NULL) && (m_pMethodDescFilter != m_pCurrent->m_nativeCodeVersion.GetMethodDesc()))
             continue;
 
-        // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check 
+        // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
         // because of it is deleted pretty early during unloading, and we do not want to recreate it.
         if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
             continue;
@@ -2051,7 +2051,7 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
             if ((pLoaderModuleFilter != NULL) && (pLoaderModuleFilter != pLoaderModule))
                 continue;
 
-            // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check 
+            // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
             // because of it is deleted pretty early during unloading, and we do not want to recreate it.
             if (pLoaderModule->GetLoaderAllocator()->IsUnloaded())
                 continue;
@@ -2257,7 +2257,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(g_pDebugger->HasDebuggerDataLock()); 
+    _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
     LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%x (%S)\n", pModule
         ,pModule->GetDebugName()));
@@ -2398,16 +2398,6 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    //        CHECK_DMI_TABLE;
-
-    // @review.  One of the BVTs causes this to be called before the table is initialized
-    // In particular, the changes to BREAKPOINT_ADD mean that this table is now consulted
-    // to determine if we have ever seen the method, rather than a call to LookupMethodDesc,
-    // which would have just returned NULL.  In general it seems OK to consult this table
-    // when it is empty, so I've added this....
-    if (this == NULL)
-        return NULL;
-
     DebuggerMethodInfoKey dmik;
     dmik.pModule = dac_cast<PTR_Module>(pModule);
     dmik.token = token;
@@ -2488,7 +2478,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 void
 DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     // This structure is in an array in the hash
     // so the 'this' is implicitly enumerated by the
@@ -2496,7 +2486,7 @@ DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // For a MiniDumpNormal, what is needed for modules is already enumerated elsewhere.
     // Don't waste time doing it here an extra time. Also, this will add many MB extra into the dump.
-    if ((key.pModule.IsValid()) && 
+    if ((key.pModule.IsValid()) &&
         CLRDATA_ENUM_MEM_MINI != flags
         && CLRDATA_ENUM_MEM_TRIAGE != flags)
     {

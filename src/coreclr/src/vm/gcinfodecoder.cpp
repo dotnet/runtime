@@ -26,7 +26,14 @@
 #if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
 #define VALIDATE_OBJECTREF(objref, fDeep)
 #else // DACCESS_COMPILE || CROSSGEN_COMPILE
-#define VALIDATE_OBJECTREF(objref, fDeep) OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)->Validate(fDeep)
+#define VALIDATE_OBJECTREF(objref, fDeep)                          \
+    do {                                                           \
+        Object* objPtr = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref); \
+        if (objPtr)                                                \
+        {                                                          \
+            objPtr->Validate(fDeep);                               \
+        }                                                          \
+    } while(0)
 #endif // DACCESS_COMPILE || CROSSGEN_COMPILE
 #endif // !VALIDATE_OBJECTREF
 
@@ -69,7 +76,7 @@ bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset,
 {
     GcInfoDecoder *pThis = (GcInfoDecoder*)hCallback;
 
-    
+
     bool fStop = pThis->m_InstructionOffset >= startOffset && pThis->m_InstructionOffset < stopOffset;
 
     if (fStop)
@@ -131,7 +138,7 @@ GcInfoDecoder::GcInfoDecoder(
     m_HasTailCalls             = ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 #endif // _TARGET_AMD64_
     int hasSizeOfEditAndContinuePreservedArea = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS;
-    
+
     int hasReversePInvokeFrame = false;
     if (gcInfoToken.IsReversePInvokeFrameAvailable())
     {
@@ -165,14 +172,14 @@ GcInfoDecoder::GcInfoDecoder(
 
     if (hasGSCookie)
     {
-        // Note that normalization as a code offset can be different than 
+        // Note that normalization as a code offset can be different than
         //  normalization as code legnth
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         // Decode prolog/epilog information
         UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
         UINT32 normEpilogSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_EPILOG_SIZE_ENCBASE);
-       
+
         m_ValidRangeStart = (UINT32) DENORMALIZE_CODE_OFFSET(normPrologSize);
         m_ValidRangeEnd = (UINT32) DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
         _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
@@ -329,7 +336,7 @@ GcInfoDecoder::GcInfoDecoder(
     }
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
-        // Note that normalization as a code offset can be different than 
+        // Note that normalization as a code offset can be different than
         //  normalization as code legnth
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
@@ -380,7 +387,7 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
     return (bool) (safePointIndex != m_NumSafePoints);
-    
+
 }
 
 UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
@@ -400,7 +407,7 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
 #endif
     {
         const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-    
+
         INT32 low = 0;
         INT32 high = (INT32)m_NumSafePoints;
 
@@ -415,7 +422,7 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
                 result = (UINT32) mid;
                 break;
             }
-        
+
             if(normOffset < normBreakOffset)
                 low = mid+1;
             else
@@ -546,7 +553,7 @@ bool GcInfoDecoder::WantsReportOnlyLeaf()
     return m_WantsReportOnlyLeaf;
 #else
     return true;
-#endif    
+#endif
 }
 
 UINT32 GcInfoDecoder::GetCodeLength()
@@ -632,10 +639,10 @@ bool GcInfoDecoder::EnumerateLiveSlots(
     // Normalized break offset
     // Relative to interruptible ranges #if PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    UINT32 pseudoBreakOffset = 0;  
+    UINT32 pseudoBreakOffset = 0;
     UINT32 numInterruptibleLength = 0;
 #else
-    UINT32 pseudoBreakOffset = normBreakOffset;  
+    UINT32 pseudoBreakOffset = normBreakOffset;
     UINT32 numInterruptibleLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 #endif
 
@@ -698,7 +705,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 goto ExitSuccess;
             }
         }
-    }        
+    }
 #else   // !PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
     // Skip interruptibility information
@@ -707,7 +714,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         m_Reader.DecodeVarLengthUnsigned( INTERRUPTIBLE_RANGE_DELTA1_ENCBASE );
         m_Reader.DecodeVarLengthUnsigned( INTERRUPTIBLE_RANGE_DELTA2_ENCBASE );
     }
-#endif        
+#endif
 
 
     //------------------------------------------------------------------------------
@@ -717,9 +724,9 @@ bool GcInfoDecoder::EnumerateLiveSlots(
 
     slotDecoder.DecodeSlotTable(m_Reader);
 
-    {   
+    {
         UINT32 numSlots = slotDecoder.GetNumTracked();
-        
+
         if(!numSlots)
             goto ReportUntracked;
 
@@ -800,7 +807,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 }
             }
             goto ReportUntracked;
-        }        
+        }
         else
         {
             m_Reader.Skip(m_NumSafePoints * numSlots);
@@ -808,10 +815,10 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 goto ReportUntracked;
         }
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-        
+
         _ASSERTE(m_NumInterruptibleRanges);
         _ASSERTE(numInterruptibleLength);
-        
+
         // If no info is found for the call site, we default to fully-interruptbile
         LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
 
@@ -823,7 +830,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
 
         if(!numBitsPerPointer)
             goto ReportUntracked;
-            
+
         size_t pointerTablePos = m_Reader.GetCurrentPos();
 
         size_t chunkPointer;
@@ -837,7 +844,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
 
             if(chunk-- == 0)
                 goto ReportUntracked;
-        }     
+        }
 
         size_t chunksStartPos = ((pointerTablePos + numChunks * numBitsPerPointer + 7) & (~7));
         size_t chunkPos = chunksStartPos + chunkPointer - 1;
@@ -869,7 +876,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 _ASSERTE(readSlots == numSlots);
 
             }
-            else 
+            else
             {
                 for(UINT32 i = 0; i < numSlots; i++)
                 {
@@ -878,7 +885,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 }
             }
             _ASSERTE(numCouldBeLiveSlots > 0);
-            
+
             BitStreamReader finalStateReader(m_Reader);
 
             m_Reader.Skip(numCouldBeLiveSlots);
@@ -919,9 +926,9 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                     slotIndex += tmp;
                     cnt = (UINT32)couldBeLiveReader.DecodeVarLengthUnsigned( LIVESTATE_RLE_SKIP_ENCBASE );
                 }
-                
+
                 UINT32 isLive = (UINT32) finalStateReader.Read(1);
-                
+
                 if(chunk == breakChunk)
                 {
                     // Read transitions
@@ -940,7 +947,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                             isLive ^= 1;
                         }
                     }
-                }        
+                }
 
                 if(isLive)
                 {
@@ -1059,7 +1066,7 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
     m_NumSlots = m_NumRegisters + numStackSlots + m_NumUntracked;
 
     UINT32 i = 0;
-    
+
     if(m_NumRegisters > 0)
     {
         // We certainly predecode the first register
@@ -1093,11 +1100,11 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
             m_SlotArray[i].Flags = flags;
         }
     }
-    
+
     if((numStackSlots > 0) && (i < MAX_PREDECODED_SLOTS))
     {
         // We have stack slots left and more room to predecode
-        
+
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(STACK_SLOT_ENCBASE);
         INT32 spOffset = DENORMALIZE_STACK_SLOT(normSpOffset);
@@ -1134,7 +1141,7 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
     if((m_NumUntracked > 0) && (i < MAX_PREDECODED_SLOTS))
     {
         // We have untracked stack slots left and more room to predecode
-        
+
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(STACK_SLOT_ENCBASE);
         INT32 spOffset = DENORMALIZE_STACK_SLOT(normSpOffset);
@@ -1177,15 +1184,15 @@ void GcSlotDecoder::DecodeSlotTable(BitStreamReader& reader)
         _ASSERTE(i == MAX_PREDECODED_SLOTS);
         m_NumDecodedSlots = i;
         m_pLastSlot = &m_SlotArray[MAX_PREDECODED_SLOTS - 1];
-        
-        m_SlotReader = reader;       
+
+        m_SlotReader = reader;
 
         // Move the argument reader past the end of the table
-        
+
         GcSlotFlags flags = m_pLastSlot->Flags;
 
         // Skip any remaining registers
-            
+
         for(; i < m_NumRegisters; i++)
         {
             if(flags)
@@ -1281,7 +1288,7 @@ const GcSlotDesc* GcSlotDecoder::GetSlotDesc(UINT32 slotIndex)
             //
             // Decode a register
             //
-            
+
             if(m_NumDecodedSlots == 0)
             {
                 // Decode the first register
@@ -1322,7 +1329,7 @@ const GcSlotDesc* GcSlotDecoder::GetSlotDesc(UINT32 slotIndex)
             else
             {
                 m_pLastSlot->Slot.Stack.Base = (GcStackSlotBase) m_SlotReader.Read(2);
-                
+
                 if(m_pLastSlot->Flags)
                 {
                     INT32 normSpOffset = (INT32) m_SlotReader.DecodeVarLengthSigned(STACK_SLOT_ENCBASE);
@@ -1337,7 +1344,7 @@ const GcSlotDesc* GcSlotDecoder::GetSlotDesc(UINT32 slotIndex)
                 }
             }
         }
-        
+
         m_NumDecodedSlots++;
     }
 
@@ -1443,7 +1450,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(FEATURE_PAL) && !defined(SOS_TARGET_AMD64) 
+#if defined(FEATURE_PAL) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1452,13 +1459,13 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     if (pObjRef == NULL)
     {
         // Report a pinned object to GC only in the promotion phase when the
-        // GC is scanning roots. 
+        // GC is scanning roots.
         GCCONTEXT* pGCCtx = (GCCONTEXT*)(hCallBack);
         if (!pGCCtx->sc->promotion)
         {
             return;
         }
-        
+
         pObjRef = GetCapturedRegister(regNum, pRD);
 
         gcFlags |= GC_CALL_PINNED;
@@ -1512,7 +1519,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     }
 
     ppReg = &pRD->pCurrentContextPointers->R4;
-	
+
     return (OBJECTREF*)*(ppReg + regNum-4);
 
 }
@@ -1624,7 +1631,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     }
 
     ppReg = &pRD->pCurrentContextPointers->X19;
-	
+
     return (OBJECTREF*)*(ppReg + regNum-19);
 }
 
@@ -1632,7 +1639,7 @@ bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18);
-    
+
     return regNum <= 17 || regNum >= 29; // R12 and R14/LR are both scratch registers
 }
 

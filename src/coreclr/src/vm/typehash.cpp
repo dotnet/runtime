@@ -103,9 +103,9 @@ void EETypeHashTable::Iterator::Init()
 
 EETypeHashTable::Iterator::Iterator()
 {
-    WRAPPER_NO_CONTRACT; 
+    WRAPPER_NO_CONTRACT;
     m_pTable = NULL;
-    Init(); 
+    Init();
 }
 
 EETypeHashTable::Iterator::Iterator(EETypeHashTable * pTable)
@@ -162,13 +162,13 @@ static DWORD HashPossiblyInstantiatedType(DWORD level, mdTypeDef token, Instanti
     CONTRACTL_END
 
     INT_PTR dwHash = 5381;
-    
+
     dwHash = ((dwHash << 5) + dwHash) ^ token;
     if (!inst.IsEmpty())
     {
         dwHash = ((dwHash << 5) + dwHash) ^ inst.GetNumArgs();
 
-        // Hash two levels of the hiearchy. A simple nesting of generics instantiations is 
+        // Hash two levels of the hiearchy. A simple nesting of generics instantiations is
         // pretty common in generic collections, e.g.: ICollection<KeyValuePair<TKey, TValue>>
         if (level < 2)
         {
@@ -189,7 +189,7 @@ static DWORD HashFnPtrType(DWORD level, BYTE callConv, DWORD numArgs, TypeHandle
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     INT_PTR dwHash = 5381;
-    
+
     dwHash = ((dwHash << 5) + dwHash) ^ ELEMENT_TYPE_FNPTR;
     dwHash = ((dwHash << 5) + dwHash) ^ callConv;
     dwHash = ((dwHash << 5) + dwHash) ^ numArgs;
@@ -209,7 +209,7 @@ static DWORD HashParamType(DWORD level, CorElementType kind, TypeHandle typePara
 {
     WRAPPER_NO_CONTRACT;
     INT_PTR dwHash = 5381;
-    
+
     dwHash = ((dwHash << 5) + dwHash) ^ kind;
     dwHash = ((dwHash << 5) + dwHash) ^ HashTypeHandle(level, typeParam);
 
@@ -231,7 +231,7 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
     CONTRACTL_END;
 
     DWORD retVal = 0;
-    
+
     if (t.HasTypeParam())
     {
         retVal =  HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
@@ -251,7 +251,7 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
     }
     else
         retVal = HashPossiblyInstantiatedType(level, t.GetCl(), Instantiation());
-    
+
     return retVal;
 }
 
@@ -282,13 +282,13 @@ static DWORD HashTypeKey(TypeKey* pKey)
     }
 }
 
-// Look up a value in the hash table 
+// Look up a value in the hash table
 //
 // The logic is subtle: type handles in the hash table may not be
 // restored, but we need to compare components of the types (rank and
 // element type for arrays, generic type and instantiation for
 // instantiated types) against pKey
-// 
+//
 // We avoid restoring types during search by cracking the signature
 // encoding used by the zapper for out-of-module types e.g. in the
 // instantiation of an instantiated type.
@@ -326,7 +326,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             pSearch = BaseFindNextEntryByHash(&sContext);
         }
     }
-    else if (kind == ELEMENT_TYPE_FNPTR) 
+    else if (kind == ELEMENT_TYPE_FNPTR)
     {
         BYTE callConv = pKey->GetCallConv();
         DWORD numArgs = pKey->GetNumArgs();
@@ -362,7 +362,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                 // accessed when unrestored.  Also they are accessed in that
                 // manner at startup when we're loading the global types
                 // (i.e. System.Object).
-                
+
                 if (!pSearch->GetTypeHandle().IsTypeDesc())
                 {
                     // Not a match
@@ -392,10 +392,10 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                 }
                 else
                 {
-                    ArrayTypeDesc *pATD = pSearch->GetTypeHandle().AsArray();   
+                    ArrayTypeDesc *pATD = pSearch->GetTypeHandle().AsArray();
 #ifdef FEATURE_PREJIT
                     // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-                    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare); 
+                    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
                     TADDR fixup = pATD->GetTemplateMethodTableMaybeTagged();
                     if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
@@ -423,7 +423,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                         ULONG data;
                         if (FAILED(sp.GetData(&data)))
                             break; // return NULL;
-                        
+
                         if (data != pKey->GetRank())
                             continue;
                     }
@@ -461,7 +461,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
 
     if (t.IsTypeDesc())
         return FALSE;
-    
+
     // Even the EEClass pointer might be encoded
     MethodTable * pMT = t.AsMethodTable();
 
@@ -470,11 +470,11 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
 
 #ifdef FEATURE_PREJIT
     // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare); 
+    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
     TADDR fixup = pMT->GetCanonicalMethodTableFixup();
-        
-    // The EEClass pointer is actually an encoding. 
+
+    // The EEClass pointer is actually an encoding.
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
         Module *pDefiningModule;
@@ -498,7 +498,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     }
 
     // The EEClass pointer is a real pointer
-    else 
+    else
 #endif //FEATURE_PREJIT
     {
         // First check that the typedef tokens match
@@ -510,7 +510,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
         // is not loaded.
         Module *pGenericModuleIfLoaded = pMT->GetModuleIfLoaded();
 
-        // Now check that the modules match 
+        // Now check that the modules match
         if (!pGenericModuleIfLoaded ||
             dac_cast<TADDR>(pGenericModuleIfLoaded) !=
             dac_cast<TADDR>(pModule))
@@ -524,7 +524,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
 #ifdef FEATURE_PREJIT
-        // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation 
+        // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation
         // asserts on encoded fixups.
         DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
         TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
@@ -537,7 +537,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
             return FALSE;
         }
     }
-    
+
     return TRUE;
 }
 
@@ -557,11 +557,11 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
 
     if (!t.IsFnPtrType())
         return FALSE;
-    
+
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_PREJIT
     // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare); 
+    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 #endif
 
     FnPtrTypeDesc* pTD = t.AsFnPtrType();
@@ -583,7 +583,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
             return FALSE;
         }
     }
-    
+
     return TRUE;
 
 #else
@@ -684,22 +684,22 @@ void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *pro
     // The base class will call us back for every entry to see if it's considered hot. To determine this we
     // have to walk through the profiling data. It's very inefficient for us to do this every time. Instead
     // we'll walk the data once just now and mark each hot entry as we find it.
-    CORBBTPROF_TOKEN_INFO * pTypeProfilingData = profileData->GetTokenFlagsData(TypeProfilingData);
-    DWORD                   cTypeProfilingData = profileData->GetTokenFlagsCount(TypeProfilingData);
+    CORBBTPROF_TOKEN_INFO * pTypeProfilingData = profileData ? profileData->GetTokenFlagsData(TypeProfilingData) : NULL;
+    DWORD                   cTypeProfilingData = profileData ? profileData->GetTokenFlagsCount(TypeProfilingData) : NULL;
 
     for (unsigned int i = 0; i < cTypeProfilingData; i++)
     {
         CORBBTPROF_TOKEN_INFO *entry = &pTypeProfilingData[i];
         mdToken token = entry->token;
         DWORD   flags = entry->flags;
-                
+
         if (TypeFromToken(token) != ibcTypeSpec)
             continue;
 
         if ((flags & (1 << ReadTypeHashTable)) == 0)
             continue;
 
-        CORBBTPROF_BLOB_ENTRY *pBlobEntry = profileData->GetBlobStream();
+        CORBBTPROF_BLOB_ENTRY *pBlobEntry = profileData ? profileData->GetBlobStream() : NULL;
         if (pBlobEntry)
         {
             while (pBlobEntry->TypeIsValid())
@@ -707,9 +707,9 @@ void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *pro
                 if (TypeFromToken(pBlobEntry->token) == ibcTypeSpec)
                 {
                     _ASSERTE(pBlobEntry->type == ParamTypeSpec);
-                            
+
                     CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry = (CORBBTPROF_BLOB_PARAM_SIG_ENTRY *) pBlobEntry;
-                            
+
                     if (pBlobEntry->token == token)
                     {
                         if (flags & (1<<ReadTypeHashTable))
@@ -819,7 +819,7 @@ void
 EETypeHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
-    
+
     BaseEnumMemoryRegions(flags);
 }
 

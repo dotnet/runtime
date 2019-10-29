@@ -1124,8 +1124,6 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
             // Is memoryKind live on entry to the handler?
             if ((handler->bbMemoryLiveIn & memoryKindSet(memoryKind)) != 0)
             {
-                assert(handler->bbMemorySsaPhiFunc != nullptr);
-
                 // Add "ssaNum" to the phi args of memoryKind.
                 BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handler->bbMemorySsaPhiFunc[memoryKind];
 

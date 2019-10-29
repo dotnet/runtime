@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // File: stubhelpers.cpp
-// 
+//
 
 //
 
@@ -59,7 +59,10 @@ void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextO
 
 	// validate the object - there's no need to validate next object's
 	// header since we validate the next object explicitly below
-	pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
+	if (pObjUNSAFE)
+	{
+		pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
+	}
 
 	// and the next object as required
 	if (fValidateNextObj)
@@ -106,7 +109,7 @@ void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorStrin
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;           
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -139,7 +142,7 @@ void StubHelpers::ProcessByrefValidationList()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;           
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -236,7 +239,7 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
     // The code in this helper is the "fast path" that used to be generated directly
     // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
     SOleTlsData * pOleTlsData = GetOrCreateOleTlsData();
-    
+
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
     if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
     {
@@ -270,7 +273,7 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoIntercept
     // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
     SOleTlsData *pOleTlsData = GetOrCreateOleTlsData();
     MethodTable *pItfMT = pComInfo->m_pInterfaceMT;
-    
+
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
     if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
     {
@@ -291,7 +294,7 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoIntercept
     if (pAuxData != NULL)
     {
         LPVOID pCtxCookie = (pRCW->IsFreeThreaded() ? NULL : pOleTlsData->pCurrentCtx);
-        
+
         IUnknown *pUnk = pAuxData->FindInterfacePointer(pItfMT, pCtxCookie);
         if (pUnk != NULL)
         {
@@ -340,7 +343,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
     GetCOMIPFromRCW_ClearFP();
 
     pIntf = pRetUnk.Extract();
-    
+
     // No exception will be thrown here (including thread abort as it is delayed in IL stubs)
     HELPER_METHOD_FRAME_END();
 
@@ -485,7 +488,7 @@ NOINLINE static FC_BOOL_RET ShouldCallWinRTInterfaceHelper(RCW *pRCW, MethodTabl
     FC_INNER_PROLOG(StubHelpers::ShouldCallWinRTInterface);
 
     bool result = false;
-    
+
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
 
     // call the GC-triggering version
@@ -528,7 +531,7 @@ NOINLINE static DelegateObject *GetTargetForAmbiguousVariantCallHelper(RCW *pRCW
     FC_INNER_PROLOG(StubHelpers::GetTargetForAmbiguousVariantCall);
 
     DelegateObject *pRetVal = NULL;
-    
+
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
 
     // Note that if the call succeeds, it will set the right OBJECTHANDLE/flags on the RCW so we won't have to do this
@@ -561,7 +564,7 @@ FCIMPL3(DelegateObject*, StubHelpers::GetTargetForAmbiguousVariantCall, Object *
     RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW == NULL)
     {
-        // ignore this - the call we'll attempt to make later will throw the right exception 
+        // ignore this - the call we'll attempt to make later will throw the right exception
         *pfUseString = false;
         return NULL;
     }
@@ -611,8 +614,8 @@ FCIMPL1(Object*, StubHelpers::ObjectMarshaler__ConvertToManaged, VARIANT* pSrc)
 
     OBJECTREF retVal = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(retVal);
-    // The IL stub is going to call ObjectMarshaler__ClearNative() afterwards.  
-    // If it doesn't it's a bug in ILObjectMarshaler.    
+    // The IL stub is going to call ObjectMarshaler__ClearNative() afterwards.
+    // If it doesn't it's a bug in ILObjectMarshaler.
     OleVariant::MarshalObjectForOleVariant(pSrc, &retVal);
     HELPER_METHOD_FRAME_END();
 
@@ -666,10 +669,10 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
     {
         return NULL;
     }
-    
+
     OBJECTREF pObj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(pObj);
-    
+
     // We're going to be making some COM calls, better initialize COM.
     EnsureComStarted();
 
@@ -677,7 +680,7 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
 
     HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(pObj);  
+    return OBJECTREFToObject(pObj);
 }
 FCIMPLEND
 
@@ -764,9 +767,9 @@ FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxi
     //
     // Get a wrapper for pNative
     // Note that we need to skip WinRT unboxing at this point because
-    // 1. We never know whether GetObjectRefFromComIP went through unboxing path. 
+    // 1. We never know whether GetObjectRefFromComIP went through unboxing path.
     // For example, user could just pass a IUnknown * to T and we'll happily convert that to T
-    // 2. If for some reason we end up getting something that does not implement IReference<T>, 
+    // 2. If for some reason we end up getting something that does not implement IReference<T>,
     // we'll get a nice message later when we do the cast in CLRIReferenceImpl.UnboxHelper
     //
     GetObjectRefFromComIP(
@@ -774,20 +777,20 @@ FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxi
         pNative,                                        // pUnk
         g_pBaseCOMObject,                               // Use __ComObject
         NULL,                                           // pItfMT
-        ObjFromComIP::CLASS_IS_HINT |                   // No cast check - we'll do cast later 
+        ObjFromComIP::CLASS_IS_HINT |                   // No cast check - we'll do cast later
         ObjFromComIP::UNIQUE_OBJECT |                   // Do not cache the object - To ensure that the unboxing code is called on this object always
                                                         // and the object is not retrieved from the cache as an __ComObject.
                                                         // Don't call GetRuntimeClassName - I just want a RCW of __ComObject
         ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING    // Skip unboxing
         );
-        
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
 }
 FCIMPLEND
 
-FCIMPL2(StringObject *, StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName, 
+FCIMPL2(StringObject *, StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName,
     ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL *pbIsWinRTPrimitive)
 {
     CONTRACTL
@@ -802,7 +805,7 @@ FCIMPL2(StringObject *, StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeN
     STRINGREF refString= NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
 
-    SString strWinRTTypeName;    
+    SString strWinRTTypeName;
     bool bIsPrimitive;
     if (WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
         refClass->GetType(),    // thManagedType
@@ -842,12 +845,12 @@ FCIMPL2(ReflectClassBaseObject *, StubHelpers::WinRTTypeNameConverter__GetTypeFr
     bool isPrimitive;
     TypeHandle th = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(refString->GetBuffer(), /* pLoadBinder */ nullptr, &isPrimitive);
     *pbIsPrimitive = isPrimitive;
-    
+
     refClass = th.GetManagedClassObject();
-    
+
     HELPER_METHOD_FRAME_END();
 
-    return (ReflectClassBaseObject *)OBJECTREFToObject(refClass);    
+    return (ReflectClassBaseObject *)OBJECTREFToObject(refClass);
 }
 FCIMPLEND
 
@@ -856,7 +859,7 @@ FCIMPL1(MethodDesc*, StubHelpers::GetDelegateInvokeMethod, DelegateObject *pThis
     FCALL_CONTRACT;
 
     MethodDesc *pMD = NULL;
-    
+
     OBJECTREF pThis = ObjectToOBJECTREF(pThisUNSAFE);
     HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
 
@@ -897,8 +900,8 @@ FCIMPL2(IInspectable *, StubHelpers::GetWinRTFactoryReturnValue, Object *pThisUN
 
     MethodTable *pDefaultItf = pClassMT->GetDefaultWinRTInterface();
     const IID &riid = (pDefaultItf == NULL ? IID_IInspectable : IID_NULL);
-    
-    pInsp = static_cast<IInspectable *>(ComCallWrapper::GetComIPFromCCW(pWrap, riid, pDefaultItf, 
+
+    pInsp = static_cast<IInspectable *>(ComCallWrapper::GetComIPFromCCW(pWrap, riid, pDefaultItf,
         GetComIPFromCCW::CheckVisibility));
 
     HELPER_METHOD_FRAME_END();
@@ -1089,7 +1092,7 @@ public :
 
         _ASSERTE(pThread != NULL);
         _ASSERTE(pCtxCookie != NULL);
-        
+
         m_bIsFreeThreaded = false;
         m_pThread = pThread;
         m_pCtxCookie = pCtxCookie;
@@ -1102,7 +1105,7 @@ public :
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(pRCW != NULL);
-        
+
         if (pRCW->IsFreeThreaded())
             m_bIsFreeThreaded = true;
 
@@ -1116,11 +1119,11 @@ public :
     virtual bool ShouldUseThisRCW(RCW *pRCW)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         _ASSERTE(pRCW->SupportsIInspectable());
 
         // Is this a free threaded RCW or a context-bound RCW created in the same context
-        if (pRCW->IsFreeThreaded() || 
+        if (pRCW->IsFreeThreaded() ||
             pRCW->GetWrapperCtxCookie() == m_pCtxCookie)
         {
             return true;
@@ -1129,11 +1132,11 @@ public :
         {
             //
             // Now we get back a WinRT factory RCW created in a different context. This means the
-            // factory is a singleton, and the returned IActivationFactory could be either one of 
+            // factory is a singleton, and the returned IActivationFactory could be either one of
             // the following:
             // 1) A raw pointer, and it acts like a free threaded object
             // 2) A proxy that is used across different contexts. It might maintain a list of contexts
-            // that it is marshaled to, and will fail to be called if it is not marshaled to this 
+            // that it is marshaled to, and will fail to be called if it is not marshaled to this
             // context yet.
             //
             // In this case, it is unsafe to use this RCW in this context and we should proceed
@@ -1143,13 +1146,13 @@ public :
             return false;
         }
     }
-    
+
     virtual void OnRCWCacheHit(RCW *pRCW)
     {
-        LIMITED_METHOD_CONTRACT;    
+        LIMITED_METHOD_CONTRACT;
 
         if (pRCW->IsFreeThreaded())
-            m_bIsFreeThreaded = true;        
+            m_bIsFreeThreaded = true;
 
         if (pRCW->IsDCOMProxy())
             m_bIsDCOMProxy = true;
@@ -1161,7 +1164,7 @@ public :
 
         return m_bIsFreeThreaded;
     }
-    
+
     bool IsDCOMProxy()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1186,14 +1189,14 @@ FCIMPL1(Object*, StubHelpers::GetWinRTFactoryObject, MethodDesc *pCMD)
     OBJECTREF refFactory = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refFactory);
-    
+
     MethodTable *pMTOfTypeToCreate = pCMD->GetMethodTable();
     AppDomain   *pDomain = GetAppDomain();
 
     //
     // Look up cached WinRT factory according to type to create + current context cookie
-    // For each type in AppDomain, we cache only the last WinRT factory object 
-    // We don't cache factory per context in order to avoid explosion of objects if there are 
+    // For each type in AppDomain, we cache only the last WinRT factory object
+    // We don't cache factory per context in order to avoid explosion of objects if there are
     // multiple STA apartments
     //
     // Note that if cached WinRT factory is FTM, we'll get it back regardless of the supplied cookie
@@ -1201,11 +1204,11 @@ FCIMPL1(Object*, StubHelpers::GetWinRTFactoryObject, MethodDesc *pCMD)
     LPVOID lpCtxCookie = GetCurrentCtxCookie();
     refFactory = pDomain->LookupWinRTFactoryObject(pMTOfTypeToCreate, lpCtxCookie);
     if (refFactory == NULL)
-    {   
+    {
         //
         // Didn't find a cached factory that matches the context
         // Time to create a new factory and wrap it in a RCW
-        // 
+        //
 
         //
         // Creates a callback to checks for singleton WinRT factory during RCW creation
@@ -1239,7 +1242,7 @@ FCIMPL1(Object*, StubHelpers::GetWinRTFactoryObject, MethodDesc *pCMD)
         //
         if (callback.IsFreeThreaded())
             lpCtxCookie = NULL;
-        
+
         // Cache the result in the AD-wide cache, unless this is a proxy to a DCOM object.
         // Out of process WinRT servers can have lifetimes independent of the application,
         // and the cache may wind up with stale pointers if we save proxies to OOP factories.
@@ -1263,7 +1266,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
 {
     FCALL_CONTRACT;
 
-    // We can get here with an ngen image generated with "/prof", 
+    // We can get here with an ngen image generated with "/prof",
     // even if the profiler doesn't want to track transitions.
     if (!CORProfilerTrackTransitions())
     {
@@ -1274,7 +1277,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
 
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler, 
+    // We must transition to preemptive GC mode before calling out to the profiler,
     // and the transition requires us to set up a HMF.
     DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
     HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
@@ -1292,7 +1295,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     else
     if (pSecretParam == 0)
     {
-        // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.  
+        // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
         // We have an unmanaged target address but no MD.  For the unmanaged delegate case, we can
         // still retrieve the MD by looking at the "this" object.
 
@@ -1343,7 +1346,7 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
 {
     FCALL_CONTRACT;
 
-    // We can get here with an ngen image generated with "/prof", 
+    // We can get here with an ngen image generated with "/prof",
     // even if the profiler doesn't want to track transitions.
     if (!CORProfilerTrackTransitions())
     {
@@ -1352,7 +1355,7 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
 
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler, 
+    // We must transition to preemptive GC mode before calling out to the profiler,
     // and the transition requires us to set up a HMF.
     HELPER_METHOD_FRAME_BEGIN_0();
     {
@@ -1364,7 +1367,7 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
             pThread = GET_THREAD();
             fReverseInterop = true;
         }
-        
+
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
         if (fReverseInterop)
@@ -1388,13 +1391,13 @@ FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
     FCALL_CONTRACT;
 
     OBJECTREF oThrowable = NULL;
-    
+
     HELPER_METHOD_FRAME_BEGIN_RET_1(oThrowable);
     {
         // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
         GetExceptionForHR(hr, &oThrowable);
     }
-    HELPER_METHOD_FRAME_END();    
+    HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oThrowable);
 }
@@ -1409,7 +1412,7 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
 
     // get 'this'
     OBJECTREF oref = ObjectToOBJECTREF(unsafe_pThis);
-    
+
     HELPER_METHOD_FRAME_BEGIN_RET_2(oref, oThrowable);
     {
         IErrorInfo *pErrInfo = NULL;
@@ -1442,7 +1445,7 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
                 IID ItfIID;
                 pItfMT->GetGuid(&ItfIID, TRUE);
                 pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID, !fForWinRT);
-            
+
                 DWORD cbRef = SafeRelease(pUnk);
                 LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
             }
@@ -1450,7 +1453,7 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
 
         GetExceptionForHR(hr, pErrInfo, !fForWinRT, &oThrowable, pResErrorInfo, bHasNonCLRLanguageErrorObject);
     }
-    HELPER_METHOD_FRAME_END();    
+    HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oThrowable);
 }
@@ -1549,7 +1552,7 @@ FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegister
 
     MethodTable* pMT = typeHnd.GetMethodTable();
     objRet = pMT->Allocate();
-    
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(objRet);
@@ -1719,7 +1722,7 @@ NOINLINE static void ArrayTypeCheckSlow(Object* element, PtrArray* arr)
 
     if (!ObjIsInstanceOf(element, arr->GetArrayElementTypeHandle()))
         COMPlusThrow(kArrayTypeMismatchException);
-    
+
     HELPER_METHOD_FRAME_END();
 
     FC_INNER_EPILOG();
@@ -1731,7 +1734,7 @@ FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
 
     if (ObjIsInstanceOfCached(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
         return;
-    
+
     FC_INNER_RETURN_VOID(ArrayTypeCheckSlow(element, arr));
 }
 FCIMPLEND

@@ -44,7 +44,7 @@ namespace
 
 //
 // RangeLists are constructed so they can be searched from multiple
-// threads without locking.  They do require locking in order to 
+// threads without locking.  They do require locking in order to
 // be safely modified, though.
 //
 
@@ -53,7 +53,7 @@ RangeList::RangeList()
     WRAPPER_NO_CONTRACT;
 
     InitBlock(&m_starterBlock);
-         
+
     m_firstEmptyBlock = &m_starterBlock;
     m_firstEmptyRange = 0;
 }
@@ -61,7 +61,7 @@ RangeList::RangeList()
 RangeList::~RangeList()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     RangeListBlock *b = m_starterBlock.next;
 
     while (b != NULL)
@@ -77,7 +77,7 @@ void RangeList::InitBlock(RangeListBlock *b)
     LIMITED_METHOD_CONTRACT;
 
     Range *r = b->ranges;
-    Range *rEnd = r + RANGE_COUNT; 
+    Range *rEnd = r + RANGE_COUNT;
     while (r < rEnd)
         r++->id = NULL;
 
@@ -110,7 +110,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
                 r->start = (TADDR)start;
                 r->end = (TADDR)end;
                 r->id = (TADDR)id;
-                
+
                 r++;
 
                 m_firstEmptyBlock = b;
@@ -122,7 +122,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
         }
 
         //
-        // If there are no more blocks, allocate a 
+        // If there are no more blocks, allocate a
         // new one.
         //
 
@@ -167,7 +167,7 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
     RangeListBlock *b = &m_starterBlock;
     Range *r = b->ranges;
     Range *rEnd = r + RANGE_COUNT;
-    
+
     //
     // Find the first free element, & mark it.
     //
@@ -212,12 +212,12 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
             m_firstEmptyRange = 0;
             m_firstEmptyBlock = &m_starterBlock;
 
-            return; 
+            return;
         }
 
-        // 
+        //
         // Next block.
-        // 
+        //
 
         b = b->next;
         r = b->ranges;
@@ -237,7 +237,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         GC_NOTRIGGER;
     }
     CONTRACTL_END
-        
+
     SUPPORTS_DAC;
 
     RangeListBlock* b = &m_starterBlock;
@@ -253,7 +253,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         while (r < rEnd)
         {
             if (r->id != NULL &&
-                address >= r->start 
+                address >= r->start
                 && address < r->end)
             {
                 if (pID != NULL)
@@ -264,7 +264,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
             }
             r++;
         }
-        
+
         //
         // If there are no more blocks, we're done.
         //
@@ -272,9 +272,9 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         if (b->next == NULL)
             return FALSE;
 
-        // 
+        //
         // Next block.
-        // 
+        //
 
         b = b->next;
         r = b->ranges;
@@ -292,7 +292,7 @@ RangeList::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // This class is almost always contained in something
     // else so there's no enumeration of 'this'.
-    
+
     RangeListBlock* block = &m_starterBlock;
     block->EnumMemoryRegions(flags);
 
@@ -300,12 +300,12 @@ RangeList::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         block->next.EnumMem();
         block = block->next;
-        
+
         block->EnumMemoryRegions(flags);
     }
 }
 
-void 
+void
 RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
@@ -315,7 +315,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     TSIZE_T         size;
     int             i;
 
-    // The code below iterates each range stored in the RangeListBlock and 
+    // The code below iterates each range stored in the RangeListBlock and
     // dumps the memory region represented by each range.
     // It is too much memory for a mini-dump, so we just bail out for mini-dumps.
     if (flags == CLRDATA_ENUM_MEM_MINI || flags == CLRDATA_ENUM_MEM_TRIAGE)
@@ -329,8 +329,8 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     for (i=0; i<RANGE_COUNT; i++)
     {
         range = &(this->ranges[i]);
-        if (range->id == NULL || range->start == NULL || range->end == NULL || 
-            // just looking at the lower 4bytes is good enough on WIN64 
+        if (range->id == NULL || range->start == NULL || range->end == NULL ||
+            // just looking at the lower 4bytes is good enough on WIN64
             range->start == BADFOOD || range->end == BADFOOD)
         {
             break;
@@ -340,12 +340,12 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         _ASSERTE( size < UINT32_MAX );    // ranges should be less than 4gig!
 
         // We can't be sure this entire range is mapped.  For example, the code:StubLinkStubManager
-        // keeps track of all ranges in the code:BaseDomain::m_pStubHeap LoaderHeap, and 
+        // keeps track of all ranges in the code:BaseDomain::m_pStubHeap LoaderHeap, and
         // code:LoaderHeap::UnlockedReservePages adds a range for the entire reserved region, instead
         // of updating the RangeList when pages are committed.  But in that case, the committed region of
         // memory will be enumerated by the LoaderHeap anyway, so it's OK if this fails
         DacEnumMemoryRegion(range->start, size, false);
-    }    
+    }
 }
 
 #endif // #ifdef DACCESS_COMPILE
@@ -652,7 +652,7 @@ class LoaderHeapSniffer
 
             //If none of the above popped up an assert, pop up a generic one.
             _ASSERTE(!("Unexpected AV inside LoaderHeap. The usual reason is that someone overwrote the end of a block or wrote into a freed block.\n"));
-                       
+
         }
 
 };
@@ -665,8 +665,8 @@ class LoaderHeapSniffer
 #define LOADER_HEAP_BEGIN_TRAP_FAULT BOOL __faulted = FALSE; EX_TRY {
 #define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH(SwallowAllExceptions) if (__faulted) LoaderHeapSniffer::WeGotAFaultNowWhat(pHeap);
 #else
-#define LOADER_HEAP_BEGIN_TRAP_FAULT 
-#define LOADER_HEAP_END_TRAP_FAULT   
+#define LOADER_HEAP_BEGIN_TRAP_FAULT
+#define LOADER_HEAP_END_TRAP_FAULT
 #endif
 
 
@@ -792,7 +792,7 @@ struct LoaderHeapFreeBlock
 
 
     private:
-        // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened. 
+        // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
         static BOOL MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap)
         {
             STATIC_CONTRACT_NOTHROW;
@@ -866,7 +866,7 @@ inline size_t AllocMem_TotalSize(size_t dwRequestedSize, UnlockedLoaderHeap *pHe
         if (dwSize < sizeof(LoaderHeapFreeBlock))
         {
             dwSize = sizeof(LoaderHeapFreeBlock);
-        } 
+        }
     }
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
 
@@ -899,7 +899,7 @@ LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
 UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        DWORD dwCommitBlockSize,
                                        const BYTE* dwReservedRegionAddress,
-                                       SIZE_T dwReservedRegionSize, 
+                                       SIZE_T dwReservedRegionSize,
                                        size_t *pPrivatePerfCounter_LoaderBytes,
                                        RangeList *pRangeList,
                                        BOOL fMakeExecutable)
@@ -911,7 +911,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
     m_pCurBlock                  = NULL;
     m_pFirstBlock                = NULL;
 
@@ -979,9 +979,9 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
         pVirtualAddress = pSearch->pVirtualAddress;
         fReleaseMemory = pSearch->m_fReleaseMemory;
         pNext = pSearch->pNext;
-                
+
         if (fReleaseMemory)
-        {    
+        {
             BOOL fSuccess;
             fSuccess = ClrVirtualFree(pVirtualAddress, 0, MEM_RELEASE);
             _ASSERTE(fSuccess);
@@ -1069,7 +1069,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
-    
+
     size_t dwSizeToReserve;
 
     // Add sizeof(LoaderHeapBlock)
@@ -1107,7 +1107,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
         dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-        _ASSERTE(dwSizeToCommit <= dwSizeToReserve);    
+        _ASSERTE(dwSizeToCommit <= dwSizeToReserve);
 
         //
         // Reserve pages
@@ -1120,9 +1120,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         }
     }
 
-    // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap). 
+    // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap).
     // If for some reason this is not true then we just catch this via an assertion and the dev who changed code
-    // would have to add logic here to handle the case when committed mem is more than the reserved mem. One option 
+    // would have to add logic here to handle the case when committed mem is more than the reserved mem. One option
     // could be to leak the users memory and reserve+commit a new block, Another option would be to fail the alloc mem
     // and notify the user to provide more reserved mem.
     _ASSERTE((dwSizeToCommit <= dwSizeToReserve) && "Loaderheap tried to commit more memory than reserved by user");
@@ -1153,8 +1153,8 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // Do this AFTER the commit - otherwise we'll have bogus ranges included.
     if (m_pRangeList != NULL)
     {
-        if (!m_pRangeList->AddRange((const BYTE *) pData, 
-                                    ((const BYTE *) pData) + dwSizeToReserve, 
+        if (!m_pRangeList->AddRange((const BYTE *) pData,
+                                    ((const BYTE *) pData) + dwSizeToReserve,
                                     (void *) this))
         {
 
@@ -1183,7 +1183,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
            pCurBlock->pNext != NULL)
         pCurBlock = pCurBlock->pNext;
 
-    if (pCurBlock != NULL)        
+    if (pCurBlock != NULL)
         m_pCurBlock->pNext = pNewBlock;
     else
         m_pFirstBlock = pNewBlock;
@@ -1197,7 +1197,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 }
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
-// has run out, reserve another set of pages. 
+// has run out, reserve another set of pages.
 // Returns: FALSE if we can't get any more memory
 // TRUE: We can/did get some more memory - check to see if it's sufficient for
 //       the caller's needs (see UnlockedAllocMem for example of use)
@@ -1210,8 +1210,8 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
-    
-    // If we have memory we can use, what are you doing here!  
+
+    // If we have memory we can use, what are you doing here!
     _ASSERTE(dwMinSize > (SIZE_T)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr));
 
     // Does this fit in the reserved region?
@@ -1267,7 +1267,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
 
     if (pResult == NULL)
         ThrowOutOfMemory();
-    
+
     RETURN pResult;
 }
 
@@ -1297,7 +1297,7 @@ static DWORD ShouldInjectFault()
 #else
 
 #define SHOULD_INJECT_FAULT(return_statement) do { (void)((void *)0); } while (FALSE)
-        
+
 #endif
 
 void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
@@ -1314,7 +1314,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
-    
+
     SHOULD_INJECT_FAULT(RETURN NULL);
 
     INDEBUG(size_t dwRequestedSize = dwSize;)
@@ -1346,7 +1346,7 @@ again:
         if (pData)
         {
 #ifdef _DEBUG
-    
+
             BYTE *pAllocatedBytes = (BYTE *)pData;
 #if LOADER_HEAP_DEBUG_BOUNDARY > 0
             // Don't fill the memory we allocated - it is assumed to be zeroed - fill the memory after it
@@ -1380,7 +1380,7 @@ again:
                                                dwSize
                                                );
             }
-    
+
 #endif
 
             EtwAllocRequest(this, pData, dwSize);
@@ -1411,7 +1411,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
     // Because the primary use of this function is backout, we'll be nice and
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
@@ -1422,7 +1422,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 #ifdef _DEBUG
     {
         DEBUG_ONLY_REGION();
-        
+
         LoaderHeapValidationTag *pTag = AllocMem_GetTag(pMem, dwRequestedSize);
 
         if (pTag->m_dwRequestedSize != dwRequestedSize || pTag->m_allocationType != kAllocMem)
@@ -1477,7 +1477,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                         "Possible causes:\n"
                         "\n"
                         "   - This pointer wasn't allocated from this loaderheap.\n"
-                        "   - This pointer was allocated by AllocAlignedMem and you didn't adjust for the \"extra.\"\n" 
+                        "   - This pointer was allocated by AllocAlignedMem and you didn't adjust for the \"extra.\"\n"
                         "   - This pointer has already been freed.\n"
                         "   - You passed in the wrong size. You must pass the exact same size you passed to AllocMem().\n"
                         "   - Someone wrote past the end of this block making it appear as if one of the above were true.\n"
@@ -1485,7 +1485,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                 message.Append(buf);
 
             }
-            else 
+            else
             {
                 message.AppendASCII("This memory block is completely unrecognizable.\n");
             }
@@ -1511,7 +1511,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         DEBUG_ONLY_REGION();
 
         LoaderHeapValidationTag *pTag = m_fExplicitControl ? NULL : AllocMem_GetTag(pMem, dwRequestedSize);
-        
+
 
         LoaderHeapSniffer::RecordEvent(this,
                                        kFreedMem,
@@ -1558,9 +1558,9 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 //   UnlockedBackoutMem( ((BYTE*)pMem) - dExtra, dwRequestedSize + dwExtra );
 //
 // If you use the AllocMemHolder or AllocMemTracker, all this is taken care of
-// behind the scenes. 
+// behind the scenes.
 //
-// 
+//
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize,
                                                           size_t  alignment,
                                                           size_t *pdwExtra
@@ -1638,7 +1638,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     size_t dwSize = AllocMem_TotalSize( cbAllocSize.Value(), this);
     m_pAllocPtr += dwSize;
 
-    
+
     ((BYTE*&)pResult) += extra;
 
 #ifdef _DEBUG
@@ -1716,7 +1716,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
     }
 
     return pResult;
-    
+
 
 }
 
@@ -1784,8 +1784,8 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     PTR_LoaderHeapBlock block = m_pFirstBlock;
     while (block.IsValid())
     {
-        // All we know is the virtual size of this block.  We don't have any way to tell how 
-        // much of this space was actually comitted, so don't expect that this will always 
+        // All we know is the virtual size of this block.  We don't have any way to tell how
+        // much of this space was actually comitted, so don't expect that this will always
         // succeed.
         // @dbgtodo : Ideally we'd reduce the risk of corruption causing problems here.
         //   We could extend LoaderHeapBlock to track a commit size,
@@ -1793,7 +1793,7 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
         TSIZE_T size = block->dwVirtualSize;
         DacEnumMemoryRegion(addr, size, false);
-        
+
         block = block->pNext;
     }
 }
@@ -1812,7 +1812,7 @@ void UnlockedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback, PT
         {
             break;
         }
-        
+
         block = block->pNext;
     }
 }
@@ -1961,7 +1961,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     LoaderHeapFreeBlock *pFree     = pHeap->m_pFirstFreeBlock;
     LoaderHeapFreeBlock *pPrev     = NULL;
 
-   
+
     void                *pBadAddr = NULL;
     LoaderHeapFreeBlock *pProbeThis = NULL;
     const char          *pExpected = NULL;
@@ -2003,7 +2003,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
         {
             break;
         }
-         
+
 
 
         pPrev = pFree;
@@ -2023,7 +2023,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
                        "    LoaderHeap:                 0x%p\n"
                        "    Suspect address at:         0x%p\n"
                        "    Start of suspect freeblock: 0x%p\n"
-                       "\n"    
+                       "\n"
                        , pBadAddr
                        , pExpected
                        , pHeap
@@ -2063,7 +2063,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
             LoaderHeapEvent *pPrevEvent = FindEvent(pHeap, ((BYTE*)pProbeThis) - 1);
 
             int count = 3;
-            while (count-- && 
+            while (count-- &&
                    pPrevEvent != NULL &&
                    ( ((UINT_PTR)pProbeThis) - ((UINT_PTR)(pPrevEvent->m_pMem)) + pPrevEvent->m_dwSize ) < 1024)
             {
@@ -2088,8 +2088,8 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 
     }
 
-    
-    
+
+
 }
 
 
@@ -2159,9 +2159,9 @@ AllocMemTracker::~AllocMemTracker()
                                                ,pNode->m_allocLineNum
 #endif
                                               );
-    
+
             }
-    
+
             pBlock = pBlock->m_pNext;
         }
     }
@@ -2187,8 +2187,6 @@ void *AllocMemTracker::Track(TaggedMemAllocPtr tmap)
     }
     CONTRACTL_END
 
-    _ASSERTE(this); 
-
     void *pv = Track_NoThrow(tmap);
     if (!pv)
     {
@@ -2205,8 +2203,6 @@ void *AllocMemTracker::Track_NoThrow(TaggedMemAllocPtr tmap)
         INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END
-
-    _ASSERTE(this); 
 
     // Calling Track() after calling SuppressRelease() is almost certainly a bug. You're supposed to call SuppressRelease() only after you're
     // sure no subsequent failure will force you to backout the memory.
@@ -2253,17 +2249,12 @@ void *AllocMemTracker::Track_NoThrow(TaggedMemAllocPtr tmap)
 
     }
     return (void *)tmap;
-    
-
-
 }
 
 
 void AllocMemTracker::SuppressRelease()
 {
     LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(this); 
 
     m_fReleased = TRUE;
 }

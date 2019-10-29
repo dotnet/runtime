@@ -33,7 +33,7 @@
 #include "../binder/inc/clrprivbindercoreclr.h"
 
 FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
-        StringObject* codeBaseUNSAFE, 
+        StringObject* codeBaseUNSAFE,
         AssemblyBaseObject* requestingAssemblyUNSAFE,
         StackCrawlMark* stackMark,
         CLR_BOOL fThrowOnFileNotFound,
@@ -84,7 +84,7 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
         }
-        
+
         if (pRefAssembly)
         {
             pParentAssembly = pRefAssembly->GetDomainAssembly();
@@ -93,15 +93,15 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     // Initialize spec
     AssemblySpec spec;
-    spec.InitializeSpec(pStackingAllocator, 
+    spec.InitializeSpec(pStackingAllocator,
                         &gc.assemblyName,
                         FALSE);
-    
+
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
     }
-    
+
     if (gc.codeBase != NULL)
         spec.SetCodeBase(pStackingAllocator, &gc.codeBase);
 
@@ -124,7 +124,7 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     }
 
     Assembly *pAssembly;
-    
+
     {
         GCX_PREEMP();
         pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
@@ -132,7 +132,7 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     if (pAssembly != NULL)
         gc.rv = (ASSEMBLYREF) pAssembly->GetExposedObject();
-    
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.rv);
@@ -149,11 +149,11 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-    
+
     Assembly *pLoadedAssembly = NULL;
-    
+
     ReleaseHolder<ICLRPrivAssembly> pAssembly;
-    
+
     // Get the correct PEImage to work with.
     BOOL fIsNativeImage = TRUE;
     PEImage *pImage = pNIImage;
@@ -164,7 +164,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
         fIsNativeImage = FALSE;
     }
     _ASSERTE(pImage != NULL);
-    
+
     BOOL fHadLoadFailure = FALSE;
 
     // Force the image to be loaded and mapped so that subsequent loads do not
@@ -177,18 +177,18 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     {
         pImage->LoadNoFile();
     }
-    
+
     DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
-    
+
     // Set the caller's assembly to be mscorlib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
     PEAssembly *pParentAssembly = pCallersAssembly->GetFile();
-    
+
     // Initialize the AssemblySpec
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), pCallersAssembly);
     spec.SetBindingContext(pBinderContext);
-    
+
     BinderTracing::AssemblyBindOperation bindOperation(&spec);
 
     HRESULT hr = S_OK;
@@ -213,7 +213,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
         {
             dwMessageID = IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT;
         }
-        
+
         StackSString name;
         spec.GetFileOrDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
@@ -221,7 +221,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
 
     BINDER_SPACE::Assembly* assem;
     assem = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pAssembly);
-    
+
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
@@ -235,22 +235,22 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    
+
     PTR_AppDomain pCurDomain = GetAppDomain();
 
     // Get the binder context in which the assembly will be loaded.
     ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
     _ASSERTE(pBinderContext != NULL);
-        
+
     // Form the PEImage for the ILAssembly. Incase of an exception, the holders will ensure
     // the release of the image.
     PEImageHolder pILImage, pNIImage;
-    
+
     if (pwzILPath != NULL)
     {
         pILImage = PEImage::OpenImage(pwzILPath);
-        
-        // Need to verify that this is a valid CLR assembly. 
+
+        // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
             THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
@@ -261,7 +261,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
             THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
         }
     }
-    
+
 #ifdef FEATURE_PREJIT
     // Form the PEImage for the NI assembly, if specified
     if (pwzNIPath != NULL)
@@ -284,45 +284,45 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         }
     }
 #endif // FEATURE_PREJIT
-    
+
     Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, pNIImage);
-    
+
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
-    LOG((LF_CLASSLOADER, 
-            LL_INFO100, 
+    LOG((LF_CLASSLOADER,
+            LL_INFO100,
             "\tLoaded assembly from a file\n"));
-    
+
     END_QCALL;
 }
 
 /*static */
-void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR ptrAssemblyArray, 
-                                              INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength, 
+void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR ptrAssemblyArray,
+                                              INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength,
                                               QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
-    
+
     // Ensure that the invariants are in place
     _ASSERTE(ptrNativeAssemblyLoadContext != NULL);
     _ASSERTE((ptrAssemblyArray != NULL) && (cbAssemblyArrayLength > 0));
     _ASSERTE((ptrSymbolArray == NULL) || (cbSymbolArrayLength > 0));
 
-    // We must have a flat image stashed away since we need a private 
+    // We must have a flat image stashed away since we need a private
     // copy of the data which we can verify before doing the mapping.
     PVOID pAssemblyArray = reinterpret_cast<PVOID>(ptrAssemblyArray);
 
     PEImageHolder pILImage(PEImage::LoadFlat(pAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
-    
-    // Need to verify that this is a valid CLR assembly. 
+
+    // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-    
+
     // Get the binder context in which the assembly will be loaded
     ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
 
@@ -334,22 +334,22 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     }
 
     // Pass the stream based assembly as IL and NI in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL); 
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
-    LOG((LF_CLASSLOADER, 
-            LL_INFO100, 
+    LOG((LF_CLASSLOADER,
+            LL_INFO100,
             "\tLoaded assembly from a file\n"));
-            
+
     // In order to assign the PDB image (if present),
     // the resulting assembly's image needs to be exactly the one
     // we created above. We need pointer comparison instead of pe image equivalence
     // to avoid mixed binaries/PDB pairs of other images.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
-    BOOL fIsSameAssembly = (pLoadedAssembly->GetManifestFile()->GetILimage() == pILImage); 
+    BOOL fIsSameAssembly = (pLoadedAssembly->GetManifestFile()->GetILimage() == pILImage);
 
     // Setting the PDB info is only applicable for our original assembly.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
@@ -373,31 +373,31 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
 void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
-    
+
     // Ensure that the invariants are in place
     _ASSERTE(ptrNativeAssemblyLoadContext != NULL);
     _ASSERTE(hModule != NULL);
 
     PEImageHolder pILImage(PEImage::LoadImage((HMODULE)hModule));
-    
-    // Need to verify that this is a valid CLR assembly. 
+
+    // Need to verify that this is a valid CLR assembly.
     if (!pILImage->HasCorHeader())
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-    
+
     // Get the binder context in which the assembly will be loaded
     ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder*>(ptrNativeAssemblyLoadContext);
-    
+
     // Pass the in memory module as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL); 
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
-    LOG((LF_CLASSLOADER, 
-            LL_INFO100, 
+    LOG((LF_CLASSLOADER,
+            LL_INFO100,
             "\tLoaded assembly from pre-loaded native module\n"));
 
     END_QCALL;
@@ -413,7 +413,7 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     {
         retString.Set(pAssembly->GetFile()->GetPath());
     }
-    
+
     END_QCALL;
 }
 
@@ -525,7 +525,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNS
     FCALL_CONTRACT;
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-    
+
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
@@ -546,7 +546,7 @@ void QCALLTYPE AssemblyNative::GetVersion(QCall::AssemblyHandle pAssembly, INT32
     *pMajorVersion = major;
     *pMinorVersion = minor;
     *pBuildNumber = build;
-    *pRevisionNumber = revision; 
+    *pRevisionNumber = revision;
 
     END_QCALL;
 }
@@ -570,7 +570,7 @@ void QCALLTYPE AssemblyNative::GetSimpleName(QCall::AssemblyHandle pAssembly, QC
 
     BEGIN_QCALL;
     retSimpleName.Set(pAssembly->GetSimpleName());
-    END_QCALL;    
+    END_QCALL;
 }
 
 void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
@@ -584,7 +584,7 @@ void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall:
     {
         retString.Set(pLocale);
     }
-    
+
     END_QCALL;
 }
 
@@ -722,12 +722,12 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
             modules.Append(pModule);
         }
     }
-    
+
     {
         GCX_COOP();
 
         PTRARRAYREF orModules = NULL;
-        
+
         GCPROTECT_BEGIN(orModules);
 
         // Return the modules
@@ -781,7 +781,7 @@ void QCALLTYPE AssemblyNative::GetModule(QCall::AssemblyHandle pAssembly, LPCWST
     BEGIN_QCALL;
 
     Module * pModule = NULL;
-    
+
     CQuickBytes qbLC;
 
     if (wszFileName == NULL)
@@ -822,7 +822,7 @@ void QCALLTYPE AssemblyNative::GetExportedTypes(QCall::AssemblyHandle pAssembly,
     InlineSArray<TypeHandle, 20> types;
 
     Assembly * pAsm = pAssembly->GetAssembly();
-    
+
     IMDInternalImport *pImport = pAsm->GetManifestImport();
 
     {
@@ -832,27 +832,27 @@ void QCALLTYPE AssemblyNative::GetExportedTypes(QCall::AssemblyHandle pAssembly,
         mdTypeDef mdTD;
         while(pImport->EnumNext(&phTDEnum, &mdTD))
         {
-            DWORD dwFlags;            
+            DWORD dwFlags;
             IfFailThrow(pImport->GetTypeDefProps(
                 mdTD,
                 &dwFlags,
                 NULL));
-            
+
             // nested type
             mdTypeDef mdEncloser = mdTD;
             while (SUCCEEDED(pImport->GetNestedClassProps(mdEncloser, &mdEncloser)) &&
                    IsTdNestedPublic(dwFlags))
             {
                 IfFailThrow(pImport->GetTypeDefProps(
-                    mdEncloser, 
-                    &dwFlags, 
+                    mdEncloser,
+                    &dwFlags,
                     NULL));
             }
-            
+
             if (IsTdPublic(dwFlags))
             {
-                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAsm->GetManifestModule(), mdTD, 
-                                                                      ClassLoader::ThrowIfNotFound, 
+                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAsm->GetManifestModule(), mdTD,
+                                                                      ClassLoader::ThrowIfNotFound,
                                                                       ClassLoader::PermitUninstDefOrRef);
                 types.Append(typeHnd);
             }
@@ -873,31 +873,31 @@ void QCALLTYPE AssemblyNative::GetExportedTypes(QCall::AssemblyHandle pAssembly,
             DWORD dwFlags;
 
             IfFailThrow(pImport->GetExportedTypeProps(
-                mdCT, 
-                &pszNameSpace, 
-                &pszClassName, 
-                &mdImpl, 
+                mdCT,
+                &pszNameSpace,
+                &pszClassName,
+                &mdImpl,
                 NULL,           //binding
                 &dwFlags));
-            
+
             // nested type
             while ((TypeFromToken(mdImpl) == mdtExportedType) &&
                    (mdImpl != mdExportedTypeNil) &&
                    IsTdNestedPublic(dwFlags))
             {
                 IfFailThrow(pImport->GetExportedTypeProps(
-                    mdImpl, 
+                    mdImpl,
                     NULL,       //namespace
                     NULL,       //name
-                    &mdImpl, 
+                    &mdImpl,
                     NULL,       //binding
                     &dwFlags));
             }
-            
+
             if ((TypeFromToken(mdImpl) == mdtFile) &&
                 (mdImpl != mdFileNil) &&
                 IsTdPublic(dwFlags))
-            {                
+            {
                 NameHandle typeName(pszNameSpace, pszClassName);
                 typeName.SetTypeToken(pAsm->GetManifestModule(), mdCT);
                 TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
@@ -942,7 +942,7 @@ void QCALLTYPE AssemblyNative::GetForwardedTypes(QCall::AssemblyHandle pAssembly
     InlineSArray<TypeHandle, 8> types;
 
     Assembly * pAsm = pAssembly->GetAssembly();
-    
+
     IMDInternalImport *pImport = pAsm->GetManifestImport();
 
     // enumerate the ExportedTypes table
@@ -967,7 +967,7 @@ void QCALLTYPE AssemblyNative::GetForwardedTypes(QCall::AssemblyHandle pAssembly
                 &dwFlags));
 
             if ((TypeFromToken(mdImpl) == mdtAssemblyRef) && (mdImpl != mdAssemblyRefNil))
-            {                
+            {
                 NameHandle typeName(pszNameSpace, pszClassName);
                 typeName.SetTypeToken(pAsm->GetManifestModule(), mdCT);
                 TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
@@ -1009,7 +1009,7 @@ FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * 
     FCALL_CONTRACT;
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-    
+
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
@@ -1034,23 +1034,23 @@ FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * 
     for(DWORD i = 0;  i < dwCount; i++) {
         pImport->EnumNext(&phEnum, &mdResource);
         LPCSTR pszName = NULL;
-        
+
         IfFailThrow(pImport->GetManifestResourceProps(
-            mdResource, 
+            mdResource,
             &pszName,   // name
             NULL,       // linkref
             NULL,       // offset
             NULL));     //flags
-        
+
         OBJECTREF o = (OBJECTREF) StringObject::NewString(pszName);
         ItemArray->SetAt(i, o);
     }
-    
+
     rv = ItemArray;
     GCPROTECT_END();
-    
+
     HELPER_METHOD_FRAME_END();
-    
+
     return OBJECTREFToObject(rv);
 }
 FCIMPLEND
@@ -1089,13 +1089,13 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
     mdAssemblyRef mdAssemblyRef;
 
     gc.ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, pAsmNameClass);
-    
-    for(DWORD i = 0; i < dwCount; i++) 
+
+    for(DWORD i = 0; i < dwCount; i++)
     {
         pImport->EnumNext(&phEnum, &mdAssemblyRef);
-    
+
         AssemblySpec spec;
-        spec.InitializeSpec(mdAssemblyRef, pImport);                                             
+        spec.InitializeSpec(mdAssemblyRef, pImport);
 
         gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
         spec.AssemblyNameInit(&gc.pObj,NULL);
@@ -1153,7 +1153,7 @@ void QCALLTYPE AssemblyNative::GetExecutingAssembly(QCall::StackCrawlMarkHandle 
     QCALL_CONTRACT;
 
     DomainAssembly * pExecutingAssembly = NULL;
-    
+
     BEGIN_QCALL;
 
     Assembly* pAssembly = SystemDomain::GetCallersAssembly(stackMark);
@@ -1176,7 +1176,7 @@ void QCALLTYPE AssemblyNative::GetEntryAssembly(QCall::ObjectHandleOnStack retAs
 
     DomainAssembly * pRootAssembly = NULL;
     Assembly * pAssembly = GetAppDomain()->m_pRootAssembly;
-    
+
     if (pAssembly)
     {
         pRootAssembly = pAssembly->GetDomainAssembly();
@@ -1196,7 +1196,7 @@ FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, As
 
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-    
+
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
@@ -1234,13 +1234,13 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
     QCALL_CONTRACT;
 
     INT_PTR ptrNativeAssemblyLoadContext = NULL;
-    
+
     BEGIN_QCALL;
-    
+
     // We do not need to take a lock since this method is invoked from the ctor of AssemblyLoadContext managed type and
     // only one thread is ever executing a ctor for a given instance.
     //
-    
+
     // Initialize the assembly binder instance in the VM
     PTR_AppDomain pCurDomain = AppDomain::GetCurrentDomain();
     CLRPrivBinderCoreCLR *pTPABinderContext = pCurDomain->GetTPABinderContext();
@@ -1299,9 +1299,9 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
         pTPABinderContext->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
         ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pTPABinderContext);
     }
-   
+
     END_QCALL;
-    
+
     return ptrNativeAssemblyLoadContext;
 }
 
@@ -1329,15 +1329,16 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     QCALL_CONTRACT;
 
     INT_PTR ptrManagedAssemblyLoadContext = NULL;
-    
+
     BEGIN_QCALL;
-    
+
+    _ASSERTE(pAssembly != NULL);
+
     // Get the PEAssembly for the RuntimeAssembly
     PEFile *pPEFile = pAssembly->GetFile();
-    PTR_PEAssembly pPEAssembly = pPEFile->AsAssembly();
-    _ASSERTE(pAssembly != NULL);
-   
-    // Platform assemblies are semantically bound against the "Default" binder. 
+    PTR_PEAssembly pPEAssembly = pPEFile ? pPEFile->AsAssembly() : NULL;
+
+    // Platform assemblies are semantically bound against the "Default" binder.
     // The reference to the same will be returned when this QCall returns.
 
     // Get the binding context for the assembly.
@@ -1387,9 +1388,9 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
         ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();
         _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
     }
-    
+
     END_QCALL;
-    
+
     return ptrManagedAssemblyLoadContext;
 }
 

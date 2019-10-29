@@ -66,7 +66,14 @@ public:
     ZapNode()
     {
         // All ZapNodes are expected to be allocate from ZapWriter::GetHeap() that returns zero filled memory
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
         _ASSERTE(m_RVA == 0);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
     }
 
     // This constructor should be used to allocate temporary ZapNodes on the stack only
@@ -444,7 +451,7 @@ public:
         ZapVirtualSection * pSection = new (GetHeap()) ZapVirtualSection(dwAlignment);
         if (pInsertAfter != NULL)
         {
-            // pInsertAfter is workaround to get decent layout with the current scheme of virtual sections. It should not be necessary 
+            // pInsertAfter is workaround to get decent layout with the current scheme of virtual sections. It should not be necessary
             // once we have better layout algorithms in place.
             for (COUNT_T iSection = 0; iSection < pPhysicalSection->m_Sections.GetCount(); iSection++)
             {
@@ -452,7 +459,7 @@ public:
                 {
                     pPhysicalSection->m_Sections.Insert(pPhysicalSection->m_Sections+(iSection+1));
                     pPhysicalSection->m_Sections[iSection+1] = pSection;
-                    return pSection;                    
+                    return pSection;
                 }
             }
             _ASSERTE(false);

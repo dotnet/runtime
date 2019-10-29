@@ -28,7 +28,7 @@ SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 DWORD Object::ComputeHashCode()
 {
     DWORD hashCode;
-   
+
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
@@ -45,7 +45,7 @@ DWORD Object::ComputeHashCode()
     return hashCode;
 }
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
 INT32 Object::GetHashCodeEx()
 {
     CONTRACTL
@@ -124,7 +124,7 @@ INT32 Object::GetHashCodeEx()
                 // Header changed under us - let's restart this whole thing.
             }
         }
-    }    
+    }
 }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -165,7 +165,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         NOTHROW;
         GC_NOTRIGGER;
         if(!IsGCThread()) { MODE_COOPERATIVE; }
-    } 
+    }
     CONTRACTL_END;
 
     // Although getting the type handle is unsafe and could cause recursive type lookups
@@ -181,24 +181,24 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     // Don't look at types that belong to an unloading AppDomain, or else
     // pObj->GetGCSafeTypeHandle() can AV. For example, we encountered this AV when pObj
     // was an array like this:
-    //     
+    //
     //     MyValueType1<MyValueType2>[] myArray
     //
     // where MyValueType1<T> & MyValueType2 are defined in different assemblies. In such
     // a case, looking up the type handle for myArray requires looking in
     // MyValueType1<T>'s module's m_AssemblyRefByNameTable, which is garbage if its
     // AppDomain is unloading.
-    // 
+    //
     // Another AV was encountered in a similar case,
-    // 
+    //
     //     MyRefType1<MyRefType2>[] myArray
-    // 
+    //
     // where MyRefType2's module was unloaded by the time the GC occurred. In at least
     // one case, the GC was caused by the AD unload itself (AppDomain::Unload ->
     // AppDomain::Exit -> GCInterface::AddMemoryPressure -> WKS::GCHeapUtilities::GarbageCollect).
-    // 
+    //
     // To protect against all scenarios, verify that
-    // 
+    //
     //     * The MT of the object is not getting unloaded, OR
     //     * In the case of arrays (potentially of arrays of arrays of arrays ...), the
     //         MT of the innermost element is not getting unloaded. This then ensures the
@@ -218,7 +218,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         // TypeDesc::GetLoaderModule() for the limited array case that we care about. In
         // case we're dealing with an array of arrays of arrays etc. traverse until we
         // find the deepest element, and that's the type we'll check
-        while (thElem.HasTypeParam()) 
+        while (thElem.HasTypeParam())
         {
             thElem = thElem.GetTypeParam();
         }
@@ -296,7 +296,7 @@ STRINGREF AllocateString(SString sstr)
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
-    
+
     COUNT_T length = sstr.GetCount(); // count of WCHARs excluding terminating NULL
     STRINGREF strObj = AllocateString(length);
     memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), length*sizeof(WCHAR));
@@ -337,12 +337,12 @@ void Object::ValidateHeap(Object *from, BOOL bDeep)
 #if defined (VERIFY_HEAP)
     //no need to verify next object's header in this case
     //since this is called in verify_heap, which will verfiy every object anyway
-    Validate(bDeep, FALSE); 
+    Validate(bDeep, FALSE);
 #endif
 }
 
 void Object::SetOffsetObjectRef(DWORD dwOffset, size_t dwValue)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -374,8 +374,8 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
 #endif
     ErectWriteBarrier(dst, ref);
 }
-    
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT) 
+
+void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 {
 
     STATIC_CONTRACT_NOTHROW;
@@ -383,7 +383,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong. 
+    _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong.
 
     // <TODO> @todo Only call MemoryBarrier() if needed.
     // Reflection is a known use case where this is required.
@@ -391,16 +391,16 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
     // </TODO>
     MemoryBarrier();
 
-        // Copy the bulk of the data, and any non-GC refs. 
+        // Copy the bulk of the data, and any non-GC refs.
     switch (pMT->GetNumInstanceFieldBytes())
-    {        
+    {
     case 1:
         *(UINT8*)dest = *(UINT8*)src;
         break;
 #ifndef ALIGN_ACCESS
-        // we can hit an alignment fault if the value type has multiple 
-        // smaller fields.  Example: if there are two I4 fields, the 
-        // value class can be aligned to 4-byte boundaries, yet the 
+        // we can hit an alignment fault if the value type has multiple
+        // smaller fields.  Example: if there are two I4 fields, the
+        // value class can be aligned to 4-byte boundaries, yet the
         // NumInstanceFieldBytes is 8
     case 2:
         *(UINT16*)dest = *(UINT16*)src;
@@ -417,37 +417,37 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
         break;
     }
 
-        // Tell the GC about any copies.  
+        // Tell the GC about any copies.
     if (pMT->ContainsPointers())
-    {   
+    {
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries* cur = map->GetHighestSeries();
         CGCDescSeries* last = map->GetLowestSeries();
         DWORD size = pMT->GetBaseSize();
         _ASSERTE(cur >= last);
-        do                                                                  
-        {   
+        do
+        {
             // offset to embedded references in this series must be
             // adjusted by the VTable pointer, when in the unboxed state.
             size_t offset = cur->GetSeriesOffset() - sizeof(void*);
             OBJECTREF* srcPtr = (OBJECTREF*)(((BYTE*) src) + offset);
             OBJECTREF* destPtr = (OBJECTREF*)(((BYTE*) dest) + offset);
-            OBJECTREF* srcPtrStop = (OBJECTREF*)((BYTE*) srcPtr + cur->GetSeriesSize() + size);         
-            while (srcPtr < srcPtrStop)                                         
-            {   
+            OBJECTREF* srcPtrStop = (OBJECTREF*)((BYTE*) srcPtr + cur->GetSeriesSize() + size);
+            while (srcPtr < srcPtrStop)
+            {
                 SetObjectReference(destPtr, ObjectToOBJECTREF(*(Object**)srcPtr));
                 srcPtr++;
                 destPtr++;
-            }                                                               
-            cur--;                                                              
-        } while (cur >= last);                                              
+            }
+            cur--;
+        } while (cur >= last);
     }
 }
 
 // Copy value class into the argument specified by the argDest.
 // The destOffset is nonzero when copying values into Nullable<T>, it is the offset
 // of the T value inside of the Nullable<T>
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset) 
+void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -479,7 +479,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
 // Initialize the value class argument to zeros
 void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -493,7 +493,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
         return;
     }
 
-#endif    
+#endif
     InitValueClass(argDest->GetDestinationAddress(), pMT);
 }
 
@@ -523,11 +523,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    if (this == NULL)
-    {
-        return;     // NULL is ok
-    }
 
     if (g_IBCLogger.InstrEnabled() && !GCStress<cfg_any>::IsEnabled())
     {
@@ -586,7 +581,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
     EX_TRY
     {
-        // in order to avoid contract violations in the EH code we'll allow AVs here, 
+        // in order to avoid contract violations in the EH code we'll allow AVs here,
         // they'll be handled in the catch block
         AVInRuntimeImplOkayHolder avOk;
 
@@ -607,7 +602,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
             bSmallObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this, true);
             if (!bSmallObjectHeapPtr)
                 bLargeObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this);
-                
+
             CHECK_AND_TEAR_DOWN(bSmallObjectHeapPtr || bLargeObjectHeapPtr);
         }
 
@@ -617,7 +612,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         {
             CHECK_AND_TEAR_DOWN(GetHeader()->Validate(bVerifySyncBlock));
         }
-        
+
         lastTest = 4;
 
         if (bDeep && (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)) {
@@ -639,8 +634,8 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
         _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
         // try to validate next object's header
-        if (bDeep 
-            && bVerifyNextHeader 
+        if (bDeep
+            && bVerifyNextHeader
             && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid()
             //NextObj could be very slow if concurrent GC is going on
             && !GCHeapUtilities::GetGCHeap ()->IsConcurrentGCInProgress ())
@@ -649,7 +644,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
             if ((nextObj != NULL) &&
                 (nextObj->GetGCSafeMethodTable() != g_pFreeObjectMethodTable))
             {
-                // we need a read barrier here - to make sure we read the object header _after_                
+                // we need a read barrier here - to make sure we read the object header _after_
                 // reading data that tells us that the object is eligible for verification
                 // (also see: gc.cpp/a_fit_segment_end_p)
                 VOLATILE_MEMORY_BARRIER();
@@ -793,13 +788,13 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
             return GetEmptyString();
         }
 
-#if 0        
-        //        
-        // This assert is disabled because it is valid for us to get a 
+#if 0
+        //
+        // This assert is disabled because it is valid for us to get a
         // pointer from the gc heap here as long as it is pinned.  This
-        // can happen when a string is marshalled to unmanaged by 
+        // can happen when a string is marshalled to unmanaged by
         // pinning and then later put into a struct and that struct is
-        // then marshalled to managed.  
+        // then marshalled to managed.
         //
         _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) pwsz) ||
                  !"pwsz can not point to GC Heap");
@@ -814,7 +809,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
 }
 
 #if defined(_MSC_VER) && defined(_TARGET_X86_)
-#pragma optimize("y", on)        // Small critical routines, don't put in EBP frame 
+#pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
 #endif
 
 STRINGREF StringObject::NewString(const WCHAR *pwsz, int length) {
@@ -832,13 +827,13 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz, int length) {
     else if (length <= 0) {
         return GetEmptyString();
     } else {
-#if 0        
-        //        
-        // This assert is disabled because it is valid for us to get a 
+#if 0
+        //
+        // This assert is disabled because it is valid for us to get a
         // pointer from the gc heap here as long as it is pinned.  This
-        // can happen when a string is marshalled to unmanaged by 
+        // can happen when a string is marshalled to unmanaged by
         // pinning and then later put into a struct and that struct is
-        // then marshalled to managed.  
+        // then marshalled to managed.
         //
         _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) pwsz) ||
                  !"pwsz can not point to GC Heap");
@@ -970,7 +965,7 @@ BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strACha
     unsigned charA;
     unsigned charB;
 
-    for(;;) {        
+    for(;;) {
         charA = *strAChars;
         charB = (unsigned) *strBChars;
 
@@ -981,10 +976,10 @@ BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strACha
             return FALSE;
         }
 
-        // uppercase both chars. 
+        // uppercase both chars.
         if (charA>='a' && charA<='z') {
             charA ^= 0x20;
-        } 
+        }
         if (charB>='a' && charB<='z') {
             charB ^= 0x20;
         }
@@ -1000,21 +995,21 @@ BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strACha
         {
             if (bLength == -1)
             {
-                *result = aLength - static_cast<INT32>(strAChars - strAStart); 
+                *result = aLength - static_cast<INT32>(strAChars - strAStart);
                 return TRUE;
             }
             if (strAChars==strAStart + aLength || strBChars==strBStart + bLength)
             {
-                *result = aLength - bLength; 
+                *result = aLength - bLength;
                 return TRUE;
             }
             // else both embedded zeros
-        } 
+        }
 
         // Next char
         strAChars++; strBChars++;
     }
-    
+
 }
 
 /*============================InternalTrailByteCheck============================
@@ -1031,7 +1026,7 @@ BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strACha
 ==============================================================================*/
 BOOL StringObject::HasTrailByte() {
     WRAPPER_NO_CONTRACT;
-    
+
     SyncBlock * pSyncBlock = PassiveGetSyncBlock();
     if(pSyncBlock != NULL)
     {
@@ -1127,7 +1122,7 @@ OBJECTREF::OBJECTREF(const OBJECTREF & objref)
         _ASSERTE(!"Write Barrier violation. Must use SetObjectReference() to assign OBJECTREF's into the GC heap!");
     }
     m_asObj = objref.m_asObj;
-    
+
     if (m_asObj != 0) {
         ENABLESTRESSHEAP();
     }
@@ -1172,7 +1167,7 @@ OBJECTREF::OBJECTREF(Object *pObject)
     STATIC_CONTRACT_FORBID_FAULT;
 
     DEBUG_ONLY_FUNCTION;
-    
+
     if ((pObject != 0) &&
         ((IGCHeap*)GCHeapUtilities::GetGCHeap())->IsHeapPointer( (BYTE*)this ))
     {
@@ -1189,7 +1184,10 @@ OBJECTREF::OBJECTREF(Object *pObject)
 void OBJECTREF::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 {
     LIMITED_METHOD_CONTRACT;
-    m_asObj->Validate(bDeep, bVerifyNextHeader, bVerifySyncBlock);
+    if (m_asObj)
+    {
+        m_asObj->Validate(bDeep, bVerifyNextHeader, bVerifySyncBlock);
+    }
 }
 
 //-------------------------------------------------------------
@@ -1233,7 +1231,7 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
         VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
         // your OBJECTREF and a GC might have occurred.  To
-        // where the possible GC was, set a breakpoint in Thread::TriggersGC 
+        // where the possible GC was, set a breakpoint in Thread::TriggersGC
         _ASSERTE(Thread::IsObjRefValid(this));
 
         if (m_asObj != 0 || objref.m_asObj != 0) {
@@ -1271,7 +1269,7 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
         VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
         // your OBJECTREF and a GC might have occurred.  To
-        // where the possible GC was, set a breakpoint in Thread::TriggersGC 
+        // where the possible GC was, set a breakpoint in Thread::TriggersGC
         _ASSERTE(Thread::IsObjRefValid(this));
 
         if (m_asObj != 0 || objref.m_asObj != 0) {
@@ -1295,7 +1293,7 @@ Object* OBJECTREF::operator->()
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
         // your OBJECTREF and a GC might have occurred.  To
-        // where the possible GC was, set a breakpoint in Thread::TriggersGC 
+        // where the possible GC was, set a breakpoint in Thread::TriggersGC
     _ASSERTE(Thread::IsObjRefValid(this));
 
     if (m_asObj != 0) {
@@ -1320,7 +1318,7 @@ const Object* OBJECTREF::operator->() const
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
         // your OBJECTREF and a GC might have occurred.  To
-        // where the possible GC was, set a breakpoint in Thread::TriggersGC 
+        // where the possible GC was, set a breakpoint in Thread::TriggersGC
     _ASSERTE(Thread::IsObjRefValid(this));
 
     if (m_asObj != 0) {
@@ -1371,7 +1369,7 @@ OBJECTREF& OBJECTREF::operator=(const OBJECTREF &objref)
 }
 
 //-------------------------------------------------------------
-// Allows for the assignment of NULL to a OBJECTREF 
+// Allows for the assignment of NULL to a OBJECTREF
 //-------------------------------------------------------------
 
 OBJECTREF& OBJECTREF::operator=(TADDR nul)
@@ -1422,9 +1420,9 @@ void* __cdecl GCSafeMemCpy(void * dest, const void * src, size_t len)
 // This function clears a piece of memory in a GC safe way.  It makes the guarantee
 // that it will clear memory in at least pointer sized chunks whenever possible.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
-// We must make this guarantee whenever we clear memory in the GC heap that could contain 
-// object references.  The GC or other user threads can read object references at any time, 
-// clearing them bytewise can result in a read on another thread getting incorrect data.  
+// We must make this guarantee whenever we clear memory in the GC heap that could contain
+// object references.  The GC or other user threads can read object references at any time,
+// clearing them bytewise can result in a read on another thread getting incorrect data.
 void __fastcall ZeroMemoryInGCHeap(void* mem, size_t size)
 {
     WRAPPER_NO_CONTRACT;
@@ -1482,12 +1480,12 @@ void StackTraceArray::CheckState() const
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-    
+
     if (!m_array)
         return;
 
     assert(GetObjectThread() == GetThread());
-    
+
     size_t size = Size();
     StackTraceElement const * p;
     p = GetData();
@@ -1524,7 +1522,7 @@ void StackTraceArray::Grow(size_t grow_size)
         size_t new_capacity = Max(Capacity() * 2, raw_size);
 
         _ASSERTE(new_capacity >= grow_size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
-        
+
         I1ARRAYREF newarr = (I1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(new_capacity));
         memcpyNoGCRefs(newarr->GetDirectPointerToNonObjectElements(),
                        GetRaw(),
@@ -1554,7 +1552,7 @@ void StackTraceArray::EnsureThreadAffinity()
 }
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4267) 
+#pragma warning(disable: 4267)
 #endif
 
 // Deep copies the stack trace array
@@ -1589,9 +1587,9 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
 #ifdef _DEBUG
 //===============================================================================
 // Code that insures that our unmanaged version of Nullable is consistant with
-// the managed version Nullable<T> for all T.  
+// the managed version Nullable<T> for all T.
 
-void Nullable::CheckFieldOffsets(TypeHandle nullableType) 
+void Nullable::CheckFieldOffsets(TypeHandle nullableType)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1649,10 +1647,10 @@ BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable*
     if (!nullableMT->IsNullable())
         return FALSE;
 
-    // we require an exact match of the parameter types 
+    // we require an exact match of the parameter types
     return TypeHandle(paramMT) == nullableMT->GetInstantiation()[0];
 }
-    
+
 //===============================================================================
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
 
@@ -1727,7 +1725,7 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
-    if (boxedVal == NULL) 
+    if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
@@ -1735,12 +1733,12 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         InitValueClass(destPtr, destMT);
         fRet = TRUE;
     }
-    else 
+    else
     {
         GCPROTECT_BEGIN(boxedVal);
         if (!IsNullableForType(destMT, boxedVal->GetMethodTable()))
         {
-            // For safety's sake, also allow true nullables to be unboxed normally.  
+            // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             if (destMT->IsEquivalentTo(boxedVal->GetMethodTable()))
             {
@@ -1783,18 +1781,18 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
-    if (boxedVal == NULL) 
+    if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }
-    else 
+    else
     {
         if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
         {
-            // For safety's sake, also allow true nullables to be unboxed normally.  
+            // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             if (destMT == boxedVal->GetMethodTable())
             {
@@ -1811,7 +1809,7 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 }
 
 //===============================================================================
-// Special Logic to unbox a boxed T as a nullable<T> into an argument 
+// Special Logic to unbox a boxed T as a nullable<T> into an argument
 // specified by the argDest.
 // Does not handle type equivalence (may conservatively return FALSE)
 BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT)
@@ -1833,18 +1831,18 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
         // We better have a concrete instantiation, or our field offset asserts are not useful
         _ASSERTE(!destMT->ContainsGenericVariables());
 
-        if (boxedVal == NULL) 
+        if (boxedVal == NULL)
         {
             // Logically we are doing *dest->HasValueAddr(destMT) = false;
             // We zero out the whole structure becasue it may contain GC references
             // and these need to be initialized to zero.   (could optimize in the non-GC case)
             InitValueClassArg(argDest, destMT);
         }
-        else 
+        else
         {
             if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
             {
-                // For safety's sake, also allow true nullables to be unboxed normally.  
+                // For safety's sake, also allow true nullables to be unboxed normally.
                 // This should not happen normally, but we want to be robust
                 if (destMT == boxedVal->GetMethodTable())
                 {
@@ -1887,18 +1885,18 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
         // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
-    if (boxedVal == NULL) 
+    if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }
-    else 
+    else
     {
         if (IsNullableType(boxedVal->GetMethodTable()))
         {
-            // For safety's sake, also allow true nullables to be unboxed normally.  
+            // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             CopyValueClass(dest, boxedVal->GetData(), destMT);
         }
@@ -1924,7 +1922,7 @@ OBJECTREF Nullable::NormalizeBox(OBJECTREF obj) {
 
     if (obj != NULL) {
         MethodTable* retMT = obj->GetMethodTable();
-        if (Nullable::IsNullableType(retMT)) 
+        if (Nullable::IsNullableType(retMT))
             obj = Nullable::Box(obj->GetData(), retMT);
     }
     return obj;

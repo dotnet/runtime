@@ -331,7 +331,6 @@ public:
     typeInfo(ti_types tiType)
     {
         assert((tiType >= TI_BYTE) && (tiType <= TI_NULL));
-        assert(tiType <= TI_FLAG_DATA_MASK);
 
         m_flags = (DWORD)tiType;
         m_cls   = NO_CLASS_HANDLE;

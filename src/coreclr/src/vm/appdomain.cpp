@@ -114,7 +114,7 @@ int                 BaseDomain::m_iNumberOfProcessors = 0;
 // System Domain Statics
 GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
 
-DECLSPEC_ALIGN(16) 
+DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 CrstStatic          SystemDomain::m_SystemDomainCrst;
@@ -255,7 +255,7 @@ OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
 }
 
 
-// Maximum bucket size will be 64K on 32-bit and 128K on 64-bit. 
+// Maximum bucket size will be 64K on 32-bit and 128K on 64-bit.
 // We subtract out a small amount to leave room for the object
 // header and length of the array.
 
@@ -738,7 +738,7 @@ void BaseDomain::Init()
 #ifdef FEATURE_COMINTEROP
     // Allocate the managed standard interfaces information.
     m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
-    
+
     {
         CLRPrivBinderWinRT::NamespaceResolutionKind fNamespaceResolutionKind = CLRPrivBinderWinRT::NamespaceResolutionKind_WindowsAPI;
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DesignerNamespaceResolutionEnabled) != FALSE)
@@ -829,7 +829,7 @@ void AppDomain::ShutdownFreeLoaderAllocators()
     CONTRACTL_END;
 
     CrstHolder ch(GetLoaderAllocatorReferencesLock());
-    
+
     // Shutdown the LoaderAllocators associated with collectible assemblies
     while (m_pDelayedLoaderAllocatorUnloadList != NULL)
     {
@@ -851,9 +851,9 @@ void AppDomain::ShutdownFreeLoaderAllocators()
 } // AppDomain::ShutdownFreeLoaderAllocators
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Register the loader allocator for deletion in code:AppDomain::ShutdownFreeLoaderAllocators.
-// 
+//
 void AppDomain::RegisterLoaderAllocatorForDeletion(LoaderAllocator * pLoaderAllocator)
 {
     CONTRACTL
@@ -864,9 +864,9 @@ void AppDomain::RegisterLoaderAllocatorForDeletion(LoaderAllocator * pLoaderAllo
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
-    
+
     CrstHolder ch(GetLoaderAllocatorReferencesLock());
-    
+
     pLoaderAllocator->m_pLoaderAllocatorDestroyNext = m_pDelayedLoaderAllocatorUnloadList;
     m_pDelayedLoaderAllocatorUnloadList = pLoaderAllocator;
 }
@@ -1244,9 +1244,9 @@ void AppDomain::CacheWinRTTypeByGuid(TypeHandle typeHandle)
 #endif // DACCESS_COMPILE
 
 void AppDomain::GetCachedWinRTTypes(
-                        SArray<PTR_MethodTable> * pTypes, 
-                        SArray<GUID> * pGuids, 
-                        UINT minEpoch, 
+                        SArray<PTR_MethodTable> * pTypes,
+                        SArray<GUID> * pGuids,
+                        UINT minEpoch,
                         UINT * pCurEpoch)
 {
     CONTRACTL
@@ -1260,19 +1260,19 @@ void AppDomain::GetCachedWinRTTypes(
 
     LockHolder lh(this);
 
-    for (auto it = m_pNameToTypeMap->Begin(), end = m_pNameToTypeMap->End(); 
-            it != end; 
+    for (auto it = m_pNameToTypeMap->Begin(), end = m_pNameToTypeMap->End();
+            it != end;
             ++it)
     {
         NameToTypeMapEntry entry = (NameToTypeMapEntry)(*it);
         TypeHandle th = entry.m_typeHandle;
-        if (th.AsMethodTable() != NULL && 
+        if (th.AsMethodTable() != NULL &&
             entry.m_key.m_wzName[0] == W('{') &&
             entry.m_nEpoch >= minEpoch)
         {
             _ASSERTE(!th.IsTypeDesc());
             PTR_MethodTable pMT = th.AsMethodTable();
-            // we're parsing the GUID value from the cache, because projected types do not cache the 
+            // we're parsing the GUID value from the cache, because projected types do not cache the
             // COM GUID in their GetGuid() but rather the legacy GUID
             GUID iid;
             if (LPWSTRToGuid(&iid, entry.m_key.m_wzName, 38) && iid != GUID_NULL)
@@ -1369,7 +1369,7 @@ void AppDomain::CacheWinRTFactoryObject(MethodTable *pClassMT, OBJECTREF *refFac
         e.m_ohFactoryObject = ohNewHandle;
 
         m_pWinRTFactoryCache->Add(e);
-     
+
         // suppress release of the CtxEntry and handle after we successfully inserted the new entry
         pNewCtxEntry.SuppressRelease();
         ohNewHandle.SuppressRelease();
@@ -1404,7 +1404,7 @@ OBJECTREF AppDomain::LookupWinRTFactoryObject(MethodTable *pClassMT, LPVOID lpCt
 
     if (m_pWinRTFactoryCache == nullptr)
         return NULL;
-            
+
     //
     // Retrieve cached factory
     //
@@ -1413,17 +1413,17 @@ OBJECTREF AppDomain::LookupWinRTFactoryObject(MethodTable *pClassMT, LPVOID lpCt
     const WinRTFactoryCacheEntry *pEntry = m_pWinRTFactoryCache->LookupPtr(pClassMT);
     if (pEntry == NULL)
         return NULL;
-    
+
     //
-    // Ignore factories from a different context, unless lpCtxCookie == NULL, 
+    // Ignore factories from a different context, unless lpCtxCookie == NULL,
     // which means the factory is free-threaded
     // Note that we cannot touch the RCW to retrieve cookie at this point
     // because the RCW might belong to a STA thread and that STA thread might die
-    // and take the RCW with it. Therefore we have to save cookie in this cache    
+    // and take the RCW with it. Therefore we have to save cookie in this cache
     //
     if (pEntry->m_pCtxEntry == NULL || pEntry->m_pCtxEntry->GetCtxCookie() == lpCtxCookie)
         return ObjectFromHandle(pEntry->m_ohFactoryObject);
-    
+
     return NULL;
 }
 
@@ -2102,7 +2102,7 @@ void SystemDomain::LoadBaseSystemClasses()
 #ifdef FEATURE_COMINTEROP
     g_pBaseCOMObject = MscorlibBinder::GetClass(CLASS__COM_OBJECT);
     g_pBaseRuntimeClass = MscorlibBinder::GetClass(CLASS__RUNTIME_CLASS);
-    
+
     MscorlibBinder::GetClass(CLASS__IDICTIONARYGENERIC);
     MscorlibBinder::GetClass(CLASS__IREADONLYDICTIONARYGENERIC);
     MscorlibBinder::GetClass(CLASS__ATTRIBUTE);
@@ -2122,7 +2122,7 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pICastableInterface = MscorlibBinder::GetClass(CLASS__ICASTABLE);
 #endif // FEATURE_ICASTABLE
 
-    // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper. 
+    // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
     // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
     ECall::GetFCallImpl(MscorlibBinder::GetMethod(METHOD__MONITOR__ENTER));
 
@@ -2559,10 +2559,10 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // If remoting is not available, we only set the caller if the crawlframe is from the same domain.
     // Why? Because if the callerdomain is different from current domain,
     // there have to be interop/native frames in between.
-    // For example, in the CORECLR, if we find the caller to be in a different domain, then the 
+    // For example, in the CORECLR, if we find the caller to be in a different domain, then the
     // call into reflection is due to an unmanaged call into mscorlib. For that
     // case, the caller really is an INTEROP method.
-    // In general, if the caller is INTEROP, we set the caller/callerdomain to be NULL 
+    // In general, if the caller is INTEROP, we set the caller/callerdomain to be NULL
     // (To be precise: they are already NULL and we don't change them).
     if (pCf->GetAppDomain() == GetAppDomain())
     // We must either be looking for the caller, or the caller's caller when
@@ -2690,7 +2690,7 @@ BOOL SystemDomain::RemoveDomain(AppDomain* pDomain)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pDomain));
-        PRECONDITION(!pDomain->IsDefaultDomain());    
+        PRECONDITION(!pDomain->IsDefaultDomain());
     }
     CONTRACTL_END;
 
@@ -2883,7 +2883,7 @@ AppDomain::~AppDomain()
         m_pWinRTFactoryCache = nullptr;
     }
 #endif //FEATURE_COMINTEROP
-    
+
 #endif // CROSSGEN_COMPILE
 }
 
@@ -2907,17 +2907,17 @@ void AppDomain::Init()
     //  - To prevent deadlock with GC thread, we cannot trigger GC while holding the lock
     //  - To prevent deadlock with profiler thread, we cannot allow thread suspension
     m_crstHostAssemblyMap.Init(
-        CrstHostAssemblyMap, 
-        (CrstFlags)(CRST_GC_NOTRIGGER_WHEN_TAKEN 
-                    | CRST_DEBUGGER_THREAD 
+        CrstHostAssemblyMap,
+        (CrstFlags)(CRST_GC_NOTRIGGER_WHEN_TAKEN
+                    | CRST_DEBUGGER_THREAD
                     INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
     m_crstHostAssemblyMapAdd.Init(CrstHostAssemblyMapAdd);
 
 #ifndef CROSSGEN_COMPILE
     //Allocate the threadpool entry before the appdomain id list. Otherwise,
-    //the thread pool list will be out of sync if insertion of id in 
-    //the appdomain fails. 
-    m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();    
+    //the thread pool list will be out of sync if insertion of id in
+    //the appdomain fails.
+    m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();
 #endif // CROSSGEN_COMPILE
 
     BaseDomain::Init();
@@ -3115,10 +3115,10 @@ void AppDomain::AddAssembly(DomainAssembly * assem)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    
+
     {
         CrstHolder ch(GetAssemblyListLock());
-    
+
         // Attempt to find empty space in assemblies list
         DWORD asmCount = m_Assemblies.GetCount_Unlocked();
         for (DWORD i = 0; i < asmCount; ++i)
@@ -3143,7 +3143,7 @@ void AppDomain::RemoveAssembly(DomainAssembly * pAsm)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     CrstHolder ch(GetAssemblyListLock());
     DWORD asmCount = m_Assemblies.GetCount_Unlocked();
     for (DWORD i = 0; i < asmCount; ++i)
@@ -3154,7 +3154,7 @@ void AppDomain::RemoveAssembly(DomainAssembly * pAsm)
             return;
         }
     }
-    
+
     _ASSERTE(!"Unreachable");
 }
 
@@ -3326,7 +3326,7 @@ static const char *fileLoadLevelName[] =
     "ADD_DEPENDENCIES",                   // FILE_LOAD_ADD_DEPENDENCIES
     "PRE_LOADLIBRARY",                    // FILE_LOAD_PRE_LOADLIBRARY
     "LOADLIBRARY",                        // FILE_LOAD_LOADLIBRARY
-    "POST_LOADLIBRARY",                   // FILE_LOAD_POST_LOADLIBRARY                
+    "POST_LOADLIBRARY",                   // FILE_LOAD_POST_LOADLIBRARY
     "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
     "DELIVER_EVENTS",                     // FILE_LOAD_DELIVER_EVENTS
     "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
@@ -3360,7 +3360,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
 #if _DEBUG
                 BOOL fDbgOnly_SuccessfulUnlink =
-#endif                
+#endif
                     m_pList->Unlink(this);
                 _ASSERTE(fDbgOnly_SuccessfulUnlink);
 
@@ -3757,7 +3757,7 @@ public:
 extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
 
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
-                                              PEAssembly *pFile, 
+                                              PEAssembly *pFile,
                                               FileLoadLevel targetLevel)
 {
     STATIC_CONTRACT_THROWS;
@@ -3781,7 +3781,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
             ICLRPrivBinder* pCurrentBindingContext = pSpec->GetBindingContext();
             ICLRPrivBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
-            
+
             if (pCurrentBindingContext == NULL)
             {
                 // Set the binding context we got from the PEAssembly if AssemblySpec does not
@@ -3789,13 +3789,13 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
                 _ASSERTE(pBindingContextFromPEAssembly != NULL);
                 pSpec->SetBindingContext(pBindingContextFromPEAssembly);
             }
-#if defined(_DEBUG)            
+#if defined(_DEBUG)
             else
             {
                 // Binding context in the spec should be the same as the binding context in the PEAssembly
                 _ASSERTE(AreSameBinderInstance(pCurrentBindingContext, pBindingContextFromPEAssembly));
             }
-#endif // _DEBUG            
+#endif // _DEBUG
 
             if (!EEFileLoadException::CheckType(pEx))
             {
@@ -3846,7 +3846,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
     // Check for existing fully loaded assembly, or for an assembly which has failed during the loading process.
     result = FindAssembly(pFile, FindAssemblyOptions_IncludeFailedToLoad);
-    
+
     if (result == NULL)
     {
         LoaderAllocator *pLoaderAllocator = NULL;
@@ -3938,7 +3938,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
-    
+
     RETURN result;
 } // AppDomain::LoadDomainAssembly
 
@@ -4212,7 +4212,7 @@ static void NormalizeAssemblySpecForNativeDependencies(AssemblySpec * pSpec)
     }
 
     //
-    // CoreCLR binder unifies assembly versions. Ignore assembly version here to 
+    // CoreCLR binder unifies assembly versions. Ignore assembly version here to
     // detect more types of potential mismatches.
     //
     AssemblyMetaDataInternal * pContext = pSpec->GetContext();
@@ -4222,7 +4222,7 @@ static void NormalizeAssemblySpecForNativeDependencies(AssemblySpec * pSpec)
     pContext->usRevisionNumber = (USHORT)-1;
 
     // Ignore the WinRT type while considering if two assemblies have the same identity.
-    pSpec->SetWindowsRuntimeType(NULL, NULL);    
+    pSpec->SetWindowsRuntimeType(NULL, NULL);
 }
 
 void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid)
@@ -4232,8 +4232,8 @@ void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID 
     //
     // The native images are ever used only for trusted images in CoreCLR.
     // We don't wish to open the IL file at runtime so we just forgo any
-    // eager consistency checking. But we still want to prevent mistmatched 
-    // NGen images from being used. We record all mappings between assembly 
+    // eager consistency checking. But we still want to prevent mistmatched
+    // NGen images from being used. We record all mappings between assembly
     // names and MVID, and fail once we detect mismatch.
     //
     NormalizeAssemblySpecForNativeDependencies(pSpec);
@@ -4354,7 +4354,7 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
     }
 
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
-        kIncludeLoaded | 
+        kIncludeLoaded |
         (includeFailedToLoad ? kIncludeFailedToLoad : 0) |
         kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -4362,8 +4362,8 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
     while (i.Next(pDomainAssembly.This()))
     {
         PEFile * pManifestFile = pDomainAssembly->GetFile();
-        if (pManifestFile && 
-            !pManifestFile->IsResource() && 
+        if (pManifestFile &&
+            !pManifestFile->IsResource() &&
             pManifestFile->Equals(pFile))
         {
             // Caller already has PEAssembly, so we can give DomainAssembly away freely without AddRef
@@ -4373,7 +4373,7 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
     return NULL;
 }
 
-static const AssemblyIterationFlags STANDARD_IJW_ITERATOR_FLAGS = 
+static const AssemblyIterationFlags STANDARD_IJW_ITERATOR_FLAGS =
     (AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution | kExcludeCollectible);
 
 
@@ -4419,7 +4419,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     m_friendlyName = tmpFriendlyName;
     m_friendlyName.Normalize();
 
-    if(g_pDebugInterface) 
+    if(g_pDebugInterface)
     {
         // update the name in the IPC publishing block
         if (SUCCEEDED(g_pDebugInterface->UpdateAppDomainEntryInIPC(this)))
@@ -4443,13 +4443,6 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
     }
     CONTRACT_END;
 
-#if _DEBUG
-    // Handle NULL this pointer - this happens sometimes when printing log messages
-    // but in general shouldn't occur in real code
-    if (this == NULL)
-        RETURN NULL;
-#endif // _DEBUG
-
     if (m_friendlyName.IsEmpty())
         SetFriendlyName(NULL, fDebuggerCares);
 
@@ -4466,12 +4459,6 @@ LPCWSTR AppDomain::GetFriendlyNameForLogging()
         POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
     }
     CONTRACT_END;
-#if _DEBUG
-    // Handle NULL this pointer - this happens sometimes when printing log messages
-    // but in general shouldn't occur in real code
-    if (this == NULL)
-        RETURN NULL;
-#endif // _DEBUG
     RETURN (m_friendlyName.IsEmpty() ?W(""):(LPCWSTR)m_friendlyName);
 }
 
@@ -4569,7 +4556,7 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAll
         // TODO: Disabling the below assertion as currently we experience
         // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
         // This causes below assertion to fire and crashes the VS. This issue
-        // is being tracked with Dev10 Bug 658555. Brought back it when this bug 
+        // is being tracked with Dev10 Bug 658555. Brought back it when this bug
         // is fixed.
         // _ASSERTE(FALSE);
 
@@ -4593,7 +4580,7 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    
+
     CrstHolder holder(&m_DomainCacheCrst);
     // !!! suppress exceptions
     BOOL bRetVal = m_AssemblyCache.StoreAssembly(pSpec, pAssembly);
@@ -4612,7 +4599,7 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    
+
     if (ex->IsTransient())
         return TRUE;
 
@@ -4694,7 +4681,7 @@ BOOL AppDomain::RemoveAssemblyFromCache(DomainAssembly* pAssembly)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    
+
     CrstHolder holder(&m_DomainCacheCrst);
 
     return m_AssemblyCache.RemoveAssembly(pAssembly);
@@ -4795,13 +4782,13 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
 
 //-----------------------------------------------------------------------------------------------------------------
 HRESULT AppDomain::BindAssemblySpecForHostedBinder(
-    AssemblySpec *   pSpec, 
-    IAssemblyName *  pAssemblyName, 
-    ICLRPrivBinder * pBinder, 
+    AssemblySpec *   pSpec,
+    IAssemblyName *  pAssemblyName,
+    ICLRPrivBinder * pBinder,
     PEAssembly **    ppAssembly)
 {
     STANDARD_VM_CONTRACT;
-    
+
     PRECONDITION(CheckPointer(pSpec));
     PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(CheckPointer(ppAssembly));
@@ -4827,22 +4814,22 @@ HRESULT AppDomain::BindAssemblySpecForHostedBinder(
 }
 
 //-----------------------------------------------------------------------------------------------------------------
-HRESULT 
+HRESULT
 AppDomain::BindHostedPrivAssembly(
     PEAssembly *       pParentAssembly,
-    ICLRPrivAssembly * pPrivAssembly, 
-    IAssemblyName *    pAssemblyName, 
+    ICLRPrivAssembly * pPrivAssembly,
+    IAssemblyName *    pAssemblyName,
     PEAssembly **      ppAssembly)
 {
     STANDARD_VM_CONTRACT;
 
     PRECONDITION(CheckPointer(pPrivAssembly));
     PRECONDITION(CheckPointer(ppAssembly));
-    
+
     HRESULT hr = S_OK;
-    
+
     *ppAssembly = nullptr;
-    
+
     // See if result has been previously loaded.
     {
         DomainAssembly* pDomainAssembly = FindAssembly(pPrivAssembly);
@@ -4890,11 +4877,11 @@ AppDomain::BindHostedPrivAssembly(
     }
 #endif // FEATURE_PREJIT
     _ASSERTE(pPEImageIL != nullptr);
-    
+
     // Create a PEAssembly using the IL and NI images.
     PEAssemblyHolder pPEAssembly = PEAssembly::Open(pParentAssembly, pPEImageIL, pPEImageNI, pPrivAssembly);
 
-    // The result.    
+    // The result.
     *ppAssembly = pPEAssembly.Extract();
 
     return S_OK;
@@ -4902,7 +4889,7 @@ AppDomain::BindHostedPrivAssembly(
 
 //---------------------------------------------------------------------------------------------------------------------
 PEAssembly * AppDomain::BindAssemblySpec(
-    AssemblySpec *         pSpec, 
+    AssemblySpec *         pSpec,
     BOOL                   fThrowOnFileNotFound)
 {
     STATIC_CONTRACT_THROWS;
@@ -4943,7 +4930,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
             assem->SetFallbackBinder(pSpec->GetFallbackLoadContextBinderForRequestingAssembly());
 EndTry2:;
         }
-        // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions 
+        // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions
         // thrown in scenarios where the exception does not escape the method. We cannot get rid of the try/catch block, as
         // there are cases within some of the clrpriv binder's which throw.
         // Note: In theory, FileNotFound should always come here as HRESULT, never as exception.
@@ -4996,7 +4983,7 @@ EndTry2:;
     {
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;
-        
+
         EX_TRY
         {
             if (!IsCached(pSpec))
@@ -5009,7 +4996,7 @@ EndTry2:;
                     pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
                     hrBindResult = bindResult.GetHRBindResult();
 
-                    if (bindResult.Found()) 
+                    if (bindResult.Found())
                     {
                         if (SystemDomain::SystemFile() && bindResult.IsMscorlib())
                         {
@@ -5023,7 +5010,7 @@ EndTry2:;
                             result = PEAssembly::Open(&bindResult,
                                                       FALSE);
                         }
-                        
+
                         // Setup the reference to the binder, which performed the bind, into the AssemblySpec
                         ICLRPrivBinder* pBinder = result->GetBindingContext();
                         _ASSERTE(pBinder != NULL);
@@ -5081,7 +5068,7 @@ EndTry2:;
                 {
                     BOOL bFileNotFoundException =
                         (EEFileLoadException::GetFileLoadKind(ex->GetHR()) == kFileNotFoundException);
-                
+
                     if (!bFileNotFoundException)
                     {
                         fFailure = AddExceptionToCache(pFailedSpec, ex);
@@ -5108,12 +5095,12 @@ EndTry2:;
                             //
                             // In Whidbey, we now set the more appropriate INET_E_RESOURCE_NOT_FOUND hr. But
                             // the online/offline switch code in VSTO for Everett hardcoded a check for
-                            // COR_E_FILENOTFOUND. 
+                            // COR_E_FILENOTFOUND.
                             //
                             // So now, to keep that code from breaking, we have to remap INET_E_RESOURCE_NOT_FOUND
                             // back to COR_E_FILENOTFOUND. We're doing it here rather down in Fusion so as to affect
                             // the least number of callers.
-                            
+
                             if (ex->GetHR() == INET_E_RESOURCE_NOT_FOUND)
                             {
                                 EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, ex);
@@ -5138,7 +5125,7 @@ EndTry2:;
                                     }
                                 }
                             }
-                            
+
                             EEFileLoadException::Throw(pFailedSpec, ex->GetHR(), ex);
                         }
 
@@ -5284,7 +5271,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/) 
+BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5384,7 +5371,7 @@ IUnknown *AppDomain::CreateFusionContext()
         // Initialize the assembly binder for the default context loads for CoreCLR.
         IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &pTPABinder));
         m_pFusionContext = reinterpret_cast<IUnknown *>(pTPABinder);
-        
+
         // By default, initial binding context setup for CoreCLR is also the TPABinding context
         (m_pTPABinderContext = pTPABinder)->AddRef();
 
@@ -5444,7 +5431,7 @@ BOOL AppDomain::NotifyDebuggerLoad(int flags, BOOL attaching)
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
     while (i.Next(pDomainAssembly.This()))
     {
-        result = (pDomainAssembly->NotifyDebuggerLoad(flags, attaching) || 
+        result = (pDomainAssembly->NotifyDebuggerLoad(flags, attaching) ||
                   result);
     }
 
@@ -5453,7 +5440,7 @@ BOOL AppDomain::NotifyDebuggerLoad(int flags, BOOL attaching)
 
 void AppDomain::NotifyDebuggerUnload()
 {
-    WRAPPER_NO_CONTRACT;    
+    WRAPPER_NO_CONTRACT;
     if (!IsDebuggerAttached())
         return;
 
@@ -5507,8 +5494,8 @@ RCWRefCache *AppDomain::GetRCWRefCache()
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
         if (FastInterlockCompareExchangePointer(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
-            pRCWRefCache.SuppressRelease();    
-        }        
+            pRCWRefCache.SuppressRelease();
+        }
     }
     RETURN m_pRCWRefCache;
 }
@@ -5970,7 +5957,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
 }
 
 
-Assembly * 
+Assembly *
 AppDomain::RaiseAssemblyResolveEvent(
     AssemblySpec * pSpec)
 {
@@ -6018,9 +6005,9 @@ AppDomain::RaiseAssemblyResolveEvent(
             ObjToArgSlot(gc.AssemblyRef),
             ObjToArgSlot(gc.str)
         };
-            
+
         ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onAssemblyResolve.Call_RetOBJECTREF(args);
-            
+
         if (ResultingAssemblyRef != NULL)
         {
             pAssembly = ResultingAssemblyRef->GetAssembly();
@@ -6059,7 +6046,7 @@ void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     int iGCRefPoint=GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
     if (GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress())
@@ -6068,7 +6055,7 @@ void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
     LoaderAllocator * pAllocatorsToDelete = NULL;
 
     {
-        CrstHolder lh(&m_DelayedUnloadCrst); 
+        CrstHolder lh(&m_DelayedUnloadCrst);
 
         LoaderAllocator ** ppAllocator=&m_pDelayedUnloadListOfLoaderAllocators;
         while (*ppAllocator!= NULL)
@@ -6088,7 +6075,7 @@ void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
         }
     }
 
-    // Delete collected loader allocators on the finalizer thread. We cannot offload it to appdomain unload thread because of 
+    // Delete collected loader allocators on the finalizer thread. We cannot offload it to appdomain unload thread because of
     // there is not guaranteed to be one, and it is not that expensive operation anyway.
     while (pAllocatorsToDelete != NULL)
     {
@@ -6187,8 +6174,8 @@ void BaseDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
 #endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
-// 
-BOOL 
+//
+BOOL
 AppDomain::AssemblyIterator::Next(
     CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder)
 {
@@ -6197,16 +6184,16 @@ AppDomain::AssemblyIterator::Next(
         WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
         MODE_ANY;
     } CONTRACTL_END;
-    
+
     CrstHolder ch(m_pAppDomain->GetAssemblyListLock());
     return Next_Unlocked(pDomainAssemblyHolder);
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Note: Does not lock the assembly list, but locks collectible assemblies for adding references.
-// 
-BOOL 
+//
+BOOL
 AppDomain::AssemblyIterator::Next_Unlocked(
     CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder)
 {
@@ -6215,11 +6202,11 @@ AppDomain::AssemblyIterator::Next_Unlocked(
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
-    
+
 #ifndef DACCESS_COMPILE
     _ASSERTE(m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
 #endif
-    
+
     while (m_Iterator.Next())
     {
         // Get element from the list/iterator (without adding reference to the assembly)
@@ -6241,8 +6228,8 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
         // First, reject DomainAssemblies whose load status is not to be included in
         // the enumeration
-        
-        if (pDomainAssembly->IsAvailableToProfilers() && 
+
+        if (pDomainAssembly->IsAvailableToProfilers() &&
             (m_assemblyIterationFlags & kIncludeAvailableToProfilers))
         {
             // The assembly has reached the state at which we would notify profilers,
@@ -6271,7 +6258,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
         // Next, reject DomainAssemblies whose execution status is
         // not to be included in the enumeration
-        
+
         // execution assembly
         if (!(m_assemblyIterationFlags & kIncludeExecution))
         {
@@ -6286,7 +6273,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
                 _ASSERTE(!(m_assemblyIterationFlags & kIncludeCollected));
                 continue; // reject
             }
-            
+
             // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
             // window during collectible assembly creation. No thread should need to have a pointer
             // to the just allocated DomainAssembly at this stage.)
@@ -6297,22 +6284,22 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
             if (pDomainAssembly->GetLoaderAllocator()->AddReferenceIfAlive())
             {   // The assembly is alive
-                
+
                 // Set the holder value (incl. increasing ref-count)
                 *pDomainAssemblyHolder = pDomainAssembly;
-                
+
                 // Now release the reference we took in the if-condition
                 pDomainAssembly->GetLoaderAllocator()->Release();
                 return TRUE;
             }
-            // The assembly is not alive anymore (and we didn't increase its ref-count in the 
+            // The assembly is not alive anymore (and we didn't increase its ref-count in the
             // if-condition)
-            
+
             if (!(m_assemblyIterationFlags & kIncludeCollected))
             {
                 continue; // reject
             }
-            // Set the holder value to assembly with 0 ref-count without increasing the ref-count (won't 
+            // Set the holder value to assembly with 0 ref-count without increasing the ref-count (won't
             // call Release either)
             pDomainAssemblyHolder->Assign(pDomainAssembly, FALSE);
             return TRUE;
@@ -6339,24 +6326,24 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
         PRECONDITION(ppLoadedAssembly != NULL);
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = E_FAIL;
 
     // Switch to COOP mode since we are going to work with managed references
     GCX_COOP();
-        
-    struct 
+
+    struct
     {
         ASSEMBLYNAMEREF oRefAssemblyName;
         ASSEMBLYREF oRefLoadedAssembly;
     } _gcRefs;
-        
+
     ZeroMemory(&_gcRefs, sizeof(_gcRefs));
-        
+
     GCPROTECT_BEGIN(_gcRefs);
-        
+
     ICLRPrivAssembly *pResolvedAssembly = NULL;
-        
+
     // Prepare to invoke System.Runtime.Loader.AssemblyLoadContext.Resolve method.
     //
     // First, initialize an assembly spec for the requested assembly
@@ -6369,10 +6356,10 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
         // Allocate an AssemblyName managed object
         _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME));
-            
+
         // Initialize the AssemblyName object from the AssemblySpec
         spec.AssemblyNameInit(&_gcRefs.oRefAssemblyName, NULL);
-                
+
         bool isSatelliteAssemblyRequest = !spec.IsNeutralCulture();
 
         if (pTPABinder != NULL)
@@ -6382,7 +6369,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
             // Finally, setup arguments for invocation
             MethodDescCallSite methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
-                
+
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
@@ -6448,7 +6435,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // attempt to resolve it using the Resolving event.
             // Finally, setup arguments for invocation
             MethodDescCallSite methResolveUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT);
-                
+
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
@@ -6464,12 +6451,12 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 fResolvedAssembly = true;
             }
         }
-            
+
         if (fResolvedAssembly && pResolvedAssembly == NULL)
         {
             // If we are here, assembly was successfully resolved via Load or Resolving events.
             _ASSERTE(_gcRefs.oRefLoadedAssembly != NULL);
-                    
+
             // We were able to get the assembly loaded. Now, get its name since the host could have
             // performed the resolution using an assembly with different name.
             DomainAssembly *pDomainAssembly = _gcRefs.oRefLoadedAssembly->GetDomainAssembly();
@@ -6489,7 +6476,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                     fFailLoad = true;
                 }
             }
-                
+
             // The loaded assembly's ICLRPrivAssembly* is saved as HostAssembly in PEAssembly
             if (fFailLoad)
             {
@@ -6497,10 +6484,10 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 spec.GetFileOrDisplayName(0, name);
                 COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
             }
-                
+
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
         }
-            
+
         if (fResolvedAssembly)
         {
             _ASSERTE(pResolvedAssembly != NULL);
@@ -6527,9 +6514,9 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             hr = COR_E_FILENOTFOUND;
         }
     }
-        
+
     GCPROTECT_END();
-    
+
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -6547,7 +6534,7 @@ size_t AppDomain::EstimateSize()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     size_t retval = sizeof(AppDomain);
     retval += GetLoaderAllocator()->EstimateSize();
     //very rough estimate
@@ -6631,7 +6618,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    
+
     while (assem.Next(pDomainAssembly.This()))
     {
         pDomainAssembly->EnumMemoryRegions(flags);
@@ -6726,10 +6713,10 @@ void AppDomain::PublishHostedAssembly(
         // We have to serialize all Add operations
         CrstHolder lockAdd(&m_crstHostAssemblyMapAdd);
         _ASSERTE(m_hostAssemblyMap.Lookup(pDomainAssembly->GetFile()->GetHostAssembly()) == nullptr);
-        
+
         // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
         HostAssemblyMap::AddPhases addCall;
-        
+
         // 1. Preallocate one element
         addCall.PreallocateForAdd(&m_hostAssemblyMap);
         {
@@ -6752,7 +6739,7 @@ void AppDomain::PublishHostedAssembly(
 
 //---------------------------------------------------------------------------------------------------------------------
 void AppDomain::UpdatePublishHostedAssembly(
-    DomainAssembly * pAssembly, 
+    DomainAssembly * pAssembly,
     PTR_PEFile       pFile)
 {
     CONTRACTL
@@ -6772,8 +6759,8 @@ void AppDomain::UpdatePublishHostedAssembly(
             // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
             OriginalFileHostAssemblyMap::AddPhases addCall;
             bool fAddOrigFile = false;
-        
-            // For cases where the pefile is being updated 
+
+            // For cases where the pefile is being updated
             // 1. Preallocate one element
             if (pFile != pAssembly->GetFile())
             {
@@ -6786,14 +6773,14 @@ void AppDomain::UpdatePublishHostedAssembly(
                 ForbidSuspendThreadHolder suspend;
                 {
                     CrstHolder lock(&m_crstHostAssemblyMap);
-                
+
                     // Remove from hash table.
                     _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetFile()->GetHostAssembly()) != nullptr);
                     m_hostAssemblyMap.Remove(pAssembly->GetFile()->GetHostAssembly());
-                
+
                     // Update PEFile on DomainAssembly. (This may cause the key for the hash to change, which is why we need this function)
                     pAssembly->UpdatePEFileWorker(pFile);
-                
+
                     _ASSERTE(fAddOrigFile == (pAssembly->GetOriginalFile() != pAssembly->GetFile()));
                     if (fAddOrigFile)
                     {
@@ -6858,14 +6845,14 @@ void AppDomain::UnPublishHostedAssembly(
 HRESULT AppDomain::SetWinrtApplicationContext(LPCWSTR pwzAppLocalWinMD)
 {
     STANDARD_VM_CONTRACT;
-    
+
     _ASSERTE(WinRTSupported());
     _ASSERTE(m_pWinRtBinder != nullptr);
 
     _ASSERTE(GetTPABinderContext() != NULL);
     BINDER_SPACE::ApplicationContext *pApplicationContext = GetTPABinderContext()->GetAppContext();
     _ASSERTE(pApplicationContext != NULL);
-    
+
     return m_pWinRtBinder->SetApplicationContext(pApplicationContext, pwzAppLocalWinMD);
 }
 
@@ -6884,10 +6871,10 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
         SUPPORTS_DAC;
     }
     CONTRACTL_END
-    
+
     if (pHostAssembly == nullptr)
         return NULL;
-    
+
     {
         ForbidSuspendThreadHolder suspend;
         {
@@ -6896,7 +6883,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
             if (returnValue == NULL)
             {
                 // If not found in the m_hostAssemblyMap, look in the m_hostAssemblyMapForOrigFile
-                // This is necessary as it may happen during in a second AppDomain that the PEFile 
+                // This is necessary as it may happen during in a second AppDomain that the PEFile
                 // first discovered in the AppDomain may not be used by the DomainFile, but the CLRPrivBinderFusion
                 // will in some cases find the pHostAssembly associated with this no longer used PEFile
                 // instead of the PEFile that was finally decided upon.

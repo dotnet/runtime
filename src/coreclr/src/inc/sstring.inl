@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifndef _SSTRING_INL_
 #define _SSTRING_INL_
@@ -646,9 +646,6 @@ inline const WCHAR *SString::GetUnicode() const
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
-    
-    if (this == NULL)
-        SS_RETURN NULL;
 
     ConvertToUnicode();
 
@@ -686,7 +683,7 @@ inline const WCHAR *SString::GetUnicode(const CIterator &i) const
     SS_CONTRACT_END;
 
     PRECONDITION(CheckPointer(this));
-    
+
     ConvertToUnicode(i);
 
     SS_RETURN i.GetUnicode();
@@ -711,7 +708,7 @@ inline void SString::Append(const SString &s)
 }
 
 inline void SString::Append(const WCHAR *string)
-{    
+{
     SS_CONTRACT_VOID
     {
         GC_NOTRIGGER;
@@ -875,7 +872,7 @@ inline BOOL SString::Match(const CIterator &i, WCHAR c) const
         NOTHROW;
     }
     SS_CONTRACT_END;
-    
+
     // End() will not throw here
     CONTRACT_VIOLATION(ThrowsViolation);
     SS_RETURN (i < End() && i[0] == c);
@@ -924,7 +921,7 @@ inline BOOL SString::Skip(CIterator &i, WCHAR c) const
 
 // Find string within this string. Return TRUE and update iterator if found
 inline BOOL SString::Find(CIterator &i, const WCHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -941,7 +938,7 @@ inline BOOL SString::Find(CIterator &i, const WCHAR *string) const
 }
 
 inline BOOL SString::FindASCII(CIterator &i, const CHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -958,7 +955,7 @@ inline BOOL SString::FindASCII(CIterator &i, const CHAR *string) const
 }
 
 inline BOOL SString::FindUTF8(CIterator &i, const CHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -975,7 +972,7 @@ inline BOOL SString::FindUTF8(CIterator &i, const CHAR *string) const
 }
 
 inline BOOL SString::FindBack(CIterator &i, const WCHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -992,7 +989,7 @@ inline BOOL SString::FindBack(CIterator &i, const WCHAR *string) const
 }
 
 inline BOOL SString::FindBackASCII(CIterator &i, const CHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -1009,7 +1006,7 @@ inline BOOL SString::FindBackASCII(CIterator &i, const CHAR *string) const
 }
 
 inline BOOL SString::FindBackUTF8(CIterator &i, const CHAR *string) const
-{    
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -1143,7 +1140,7 @@ inline void SString::Trim() const
 
 // RETURN true if the string is empty.
 inline BOOL SString::IsEmpty() const
-{ 
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -1158,7 +1155,7 @@ inline BOOL SString::IsEmpty() const
 
 // RETURN true if the string rep is ASCII.
 inline BOOL SString::IsASCII() const
-{ 
+{
     SS_CONTRACT(BOOL)
     {
         GC_NOTRIGGER;
@@ -1172,7 +1169,7 @@ inline BOOL SString::IsASCII() const
 
 // Get the number of characters in the string (excluding the terminating NULL)
 inline COUNT_T SString::GetCount() const
-{ 
+{
     SS_CONTRACT(COUNT_T)
     {
         GC_NOTRIGGER;
@@ -1231,8 +1228,8 @@ inline WCHAR *SString::GetRawUnicode() const
 
 // Private helper:
 // get the representation (ansi, unicode, utf8)
-inline SString::Representation SString::GetRepresentation() const 
-{ 
+inline SString::Representation SString::GetRepresentation() const
+{
     WRAPPER_NO_CONTRACT;
 
     return (Representation) SBuffer::GetRepresentationField();
@@ -1241,7 +1238,7 @@ inline SString::Representation SString::GetRepresentation() const
 // Private helper.
 // Set the representation.
 inline void SString::SetRepresentation(SString::Representation representation)
-{ 
+{
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACT_VOID
     {
@@ -1265,8 +1262,8 @@ inline void SString::SetRepresentation(SString::Representation representation)
 
 // Private helper:
 // Get the amount to shift the byte size to get a character count
-inline int SString::GetCharacterSizeShift() const 
-{ 
+inline int SString::GetCharacterSizeShift() const
+{
     WRAPPER_NO_CONTRACT;
 
     // Note that the flag is backwards; we want the default
@@ -1312,9 +1309,9 @@ FORCEINLINE void SString::NullTerminate()
 //----------------------------------------------------------------------------
 // private helper
 // Return true if the string is a literal.
-// A literal string has immutable memory. 
+// A literal string has immutable memory.
 //----------------------------------------------------------------------------
-inline BOOL SString::IsLiteral() const 
+inline BOOL SString::IsLiteral() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1324,7 +1321,7 @@ inline BOOL SString::IsLiteral() const
 //----------------------------------------------------------------------------
 // private helper:
 // RETURN true if the string allocated (and should delete) its buffer.
-// IsAllocated() will RETURN false for Literal strings and 
+// IsAllocated() will RETURN false for Literal strings and
 // stack-based strings (the buffer is on the stack)
 //----------------------------------------------------------------------------
 inline BOOL SString::IsAllocated() const
@@ -1338,7 +1335,7 @@ inline BOOL SString::IsAllocated() const
 // Return true after we call OpenBuffer(), but before we close it.
 // All SString operations are illegal while the buffer is open.
 //----------------------------------------------------------------------------
-#if _DEBUG    
+#if _DEBUG
 inline BOOL SString::IsBufferOpen() const
 {
     WRAPPER_NO_CONTRACT;
@@ -1351,7 +1348,7 @@ inline BOOL SString::IsBufferOpen() const
 // Return true if we've scanned the string to see if it is in the ASCII subset.
 //----------------------------------------------------------------------------
 inline BOOL SString::IsASCIIScanned() const
-{    
+{
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
@@ -1362,7 +1359,7 @@ inline BOOL SString::IsASCIIScanned() const
 // Set that we've scanned the string to see if it is in the ASCII subset.
 //----------------------------------------------------------------------------
 inline void SString::SetASCIIScanned() const
-{    
+{
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -1373,7 +1370,7 @@ inline void SString::SetASCIIScanned() const
 // Return true if we've normalized the string to unicode
 //----------------------------------------------------------------------------
 inline BOOL SString::IsNormalized() const
-{    
+{
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
@@ -1384,7 +1381,7 @@ inline BOOL SString::IsNormalized() const
 // Set that we've normalized the string to unicode
 //----------------------------------------------------------------------------
 inline void SString::SetNormalized() const
-{    
+{
     WRAPPER_NO_CONTRACT;
 
     const_cast<SString *>(this)->SBuffer::SetFlag3();
@@ -1394,7 +1391,7 @@ inline void SString::SetNormalized() const
 // Clear normalization
 //----------------------------------------------------------------------------
 inline void SString::ClearNormalized() const
-{    
+{
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -1439,10 +1436,10 @@ inline BOOL SString::IsIteratable() const
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    // Note that in many cases ANSI may be fixed width.  However we 
+    // Note that in many cases ANSI may be fixed width.  However we
     // currently still do not allow iterating on them, because we would have to
     // do character-by-character conversion on a character dereference (which must
-    // go to unicode) .  We may want to adjust this going forward to 
+    // go to unicode) .  We may want to adjust this going forward to
     // depending on perf in the non-ASCII but fixed width ANSI case.
 
     return ((GetRepresentation()&REPRESENTATION_VARIABLE_MASK) == 0);
@@ -1455,7 +1452,7 @@ inline BOOL SString::IsIteratable() const
 // count does not include the null-terminator, but the RETURN value does.
 //----------------------------------------------------------------------------
 inline COUNT_T SString::CountToSize(COUNT_T count) const
-{    
+{
     SS_CONTRACT(COUNT_T)
     {
         GC_NOTRIGGER;
@@ -1471,7 +1468,7 @@ inline COUNT_T SString::CountToSize(COUNT_T count) const
 
 //----------------------------------------------------------------------------
 // Private helper.
-// Return the maxmimum count of characters that could fit in a buffer of 
+// Return the maxmimum count of characters that could fit in a buffer of
 // 'size' bytes in the given representation.
 // 'size' includes the null terminator, but the RETURN value does not.
 //----------------------------------------------------------------------------
@@ -1493,7 +1490,7 @@ inline COUNT_T SString::SizeToCount(COUNT_T size) const
 //----------------------------------------------------------------------------
 // Private helper.
 // Return the maxmimum count of characters that could fit in the current
-// buffer including NULL terminator. 
+// buffer including NULL terminator.
 //----------------------------------------------------------------------------
 inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
 {
@@ -1505,7 +1502,7 @@ inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
 }
 
 
- 
+
 //----------------------------------------------------------------------------
 // Assert helper
 // Asser that the iterator is within the given string.
@@ -1543,7 +1540,7 @@ inline CHECK SString::CheckEmpty() const
 //----------------------------------------------------------------------------
 // Check the range of a count
 //----------------------------------------------------------------------------
-inline CHECK SString::CheckCount(COUNT_T count) 
+inline CHECK SString::CheckCount(COUNT_T count)
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(CheckSize(count*sizeof(WCHAR)));
@@ -1568,7 +1565,7 @@ inline CHECK SString::CheckRepresentation(int representation)
 
 #if CHECK_INVARIANTS
 //----------------------------------------------------------------------------
-// Assert helper. Check that the string only uses the ASCII subset of 
+// Assert helper. Check that the string only uses the ASCII subset of
 // codes.
 //----------------------------------------------------------------------------
 inline CHECK SString::CheckASCIIString(const CHAR *string)
@@ -1625,7 +1622,7 @@ inline CHECK SString::InternalInvariant() const
 //----------------------------------------------------------------------------
 // Return a writeable buffer that can store 'countChars'+1 unicode characters.
 // Call CloseBuffer when done.
-//----------------------------------------------------------------------------    
+//----------------------------------------------------------------------------
 inline WCHAR *SString::OpenUnicodeBuffer(COUNT_T countChars)
 {
     SS_CONTRACT(WCHAR*)
@@ -1665,7 +1662,7 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
 
     buffer = new WCHAR[GetCount() +1];
     wcscpy_s(buffer, GetCount() + 1, GetUnicode());
-    
+
     SS_RETURN buffer.Extract();
 }
 
@@ -1721,9 +1718,9 @@ inline UTF8 *SString::OpenUTF8Buffer(COUNT_T countBytes)
 
 //----------------------------------------------------------------------------
 // Private helper to open a raw buffer.
-// Called by public functions to open the buffer in the specific 
+// Called by public functions to open the buffer in the specific
 // representation.
-// While the buffer is opened, all other operations are illegal. Call 
+// While the buffer is opened, all other operations are illegal. Call
 // CloseBuffer() when done.
 //----------------------------------------------------------------------------
 inline void SString::OpenBuffer(SString::Representation representation, COUNT_T countChars)
@@ -1757,7 +1754,7 @@ inline void SString::OpenBuffer(SString::Representation representation, COUNT_T 
 }
 
 //----------------------------------------------------------------------------
-// Get the max size that can be passed to OpenUnicodeBuffer without causing 
+// Get the max size that can be passed to OpenUnicodeBuffer without causing
 // allocations.
 //----------------------------------------------------------------------------
 inline COUNT_T SString::GetUnicodeAllocation()
@@ -1767,16 +1764,16 @@ inline COUNT_T SString::GetUnicodeAllocation()
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-    } 
+    }
     CONTRACTL_END;
 
     COUNT_T allocation = GetAllocation();
-    return ( (allocation > sizeof(WCHAR)) 
+    return ( (allocation > sizeof(WCHAR))
         ? (allocation - sizeof(WCHAR)) / sizeof(WCHAR) : 0 );
 }
 
 //----------------------------------------------------------------------------
-// Close an open buffer. Assumes that we wrote exactly number of characters 
+// Close an open buffer. Assumes that we wrote exactly number of characters
 // we requested in OpenBuffer.
 //----------------------------------------------------------------------------
 inline void SString::CloseBuffer()
@@ -1801,7 +1798,7 @@ inline void SString::CloseBuffer()
 //----------------------------------------------------------------------------
 // CloseBuffer() tells the SString that we're done using the unsafe buffer.
 // countChars is the count of characters actually used (so we can set m_count).
-// This is important if we request a buffer larger than what we actually 
+// This is important if we request a buffer larger than what we actually
 // used.
 //----------------------------------------------------------------------------
 inline void SString::CloseBuffer(COUNT_T finalCount)
@@ -1852,7 +1849,7 @@ inline void SString::EnsureWritable() const
 }
 
 //-----------------------------------------------------------------------------
-// Convert the internal representation to be a fixed size 
+// Convert the internal representation to be a fixed size
 //-----------------------------------------------------------------------------
 inline void SString::ConvertToFixed() const
 {
@@ -1881,7 +1878,7 @@ inline void SString::ConvertToFixed() const
 }
 
 //-----------------------------------------------------------------------------
-// Convert the internal representation to be an iteratable one (current 
+// Convert the internal representation to be an iteratable one (current
 // requirements here are that it be trivially convertable to unicode chars.)
 //-----------------------------------------------------------------------------
 inline void SString::ConvertToIteratable() const
@@ -1930,7 +1927,7 @@ inline SString::UIterator SString::BeginUnicode()
 
     SS_RETURN UIterator(this, 0);
 }
-        
+
 inline SString::UIterator SString::EndUnicode()
 {
     SS_CONTRACT(SString::UIterator)
@@ -1967,7 +1964,7 @@ FORCEINLINE SString::CIterator SString::Begin() const
 
     SS_RETURN CIterator(this, 0);
 }
-        
+
 FORCEINLINE SString::CIterator SString::End() const
 {
     SS_CONTRACT(SString::CIterator)
@@ -1988,7 +1985,7 @@ FORCEINLINE SString::CIterator SString::End() const
 // Create Iterators on the string.
 //-----------------------------------------------------------------------------
 
-FORCEINLINE SString::Iterator SString::Begin() 
+FORCEINLINE SString::Iterator SString::Begin()
 {
     SS_CONTRACT(SString::Iterator)
     {
@@ -2005,8 +2002,8 @@ FORCEINLINE SString::Iterator SString::Begin()
 
     SS_RETURN Iterator(this, 0);
 }
-        
-FORCEINLINE SString::Iterator SString::End() 
+
+FORCEINLINE SString::Iterator SString::End()
 {
     SS_CONTRACT(SString::Iterator)
     {
@@ -2049,7 +2046,7 @@ inline SString::Index::Index(SString *string, SCOUNT_T index)
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
-        
+
     m_characterSizeShift = string->GetCharacterSizeShift();
 
     SS_RETURN;
@@ -2125,7 +2122,7 @@ inline WCHAR SString::Index::operator*() const
 }
 
 inline void SString::Index::operator->() const
-{ 
+{
     LIMITED_METHOD_CONTRACT;
 }
 
