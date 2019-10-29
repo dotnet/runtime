@@ -4,13 +4,16 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 
 namespace System.Resources.Extensions.Tests
 {
@@ -49,7 +52,15 @@ namespace System.Resources.Extensions.Tests
             new Dictionary<string, object>()
             {
                 ["enum_bin"] = DayOfWeek.Friday,
-                ["point_bin"] = new Point(4, 8)
+                ["point_bin"] = new Point(4, 8),
+                ["array_int_bin"] = new int[] { 1, 2, 3, 4, 5, 6 },
+                ["list_int_bin"] = new List<int>() { 1, 2, 3, 4, 5, 6 },
+                ["stack_Point_bin"] = new Stack<Point>(new [] { new Point(4, 8), new Point(2, 5) }),
+                ["dict_string_string_bin"] = new Dictionary<string, string>()
+                {
+                    { "key1", "value1" },
+                    { "key2", "value2" }
+                }
             };
 
         public static Dictionary<string, object> BinaryFormattedWithoutDrawingNoType { get; } =
@@ -142,21 +153,75 @@ namespace System.Resources.Extensions.Tests
             return converter.ConvertToInvariantString(value);
         }
 
-        public static string GetSerializationTypeName(Type runtimeType)
+
+        // Copied from  FormatterServices.cs
+        internal static string GetClrTypeFullName(Type type)
         {
-            object[] typeAttributes = runtimeType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
-            if (typeAttributes != null && typeAttributes.Length > 0)
+            return type.IsArray ?
+                GetClrTypeFullNameForArray(type) :
+                GetClrTypeFullNameForNonArrayTypes(type);
+        }
+
+        private static string GetClrTypeFullNameForArray(Type type)
+        {
+            int rank = type.GetArrayRank();
+            Debug.Assert(rank >= 1);
+            string typeName = GetClrTypeFullName(type.GetElementType());
+            return rank == 1 ?
+                typeName + "[]" :
+                typeName + "[" + new string(',', rank - 1) + "]";
+        }
+
+        private static string GetClrTypeFullNameForNonArrayTypes(Type type)
+        {
+            if (!type.IsGenericType)
             {
-                TypeForwardedFromAttribute typeForwardedFromAttribute = (TypeForwardedFromAttribute)typeAttributes[0];
-                return $"{runtimeType.FullName}, {typeForwardedFromAttribute.AssemblyFullName}";
-            }
-            else if (runtimeType.Assembly == typeof(object).Assembly)
-            {
-                // no attribute and in corelib. Strip the assembly name and hope its in CoreLib on other frameworks
-                return runtimeType.FullName;
+                return type.FullName;
             }
 
-            return runtimeType.AssemblyQualifiedName;
+            var builder = new StringBuilder(type.GetGenericTypeDefinition().FullName).Append("[");
+
+            foreach (Type genericArgument in type.GetGenericArguments())
+            {
+                builder.Append("[").Append(GetClrTypeFullName(genericArgument)).Append(", ");
+                builder.Append(GetClrAssemblyName(genericArgument)).Append("],");
+            }
+
+            //remove the last comma and close typename for generic with a close bracket
+            return builder.Remove(builder.Length - 1, 1).Append("]").ToString();
+        }
+
+        private static string GetClrAssemblyName(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            // Special case types like arrays
+            Type attributedType = type;
+            while (attributedType.HasElementType)
+            {
+                attributedType = attributedType.GetElementType();
+            }
+
+            foreach (Attribute first in attributedType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false))
+            {
+                return ((TypeForwardedFromAttribute)first).AssemblyFullName;
+            }
+
+            return type.Assembly.FullName;
+        }
+
+        public static string GetSerializationTypeName(Type runtimeType)
+        {
+            string typeName = GetClrTypeFullName(runtimeType);
+            if (runtimeType.Assembly == typeof(object).Assembly)
+            {
+                // In corelib. Strip the assembly name and hope its in CoreLib on other frameworks
+                return typeName;
+            }
+            return $"{typeName}, {GetClrAssemblyName(runtimeType)}";
         }
 
         public static void WriteResources(string file)
@@ -178,7 +243,11 @@ namespace System.Resources.Extensions.Tests
                     writer.AddResource(pair.Key, GetStringValue(pair.Value), GetSerializationTypeName(pair.Value.GetType()));
                 }
 
-                var formatter = new BinaryFormatter();
+                var formatter = new BinaryFormatter()
+                {
+                    Binder = new TypeNameManglingSerializationBinder()
+                };
+
                 foreach (var pair in BinaryFormattedWithoutDrawing)
                 {
                     using (MemoryStream memoryStream = new MemoryStream())
@@ -215,6 +284,44 @@ namespace System.Resources.Extensions.Tests
                 }
 
                 writer.Generate();
+            }
+        }
+
+        /// <summary>
+        /// An approximation of ResXSerializationBinder's behavior (without retargeting) 
+        /// </summary>
+        internal class TypeNameManglingSerializationBinder : SerializationBinder
+        {
+            static readonly string s_coreAssemblyName = typeof(object).Assembly.FullName;
+            static readonly string s_mscorlibAssemblyName = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
+            public override void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            {
+                typeName = null;
+                // Apply type-forwarded from here, so that we mimic what would happen in ResXWriter which runs in VS on desktop
+                string assemblyQualifiedTypeName = GetSerializationTypeName(serializedType);
+
+                // workaround for https://github.com/dotnet/corefx/issues/42092
+                assemblyQualifiedTypeName = assemblyQualifiedTypeName.Replace(s_coreAssemblyName, s_mscorlibAssemblyName);
+
+                int pos = assemblyQualifiedTypeName.IndexOf(',');
+                if (pos > 0 && pos < assemblyQualifiedTypeName.Length - 1)
+                {
+                    assemblyName = assemblyQualifiedTypeName.Substring(pos + 1).TrimStart();
+                    string newTypeName = assemblyQualifiedTypeName.Substring(0, pos);
+                    if (!string.Equals(newTypeName, serializedType.FullName, StringComparison.InvariantCulture))
+                    {
+                        typeName = newTypeName;
+                    }
+                    return;
+                }
+                base.BindToName(serializedType, out assemblyName, out typeName);
+            }
+
+            public override Type BindToType(string assemblyName, string typeName)
+            {
+                // We should never be using this binder during Deserialization
+                throw new NotSupportedException($"{nameof(TypeNameManglingSerializationBinder)}.{nameof(BindToType)} should not be used during testing.");
             }
         }
     }
