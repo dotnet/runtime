@@ -19,7 +19,7 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
-    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)restore\winrt\winrt.depproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
@@ -116,7 +116,7 @@
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Resources.ResourceManager" />
-    <ProjectReference Include="$(RepositoryEngineeringDir)restore\winrt\winrt.depproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)restore\winrt\winrt.depproj" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>

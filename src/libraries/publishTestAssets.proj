@@ -1,9 +1,9 @@
 <Project DefaultTargets="PublishTestAssets">
-  <Import Project="..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
   this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->
-  <Import Project="..\Directory.Build.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
 
   <PropertyGroup>
     <AssetManifestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'TestAssetsManifests'))</AssetManifestDir>

@@ -88,7 +88,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
-    <Compile Include="$(SourceDir)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs">
       <Link>System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.EventStream.cs">

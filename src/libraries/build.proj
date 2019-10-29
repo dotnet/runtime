@@ -20,11 +20,11 @@
 
   <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-      <_RestoreProjects Include="$(RepositoryEngineeringDir)restore\dirs.proj" Build="true" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
     </ItemGroup>
     
     <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
-      <_RestoreProjects Include="$(SourceDir)tests.proj" Build="false" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Build="false" />
     </ItemGroup>
 
     <MSBuild Projects="@(_RestoreProjects)" Targets="Restore" Properties="$(ProjectProperties)" />
@@ -33,7 +33,7 @@
 
   <Target Name="BuildNative">
     <ItemGroup>
-      <_BuildNativeProjects Include="src\Native\build-native.proj" />
+      <_BuildNativeProjects Include="$(MSBuildThisFileDirectory)Native\build-native.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_BuildNativeProjects)" Properties="$(ProjectProperties)" />
@@ -41,7 +41,7 @@
 
   <Target Name="BuildManaged">
     <ItemGroup>
-      <_BuildMangedProjects Include="src\dirs.proj" />
+      <_BuildMangedProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
@@ -49,7 +49,7 @@
 
   <Target Name="BuildTests">
     <ItemGroup>
-      <_TestProjects Include="src\tests.proj" />
+      <_TestProjects Include="$(MSBuildThisFileDirectory)tests.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_TestProjects)"
@@ -59,7 +59,7 @@
 
   <Target Name="Test">
     <ItemGroup>
-      <_TestProjects Include="src\tests.proj" />
+      <_TestProjects Include="$(MSBuildThisFileDirectory)tests.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_TestProjects)"
@@ -69,7 +69,7 @@
 
   <Target Name="Pack">
     <ItemGroup>
-      <_PackProjects Include="src\packages.builds" />
+      <_PackProjects Include="$(MSBuildThisFileDirectory)packages.builds" />
     </ItemGroup>
 
     <MSBuild Projects="@(_PackProjects)" Properties="$(ProjectProperties)" />
@@ -82,11 +82,11 @@
   <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
   <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
     <ItemGroup>
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" 
-                        Exclude="$(MSBuildThisFileDirectory)src/shims/**/*.*csproj"/>
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" />
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" />
-      <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/Directory.Build.props" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*csproj" 
+                        Exclude="$(MSBuildThisFileDirectory)shims/**/*.*csproj"/>
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*ilproj" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*vbproj" />
+      <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)*/Directory.Build.props" />
       <SolutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
     </ItemGroup>
   </Target>

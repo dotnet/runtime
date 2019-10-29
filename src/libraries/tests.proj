@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <Project Include="$(RepoRoot)pkg\test\testPackages.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj" />
   </ItemGroup>
 
   <Target Name="IncludeProjectReferences" DependsOnTargets="FilterProjects">

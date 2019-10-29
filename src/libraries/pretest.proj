@@ -31,7 +31,7 @@
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
     <PropertyGroup>
-      <_TestProjectRootDir>$(SourceDir)</_TestProjectRootDir>
+      <_TestProjectRootDir>$(LibrariesProjectRoot)</_TestProjectRootDir>
       <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
     </PropertyGroup>
     <ItemGroup>

@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
-    <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
+    <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
     <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(RefPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
 

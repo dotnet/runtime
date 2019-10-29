@@ -18,5 +18,5 @@
     <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
+  <Import Project="..\dir.traversal.targets" />
 </Project>

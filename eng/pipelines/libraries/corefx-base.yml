@@ -159,7 +159,7 @@ jobs:
 
           - ${{ if eq(job.submitToHelix, 'true') }}:
             - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-              - script: $(_msbuildCommand) eng/publishTestAssets.proj
+              - script: $(_msbuildCommand) src/publishTestAssets.proj
                       /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
                       /p:AccountKey=$(dotnetfeed-storage-access-key-1)
                       /p:ExpectedFeedUrl=$(_dotnetFeedUrl)

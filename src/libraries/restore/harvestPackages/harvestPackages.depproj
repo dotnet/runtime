@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
-  <Import Project="$(RepoRoot)pkg/baseline/baseline.props" />
+  <Import Project="$(PkgDir)baseline/baseline.props" />
 
   <!-- only restore this project during the build, don't copy any of it's packages
        The sole purpose of this project is to download packages that can be examined
@@ -12,7 +12,7 @@
 
   <Target Name="AddPackageDownload">
     <ItemGroup>
-      <_AllPkgProjs Include="$(RepoRoot)src/**/*.pkgproj" />
+      <_AllPkgProjs Include="$(LibrariesProjectRoot)*\pkg\**\*.pkgproj" />
     </ItemGroup>
     <!-- Need separate ItemGroups so right metadata gets populated -->
     <ItemGroup>

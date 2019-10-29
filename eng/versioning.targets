@@ -10,7 +10,7 @@
 
   <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
        Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
-  <ItemGroup Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' AND '$(IsTestProject)' != 'true'" >
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'" >
     <AssemblyMetadata Include=".NETFrameworkAssembly">
       <Value></Value>
     </AssemblyMetadata>
