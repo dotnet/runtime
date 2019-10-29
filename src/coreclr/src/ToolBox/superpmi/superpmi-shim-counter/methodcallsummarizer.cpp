@@ -20,6 +20,17 @@ MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
     dataFileName = GetResultFileName(logPath, fileName, extension);
 }
 
+MethodCallSummarizer::~MethodCallSummarizer()
+{
+    delete [] dataFileName;
+    delete [] counts;
+    for (int i = 0; i < numNames; i++)
+    {
+        delete [] names[i];
+    }
+    delete [] names;
+}
+
 // lots of ways will be faster.. this happens to be decently simple and good enough for the task at hand and nicely
 // sorts the output. in this approach the most commonly added items are at the top of the list... 60% landed in the
 // first
@@ -54,7 +65,7 @@ void MethodCallSummarizer::AddCall(const char* name)
     if (tnames != nullptr)
     {
         memcpy(names, tnames, numNames * sizeof(char*));
-        delete tnames;
+        delete [] tnames;
     }
 
     size_t tlen     = strlen(name);
@@ -65,7 +76,7 @@ void MethodCallSummarizer::AddCall(const char* name)
     if (tcounts != nullptr)
     {
         memcpy(counts, tcounts, numNames * sizeof(unsigned int));
-        delete tcounts;
+        delete [] tcounts;
     }
     counts[numNames] = 1;
 
