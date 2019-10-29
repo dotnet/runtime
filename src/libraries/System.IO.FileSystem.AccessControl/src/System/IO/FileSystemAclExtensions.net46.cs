@@ -8,6 +8,17 @@ namespace System.IO
 {
     public static class FileSystemAclExtensions
     {
+        public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
+        {
+            if (fileInfo == null)
+                throw new ArgumentNullException(nameof(fileInfo));
+
+            if (fileSecurity == null)
+                throw new ArgumentNullException(nameof(fileSecurity));
+
+            return new FileStream(fileInfo.FullName, mode, rights, share, bufferSize, options, fileSecurity);
+        }
+
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directoryInfo == null)

@@ -4,18 +4,20 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using Microsoft.DotNet.PlatformAbstractions;
-using Microsoft.VisualBasic;
 using Xunit;
 
 namespace System.IO
 {
     public class FileSystemAclExtensionsTests
     {
+        private const int DefaultBufferSize = 4096;
+
+
         #region Test methods
+
+        #region GetAccessControl
 
         [Fact]
         public void GetAccessControl_DirectoryInfo_InvalidArguments()
@@ -120,6 +122,10 @@ namespace System.IO
             }
         }
 
+        #endregion
+
+        #region SetAccessControl
+
         [Fact]
         public void SetAccessControl_DirectoryInfo_DirectorySecurity_InvalidArguments()
         {
@@ -195,20 +201,66 @@ namespace System.IO
             }
         }
 
+        #endregion
+
+        #region DirectoryInfo Create
+
         [Fact]
         public void DirectoryInfo_Create_NullDirectoryInfo()
         {
             DirectoryInfo info = null;
             DirectorySecurity security = new DirectorySecurity();
 
-            if (PlatformDetection.IsFullFramework)
+            Assert.Throws<ArgumentNullException>("directoryInfo", () =>
             {
-                Assert.Throws<ArgumentNullException>(() => FileSystemAclExtensions.Create(info, security));
-            }
-            else
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, security);
+                }
+                else
+                {
+                    info.Create(security);
+                }
+            });
+        }
+
+        [Fact]
+        public void DirectoryInfo_Create_NullDirectorySecurity()
+        {
+            DirectoryInfo info = new DirectoryInfo("path");
+
+            Assert.Throws<ArgumentNullException>("directorySecurity", () =>
             {
-                Assert.Throws<ArgumentNullException>(() => info.Create(security));
-            }
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, null);
+                }
+                else
+                {
+                    info.Create(null);
+                }
+            });
+        }
+
+        [Fact]
+        public void DirectoryInfo_Create_NotFound()
+        {
+            using var directory = new TempDirectory();
+            string path = Path.Combine(directory.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+            DirectoryInfo info = new DirectoryInfo(path);
+            DirectorySecurity security = new DirectorySecurity();
+
+            Assert.Throws<UnauthorizedAccessException>(() =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, security);
+                }
+                else
+                {
+                    info.Create(security);
+                }
+            });
         }
 
         [Fact]
@@ -218,45 +270,199 @@ namespace System.IO
             VerifyDirectorySecurity(security);
         }
 
-        [Fact]
-        public void DirectoryInfo_Create_NullDirectorySecurity()
-        {
-            DirectoryInfo info = new DirectoryInfo("path");
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.Throws<ArgumentNullException>(() => FileSystemAclExtensions.Create(info, null));
-            }
-            else
-            {
-                Assert.Throws<ArgumentNullException>(() => info.Create(null));
-            }
-        }
-
-        [Fact]
-        public void DirectoryInfo_Create_NotFound()
-        {
-            DirectoryInfo info = new DirectoryInfo(@"W:\\I\\Do\\Not\\Exist");
-            DirectorySecurity security = new DirectorySecurity();
-            Assert.Throws<DirectoryNotFoundException>(() => info.Create(security));
-        }
-
         [Theory]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Deny)]
         [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadData, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.Write, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.Write, AccessControlType.Deny)]
         [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Deny)]
         public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(
             WellKnownSidType sid,
             FileSystemRights rights,
             AccessControlType controlType)
         {
-
             DirectorySecurity security = GetDirectorySecurity(sid, rights, controlType);
             VerifyDirectorySecurity(security);
         }
 
         #endregion
+
+        #region FileInfo Create
+
+        [Fact]
+        public void FileInfo_Create_NullFileInfo()
+        {
+            FileInfo info = null;
+            FileSecurity security = new FileSecurity();
+
+            Assert.Throws<ArgumentNullException>("fileInfo", () =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+                else
+                {
+                    info.Create(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Fact]
+        public void FileInfo_Create_NullFileSecurity()
+        {
+            FileInfo info = new FileInfo("path");
+
+            Assert.Throws<ArgumentNullException>("fileSecurity", () =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, null);
+                }
+                else
+                {
+                    info.Create(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, null);
+                }
+            });
+        }
+
+        [Fact]
+        public void FileInfo_Create_NotFound()
+        {
+            using var directory = new TempDirectory();
+            string path = Path.Combine(directory.Path, Guid.NewGuid().ToString(), "file.txt");
+            FileInfo info = new FileInfo(path);
+            FileSecurity security = new FileSecurity();
+
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+                else
+                {
+                    info.Create(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData((FileMode)int.MinValue)]
+        [InlineData((FileMode)0)]
+        [InlineData((FileMode)int.MaxValue)]
+        public void FileInfo_Create_FileSecurity_InvalidFileMode(FileMode invalidMode)
+        {
+            FileSecurity security = new FileSecurity();
+            FileInfo info = new FileInfo("path");
+
+            Assert.Throws<ArgumentOutOfRangeException>("mode", () =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, invalidMode, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security); ;
+                }
+                else
+                {
+                    info.Create(invalidMode, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData((FileShare)(-1))]
+        [InlineData((FileShare)int.MaxValue)]
+        public void FileInfo_Create_FileSecurity_InvalidFileShare(FileShare invalidFileShare)
+        {
+            FileSecurity security = new FileSecurity();
+            FileInfo info = new FileInfo("path");
+
+            Assert.Throws<ArgumentOutOfRangeException>("share", () =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security);
+                }
+                else
+                {
+                    info.Create(FileMode.Create, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(int.MinValue)]
+        [InlineData(0)]
+        public void FileInfo_Create_FileSecurity_InvalidBufferSize(int invalidBufferSize)
+        {
+            FileSecurity security = new FileSecurity();
+            FileInfo info = new FileInfo("path");
+
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, invalidBufferSize, FileOptions.None, security);
+                }
+                else
+                {
+                    info.Create(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, invalidBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(FileMode.Truncate, FileSystemRights.Read)]
+        [InlineData(FileMode.Truncate, FileSystemRights.ReadData)]
+        [InlineData(FileMode.CreateNew, FileSystemRights.Read)]
+        [InlineData(FileMode.CreateNew, FileSystemRights.ReadData)]
+        [InlineData(FileMode.Create, FileSystemRights.Read)]
+        [InlineData(FileMode.Create, FileSystemRights.ReadData)]
+        [InlineData(FileMode.Append, FileSystemRights.Read)]
+        [InlineData(FileMode.Append, FileSystemRights.ReadData)]
+        public void FileInfo_Create_FileSecurity_ForbiddenCombo_FileModeFileSystemSecurity(FileMode mode, FileSystemRights rights)
+        {
+            FileSecurity security = new FileSecurity();
+            FileInfo info = new FileInfo("path");
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    FileSystemAclExtensions.Create(info, mode, rights, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+                else
+                {
+                    info.Create(mode, rights, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
+                }
+            });
+        }
+
+        [Fact]
+        public void FileInfo_Create_DefaultFileSecurity()
+        {
+            FileSecurity security = new FileSecurity();
+            VerifyFileSecurity(security);
+        }
+
+        [Theory]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Deny)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Allow)]
+        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Deny)]
+        public void FileInfo_Create_FileSecurity_SpecificAccessRule(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
+        {
+            FileSecurity security = GetFileSecurity(sid, rights, controlType);
+            VerifyFileSecurity(security);
+        }
+
+        #endregion
+
+        #endregion
+
 
         #region Helper methods
 
@@ -274,24 +480,58 @@ namespace System.IO
         private void VerifyDirectorySecurity(DirectorySecurity expectedSecurity)
         {
             using var directory = new TempDirectory();
-
             string path = Path.Combine(directory.Path, "directory");
             DirectoryInfo info = new DirectoryInfo(path);
 
             info.Create(expectedSecurity);
 
             Assert.True(Directory.Exists(path));
-            Assert.Equal(typeof(FileSystemRights), expectedSecurity.AccessRightType);
 
             DirectoryInfo actualInfo = new DirectoryInfo(info.FullName);
 
             DirectorySecurity actualSecurity = actualInfo.GetAccessControl();
 
-            VerifyDirectoryAccessSecurity(expectedSecurity, actualSecurity);
+            VerifyAccessSecurity(expectedSecurity, actualSecurity);
         }
 
-        private void VerifyDirectoryAccessSecurity(DirectorySecurity expectedSecurity, DirectorySecurity actualSecurity)
+        private FileSecurity GetFileSecurity(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
         {
+            FileSecurity security = new FileSecurity();
+
+            SecurityIdentifier identity = new SecurityIdentifier(sid, null);
+            FileSystemAccessRule accessRule = new FileSystemAccessRule(identity, rights, controlType);
+            security.AddAccessRule(accessRule);
+
+            return security;
+        }
+
+        private void VerifyFileSecurity(FileSecurity expectedSecurity)
+        {
+            VerifyFileSecurity(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
+        }
+
+        private void VerifyFileSecurity(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
+        {
+            using var directory = new TempDirectory();
+
+            string path = Path.Combine(directory.Path, "file.txt");
+            FileInfo info = new FileInfo(path);
+
+            info.Create(mode, rights, share, bufferSize, options, expectedSecurity);
+
+            Assert.True(File.Exists(path));
+
+            FileInfo actualInfo = new FileInfo(info.FullName);
+
+            FileSecurity actualSecurity = actualInfo.GetAccessControl();
+
+            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+        }
+
+        private void VerifyAccessSecurity(CommonObjectSecurity expectedSecurity, CommonObjectSecurity actualSecurity)
+        {
+            Assert.Equal(typeof(FileSystemRights), expectedSecurity.AccessRightType);
+
             Assert.Equal(typeof(FileSystemRights), actualSecurity.AccessRightType);
 
             List<FileSystemAccessRule> expectedAccessRules = expectedSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
@@ -300,7 +540,6 @@ namespace System.IO
             List<FileSystemAccessRule> actualAccessRules = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
                 .Cast<FileSystemAccessRule>().ToList();
 
-            // If DirectorySecurity is created without arguments, GetAccessRules will return zero rules
             Assert.Equal(expectedAccessRules.Count, actualAccessRules.Count);
             if (expectedAccessRules.Count > 0)
             {
