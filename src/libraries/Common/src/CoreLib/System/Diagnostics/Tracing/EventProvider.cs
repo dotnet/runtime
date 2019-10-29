@@ -294,19 +294,22 @@ namespace System.Diagnostics.Tracing
                             GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
                         {
                             args = new Dictionary<string, string?>(4);
-                            Debug.Assert(data != null);
-                            while (keyIndex < data.Length)
+                            // data can be null if the filterArgs had a very large size which failed our sanity check
+                            if (data != null)
                             {
-                                int keyEnd = FindNull(data, keyIndex);
-                                int valueIdx = keyEnd + 1;
-                                int valueEnd = FindNull(data, valueIdx);
-                                if (valueEnd < data.Length)
+                                while (keyIndex < data.Length)
                                 {
-                                    string key = System.Text.Encoding.UTF8.GetString(data, keyIndex, keyEnd - keyIndex);
-                                    string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
-                                    args[key] = value;
+                                    int keyEnd = FindNull(data, keyIndex);
+                                    int valueIdx = keyEnd + 1;
+                                    int valueEnd = FindNull(data, valueIdx);
+                                    if (valueEnd < data.Length)
+                                    {
+                                        string key = System.Text.Encoding.UTF8.GetString(data, keyIndex, keyEnd - keyIndex);
+                                        string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
+                                        args[key] = value;
+                                    }
+                                    keyIndex = valueEnd + 1;
                                 }
-                                keyIndex = valueEnd + 1;
                             }
                         }
 
@@ -619,7 +622,10 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 1024)
+                // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
+                // can legitimately use large filter data buffers to encode a large set of events and properties
+                // that should be gathered so I am bumping the limit from 1K -> 100K.
+                if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
                 {
                     data = new byte[filterData->Size];
                     Marshal.Copy((IntPtr)filterData->Ptr, data, 0, data.Length);
