@@ -8220,7 +8220,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
         // Insert a GC poll.
-        bool insertedBB = fgCreateGCPoll(GCPOLL_CALL, compCurBB);
+        bool insertedBB = fgCreateGCPoll(GCPOLL_CALL, compCurBB, compCurStmt);
         assert(!insertedBB); // No new block should be inserted
     }
 
