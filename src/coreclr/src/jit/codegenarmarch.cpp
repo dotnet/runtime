@@ -131,7 +131,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     }
 #endif // DEBUG
 
-#ifdef _TARGET_ARM64_ // TODO-ARM: is this applicable to ARM32?
     // Is this a node whose value is already in a register?  LSRA denotes this by
     // setting the GTF_REUSE_REG_VAL flag.
     if (treeNode->IsReuseRegVal())
@@ -141,7 +140,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
-#endif // _TARGET_ARM64_
 
     // contained nodes are part of their parents for codegen purposes
     // ex : immediates, most LEAs
