@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -195,6 +196,25 @@ namespace System.Runtime.Loader
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
                 asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
                 null;
+        }
+
+        // Assembly load runtime activity name
+        private const string AssemblyLoadName = "AssemblyLoad";
+
+        /// <summary>
+        /// Called by the runtime to start an assembly load activity for tracing
+        /// </summary>
+        private static void StartAssemblyLoad(ref Guid activityId, ref Guid relatedActivityId)
+        {
+            ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, ref relatedActivityId, EventActivityOptions.Recursive);
+        }
+
+        /// <summary>
+        /// Called by the runtime to stop an assembly load activity for tracing
+        /// </summary>
+        private static void StopAssemblyLoad(ref Guid activityId)
+        {
+            ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId);
         }
     }
 }
