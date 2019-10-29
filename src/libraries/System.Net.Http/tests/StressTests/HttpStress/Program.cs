@@ -36,7 +36,7 @@ public static class Program
     {
         var cmd = new RootCommand();
         cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
-        cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<Uri>("serverUri", new Uri("https://localhost:5001")) });
+        cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<string>("serverUri", "https://localhost:5001") });
         cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
         cmd.AddOption(new Option("-maxExecutionTime", "Maximum stress execution time, in minutes. Defaults to infinity.") { Argument = new Argument<double?>("minutes", null) });
         cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
@@ -78,7 +78,7 @@ public static class Program
         config = new Configuration()
         {
             RunMode = cmdline.ValueForOption<RunMode>("-runMode"),
-            ServerUri = cmdline.ValueForOption<Uri>("-serverUri"),
+            ServerUri = cmdline.ValueForOption<string>("-serverUri"),
             ListOperations = cmdline.ValueForOption<bool>("-listOps"),
 
             HttpVersion = cmdline.ValueForOption<Version>("-http"),
@@ -124,7 +124,7 @@ public static class Program
             return ExitCode.CliError;
         }
 
-        if (!config.ServerUri.Scheme.StartsWith("http"))
+        if (!config.ServerUri.StartsWith("http"))
         {
             Console.Error.WriteLine("Invalid server uri");
             return ExitCode.CliError;

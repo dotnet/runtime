@@ -22,7 +22,7 @@ namespace HttpStress
 
     public class Configuration
     {
-        public Uri ServerUri { get; set; } = new Uri("http://placeholder");
+        public string ServerUri { get; set; } = "";
         public RunMode RunMode { get; set; }
         public bool ListOperations { get; set; }
 
