@@ -371,12 +371,14 @@ namespace Mono.Linker.Steps {
 
 					if (_context.KeepUsedAttributeTypesOnly) {
 						_lateMarkedAttributes.Enqueue (new AttributeProviderPair (ca, provider));
-					} else {
-						if (!ShouldMarkCustomAttribute (ca, provider))
-							continue;
-
-						MarkCustomAttribute (ca);
+						continue;
 					}
+
+					if (!ShouldMarkCustomAttribute (ca, provider))
+						continue;
+
+					MarkCustomAttribute (ca);
+					MarkSpecialCustomAttributeDependencies (ca);
 				}
 			} finally {
 				Tracer.Pop ();
@@ -903,6 +905,7 @@ namespace Mono.Linker.Steps {
 
 				markOccurred = true;
 				MarkCustomAttribute (customAttribute);
+				MarkSpecialCustomAttributeDependencies (customAttribute);
 			}
 
 			// requeue the items we skipped in case we need to make another pass
@@ -1159,12 +1162,22 @@ namespace Mono.Linker.Steps {
 				case "EventDataAttribute" when attrType.Namespace == "System.Diagnostics.Tracing":
 					MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
 					break;
-				case "TypeConverterAttribute" when attrType.Namespace == "System.ComponentModel":
-					// The attribute can be applied anywhere but in reality it's always associated with type
-					MarkTypeConverterDependency (attribute);
-					break;
 				}
 			}
+		}
+
+		//
+		// Used for known framework attributes which can be applied to any element
+		//
+		bool MarkSpecialCustomAttributeDependencies (CustomAttribute ca)
+		{
+			var dt = ca.Constructor.DeclaringType;
+			if (dt.Name == "TypeConverterAttribute" && dt.Namespace == "System.ComponentModel") {
+				MarkTypeConverterDependency (ca);
+				return true;
+			}
+
+			return false;
 		}
 
 		void MarkMethodSpecialCustomAttributes (MethodDefinition method)
