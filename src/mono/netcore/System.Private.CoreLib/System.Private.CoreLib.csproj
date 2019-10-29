@@ -190,6 +190,7 @@
       <Compile Include="src\System.Diagnostics\Debugger.cs" />
       <Compile Include="src\System.Diagnostics\StackFrame.cs" />
       <Compile Include="src\System.Diagnostics\StackTrace.cs" />
+      <Compile Include="src\System.Diagnostics\NativeRuntimeEventSource.cs" />
       <Compile Include="src\System.IO\Stream.cs" />
       <Compile Include="src\System.IO\FileLoadException.cs" />
       <Compile Include="src\System.Reflection\Assembly.cs" />
