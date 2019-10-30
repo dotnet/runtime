@@ -14,7 +14,7 @@ public class ProcessParameters
     /// <summary>
     /// Maximum time for CPAOT / Crossgen compilation.
     /// </summary>
-    public const int DefaultIlcTimeout = 5 * 60 * 1000;
+    public const int DefaultIlcTimeout = 10 * 60 * 1000;
 
     /// <summary>
     /// Test execution timeout.
