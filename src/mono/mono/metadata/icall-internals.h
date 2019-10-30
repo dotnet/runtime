@@ -84,6 +84,9 @@ typedef enum {
 gconstpointer
 mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_missing, guint32 *flags);
 
+gboolean
+mono_is_missing_icall_addr (gconstpointer addr);
+
 #ifdef __cplusplus
 
 #if !HOST_ANDROID

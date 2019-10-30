@@ -1573,7 +1573,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		} else {
 			target = mono_lookup_internal_call (patch_info->data.method);
 
-			if (!target && run_cctors)
+			if (mono_is_missing_icall_addr (target) && run_cctors)
 				g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
 		}
 		break;

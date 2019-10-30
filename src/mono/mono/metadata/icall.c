@@ -9146,6 +9146,15 @@ no_icall_table (void)
 	g_assert_not_reached ();
 }
 
+gboolean
+mono_is_missing_icall_addr (gconstpointer addr)
+{
+	return addr == NULL || addr == no_icall_table;
+}
+
+/*
+ * Returns either NULL or no_icall_table for missing icalls.
+ */
 gconstpointer
 mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_missing, guint32 *flags)
 {
