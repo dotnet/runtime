@@ -32,19 +32,19 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetApiCompatPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>5.0.0-beta.19527.3</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetApiCompatPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19463.3</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetGenAPIPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.1-beta.19463.3</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19463.3</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19531.4</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19463.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetBuildTasksPackagingPackageVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetRemoteExecutorPackageVersion>
-    <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
     <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppPackageVersion>
@@ -146,7 +146,6 @@
     <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
     <MicrosoftSymbolUploaderBuildTaskPackage>Microsoft.SymbolUploader.Build.Task</MicrosoftSymbolUploaderBuildTaskPackage>
   </PropertyGroup>
-
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
 </Project>
