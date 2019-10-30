@@ -6957,6 +6957,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
+    // Heuristic: regular calls to noreturn methods can sometimes be
+    // merged, so if we have multiple such calls, we defer tail calling.
+    if (call->IsNoReturn() && (optNoReturnCallCount > 1))
+    {
+        failTailCall("Defer tail calling throw helper; anticipating merge");
+        return nullptr;
+    }
+
 #ifdef _TARGET_AMD64_
     // Needed for Jit64 compat.
     // In future, enabling tail calls from methods that need GS cookie check
@@ -16605,10 +16613,9 @@ void Compiler::fgMorph()
     EndPhase(PHASE_MERGE_FINALLY_CHAINS);
 
     fgCloneFinally();
+    fgUpdateFinallyTargetFlags();
 
     EndPhase(PHASE_CLONE_FINALLY);
-
-    fgUpdateFinallyTargetFlags();
 
     /* For x64 and ARM64 we need to mark irregular parameters */
     lvaRefCountState = RCS_EARLY;
