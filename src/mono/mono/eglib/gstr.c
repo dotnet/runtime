@@ -981,6 +981,9 @@ g_strdelimit (gchar *string, gchar delimiter, gchar new_delimiter)
 gsize 
 g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 {
+	g_assert (src);
+	g_assert (dest);
+
 #ifdef HAVE_STRLCPY
 	return strlcpy (dest, src, dest_size);
 #else
@@ -988,9 +991,6 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 	const gchar *s;
 	gchar c;
 	gsize len;
-	
-	g_return_val_if_fail (src != NULL, 0);
-	g_return_val_if_fail (dest != NULL, 0);
 
 	len = dest_size;
 	if (len == 0)
