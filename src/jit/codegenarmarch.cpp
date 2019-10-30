@@ -1931,9 +1931,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
 
-#ifndef _TARGET_ARM64_
-    NYI_ARM("genCodeForInitBlkUnroll");
-#else
     regNumber dstAddrBaseReg = genConsumeReg(node->Addr());
     unsigned  dstOffset      = 0;
 
@@ -1952,8 +1949,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
+#ifdef _TARGET_ARM64_
         assert(src->IsIntegralConst(0));
         srcReg = REG_ZR;
+#else
+        unreached();
+#endif
     }
 
     if (node->IsVolatile())
@@ -1964,10 +1965,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     emitter* emit = GetEmitter();
     unsigned size = node->GetLayout()->GetSize();
 
+#ifdef _TARGET_ARM64_
     for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
     {
         emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
     }
+#endif
 
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
@@ -1977,26 +1980,37 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
 
         instruction storeIns;
+        emitAttr    attr;
 
         switch (regSize)
         {
             case 1:
                 storeIns = INS_strb;
+#ifdef _TARGET_ARM64_
+                attr = EA_1BYTE;
+#else
+                attr = EA_4BYTE;
+#endif
                 break;
             case 2:
                 storeIns = INS_strh;
+#ifdef _TARGET_ARM64_
+                attr = EA_2BYTE;
+#else
+                attr = EA_4BYTE;
+#endif
                 break;
             case 4:
             case 8:
                 storeIns = INS_str;
+                attr     = EA_ATTR(regSize);
                 break;
             default:
                 unreached();
         }
 
-        emit->emitIns_R_R_I(storeIns, EA_ATTR(regSize), srcReg, dstAddrBaseReg, dstOffset);
+        emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
     }
-#endif // _TARGET_ARM64_
 }
 
 //----------------------------------------------------------------------------------
