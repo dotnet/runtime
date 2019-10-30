@@ -559,27 +559,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) => LeadingSignCount(value);
 
         /// <summary>
-        /// uint8x8_t vcls_u8 (uint8x8_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<byte> LeadingSignCount(Vector64<byte> value) => LeadingSignCount(value);
-
-        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS Dd, Dm
         ///   A64: CLS Vd, Vn
         /// </summary>
         public static Vector64<short> LeadingSignCount(Vector64<short> value) => LeadingSignCount(value);
-
-        /// <summary>
-        /// uint16x4_t vcls_u16 (uint16x4_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<ushort> LeadingSignCount(Vector64<ushort> value) => LeadingSignCount(value);
 
         /// <summary>
         /// int32x2_t vcls_s32 (int32x2_t a)
@@ -589,27 +573,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<int> LeadingSignCount(Vector64<int> value) => LeadingSignCount(value);
 
         /// <summary>
-        /// uint32x2_t vcls_u32 (uint32x2_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<uint> LeadingSignCount(Vector64<uint> value) => LeadingSignCount(value);
-
-        /// <summary>
         /// int8x16_t vclsq_s8 (int8x16_t a)
         ///   A32: VCLS Qd, Qm
         ///   A64: CLS Vd, Vn
         /// </summary>
         public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) => LeadingSignCount(value);
-
-        /// <summary>
-        /// uint8x16_t vclsq_u8 (uint8x16_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector128<byte> LeadingSignCount(Vector128<byte> value) => LeadingSignCount(value);
 
         /// <summary>
         /// int16x8_t vclsq_s16 (int16x8_t a)
@@ -619,27 +587,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<short> LeadingSignCount(Vector128<short> value) => LeadingSignCount(value);
 
         /// <summary>
-        /// uint16x8_t vclsq_u16 (uint16x8_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector128<ushort> LeadingSignCount(Vector128<ushort> value) => LeadingSignCount(value);
-
-        /// <summary>
         /// int32x4_t vclsq_s32 (int32x4_t a)
         ///   A32: VCLS Qd, Qm
         ///   A64: CLS Vd, Vn
         /// </summary>
         public static Vector128<int> LeadingSignCount(Vector128<int> value) => LeadingSignCount(value);
-
-        /// <summary>
-        /// uint32x4_t vclsq_u32 (uint32x4_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector128<uint> LeadingSignCount(Vector128<uint> value) => LeadingSignCount(value);
 
         /// <summary>
         /// int8x8_t vclz_s8 (int8x8_t a)
