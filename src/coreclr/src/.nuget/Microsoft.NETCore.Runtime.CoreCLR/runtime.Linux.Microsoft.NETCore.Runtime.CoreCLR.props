@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
+  </PropertyGroup>
+  <ItemGroup>
+    <NativeBinary Include="$(BinDir)libcoreclr.so" />
+    <NativeBinary Condition="'$(_PlatformDoesNotSupportEventTrace)' != 'true'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
+    <NativeBinary Include="$(BinDir)libdbgshim.so" />
+    <NativeBinary Include="$(BinDir)libmscordaccore.so" />
+    <NativeBinary Include="$(BinDir)libmscordbi.so" />
+    <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
+    <NativeBinary Condition="'$(_PlatformDoesNotSupportCreatedump)' != 'true'" Include="$(BinDir)createdump" />
+    <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
+    <CrossArchitectureSpecificToolFile Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen" />
+  </ItemGroup>
+</Project>

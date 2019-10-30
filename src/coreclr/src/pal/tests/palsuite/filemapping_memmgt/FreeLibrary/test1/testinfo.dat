@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = FreeLibrary
+Name = Positive test for FreeLibrary API
+TYPE = DEFAULT
+EXE1 = freelibrary
+LIB1 = dlltest
+Description
+=Test the FreeLibrary to decrement the reference 
+=count of the loaded DLL

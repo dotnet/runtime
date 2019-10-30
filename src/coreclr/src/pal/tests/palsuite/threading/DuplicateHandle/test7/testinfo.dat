@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Threading
+Function = DuplicateHandle
+Name = Test for DuplicateHandle (CreateThread)
+TYPE = DEFAULT
+EXE1 = test7
+Description
+= Tests the PAL implementation of the DuplicateHandle function,
+= with a handle from CreateThread. The test will create a thread
+= handle and its duplicate. Then get the priorities of the threads,
+= set the priority of one and the change should be seen in the
+= other.

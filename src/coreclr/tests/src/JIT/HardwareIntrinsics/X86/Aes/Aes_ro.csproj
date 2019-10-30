@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Decrypt.Byte.cs" />
+    <Compile Include="DecryptLast.Byte.cs" />
+    <Compile Include="Encrypt.Byte.cs" />
+    <Compile Include="EncryptLast.Byte.cs" />
+    <Compile Include="KeygenAssist.Byte.5.cs" />
+    <Compile Include="InverseMixColumns.Byte.cs" />
+    <Compile Include="Program.Aes.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

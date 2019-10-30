@@ -1,0 +1,33 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CreateMutexA / ReleaseMutex
+Name = Positive Test for CreateMutexA and ReleaseMutex 
+TYPE = DEFAULT
+EXE1 = createmutexa
+Description 
+= This test cases test whether a Mutex object created
+= with CreateMutexA really works by mutually excluding
+= threads from accessing a data structure at the same
+= time.  Here we have a buffer that can be filled or
+= emptied, we use a Mutex object to ensure that one
+= operation cannot be started until the other is
+= finished.  If one operation detects that the other
+= has not finished, it fails.  There is a Producer
+= thread which will try to fill the buffer 25 times,
+= and a consumer thread which try to empty the buffer
+= 25 times.  If either the fill or empty operations
+= fails because the Mutex failed to mutually exclude
+= then, the corresponding thread will set an error
+= flag and return.  This will cause the test case to
+= fail.
+= To increase the probability of identifying problems,
+= the Fill opeartion has been slowed dowm with a call
+= to Sleep.  This ensures that one operation will try
+= to access the shared buffer while the other is in
+= progress.
+= NOTE: this test case also serves as a test case for
+= WaitForSingleObject.

@@ -1,0 +1,242 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+//+---------------------------------------------------------------------------
+//
+//  Microsoft Windows
+//  File:       fusion.idl
+//
+//  Contents:   Fusion Interfaces
+//
+//  Classes:
+//
+//  Functions:
+//
+//
+//----------------------------------------------------------------------------
+
+cpp_quote("")
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma comment(lib,\"uuid.lib\")")
+cpp_quote("#endif")
+cpp_quote("")
+cpp_quote("//---------------------------------------------------------------------------=")
+cpp_quote("// Fusion Interfaces.")
+cpp_quote("")
+
+import "objidl.idl";
+
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma once")
+cpp_quote("#endif")
+
+
+interface IAssemblyCache;
+interface IAssemblyCacheItem;
+interface IAssemblyName;
+interface IAssemblyEnum;
+
+
+cpp_quote("#ifndef PEKIND_ENUM_DEFINED")
+cpp_quote("#define PEKIND_ENUM_DEFINED")
+// This must match the definition of pekind in peinformation.h
+typedef enum _tagPEKIND 
+{
+    peNone      = 0x00000000,
+    peMSIL      = 0x00000001,
+    peI386      = 0x00000002,
+    peIA64      = 0x00000003,
+    peAMD64     = 0x00000004,
+    peARM       = 0x00000005,
+    peARM64     = 0x00000006,
+    peInvalid   = 0xffffffff
+} PEKIND;
+cpp_quote("#endif")
+
+typedef enum _tagAssemblyContentType
+{
+    AssemblyContentType_Default         = 0x00000000, 
+    AssemblyContentType_WindowsRuntime  = 0x00000001, 
+    AssemblyContentType_Invalid         = 0xffffffff
+} AssemblyContentType;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyName
+//
+///////////////////////////////////////////////////////////////////////////////
+
+cpp_quote("// {CD193BC0-B4BC-11d2-9833-00C04FC31D2E}")
+cpp_quote("EXTERN_GUID(IID_IAssemblyName, 0xCD193BC0, 0xB4BC, 0x11d2, 0x98, 0x33, 0x00, 0xC0, 0x4F, 0xC3, 0x1D, 0x2E);")
+
+
+[
+        local,
+        object,
+        uuid(CD193BC0-B4BC-11d2-9833-00C04FC31D2E),
+        pointer_default(unique)
+]
+interface IAssemblyName: IUnknown
+{
+    typedef [unique] IAssemblyName *LPASSEMBLYNAME;
+    
+    typedef enum {
+         CANOF_PARSE_DISPLAY_NAME = 0x1,
+         CANOF_SET_DEFAULT_VALUES = 0x2,
+         CANOF_VERIFY_FRIEND_ASSEMBLYNAME = 0x4,
+         CANOF_PARSE_FRIEND_DISPLAY_NAME = CANOF_PARSE_DISPLAY_NAME | CANOF_VERIFY_FRIEND_ASSEMBLYNAME
+    } CREATE_ASM_NAME_OBJ_FLAGS;
+    
+    typedef enum
+    {
+        ASM_NAME_PUBLIC_KEY = 0,        //  0
+        ASM_NAME_PUBLIC_KEY_TOKEN,      //  1
+        ASM_NAME_HASH_VALUE,            //  2
+        ASM_NAME_NAME,                  //  3
+        ASM_NAME_MAJOR_VERSION,         //  4
+        ASM_NAME_MINOR_VERSION,         //  5
+        ASM_NAME_BUILD_NUMBER,          //  6
+        ASM_NAME_REVISION_NUMBER,       //  7
+        ASM_NAME_CULTURE,               //  8
+        ASM_NAME_PROCESSOR_ID_ARRAY,    //  9
+        ASM_NAME_OSINFO_ARRAY,          // 10 ... 0x0a
+        ASM_NAME_HASH_ALGID,            // 11 ... 0x0b
+        ASM_NAME_ALIAS,                 // 12 ... 0x0c
+        ASM_NAME_CODEBASE_URL,          // 13 ... 0x0d
+        ASM_NAME_CODEBASE_LASTMOD,      // 14 ... 0x0e
+        ASM_NAME_NULL_PUBLIC_KEY,       // 15 ... 0x0f
+        ASM_NAME_NULL_PUBLIC_KEY_TOKEN, // 16 ... 0x10
+        ASM_NAME_CUSTOM,                // 17 ... 0x11
+        ASM_NAME_NULL_CUSTOM,           // 18 ... 0x12
+        ASM_NAME_MVID,                  // 19 ... 0x13
+        ASM_NAME_FILE_MAJOR_VERSION,    // 20 ... 0x14
+        ASM_NAME_FILE_MINOR_VERSION,    // 21 ... 0x15
+        ASM_NAME_FILE_BUILD_NUMBER,     // 22 ... 0x16
+        ASM_NAME_FILE_REVISION_NUMBER,  // 23 ... 0x17
+        ASM_NAME_RETARGET,              // 24 ... 0x18
+        ASM_NAME_SIGNATURE_BLOB,        // 25 ... 0x19
+        ASM_NAME_CONFIG_MASK,           // 26 ... 0x1a
+        ASM_NAME_ARCHITECTURE,          // 27 ... 0x1b
+        ASM_NAME_CONTENT_TYPE,          // 28 ... 0x1c
+        ASM_NAME_MAX_PARAMS             // 29 ... 0x1d
+    } ASM_NAME;
+    
+    typedef enum
+    {
+        ASM_DISPLAYF_VERSION               = 0x1, 
+        ASM_DISPLAYF_CULTURE               = 0x2, 
+        ASM_DISPLAYF_PUBLIC_KEY_TOKEN      = 0x4, 
+        ASM_DISPLAYF_PUBLIC_KEY            = 0x8, 
+        ASM_DISPLAYF_CUSTOM                = 0x10, 
+        ASM_DISPLAYF_PROCESSORARCHITECTURE = 0x20, 
+        ASM_DISPLAYF_LANGUAGEID            = 0x40, 
+        ASM_DISPLAYF_RETARGET              = 0x80, 
+        ASM_DISPLAYF_CONFIG_MASK           = 0x100, 
+        ASM_DISPLAYF_MVID                  = 0x200, 
+        ASM_DISPLAYF_CONTENT_TYPE          = 0x400, 
+
+        
+        // ASM_DISPLAYF_FULL shows the full identity of the assembly.
+        // It should be used when you are working with APIs taking 
+        // assembly full identity, such as GAC APIs.
+        //
+        // WARNING!!! ASM_DISPLAYF_FULL will change in the future,
+        // when we introduce new attributes. This means the identity returned
+        // will change from CLR version to version. Don't ever assume
+        // the identity will not change. !!!
+        ASM_DISPLAYF_FULL    = ASM_DISPLAYF_VERSION
+                                | ASM_DISPLAYF_CULTURE
+                                | ASM_DISPLAYF_PUBLIC_KEY_TOKEN
+                                | ASM_DISPLAYF_RETARGET
+                                | ASM_DISPLAYF_PROCESSORARCHITECTURE
+                                | ASM_DISPLAYF_CONTENT_TYPE,
+    } ASM_DISPLAY_FLAGS;
+    
+    typedef enum
+    {
+        ASM_CMPF_NAME               = 0x1,
+
+        ASM_CMPF_MAJOR_VERSION      = 0x2,
+        ASM_CMPF_MINOR_VERSION      = 0x4,
+        ASM_CMPF_BUILD_NUMBER       = 0x8,
+        ASM_CMPF_REVISION_NUMBER    = 0x10,
+        
+        ASM_CMPF_VERSION = ASM_CMPF_MAJOR_VERSION
+                          |ASM_CMPF_MINOR_VERSION
+                          |ASM_CMPF_BUILD_NUMBER
+                          |ASM_CMPF_REVISION_NUMBER,
+
+        ASM_CMPF_PUBLIC_KEY_TOKEN       = 0x20,
+        ASM_CMPF_CULTURE                = 0x40,
+        ASM_CMPF_CUSTOM                 = 0x80,
+
+        ASM_CMPF_DEFAULT                = 0x100,
+
+        ASM_CMPF_RETARGET               = 0x200,
+        ASM_CMPF_ARCHITECTURE           = 0x400,
+        ASM_CMPF_CONFIG_MASK            = 0x800,
+        ASM_CMPF_MVID                   = 0x1000,
+        ASM_CMPF_SIGNATURE              = 0x2000,
+        ASM_CMPF_CONTENT_TYPE           = 0x4000, 
+
+        ASM_CMPF_IL_ALL = ASM_CMPF_NAME
+                        | ASM_CMPF_VERSION
+                        | ASM_CMPF_PUBLIC_KEY_TOKEN
+                        | ASM_CMPF_CULTURE,
+
+        ASM_CMPF_IL_NO_VERSION = ASM_CMPF_NAME
+                        | ASM_CMPF_PUBLIC_KEY_TOKEN
+                        | ASM_CMPF_CULTURE
+    } ASM_CMP_FLAGS;                       
+
+    HRESULT SetProperty(
+        [in]    DWORD        PropertyId, 
+        [in]    void const * pvProperty,
+        [in]    DWORD        cbProperty);
+
+    HRESULT GetProperty(
+        [in]         DWORD    PropertyId, 
+        [out]        LPVOID   pvProperty,
+        [in, out]    LPDWORD  pcbProperty);
+
+    HRESULT Finalize();
+
+    HRESULT GetDisplayName(
+        [out, annotation("_Out_writes_opt_(*pccDisplayName)")]
+                     LPOLESTR  szDisplayName,
+        [in, out]   LPDWORD   pccDisplayName,
+        [in]        DWORD     dwDisplayFlags);
+
+    HRESULT Reserved(
+        [in]      REFIID               refIID,
+        [in]      IUnknown            *pUnkReserved1, 
+        [in]      IUnknown            *pUnkReserved2,
+        [in]      LPCOLESTR            szReserved,
+        [in]      LONGLONG             llReserved,
+        [in]      LPVOID               pvReserved,
+        [in]      DWORD                cbReserved,
+        [out]     LPVOID               *ppReserved);
+
+
+    HRESULT GetName(
+        [in, out, annotation("_Inout_")] LPDWORD lpcwBuffer,
+        [out, annotation("_Out_writes_opt_(*lpcwBuffer)")] WCHAR *pwzName);
+        
+    HRESULT GetVersion(
+        [out] LPDWORD pdwVersionHi,
+        [out] LPDWORD pdwVersionLow);
+
+    HRESULT IsEqual(
+        [in] IAssemblyName *pName,
+        [in] DWORD dwCmpFlags);
+        
+    HRESULT Clone(
+        [out] IAssemblyName **pName);
+        
+}
+
+
+#pragma midl_echo("STDAPI CreateAssemblyNameObject(LPASSEMBLYNAME *ppAssemblyNameObj, LPCWSTR szAssemblyName, DWORD dwFlags, LPVOID pvReserved);             ")
+

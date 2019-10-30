@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = GetFileAttributesExW
+Name = Test with normal file/dir and readonly file/dir and hidden file/dir
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Tests the PAL implementation of the GetFileAttributesExW function.
+= Call the function on a normal directory and file and a read-only directory
+= and file and a hidden file and directory.  
+= Ensure that the attributes returned are correct, and the 
+= file times and file sizes.

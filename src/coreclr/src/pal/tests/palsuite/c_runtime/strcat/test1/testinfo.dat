@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = strcat
+Name = Test #1 for strcat
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Concatenate three strings into one string.  Each time, check to ensure 
+= the pointer returned was what we expected.  When finished, compare the 
+= newly formed string to what it should be to ensure no characters were 
+= lost.

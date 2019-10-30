@@ -1,0 +1,35 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Properties for all Interop managed test assets -->
+  <PropertyGroup>
+    <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
+  </PropertyGroup>
+
+  <!-- Add the CoreCLRTestLibrary dependency -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')">
+    <ProjectReference
+      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+
+  <!-- Add the CoreCLRTestLibrary dependency
+       If a target project references System.Private.Corelib, we are unable to reference CoreCLRTestLibrary.
+       Compile in relevant files used for testing interop. -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
+  </ItemGroup>
+
+  <!-- Required debug vcruntime and UCRT dlls -->
+  <ItemGroup
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always"
+        Condition="Exists('$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll')" />
+    
+    <!-- There's a bug in VS that causes UCRTVersion env var to get set to a version that isn't actually installed on the machine. -->
+    <!-- Until that gets resolved, we need this workaround to grab the last "known" good version of ucrtbased.dll -->
+    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/10.0.17763.0/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always"
+        Condition="!Exists('$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll')" />
+  </ItemGroup>
+</Project>

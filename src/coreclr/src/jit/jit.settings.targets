@@ -1,0 +1,148 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+
+    <PropertyGroup>
+        <ClWarningLevel>4</ClWarningLevel>
+
+        <UserIncludes>
+            $(UserIncludes);
+            ..;
+            ..\jitstd\;
+            $(Clrbase)\src\TraceLog;
+        </UserIncludes>
+
+        <!-- PCH baloney -->
+        <EnableCxxPCHHeaders>true</EnableCxxPCHHeaders>
+        <PCHCompile>..\jitpch.cpp</PCHCompile>
+        <PCHHeader>jitpch.h</PCHHeader>
+
+        <!-- JIT_BUILD disables certain PAL_TRY debugging features -->
+        <ClDefines>$(ClDefines);JIT_BUILD=1</ClDefines>
+
+        <ClDefines Condition="'$(DebugBuild)' == 'false'">$(ClDefines);FAST=1</ClDefines>
+        <ClDefines Condition="'$(DebugBuild)' == 'true'">$(ClDefines);DEBUG=1</ClDefines>
+    </PropertyGroup>
+
+    <!-- For debugging purposes only, temporarily enable these in RET builds so GenTree debugging is easier. -->
+    <!-- We need to link with /OPT:NOICF or our magic vtable debugging system for GenTree doesn't work. -->
+    <PropertyGroup Condition="'$(DebugBuild)' == 'true'">
+        <!-- This is already automatically defined in DEBUG builds.
+        <ClDefines>$(ClDefines);DEBUGGABLE_GENTREE=1</ClDefines>
+        -->
+        <LinkEnableCOMDATFolding>false</LinkEnableCOMDATFolding>                <!-- /OPT:NOICF -->
+        <ClAdditionalOptions>$(ClAdditionalOptions) /Ob0</ClAdditionalOptions>  <!-- no inlining -->
+    </PropertyGroup>
+
+    <!-- Leaf Project Items -->
+    <ItemGroup>
+        <CppCompile Include="..\alloc.cpp" />
+        <CppCompile Include="..\earlyprop.cpp" />        
+        <CppCompile Include="..\bitset.cpp" />
+        <CppCompile Include="..\block.cpp" />
+        <CppCompile Include="..\Compiler.cpp" />
+        <CppCompile Include="..\DisAsm.cpp" />
+        <CppCompile Include="..\eeInterface.cpp" />
+        <CppCompile Include="..\ee_il_dll.cpp" />
+        <CppCompile Include="..\jiteh.cpp" />
+        <CppCompile Include="..\error.cpp" />
+        <CppCompile Include="..\FlowGraph.cpp" />
+        <CppCompile Include="..\GCInfo.cpp" />
+        <CppCompile Include="..\GCDecode.cpp" />
+        <CppCompile Include="..\GCEncode.cpp" />
+        <CppCompile Include="..\GenTree.cpp" />
+        <CppCompile Include="..\GSChecks.cpp" />
+        <CppCompile Include="..\hashbv.cpp" />
+        <CppCompile Include="..\Importer.cpp" />
+        <CppCompile Include="..\Instr.cpp" />
+        <CppCompile Include="..\JitTelemetry.cpp" />
+        <CppCompile Include="..\LclVars.cpp" />
+        <CppCompile Include="..\LIR.cpp" />
+        <CppCompile Include="..\Liveness.cpp" />
+        <CppCompile Include="..\Morph.cpp" />
+        <CppCompile Include="..\Optimizer.cpp" />
+        <CppCompile Include="..\OptCSE.cpp" />
+        <CppCompile Include="..\rationalize.cpp" />
+        <CppCompile Include="..\RegAlloc.cpp" />
+        <CppCompile Include="..\RegSet.cpp" />
+        <CppCompile Include="..\register_arg_convention.cpp" />
+        <CppCompile Include="..\emit.cpp" />
+        <CppCompile Include="..\ScopeInfo.cpp" />
+        <CppCompile Include="..\SM.cpp" />
+        <CppCompile Include="..\SMData.cpp" />
+        <CppCompile Include="..\SMWeights.cpp" />
+        <CppCompile Include="..\typeInfo.cpp" />
+        <CppCompile Include="..\unwind.cpp" />
+        <CppCompile Include="..\Utils.cpp" />
+        <CppCompile Include="..\SsaBuilder.cpp" />
+        <CppCompile Include="..\SsaRenameState.cpp" />
+        <CppCompile Include="..\ValueNum.cpp" />
+        <CppCompile Include="..\CopyProp.cpp" />
+        <CppCompile Include="..\CodeGenCommon.cpp" />
+        <CppCompile Include="..\AssertionProp.cpp" />
+        <CppCompile Include="..\RangeCheck.cpp" />
+        <CppCompile Include="..\LoopCloning.cpp" />
+        <CppCompile Include="..\indirectcalltransformer.cpp" />
+        <CppCompile Include="..\inline.cpp" />
+        <CppCompile Include="..\inlinepolicy.cpp" />
+        <CppCompile Include="..\jitconfig.cpp" />
+        <CppCompile Include="..\hostallocator.cpp" />
+        <CppCompile Include="..\objectalloc.cpp" />
+        <CppCompile Include="..\sideeffects.cpp" />
+        <CppCompile Include="..\stacklevelsetter.cpp" />
+        <CppCompile Include="..\treelifeupdater.cpp" />
+        <CppCompile Include="..\Lower.cpp" />
+        <CppCompile Include="..\LSRA.cpp" />
+        <CppCompile Include="..\lsrabuild.cpp" />
+        <CppCompile Include="..\codegenlinear.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='i386'">
+        <CppCompile Include="..\emitXArch.cpp" />
+        <CppCompile Include="..\TargetX86.cpp" />
+        <CppCompile Include="..\unwindx86.cpp" />
+        <CppCompile Include="..\DecomposeLongs.cpp" />
+        <CppCompile Include="..\LowerXArch.cpp" />
+        <CppCompile Include="..\lsraxarch.cpp" />
+        <CppCompile Include="..\CodeGenXArch.cpp" />
+        <CppCompile Include="..\SIMD.cpp" />
+        <CppCompile Include="..\SIMDCodeGenXArch.cpp" />
+        <CppCompile Include="..\hwintrinsicxarch.cpp" />
+        <CppCompile Include="..\hwintrinsiccodegenxarch.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='amd64'">
+        <CppCompile Include="..\emitXArch.cpp" />
+        <CppCompile Include="..\TargetAmd64.cpp" />
+        <CppCompile Include="..\LowerXArch.cpp" />
+        <CppCompile Include="..\lsraxarch.cpp" />
+        <CppCompile Include="..\CodeGenXArch.cpp" />
+        <CppCompile Include="..\SIMD.cpp" />
+        <CppCompile Include="..\SIMDCodeGenXArch.cpp" />
+        <CppCompile Include="..\unwindAmd64.cpp" />
+        <CppCompile Include="..\hwintrinsicxarch.cpp" />
+        <CppCompile Include="..\hwintrinsiccodegenxarch.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='arm'">
+        <CppCompile Include="..\emitarm.cpp" />
+        <CppCompile Include="..\TargetArm.cpp" />
+        <CppCompile Include="..\DecomposeLongs.cpp" />
+        <CppCompile Include="..\LowerArmArch.cpp" />
+        <CppCompile Include="..\lsraarmarch.cpp" />
+        <CppCompile Include="..\CodeGenArmArch.cpp" />
+        <CppCompile Include="..\lsraarm.cpp" />
+        <CppCompile Include="..\CodeGenArm.cpp" />
+        <CppCompile Include="..\unwindArm.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='arm64'">
+        <CppCompile Include="..\emitarm64.cpp" />
+        <CppCompile Include="..\TargetArm64.cpp" />
+        <CppCompile Include="..\LowerArmArch.cpp" />
+        <CppCompile Include="..\lsraarmarch.cpp" />
+        <CppCompile Include="..\CodeGenArmArch.cpp" />
+        <CppCompile Include="..\lsraarm64.cpp" />
+        <CppCompile Include="..\CodeGenArm64.cpp" />
+        <CppCompile Include="..\unwindArm.cpp" />
+        <CppCompile Include="..\unwindArm64.cpp" />
+    </ItemGroup>
+
+    <!-- Import the targets - this actually contains the full build rules -->
+    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
+
+</Project>

@@ -1,0 +1,98 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+// GitHub 20211: bug with lowering SIMDIntrinsicGetItem on ARM64
+// when INS_mov (move w/o sign-extension) was used to copy signed value
+// from Vn.b[i] (or Vn.h[i]) to general register Wd (or Xd) instead of
+// INS_smov (move with sign-extension).
+
+namespace GitHub_20211
+{
+    class Program
+    {
+<#
+        string[] typeNames = { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" };
+        foreach (string typeName in typeNames)
+        {
+#>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static unsafe <#= typeName #> SquareRootAt0(Vector<<#= typeName #>> arg)
+        {
+            return (<#= typeName #>)Math.Sqrt(arg[0]);
+        }
+
+<#
+        }
+#>
+        enum Result { Pass, Fail }
+
+        struct TestRunner
+        {
+<#
+        foreach (string typeName in typeNames)
+        {
+#>
+            void TestSquareRootAt0(<#= typeName #> arg0)
+            {
+                Vector<<#= typeName #>> arg = new Vector<<#= typeName #>>(arg0);
+                <#= typeName #> actual = SquareRootAt0(arg);
+                <#= typeName #> expected = (<#= typeName #>)Math.Sqrt(arg0);
+
+                if (actual != expected)
+                {
+                    Console.WriteLine($"Fail: <#= typeName #> (actual={actual}, expected={expected})");
+                    result = Result.Fail;
+                }
+            }
+
+<#
+        }
+#>
+            Result result;
+
+            public Result Run()
+            {
+                result = Result.Pass;
+
+                TestSquareRootAt0((sbyte)-1);
+                TestSquareRootAt0((short)-1);
+                TestSquareRootAt0((int)-1);
+                TestSquareRootAt0((long)-1);
+
+                TestSquareRootAt0((sbyte)1);
+                TestSquareRootAt0((byte)1);
+                TestSquareRootAt0((short)1);
+                TestSquareRootAt0((ushort)1);
+                TestSquareRootAt0((int)1);
+                TestSquareRootAt0((uint)1);
+                TestSquareRootAt0((long)1);
+                TestSquareRootAt0((ulong)1);
+
+                TestSquareRootAt0((float)4);
+                TestSquareRootAt0((double)4);
+
+                return result;
+            }
+        }
+
+        static int Main(string[] args)
+        {
+            if (new TestRunner().Run() == Result.Pass)
+            {
+                Console.WriteLine("Pass");
+                return 100;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+    }
+}

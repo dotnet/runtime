@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _vsnwprintf_s
+Name = Positive Test for _vsnwprintf_s
+TYPE = DEFAULT
+EXE1 = test6
+Description
+= Tests the PAL implementation of the _vsnwprintf_s function.
+= Tests _vsnwprintf_s with characters.
+= This test is modeled after _snwprintf.

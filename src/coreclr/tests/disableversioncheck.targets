@@ -1,0 +1,11 @@
+<Project>
+
+  <Target Name="DisableNETCoreVersionCheck"
+          BeforeTargets="_CheckForUnsupportedNETCoreVersion">
+    <!-- Force the CLI to allow us to target higher netcoreapp than it may know about -->
+    <PropertyGroup>
+      <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
+    </PropertyGroup>
+  </Target>
+
+</Project>

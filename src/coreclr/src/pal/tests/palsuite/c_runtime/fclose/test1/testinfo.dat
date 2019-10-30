@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = fclose
+Name = Test for fclose
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the fclose function. 
+= This test will use fdopen to create a file stream,
+= that will be used to test fclose. fclose will also 
+= be passed a closed file handle to make sure it handle
+= it accordingly.
+
+

@@ -1,0 +1,25 @@
+parameters:
+  downloadFolder: ''
+  unpackFolder: ''
+  cleanUnpackFolder: true
+  artifactFileName: ''
+  artifactName: ''
+  displayName: ''
+
+steps:
+  # Download artifact
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download ${{ parameters.displayName }}'
+    inputs:
+      buildType: current
+      downloadType: single
+      downloadPath: '${{ parameters.downloadFolder }}'
+      artifactName: '${{ parameters.artifactName }}'
+
+  # Unzip artifact
+  - task: ExtractFiles@1
+    displayName: 'Unzip ${{ parameters.displayName }}'
+    inputs:
+      archiveFilePatterns: ${{ parameters.downloadFolder }}/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      destinationFolder: ${{ parameters.unpackFolder }}
+      cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}

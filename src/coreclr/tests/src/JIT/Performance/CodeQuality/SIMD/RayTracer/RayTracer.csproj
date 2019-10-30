@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RayTracerBench.cs" />
+    <Compile Include="Camera.cs" />
+    <Compile Include="Color.cs" />
+    <Compile Include="ISect.cs" />
+    <Compile Include="Light.cs" />
+    <Compile Include="ObjectPool.cs" />
+    <Compile Include="Plane.cs" />
+    <Compile Include="ProducerConsumerCollectionBase.cs" />
+    <Compile Include="Ray.cs" />
+    <Compile Include="Raytracer.cs" />
+    <Compile Include="Scene.cs" />
+    <Compile Include="SceneObject.cs" />
+    <Compile Include="Sphere.cs" />
+    <Compile Include="Surface.cs" />
+    <Compile Include="Surfaces.cs" />
+    <Compile Include="Vector.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

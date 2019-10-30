@@ -1,0 +1,145 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".il" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// Use the following commands to generate a corresponding IL file
+//   "%DevEnvDir%\TextTransform.exe" .\GitHub_21061_StackOverflowInFuncletProlog.tt
+
+// This test is similar to GitHub_21061_StackOverflowInFunctionProlog. The main difference is that StackOverflow is thrown from a funclet prolog.
+//
+
+.assembly extern System.Private.CoreLib
+{
+}
+
+.assembly GitHub_21061
+{
+}
+
+.module GitHub_21061.dll
+
+// The AllocLocal_DivideByZero() functions will allocate a local of given size, probe the stack and throw DivideByZeroException.
+// Then control will be taken by a funclet corresponding to catch-block that would need to do additional stack probing for the outgoing arguments.
+// When the size of the local frame allocated by prologs of both AllocLocal_DivideByZero() and its funclet exceed the size of the frame
+// this will cause StackOverflow. Note that the exception must be thrown from the funclet prolog and not from the funclet body.
+<#
+  foreach(int structSizeInBytes in StructSizesInBytes)
+  {
+    string structName = StructName(structSizeInBytes);
+#>
+
+.class private explicit ansi sealed beforefieldinit GitHub_21061.<#= structName #>
+  extends [System.Private.CoreLib]System.ValueType
+{
+  .field [0] private int32 _0
+  .field [<#= structSizeInBytes #>] private int32 <#= structName #>
+
+  .method public hidebysig static void  AllocLocal_DivideByZero() cil managed noinlining
+  {
+    .maxstack  <#= NumberOfArgumentsInFuncletCallee #>
+    .locals init (valuetype GitHub_21061.<#= structName #> V_0)
+
+    ldloca.s   V_0
+    initobj    GitHub_21061.<#= structName #>
+
+    .try
+    {
+      ldc.i4.1
+      ldc.i4.0
+      div
+
+      ldloc.0
+      ldfld      int32 GitHub_21061.<#= structName #>::_0
+      call       void GitHub_21061.Program::Keep(int32)
+
+      leave      _Return
+    }
+    catch [System.Private.CoreLib]System.DivideByZeroException
+    {
+      pop
+
+<#
+  foreach(int _ in Enumerable.Range(0, NumberOfArgumentsInFuncletCallee))
+  {
+#>
+      ldc.i4.0
+<#
+  }
+#>
+      call       void GitHub_21061.Program::Keep(
+<#
+  foreach(int _ in Enumerable.Range(0, NumberOfArgumentsInFuncletCallee - 1))
+  {
+#>
+                      int32,
+<#
+  }
+#>
+                      int32)
+      leave      _Return
+    }
+
+    _Return: ret
+  }
+}
+<#
+  }
+#>
+
+.class private auto ansi beforefieldinit GitHub_21061.Program
+       extends [System.Private.CoreLib]System.Object
+{
+  .method public hidebysig static void  Keep(int32 i) cil managed noinlining
+  {
+    .maxstack  8
+    ret
+  }
+
+  .method public hidebysig static void  Keep(
+<#
+  foreach(int i in Enumerable.Range(0, NumberOfArgumentsInFuncletCallee - 1))
+  {
+#>
+       int32 arg<#= i #>,
+<#
+  }
+#>
+       int32 arg<#= NumberOfArgumentsInFuncletCallee - 1 #>) cil managed noinlining
+  {
+    .maxstack  8
+    ret
+  }
+
+  .method private hidebysig static void  Main(string[] args) cil managed
+  {
+    .entrypoint
+    .maxstack  5
+<#
+  foreach(int structSizeInBytes in StructSizesInBytes)
+  {
+#>
+    call       void GitHub_21061.<#= StructName(structSizeInBytes) #>::AllocLocal_DivideByZero()
+<#
+  }
+#>
+    ret
+  }
+}
+<#+
+  string StructName(int structSizeInBytes)
+  {
+    return $"_{structSizeInBytes:X8}";
+  }
+
+  const int OsPageSizeInBytes = 4096;
+  const int MachineRegisterSizeInBytes = 8;
+  const int SizeOfFuncletStackFrameInBytes = 4 * OsPageSizeInBytes;
+  const int NumberOfArgumentsInFuncletCallee = SizeOfFuncletStackFrameInBytes / MachineRegisterSizeInBytes;
+  const int MaxSizeOfStackFrameInBytes = 8 * 1024 * 1024; // 8 megabytes should be enough to cause StackOverflow on all supported platforms.
+  int[] StructSizesInBytes = Enumerable.Range(1, MaxSizeOfStackFrameInBytes / OsPageSizeInBytes).Select(k => k * OsPageSizeInBytes).ToArray();
+#>

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>ThreadStartBool.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>true</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,27 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+
+Section = exception_handling
+
+Function = PAL_TRY and PAL_EXCEPT
+
+Name = Test for PAL_TRY and PAL_EXCEPT
+
+Type = DEFAULT 
+
+EXE1 = test3
+
+LANG = cpp
+
+Description
+
+= Test to make sure the PAL_EXCEPT block is executed
+
+= after an exception occurs in the PAL_TRY block
+
+= that calls a function that contains 
+
+= another PAL_TRY-PAL_EXCEPT block

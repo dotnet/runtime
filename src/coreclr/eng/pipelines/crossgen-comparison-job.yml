@@ -1,0 +1,171 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  helixQueues: ''
+  crossrootfsDir: ''
+  stagedBuild: false
+
+### Crossgen-comparison job
+###
+### Ensure that the output of cross-architecture, e.g. x64-hosted-arm-targeting,
+### crossgen matches that of native, e.g. arm-hosted-arm-targeting, crossgen.
+
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    helixType: 'test/crossgen-comparison/'
+
+    # Compute job name from template parameters
+    name: ${{ format('test_crossgen_comparison_{0}{1}_{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Test crossgen-comparison {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+
+    variables:
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: DotNet-HelixApi-Access
+    - name: hostArchType
+      value: x64
+    - name: targetFlavor
+      value: $(osGroup).$(archType).$(buildConfigUpper)
+    - name: crossFlavor
+      value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: binDirectory
+        value: $(Build.SourcesDirectory)/bin
+      - name: productDirectory
+        value: $(Build.SourcesDirectory)/bin/Product
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: binDirectory
+        value: $(Build.SourcesDirectory)\bin
+      - name: productDirectory
+        value: $(Build.SourcesDirectory)\bin\Product
+
+    # Test job depends on the corresponding build job
+    dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
+
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      timeoutInMinutes: 120
+
+    steps:
+
+    # Download product build
+    - task: DownloadBuildArtifacts@0
+      displayName: Download product build
+      inputs:
+        buildType: current
+        downloadType: single
+        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        downloadPath: $(System.ArtifactsDirectory)
+
+
+    # Populate Product directory
+    - task: CopyFiles@2
+      displayName: Populate Product directory
+      inputs:
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        contents: '**'
+        targetFolder: $(productDirectory)/$(targetFlavor)
+
+
+    # Create directories and ensure crossgen is executable
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          chmod +x $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
+          mkdir -p $(binDirectory)/Logs/$(crossFlavor)
+        displayName: Create directories and ensure crossgen is executable
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          mkdir $(binDirectory)\Logs\$(crossFlavor)
+        displayName: Create directories
+
+
+    # Populate Core_Root
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+        displayName: Populate Core_Root
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build-test.cmd $(buildConfig) $(archType) generateLayoutOnly
+        displayName: Populate Core_Root
+
+
+    # Create baseline output on the host (x64) machine
+    - task: PythonScript@0
+      displayName: Create cross-platform crossgen baseline
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: $(Build.SourcesDirectory)/tests/scripts/crossgen_comparison.py
+        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          arguments:
+            crossgen_framework
+            --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
+            --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
+            --core_root  $(binDirectory)/tests/$(targetFlavor)/Tests/Core_Root
+            --result_dir $(binDirectory)/Logs/$(crossFlavor)
+        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          arguments:
+            crossgen_framework
+            --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
+            --il_corelib $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll
+            --core_root  $(binDirectory)\tests\$(targetFlavor)\Tests\Core_Root
+            --result_dir $(binDirectory)\Logs\$(crossFlavor)
+
+
+    # Send payload to Helix where the native output is generated and compared to the baseline
+    - template: /eng/common/templates/steps/send-to-helix.yml
+      parameters:
+        DisplayNamePrefix: Run native crossgen and compare output to baseline
+        HelixSource: $(_HelixSource)
+        HelixType: 'test/crossgen-comparison/'
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
+        ${{ if ne(variables['System.TeamProject'], 'internal') }}:
+          Creator: $(Creator)
+        WorkItemTimeout: 1:00 # 1 hour
+        WorkItemDirectory: '$(binDirectory)'
+        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/tests/scripts'
+        ${{ if ne(parameters.osName, 'Windows_NT') }}:
+          WorkItemCommand:
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen;
+            mkdir -p     $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor);
+            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
+            --crossgen   $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/IL/System.Private.CoreLib.dll
+            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/$(targetFlavor)/Tests/Core_Root
+            --result_dir $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor);
+            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
+            --base_dir   $HELIX_WORKITEM_PAYLOAD/Logs/$(crossFlavor)
+            --diff_dir   $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor)
+        ${{ if eq(parameters.osName, 'Windows_NT') }}:
+          WorkItemCommand:
+            mkdir        %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor);
+            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
+            --crossgen   %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\crossgen
+            --il_corelib %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\IL\System.Private.CoreLib.dll
+            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\$(targetFlavor)\Tests\Core_Root
+            --result_dir %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor);
+            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
+            --base_dir   %HELIX_WORKITEM_PAYLOAD%\Logs\$(crossFlavor)
+            --diff_dir   %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor)
+
+    # Publish Logs
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        pathtoPublish: $(binDirectory)/Logs
+        artifactName: ${{ format('TestLogs_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      continueOnError: true
+      condition: always()

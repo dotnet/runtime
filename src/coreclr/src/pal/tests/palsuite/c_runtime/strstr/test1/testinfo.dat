@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = strstr
+Name = Positive Test for strstr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Check three cases of searching for a string within a string.  First when
+= the string is contained, check that the pointer returned points to it.
+= Then when it isn't contained, ensure it returns null.  And when the string
+= we're searching for is empty, it should return a pointer to the string 
+= we're searching through.

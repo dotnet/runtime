@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+Localization Specific Metadata
+_________________________________________________________
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+-->
+<Project DefaultTargets="Localize" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RunFromAll>true</RunFromAll>
+  </PropertyGroup>
+  <!--When running from a top-level project $(RunFromMaster) = true-->
+  <Import Project="$(_NTBINDIR)\tools\devdiv\loc\Loctask\Localization.settings.targets" Condition=" '$(RunFromMaster)' == '' " />
+
+ <ImportGroup Condition="'$(ProductGroupsToBuild)' == '' or '$(ProductGroupsToBuild)' == 'FX' or 
+                          '$(ProductGroupsToBuild)' == 'VS;FX' or '$(ProductGroupsToBuild)' == 'FX;VS'" >
+  <Import Project="LocProjects\caspol.exe.locproj" />
+  <Import Project="LocProjects\corperfmonsymbols.ini.locproj" />
+  <Import Project="LocProjects\CustomMarshalers.dll.locproj" />
+  <Import Project="LocProjects\flogvwrc.dll.locproj" />
+  <Import Project="LocProjects\gacutlrc.dll.locproj" />
+  <Import Project="LocProjects\IlDasmrc.dll.locproj" />
+  <Import Project="LocProjects\mscoreeis.dll.locproj" />
+  <Import Project="LocProjects\mscorees_unsigned.dll.locproj" />
+  <Import Project="LocProjects\mscorlib.dll.locproj" />
+  <Import Project="LocProjects\mscorrc.dll.locproj" />
+  <Import Project="LocProjects\mscorsecr.dll.locproj" />
+  <Import Project="LocProjects\pevrfyrc.dll.locproj" />
+  <Import Project="LocProjects\Regasm.exe.locproj" />
+  <Import Project="LocProjects\winmdexp.exe.locproj" />
+  <Import Project="LocProjects\SecAnnotate.exe.locproj" />
+  <Import Project="LocProjects\sn.exe.locproj" />
+  <Import Project="LocProjects\snrc.dll.locproj" />
+  <Import Project="LocProjects\sysglobl.dll.locproj" />
+  <Import Project="LocProjects\System.EnterpriseServices.dll.locproj" />
+  <Import Project="LocProjects\System.Runtime.Remoting.dll.locproj" />
+  <Import Project="LocProjects\System.Runtime.Serialization.Formatters.Soap.dll.locproj" />
+  <Import Project="LocProjects\System.Security.dll.locproj" />
+  <Import Project="LocProjects\sdk_tools.locproj" />
+ </ImportGroup>
+
+ <ImportGroup Condition="'$(ProductGroupsToBuild)' == '' or '$(ProductGroupsToBuild)' == 'FX' or '$(ProductGroupsToBuild)' == 'VS' or 
+                          '$(ProductGroupsToBuild)' == 'VS;FX' or '$(ProductGroupsToBuild)' == 'FX;VS'" >
+  <Import Project="LocProjects\SecurityTransparencyRules.dll.locproj" />
+ </ImportGroup>
+</Project>

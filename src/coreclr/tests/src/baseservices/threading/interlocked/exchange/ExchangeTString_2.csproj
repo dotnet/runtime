@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestProjectToRun>ExchangeTString.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>null "This is a string"</CLRTestExecutionArguments>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+</Project>

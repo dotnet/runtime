@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestProjectToRun>CheckAddLong.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>/start:-922337203685477 /add:100</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

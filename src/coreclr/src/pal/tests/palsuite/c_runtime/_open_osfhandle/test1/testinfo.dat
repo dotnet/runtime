@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _open_osfhandle
+Name = Test for _open_osfhandle
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the _open_osfhandle function.
+= This API accepts a OS Handle returned from CreatePipe() and
+= a flag of _O_RDONLY and returns a C Run-Time handle. The test
+= will write to the pipe and pass the C Run-Time handle to _fdopen
+= to open the Read Handle to compare what was written with what
+= was wrote. They should be the same.

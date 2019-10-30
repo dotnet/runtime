@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PinnedInt.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="GCUtil_Pinning.csproj" />
+  </ItemGroup>
+</Project>

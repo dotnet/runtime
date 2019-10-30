@@ -1,0 +1,19 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = exception_handling
+Function = PAL_FINALLY
+Name = Test for nested PAL_FINALLY
+Type = DEFAULT 
+EXE1 = pal_finally
+LANG = cpp
+Description
+= Tests the PAL implementation of the PAL_FINALLY in the presence
+= of a call stack. An exception is forced and passed to two nested
+= exception filters for consideration.  The first filter returns
+= EXCEPTION_CONTINUE_SEARCH so the second can run and return
+= EXCEPTION_EXECUTE_HANDLER.  The initial exception handler should
+= be skipped, and the second executed, and all the PAL_FINALLY
+= blocks handled.

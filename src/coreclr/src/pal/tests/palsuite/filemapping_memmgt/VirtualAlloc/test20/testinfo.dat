@@ -1,0 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = VirtualAlloc
+Name = Positive test for VirtualAlloc API
+TYPE = DEFAULT
+EXE1 = virtualalloc
+Description
+=Test VirtualAlloc to ensure that re-committed memory is not changed.

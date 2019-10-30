@@ -1,0 +1,20 @@
+<Project>
+  <Import Project="../Directory.Build.targets" />
+
+  <ItemGroup>
+    <BuiltBinary Include="$(TargetPath)" />
+  </ItemGroup>
+
+  <!-- Target used to consolidate all PDBs into a single location -->
+  <Target Name="MoveSymbolFiles"
+          AfterTargets="Build"
+          Condition="Exists(@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb'))"
+          Inputs="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
+          Outputs="@(BuiltBinary -> '$(BinDir)PDB/%(Filename).pdb')">
+
+    <Move SourceFiles="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
+          DestinationFolder="$(BinDir)PDB" />
+
+  </Target>
+
+</Project>

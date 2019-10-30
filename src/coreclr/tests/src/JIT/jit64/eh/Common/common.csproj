@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <GenerateRunScript>false</GenerateRunScript>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="common.cs" />
+  </ItemGroup>
+</Project>

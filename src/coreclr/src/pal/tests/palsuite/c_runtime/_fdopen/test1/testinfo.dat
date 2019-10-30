@@ -1,0 +1,23 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = fdopen
+Name = test for fdopen and _close
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the fdopen function. 
+= This will test fdopen in r (read) mode. This test 
+= creates and opens a test pipe, to write and read 
+= from. fdopen requires a file handle(int), therefore
+= _open_osfhandle is used to get that handle. 
+= _open_osfhandle is only used with CreatePipe. The 
+= test will write and read from the pipe comparing 
+= the results.
+= As a secondary test, _close is tested since it needs
+= the handle returned by _open_osfhandle. The handle is
+= closed, then a read is attempted on the handle which 
+= should fail.
