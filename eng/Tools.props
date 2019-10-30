@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- We need to import this props file which contains PackageReferences to analyzers so that
+       analyzer build assets are imported via the Tools generated props and targets -->
+  <Import Project="$(RepositoryEngineeringDir)analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
+
+  <!-- source-built packages -->
+  <ItemGroup>
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    
+    <!-- coreclr -->
+    <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
+    <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILPackageVersion)]" />
+
+    <!-- roslyn -->
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- excluded from offline portion of source build -->
+  <ItemGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
+  </ItemGroup>
+
+  <!-- excluded from source build -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
+
+    <!-- SourceLink -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.SourceLink.Vsts.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\docs.targets') and '$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\optimizationData.targets') and '$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\illink.targets') and '$(ILLinkTrimAssembly)' != 'false'" />
+</Project>
