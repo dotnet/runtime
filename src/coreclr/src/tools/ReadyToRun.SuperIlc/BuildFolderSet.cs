@@ -300,7 +300,11 @@ namespace ReadyToRun.SuperIlc
 
             ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
 
-            HashSet<string> skipCopying = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string>[] skipCopying = new HashSet<string>[(int)CompilerIndex.Count];
+            foreach (CompilerRunner runner in frameworkRunners)
+            {
+                skipCopying[(int)runner.Index] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
             int[] failedCompilationsPerBuilder = new int[(int)CompilerIndex.Count];
             int successfulCompileCount = 0;
             int failedCompileCount = 0;
@@ -316,7 +320,7 @@ namespace ReadyToRun.SuperIlc
                     }
                     else if (compilationProcess.Succeeded)
                     {
-                        skipCopying.Add(compilationProcess.Parameters.InputFileName);
+                        skipCopying[(int)runner.Index].Add(compilationProcess.Parameters.InputFileName);
                         AnalyzeCompilationLog(compilationProcess, runner.Index);
                     }
                     else
@@ -341,7 +345,7 @@ namespace ReadyToRun.SuperIlc
                 string outputPath = runner.GetOutputPath(coreRoot);
                 foreach (string file in frameworkFolderFiles)
                 {
-                    if (!skipCopying.Contains(file))
+                    if (!skipCopying[(int)runner.Index].Contains(file))
                     {
                         string targetFile = Path.Combine(outputPath, Path.GetFileName(file));
                         File.Copy(file, targetFile, overwrite: true);
