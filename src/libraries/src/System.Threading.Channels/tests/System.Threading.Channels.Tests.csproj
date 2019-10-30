@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BoundedChannelTests.cs" />
+    <Compile Include="ChannelClosedExceptionTests.cs" />
+    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ChannelTestBase.cs" />
+    <Compile Include="ChannelTestBase.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ChannelTests.cs" />
+    <Compile Include="TestBase.cs" />
+    <Compile Include="UnboundedChannelTests.cs" />
+    <Compile Include="Stress.cs" />
+    <Compile Include="DebugAttributeTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

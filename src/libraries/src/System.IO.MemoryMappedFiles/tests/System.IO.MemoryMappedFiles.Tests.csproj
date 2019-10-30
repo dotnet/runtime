@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MemoryMappedFile.CreateFromFile.Tests.cs" />
+    <Compile Include="MemoryMappedFile.CreateOrOpen.Tests.cs" />
+    <Compile Include="MemoryMappedFile.OpenExisting.Tests.cs" />
+    <Compile Include="MemoryMappedFile.CreateNew.Tests.cs" />
+    <Compile Include="MemoryMappedFile.CrossProcess.cs" />
+    <Compile Include="MemoryMappedViewStream.Tests.cs" />
+    <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
+    <Compile Include="MemoryMappedFilesTestsBase.cs" />
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+</Project>

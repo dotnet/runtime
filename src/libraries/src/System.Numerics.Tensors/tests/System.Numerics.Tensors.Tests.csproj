@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NativeMemory.cs" />
+    <Compile Include="TensorArithmetic.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TensorArithmetic.tt</DependentUpon>
+    </Compile>
+    <Compile Include="TensorExtensions.cs" />
+    <Compile Include="TensorOperations.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TensorOperations.tt</DependentUpon>
+    </Compile>
+    <Compile Include="TensorTests.cs" />
+    <Compile Include="TensorTestsBase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TensorArithmetic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TensorArithmetic.cs</LastGenOutput>
+    </None>
+    <None Include="TensorOperations.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TensorOperations.cs</LastGenOutput>
+    </None>
+    <None Include="TensorTemplate.ttinclude" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <DefaultReferenceExclusions Include="System.Numerics.Tensors" />
+    <ReferenceFromRuntime Include="System.Numerics.Tensors" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- enable the TextTemplating extension -->
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Runtime\Serialization\CollectionDataContractAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\ContractNamespaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\DataContractAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\DataMemberAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\EnumMemberAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\IgnoreDataMemberAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\InvalidDataContractExceptionTests.cs" />
+    <Compile Include="System\Runtime\Serialization\KnownTypeAttributeTests.cs" />
+  </ItemGroup>
+</Project>

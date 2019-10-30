@@ -1,0 +1,14 @@
+version: '3'
+services:
+  client:
+    image: httpstress
+    links:
+      - server
+    environment:
+      - HTTPSTRESS_ARGS=-runMode client -serverUri https://server:5001 ${HTTPSTRESS_ARGS}
+  server:
+    image: httpstress
+    ports:
+      - "5001:5001"
+    environment:
+      - HTTPSTRESS_ARGS=-runMode server -serverUri https://+:5001

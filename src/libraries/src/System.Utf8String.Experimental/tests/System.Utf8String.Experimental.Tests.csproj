@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <RootNamespace>System</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Must reference the Utf8String reference assembly, which is normally excluded from unit test projects. -->
+    <IncludeUtf8StringAsmRef>true</IncludeUtf8StringAsmRef>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
+    <Compile Include="System\Char8Tests.cs" />
+    <Compile Include="System\MemoryTests.cs" />
+    <Compile Include="System\Net\Http\Utf8StringContentTests.cs" />
+    <Compile Include="System\ReflectionTests.cs" />
+    <Compile Include="System\Utf8ExtensionsTests.cs" />
+    <Compile Include="System\BoundedUtf8Span.cs" />
+    <Compile Include="System\RangeEqualityComparer.cs" />
+    <Compile Include="System\Utf8SpanTests.cs" />
+    <Compile Include="System\Utf8SpanTests.Comparison.cs" />
+    <Compile Include="System\Utf8SpanTests.Conversion.cs" />
+    <Compile Include="System\Utf8SpanTests.Ctor.cs" />
+    <Compile Include="System\Utf8SpanTests.Enumeration.cs" />
+    <Compile Include="System\Utf8SpanTests.Manipulation.cs" />
+    <Compile Include="System\Utf8SpanTests.Manipulation.TestData.cs" />
+    <Compile Include="System\Utf8SpanTests.Searching.cs" />
+    <Compile Include="System\Utf8SpanTests.Searching.TestData.cs" />
+    <Compile Include="System\Utf8SpanTests.TestData.cs" />
+    <Compile Include="System\Utf8StringTests.cs" />
+    <Compile Include="System\Utf8StringTests.Comparison.cs" />
+    <Compile Include="System\Utf8StringTests.Conversion.cs" />
+    <Compile Include="System\Utf8StringTests.Ctor.cs" />
+    <Compile Include="System\Utf8StringTests.Enumeration.cs" />
+    <Compile Include="System\Utf8StringTests.Manipulation.cs" />
+    <Compile Include="System\Utf8StringTests.Searching.cs" />
+    <Compile Include="Xunit\SpanAssert.cs" />
+    <Compile Include="System\Utf8TestUtilities.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,341 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_BufferIndexExceedsCapacity" xml:space="preserve">
+    <value>The specified buffer index is not within the buffer capacity.</value>
+  </data>
+  <data name="Argument_BufferLengthExceedsCapacity" xml:space="preserve">
+    <value>The specified useful data length exceeds the capacity of this buffer.</value>
+  </data>
+  <data name="Argument_IndexOutOfArrayBounds" xml:space="preserve">
+    <value>The specified index is out of bounds of the specified array.</value>
+  </data>
+  <data name="Argument_InstancesImplementingIRASThatCanReadMustImplementIIS" xml:space="preserve">
+    <value>The specified Windows Runtime stream supports the IRandomAccessStream interface and its CanRead property returns TRUE, however it does not implement the IInputStream interface. Windows Runtime streams with such inconsistent capabilities cannot be converted to managed Stream objects. IRandomAccessStream instances whose CanRead property returns TRUE must implement the IInputStream interface.</value>
+  </data>
+  <data name="Argument_InstancesImplementingIRASThatCanWriteMustImplementIOS" xml:space="preserve">
+    <value>The specified Windows Runtime stream supports the IRandomAccessStream interface and its CanWrite property returns TRUE, however it does not implement the IOutputStream interface. Windows Runtime streams with such inconsistent capabilities cannot be converted to managed Stream objects. IRandomAccessStream instances whose CanWrite property returns TRUE must implement the IOutputStream interface.</value>
+  </data>
+  <data name="Argument_InsufficientArrayElementsAfterOffset" xml:space="preserve">
+    <value>The specified array does not contain the specified number of elements starting at the specified offset.</value>
+  </data>
+  <data name="Argument_InsufficientBufferCapacity" xml:space="preserve">
+    <value>The specified buffer capacity is not sufficient to hold data of the specified length.</value>
+  </data>
+  <data name="Argument_InsufficientSpaceInSourceBuffer" xml:space="preserve">
+    <value>The specified source buffer does not contain the specified number of elements starting at the specified offset.</value>
+  </data>
+  <data name="Argument_InsufficientSpaceInTargetBuffer" xml:space="preserve">
+    <value>The specified destination buffer is not large enough to hold the specified number of bytes starting at the specified offset.</value>
+  </data>
+  <data name="Argument_NotSufficientCapabilitiesToConvertToWinRtStream" xml:space="preserve">
+    <value>Cannot convert the specified Stream object to a Windows Runtime stream because it does not have sufficient capabilities. In order to convert a System.IO.Stream instance to a Windows Runtime stream at least one of the properties CanRead, CanWrite, CanSeek must return TRUE; however, none of these properties returns TRUE for the specified Stream.</value>
+  </data>
+  <data name="Argument_ObjectMustBeWinRtStreamToConvertToNetFxStream" xml:space="preserve">
+    <value>The specified object cannot be converted to a System.IO.Stream instance because it is not a Windows Runtime stream. In order to convert an object to a Stream instance it must implement at least one of the following 3 Windows Runtime stream interfaces: IInputStream, IOutputStream, IRandomAccessStream.</value>
+  </data>
+  <data name="Argument_RelativePathMayNotBeWhitespaceOnly" xml:space="preserve">
+    <value>The specified relative path may not consist of whitespace only</value>
+  </data>
+  <data name="Argument_StreamPositionBeyondEOS" xml:space="preserve">
+    <value>The specified stream position is beyond the end of the stream.</value>
+  </data>
+  <data name="Argument_UnexpectedAsyncResult" xml:space="preserve">
+    <value>The specified AsyncResult does not correspond to any outstanding IO operation.</value>
+  </data>
+  <data name="Argument_WinRtStreamCannotReadOrWrite" xml:space="preserve">
+    <value>The specified Windows Runtime stream does not support reading nor writing. Windows Runtime streams with such capabilities cannot be converted to managed Stream objects. Use a Windows Runtime stream that can support reading, writing or both.</value>
+  </data>
+  <data name="ArgumentOutOfRange_CannotResizeStreamToNegative" xml:space="preserve">
+    <value>Cannot set the length of a stream to a negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IO_CannotSeekToNegativePosition" xml:space="preserve">
+    <value>Cannot seek to an absolute stream position that is negative.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidInputStreamOptionsEnumValue" xml:space="preserve">
+    <value>The specified value is not a valid member of the InputStreamOptions enumeration.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative" xml:space="preserve">
+    <value>The buffer size for a Windows Runtime stream adapter may not be negative. Use a positive buffer size or 0 to disable buffering.</value>
+  </data>
+  <data name="InvalidOperation_CannotCallThisMethodInCurrentState" xml:space="preserve">
+    <value>The state of this object does not permit invoking this method.</value>
+  </data>
+  <data name="InvalidOperation_CannotChangeBufferSizeOfWinRtStreamAdapter" xml:space="preserve">
+    <value>Cannot convert the specified Windows Runtime stream to a managed System.IO.Stream object with the specified buffer size because this Windows Runtime stream has been previously converted to a managed Stream object with a different buffer size. Ensure that the 'bufferSize' argument matches the existing buffer or use the '{0}'-overload without the 'bufferSize' argument to convert the specified Windows Runtime stream to a Stream object with the same buffer size as previously.</value>
+  </data>
+  <data name="InvalidOperation_CannotChangeBufferSizeOfWinRtStreamAdapterToZero" xml:space="preserve">
+    <value>Cannot convert the specified Windows Runtime stream to a managed System.IO.Stream object without a buffer because this Windows Runtime stream has been previously converted to a managed Stream object with a buffer. Ensure that the 'bufferSize' argument matches the existing buffer or use the '{0}'-overload without the 'bufferSize' argument to convert the specified Windows Runtime stream to a Stream object with the same buffer size as previously.</value>
+  </data>
+  <data name="InvalidOperation_CannotGetResultsFromIncompleteOperation" xml:space="preserve">
+    <value>Cannot call GetResults on this asynchronous info because the underlying operation has not completed.</value>
+  </data>
+  <data name="InvalidOperation_CannotSetCompletionHanlderMoreThanOnce" xml:space="preserve">
+    <value>The 'Completed' handler delegate cannot be set more than once, but this handler has already been set.</value>
+  </data>
+  <data name="InvalidOperation_CannotSetStreamSizeCannotWrite" xml:space="preserve">
+    <value>Cannot set the size of this stream because it cannot be written to.</value>
+  </data>
+  <data name="InvalidOperation_IllegalStateChange" xml:space="preserve">
+    <value>The specified state transition is illegal for the current state of this object.</value>
+  </data>
+  <data name="InvalidOperation_InvalidAsyncCompletion" xml:space="preserve">
+    <value>The asynchronous operation could not be completed.</value>
+  </data>
+  <data name="InvalidOperation_MultipleIOCompletionCallbackInvocation" xml:space="preserve">
+    <value>A callback for the same asynchronous IO operation was invoked more than once.</value>
+  </data>
+  <data name="InvalidOperation_TaskProviderReturnedUnstartedTask" xml:space="preserve">
+    <value>The Task provider delegate specified for this IAsyncInfo instance returned a Task object that was not started. Task instances must be run immediately upon creation.</value>
+  </data>
+  <data name="InvalidOperation_UnexpectedAsyncOperationID" xml:space="preserve">
+    <value>This AsyncResult or Task corresponds to a different asynchronous operation ID than the one that invoked the completion callback.</value>
+  </data>
+  <data name="InvalidOperation_UnstartedTaskSpecified" xml:space="preserve">
+    <value>The specified underlying Task is not started. Task instances must be run immediately upon creation.</value>
+  </data>
+  <data name="IO_CannotSeekBeyondInt64MaxValue" xml:space="preserve">
+    <value>Cannot seek to an absolute stream position that is larger than 2^63 - 1 bytes. (2^63 - 1 = 0x7FFFFFFFFFFFFFFF = Int64.MaxValue).</value>
+  </data>
+  <data name="IO_CannotSetSizeBeyondInt64MaxValue" xml:space="preserve">
+    <value>This Windows Runtime stream is backed by a .NET Stream; its size cannot be set to a value that is larger than 2^63 - 1 bytes. (2^63 - 1 = 0x7FFFFFFFFFFFFFFF = Int64.MaxValue).</value>
+  </data>
+  <data name="IO_General" xml:space="preserve">
+    <value>An IO error occurred in the Windows runtime system.</value>
+  </data>
+  <data name="IO_UnderlyingWinRTStreamTooLong_CannotUseLengthOrPosition" xml:space="preserve">
+    <value>This Stream is backed by a Windows Runtime stream with a length that exceeds 2^63 - 1 bytes. Operations related to the stream's length or position cannot be performed on streams when the length exceeds 2^63 - 1 bytes. (2^63 - 1 = 0x7FFFFFFFFFFFFFFF = Int64.MaxValue = approx. 8000 PetaBytes.)</value>
+  </data>
+  <data name="NotImplemented_NativeRoutineNotFound" xml:space="preserve">
+    <value>A native library routine was not found: {0}.</value>
+  </data>
+  <data name="NotSupported_CannotConvertNotReadableToInputStream" xml:space="preserve">
+    <value>Cannot use the specified Stream as a Windows Runtime IInputStream because this Stream is not readable.</value>
+  </data>
+  <data name="NotSupported_CannotConvertNotSeekableToRandomAccessStream" xml:space="preserve">
+    <value>Cannot use the specified Stream as a Windows Runtime IRandomAccessStream because this Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_CannotConvertNotWritableToOutputStream" xml:space="preserve">
+    <value>Cannot use the specified Stream as a Windows Runtime IOutputStream because this Stream is not writable.</value>
+  </data>
+  <data name="NotSupported_CannotReadFromStream" xml:space="preserve">
+    <value>This stream does not support read access.</value>
+  </data>
+  <data name="NotSupported_CannotSeekInStream" xml:space="preserve">
+    <value>This stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_CannotUseLength_StreamNotSeekable" xml:space="preserve">
+    <value>This stream does not support the Length property because it is not seekable.</value>
+  </data>
+  <data name="NotSupported_CannotUsePosition_StreamNotSeekable" xml:space="preserve">
+    <value>This stream does not support the Position property because it is not seekable.</value>
+  </data>
+  <data name="NotSupported_CannotWriteToStream" xml:space="preserve">
+    <value>This stream does not support write access.</value>
+  </data>
+  <data name="NotSupported_CloningNotSupported" xml:space="preserve">
+    <value>This IRandomAccessStream does not support the {0} method because it requires cloning and this stream does not support cloning.</value>
+  </data>
+  <data name="NullReference_IOCompletionCallbackCannotProcessNullAsyncInfo" xml:space="preserve">
+    <value>The Windows Runtime stream that underlies this System.IO.Stream object has invoked an IO completion callback and specified null for the IAsyncInfo instance that describes the completed IO operation. This behavior is not supported because results cannot be retrieved from a null operation. Either the underlying Windows Runtime stream has a faulty implementation, or you are using a Windows Runtime object in an unsupported runtime environment.</value>
+  </data>
+  <data name="NullReference_TaskProviderReturnedNull" xml:space="preserve">
+    <value>The task provider delegate used to create this asynchronous operation returned null, but a valid Task object was expected.</value>
+  </data>
+  <data name="ObjectDisposed_AsyncInfoIsClosed" xml:space="preserve">
+    <value>The requested invocation is not permitted because this IAsyncInfo instance has already been closed.</value>
+  </data>
+  <data name="ObjectDisposed_CannotPerformOperation" xml:space="preserve">
+    <value>The requested operation cannot be performed because this stream has already been disposed.</value>
+  </data>
+  <data name="WinRtCOM_Error" xml:space="preserve">
+    <value>An error has occurred.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
+    <value>Invalid seek origin.</value>
+  </data>
+  <data name="DirectUI_Empty" xml:space="preserve">
+    <value>Empty.</value>
+  </data>
+  <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
+    <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
+  </data>
+  <data name="UnauthorizedAccess_InternalBuffer" xml:space="preserve">
+    <value>MemoryStream's internal buffer cannot be accessed.</value>
+  </data>
+  <data name="NotSupported_Inheritable" xml:space="preserve">
+    <value>Inheritable is not a supported option.</value>
+  </data>
+  <data name="NotSupported_Encrypted" xml:space="preserve">
+    <value>Encrypted is not a supported option.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="PlatformNotSupported_WindowsRuntime" xml:space="preserve">
+    <value>Windows Runtime (WinRT) is not supported on this platform.</value>
+  </data>
+</root>

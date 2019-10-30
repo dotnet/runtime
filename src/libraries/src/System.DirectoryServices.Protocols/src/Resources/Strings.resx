@@ -1,0 +1,491 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DsmlNonHttpUri" xml:space="preserve">
+    <value>The URI that is supplied must be either "http" or "https".</value>
+  </data>
+  <data name="NoNegativeTimeLimit" xml:space="preserve">
+    <value>A negative value is not permitted for the time limit.</value>
+  </data>
+  <data name="NoNegativeSizeLimit" xml:space="preserve">
+    <value>A negative value is not permitted for the size limit.</value>
+  </data>
+  <data name="InvalidDocument" xml:space="preserve">
+    <value>The DSML document could not be parsed.</value>
+  </data>
+  <data name="MissingSessionId" xml:space="preserve">
+    <value>The server failed to return a session identifier.</value>
+  </data>
+  <data name="MissingResponse" xml:space="preserve">
+    <value>The server failed to return a DirectoryResponse.</value>
+  </data>
+  <data name="ErrorResponse" xml:space="preserve">
+    <value>An ErrorResponse DSML element was returned.</value>
+  </data>
+  <data name="BadControl" xml:space="preserve">
+    <value>The server returned an invalid DSML control.</value>
+  </data>
+  <data name="NullDirectoryAttribute" xml:space="preserve">
+    <value>A null reference cannot be added to DirectoryAttribute or DirectoryAttributeModification objects. </value>
+  </data>
+  <data name="NullDirectoryAttributeCollection" xml:space="preserve">
+    <value>A null reference cannot be added to DirectoryAttributeCollection or DirectoryAttributeModificationCollection objects. </value>
+  </data>
+  <data name="WhiteSpaceServerName" xml:space="preserve">
+    <value>Server names cannot contain a space character.</value>
+  </data>
+  <data name="DirectoryAttributeConversion" xml:space="preserve">
+    <value>A DirectoryAttribute value can only be converted between byte array and string.</value>
+  </data>
+  <data name="WrongNumValuesCompare" xml:space="preserve">
+    <value>Only one value can be specified for the compare operation.</value>
+  </data>
+  <data name="WrongAssertionCompare" xml:space="preserve">
+    <value>The assertion is null and is invalid for the compare operation.</value>
+  </data>
+  <data name="DefaultOperationsError" xml:space="preserve">
+    <value>An unspecified operation error occurred.</value>
+  </data>
+  <data name="BadSearchLDAPFilter" xml:space="preserve">
+    <value>The LDAP filter string is invalid.</value>
+  </data>
+  <data name="ReadOnlyProperty" xml:space="preserve">
+    <value>The property is read-only.</value>
+  </data>
+  <data name="MissingOperationResponseResultCode" xml:space="preserve">
+    <value>The operation response is missing the result code.</value>
+  </data>
+  <data name="MissingSearchResultEntryDN" xml:space="preserve">
+    <value>The distinguished name is missing in the SearchResultEntry of the search response.</value>
+  </data>
+  <data name="MissingSearchResultEntryAttributeName" xml:space="preserve">
+    <value>The search result is missing the attribute name.</value>
+  </data>
+  <data name="BadOperationResponseResultCode" xml:space="preserve">
+    <value>The server returned an unknown result code "{0}".</value>
+  </data>
+  <data name="MissingErrorResponseType" xml:space="preserve">
+    <value>The error response is missing the type attribute.</value>
+  </data>
+  <data name="ErrorResponseInvalidValue" xml:space="preserve">
+    <value>The error response contains an invalid type attribute "{0}".</value>
+  </data>
+  <data name="NotSupportOnDsmlErrRes" xml:space="preserve">
+    <value>This property is not supported on a DsmlErrorResponse.</value>
+  </data>
+  <data name="BadBase64Value" xml:space="preserve">
+    <value>The value is invalid base-64-encoded data.</value>
+  </data>
+  <data name="WrongAuthType" xml:space="preserve">
+    <value>The DsmlSoapHttpConnection does not support "{0}" authentication type.</value>
+  </data>
+  <data name="SessionInUse" xml:space="preserve">
+    <value>An active session already exists for this connection.</value>
+  </data>
+  <data name="ReadOnlyDocument" xml:space="preserve">
+    <value>The document is read-only.</value>
+  </data>
+  <data name="NotWellFormedResponse" xml:space="preserve">
+    <value>The response from the server is not a well-formed DSML document.</value>
+  </data>
+  <data name="NoCurrentSession" xml:space="preserve">
+    <value>No active session exists for this connection.</value>
+  </data>
+  <data name="UnknownResponseElement" xml:space="preserve">
+    <value>The server returned an unknown response element.</value>
+  </data>
+  <data name="InvalidClientCertificates" xml:space="preserve">
+    <value>ClientCertificates can contain only zero or one certificate.</value>
+  </data>
+  <data name="InvalidAuthCredential" xml:space="preserve">
+    <value>The user name and password must be null when the authentication type is anonymous.</value>
+  </data>
+  <data name="InvalidLdapSearchRequestFilter" xml:space="preserve">
+    <value>The LDAP connection only accepts SearchRequest objects that have string type filters.</value>
+  </data>
+  <data name="PartialResultsNotSupported" xml:space="preserve">
+    <value>Retrieval of partial results set is supported only by the SearchRequest object.</value>
+  </data>
+  <data name="BerConverterNotMatch" xml:space="preserve">
+    <value>The "format" string argument and the passed in "value" argument do not match.</value>
+  </data>
+  <data name="BerConverterUndefineChar" xml:space="preserve">
+    <value>The "format" string contains an invalid character.</value>
+  </data>
+  <data name="BerConversionError" xml:space="preserve">
+    <value>An error occurred during the BER conversion.</value>
+  </data>
+  <data name="TLSStopFailure" xml:space="preserve">
+    <value>The Stop TLS operation failed.</value>
+  </data>
+  <data name="NoPartialResults" xml:space="preserve">
+    <value>The LDAP connection cannot retrieve a partial result set.</value>
+  </data>
+  <data name="DefaultLdapError" xml:space="preserve">
+    <value>The LDAP server returned an unknown error.</value>
+  </data>
+  <data name="LDAP_PARTIAL_RESULTS" xml:space="preserve">
+    <value>Only partial results and referrals were received.</value>
+  </data>
+  <data name="LDAP_IS_LEAF" xml:space="preserve">
+    <value>The object is a leaf.</value>
+  </data>
+  <data name="LDAP_SORT_CONTROL_MISSING" xml:space="preserve">
+    <value>The search requires a SORT control.</value>
+  </data>
+  <data name="LDAP_OFFSET_RANGE_ERROR" xml:space="preserve">
+    <value>The search results exceed the specified offset range.</value>
+  </data>
+  <data name="LDAP_RESULTS_TOO_LARGE" xml:space="preserve">
+    <value>The returned results are too large.</value>
+  </data>
+  <data name="LDAP_SERVER_DOWN" xml:space="preserve">
+    <value>The LDAP server is unavailable.</value>
+  </data>
+  <data name="LDAP_LOCAL_ERROR" xml:space="preserve">
+    <value>A local error occurred.</value>
+  </data>
+  <data name="LDAP_ENCODING_ERROR" xml:space="preserve">
+    <value>An encoding error occurred.</value>
+  </data>
+  <data name="LDAP_DECODING_ERROR" xml:space="preserve">
+    <value>A decoding error occurred.</value>
+  </data>
+  <data name="LDAP_TIMEOUT" xml:space="preserve">
+    <value>The operation was aborted because the client side timeout limit was exceeded. </value>
+  </data>
+  <data name="LDAP_AUTH_UNKNOWN" xml:space="preserve">
+    <value>An unknown authentication error occurred.</value>
+  </data>
+  <data name="LDAP_FILTER_ERROR" xml:space="preserve">
+    <value>The search filter is invalid.</value>
+  </data>
+  <data name="LDAP_USER_CANCELLED" xml:space="preserve">
+    <value>The user cancelled the operation.</value>
+  </data>
+  <data name="LDAP_PARAM_ERROR" xml:space="preserve">
+    <value>A bad parameter was passed to a routine.</value>
+  </data>
+  <data name="LDAP_NO_MEMORY" xml:space="preserve">
+    <value>There is not enough memory to perform the task.</value>
+  </data>
+  <data name="LDAP_CONNECT_ERROR" xml:space="preserve">
+    <value>The connection cannot be established. </value>
+  </data>
+  <data name="LDAP_NOT_SUPPORTED" xml:space="preserve">
+    <value>The feature is not supported. </value>
+  </data>
+  <data name="LDAP_NO_RESULTS_RETURNED" xml:space="preserve">
+    <value>No results were returned. </value>
+  </data>
+  <data name="LDAP_CONTROL_NOT_FOUND" xml:space="preserve">
+    <value>The specified control was not found. </value>
+  </data>
+  <data name="LDAP_MORE_RESULTS_TO_RETURN" xml:space="preserve">
+    <value>More results will be returned.</value>
+  </data>
+  <data name="LDAP_CLIENT_LOOP" xml:space="preserve">
+    <value>A client loop was detected.</value>
+  </data>
+  <data name="LDAP_REFERRAL_LIMIT_EXCEEDED" xml:space="preserve">
+    <value>The referral limit has been exceeded.</value>
+  </data>
+  <data name="LDAP_INVALID_CREDENTIALS" xml:space="preserve">
+    <value>The supplied credential is invalid.</value>
+  </data>
+  <data name="LDAP_SUCCESS" xml:space="preserve">
+    <value>The call completed successfully.</value>
+  </data>
+  <data name="NoSessionIDReturned" xml:space="preserve">
+    <value>The server failed to return a session identifier.</value>
+  </data>
+  <data name="LDAP_OPERATIONS_ERROR" xml:space="preserve">
+    <value>An operation error occurred.</value>
+  </data>
+  <data name="LDAP_PROTOCOL_ERROR" xml:space="preserve">
+    <value>A protocol error occurred.</value>
+  </data>
+  <data name="LDAP_TIMELIMIT_EXCEEDED" xml:space="preserve">
+    <value>The time limit set by the server-side time limit parameter was exceeded.</value>
+  </data>
+  <data name="LDAP_SIZELIMIT_EXCEEDED" xml:space="preserve">
+    <value>The size limit was exceeded</value>
+  </data>
+  <data name="LDAP_COMPARE_FALSE" xml:space="preserve">
+    <value>The attribute and known values do not match.</value>
+  </data>
+  <data name="LDAP_COMPARE_TRUE" xml:space="preserve">
+    <value>The attribute and known values match.</value>
+  </data>
+  <data name="LDAP_AUTH_METHOD_NOT_SUPPORTED" xml:space="preserve">
+    <value>The authentication method is not supported.</value>
+  </data>
+  <data name="LDAP_STRONG_AUTH_REQUIRED" xml:space="preserve">
+    <value>Strong authentication is required for this operation.</value>
+  </data>
+  <data name="LDAP_REFERRAL" xml:space="preserve">
+    <value>A referral was returned from the server.</value>
+  </data>
+  <data name="LDAP_ADMIN_LIMIT_EXCEEDED" xml:space="preserve">
+    <value>The administration limit on the server was exceeded.</value>
+  </data>
+  <data name="LDAP_UNAVAILABLE_CRIT_EXTENSION" xml:space="preserve">
+    <value>The server does not support the control. The control is critical.</value>
+  </data>
+  <data name="LDAP_CONFIDENTIALITY_REQUIRED" xml:space="preserve">
+    <value>Confidentiality is required for this operation.</value>
+  </data>
+  <data name="LDAP_SASL_BIND_IN_PROGRESS" xml:space="preserve">
+    <value>A SASL bind is in progress.</value>
+  </data>
+  <data name="LDAP_NO_SUCH_ATTRIBUTE" xml:space="preserve">
+    <value>The requested attribute does not exist.</value>
+  </data>
+  <data name="LDAP_UNDEFINED_TYPE" xml:space="preserve">
+    <value>The type is not defined.</value>
+  </data>
+  <data name="LDAP_INAPPROPRIATE_MATCHING" xml:space="preserve">
+    <value>The matching rule does not apply to the specified attribute type.</value>
+  </data>
+  <data name="LDAP_CONSTRAINT_VIOLATION" xml:space="preserve">
+    <value>A value in the request is invalid.</value>
+  </data>
+  <data name="LDAP_ATTRIBUTE_OR_VALUE_EXISTS" xml:space="preserve">
+    <value>The attribute exists or the value has been assigned.</value>
+  </data>
+  <data name="LDAP_INVALID_SYNTAX" xml:space="preserve">
+    <value>The syntax is invalid.</value>
+  </data>
+  <data name="LDAP_NO_SUCH_OBJECT" xml:space="preserve">
+    <value>The object does not exist.</value>
+  </data>
+  <data name="LDAP_ALIAS_PROBLEM" xml:space="preserve">
+    <value>The alias is invalid.</value>
+  </data>
+  <data name="LDAP_INVALID_DN_SYNTAX" xml:space="preserve">
+    <value>The distinguished name contains invalid syntax.</value>
+  </data>
+  <data name="LDAP_ALIAS_DEREF_PROBLEM" xml:space="preserve">
+    <value>An error occurred when dereferencing the alias.</value>
+  </data>
+  <data name="LDAP_INAPPROPRIATE_AUTH" xml:space="preserve">
+    <value>The authentication that was provided was not appropriate.</value>
+  </data>
+  <data name="LDAP_INSUFFICIENT_RIGHTS" xml:space="preserve">
+    <value>The user has insufficient access rights.</value>
+  </data>
+  <data name="LDAP_BUSY" xml:space="preserve">
+    <value>The server is busy.</value>
+  </data>
+  <data name="LDAP_UNAVAILABLE" xml:space="preserve">
+    <value>The server is unavailable.</value>
+  </data>
+  <data name="LDAP_UNWILLING_TO_PERFORM" xml:space="preserve">
+    <value>The server cannot handle directory requests.</value>
+  </data>
+  <data name="LDAP_LOOP_DETECT" xml:space="preserve">
+    <value>The chain of referrals has looped back to a referring server.</value>
+  </data>
+  <data name="LDAP_NAMING_VIOLATION" xml:space="preserve">
+    <value>A naming violation occurred.</value>
+  </data>
+  <data name="LDAP_OBJECT_CLASS_VIOLATION" xml:space="preserve">
+    <value>An object class violation occurred.</value>
+  </data>
+  <data name="LDAP_NOT_ALLOWED_ON_NONLEAF" xml:space="preserve">
+    <value>This operation is not allowed on a non-leaf object.</value>
+  </data>
+  <data name="LDAP_NOT_ALLOWED_ON_RDN" xml:space="preserve">
+    <value>This operation is not allowed on a relative distinguished name.</value>
+  </data>
+  <data name="LDAP_ALREADY_EXISTS" xml:space="preserve">
+    <value>The object exists.</value>
+  </data>
+  <data name="LDAP_NO_OBJECT_CLASS_MODS" xml:space="preserve">
+    <value>The request is attempting to modify an object class that cannot be modified.</value>
+  </data>
+  <data name="LDAP_AFFECTS_MULTIPLE_DSAS" xml:space="preserve">
+    <value>Multiple directory service agents are affected.</value>
+  </data>
+  <data name="LDAP_VIRTUAL_LIST_VIEW_ERROR" xml:space="preserve">
+    <value>An error occurred when attempting to perform a requested Virtual List View operation. </value>
+  </data>
+  <data name="LDAP_OTHER" xml:space="preserve">
+    <value>An unknown error occurred.</value>
+  </data>
+  <data name="LDAP_SEND_TIMEOUT" xml:space="preserve">
+    <value>The operation was aborted because the send timeout limit was exceeded.</value>
+  </data>
+  <data name="InvalidAsyncResult" xml:space="preserve">
+    <value>The async result is invalid.</value>
+  </data>
+  <data name="ValidDirectoryAttributeType" xml:space="preserve">
+    <value>The "value" parameter must be a string or byte[] type.</value>
+  </data>
+  <data name="ValidFilterType" xml:space="preserve">
+    <value>The "filter" parameter must be a string or DsmlDocument type.</value>
+  </data>
+  <data name="ValidValuesType" xml:space="preserve">
+    <value>The "values" parameter must be a string[], byte[][], or Uri[] type.</value>
+  </data>
+  <data name="ValidValueType" xml:space="preserve">
+    <value>The value must be a string, byte[], or Uri type.</value>
+  </data>
+  <data name="TLSNotSupported" xml:space="preserve">
+    <value>Transport layer security is not supported on Windows 2000.</value>
+  </data>
+  <data name="InvalidValueType" xml:space="preserve">
+    <value>The specified parameter should be a "{0}" type.</value>
+  </data>
+  <data name="ValidValue" xml:space="preserve">
+    <value>The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ContainNullControl" xml:space="preserve">
+    <value>The collection cannot contain a null DirectoryControl object.</value>
+  </data>
+  <data name="InvalidFilterType" xml:space="preserve">
+    <value>The filter type "{0}" is invalid.</value>
+  </data>
+  <data name="NotReturnedAsyncResult" xml:space="preserve">
+    <value>The value "{0}" is not the return value from BeginSendRequest.</value>
+  </data>
+  <data name="DsmlAuthRequestNotSupported" xml:space="preserve">
+    <value>LdapConnection object does not support DsmlAuthRequest.</value>
+  </data>
+  <data name="CallBackIsNull" xml:space="preserve">
+    <value>Callback function can not be null when partial result processing is in ReturnPartialResultsAndNotifyCallback mode.</value>
+  </data>
+  <data name="NullValueArray" xml:space="preserve">
+    <value>The array should not contain null reference.</value>
+  </data>
+  <data name="NonCLSException" xml:space="preserve">
+    <value>A non-CLSCompliant exception is thrown.</value>
+  </data>
+  <data name="ConcurrentBindNotSupport" xml:space="preserve">
+    <value>Fast concurrent bind is only supported on Windows 2003 and later operating systems.</value>
+  </data>
+  <data name="TimespanExceedMax" xml:space="preserve">
+    <value>The value exceeds the maximum allowed.</value>
+  </data>
+  <data name="InvliadRequestType" xml:space="preserve">
+    <value>The specified request is not supported.</value>
+  </data>
+  <data name="DirectoryServicesProtocols_PlatformNotSupported" xml:space="preserve">
+    <value>System.DirectoryServices.Protocols is not supported on this platform.</value>
+  </data>
+</root>

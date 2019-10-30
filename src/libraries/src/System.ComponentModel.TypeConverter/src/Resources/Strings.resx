@@ -1,0 +1,252 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Array" xml:space="preserve">
+    <value>{0} Array</value>
+  </data>
+  <data name="Collection" xml:space="preserve">
+    <value>(Collection)</value>
+  </data>
+  <data name="ConvertFromException" xml:space="preserve">
+    <value>{0} cannot convert from {1}.</value>
+  </data>
+  <data name="ConvertInvalidPrimitive" xml:space="preserve">
+    <value>{0} is not a valid value for {1}.</value>
+  </data>
+  <data name="ConvertToException" xml:space="preserve">
+    <value>'{0}' is unable to convert '{1}' to '{2}'.</value>
+  </data>
+  <data name="EnumConverterInvalidValue" xml:space="preserve">
+    <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
+  </data>
+  <data name="ErrorInvalidEventHandler" xml:space="preserve">
+   <value>Invalid event handler for the {0} event.</value> 
+  </data>
+  <data name="ErrorInvalidEventType" xml:space="preserve">
+   <value>Invalid type for the {0} event.</value> 
+  </data>
+  <data name="ErrorInvalidPropertyType" xml:space="preserve">
+    <value>Invalid type for the {0} property</value>
+  </data>
+  <data name="ErrorMissingEventAccessors" xml:space="preserve">
+   <value>Accessor methods for the {0} event are missing.</value> 
+  </data>
+  <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
+    <value>Accessor methods for the {0} property are missing.</value>
+  </data>
+  <data name="InvalidMemberName" xml:space="preserve">
+    <value>Invalid member name</value>
+  </data>
+  <data name="none" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="Null" xml:space="preserve">
+    <value>(null)</value>
+  </data>
+  <data name="NullableConverterBadCtorArg" xml:space="preserve">
+    <value>The specified type is not a nullable type.</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>(Text)</value>
+  </data>
+  <data name="TypeDescriptorAlreadyAssociated" xml:space="preserve">
+    <value>The primary and secondary objects are already associated with each other.</value>
+  </data>
+  <data name="TypeDescriptorArgsCountMismatch" xml:space="preserve">
+    <value>The number of elements in the Type and Object arrays must match.</value>
+  </data>
+  <data name="TypeDescriptorProviderError" xml:space="preserve">
+    <value>The type description provider {0} has returned null from {1} which is illegal.</value>
+  </data>
+  <data name="TypeDescriptorExpectedElementType" xml:space="preserve">
+    <value>Expected types in the collection to be of type {0}.</value>
+  </data>
+  <data name="TypeDescriptorSameAssociation" xml:space="preserve">
+    <value>Cannot create an association when the primary and secondary objects are the same.</value>
+  </data>
+  <data name="InvalidColor" xml:space="preserve">
+    <value>Color '{0}' is not valid.</value>
+  </data>
+  <data name="TextParseFailedFormat" xml:space="preserve">
+    <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
+  </data>
+  <data name="PropertyValueInvalidEntry" xml:space="preserve">
+    <value>IDictionary parameter contains at least one entry that is not valid. Ensure all values are consistent with the object's properties.</value>
+  </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="TimerAutoReset" xml:space="preserve">
+    <value>Indicates whether the timer will be restarted when it is enabled.</value>
+  </data>
+  <data name="TimerEnabled" xml:space="preserve">
+    <value>Indicates whether the timer is enabled to fire events at a defined interval.</value>
+  </data>
+  <data name="TimerInterval" xml:space="preserve">
+    <value>The number of milliseconds between timer events.</value>
+  </data>
+  <data name="TimerIntervalElapsed" xml:space="preserve">
+    <value>Occurs when the Interval has elapsed.</value>
+  </data>
+  <data name="TimerInvalidInterval" xml:space="preserve">
+    <value>'{0}' is not a valid value for 'Interval'. 'Interval' must be greater than {1}.</value>
+  </data>
+  <data name="TimerSynchronizingObject" xml:space="preserve">
+    <value>The object used to marshal the event handler calls issued when an interval has elapsed.</value>
+  </data>
+  <data name="ToolboxItemAttributeFailedGetType" xml:space="preserve">
+    <value>Failed to create ToolboxItem of type: {0}</value>
+  </data>
+  <data name="PropertyTabAttributeBadPropertyTabScope" xml:space="preserve">
+    <value>Scope must be PropertyTabScope.Document or PropertyTabScope.Component</value>
+  </data>
+  <data name="PropertyTabAttributeTypeLoadException" xml:space="preserve">
+    <value>Couldn't find type {0}</value>
+  </data>
+  <data name="PropertyTabAttributeArrayLengthMismatch" xml:space="preserve">
+    <value>tabClasses must have the same number of items as tabScopes</value>
+  </data>
+  <data name="PropertyTabAttributeParamsBothNull" xml:space="preserve">
+    <value>An array of tab type names or tab types must be specified</value>
+  </data>
+  <data name="CultureInfoConverterDefaultCultureString" xml:space="preserve">
+    <value>(Default)</value>
+  </data>
+  <data name="CultureInfoConverterInvalidCulture" xml:space="preserve">
+    <value>The {0} culture cannot be converted to a CultureInfo object on this computer.</value>
+  </data> 
+  <data name="ErrorInvalidServiceInstance" xml:space="preserve">
+    <value>The service instance must derive from or implement {0}.</value>
+  </data>
+  <data name="ErrorServiceExists" xml:space="preserve">
+    <value>The service {0} already exists in the service container.</value>
+  </data>
+  <data name="InvalidArgumentValue" xml:space="preserve">
+    <value>Value of '{1}' is not valid for '{0}'.</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
+  </data>
+  <data name="DuplicateComponentName" xml:space="preserve">
+    <value>Duplicate component name '{0}'. Component names must be unique and case-insensitive.</value>
+  </data>
+  <data name="MaskedTextProviderPasswordAndPromptCharError" xml:space="preserve">
+    <value>The PasswordChar and PromptChar values cannot be the same.</value>
+  </data>
+  <data name="MaskedTextProviderInvalidCharError" xml:space="preserve">
+    <value>The specified character value is not allowed for this property.</value>
+  </data>
+  <data name="MaskedTextProviderMaskNullOrEmpty" xml:space="preserve">
+    <value>The Mask value cannot be null or empty.</value>
+  </data>
+  <data name="MaskedTextProviderMaskInvalidChar" xml:space="preserve">
+    <value>The specified mask contains invalid characters.</value>
+  </data>
+  <data name="InstanceDescriptorCannotBeStatic" xml:space="preserve">
+    <value>Parameter cannot be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeStatic" xml:space="preserve">
+    <value>Parameter must be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeReadable" xml:space="preserve">
+    <value>Parameter must be readable.</value>
+  </data>
+  <data name="InstanceDescriptorLengthMismatch" xml:space="preserve">
+    <value>Length mismatch.</value>
+  </data>
+  <data name="MetaExtenderName" xml:space="preserve">
+    <value>{0} on {1}</value>
+  </data>
+  <data name="CantModifyListSortDescriptionCollection" xml:space="preserve">
+    <value>Once a ListSortDescriptionCollection has been created it can't be modified.</value>
+  </data>
+  <data name="LicExceptionTypeOnly" xml:space="preserve">
+    <value>A valid license cannot be granted for the type {0}. Contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicExceptionTypeAndInstance" xml:space="preserve">
+    <value>An instance of type '{1}' was being created, and a valid license could not be granted for the type '{0}'. Please,  contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicMgrContextCannotBeChanged" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is currently locked and cannot be changed.</value>
+  </data>
+  <data name="LicMgrAlreadyLocked" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is already locked by another user.</value>
+  </data>
+  <data name="LicMgrDifferentUser" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager can only be unlocked with the same contextUser.</value>
+  </data>
+  <data name="CollectionConverterText" xml:space="preserve">
+    <value>(Collection)</value>
+  </data>
+  <data name="InstanceCreationEditorDefaultText" xml:space="preserve">
+    <value>(New...)</value>
+  </data>
+  <data name="ErrorPropertyAccessorException" xml:space="preserve">
+    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
+  </data>
+  <data name="CHECKOUTCanceled" xml:space="preserve">
+    <value>The checkout was canceled by the user.</value>
+  </data> 
+   <data name="toStringNone" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+   <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
+    <value>Relationships between {0}.{1} and {2}.{3} are not supported.</value>
+  </data>
+</root>

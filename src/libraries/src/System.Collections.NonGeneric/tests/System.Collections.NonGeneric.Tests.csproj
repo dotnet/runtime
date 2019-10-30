@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
+      <Link>Common\System\Collections\TestingTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="ArrayListTests.cs" />
+    <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
+    <Compile Include="Hashtable\Hashtable.Values.Tests.cs" />
+    <Compile Include="Hashtable\Hashtable.Keys.Tests.cs" />
+    <Compile Include="Hashtable\Hashtable.IDictionary.Tests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="CaseInsensitiveComparerTests.cs" />
+    <Compile Include="CollectionBaseTests.cs" />
+    <Compile Include="CollectionsUtilTests.cs" />
+    <Compile Include="ComparerTests.cs" />
+    <Compile Include="DictionaryBaseTests.cs" />
+    <Compile Include="HashtableTests.cs" />
+    <Compile Include="QueueTests.cs" />
+    <Compile Include="ReadOnlyCollectionBaseTests.cs" />
+    <Compile Include="SortedListTests.cs" />
+    <Compile Include="StackTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

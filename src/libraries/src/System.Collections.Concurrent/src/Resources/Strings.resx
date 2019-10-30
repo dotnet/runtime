@@ -1,0 +1,186 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BlockingCollection_Add_ConcurrentCompleteAdd" xml:space="preserve">
+    <value>CompleteAdding may not be used concurrently with additions to the collection.</value>
+  </data>
+  <data name="BlockingCollection_Add_Failed" xml:space="preserve">
+    <value>The underlying collection didn't accept the item.</value>
+  </data>
+  <data name="BlockingCollection_CantAddAnyWhenCompleted" xml:space="preserve">
+    <value>At least one of the specified collections is marked as complete with regards to additions.</value>
+  </data>
+  <data name="BlockingCollection_CantTakeAnyWhenAllDone" xml:space="preserve">
+    <value>All collections are marked as complete with regards to additions.</value>
+  </data>
+  <data name="BlockingCollection_CantTakeWhenDone" xml:space="preserve">
+    <value>The collection argument is empty and has been marked as complete with regards to additions.</value>
+  </data>
+  <data name="BlockingCollection_Completed" xml:space="preserve">
+    <value>The collection has been marked as complete with regards to additions.</value>
+  </data>
+  <data name="BlockingCollection_CopyTo_IncorrectType" xml:space="preserve">
+    <value>The array argument is of the incorrect type.</value>
+  </data>
+  <data name="BlockingCollection_CopyTo_MultiDim" xml:space="preserve">
+    <value>The array argument is multidimensional.</value>
+  </data>
+  <data name="BlockingCollection_CopyTo_NonNegative" xml:space="preserve">
+    <value>The index argument must be greater than or equal zero.</value>
+  </data>
+  <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
+    <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
+  </data>
+  <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">
+    <value>The boundedCapacity argument must be positive.</value>
+  </data>
+  <data name="BlockingCollection_ctor_CountMoreThanCapacity" xml:space="preserve">
+    <value>The collection argument contains more items than are allowed by the boundedCapacity.</value>
+  </data>
+  <data name="BlockingCollection_Disposed" xml:space="preserve">
+    <value>The collection has been disposed.</value>
+  </data>
+  <data name="BlockingCollection_Take_CollectionModified" xml:space="preserve">
+    <value>The underlying collection was modified from outside of the BlockingCollection&lt;T&gt;.</value>
+  </data>
+  <data name="BlockingCollection_TimeoutInvalid" xml:space="preserve">
+    <value>The specified timeout must represent a value between -1 and {0}, inclusive.</value>
+  </data>
+  <data name="BlockingCollection_ValidateCollectionsArray_DispElems" xml:space="preserve">
+    <value>The collections argument contains at least one disposed element.</value>
+  </data>
+  <data name="BlockingCollection_ValidateCollectionsArray_LargeSize" xml:space="preserve">
+    <value>The collections length is greater than the supported range for 32 bit machine.</value>
+  </data>
+  <data name="BlockingCollection_ValidateCollectionsArray_NullElems" xml:space="preserve">
+    <value>The collections argument contains at least one null element.</value>
+  </data>
+  <data name="BlockingCollection_ValidateCollectionsArray_ZeroSize" xml:space="preserve">
+    <value>The collections argument is a zero-length array.</value>
+  </data>
+  <data name="Common_OperationCanceled" xml:space="preserve">
+    <value>The operation was canceled.</value>
+  </data>
+  <data name="ConcurrentBag_Ctor_ArgumentNullException" xml:space="preserve">
+    <value>The collection argument is null.</value>
+  </data>
+  <data name="ConcurrentBag_CopyTo_ArgumentNullException" xml:space="preserve">
+    <value>The array argument is null.</value>
+  </data>
+  <data name="Collection_CopyTo_ArgumentOutOfRangeException" xml:space="preserve">
+    <value>The index argument must be greater than or equal zero.</value>
+  </data>
+  <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
+    <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="ConcurrentDictionary_ArrayIncorrectType" xml:space="preserve">
+    <value>The array is multidimensional, or the type parameter for the set cannot be cast automatically to the type of the destination array.</value>
+  </data>
+  <data name="ConcurrentDictionary_SourceContainsDuplicateKeys" xml:space="preserve">
+    <value>The source argument contains duplicate keys.</value>
+  </data>
+  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositive" xml:space="preserve">
+    <value>The concurrencyLevel argument must be positive.</value>
+  </data>
+  <data name="ConcurrentDictionary_CapacityMustNotBeNegative" xml:space="preserve">
+    <value>The capacity argument must be greater than or equal to zero.</value>
+  </data>
+  <data name="ConcurrentDictionary_IndexIsNegative" xml:space="preserve">
+    <value>The index argument is less than zero.</value>
+  </data>
+  <data name="ConcurrentDictionary_ArrayNotLargeEnough" xml:space="preserve">
+    <value>The index is equal to or greater than the length of the array, or the number of elements in the dictionary is greater than the available space from index to the end of the destination array.</value>
+  </data>
+  <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
+    <value>The key already existed in the dictionary.</value>
+  </data>
+  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
+    <value>TKey is a reference type and item.Key is null.</value>
+  </data>
+  <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
+    <value>The key was of an incorrect type for this dictionary.</value>
+  </data>
+  <data name="ConcurrentDictionary_TypeOfValueIncorrect" xml:space="preserve">
+    <value>The value was of an incorrect type for this dictionary.</value>
+  </data>
+  <data name="ConcurrentStack_PushPopRange_CountOutOfRange" xml:space="preserve">
+    <value>The count argument must be greater than or equal to zero.</value>
+  </data>
+  <data name="ConcurrentStack_PushPopRange_InvalidCount" xml:space="preserve">
+    <value>The sum of the startIndex and count arguments must be less than or equal to the collection's Count.</value>
+  </data>
+  <data name="ConcurrentStack_PushPopRange_StartOutOfRange" xml:space="preserve">
+    <value>The startIndex argument must be greater than or equal to zero.</value>
+  </data>
+  <data name="Partitioner_DynamicPartitionsNotSupported" xml:space="preserve">
+    <value>Dynamic partitions are not supported by this partitioner.</value>
+  </data>
+  <data name="PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed" xml:space="preserve">
+    <value>Can not call GetEnumerator on partitions after the source enumerable is disposed</value>
+  </data>
+  <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
+    <value>MoveNext must be called at least once before calling Current.</value>
+  </data>
+  <data name="ConcurrentBag_Enumerator_EnumerationNotStartedOrAlreadyFinished" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
+</root>

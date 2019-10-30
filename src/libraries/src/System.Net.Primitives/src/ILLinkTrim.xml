@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Net.Primitives">
+    <type fullname="System.Net.Cookie">
+      <!-- Workarounds for https://github.com/dotnet/corefx/issues/13607 -->
+      <method name="set_Variant" />
+      <method name="ToServerString" />
+    </type>
+  </assembly>
+</linker>

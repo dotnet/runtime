@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UriRelativeResolutionTest.cs" />
+    <Compile Include="UriTests.cs" />
+  </ItemGroup>
+</Project>

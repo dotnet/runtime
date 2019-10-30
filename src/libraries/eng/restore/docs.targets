@@ -1,0 +1,46 @@
+<Project>
+
+  <ItemGroup>
+    <PackageReference Include="$(MicrosoftPrivateIntellisensePackageId)" Version="$(MicrosoftPrivateIntellisensePackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- the intellisense package doesn't use nuget conventions so we need to select manually -->
+  <Target Name="GetDocFiles"
+          AfterTargets="Restore">
+
+    <ItemGroup>
+      <DocFile Include="$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackageId)/$(MicrosoftPrivateIntellisensePackageVersion)/xmldocs/netcoreapp/**/*.xml"/>
+      <DocFile>
+        <!-- trim off slash since it differs by platform and we need to do a string compare -->
+        <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>
+      </DocFile>
+      <DocFile>
+        <!-- map LCID to culture name that VS expects -->
+        <Culture>unknown</Culture>
+        <Culture Condition="'%(LCID)' == '1028'">zh-hant/</Culture>
+        <Culture Condition="'%(LCID)' == '1031'">de/</Culture>
+        <!-- english is placed in the root -->
+        <Culture Condition="'%(LCID)' == '1033'"></Culture>
+        <Culture Condition="'%(LCID)' == '1036'">fr/</Culture>
+        <Culture Condition="'%(LCID)' == '1040'">it/</Culture>
+        <Culture Condition="'%(LCID)' == '1041'">ja/</Culture>
+        <Culture Condition="'%(LCID)' == '1042'">ko/</Culture>
+        <Culture Condition="'%(LCID)' == '1049'">ru/</Culture>
+        <Culture Condition="'%(LCID)' == '2052'">zh-hans/</Culture>
+        <Culture Condition="'%(LCID)' == '3082'">es/</Culture>
+      </DocFile>
+      <DocFile>
+        <SubFolder>%(Culture)/</SubFolder>
+      </DocFile>
+    </ItemGroup>
+
+    <Error Condition="'%(DocFile.Culture)' == 'unknown'" Text="Unknown language folder '%(LCID)' for doc files '@(DocFile)'" />
+    
+    <Copy SourceFiles="@(DocFile)"
+          DestinationFiles="$(XmlDocDir)\%(SubFolder)%(FileName)%(Extension)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+
+</Project>

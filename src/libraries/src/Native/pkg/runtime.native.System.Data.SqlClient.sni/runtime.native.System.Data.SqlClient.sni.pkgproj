@@ -1,0 +1,19 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <Dependency Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni">
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
+    </Dependency>
+    <Dependency Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni">
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
+    </Dependency>
+    <Dependency Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni">
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
+    </Dependency>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

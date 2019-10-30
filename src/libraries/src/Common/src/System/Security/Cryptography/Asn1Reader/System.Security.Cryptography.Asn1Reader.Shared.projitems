@@ -1,0 +1,119 @@
+﻿<Project>
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>4aaf81e6-6cdc-44fa-adfd-d7b47b9c998f</SharedGUID>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Compile>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Asn1Tag.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\Asn1Tag.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Asn1Tag.Accelerators.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\Asn1Tag.Accelerators.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnCharacterStringEncodings.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnCharacterStringEncodings.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnEncodingRules.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnEncodingRules.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.BitString.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.BitString.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Boolean.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Boolean.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Enumerated.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Enumerated.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.GeneralizedTime.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.GeneralizedTime.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Integer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Integer.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.NamedBitList.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.NamedBitList.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Null.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Null.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.OctetString.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.OctetString.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Oid.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Oid.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Sequence.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Sequence.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.SetOf.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.SetOf.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.Text.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.Text.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnReader.UtcTime.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnReader.UtcTime.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.BitString.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.BitString.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Boolean.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Boolean.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Enumerated.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Enumerated.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.GeneralizedTime.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.GeneralizedTime.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Integer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Integer.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.NamedBitList.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.NamedBitList.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Null.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Null.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.OctetString.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.OctetString.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Oid.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Oid.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Sequence.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Sequence.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.SetOf.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.SetOf.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.Text.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.Text.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriter.UtcTime.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnWriter.UtcTime.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)SetOfValueComparer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\SetOfValueComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)TagClass.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\TagClass.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)UniversalTagNumber.cs">
+      <Link>Common\System\Security\Cryptography\Asn1Reader\UniversalTagNumber.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

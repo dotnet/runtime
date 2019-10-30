@@ -1,0 +1,5 @@
+Compat issues with assembly System.Threading.Tasks:
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait(System.IAsyncDisposable, System.Boolean)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Boolean)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.WithCancellation<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Threading.CancellationToken)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 3

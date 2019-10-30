@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BrotliEncoderTests.cs" />
+    <Compile Include="BrotliGoogleTestData.cs" />
+    <Compile Include="CompressionStreamUnitTests.Brotli.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamTestBase.cs">
+      <Link>Common\System\IO\Compression\CompressionStreamTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamUnitTestBase.cs">
+      <Link>Common\System\IO\Compression\CompressionStreamUnitTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\LocalMemoryStream.cs">
+      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\StreamHelpers.cs">
+      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!--
+    Manually copy the contentFiles over as on macOS 10.12 unicode characters cause items to be flagged with buildaction compile.
+    TODO: Remove when macOS 10.12 support ended.
+  -->
+  <ItemGroup>
+    <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataPackageVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <None Include="$(PkgSystem_IO_Compression_TestData)\contentFiles\any\any\**\*" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

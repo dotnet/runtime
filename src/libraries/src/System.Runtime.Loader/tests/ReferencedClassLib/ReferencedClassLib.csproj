@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ReferencedClassLib.cs" />
+    <EmbeddedResource Include="ReferencedStrings*.resx" />
+  </ItemGroup>
+</Project>

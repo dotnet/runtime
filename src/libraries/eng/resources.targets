@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.csproj'">.cs</ResourcesSourceFileExtension>
+    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.vbproj'">.vb</ResourcesSourceFileExtension>
+
+    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' AND Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
+    <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
+    <StringResourcesName Condition="'$(StringResourcesName)' == ''">FxResources.$(AssemblyName).$(StringResourcesClassName)</StringResourcesName>
+
+    <!-- We define our own implementation of GetResourceString -->
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <!-- For debug builds we include the full value string so that we get actual resources, even in the case the toolchain strips the resources file -->
+    <GenerateResxSourceIncludeDefaultValues Condition="'$(ConfigurationGroup)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
+  </PropertyGroup>
+
+  <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
+  <ItemGroup Condition="'$(StringResourcesPath)' != '' AND '$(OmitResources)' != 'true'">
+    <EmbeddedResource Include="$(StringResourcesPath)">
+      <Visible>true</Visible>
+      <ManifestResourceName>$(StringResourcesName)</ManifestResourceName>
+      <GenerateSource>true</GenerateSource>
+      <ClassName>$(StringResourcesNamespace).$(StringResourcesClassName)</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Include common SR helper when resources are included unless SkipCommonResourcesIncludes is set. -->
+  <ItemGroup Condition="Exists('$(StringResourcesPath)') AND '$(OmitResources)' != 'true' AND '$(SkipCommonResourcesIncludes)' == ''">
+    <Compile Include="$(CommonPath)/System/SR$(ResourcesSourceFileExtension)">
+      <Visible>true</Visible>
+      <Link>Resources/Common/SR$(ResourcesSourceFileExtension)</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <!--Windows only files -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
+    <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsUserErrors.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEvent.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\FuzzyTests.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.Etw.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
+    <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
+    <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
+    <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
+    <Compile Include="BasicEventSourceTest\TestFilter.cs" />
+    <Compile Include="BasicEventSourceTest\TestShutdown.cs" />
+    <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
+    <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />
+    <Compile Include="BasicEventSourceTest\TestsManifestNegative.cs" />
+    <Compile Include="BasicEventSourceTest\TestsTraits.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEvent.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.cs" />
+    <Compile Include="BasicEventSourceTest\EventSourceTestParser.cs" />
+    <Compile Include="BasicEventSourceTest\LoudListener.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWrite.cs" />
+    <Compile Include="BasicEventSourceTest\TestsUserErrors.cs" />
+    <Compile Include="BasicEventSourceTest\TestUtilities.cs" />
+    <Compile Include="BasicEventSourceTest\XUnitAssemblyAttributes.cs" />
+    <!--EventSources for testing-->
+    <Compile Include="CustomEventSources\EventSourceTest.cs" />
+    <Compile Include="CustomEventSources\InvalidCallsToWriteEvent.cs" />
+    <Compile Include="CustomEventSources\InvalidEventSources.cs" />
+    <Compile Include="CustomEventSources\SimpleEventSource.cs" />
+    <Compile Include="CustomEventSources\UseAbstractEventSource.cs" />
+    <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventPackageVersion)" />
+  </ItemGroup>
+</Project>

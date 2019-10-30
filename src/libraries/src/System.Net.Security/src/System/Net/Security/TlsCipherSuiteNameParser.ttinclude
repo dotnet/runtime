@@ -1,0 +1,597 @@
+﻿<#@ assembly name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#+
+
+// Copy of ssl enum types with values which we are missing
+// We will translate those names to the values we have available
+// We still want to have the source of truth somewhere
+public enum ExchangeAlgorithmType
+{
+    None,
+    Rsa,
+    DiffieHellmanStatic,
+    DiffieHellmanEphermal,
+    ECDiffieHellman,
+    ECDiffieHellmanEphermal,
+    Kerberos5,
+    PSK,
+    SRP,
+    ECCPWD,
+    Any,
+}
+
+public enum CipherAlgorithmType
+{
+    Aes,
+    Aes128,
+    Aes192,
+    Aes256,
+    Des,
+    None,
+    Null,
+    Rc2,
+    Rc4,
+    TripleDes,
+    AesGcm,
+    AesCcm,
+    Aes128Gcm,
+    Aes256Gcm,
+    Aes128Ccm,
+    Aes128Ccm8,
+    Aes256Ccm,
+    Aes256Ccm8,
+    Camellia,
+    Camellia128,
+    Camellia256,
+    Camellia128Gcm,
+    Camellia256Gcm,
+    ChaCha20,
+    ChaCha20Poly1305,
+    Seed,
+    Idea,
+    Aria,
+    Aria128,
+    Aria256,
+    Aria128Gcm,
+    Aria256Gcm,
+}
+
+public enum HashAlgorithmType
+{
+    None,
+    Md5,
+    Sha1,
+    Sha256,
+    Sha384,
+    Sha512,
+    Aead,
+}
+
+internal static class EnumHelpers
+{
+    public static string ToFrameworkName(ExchangeAlgorithmType val)
+    {
+        switch (val)
+        {
+            case ExchangeAlgorithmType.None:
+                return "None";
+            case ExchangeAlgorithmType.Rsa:
+                return "RsaKeyX";
+            case ExchangeAlgorithmType.DiffieHellmanEphermal:
+            case ExchangeAlgorithmType.DiffieHellmanStatic:
+            case ExchangeAlgorithmType.ECDiffieHellman:
+            case ExchangeAlgorithmType.ECDiffieHellmanEphermal:
+                return "DiffieHellman";
+            case ExchangeAlgorithmType.Kerberos5:
+            case ExchangeAlgorithmType.PSK:
+            case ExchangeAlgorithmType.SRP:
+            case ExchangeAlgorithmType.ECCPWD:
+            case ExchangeAlgorithmType.Any:
+                return  "None";
+            default:
+                throw new Exception($"Value `ExchangeAlgorithmType.{val}` does not have framework corresponding name. See TlsCipherSuiteNameParser.ttinclude: ToFrameworkName.");
+        }
+    }
+
+    public static string ToFrameworkName(CipherAlgorithmType val)
+    {
+        switch (val)
+        {
+            case CipherAlgorithmType.Null:
+            case CipherAlgorithmType.Rc2:
+            case CipherAlgorithmType.Rc4:
+            case CipherAlgorithmType.Des:
+            case CipherAlgorithmType.TripleDes:
+            case CipherAlgorithmType.Aes128:
+            case CipherAlgorithmType.Aes256:
+                return val.ToString();
+            case CipherAlgorithmType.Aes128Gcm:
+            case CipherAlgorithmType.Aes128Ccm:
+            case CipherAlgorithmType.Aes128Ccm8:
+                return "Aes128";
+            case CipherAlgorithmType.Aes256Gcm:
+            case CipherAlgorithmType.Aes256Ccm:
+            case CipherAlgorithmType.Aes256Ccm8:
+                return "Aes256";
+            case CipherAlgorithmType.Idea:
+            case CipherAlgorithmType.Seed:
+            case CipherAlgorithmType.Camellia128:
+            case CipherAlgorithmType.Camellia128Gcm:
+            case CipherAlgorithmType.Camellia256:
+            case CipherAlgorithmType.Camellia256Gcm:
+            case CipherAlgorithmType.ChaCha20Poly1305:
+            case CipherAlgorithmType.Aria128:
+            case CipherAlgorithmType.Aria128Gcm:
+            case CipherAlgorithmType.Aria256:
+            case CipherAlgorithmType.Aria256Gcm:
+                return "None";
+            default:
+                throw new Exception($"Value `CipherAlgorithmType.{val}` does not have framework corresponding name. See TlsCipherSuiteNameParser.ttinclude: ToFrameworkName.");
+        }
+    }
+
+    public static string ToFrameworkName(HashAlgorithmType val)
+    {
+        switch (val)
+        {
+            case HashAlgorithmType.Aead:
+            case HashAlgorithmType.None:
+                return "None";
+            case HashAlgorithmType.Md5:
+            case HashAlgorithmType.Sha1:
+            case HashAlgorithmType.Sha256:
+            case HashAlgorithmType.Sha384:
+            case HashAlgorithmType.Sha512:
+                return val.ToString();
+            default:
+                throw new Exception($"Value `HashAlgorithmType.{val}` does not have framework corresponding name. See TlsCipherSuiteNameParser.ttinclude: ToFrameworkName.");
+        }
+    }
+}
+
+// Simplified structure which we use in the product code
+internal partial struct TlsCipherSuiteData
+{
+    internal ExchangeAlgorithmType KeyExchangeAlgorithm;
+    internal CipherAlgorithmType CipherAlgorithm;
+    internal int CipherAlgorithmStrength;
+    internal HashAlgorithmType MACAlgorithm;
+}
+
+// data about the ciphers used, extracted from the ciphersuite name
+class CipherSuiteNameData
+{
+    string _name;
+    int _currToken = 0;
+    string[] _tokens;
+    bool _isAead = false;
+
+    internal TlsCipherSuiteData Data;
+
+    public CipherSuiteNameData(string name)
+    {
+        _name = name;
+        _tokens = name.Split('_');
+        Parse();
+    }
+
+    private string Peek() => _tokens[_currToken];
+
+    private string Next()
+    {
+        if (_currToken == _tokens.Length)
+            throw new Exception($"Token missing: {_name}");
+        var ret = Peek();
+        _currToken++;
+        return ret;
+    }
+
+    private bool EOF()
+    {
+        return _currToken == _tokens.Length;
+    }
+
+    private void Parse()
+    {
+        if (Next() != "TLS")
+            throw new Exception($"invalid name: {_name}");
+
+        ReadKeyX();
+        ReadCipherAndSize();
+        ReadMacAndSize();
+        if (!EOF())
+            throw new Exception($"Extra token: {Peek()}. Name: {_name}");
+    }
+
+    private void ReadKeyX()
+    {
+        var ret = ReadKeyXImpl();
+        if (ret != ExchangeAlgorithmType.Any)
+            Next();
+
+        if (ret == ExchangeAlgorithmType.SRP)
+        {
+            if (Peek() == "SHA")
+            {
+                Next();
+            }
+        }
+
+        if (ret == ExchangeAlgorithmType.PSK)
+        {
+            // PSK is used for authentication but words are swapped
+            // in the ciphersuite name
+            switch (Peek())
+            {
+                case "DHE":
+                    ret = ExchangeAlgorithmType.DiffieHellmanEphermal;
+                    Next();
+                    break;
+                case "ECDHE":
+                    ret = ExchangeAlgorithmType.ECDiffieHellmanEphermal;
+                    Next();
+                    break;
+                case "WITH": // means: just PSK
+                    break;
+                default: throw new Exception($"Token `{Peek()}` has occured after PSK and it is not known. Name: {_name}");
+            }
+        }
+
+        if (Peek() == "PSK")
+        {
+            // PSK is used for authentication
+            Next();
+            switch (ret)
+            {
+                case ExchangeAlgorithmType.DiffieHellmanEphermal:
+                case ExchangeAlgorithmType.ECDiffieHellmanEphermal:
+                case ExchangeAlgorithmType.Rsa:
+                    break;
+                default: throw new Exception($"Key exchange `{ret}` does not combine with PSK. Name: {_name}");
+            }
+        }
+
+        if (Peek() == "anon")
+        {
+            // this refers to authentication but it may change what the Key Exchange algorithm means...
+            Next();
+            switch (ret)
+            {
+                case ExchangeAlgorithmType.ECDiffieHellman:
+                    // per https://tools.ietf.org/html/rfc8422#section-2 ECDH_anon means ECDHE
+                    ret = ExchangeAlgorithmType.ECDiffieHellmanEphermal;
+                    break;
+                case ExchangeAlgorithmType.DiffieHellmanStatic:
+                    // no changes needed
+                    break;
+                default:
+                    throw new Exception($"`anon` ocurred after `{ret}` which was unexpected. Name: {_name}");
+            }
+        }
+
+        if (Peek() == "EXPORT")
+        {
+            switch (ret)
+            {
+                case ExchangeAlgorithmType.Kerberos5:
+                case ExchangeAlgorithmType.Rsa:
+                case ExchangeAlgorithmType.DiffieHellmanStatic:
+                    break;
+                default:
+                    throw new Exception($"`EXPORT` ocurred after `{ret}` which was unexpected. Name: {_name}");
+            }
+            Next();
+        }
+
+        Data.KeyExchangeAlgorithm = ret;
+    }
+
+    private ExchangeAlgorithmType ReadKeyXImpl()
+    {
+        switch (Peek())
+        {
+            case "NULL": return ExchangeAlgorithmType.None;
+            case "RSA": return ExchangeAlgorithmType.Rsa;
+            case "DH": return ExchangeAlgorithmType.DiffieHellmanStatic;
+            case "DHE": return ExchangeAlgorithmType.DiffieHellmanEphermal;
+            case "KRB5": return ExchangeAlgorithmType.Kerberos5;
+            case "PSK": return ExchangeAlgorithmType.PSK;
+            case "ECDH": return ExchangeAlgorithmType.ECDiffieHellman;
+            case "ECDHE": return ExchangeAlgorithmType.ECDiffieHellmanEphermal;
+            case "SRP": return ExchangeAlgorithmType.SRP;
+            case "ECCPWD": return ExchangeAlgorithmType.ECCPWD;
+            // TLS 1.3 does not have info about Key Exchange
+            case "CHACHA20":
+            case "AES":
+                return ExchangeAlgorithmType.Any;
+            default: throw new Exception($"Unknown KeyX: {Peek()}");
+        }
+    }
+
+    private void ReadCipherAndSize()
+    {
+        // skip meaningless words and signature algorithms
+        bool endProcessingMeaninglessWords = false;
+        while (!endProcessingMeaninglessWords)
+        {
+            switch (Peek())
+            {
+                case "RSA":
+                case "DSS":
+                    Next();
+                    if (Peek() == "EXPORT")
+                        Next();
+                    break;
+                case "ECDSA":
+                case "WITH":
+                    Next();
+                    break;
+                default:
+                    endProcessingMeaninglessWords = true;
+                    break;
+            }
+        }
+
+        switch (Peek())
+        {
+            case "NULL":
+                Data.CipherAlgorithm = CipherAlgorithmType.Null;
+                Next();
+                break;
+            case "RC4":
+                Data.CipherAlgorithm = CipherAlgorithmType.Rc4;
+                Next();
+                Data.CipherAlgorithmStrength = int.Parse(Next());
+                break;
+            case "RC2":
+                Data.CipherAlgorithm = CipherAlgorithmType.Rc2;
+                Data.CipherAlgorithmStrength = 40;
+                Next();
+                if (Peek() == "CBC")
+                    Next();
+                if (Peek() == "40")
+                    Next();
+                break;
+            case "IDEA":
+                Data.CipherAlgorithm = CipherAlgorithmType.Idea;
+                Next();
+                Data.CipherAlgorithmStrength = 128;
+                break;
+            case "DES40":
+                Data.CipherAlgorithm = CipherAlgorithmType.Des;
+                Data.CipherAlgorithmStrength = 40;
+                Next();
+                break;
+            case "DES":
+                Data.CipherAlgorithm = CipherAlgorithmType.Des;
+                Next();
+
+                if (Peek() == "CBC")
+                    Next();
+
+                if (Peek() == "40")
+                {
+                    Next();
+                    Data.CipherAlgorithmStrength = 40;
+                }
+                else
+                {
+                    Data.CipherAlgorithmStrength = 56;
+                }
+                break;
+            case "3DES":
+                Data.CipherAlgorithm = CipherAlgorithmType.TripleDes;
+                Next();
+                Data.CipherAlgorithmStrength = 168;
+                break;
+            case "AES":
+                Next();
+                Data.CipherAlgorithmStrength = int.Parse(Peek());
+                switch (Next())
+                {
+                    case "128":
+                        Data.CipherAlgorithm = CipherAlgorithmType.Aes128;
+                        break;
+                    case "256":
+                        Data.CipherAlgorithm = CipherAlgorithmType.Aes256;
+                        break;
+                    default: throw new Exception($"Unknown AES size: {Peek()}. Name: {_name}");
+                }
+
+                if (Peek() == "GCM")
+                {
+                    _isAead = true;
+                    Next();
+                    switch (Data.CipherAlgorithm)
+                    {
+                        case CipherAlgorithmType.Aes128:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aes128Gcm;
+                            break;
+                        case CipherAlgorithmType.Aes256:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aes256Gcm;
+                            break;
+                        default: throw new Exception($"Unknown AES value: {Data.CipherAlgorithm}. Name: {_name}");
+                    }
+                }
+
+                if (Peek() == "CCM")
+                {
+                    _isAead = true;
+                    Next();
+                    switch (Data.CipherAlgorithm)
+                    {
+                        case CipherAlgorithmType.Aes128:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aes128Ccm;
+                            break;
+                        case CipherAlgorithmType.Aes256:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aes256Ccm;
+                            break;
+                        default: throw new Exception($"Unknown AES value: {Data.CipherAlgorithm}. Name: {_name}");
+                    }
+
+                    if (!EOF() && Peek() == "8")
+                    {
+                        // 8 is ICV (Integrity Check Value) aka Tag
+                        Next();
+                        switch (Data.CipherAlgorithm)
+                        {
+                            case CipherAlgorithmType.Aes128Ccm:
+                                Data.CipherAlgorithm = CipherAlgorithmType.Aes128Ccm8;
+                                break;
+                            case CipherAlgorithmType.Aes256Ccm:
+                                Data.CipherAlgorithm = CipherAlgorithmType.Aes256Ccm8;
+                                break;
+                            default: throw new Exception($"Unknown AES CCM value: {Data.CipherAlgorithm}. Name: {_name}");
+                        }
+                    }
+                }
+                break;
+            case "CAMELLIA":
+                Next();
+                Data.CipherAlgorithmStrength = int.Parse(Next());
+
+                switch (Data.CipherAlgorithmStrength)
+                {
+                    case 128:
+                        Data.CipherAlgorithm = CipherAlgorithmType.Camellia128;
+                        break;
+                    case 256:
+                        Data.CipherAlgorithm = CipherAlgorithmType.Camellia256;
+                        break;
+                    default:
+                        throw new Exception($"Camellia size {Data.CipherAlgorithmStrength} is not defined. Name: {_name}");
+                }
+
+                if (Peek() == "GCM")
+                {
+                    _isAead = true;
+                    Next();
+
+                    switch (Data.CipherAlgorithm)
+                    {
+                        case CipherAlgorithmType.Camellia128:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Camellia128Gcm;
+                            break;
+                        case CipherAlgorithmType.Camellia256:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Camellia256Gcm;
+                            break;
+                        default:
+                            throw new Exception($"Camellia GCM size {Data.CipherAlgorithmStrength} is not defined. Name: {_name}");
+                    }
+                }
+                break;
+            case "SEED":
+                Data.CipherAlgorithm = CipherAlgorithmType.Seed;
+                Data.CipherAlgorithmStrength = 128;
+                Next();
+                break;
+            case "CHACHA20":
+                Next();
+                switch (Peek())
+                {
+                    case "POLY1305":
+                        _isAead = true;
+                        Data.CipherAlgorithm = CipherAlgorithmType.ChaCha20Poly1305;
+                        Data.CipherAlgorithmStrength = 256;
+                        break;
+                    default: throw new Exception($"Unknown AES size: {Peek()}. Name: {_name}");
+                }
+                Next();
+                break;
+            case "ARIA":
+                Next();
+                Data.CipherAlgorithmStrength = int.Parse(Next());
+
+                switch (Data.CipherAlgorithmStrength)
+                {
+                    case 128:
+                        Data.CipherAlgorithm = CipherAlgorithmType.Aria128;
+                        break;
+                    case 256:
+                        Data.CipherAlgorithm = CipherAlgorithmType.Aria256;
+                        break;
+                    default:
+                        throw new Exception($"Aria size {Data.CipherAlgorithmStrength} is not defined. Name: {_name}");
+                }
+
+                if (Peek() == "GCM")
+                {
+                    _isAead = true;
+                    Next();
+
+                    switch (Data.CipherAlgorithm)
+                    {
+                        case CipherAlgorithmType.Aria128:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aria128Gcm;
+                            break;
+                        case CipherAlgorithmType.Aria256:
+                            Data.CipherAlgorithm = CipherAlgorithmType.Aria256Gcm;
+                            break;
+                        default:
+                            throw new Exception($"Aria GCM size {Data.CipherAlgorithmStrength} is not defined. Name: {_name}");
+                    }
+                }
+
+                break;
+            default: throw new Exception($"Unknown Cipher token: {Peek()}. Name: {_name}");
+        }
+
+        while (!EOF() && (Peek() == "EDE" || Peek() == "CBC"))
+            Next();
+    }
+
+    private void ReadMacAndSize()
+    {
+        if (_isAead)
+        {
+            Data.MACAlgorithm = HashAlgorithmType.Aead;
+
+            while (!EOF())
+            {
+                // hash algoritms are used for two things in TLS/SSL:
+                //   MAC - which can be replaced by AEAD - this is what .NET means by HashAlgorithm
+                //   HKDF - (hash key derivation function), this is the one this refers to
+                // we only support filtering by MAC and this is what HashAlgorithm refers to
+                switch (Peek())
+                {
+                    case "SHA384":
+                    case "SHA256":
+                        Next();
+                        break;
+                    default: throw new Exception($"Unknown token for AEAD: {Peek()}. Name: {_name}");
+                }
+            }
+
+            return;
+        }
+
+        switch (Peek())
+        {
+            case "NULL":
+                Data.MACAlgorithm = HashAlgorithmType.None;
+                Next();
+                break;
+            case "MD5":
+                Data.MACAlgorithm = HashAlgorithmType.Md5;
+                Next();
+                break;
+            case "SHA":
+                Data.MACAlgorithm = HashAlgorithmType.Sha1;
+                Next();
+                break;
+            case "SHA256":
+                Data.MACAlgorithm = HashAlgorithmType.Sha256;
+                Next();
+                break;
+            case "SHA384":
+                Data.MACAlgorithm = HashAlgorithmType.Sha384;
+                Next();
+                break;
+            default: throw new Exception($"Unknown Mac token: {Peek()}. Name: {_name}");
+        }
+    }
+}
+#>

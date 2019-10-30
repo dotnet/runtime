@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.ComponentModel.Annotations.cs" />
+  </ItemGroup>
+</Project>

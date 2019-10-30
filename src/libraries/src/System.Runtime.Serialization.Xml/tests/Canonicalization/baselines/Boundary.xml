@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<bookstore xmlns:bk="urn:samples">
+  <book genre="novel" publicationdate="1997" bk:ISBN="1-861001-57-8">
+    <title xmlns="">1. Pride And Prejudice</title>
+    <author xmlns="urn:someuri0">
+      <first-name xmlns="">Jane</first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>24.95</price>
+  </book>
+  <book publicationdate="1997" genre="novel" bk:ISBN="1-861001-57-8">
+    <title xmlns="">2. Pride And Prejudice</title>
+    <author xmlns="urn:someuri1">
+      <bk:first-name xmlns:x="urn:y" xmlns="">Jane
+        <c> <x:d> <e bk:a="b"/> <f> <g x:a1="b1"/> </f></x:d></c>
+      </bk:first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>24.95</price>
+  </book><!-- comment between book tags -->
+  <book genre="novel" publicationdate="1997" bk:ISBN="1-861001-57-8" xmlns:a="urn:someuri2">
+    <title>3. Pride And Prejudice</title>
+    <author xmlns="urn:someuri3">
+      <bk:first-name xmlns="">Jane</bk:first-name>
+      <last-name>Austen<a:b/></last-name>
+    </author>
+    <price>24.95</price>
+  </book>
+  <book publicationdate="1992" genre="novel" bk:ISBN="1-861002-30-1">
+    <title>4. The Handmaid's Tale</title>
+    <bk:author>
+      <first-name>Margaret</first-name>
+      <last-name>Atwood</last-name>
+    </bk:author>
+    <price>29.95</price>
+  </book>
+  <book genre="novel" publicationdate="1991" bk:ISBN="1-861001-57-6">
+    <title>5. Emma</title>
+    <author bk:xx="yy">
+      <first-name>Jane</first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>19.95</price>
+  </book>
+  <book genre="novel" publicationdate="1982" bk:ISBN="1-861001-45-3">
+    <title>6. Sense and Sensibility</title>
+    <author>
+      <first-name bk:x="y">Jane</first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>19.95<!-- another comment --></price>
+  </book>
+  <book genre="novel" publicationdate="1982" bk:ISBN="1-861001-45-3">
+    <title xmlns:a="urn:a1">7. Sense and Sensibility</title>
+    <author xmlns:a="urn:a2">
+      <first-name>Jane<x a:x1="y1"/></first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>19.95<!-- another comment --></price>
+  </book>
+  <book genre="novel" publicationdate="1982" bk:ISBN="1-861001-45-3">
+    <a:title xmlns:a="urn:a1">8. Sense and Sensibility</a:title>
+    <author xmlns:a="urn:a2">
+      <first-name>Jane<x a:x1="y1"/></first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>19.95<!-- another comment --></price>
+  </book>
+  <book genre="novel" publicationdate="1982" bk:ISBN="1-861001-45-3">
+    <title xmlns:a="urn:a1">7. Sense and Sensibility</title>
+    <author xmlns:a="urn:a2">
+      <a:first-name>Jane<x a:x1="y1"/></a:first-name>
+      <last-name>Austen</last-name>
+    </author>
+    <price>19.95<!-- another comment --></price>
+  </book>
+</bookstore>

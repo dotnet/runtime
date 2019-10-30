@@ -1,0 +1,9 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <Project Include="Microsoft.Private.PackageBaseline.pkgproj"/>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))" />
+</Project>

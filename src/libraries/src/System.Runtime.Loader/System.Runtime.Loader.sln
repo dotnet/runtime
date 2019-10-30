@@ -1,0 +1,143 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Tests", "tests\System.Runtime.Loader.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Test.ContextualReflectionDependency", "tests\ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj", "{95DBE3B0-AA86-4366-BB8A-E04B534365F3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.DefaultContext.Tests", "tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.RefEmitLoadContext.Tests", "tests\RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReferencedClassLib", "tests\ReferencedClassLib\ReferencedClassLib.csproj", "{2CD5A44C-65B4-4C51-AC7B-B2938307848A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReferencedClassLibNeutralIsSatellite", "tests\ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj", "{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Noop.Assembly", "tests\System.Runtime.Loader.Noop.Assembly\System.Runtime.Loader.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A57}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Test.Assembly", "tests\System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj", "{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Test.Assembly2", "tests\System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj", "{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Test.AssemblyNotSupported", "tests\System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj", "{F430F54A-7F28-4707-8006-F628B576664E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader", "src\System.Runtime.Loader.csproj", "{485A65F0-51C9-4B95-A7A8-A4860C231E67}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FB507A82-ACDD-4809-A030-6F9372A71194} = {FB507A82-ACDD-4809-A030-6F9372A71194}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader", "ref\System.Runtime.Loader.csproj", "{FB507A82-ACDD-4809-A030-6F9372A71194}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{95DBE3B0-AA86-4366-BB8A-E04B534365F3}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{95DBE3B0-AA86-4366-BB8A-E04B534365F3}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{95DBE3B0-AA86-4366-BB8A-E04B534365F3}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{95DBE3B0-AA86-4366-BB8A-E04B534365F3}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{2CD5A44C-65B4-4C51-AC7B-B2938307848A}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{2CD5A44C-65B4-4C51-AC7B-B2938307848A}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{2CD5A44C-65B4-4C51-AC7B-B2938307848A}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{2CD5A44C-65B4-4C51-AC7B-B2938307848A}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{F430F54A-7F28-4707-8006-F628B576664E}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F430F54A-7F28-4707-8006-F628B576664E}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F430F54A-7F28-4707-8006-F628B576664E}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F430F54A-7F28-4707-8006-F628B576664E}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{FB507A82-ACDD-4809-A030-6F9372A71194}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FB507A82-ACDD-4809-A030-6F9372A71194}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FB507A82-ACDD-4809-A030-6F9372A71194}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FB507A82-ACDD-4809-A030-6F9372A71194}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{95DBE3B0-AA86-4366-BB8A-E04B534365F3} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{2CD5A44C-65B4-4C51-AC7B-B2938307848A} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{7FA764E6-47A3-42B5-923B-7D5DBC611E8E} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{F430F54A-7F28-4707-8006-F628B576664E} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{FB507A82-ACDD-4809-A030-6F9372A71194} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8A93F75F-A61A-4F0E-9929-65775CFDEB09}
+	EndGlobalSection
+EndGlobal

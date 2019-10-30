@@ -1,0 +1,61 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri.ExtendedFunctional.Tests", "tests\ExtendedFunctionalTests\System.Private.Uri.ExtendedFunctional.Tests.csproj", "{0febe054-68ac-446f-b999-9068736d3cec}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {4AC5343E-6E31-4BA5-A795-0493AE7E9008}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri.Functional.Tests", "tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj", "{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {4AC5343E-6E31-4BA5-A795-0493AE7E9008}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri.Unit.Tests", "tests\UnitTests\System.Private.Uri.Unit.Tests.csproj", "{96AF3242-A368-4F13-B006-A722CC3B8517}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {4AC5343E-6E31-4BA5-A795-0493AE7E9008}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri", "src\System.Private.Uri.csproj", "{4AC5343E-6E31-4BA5-A795-0493AE7E9008}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0febe054-68ac-446f-b999-9068736d3cec}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{0febe054-68ac-446f-b999-9068736d3cec}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{0febe054-68ac-446f-b999-9068736d3cec}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{0febe054-68ac-446f-b999-9068736d3cec}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{96AF3242-A368-4F13-B006-A722CC3B8517}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{96AF3242-A368-4F13-B006-A722CC3B8517}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{96AF3242-A368-4F13-B006-A722CC3B8517}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{96AF3242-A368-4F13-B006-A722CC3B8517}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0febe054-68ac-446f-b999-9068736d3cec} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{96AF3242-A368-4F13-B006-A722CC3B8517} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2151451C-8B2A-44DB-881E-B922A4795A30}
+	EndGlobalSection
+EndGlobal

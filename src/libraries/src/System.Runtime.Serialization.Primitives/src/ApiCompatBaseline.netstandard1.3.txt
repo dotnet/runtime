@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime.Serialization.Primitives:
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.InvalidDataContractException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.SerializationException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+Total Issues: 2

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TestTraceFilter.cs" />
+    <Compile Include="CommonUtilities.cs" />
+    <Compile Include="CtorsDelimiterTests.cs" />
+    <Compile Include="TextWriterTraceListener_WriteTests.cs" />
+    <Compile Include="CtorsStreamTests.cs" />
+    <Compile Include="DelimiterWriteMethodTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="ConsoleTraceListenerTests.cs" />
+    <Compile Include="XmlWriterTraceListenerTests.cs" />
+  </ItemGroup>
+</Project>

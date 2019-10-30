@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>                              
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">              
+                                                                     
+    <xs:complexType name="importCmplxType">                         
+        <xs:choice>                                                  
+            <xs:element name="e1_inc" type="xs:string"/>             
+            <xs:element name="e2_inc" type="xs:string"/>             
+        </xs:choice>                                                 
+    </xs:complexType>                                                
+                                                                           
+</xs:schema>                                                         
+                                                                     
+                                                                     

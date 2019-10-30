@@ -1,0 +1,33 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Since we don't have an SDK that knows about 5.0 framework, we should specify it manually. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                            TargetFramework="$(TargetFramework)"
+                            RuntimeFrameworkName="Microsoft.NETCore.App"
+                            DefaultRuntimeFrameworkVersion="$(RuntimeFrameworkVersion)"
+                            LatestRuntimeFrameworkVersion="$(RuntimeFrameworkVersion)"
+                            TargetingPackName="Microsoft.NETCore.App.Ref"
+                            TargetingPackVersion="$(RuntimeFrameworkVersion)"
+                            RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
+                            RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
+                            PackagesToReference="Microsoft.NETCore.App/$(RuntimeFrameworkVersion)"
+                            IsTrimmable="true"
+                            />
+
+    <KnownAppHostPack Update="Microsoft.NETCore.App"
+                      TargetFramework="$(TargetFramework)"
+                      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
+                      AppHostPackVersion="$(RuntimeFrameworkVersion)"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
+                      />
+
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+</Project>

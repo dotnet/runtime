@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup Condition="'$(IsEligibleForNgenOptimization)' == ''">
+     <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' OR '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
+  </PropertyGroup>
+
+  <Target Name="SetApplyNgenOptimization"
+          Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
+          BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <IbcOptimizationDataDir Condition="'$(OSGroup)' == 'Unix' or '$(OSGroup)' == 'Linux'">$(IbcOptimizationDataDir)$(LinuxCoreFxOptimizationDataPackageId)\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(OSGroup)' != 'Unix' and '$(OSGroup)' != 'Linux'">$(IbcOptimizationDataDir)$(WindowsCoreFxOptimizationDataPackageId)\</IbcOptimizationDataDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <ApplyNgenOptimization Condition="'@(_optimizationDataAssembly)' != ''">full</ApplyNgenOptimization>
+    </PropertyGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- ensure these projects use a different intermediate and output directory than generated projects -->
+    <OutDirName>manual.$(MSBuildProjectName)</OutDirName>
+  </PropertyGroup>
+  
+  <Import Project="..\Directory.Build.props" />
+
+  <!-- import generated projects in order to share generated properties -->
+  <Import Project="..\generated\$(MSBuildProjectName).csproj" />
+
+  <PropertyGroup>
+    <IsRuntimeAssembly>true</IsRuntimeAssembly>
+    <!-- Use runtime assemblies for the TargetGroup, using build configuration OSGroup -->
+    <RefPath>$(ArtifactsBinDir)runtime/$(TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ReferencePath
+      Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
+      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+  </ItemGroup>
+</Project>

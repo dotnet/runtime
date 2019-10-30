@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <!--
+      This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
+      and instead use runtime checks.
+    -->
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\AdminHelpers.cs" />
+    <Compile Include="System\AssertExtensions.cs" />
+    <Compile Include="System\RetryHelper.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
+    <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
+    <Compile Include="System\IO\FileCleanupTestBase.cs" />
+    <Compile Include="System\TestEnvironment.cs" />
+    <Compile Include="System\ThreadCultureChange.cs" />
+    <!-- We don't compile per but and instead use runtime platform checks. -->
+    <Compile Include="System\PlatformDetection.cs" />
+    <Compile Include="System\PlatformDetection.Unix.cs" />
+    <Compile Include="System\PlatformDetection.Windows.cs" />
+    <!-- 
+      Interop.Library is not designed to support runtime checks therefore we are picking the Windows
+      variant from the Common folder and adding the missing members manually.
+    -->
+    <Compile Include="Interop\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Windows imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Unix imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitPackageVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="$(MicrosoftDotNetPlatformAbstractionsPackageVersion)" />
+  </ItemGroup>
+</Project>

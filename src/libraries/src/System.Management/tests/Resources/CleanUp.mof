@@ -1,0 +1,2 @@
+#pragma namespace("\\\\.\\root")
+#pragma deleteInstance("__namespace.Name='WmiEBvt'", NOFAIL)

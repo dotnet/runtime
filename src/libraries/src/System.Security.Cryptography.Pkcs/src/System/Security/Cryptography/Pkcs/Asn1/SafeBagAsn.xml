@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SafeBagAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc7292#section-4.2
+
+    SafeBag ::= SEQUENCE {
+        bagId          BAG-TYPE.&id ({PKCS12BagSet})
+        bagValue       [0] EXPLICIT BAG-TYPE.&Type({PKCS12BagSet}{@bagId}),
+        bagAttributes  SET OF PKCS12Attribute OPTIONAL
+    }
+  -->
+  <asn:ObjectIdentifier name="BagId" backingType="string" />
+  <asn:AnyValue name="BagValue" explicitTag="0" />
+  <asn:SetOf name="BagAttributes" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" />
+  </asn:SetOf>
+</asn:Sequence>

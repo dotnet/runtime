@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(CommonTestPath)\Tests.props" />
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NodeReaderTestHelper.cs" />
+    <Compile Include="XmlNodeReaderConstructionTests.cs" />
+    <Compile Include="XmlNodeReaderGetAttributeTests.cs" />
+    <Compile Include="XmlNodeReaderMiscTests.cs" />
+    <Compile Include="XmlNodeReaderMoveToAttributeTests.cs" />
+    <Compile Include="XmlNodeReaderReadTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Configurations.props" />
+  </ItemGroup>
+</Project>

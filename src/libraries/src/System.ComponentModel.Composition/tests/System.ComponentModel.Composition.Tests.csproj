@@ -1,0 +1,181 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- TODO: Add netfx configuration after OOB package bug is fixed: https://github.com/dotnet/corefx/issues/23889 -->
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <DefaultReferenceExclusions Include="System.ComponentModel.Composition" />
+    <ReferenceFromRuntime Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="IMetadataView.cs" />
+    <Compile Include="MetadataTests_IMetadataView.cs" />
+    <Compile Include="System\LazyHelper.cs" />
+    <Compile Include="System\ComponentModel\Composition\AdvancedValueComposition.cs" />
+    <Compile Include="System\ComponentModel\Composition\AggregateExportProviderTest.cs" />
+    <Compile Include="System\ComponentModel\Composition\AttributedModelServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\AttributedModel\AllowNonPublicCompositionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\AttributedModel\AttributedModelCompositionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\AttributedModel\AttributedModelDiscoveryTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\AttributedModel\INotifyImportTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CardinalityMismatchExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CatalogExtensionsTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComponentModelTestTypes.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComponentServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComposablePartCatalogExtensions.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComposablePartDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComposablePartExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComposablePartExtensibilityTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ComposablePartTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerCollectionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerCycleTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerExtensibilityTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerExtensions.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerImportTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionContainerTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionErrorDebuggerProxyTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionErrorIdTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionErrorTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionResultOfTTest.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionResultTest.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionServiceExportFactoryTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionServiceExtensionsTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionServiceProxy.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\CompositionServiceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ConcreteComposablePart.cs" />
+    <Compile Include="System\ComponentModel\Composition\ConstraintParser.cs" />
+    <Compile Include="System\ComponentModel\Composition\ConstraintServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ContractBasedImportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ContractMismatchExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\DynamicMetadata.cs" />
+    <Compile Include="System\ComponentModel\Composition\Expectations.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportCollectionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportFactoryTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportMetadataAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportProviderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ExportTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Extensibility\CustomImportAttribute.cs" />
+    <Compile Include="System\ComponentModel\Composition\Extensibility\CustomImportManyAttribute.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.DerivedComposablePartCatalog.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.DisposableComposablePartCatalog.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.MutableComposablePartCatalog.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.NonFilteringTypeCatalog.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\CatalogFactory.NoOverridesComposablePartCatalog.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ConstraintFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ContainerFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ContainerFactory.DisposableCompositionContainer.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ElementFactory.CompositionElement.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ElementFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ErrorFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportDefinitionFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportDefinitionFactory.DerivedExportDefinition.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportProviderFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportProviderFactory.NoOverridesExportProvider.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ExportProviderFactory.RecomposableExportProvider.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ImportDefinitionFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ImportDefinitionFactory.DerivedContractBasedImportDefinition.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ImportDefinitionFactory.DerivedImportDefinition.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartDefinitionFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartDefinitionFactory.DerivedComposablePartDefinition.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartDefinitionFactory.NoOverridesComposablePartDefinition.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartFactory.DisposableComposablePart.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\PartFactory.NoOverridesComposablePart.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ReflectionFactory.cs" />
+    <Compile Include="System\ComponentModel\Composition\Factories\ReflectionFactory.MockParameterInfo.cs" />
+    <Compile Include="System\ComponentModel\Composition\GenerationServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\GenericsTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\AggregateCatalogTest.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\ApplicationCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\AssemblyCatalogDebuggerProxyTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\AssemblyCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\CatalogExportProviderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\CompositionBatchTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\CompositionTransactionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\DirectoryCatalogDebuggerProxyTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\DirectoryCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\FilteredCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\FilteredCatalogTransitiveClosureTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\ImportEngineTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\ScopeExtensionsTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Hosting\TypeCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ImportAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ImportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ImportingComposablePart.cs" />
+    <Compile Include="System\ComponentModel\Composition\ImportingConstructorAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\InitializationScopeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\MetadataAttributeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\MetadataTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\MetadataViewProviderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\MicroExport.cs" />
+    <Compile Include="System\ComponentModel\Composition\PartCreationPolicyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\PartMetadataAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\ComposablePartCatalogDebuggerProxyTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\ComposablePartCatalogTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\CompositionElementDebuggerProxyTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\CompositionElementTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\CompositionScopeDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\LazyMemberInfoTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionComposablePartDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionComposablePartTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionMemberExportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionMemberImportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionModelServicesEx.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionModelServicesTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionParameterImportDefinitionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\SampleComponents.cs" />
+    <Compile Include="System\ComponentModel\Composition\ScopedCompositionServicetests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ScopeExportFactoryTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\ScopingHelpers.cs" />
+    <Compile Include="System\Integration\AdaptingCollectionTests.cs" />
+    <Compile Include="System\Integration\CatalogFilteringTests.cs" />
+    <Compile Include="System\Integration\CompositionContainerAttributedModelCycleTests.cs" />
+    <Compile Include="System\Integration\ConstructorInjectionTests.cs" />
+    <Compile Include="System\Integration\DelayLoadingTests.cs" />
+    <Compile Include="System\Integration\DelegateCompositionTests.cs" />
+    <Compile Include="System\Integration\DiscoveryTests.cs" />
+    <Compile Include="System\Integration\ExportProviderEventTests.cs" />
+    <Compile Include="System\Integration\LifetimeTests.cs" />
+    <Compile Include="System\Integration\RecompositionTests.cs" />
+    <Compile Include="System\Integration\RejectionTests.cs" />
+    <Compile Include="System\Integration\RequiredCreationPolicyTests.cs" />
+    <Compile Include="System\ReferenceTracker.cs" />
+    <Compile Include="System\TypeExtensions.cs" />
+    <Compile Include="System\UnitTesting\CompositionAssert.cs" />
+    <Compile Include="System\UnitTesting\ConstraintAssert.cs" />
+    <Compile Include="System\UnitTesting\EnumerableAssert.cs" />
+    <Compile Include="System\UnitTesting\EqualityExtensions.cs" />
+    <Compile Include="System\UnitTesting\ErrorId.cs" />
+    <Compile Include="System\UnitTesting\ExceptionAssert.cs" />
+    <Compile Include="System\UnitTesting\ExpectationCollectionOfI.cs" />
+    <Compile Include="System\UnitTesting\ExpectationCollectionOfIO.cs" />
+    <Compile Include="System\UnitTesting\ExpectationOfI.cs" />
+    <Compile Include="System\UnitTesting\ExpectationOfIO.cs" />
+    <Compile Include="System\UnitTesting\ExportsAssert.cs" />
+    <Compile Include="System\UnitTesting\ExtendedAssert.cs" />
+    <Compile Include="System\UnitTesting\RetryMode.cs" />
+    <Compile Include="System\UnitTesting\TestServices.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="System.ComponentModel.Composition.Noop.Assembly/System.ComponentModel.Composition.Noop.Assembly.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

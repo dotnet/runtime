@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificatePolicyMappingAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.2.1.5
+
+    PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
+        issuerDomainPolicy      CertPolicyId,
+        subjectDomainPolicy     CertPolicyId
+    }
+
+    CertPolicyId ::= OBJECT IDENTIFIER
+  -->
+  <asn:ObjectIdentifier name="IssuerDomainPolicy" backingType="string" />
+  <asn:ObjectIdentifier name="SubjectDomainPolicy" backingType="string" />
+</asn:Sequence>

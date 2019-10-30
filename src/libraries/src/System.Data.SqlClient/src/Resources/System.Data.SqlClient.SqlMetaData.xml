@@ -1,0 +1,2539 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xs:element name="NewDataSet" msdata:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="MetaDataCollections" msdata:MinimumCapacity="9">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="CollectionName" type="xs:string" minOccurs="0" />
+                <xs:element name="NumberOfRestrictions" type="xs:int" minOccurs="0" />
+                <xs:element name="NumberOfIdentifierParts" type="xs:int" minOccurs="0" />
+                <xs:element name="PopulationMechanism" type="xs:string" minOccurs="0" />
+                <xs:element name="PopulationString" type="xs:string" minOccurs="0" />
+                <xs:element name="MinimumVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="MaximumVersion" type="xs:string" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="Restrictions" msdata:MinimumCapacity="3">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="CollectionName" type="xs:string" minOccurs="0" />
+                <xs:element name="RestrictionName" type="xs:string" minOccurs="0" />
+                <xs:element name="ParameterName" type="xs:string" minOccurs="0" />
+                <xs:element name="RestrictionDefault" type="xs:string" minOccurs="0" />
+                <xs:element name="RestrictionNumber" type="xs:int" minOccurs="0" />
+                <xs:element name="MinimumVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="MaximumVersion" type="xs:string" minOccurs="0" />
+               </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="DataSourceInformation" msdata:MinimumCapacity="18">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="CompositeIdentifierSeparatorPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="DataSourceProductName" type="xs:string" minOccurs="0" />
+                <xs:element name="DataSourceProductVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="DataSourceProductVersionNormalized" type="xs:string" minOccurs="0" />
+                <xs:element name="GroupByBehavior" msdata:DataType="System.Data.Common.GroupByBehavior, System.Data, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" type="xs:string" minOccurs="0" />
+                <xs:element name="IdentifierPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="IdentifierCase" msdata:DataType="System.Data.Common.IdentifierCase, System.Data, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" type="xs:string" minOccurs="0" />
+                <xs:element name="OrderByColumnsInSelect" type="xs:boolean" minOccurs="0" />
+                <xs:element name="ParameterMarkerFormat" type="xs:string" minOccurs="0" />
+                <xs:element name="ParameterMarkerPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="ParameterNameMaxLength" type="xs:int" minOccurs="0" />
+                <xs:element name="ParameterNamePattern" type="xs:string" minOccurs="0" />
+                <xs:element name="QuotedIdentifierPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="QuotedIdentifierCase" msdata:DataType="System.Data.Common.IdentifierCase, System.Data, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" type="xs:string" minOccurs="0" />
+                <xs:element name="StatementSeparatorPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="StringLiteralPattern" type="xs:string" minOccurs="0" />
+                <xs:element name="SupportedJoinOperators" msdata:DataType="System.Data.Common.SupportedJoinOperators, System.Data, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" type="xs:string" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="DataTypes" msdata:MinimumCapacity="18">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="TypeName" type="xs:string" minOccurs="0" />
+                <xs:element name="ProviderDbType" type="xs:int" minOccurs="0" />
+                <xs:element name="ColumnSize" type="xs:long" minOccurs="0" />
+                <xs:element name="CreateFormat" type="xs:string" minOccurs="0" />
+                <xs:element name="CreateParameters" type="xs:string" minOccurs="0" />
+                <xs:element name="DataType" type="xs:string" minOccurs="0" />
+                <xs:element name="IsAutoIncrementable" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsBestMatch" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsCaseSensitive" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsFixedLength" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsFixedPrecisionScale" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsLong" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsNullable" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsSearchable" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsSearchableWithLike" type="xs:boolean" minOccurs="0" />
+                <xs:element name="IsUnsigned" type="xs:boolean" minOccurs="0" />
+                <xs:element name="MaximumScale" type="xs:short" minOccurs="0" />
+                <xs:element name="MinimumScale" type="xs:short" minOccurs="0" />
+                <xs:element name="IsConcurrencyType" type="xs:boolean" minOccurs="0" />
+                <xs:element name="MaximumVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="MinimumVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="IsLiteralSupported" type="xs:boolean" minOccurs="0" />
+                <xs:element name="LiteralPrefix" type="xs:string" minOccurs="0" />
+                <xs:element name="LiteralSuffix" type="xs:string" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="ReservedWords" msdata:MinimumCapacity="3">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="ReservedWord" type="xs:string" minOccurs="0" />
+                <xs:element name="MaximumVersion" type="xs:string" minOccurs="0" />
+                <xs:element name="MinimumVersion" type="xs:string" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <MetaDataCollections>
+    <CollectionName>MetaDataCollections</CollectionName>
+    <NumberOfRestrictions>0</NumberOfRestrictions>
+    <NumberOfIdentifierParts>0</NumberOfIdentifierParts>
+    <PopulationMechanism>DataTable</PopulationMechanism>
+    <PopulationString>MetaDataCollections</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>DataSourceInformation</CollectionName>
+    <NumberOfRestrictions>0</NumberOfRestrictions>
+    <NumberOfIdentifierParts>0</NumberOfIdentifierParts>
+    <PopulationMechanism>DataTable</PopulationMechanism>
+    <PopulationString>DataSourceInformation</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>DataTypes</CollectionName>
+    <NumberOfRestrictions>0</NumberOfRestrictions>
+    <NumberOfIdentifierParts>0</NumberOfIdentifierParts>
+    <PopulationMechanism>PrepareCollection</PopulationMechanism>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Restrictions</CollectionName>
+    <NumberOfRestrictions>0</NumberOfRestrictions>
+    <NumberOfIdentifierParts>0</NumberOfIdentifierParts>
+    <PopulationMechanism>DataTable</PopulationMechanism>
+    <PopulationString>Restrictions</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>ReservedWords</CollectionName>
+    <NumberOfRestrictions>0</NumberOfRestrictions>
+    <NumberOfIdentifierParts>0</NumberOfIdentifierParts>
+    <PopulationMechanism>DataTable</PopulationMechanism>
+    <PopulationString>ReservedWords</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Users</CollectionName>
+    <NumberOfRestrictions>1</NumberOfRestrictions>
+    <NumberOfIdentifierParts>1</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select uid, name as user_name, createdate, updatedate from sysusers where (name = @Name or (@Name is null))</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Databases</CollectionName>
+    <NumberOfRestrictions>1</NumberOfRestrictions>
+    <NumberOfIdentifierParts>1</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select name as database_name, dbid, crdate as create_date from master..sysdatabases where (name = @Name or (@Name is null))</PopulationString>
+    <MaximumVersion>09.99.999.9</MaximumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Databases</CollectionName>
+    <NumberOfRestrictions>1</NumberOfRestrictions>
+    <NumberOfIdentifierParts>1</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>IF OBJECT_ID('master..sysdatabases') IS NULL EXEC sp_executesql N'select name as database_name, dbid, crdate as create_date from sysdatabases where (name = @Name or (@Name is null))',N'@Name NVARCHAR(128)',@Name=@Name ELSE EXEC sp_executesql N'select name as database_name, dbid, crdate as create_date from master..sysdatabases where (name = @Name or (@Name is null))',N'@Name NVARCHAR(128)',@Name=@Name</PopulationString>
+    <MinimumVersion>10.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Tables</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE from INFORMATION_SCHEMA.TABLES where (TABLE_CATALOG = @Catalog or (@Catalog is null)) and (TABLE_SCHEMA = @Owner or (@Owner is null)) and (TABLE_NAME = @Name or (@Name is null)) and (TABLE_TYPE = @TableType or (@TableType is null))</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Columns</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, NUMERIC_PRECISION, NUMERIC_PRECISION_RADIX, NUMERIC_SCALE, DATETIME_PRECISION, CHARACTER_SET_CATALOG, CHARACTER_SET_SCHEMA, CHARACTER_SET_NAME, COLLATION_CATALOG from INFORMATION_SCHEMA.COLUMNS where (TABLE_CATALOG = @Catalog or (@Catalog is null)) and (TABLE_SCHEMA = @Owner or (@Owner is null)) and (TABLE_NAME = @Table or (@Table is null)) and (COLUMN_NAME = @Column or (@Column is null)) order by TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME</PopulationString>
+    <MaximumVersion>09.99.999.9</MaximumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Columns</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>EXEC sys.sp_columns_managed @Catalog, @Owner, @Table, @Column, 0</PopulationString>
+    <MinimumVersion>10.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>AllColumns</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>EXEC sys.sp_columns_managed @Catalog, @Owner, @Table, @Column, 1</PopulationString>
+    <MinimumVersion>10.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>ColumnSetColumns</CollectionName>
+    <NumberOfRestrictions>3</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>EXEC sys.sp_columns_managed @Catalog, @Owner, @Table, null, 2</PopulationString>
+    <MinimumVersion>10.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+<MetaDataCollections>
+    <CollectionName>StructuredTypeMembers</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>SELECT DB_NAME() AS TYPE_CATALOG, sc.name AS TYPE_SCHEMA, tt.name AS TYPE_NAME, c.name AS MEMBER_NAME, ColumnProperty(c.object_id, c.name, 'ordinal') AS ORDINAL_POSITION, convert(nvarchar(4000), object_definition(c.default_object_id)) AS MEMBER_DEFAULT,  convert(varchar(3), CASE c.is_nullable WHEN 1 THEN 'YES' ELSE 'NO' END) AS IS_NULLABLE, type_name(c.system_type_id) AS DATA_TYPE, ColumnProperty(c.object_id, c.name, 'charmaxlen') AS CHARACTER_MAXIMUM_LENGTH, ColumnProperty(c.object_id, c.name, 'octetmaxlen') AS CHARACTER_OCTET_LENGTH, convert(tinyint, CASE /* int/decimal/numeric/real/float/money */ WHEN c.system_type_id IN (48, 52, 56, 59, 60, 62, 106, 108, 122, 127) THEN c.precision END) AS NUMERIC_PRECISION, convert(smallint, CASE /* int/money/decimal/numeric */ WHEN c.system_type_id IN (48, 52, 56, 60, 106, 108, 122, 127) THEN 10 WHEN c.system_type_id IN (59, 62) THEN 2 END) AS NUMERIC_PRECISION_RADIX, /* real/float */ convert(int, CASE /* datetime/smalldatetime */ WHEN c.system_type_id IN (58, 61) THEN NULL ELSE odbcscale(c.system_type_id, c.scale) END) AS NUMERIC_SCALE, convert(smallint, CASE /* datetime/smalldatetime */ WHEN c.system_type_id IN (58, 61) THEN 3 END) AS DATETIME_PRECISION, convert(sysname, null) AS CHARACTER_SET_CATALOG, convert(sysname, null) AS CHARACTER_SET_SCHEMA, convert(sysname, CASE WHEN c.system_type_id IN (35, 167, 175) /*char/varchar/text*/ THEN CollationProperty(c.collation_name, 'sqlcharsetname') WHEN c.system_type_id IN (99, 231, 239) /*nchar/nvarchar/ntext*/ THEN N'UNICODE' END) AS CHARACTER_SET_NAME, convert(sysname, null) AS COLLATION_CATALOG FROM sys.schemas sc join sys.objects o on sc.schema_id = o.schema_id JOIN sys.table_types tt on o.object_id = tt.type_table_object_id JOIN sys.columns c ON c.object_id = o.object_id LEFT JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE o.type IN ('TT') AND (DB_NAME() = @Catalog or (@Catalog is null)) and (sc.name = @Owner or (@Owner is null)) and (tt.name = @Type or (@Type is null)) and (c.name = @Member or (@Member is null)) order by sc.name, tt.name, c.name</PopulationString>
+    <MinimumVersion>09.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Views</CollectionName>
+    <NumberOfRestrictions>3</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, CHECK_OPTION, IS_UPDATABLE from INFORMATION_SCHEMA.VIEWS where (TABLE_CATALOG = @Catalog or (@Catalog is null)) and (TABLE_SCHEMA = @Owner or (@Owner is null)) and (TABLE_NAME = @Table or (@Table is null)) order by TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME</PopulationString>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>ViewColumns</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select VIEW_CATALOG, VIEW_SCHEMA, VIEW_NAME, TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME from INFORMATION_SCHEMA.VIEW_COLUMN_USAGE where (VIEW_CATALOG = @Catalog or (@Catalog is null)) and (VIEW_SCHEMA = @Owner or (@Owner is null)) and (VIEW_NAME = @Table or (@Table is null)) and (COLUMN_NAME = @Column or (@Column is null)) order by VIEW_CATALOG, VIEW_SCHEMA, VIEW_NAME</PopulationString>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>ProcedureParameters</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>1</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select SPECIFIC_CATALOG, SPECIFIC_SCHEMA, SPECIFIC_NAME, ORDINAL_POSITION, PARAMETER_MODE, IS_RESULT, AS_LOCATOR, PARAMETER_NAME, CASE WHEN DATA_TYPE IS NULL THEN USER_DEFINED_TYPE_NAME WHEN DATA_TYPE = 'table type' THEN USER_DEFINED_TYPE_NAME ELSE DATA_TYPE END as DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, COLLATION_CATALOG, COLLATION_SCHEMA, COLLATION_NAME, CHARACTER_SET_CATALOG, CHARACTER_SET_SCHEMA, CHARACTER_SET_NAME, NUMERIC_PRECISION, NUMERIC_PRECISION_RADIX, NUMERIC_SCALE, DATETIME_PRECISION, INTERVAL_TYPE, INTERVAL_PRECISION from INFORMATION_SCHEMA.PARAMETERS where (SPECIFIC_CATALOG = @Catalog or (@Catalog is null)) and (SPECIFIC_SCHEMA = @Owner or (@Owner is null)) and (SPECIFIC_NAME = @Name or (@Name is null)) and (PARAMETER_NAME = @Parameter or (@Parameter is null)) order by SPECIFIC_CATALOG, SPECIFIC_SCHEMA, SPECIFIC_NAME, PARAMETER_NAME</PopulationString>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Procedures</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select SPECIFIC_CATALOG, SPECIFIC_SCHEMA, SPECIFIC_NAME, ROUTINE_CATALOG, ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_TYPE, CREATED, LAST_ALTERED from INFORMATION_SCHEMA.ROUTINES where (SPECIFIC_CATALOG = @Catalog or (@Catalog is null)) and (SPECIFIC_SCHEMA = @Owner or (@Owner is null)) and (SPECIFIC_NAME = @Name or (@Name is null)) and (ROUTINE_TYPE = @Type or (@Type is null)) order by SPECIFIC_CATALOG, SPECIFIC_SCHEMA, SPECIFIC_NAME</PopulationString>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>ForeignKeys</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select CONSTRAINT_CATALOG, CONSTRAINT_SCHEMA, CONSTRAINT_NAME, TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, CONSTRAINT_TYPE, IS_DEFERRABLE, INITIALLY_DEFERRED from INFORMATION_SCHEMA.TABLE_CONSTRAINTS where (CONSTRAINT_CATALOG = @Catalog or (@Catalog is null)) and (CONSTRAINT_SCHEMA = @Owner or (@Owner is null)) and (TABLE_NAME = @Table or (@Table is null)) and (CONSTRAINT_NAME = @Name or (@Name is null)) and CONSTRAINT_TYPE = 'FOREIGN KEY' order by CONSTRAINT_CATALOG, CONSTRAINT_SCHEMA, CONSTRAINT_NAME</PopulationString>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>IndexColumns</CollectionName>
+    <NumberOfRestrictions>5</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select distinct db_Name() as constraint_catalog, constraint_schema = user_name(o.uid), constraint_name = x.name, table_catalog  = db_name(), table_schema = user_name(o.uid), table_name = o.name, column_name = c.name, ordinal_position = convert(int, xk.keyno), KeyType  = c.xtype, index_name = x.name from sysobjects o, sysindexes x, syscolumns c, sysindexkeys xk where o.type in ('U') and x.id = o.id  and o.id = c.id and o.id = xk.id and x.indid = xk.indid and c.colid = xk.colid and xk.keyno &lt; = x.keycnt and permissions(o.id, c.name) &lt;&gt; 0  and (db_name() = @Catalog or (@Catalog is null)) and (user_name()= @Owner or (@Owner is null)) and (o.name = @Table or (@Table is null)) and (x.name = @ConstraintName or (@ConstraintName is null)) and (c.name = @Column or (@Column is null)) order by table_name, index_name</PopulationString>
+    <MaximumVersion>09.99.9999</MaximumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>IndexColumns</CollectionName>
+    <NumberOfRestrictions>5</NumberOfRestrictions>
+    <NumberOfIdentifierParts>4</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>EXEC sys.sp_indexcolumns_managed @Catalog, @Owner, @Table, @ConstraintName, @Column</PopulationString>
+    <MinimumVersion>10.00.0000</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Indexes</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select distinct db_Name() as constraint_catalog, constraint_schema = user_name(o.uid), constraint_name = x.name, table_catalog  = db_name(), table_schema = user_name(o.uid), table_name = o.name, index_name = x.name from sysobjects o, sysindexes x, sysindexkeys xk where o.type in ('U') and x.id = o.id  and o.id = xk.id and x.indid = xk.indid and xk.keyno &lt; = x.keycnt and (db_name() = @Catalog or (@Catalog is null)) and (user_name()= @Owner or (@Owner is null)) and (o.name = @Table or (@Table is null)) and (x.name = @Name or (@Name is null)) order by table_name, index_name</PopulationString>
+    <MaximumVersion>09.99.9999</MaximumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+    <CollectionName>Indexes</CollectionName>
+    <NumberOfRestrictions>4</NumberOfRestrictions>
+    <NumberOfIdentifierParts>3</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>EXEC sys.sp_indexes_managed @Catalog, @Owner, @Table, @Name</PopulationString>
+    <MinimumVersion>10.00.0000</MinimumVersion>
+  </MetaDataCollections>
+  <MetaDataCollections>
+   <CollectionName>UserDefinedTypes</CollectionName>
+    <NumberOfRestrictions>2</NumberOfRestrictions>
+    <NumberOfIdentifierParts>1</NumberOfIdentifierParts>
+    <PopulationMechanism>SQLCommand</PopulationMechanism>
+    <PopulationString>select assemblies.name as assembly_name, types.assembly_class as udt_name, ASSEMBLYPROPERTY(assemblies.name, 'VersionMajor') as version_major, ASSEMBLYPROPERTY(assemblies.name, 'VersionMinor') as version_minor, ASSEMBLYPROPERTY(assemblies.name, 'VersionBuild') as version_build, ASSEMBLYPROPERTY(assemblies.name, 'VersionRevision') as version_revision, ASSEMBLYPROPERTY(assemblies.name, 'CultureInfo') as culture_info, ASSEMBLYPROPERTY(assemblies.name, 'PublicKey') as public_key, is_fixed_length, max_length, Create_Date, Permission_set_desc from sys.assemblies as assemblies  join sys.assembly_types as types on assemblies.assembly_id = types.assembly_id where (assemblies.name = @AssemblyName or (@AssemblyName is null)) and (types.assembly_class = @UDTName or (@UDTName is null))</PopulationString>
+    <MinimumVersion>09.00.0000</MinimumVersion>
+  </MetaDataCollections>
+  <Restrictions>
+    <CollectionName>Users</CollectionName>
+    <RestrictionName>User_Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>name</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Databases</CollectionName>
+    <RestrictionName>Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>Name</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Tables</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TABLE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Tables</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TABLE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Tables</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Tables</CollectionName>
+    <RestrictionName>TableType</RestrictionName>
+    <ParameterName>@TableType</ParameterName>
+    <RestrictionDefault>TABLE_TYPE</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Columns</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TABLE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Columns</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TABLE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Columns</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Columns</CollectionName>
+    <RestrictionName>Column</RestrictionName>
+    <ParameterName>@Column</ParameterName>
+    <RestrictionDefault>COLUMN_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>AllColumns</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TABLE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>AllColumns</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TABLE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>AllColumns</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>AllColumns</CollectionName>
+    <RestrictionName>Column</RestrictionName>
+    <ParameterName>@Column</ParameterName>
+    <RestrictionDefault>COLUMN_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ColumnSetColumns</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TABLE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ColumnSetColumns</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TABLE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ColumnSetColumns</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>StructuredTypeMembers</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TYPE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>StructuredTypeMembers</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TYPE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>StructuredTypeMembers</CollectionName>
+    <RestrictionName>Type</RestrictionName>
+    <ParameterName>@Type</ParameterName>
+    <RestrictionDefault>TYPE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>StructuredTypeMembers</CollectionName>
+    <RestrictionName>Member</RestrictionName>
+    <ParameterName>@Member</ParameterName>
+    <RestrictionDefault>MEMBER_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Views</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>TABLE_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Views</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>TABLE_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Views</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ViewColumns</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>VIEW_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ViewColumns</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>VIEW_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ViewColumns</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>VIEW_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ViewColumns</CollectionName>
+    <RestrictionName>Column</RestrictionName>
+    <ParameterName>@Column</ParameterName>
+    <RestrictionDefault>COLUMN_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+    <MinimumVersion>08.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ProcedureParameters</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>SPECIFIC_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ProcedureParameters</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>SPECIFIC_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ProcedureParameters</CollectionName>
+    <RestrictionName>Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>SPECIFIC_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ProcedureParameters</CollectionName>
+    <RestrictionName>Parameter</RestrictionName>
+    <ParameterName>@Parameter</ParameterName>
+    <RestrictionDefault>PARAMETER_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Procedures</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>SPECIFIC_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Procedures</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>SPECIFIC_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+</Restrictions>
+  <Restrictions>
+    <CollectionName>Procedures</CollectionName>
+    <RestrictionName>Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>SPECIFIC_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Procedures</CollectionName>
+    <RestrictionName>Type</RestrictionName>
+    <ParameterName>@Type</ParameterName>
+    <RestrictionDefault>ROUTINE_TYPE</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+    <MinimumVersion>08.00.0000</MinimumVersion>
+</Restrictions>
+  <Restrictions>
+    <CollectionName>IndexColumns</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>db_name()</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>IndexColumns</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>user_name()</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>IndexColumns</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>o.name</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>IndexColumns</CollectionName>
+    <RestrictionName>ConstraintName</RestrictionName>
+    <ParameterName>@ConstraintName</ParameterName>
+    <RestrictionDefault>x.name</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>IndexColumns</CollectionName>
+    <RestrictionName>Column</RestrictionName>
+    <ParameterName>@Column</ParameterName>
+    <RestrictionDefault>c.name</RestrictionDefault>
+    <RestrictionNumber>5</RestrictionNumber>
+  </Restrictions>
+ <Restrictions>
+    <CollectionName>Indexes</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>db_name()</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Indexes</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>user_name()</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Indexes</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>o.name</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>Indexes</CollectionName>
+    <RestrictionName>Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>x.name</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>UserDefinedTypes</CollectionName>
+    <RestrictionName>assembly_name</RestrictionName>
+    <ParameterName>@AssemblyName</ParameterName>
+    <RestrictionDefault>assemblies.name</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+    <MinimumVersion>09.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>UserDefinedTypes</CollectionName>
+    <RestrictionName>udt_name</RestrictionName>
+    <ParameterName>@UDTName</ParameterName>
+    <RestrictionDefault>types.assembly_class</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+    <MinimumVersion>09.00.000.0</MinimumVersion>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ForeignKeys</CollectionName>
+    <RestrictionName>Catalog</RestrictionName>
+    <ParameterName>@Catalog</ParameterName>
+    <RestrictionDefault>CONSTRAINT_CATALOG</RestrictionDefault>
+    <RestrictionNumber>1</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ForeignKeys</CollectionName>
+    <RestrictionName>Owner</RestrictionName>
+    <ParameterName>@Owner</ParameterName>
+    <RestrictionDefault>CONSTRAINT_SCHEMA</RestrictionDefault>
+    <RestrictionNumber>2</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ForeignKeys</CollectionName>
+    <RestrictionName>Table</RestrictionName>
+    <ParameterName>@Table</ParameterName>
+    <RestrictionDefault>TABLE_NAME</RestrictionDefault>
+    <RestrictionNumber>3</RestrictionNumber>
+  </Restrictions>
+  <Restrictions>
+    <CollectionName>ForeignKeys</CollectionName>
+    <RestrictionName>Name</RestrictionName>
+    <ParameterName>@Name</ParameterName>
+    <RestrictionDefault>CONSTRAINT_NAME</RestrictionDefault>
+    <RestrictionNumber>4</RestrictionNumber>
+  </Restrictions>
+  <DataSourceInformation>
+    <CompositeIdentifierSeparatorPattern>\.</CompositeIdentifierSeparatorPattern>
+    <DataSourceProductName>Microsoft SQL Server</DataSourceProductName>
+    <GroupByBehavior>2</GroupByBehavior>
+    <IdentifierPattern>(^\[\p{Lo}\p{Lu}\p{Ll}_@#][\p{Lo}\p{Lu}\p{Ll}\p{Nd}@$#_]*$)|(^\[[^\]\0]|\]\]+\]$)|(^\"[^\"\0]|\"\"+\"$)</IdentifierPattern>
+    <IdentifierCase>1</IdentifierCase>
+    <OrderByColumnsInSelect>false</OrderByColumnsInSelect>
+    <ParameterMarkerFormat>{0}</ParameterMarkerFormat>
+    <ParameterMarkerPattern>@[\p{Lo}\p{Lu}\p{Ll}\p{Lm}_@#][\p{Lo}\p{Lu}\p{Ll}\p{Lm}\p{Nd}\uff3f_@#\$]*(?=\s+|$)</ParameterMarkerPattern>
+    <ParameterNameMaxLength>128</ParameterNameMaxLength>
+    <ParameterNamePattern>^[\p{Lo}\p{Lu}\p{Ll}\p{Lm}_@#][\p{Lo}\p{Lu}\p{Ll}\p{Lm}\p{Nd}\uff3f_@#\$]*(?=\s+|$)</ParameterNamePattern>
+    <QuotedIdentifierPattern>(([^\[]|\]\])*)</QuotedIdentifierPattern>
+    <QuotedIdentifierCase>1</QuotedIdentifierCase>
+    <StatementSeparatorPattern>;</StatementSeparatorPattern>
+    <StringLiteralPattern>'(([^']|'')*)'</StringLiteralPattern>
+    <SupportedJoinOperators>15</SupportedJoinOperators>
+  </DataSourceInformation>
+<DataTypes>
+<TypeName>smallint</TypeName>
+<ProviderDbType>16</ProviderDbType>
+<ColumnSize>5</ColumnSize>
+<CreateFormat>smallint</CreateFormat>
+<DataType>System.Int16</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>int</TypeName>
+<ProviderDbType>8</ProviderDbType>
+<ColumnSize>10</ColumnSize>
+<CreateFormat>int</CreateFormat>
+<DataType>System.Int32</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>real</TypeName>
+<ProviderDbType>13</ProviderDbType>
+<ColumnSize>7</ColumnSize>
+<CreateFormat>real</CreateFormat>
+<DataType>System.Single</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>float</TypeName>
+<ProviderDbType>6</ProviderDbType>
+<ColumnSize>53</ColumnSize>
+<CreateFormat>float({0})</CreateFormat>
+<CreateParameters>number of bits used to store the mantissa</CreateParameters>
+<DataType>System.Double</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>money</TypeName>
+<ProviderDbType>9</ProviderDbType>
+<ColumnSize>19</ColumnSize>
+<CreateFormat>money</CreateFormat>
+<DataType>System.Decimal</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>smallmoney</TypeName>
+<ProviderDbType>17</ProviderDbType>
+<ColumnSize>10</ColumnSize>
+<CreateFormat>smallmoney</CreateFormat>
+<DataType>System.Decimal</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>bit</TypeName>
+<ProviderDbType>2</ProviderDbType>
+<ColumnSize>1</ColumnSize>
+<CreateFormat>bit</CreateFormat>
+<DataType>System.Boolean</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+</DataTypes>
+<DataTypes>
+<TypeName>tinyint</TypeName>
+<ProviderDbType>20</ProviderDbType>
+<ColumnSize>3</ColumnSize>
+<CreateFormat>tinyint</CreateFormat>
+<DataType>System.SByte</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>true</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>bigint</TypeName>
+<ProviderDbType>0</ProviderDbType>
+<ColumnSize>19</ColumnSize>
+<CreateFormat>bigint</CreateFormat>
+<DataType>System.Int64</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+</DataTypes>
+<DataTypes>
+<TypeName>varbinary</TypeName>
+<ProviderDbType>21</ProviderDbType>
+<ColumnSize>8000</ColumnSize>
+<CreateFormat>varbinary({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.Byte[]</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<MaximumVersion>08.99.999.9</MaximumVersion>
+<LiteralPrefix>0x</LiteralPrefix>
+</DataTypes>
+<DataTypes>
+<TypeName>timestamp</TypeName>
+<ProviderDbType>19</ProviderDbType>
+<ColumnSize>8</ColumnSize>
+<CreateFormat>timestamp</CreateFormat>
+<DataType>System.Byte[]</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>true</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>false</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<LiteralPrefix>0x</LiteralPrefix>
+</DataTypes>
+<DataTypes>
+<TypeName>binary</TypeName>
+<ProviderDbType>1</ProviderDbType>
+<ColumnSize>8000</ColumnSize>
+<CreateFormat>binary({0})</CreateFormat>
+<CreateParameters>length</CreateParameters>
+<DataType>System.Byte[]</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<LiteralPrefix>0x</LiteralPrefix>
+</DataTypes>
+<DataTypes>
+<TypeName>image</TypeName>
+<ProviderDbType>7</ProviderDbType>
+<ColumnSize>2147483647</ColumnSize>
+<CreateFormat>image</CreateFormat>
+<DataType>System.Byte[]</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>true</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>false</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<LiteralPrefix>0x</LiteralPrefix>
+</DataTypes>
+<DataTypes>
+<TypeName>char</TypeName>
+<ProviderDbType>3</ProviderDbType>
+<ColumnSize>8000</ColumnSize>
+<CreateFormat>char</CreateFormat>
+<CreateParameters>length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumVersion>08.99.999.9</MaximumVersion>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>text</TypeName>
+<ProviderDbType>18</ProviderDbType>
+<ColumnSize>2147483647</ColumnSize>
+<CreateFormat>text</CreateFormat>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>true</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>false</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>varchar</TypeName>
+<ProviderDbType>22</ProviderDbType>
+<ColumnSize>8000</ColumnSize>
+<CreateFormat>varchar({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumVersion>08.99.999.9</MaximumVersion>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>nchar</TypeName>
+<ProviderDbType>10</ProviderDbType>
+<ColumnSize>4000</ColumnSize>
+<CreateFormat>nchar({0})</CreateFormat>
+<CreateParameters>length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumVersion>08.99.999.9</MaximumVersion>
+<LiteralPrefix>N'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>ntext</TypeName>
+<ProviderDbType>11</ProviderDbType>
+<ColumnSize>1073741823</ColumnSize>
+<CreateFormat>ntext</CreateFormat>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>true</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>false</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<LiteralPrefix>N'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>nvarchar</TypeName>
+<ProviderDbType>12</ProviderDbType>
+<ColumnSize>4000</ColumnSize>
+<CreateFormat>nvarchar({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumVersion>08.99.999.9</MaximumVersion>
+<LiteralPrefix>N'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>decimal</TypeName>
+<ProviderDbType>5</ProviderDbType>
+<ColumnSize>38</ColumnSize>
+<CreateFormat>decimal({0}, {1})</CreateFormat>
+<CreateParameters>precision,scale</CreateParameters>
+<DataType>System.Decimal</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+<MaximumScale>38</MaximumScale>
+<MinimumScale>0</MinimumScale>
+</DataTypes>
+<DataTypes>
+<TypeName>numeric</TypeName>
+<ProviderDbType>5</ProviderDbType>
+<ColumnSize>38</ColumnSize>
+<CreateFormat>numeric({0}, {1})</CreateFormat>
+<CreateParameters>precision,scale</CreateParameters>
+<DataType>System.Decimal</DataType>
+<IsAutoIncrementable>true</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsUnsigned>false</IsUnsigned>
+<MaximumScale>38</MaximumScale>
+<MinimumScale>0</MinimumScale>
+</DataTypes>
+<DataTypes>
+<TypeName>datetime</TypeName>
+<ProviderDbType>4</ProviderDbType>
+<ColumnSize>23</ColumnSize>
+<CreateFormat>datetime</CreateFormat>
+<DataType>System.DateTime</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>smalldatetime</TypeName>
+<ProviderDbType>15</ProviderDbType>
+<ColumnSize>16</ColumnSize>
+<CreateFormat>smalldatetime</CreateFormat>
+<DataType>System.DateTime</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>sql_variant</TypeName>
+<ProviderDbType>23</ProviderDbType>
+<CreateFormat>sql_variant</CreateFormat>
+<DataType>System.Object</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<IsLiteralSupported>false</IsLiteralSupported>
+</DataTypes>
+<DataTypes>
+<TypeName>xml</TypeName>
+<ProviderDbType>25</ProviderDbType>
+<ColumnSize>2147483647</ColumnSize>
+<CreateFormat>xml</CreateFormat>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>true</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>false</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<IsLiteralSupported>false</IsLiteralSupported>
+</DataTypes>
+<DataTypes>
+<TypeName>varchar</TypeName>
+<ProviderDbType>22</ProviderDbType>
+<ColumnSize>2147483647</ColumnSize>
+<CreateFormat>varchar({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>char</TypeName>
+<ProviderDbType>3</ProviderDbType>
+<ColumnSize>2147483647</ColumnSize>
+<CreateFormat>char({0})</CreateFormat>
+<CreateParameters>length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>nchar</TypeName>
+<ProviderDbType>10</ProviderDbType>
+<ColumnSize>1073741823</ColumnSize>
+<CreateFormat>nchar({0})</CreateFormat>
+<CreateParameters>length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<LiteralPrefix>N'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>nvarchar</TypeName>
+<ProviderDbType>12</ProviderDbType>
+<ColumnSize>1073741823</ColumnSize>
+<CreateFormat>nvarchar({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.String</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<LiteralPrefix>N'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>varbinary</TypeName>
+<ProviderDbType>21</ProviderDbType>
+<ColumnSize>1073741823</ColumnSize>
+<CreateFormat>varbinary({0})</CreateFormat>
+<CreateParameters>max length</CreateParameters>
+<DataType>System.Byte[]</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<MinimumVersion>09.00.000.0</MinimumVersion>
+<LiteralPrefix>0x</LiteralPrefix>
+</DataTypes>
+<DataTypes>
+<TypeName>uniqueidentifier</TypeName>
+<ProviderDbType>14</ProviderDbType>
+<ColumnSize>16</ColumnSize>
+<CreateFormat>uniqueidentifier</CreateFormat>
+<DataType>System.Guid</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>false</IsSearchableWithLike>
+<LiteralPrefix>'</LiteralPrefix>
+<LiteralSuffix>'</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>date</TypeName>
+<ProviderDbType>31</ProviderDbType>
+<ColumnSize>3</ColumnSize>
+<CreateFormat>date</CreateFormat>
+<DataType>System.DateTime</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>true</IsFixedLength>
+<IsFixedPrecisionScale>true</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MinimumVersion>10.00.000.0</MinimumVersion>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>time</TypeName>
+<ProviderDbType>32</ProviderDbType>
+<ColumnSize>5</ColumnSize>
+<CreateFormat>time({0})</CreateFormat>
+<CreateParameters>scale</CreateParameters>
+<DataType>System.TimeSpan</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>false</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumScale>7</MaximumScale>
+<MinimumScale>0</MinimumScale>
+<MinimumVersion>10.00.000.0</MinimumVersion>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>datetime2</TypeName>
+<ProviderDbType>33</ProviderDbType>
+<ColumnSize>8</ColumnSize>
+<CreateFormat>datetime2({0})</CreateFormat>
+<CreateParameters>scale</CreateParameters>
+<DataType>System.DateTime</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumScale>7</MaximumScale>
+<MinimumScale>0</MinimumScale>
+<MinimumVersion>10.00.000.0</MinimumVersion>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+<DataTypes>
+<TypeName>datetimeoffset</TypeName>
+<ProviderDbType>34</ProviderDbType>
+<ColumnSize>10</ColumnSize>
+<CreateFormat>datetimeoffset({0})</CreateFormat>
+<CreateParameters>scale</CreateParameters>
+<DataType>System.DateTimeOffset</DataType>
+<IsAutoIncrementable>false</IsAutoIncrementable>
+<IsBestMatch>true</IsBestMatch>
+<IsCaseSensitive>false</IsCaseSensitive>
+<IsConcurrencyType>false</IsConcurrencyType>
+<IsFixedLength>false</IsFixedLength>
+<IsFixedPrecisionScale>false</IsFixedPrecisionScale>
+<IsLong>false</IsLong>
+<IsNullable>true</IsNullable>
+<IsSearchable>true</IsSearchable>
+<IsSearchableWithLike>true</IsSearchableWithLike>
+<MaximumScale>7</MaximumScale>
+<MinimumScale>0</MinimumScale>
+<MinimumVersion>10.00.000.0</MinimumVersion>
+<LiteralPrefix>{ts '</LiteralPrefix>
+<LiteralSuffix>'}</LiteralSuffix>
+</DataTypes>
+ <ReservedWords>
+  <ReservedWord>ADD</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXCEPT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PERCENT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ALL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXEC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PLAN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ALTER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXECUTE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRECISION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AND</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXISTS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRIMARY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ANY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXIT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRINT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FETCH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PROC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ASC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FILE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PROCEDURE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AUTHORIZATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FILLFACTOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PUBLIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BACKUP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RAISERROR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BEGIN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FOREIGN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>READ</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BETWEEN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FREETEXT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>READTEXT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BREAK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FREETEXTTABLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RECONFIGURE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BROWSE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FROM</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REFERENCES</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BULK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FULL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REPLICATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FUNCTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RESTORE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CASCADE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GOTO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RESTRICT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CASE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GRANT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RETURN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHECK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GROUP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REVOKE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHECKPOINT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>HAVING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RIGHT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CLOSE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>HOLDLOCK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROLLBACK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CLUSTERED</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IDENTITY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROWCOUNT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COALESCE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IDENTITY_INSERT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROWGUIDCOL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COLLATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IDENTITYCOL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RULE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COLUMN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SAVE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COMMIT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SCHEMA</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COMPUTE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INDEX</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SELECT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONSTRAINT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INNER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SESSION_USER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONTAINS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INSERT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SET</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONTAINSTABLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INTERSECT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SETUSER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONTINUE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INTO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SHUTDOWN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONVERT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SOME</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CREATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>JOIN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>STATISTICS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CROSS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>KEY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SYSTEM_USER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>KILL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TABLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_DATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LEFT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TEXTSIZE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_TIME</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LIKE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>THEN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_TIMESTAMP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LINENO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_USER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOAD</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TOP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURSOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NATIONAL </ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRAN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DATABASE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NOCHECK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRANSACTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DBCC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NONCLUSTERED</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRIGGER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEALLOCATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NOT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRUNCATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DECLARE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NULL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TSEQUAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEFAULT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NULLIF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UNION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DELETE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UNIQUE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DENY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OFF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UPDATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DESC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OFFSETS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UPDATETEXT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DISK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ON</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>USE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DISTINCT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPEN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>USER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DISTRIBUTED</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPENDATASOURCE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VALUES</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DOUBLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPENQUERY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VARYING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DROP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPENROWSET</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VIEW</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DUMMY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPENXML</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WAITFOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DUMP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WHEN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ELSE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WHERE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>END</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ORDER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WHILE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ERRLVL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OUTER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WITH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ESCAPE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OVER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WRITETEXT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ABSOLUTE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FOUND</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRESERVE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ACTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FREE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRIOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ADMIN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GENERAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PRIVILEGES</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AFTER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GET</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>READS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AGGREGATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GLOBAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ALIAS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RECURSIVE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ALLOCATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>GROUPING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ARE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>HOST</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>REFERENCING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ARRAY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>HOUR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RELATIVE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ASSERTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IGNORE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RESULT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>IMMEDIATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>RETURNS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BEFORE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INDICATOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BINARY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INITIALIZE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROLLUP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BIT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INITIALLY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROUTINE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BLOB</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INOUT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROW</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BOOLEAN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INPUT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ROWS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BOTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SAVEPOINT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BREADTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INTEGER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SCROLL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CALL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INTERVAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SCOPE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CASCADED</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ISOLATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SEARCH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CAST</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ITERATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SECOND</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CATALOG</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LANGUAGE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SECTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHAR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LARGE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SEQUENCE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHARACTER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LAST</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SESSION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CLASS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LATERAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SETS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CLOB</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LEADING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SIZE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COLLATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LESS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SMALLINT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COMPLETION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LEVEL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SPACE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONNECT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LIMIT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SPECIFIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONNECTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOCAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SPECIFICTYPE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONSTRAINTS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOCALTIME</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CONSTRUCTOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOCALTIMESTAMP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLEXCEPTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CORRESPONDING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOCATOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLSTATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CUBE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MAP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLWARNING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_PATH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MATCH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>START</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CURRENT_ROLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MINUTE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>STATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CYCLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MODIFIES</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>STATEMENT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DATA</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MODIFY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>STATIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MODULE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>STRUCTURE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DAY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MONTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TEMPORARY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NAMES</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TERMINATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DECIMAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NATURAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>THAN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEFERRABLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NCHAR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TIME</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEFERRED</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NCLOB</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TIMESTAMP</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEPTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NEW</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TIMEZONE_HOUR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DEREF</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NEXT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TIMEZONE_MINUTE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DESCRIBE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NO</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRAILING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DESCRIPTOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NONE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRANSLATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DESTROY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>NUMERIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TREAT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DESTRUCTOR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OBJECT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRUE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DETERMINISTIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OLD</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UNDER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DICTIONARY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ONLY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UNKNOWN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DIAGNOSTICS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OPERATION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UNNEST</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DISCONNECT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ORDINALITY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>USAGE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DOMAIN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OUT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>USING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>DYNAMIC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OUTPUT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VALUE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EACH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PAD</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VARCHAR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>END-EXEC</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PARAMETER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>VARIABLE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EQUALS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PARAMETERS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WHENEVER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EVERY</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PARTIAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WITHOUT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXCEPTION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PATH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WORK</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXTERNAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>POSTFIX</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>WRITE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FALSE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PREFIX</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>YEAR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FIRST</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PREORDER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ZONE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FLOAT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PREPARE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>ADA</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>AVG</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>BIT_LENGTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHAR_LENGTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>CHARACTER_LENGTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>COUNT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>EXTRACT</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>FORTRAN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INCLUDE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>INSENSITIVE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>LOWER</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MAX</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>MIN</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OCTET_LENGTH</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>OVERLAPS</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>PASCAL</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>POSITION</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLCA</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLCODE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SQLERROR</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SUBSTRING</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>SUM</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRANSLATE</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>TRIM</ReservedWord>
+  </ReservedWords>
+  <ReservedWords>
+  <ReservedWord>UPPER</ReservedWord>
+  </ReservedWords>
+</NewDataSet>

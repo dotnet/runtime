@@ -1,0 +1,162 @@
+# Windows legs
+parameters:
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+  # Required: value to specify if the full test matrix should be tested
+  #   Default: false
+  fullMatrix: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
+
+stages:
+- stage: WindowsStage
+  displayName: Windows
+  dependsOn: []
+  jobs:
+
+  - template: corefx-base.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      testScope: ${{ parameters.testScope }}
+      targetOS: Windows_NT
+      jobs:
+
+      # Legs with Helix testing
+      - job: WindowsTest
+        displayName: Build
+        strategy:
+          matrix:
+            # PR CI Matrix
+            ${{ if eq(parameters.fullMatrix, 'false') }}:
+              x64_Debug:
+                _BuildConfig: Debug
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
+
+              x86_Release:
+                _BuildConfig: Release
+                _architecture: x86
+                _framework: netcoreapp
+                _helixQueues: $(netcoreappWindowsQueues)
+
+              NETFX_x86_Release:
+                _BuildConfig: Release
+                _architecture: x86
+                _framework: netfx
+                _helixQueues: $(netFxQueues)
+            
+            # Full test matrix
+            ${{ if eq(parameters.fullMatrix, 'true') }}:
+              x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: netcoreapp
+                _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
+                _publishTests: true
+
+              x86_Release:
+                _BuildConfig: Release
+                _architecture: x86
+                _framework: netcoreapp
+                _helixQueues: $(netcoreappWindowsQueues)
+                _publishTests: true
+
+              NETFX_x86_Release:
+                _BuildConfig: Release
+                _architecture: x86
+                _framework: netfx
+                _helixQueues: $(netFxQueues)
+                _skipPublishPackages: true # In NETFX leg we don't produce packages
+
+              NETFX_x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: netfx
+                _helixQueues: $(netFxQueues)
+                _skipPublishPackages: true # In NETFX leg we don't produce packages
+
+        pool:
+          name: Hosted VS2017
+
+        submitToHelix: true
+        buildExtraArguments: /p:RuntimeOS=win10
+
+        variables:
+          - nanoQueues: "`(Windows.Nano.1809.Amd64.Open`)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353"
+          - netFxQueues: Windows.10.Amd64.Client19H1.Open
+
+          - ${{ if eq(parameters.fullMatrix, 'false') }}:
+            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.Client19H1.ES.Open
+
+          - ${{ if eq(parameters.fullMatrix, 'true') }}:
+            - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ServerRS5.Open+Windows.10.Amd64.Client19H1.Open
+
+      # There is no point of running legs without outerloop tests, when in an outerloop build.
+      - ${{ if and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all')) }}:
+        # Packaging all configurations
+        - job: AllConfigurations
+          displayName: Packaging All Configurations
+          strategy:
+            matrix:
+              ${{ if eq(parameters.fullMatrix, 'false') }}:
+                x64_Debug:
+                  _BuildConfig: Debug
+                  _architecture: x64
+                  _framework: allConfigurations
+                  _helixQueues: $(allConfigurationsQueues)
+
+              ${{ if eq(parameters.fullMatrix, 'true') }}:
+                x64_Release:
+                  _BuildConfig: Release
+                  _architecture: x64
+                  _framework: allConfigurations
+                  _helixQueues: $(allConfigurationsQueues)
+
+          pool:
+            name: Hosted VS2017
+
+          submitToHelix: true
+          buildExtraArguments: /p:RuntimeOS=win10
+
+          variables:
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS5.Open
+
+          frameworkArg: -allConfigurations
+          customBuildSteps:
+            - script: build.cmd
+                      -build
+                      -configuration $(_BuildConfig)
+                      -ci
+                      -buildtests
+                      -allconfigurations
+                      -arch $(_architecture)
+                      /p:RuntimeOS=win10
+                      /p:ArchiveTests=Packages
+                      $(_msbuildCommonParameters)
+              displayName: Build Packages and Tests
+
+        # Legs without HELIX testing
+        - ${{ if eq(parameters.fullMatrix, 'true') }}:
+          - job: WindowsNoTest
+            displayName: Build
+            strategy:
+              matrix:
+                arm_Release:
+                  _BuildConfig: Release
+                  _architecture: arm
+                  _framework: netcoreapp
+
+                arm64_Release:
+                  _BuildConfig: Release
+                  _architecture: arm64
+                  _framework: netcoreapp
+                  _publishTests: true
+
+            pool:
+              name: Hosted VS2017
+
+            submitToHelix: false
+            buildExtraArguments: /p:RuntimeOS=win10

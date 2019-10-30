@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Windows</AssemblyName>
+    <TargetExt>.winmd</TargetExt>
+    <!-- don't binplace for netstandard since the netstandard ref path is used for API compat and assumed to be 
+         implemented by all frameworks that support it.  Instead require projectreference to this project -->
+    <BinPlaceRef Condition="'$(TargetsNetStandard)' != 'true'">true</BinPlaceRef>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.5</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

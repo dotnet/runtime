@@ -1,0 +1,81 @@
+<Project>
+  <PropertyGroup>
+    <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <RuntimeIdGraphDefinitionFile>$(PkgDir)Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
+    <ProjectUrl Condition="'$(ProjectUrl)' == ''">https://github.com/dotnet/corefx</ProjectUrl>
+    <LicenseUrl Condition="'$(LicenseUrl)' == ''">https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
+    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+
+    <!-- Used by PackageLibs.targets -->
+    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackageId)/$(MicrosoftPrivateIntellisensePackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
+
+    <!-- By default the packaging targets will package desktop facades as ref,
+         but we don't use this as we now build partial-reference-facades. -->
+    <PackageDesktopAsRef>false</PackageDesktopAsRef>
+
+    <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
+    <SkipBaseLineCheck>true</SkipBaseLineCheck>
+
+    <!-- by default all packages will use the same version which revs with respect to product version -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+    <!-- major.minor.release version of the platforms package we're currently building
+         Pre-release will be appended during build -->
+    <PlatformPackageVersion>$(ProductVersion)</PlatformPackageVersion>
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <SkipGenerationCheck>true</SkipGenerationCheck>
+    <SkipIndexCheck>true</SkipIndexCheck>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <!-- Don't build referenced projects -->
+    <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
+    <!-- Omit any files that were not built -->
+    <AllowPartialPackages>true</AllowPartialPackages>
+    <!-- Don't permit harvesting since this requires pre-builts -->
+    <HarvestStablePackage>false</HarvestStablePackage>
+    <!-- Validation will fail in case we were relying on harvested assets or assets not built to satisfy stated support -->
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <!-- Include All BuildConfigurations in package, so that whatever we're building for source build is included -->
+    <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(PkgDir)baseline\baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
+
+  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
+    <!--
+      Building packages fails for two reasons.
+      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
+      Second, we aren't yet building pdbs, which the nuspecs specify.
+    -->
+    <SkipBuildPackages>true</SkipBuildPackages>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <!-- Add version file to packages -->
+    <File Condition="Exists('$(VersionFileForPackages)')"
+          Include="$(VersionFileForPackages)">
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <!-- Add a marker to help the designer optimize & share .NET Core packages -->
+    <File Condition="'$(IncludeDesignerMarker)' != 'false'"
+          Include="$(PkgDir)useSharedDesignerContext.txt">
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+  </ItemGroup>
+</Project>

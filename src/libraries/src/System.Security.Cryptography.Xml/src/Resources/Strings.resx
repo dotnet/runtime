@@ -1,0 +1,380 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="Arg_EmptyOrNullString" xml:space="preserve">
+    <value>String cannot be empty or null.</value>
+  </data>
+  <data name="Cryptography_Partial_Chain" xml:space="preserve">
+    <value>A certificate chain could not be built to a trusted root authority.</value>
+  </data>
+  <data name="Cryptography_Xml_BadWrappedKeySize" xml:space="preserve">
+    <value>Bad wrapped key size.</value>
+  </data>
+  <data name="Cryptography_Xml_CipherValueElementRequired" xml:space="preserve">
+    <value>A Cipher Data element should have either a CipherValue or a CipherReference element.</value>
+  </data>
+  <data name="Cryptography_Xml_CreateHashAlgorithmFailed" xml:space="preserve">
+    <value>Could not create hash algorithm object.</value>
+  </data>
+  <data name="Cryptography_Xml_CreateTransformFailed" xml:space="preserve">
+    <value>Could not create the XML transformation identified by the URI {0}.</value>
+  </data>
+  <data name="Cryptography_Xml_CreatedKeyFailed" xml:space="preserve">
+    <value>Failed to create signing key.</value>
+  </data>
+  <data name="Cryptography_Xml_DigestMethodRequired" xml:space="preserve">
+    <value>A DigestMethod must be specified on a Reference prior to generating XML.</value>
+  </data>
+  <data name="Cryptography_Xml_DigestValueRequired" xml:space="preserve">
+    <value>A Reference must contain a DigestValue.</value>
+  </data>
+  <data name="Cryptography_Xml_EnvelopedSignatureRequiresContext" xml:space="preserve">
+    <value>An XmlDocument context is required for enveloped transforms.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidElement" xml:space="preserve">
+    <value>Malformed element {0}.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidEncryptionProperty" xml:space="preserve">
+    <value>Malformed encryption property element.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidKeySize" xml:space="preserve">
+    <value>The key size should be a non negative integer.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidReference" xml:space="preserve">
+    <value>Malformed reference element.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidSignatureLength" xml:space="preserve">
+    <value>The length of the signature with a MAC should be less than the hash output length.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidSignatureLength2" xml:space="preserve">
+    <value>The length in bits of the signature with a MAC should be a multiple of 8.</value>
+  </data>
+  <data name="Cryptography_Xml_InvalidX509IssuerSerialNumber" xml:space="preserve">
+    <value>X509 issuer serial number is invalid.</value>
+  </data>
+  <data name="Cryptography_Xml_KeyInfoRequired" xml:space="preserve">
+    <value>A KeyInfo element is required to check the signature.</value>
+  </data>
+  <data name="Cryptography_Xml_KW_BadKeySize" xml:space="preserve">
+    <value>The length of the encrypted data in Key Wrap is either 32, 40 or 48 bytes.</value>
+  </data>
+  <data name="Cryptography_Xml_LoadKeyFailed" xml:space="preserve">
+    <value>Signing key is not loaded.</value>
+  </data>
+  <data name="Cryptography_Xml_MissingAlgorithm" xml:space="preserve">
+    <value>Symmetric algorithm is not specified.</value>
+  </data>
+  <data name="Cryptography_Xml_MissingCipherData" xml:space="preserve">
+    <value>Cipher data is not specified.</value>
+  </data>
+  <data name="Cryptography_Xml_MissingDecryptionKey" xml:space="preserve">
+    <value>Unable to retrieve the decryption key.</value>
+  </data>
+  <data name="Cryptography_Xml_MissingEncryptionKey" xml:space="preserve">
+    <value>Unable to retrieve the encryption key.</value>
+  </data>
+  <data name="Cryptography_Xml_NotSupportedCryptographicTransform" xml:space="preserve">
+    <value>The specified cryptographic transform is not supported.</value>
+  </data>
+  <data name="Cryptography_Xml_ReferenceElementRequired" xml:space="preserve">
+    <value>At least one Reference element is required.</value>
+  </data>
+  <data name="Cryptography_Xml_ReferenceTypeRequired" xml:space="preserve">
+    <value>The Reference type must be set in an EncryptedReference object.</value>
+  </data>
+  <data name="Cryptography_Xml_SelfReferenceRequiresContext" xml:space="preserve">
+    <value>An XmlDocument context is required to resolve the Reference Uri {0}.</value>
+  </data>
+  <data name="Cryptography_Xml_SignatureDescriptionNotCreated" xml:space="preserve">
+    <value>SignatureDescription could not be created for the signature algorithm supplied.</value>
+  </data>
+  <data name="Cryptography_Xml_SignatureMethodKeyMismatch" xml:space="preserve">
+    <value>The key does not fit the SignatureMethod.</value>
+  </data>
+  <data name="Cryptography_Xml_SignatureMethodRequired" xml:space="preserve">
+    <value>A signature method is required.</value>
+  </data>
+  <data name="Cryptography_Xml_SignatureValueRequired" xml:space="preserve">
+    <value>Signature requires a SignatureValue.</value>
+  </data>
+  <data name="Cryptography_Xml_SignedInfoRequired" xml:space="preserve">
+    <value>Signature requires a SignedInfo.</value>
+  </data>
+  <data name="Cryptography_Xml_TransformIncorrectInputType" xml:space="preserve">
+    <value>The input type was invalid for this transform.</value>
+  </data>
+  <data name="Cryptography_Xml_IncorrectObjectType" xml:space="preserve">
+    <value>Type of input object is invalid.</value>
+  </data>
+  <data name="Cryptography_Xml_UnknownTransform" xml:space="preserve">
+    <value>Unknown transform has been encountered.</value>
+  </data>
+  <data name="Cryptography_Xml_UriNotResolved" xml:space="preserve">
+    <value>Unable to resolve Uri {0}.</value>
+  </data>
+  <data name="Cryptography_Xml_UriNotSupported" xml:space="preserve">
+    <value> The specified Uri is not supported.</value>
+  </data>
+  <data name="Cryptography_Xml_UriRequired" xml:space="preserve">
+    <value>A Uri attribute is required for a CipherReference element.</value>
+  </data>
+  <data name="Cryptography_Xml_XrmlMissingContext" xml:space="preserve">
+    <value>Null Context property encountered.</value>
+  </data>
+  <data name="Cryptography_Xml_XrmlMissingIRelDecryptor" xml:space="preserve">
+    <value>IRelDecryptor is required.</value>
+  </data>
+  <data name="Cryptography_Xml_XrmlMissingIssuer" xml:space="preserve">
+    <value>Issuer node is required.</value>
+  </data>
+  <data name="Cryptography_Xml_XrmlMissingLicence" xml:space="preserve">
+    <value>License node is required.</value>
+  </data>
+  <data name="Cryptography_Xml_XrmlUnableToDecryptGrant" xml:space="preserve">
+    <value>Unable to decrypt grant content.</value>
+  </data>
+  <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
+    <value>The certificate key algorithm is not supported.</value>
+  </data>
+  <data name="Log_ActualHashValue" xml:space="preserve">
+    <value>Actual hash value: {0}</value>
+  </data>
+  <data name="Log_BeginCanonicalization" xml:space="preserve">
+    <value>Beginning canonicalization using "{0}" ({1}).</value>
+  </data>
+  <data name="Log_BeginSignatureComputation" xml:space="preserve">
+    <value>Beginning signature computation.</value>
+  </data>
+  <data name="Log_BeginSignatureVerification" xml:space="preserve">
+    <value>Beginning signature verification.</value>
+  </data>
+  <data name="Log_BuildX509Chain" xml:space="preserve">
+    <value>Building and verifying the X509 chain for certificate {0}.</value>
+  </data>
+  <data name="Log_CanonicalizationSettings" xml:space="preserve">
+    <value>Canonicalization transform is using resolver {0} and base URI "{1}".</value>
+  </data>
+  <data name="Log_CanonicalizedOutput" xml:space="preserve">
+    <value>Output of canonicalization transform: {0}</value>
+  </data>
+  <data name="Log_CertificateChain" xml:space="preserve">
+    <value>Certificate chain:</value>
+  </data>
+  <data name="Log_CheckSignatureFormat" xml:space="preserve">
+    <value>Checking signature format using format validator "[{0}] {1}.{2}".</value>
+  </data>
+  <data name="Log_CheckSignedInfo" xml:space="preserve">
+    <value>Checking signature on SignedInfo with id "{0}".</value>
+  </data>
+  <data name="Log_FormatValidationSuccessful" xml:space="preserve">
+    <value>Signature format validation was successful.</value>
+  </data>
+  <data name="Log_FormatValidationNotSuccessful" xml:space="preserve">
+    <value>Signature format validation failed.</value>
+  </data>
+  <data name="Log_KeyUsages" xml:space="preserve">
+    <value>Found key usages "{0}" in extension {1} on certificate {2}.</value>
+  </data>
+  <data name="Log_NoNamespacesPropagated" xml:space="preserve">
+    <value>No namespaces are being propagated.</value>
+  </data>
+  <data name="Log_PropagatingNamespace" xml:space="preserve">
+    <value>Propagating namespace {0}="{1}".</value>
+  </data>
+  <data name="Log_RawSignatureValue" xml:space="preserve">
+    <value>Raw signature: {0}</value>
+  </data>
+  <data name="Log_ReferenceHash" xml:space="preserve">
+    <value>Reference {0} hashed with "{1}" ({2}) has hash value {3}, expected hash value {4}.</value>
+  </data>
+  <data name="Log_RevocationMode" xml:space="preserve">
+    <value>Revocation mode for chain building: {0}.</value>
+  </data>
+  <data name="Log_RevocationFlag" xml:space="preserve">
+    <value>Revocation flag for chain building: {0}.</value>
+  </data>
+  <data name="Log_SigningAsymmetric" xml:space="preserve">
+    <value>Calculating signature with key {0} using signature description {1}, hash algorithm {2}, and asymmetric signature formatter {3}.</value>
+  </data>
+  <data name="Log_SigningHmac" xml:space="preserve">
+    <value>Calculating signature using keyed hash algorithm {0}.</value>
+  </data>
+  <data name="Log_SigningReference" xml:space="preserve">
+    <value>Hashing reference {0}, Uri "{1}", Id "{2}", Type "{3}" with hash algorithm "{4}" ({5}).</value>
+  </data>
+  <data name="Log_TransformedReferenceContents" xml:space="preserve">
+    <value>Transformed reference contents: {0}</value>
+  </data>
+  <data name="Log_UnsafeCanonicalizationMethod" xml:space="preserve">
+    <value>Canonicalization method "{0}" is not on the safe list. Safe canonicalization methods are: {1}.</value>
+  </data>
+  <data name="Log_UrlTimeout" xml:space="preserve">
+    <value>URL retrieval timeout for chain building: {0}.</value>
+  </data>
+  <data name="Log_VerificationFailed" xml:space="preserve">
+    <value>Verification failed checking {0}.</value>
+  </data>
+  <data name="Log_VerificationFailed_References" xml:space="preserve">
+    <value>references</value>
+  </data>
+  <data name="Log_VerificationFailed_SignedInfo" xml:space="preserve">
+    <value>SignedInfo</value>
+  </data>
+  <data name="Log_VerificationFailed_X509Chain" xml:space="preserve">
+    <value>X509 chain verification</value>
+  </data>
+  <data name="Log_VerificationFailed_X509KeyUsage" xml:space="preserve">
+    <value>X509 key usage verification</value>
+  </data>
+  <data name="Log_VerificationFlag" xml:space="preserve">
+    <value>Verification flags for chain building: {0}.</value>
+  </data>
+  <data name="Log_VerificationTime" xml:space="preserve">
+    <value>Verification time for chain building: {0}.</value>
+  </data>
+  <data name="Log_VerificationWithKeySuccessful" xml:space="preserve">
+    <value>Verification with key {0} was successful.</value>
+  </data>
+  <data name="Log_VerificationWithKeyNotSuccessful" xml:space="preserve">
+    <value>Verification with key {0} was not successful.</value>
+  </data>
+  <data name="Log_VerifyReference" xml:space="preserve">
+    <value>Processing reference {0}, Uri "{1}", Id "{2}", Type "{3}".</value>
+  </data>
+  <data name="Log_VerifySignedInfoAsymmetric" xml:space="preserve">
+    <value>Verifying SignedInfo using key {0}, signature description {1}, hash algorithm {2}, and asymmetric signature deformatter {3}.</value>
+  </data>
+  <data name="Log_VerifySignedInfoHmac" xml:space="preserve">
+    <value>Verifying SignedInfo using keyed hash algorithm {0}.</value>
+  </data>
+  <data name="Log_X509ChainError" xml:space="preserve">
+    <value>Error building X509 chain: {0}: {1}.</value>
+  </data>
+  <data name="Log_XmlContext" xml:space="preserve">
+    <value>Using context: {0}</value>
+  </data>
+  <data name="Log_SignedXmlRecursionLimit" xml:space="preserve">
+    <value>Signed xml recursion limit hit while trying to decrypt the key. Reference {0} hashed with "{1}" and ({2}).</value>
+  </data>
+  <data name="Log_UnsafeTransformMethod" xml:space="preserve">
+    <value>Transform method "{0}" is not on the safe list. Safe transform methods are: {1}.</value>
+  </data>
+</root>

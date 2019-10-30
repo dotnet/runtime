@@ -1,0 +1,63 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json.Tests", "tests\System.Runtime.Serialization.Json.Tests.csproj", "{173F6978-B961-4D1C-84E4-06468772D019}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json.ReflectionOnly.Tests", "tests\ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj", "{C99A835E-46F3-4C05-AD34-7DD84FB7466B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json", "src\System.Runtime.Serialization.Json.csproj", "{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC} = {5119E88F-FA73-4FC6-A327-DD7C77E746BC}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json", "ref\System.Runtime.Serialization.Json.csproj", "{5119E88F-FA73-4FC6-A327-DD7C77E746BC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{173F6978-B961-4D1C-84E4-06468772D019}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{173F6978-B961-4D1C-84E4-06468772D019}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{173F6978-B961-4D1C-84E4-06468772D019}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{173F6978-B961-4D1C-84E4-06468772D019}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{C99A835E-46F3-4C05-AD34-7DD84FB7466B}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{C99A835E-46F3-4C05-AD34-7DD84FB7466B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{C99A835E-46F3-4C05-AD34-7DD84FB7466B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{C99A835E-46F3-4C05-AD34-7DD84FB7466B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{173F6978-B961-4D1C-84E4-06468772D019} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{C99A835E-46F3-4C05-AD34-7DD84FB7466B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{5119E88F-FA73-4FC6-A327-DD7C77E746BC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6BB5B700-6575-4C04-ADF5-1680E2177DB2}
+	EndGlobalSection
+EndGlobal

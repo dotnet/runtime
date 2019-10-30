@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Net.Tests.HttpListenerRequestTests">
+      <Type Name="System.Text.UTF8Encoding" Dynamic="Required All" />
+  </Library>
+</Directives>

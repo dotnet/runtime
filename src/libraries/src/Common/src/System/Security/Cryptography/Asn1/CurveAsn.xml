@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CurveAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://www.secg.org/sec1-v2.pdf, C.2
+
+    Curve ::= SEQUENCE {
+        a FieldElement,
+        b FieldElement,
+        seed BIT STRING OPTIONAL
+        - Shall be present if used in SpecifiedECDomain
+        - with version equal to ecdpVer2 or ecdpVer3
+    }
+
+    FieldElement ::= OCTET STRING
+  -->
+  <asn:OctetString name="A" />
+  <asn:OctetString name="B" />
+  <asn:BitString name="Seed" optional="true" />
+</asn:Sequence>

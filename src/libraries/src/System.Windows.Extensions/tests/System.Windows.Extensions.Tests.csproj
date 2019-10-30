@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="X509Certificate2UITests.cs" />
+    <Compile Include="X509Certificate2UIManualTests.cs" />
+    <Compile Include="XamlAccessLevelTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Drawing\FontConverterTests.cs" />
+    <Compile Include="System\Drawing\IconConverterTests.cs" />
+    <Compile Include="System\Drawing\ImageConverterTests.cs" />
+    <Compile Include="System\Drawing\ImageFormatConverterTests.cs" />
+    <Compile Include="System\Drawing\Printing\MarginsConverterTests.cs" />
+    <Compile Include="System\Media\SoundPlayerTests.cs" />
+    <Compile Include="System\Media\SystemSoundTests.cs" />
+    <Compile Include="System\Media\SystemSoundsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataPackageVersion)" />
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataPackageVersion)" />
+    <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataPackageVersion)" />
+  </ItemGroup>
+</Project>

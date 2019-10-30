@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Don't warn about usage of obsolete API since the contract must keep its own references
+         to its own obsolete API. -->
+    <NoWarn>$(NoWarn);618</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.InteropServices.cs" />
+    <Compile Include="System.Runtime.InteropServices.Forwards.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
+    <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Handles\ref\System.Runtime.Handles.csproj" />
+  </ItemGroup>
+</Project>

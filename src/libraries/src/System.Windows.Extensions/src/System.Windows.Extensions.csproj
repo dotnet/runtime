@@ -1,0 +1,97 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_IntPtr.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertOpenStore.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertOpenStore.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\CryptUI\Interop.CryptUIDlgCertificate.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptUIDlgCertificate.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.MessageBeep.cs">
+      <Link>Common\Interop\Windows\User32\Interop.MessageBeep.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.MMCKINFO.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.MMCKINFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioAscend.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioAscend.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioClose.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioClose.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioDescend.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioDescend.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioRead.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioRead.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioOpen.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioOpen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.PlaySound.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.PlaySound.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2UI.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\SafeX509Handles.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Utils.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="System\Drawing\FontConverter.cs" />
+    <Compile Include="System\Drawing\IconConverter.cs" />
+    <Compile Include="System\Drawing\ImageConverter.cs" />
+    <Compile Include="System\Drawing\ImageFormatConverter.cs" />
+    <Compile Include="System\Drawing\Printing\MarginsConverter.cs" />
+    <Compile Include="System\Media\SoundPlayer.cs" />
+    <Compile Include="System\Media\SystemSound.cs" />
+    <Compile Include="System\Media\SystemSounds.cs" />
+    <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.ComponentModel.EventBasedAsync" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Drawing.Common" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Requests" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>
