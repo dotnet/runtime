@@ -264,8 +264,8 @@ namespace System.Net
                     // if we find another '&' before finding a ';', then this is not an entity,
                     // and the next '&' might start a real entity (VSWhidbey 275184)
                     ReadOnlySpan<char> inputSlice = input.Slice(i + 1);
-                    int entityLength = inputSlice.IndexOf(';');
-                    if (entityLength >= 0)
+                    int entityLength = inputSlice.IndexOfAny(';', '&');
+                    if (entityLength >= 0 && inputSlice[entityLength] == ';')
                     {
                         int entityEndPosition = (i + 1) + entityLength;
                         if (entityLength > 1 && inputSlice[0] == '#')

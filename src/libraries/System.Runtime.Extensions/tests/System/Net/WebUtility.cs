@@ -56,6 +56,10 @@ namespace System.Net.Tests
             // Empty
             yield return new object[] { "", "" };
             yield return new object[] { null, null };
+
+            // Should decode the innermost entity
+            yield return new object[] { "& &amp;", "& &" };
+            yield return new object[] { "&quot; &lt &gt;", "\" &lt >" };
         }
 
         [Theory]
