@@ -98,8 +98,9 @@ namespace System.Text.Encodings.Web
                         // Load the next 16 bytes.
                         Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
 
-                        Vector128<sbyte> mask = Sse2Helper.CreateAsciiMask(sourceValue);
-                        int index = Sse2.MoveMask(mask);
+                        // Check for ASCII text. Any byte that's not in the ASCII range will already be negative when
+                        // casted to signed byte.
+                        int index = Sse2.MoveMask(sourceValue);
 
                         if (index != 0)
                         {
@@ -196,6 +197,7 @@ namespace System.Text.Encodings.Web
                         idx += utf8BytesConsumedForScalar;
                     }
                 }
+                Debug.Assert(idx == utf8Text.Length);
 
                 idx = -1; // All bytes are allowed.
 
