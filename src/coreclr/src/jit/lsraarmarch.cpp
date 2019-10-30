@@ -585,7 +585,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
-                NYI_ARM("initblk loop unrolling is currently not implemented.");
                 break;
 
             case GenTreeBlk::BlkOpKindHelper:

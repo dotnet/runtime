@@ -299,39 +299,36 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
             }
         }
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            // If src or dst are on stack, we don't have to generate the address
+            // into a register because it's just some constant+SP.
+            if (src->OperIs(GT_IND))
+            {
+                GenTree* srcAddr = src->AsIndir()->Addr();
+                if (srcAddr->OperIsLocalAddr())
+                {
+                    srcAddr->SetContained();
+                }
+            }
+
+            if (dstAddr->OperIsLocalAddr())
+            {
+                dstAddr->SetContained();
+            }
+        }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
-            if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= CPBLK_UNROLL_LIMIT))
-            {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-                // If src or dst are on stack, we don't have to generate the address
-                // into a register because it's just some constant+SP.
-                if (src->OperIs(GT_IND))
-                {
-                    GenTree* srcAddr = src->AsIndir()->Addr();
-                    if (srcAddr->OperIsLocalAddr())
-                    {
-                        srcAddr->SetContained();
-                    }
-                }
-
-                if (dstAddr->OperIsLocalAddr())
-                {
-                    dstAddr->SetContained();
-                }
-            }
-            else
-            {
 #ifdef _TARGET_AMD64_
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
 #else
-                // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
+            // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
 #endif
-            }
         }
     }
 }
