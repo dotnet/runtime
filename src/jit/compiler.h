@@ -4356,6 +4356,16 @@ public:
 
     void fgAddFinallyTargetFlags();
 
+    void fgTailMergeThrows();
+    void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
+                                            BasicBlock* nonCanonicalBlock,
+                                            BasicBlock* canonicalBlock,
+                                            flowList*   predEdge);
+    void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
+                                       BasicBlock* nonCanonicalBlock,
+                                       BasicBlock* canonicalBlock,
+                                       flowList*   predEdge);
+
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
     // when this is necessary.
@@ -6344,6 +6354,18 @@ public:
                                              unsigned              classAttr);
 
     unsigned optMethodFlags;
+
+    bool doesMethodHaveNoReturnCalls()
+    {
+        return optNoReturnCallCount > 0;
+    }
+
+    void setMethodHasNoReturnCalls()
+    {
+        optNoReturnCallCount++;
+    }
+
+    unsigned optNoReturnCallCount;
 
     // Recursion bound controls how far we can go backwards tracking for a SSA value.
     // No throughput diff was found with backward walk bound between 3-8.

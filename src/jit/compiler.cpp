@@ -1835,7 +1835,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     opts.instrCount = 0;
 
     // Used to track when we should consider running EarlyProp
-    optMethodFlags = 0;
+    optMethodFlags       = 0;
+    optNoReturnCallCount = 0;
 
 #ifdef DEBUG
     m_nodeTestData      = nullptr;
@@ -4655,6 +4656,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
+        fgTailMergeThrows();
+        EndPhase(PHASE_MERGE_THROWS);
+
         optOptimizeLayout();
         EndPhase(PHASE_OPTIMIZE_LAYOUT);
 
