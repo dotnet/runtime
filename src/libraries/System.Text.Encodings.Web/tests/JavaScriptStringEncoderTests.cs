@@ -5,9 +5,12 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.Internal;
 using System.Text.Unicode;
 using Xunit;
 
@@ -32,6 +35,7 @@ namespace System.Text.Encodings.Web.Tests
 
         [Theory]
         [MemberData(nameof(EscapingTestData))]
+        [MemberData(nameof(EscapingTestData_NonAscii))]
         public unsafe void FindFirstCharacterToEncode(char replacementChar, JavaScriptEncoder encoder, bool requiresEscaping)
         {
             Assert.Equal(-1, encoder.FindFirstCharacterToEncodeUtf8(default));
@@ -95,6 +99,7 @@ namespace System.Text.Encodings.Web.Tests
                 {
                     new object[] { 'a', JavaScriptEncoder.Default, false },              // ASCII not escaped
                     new object[] { '\u001F', JavaScriptEncoder.Default, true },          // control character within single byte range
+                    new object[] { '\u007F', JavaScriptEncoder.Default, true },          // control character, sbyte.MaxValue
                     new object[] { '\u2000', JavaScriptEncoder.Default, true },          // space character outside single byte range
                     new object[] { '\u00A2', JavaScriptEncoder.Default, true },          // non-ASCII but < 255
                     new object[] { '\uA686', JavaScriptEncoder.Default, true },          // non-ASCII above short.MaxValue
@@ -111,6 +116,7 @@ namespace System.Text.Encodings.Web.Tests
 
                     new object[] { 'a', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), false },
                     new object[] { '\u001F', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
+                    new object[] { '\u007F', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
                     new object[] { '\u2000', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
                     new object[] { '\u00A2', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
                     new object[] { '\uA686', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
@@ -124,38 +130,6 @@ namespace System.Text.Encodings.Web.Tests
                     new object[] { '\'', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
                     new object[] { '+', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
                     new object[] { '\uFFFD', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
-
-                    new object[] { 'a', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-                    new object[] { '\u001F', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '\u2000', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '\u00A2', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-                    new object[] { '\uA686', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-                    new object[] { '\u6C49', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-                    new object[] { '"', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '\\', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '<', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '>', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '&', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '`', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '\'', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '+', JavaScriptEncoder.Create(UnicodeRanges.All), true },
-                    new object[] { '\uFFFD', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-
-                    new object[] { 'a', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\u001F', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
-                    new object[] { '\u2000', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
-                    new object[] { '\u00A2', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\uA686', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\u6C49', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '"', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
-                    new object[] { '\\', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
-                    new object[] { '<', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '>', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '&', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '`', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\'', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '+', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\uFFFD', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
                 };
             }
         }
@@ -203,6 +177,7 @@ namespace System.Text.Encodings.Web.Tests
                 {
                     new object[] { 'a', JavaScriptEncoder.Create(UnicodeRanges.All), false },
                     new object[] { '\u001F', JavaScriptEncoder.Create(UnicodeRanges.All), true },
+                    new object[] { '\u007F', JavaScriptEncoder.Create(UnicodeRanges.All), true },
                     new object[] { '\u2000', JavaScriptEncoder.Create(UnicodeRanges.All), true },
                     new object[] { '\u00A2', JavaScriptEncoder.Create(UnicodeRanges.All), false },
                     new object[] { '\uA686', JavaScriptEncoder.Create(UnicodeRanges.All), false },
@@ -219,6 +194,7 @@ namespace System.Text.Encodings.Web.Tests
 
                     new object[] { 'a', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
                     new object[] { '\u001F', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
+                    new object[] { '\u007F', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
                     new object[] { '\u2000', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, true },
                     new object[] { '\u00A2', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
                     new object[] { '\uA686', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
@@ -232,6 +208,23 @@ namespace System.Text.Encodings.Web.Tests
                     new object[] { '\'', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
                     new object[] { '+', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
                     new object[] { '\uFFFD', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
+
+                    new object[] { 'a', new MyCustomEncoder(UnicodeRanges.All), false },
+                    new object[] { '\u001F', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\u007F', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\u2000', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\u00A2', new MyCustomEncoder(UnicodeRanges.All), false },
+                    new object[] { '\uA686', new MyCustomEncoder(UnicodeRanges.All), false },
+                    new object[] { '\u6C49', new MyCustomEncoder(UnicodeRanges.All), false },
+                    new object[] { '"', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\\', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '<', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '>', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '&', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '`', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\'', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '+', new MyCustomEncoder(UnicodeRanges.All), true },
+                    new object[] { '\uFFFD', new MyCustomEncoder(UnicodeRanges.All), false },
                 };
             }
         }
@@ -305,6 +298,7 @@ namespace System.Text.Encodings.Web.Tests
                     new object[] { JavaScriptEncoder.Create(UnicodeRanges.BasicLatin) },
                     new object[] { JavaScriptEncoder.Create(UnicodeRanges.All) },
                     new object[] { JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
+                    new object[] { new MyCustomEncoder(UnicodeRanges.BasicLatin) },
                 };
             }
         }
@@ -359,7 +353,86 @@ namespace System.Text.Encodings.Web.Tests
 
                     new object[] { '\uD801', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin) },
                     new object[] { '\uDC01', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin) },
+
+                    new object[] { '\uD801', new MyCustomEncoder(UnicodeRanges.BasicLatin) },
+                    new object[] { '\uDC01', new MyCustomEncoder(UnicodeRanges.BasicLatin) },
                 };
+            }
+        }
+
+        internal sealed class MyCustomEncoder : JavaScriptEncoder
+        {
+            private readonly AllowedCharactersBitmap _allowedCharacters;
+
+            public MyCustomEncoder(TextEncoderSettings filter)
+            {
+                if (filter == null)
+                {
+                    throw new ArgumentNullException(nameof(filter));
+                }
+
+                _allowedCharacters = filter.GetAllowedCharacters();
+
+                // Forbid codepoints which aren't mapped to characters or which are otherwise always disallowed
+                // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
+                _allowedCharacters.ForbidUndefinedCharacters();
+
+                // Forbid characters that are special in HTML.
+                // Even though this is a not HTML encoder,
+                // it's unfortunately common for developers to
+                // forget to HTML-encode a string once it has been JS-encoded,
+                // so this offers extra protection.
+                ForbidHtmlCharacters(_allowedCharacters);
+
+                // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
+                // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
+                _allowedCharacters.ForbidCharacter('\\');
+
+                // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).
+                _allowedCharacters.ForbidCharacter('`');
+            }
+
+            internal static void ForbidHtmlCharacters(AllowedCharactersBitmap allowedCharacters)
+            {
+                allowedCharacters.ForbidCharacter('<');
+                allowedCharacters.ForbidCharacter('>');
+                allowedCharacters.ForbidCharacter('&');
+                allowedCharacters.ForbidCharacter('\''); // can be used to escape attributes
+                allowedCharacters.ForbidCharacter('\"'); // can be used to escape attributes
+                allowedCharacters.ForbidCharacter('+'); // technically not HTML-specific, but can be used to perform UTF7-based attacks
+            }
+
+            public MyCustomEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
+            { }
+
+            public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form
+
+            public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
+            {
+                throw new NotImplementedException();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override unsafe int FindFirstCharacterToEncode(char* text, int textLength)
+            {
+                if (text == null)
+                {
+                    throw new ArgumentNullException(nameof(text));
+                }
+
+                return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
+            }
+
+            public override bool WillEncode(int unicodeScalar)
+            {
+                if (UnicodeHelpers.IsSupplementaryCodePoint(unicodeScalar))
+                {
+                    return true;
+                }
+
+                Debug.Assert(unicodeScalar >= char.MinValue && unicodeScalar <= char.MaxValue);
+
+                return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
             }
         }
 
