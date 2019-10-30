@@ -154,7 +154,7 @@ namespace System.Threading.Tasks
         {
             // This logic ensures that we have a diversity of timeouts across worker tasks (100, 150, 200, 250, 100, etc)
             // Otherwise all worker will try to timeout at precisely the same point, which is bad if the work is just about to finish.
-            int period = PlatformHelper.ProcessorCount;
+            int period = Environment.ProcessorCount;
             int pseudoRnd = Environment.TickCount;
             return CooperativeMultitaskingTaskTimeout_Min + (pseudoRnd % period) * CooperativeMultitaskingTaskTimeout_Increment;
         }

@@ -191,8 +191,7 @@ namespace System.Collections.Concurrent
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
             decimal range = (decimal)toExclusive - fromInclusive;
-            long rangeSize = (long)(range /
-                (PlatformHelper.ProcessorCount * CoreOversubscriptionRate));
+            long rangeSize = (long)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
@@ -246,8 +245,7 @@ namespace System.Collections.Concurrent
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
             long range = (long)toExclusive - fromInclusive;
-            int rangeSize = (int)(range /
-                (PlatformHelper.ProcessorCount * CoreOversubscriptionRate));
+            int rangeSize = (int)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
@@ -591,7 +589,7 @@ namespace System.Collections.Concurrent
                     {
                         // Time to allocate the fill buffer which is used to reduce the contention on the shared lock.
                         // First pick the buffer size multiplier. We use 4 for when there are more than 4 cores, and just 1 for below. This is based on empirical evidence.
-                        int fillBufferMultiplier = (PlatformHelper.ProcessorCount > 4) ? 4 : 1;
+                        int fillBufferMultiplier = (Environment.ProcessorCount > 4) ? 4 : 1;
 
                         // and allocate the fill buffer using these two numbers
                         _fillBuffer = new KeyValuePair<long, TSource>[fillBufferMultiplier * Partitioner.GetDefaultChunkSize<TSource>()];

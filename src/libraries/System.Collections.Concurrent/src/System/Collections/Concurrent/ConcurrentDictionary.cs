@@ -1906,10 +1906,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// The number of concurrent writes for which to optimize by default.
         /// </summary>
-        private static int DefaultConcurrencyLevel
-        {
-            get { return PlatformHelper.ProcessorCount; }
-        }
+        private static int DefaultConcurrencyLevel => Environment.ProcessorCount;
 
         /// <summary>
         /// Acquires all locks for this hash table, and increments locksAcquired by the number
