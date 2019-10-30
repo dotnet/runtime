@@ -35,18 +35,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingSignCount(long value) => LeadingSignCount(value);
 
             /// <summary>
-            ///   A64: CLS Wd, Wn
-            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-            /// </summary>
-            public static int LeadingSignCount(uint value) => LeadingSignCount(value);
-
-            /// <summary>
-            ///   A64: CLS Xd, Xn
-            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-            /// </summary>
-            public static int LeadingSignCount(ulong value) => LeadingSignCount(value);
-
-            /// <summary>
             ///   A64: CLZ Xd, Xn
             /// </summary>
             public static int LeadingZeroCount(long value) => LeadingZeroCount(value);
