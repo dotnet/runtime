@@ -27,6 +27,7 @@
 
 #include "mini.h"
 #include "mini-sparc.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #ifndef REG_SP
 #define REG_SP REG_O6

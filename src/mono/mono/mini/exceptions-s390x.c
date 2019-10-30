@@ -64,6 +64,7 @@
 #include "support-s390x.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /*========================= End of Includes ========================*/
 

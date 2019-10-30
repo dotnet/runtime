@@ -33,6 +33,7 @@
 #include "mini-ppc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /*
 

@@ -8,9 +8,9 @@
 
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-sigcontext.h>
+#include "mono/utils/mono-tls-inline.h"
 
 #ifndef DISABLE_JIT
-
 
 static gpointer
 nop_stub (void)

@@ -34,6 +34,7 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /* Sanity check: This makes no sense */
 #if defined(ARM_FPU_NONE) && (defined(ARM_FPU_VFP) || defined(ARM_FPU_VFP_HARD))
@@ -428,7 +429,7 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 		code = emit_tls_get (code, ARMREG_R0, mono_tls_get_tls_offset (TLS_KEY_LMF_ADDR));
 	} else {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							 GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr));
+							 GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
 		code = emit_call_seq (cfg, code);
 	}
 	/* we build the MonoLMF structure on the stack - see mini-arm.h */

@@ -20,6 +20,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/unlocked.h>
+#include "mono/utils/mono-tls-inline.h"
 
 #include "mini-ppc.h"
 #ifdef TARGET_POWERPC64
@@ -5156,7 +5157,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 		}
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-			     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr));
+			     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
 		if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 			ppc_load_func (code, PPC_CALL_REG, 0);
 			ppc_mtlr (code, PPC_CALL_REG);

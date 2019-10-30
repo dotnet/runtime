@@ -94,6 +94,7 @@
 #if !defined(DISABLE_CRASH_REPORTING)
 #include <gmodule.h>
 #endif
+#include "mono/utils/mono-tls-inline.h"
 
 /*
  * Raw frame information is stored in MonoException.trace_ips as an IntPtr[].

@@ -52,6 +52,7 @@
 #include <mono/metadata/coree.h>
 #include <mono/utils/mono-experiments.h>
 #include "external-only.h"
+#include "mono/utils/mono-tls-inline.h"
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 

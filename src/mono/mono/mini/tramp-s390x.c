@@ -50,6 +50,7 @@
 #include "mini-runtime.h"
 #include "support-s390x.h"
 #include "jit-icalls.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /*========================= End of Includes ========================*/
 

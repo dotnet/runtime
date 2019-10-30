@@ -30,6 +30,7 @@
 #include "ir-emit.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #define SAVE_FP_REGS		0
 

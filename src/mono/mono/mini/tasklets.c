@@ -10,6 +10,7 @@
 #include "mini.h"
 #include "mini-runtime.h"
 #include "mono/metadata/loader-internals.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #if defined(MONO_SUPPORT_TASKLETS)
 

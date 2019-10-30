@@ -27,6 +27,7 @@
 #include "mini-runtime.h"
 #include "debugger-agent.h"
 #include "jit-icalls.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /*
  * mono_arch_get_unbox_trampoline:

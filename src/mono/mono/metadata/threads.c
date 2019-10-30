@@ -59,6 +59,7 @@
 #include <mono/utils/mono-state.h>
 #include <mono/metadata/w32subset.h>
 #include <mono/metadata/mono-config.h>
+#include "mono/utils/mono-tls-inline.h"
 
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>

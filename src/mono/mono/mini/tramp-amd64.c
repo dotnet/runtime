@@ -34,6 +34,7 @@
 #ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
+#include "mono/utils/mono-tls-inline.h"
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 

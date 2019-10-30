@@ -36,6 +36,7 @@
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN

@@ -70,6 +70,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #ifndef DISABLE_AOT
 

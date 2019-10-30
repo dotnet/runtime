@@ -26,6 +26,7 @@
 #include "mini.h"
 #include "mini-mips.h"
 #include "mini-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 /*
  * get_unbox_trampoline:

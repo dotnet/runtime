@@ -26,6 +26,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-tls-inline.h"
 
 //#define CARDTABLE_STATS
 

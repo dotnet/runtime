@@ -192,6 +192,7 @@ monoutils_sources = \
 	mono-utility-thread.c	\
 	mono-utility-thread.h	\
 	mono-tls.h	\
+	mono-tls-inline.h	\
 	mono-tls.c	\
 	mono-utils-debug.c \
 	mono-utils-debug.h \

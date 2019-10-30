@@ -37,6 +37,7 @@
 #include "utils/mono-threads.h"
 #include "metadata/w32handle.h"
 #include "icall-signatures.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;

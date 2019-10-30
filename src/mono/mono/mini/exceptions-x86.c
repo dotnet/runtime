@@ -34,6 +34,7 @@
 #include "mini-runtime.h"
 #include "tasklets.h"
 #include "aot-runtime.h"
+#include "mono/utils/mono-tls-inline.h"
 
 static gpointer signal_exception_trampoline;
 

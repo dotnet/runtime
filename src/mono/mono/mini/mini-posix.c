@@ -97,6 +97,7 @@
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
+#include "mono/utils/mono-tls-inline.h"
 
 #if defined(HOST_WATCHOS)
 

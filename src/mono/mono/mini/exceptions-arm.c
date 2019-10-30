@@ -40,6 +40,7 @@
 #include "aot-runtime.h"
 #include "mono/utils/mono-sigcontext.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-tls-inline.h"
 
 #ifndef DISABLE_JIT
 

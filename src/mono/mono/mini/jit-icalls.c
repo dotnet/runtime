@@ -27,6 +27,7 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-math.h>
+#include "mono/utils/mono-tls-inline.h"
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
