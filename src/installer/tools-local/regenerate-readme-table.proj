@@ -1,0 +1,50 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+
+  <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+
+  <Target Name="Build">
+    <!--
+      Column and row configuration for the readme table. The abbreviations match up with
+      reference-style Markdown links in the readme file to figure out what to put in the cells.
+    -->
+    <ItemGroup>
+      <Branches Include="Master" Abbr="master" />
+      <Branches Include="Release/3.0.X" Abbr="3.0.X" />
+      <Branches Include="Release/2.2.X" Abbr="2.2.X" />
+      <Branches Include="Release/2.1.X" Abbr="2.1.X" />
+
+      <Platforms Include="Windows (x64)" Abbr="win-x64" />
+      <Platforms Include="Windows (x86)" Abbr="win-x86" />
+      <Platforms Include="Windows (arm32)" Abbr="win-arm" />
+      <Platforms Include="Windows (arm64)" Abbr="win-arm64" />
+      <Platforms Include="Mac OS X (x64)" Abbr="osx" />
+      <Platforms Include="Linux (x64)" Parenthetical=" (for glibc based OS)" Abbr="linux-x64" />
+      <Platforms Include="Linux (armhf)" Parenthetical=" (for glibc based OS)" Abbr="linux-arm"/>
+      <Platforms Include="Linux (arm64)" Parenthetical=" (for glibc based OS)" Abbr="linux-arm64" />
+      <Platforms Include="Ubuntu 14.04 (x64)" Abbr="ubuntu-14.04" />
+      <Platforms Include="Ubuntu 16.04 (x64)" Abbr="ubuntu-16.04" />
+      <Platforms Include="Ubuntu 18.04 (x64)" Abbr="ubuntu-18.04" />
+      <Platforms Include="Ubuntu 19.04 (x64)" Abbr="ubuntu-19.04" />
+      <Platforms Include="Debian 8.2 (x64)" Abbr="debian-8.2" />
+      <Platforms Include="Debian 9 (x64)" Abbr="debian-9" />
+      <Platforms Include="CentOS 7 (x64)" Abbr="centos-7" />
+      <Platforms Include="RHEL 6" Abbr="rhel-6" />
+      <Platforms Include="RHEL 7.2 (x64)" Abbr="rhel7" />
+      <Platforms Include="Fedora 27 (x64)" Abbr="fedora-27" />
+      <Platforms Include="SLES 12 (x64)" Abbr="sles-12" />
+      <Platforms Include="OpenSUSE 42 (x64)" Abbr="OpenSUSE-42" />
+      <Platforms Include="Linux-musl (x64)" Abbr="linux-musl-x64" />
+      <Platforms Include="Linux-musl (arm64)" Abbr="linux-musl-arm64" />
+    </ItemGroup>
+
+    <RegenerateReadmeTable
+      ReadmeFile="$(RepoRoot)README.md"
+      Branches="@(Branches)"
+      Platforms="@(Platforms)" />
+
+    <Message Text="$(MSBuildProjectName) -> $(RepoRoot)README.md" Importance="High" />
+  </Target>
+
+  <Import Project="Directory.Build.targets" />
+</Project>
