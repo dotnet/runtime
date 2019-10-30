@@ -16,6 +16,7 @@ namespace System.Net.Security.Tests
     public class CertificateValidationRemoteServer
     {
         [Fact]
+        [OuterLoop("Uses external servers")]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok()
         {
             using (var client = new TcpClient(AddressFamily.InterNetwork))
