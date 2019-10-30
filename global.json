@@ -8,7 +8,7 @@
     "dotnet": "3.0.100"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.19528.5",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.19528.5"
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.19529.9",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.19529.9"
   }
 }
