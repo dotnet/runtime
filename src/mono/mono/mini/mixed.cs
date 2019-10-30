@@ -180,6 +180,15 @@ class JitClass
 	public static StackTrace get_stacktrace_jit2 () {
 		return InterpClass.get_stacktrace_interp2 ();
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static string string_from_interp ()
+	{
+		char [] buf = new char [10];
+		for (int i = 0; i < buf.Length; i++)
+			buf [i] = (char) ((int) 'a' + i);
+		return new string (buf, 0, 10);
+	}
 }
 
 #if __MOBILE__
@@ -311,5 +320,10 @@ class Tests
 			return 0;
 		}
 		return 2;
-        }
+	}
+
+	public static int test_0_stringctor () {
+		string s = JitClass.string_from_interp ();
+		return s == "abcdefghij" ? 0 : 1;
+	}
 }
