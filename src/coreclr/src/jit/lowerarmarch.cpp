@@ -246,7 +246,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-#ifdef _TARGET_ARM64_
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
@@ -262,13 +261,19 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (fill == 0)
             {
+#ifdef _TARGET_ARM64_
+                // On ARM64 we can just use REG_ZR instead of having to load
+                // the constant into a real register like on ARM32.
                 src->SetContained();
+#endif
             }
+#ifdef _TARGET_ARM64_
             else if (size >= REGSIZE_BYTES)
             {
                 fill *= 0x0101010101010101LL;
                 src->gtType = TYP_LONG;
             }
+#endif
             else
             {
                 fill *= 0x01010101;
@@ -277,10 +282,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->AsIntCon()->SetIconValue(fill);
         }
         else
-#endif // _TARGET_ARM64_
         {
-            // TODO-ARM-CQ: Currently we generate a helper call for every initblk we encounter.
-            // Later on we should implement loop unrolling code sequences to improve CQ.
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
     }
@@ -319,32 +321,29 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            if (src->OperIs(GT_IND))
+            {
+                GenTree* srcAddr = src->AsIndir()->Addr();
+                if (srcAddr->OperIsLocalAddr())
+                {
+                    srcAddr->SetContained();
+                }
+            }
+
+            if (dstAddr->OperIsLocalAddr())
+            {
+                dstAddr->SetContained();
+            }
+        }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
-            if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= CPBLK_UNROLL_LIMIT))
-            {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-                if (src->OperIs(GT_IND))
-                {
-                    GenTree* srcAddr = src->AsIndir()->Addr();
-                    if (srcAddr->OperIsLocalAddr())
-                    {
-                        srcAddr->SetContained();
-                    }
-                }
-
-                if (dstAddr->OperIsLocalAddr())
-                {
-                    dstAddr->SetContained();
-                }
-            }
-            else
-            {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
-            }
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
     }
 }
