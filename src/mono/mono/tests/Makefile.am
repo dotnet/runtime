@@ -383,6 +383,7 @@ TESTS_CS_SRC=		\
 	params.cs		\
 	reflection.cs		\
 	interface.cs		\
+	interface-2.cs		\
 	iface.cs		\
 	iface2.cs		\
 	iface3.cs		\
