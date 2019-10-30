@@ -101,9 +101,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-perfcounters.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-perfcounters-def.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-ptr-array.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-route.c">
-      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-route.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-route.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\monitor.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\native-library.c" />
