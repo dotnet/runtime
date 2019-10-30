@@ -264,7 +264,6 @@
       <Compile Include="src\System.Threading\ThreadPool.cs" />
       <Compile Include="src\System.Threading\LowLevelLock.cs" />
       <Compile Include="src\System.Threading\LowLevelSpinWaiter.cs" />
-      <Compile Include="src\System.Threading\LowLevelLifoSemaphore.Unix.cs" />
       <Compile Include="src\System.Threading\WaitHandle.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -274,6 +273,7 @@
       <Compile Include="src\System.Threading\EventWaitHandle.Unix.cs" />
       <Compile Include="src\System.Threading\Mutex.Unix.cs" />
       <Compile Include="src\System.Threading\Semaphore.Unix.cs" />
+      <Compile Include="src\System.Threading\LowLevelLifoSemaphore.Unix.cs" />
 
       <Compile Include="..\..\mcs\class\corlib\System.IO\MonoIOError.cs" />
   </ItemGroup>
