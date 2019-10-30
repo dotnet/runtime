@@ -128,9 +128,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>dcc9f626eeb0751d4ba4499f623aac42d2e95c10</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19501.2">
+    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19531.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>8546a718287c4ff280199c45cc0184cbd6153c0c</Sha>
+      <Sha>a2bca7f4f89c899c2c0325c2790faf6f7d29870c</Sha>
     </Dependency>
     <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19523.1">
       <Uri>https://github.com/mono/linker</Uri>
