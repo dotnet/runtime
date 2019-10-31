@@ -156,10 +156,6 @@ Crst Contexts
                    StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
 End
 
-Crst CoreCLRBinderLog
-	Unordered
-End
-
 Crst CSPCache
     AcquiredBefore JumpStubCache 
 End

@@ -63,7 +63,6 @@ namespace BINDER_SPACE
                                        /* in */ ApplicationContext *pApplicationContext)
         {
             HRESULT hr = S_OK;
-            BINDER_LOG_ENTER(W("IsValidAssemblyVersion"));
             AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
             AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
 
@@ -135,7 +134,6 @@ namespace BINDER_SPACE
                 hr = FUSION_E_REF_DEF_MISMATCH;
             }
 
-            BINDER_LOG_LEAVE_HR(W("IsValidAssemblyVersion"), hr)
             return hr;
         }
 
@@ -369,9 +367,6 @@ namespace BINDER_SPACE
         g_BinderVariables = new Variables();
         IF_FAIL_GO(g_BinderVariables->Init());
 
-        // Setup Debug log
-        BINDER_LOG_STARTUP();
-
     Exit:
         return hr;
     }
@@ -380,7 +375,6 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinder::TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("TranslatePEToArchitectureType"))
 
         _ASSERTE(pdwPAFlags != NULL);
         _ASSERTE(PeKind != NULL);
@@ -393,7 +387,6 @@ namespace BINDER_SPACE
         if(CLRPeKind == peNot) 
         {
             // Not a PE. Shouldn't ever get here.
-            BINDER_LOG(W("Not a PE!"));
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
         else 
@@ -402,7 +395,6 @@ namespace BINDER_SPACE
                 !(CLRPeKind & pe32BitRequired) && dwImageType == IMAGE_FILE_MACHINE_I386) 
             {
                 // Processor-agnostic (MSIL)
-                BINDER_LOG(W("Processor-agnostic (MSIL)"));
                 *PeKind = peMSIL;
             }
             else if (CLRPeKind & pe32Plus) 
@@ -411,7 +403,6 @@ namespace BINDER_SPACE
                 if (CLRPeKind & pe32BitRequired) 
                 {
                     // Invalid
-                    BINDER_LOG(W("CLRPeKind & pe32BitRequired is true"));
                     IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
                 }
 
@@ -424,7 +415,6 @@ namespace BINDER_SPACE
                 else 
                 {
                     // We don't support other architectures
-                    BINDER_LOG(W("Unknown architecture"));
                     IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
                 }
             }
@@ -438,14 +428,12 @@ namespace BINDER_SPACE
                 else 
                 {
                     // Not supported
-                    BINDER_LOG(W("32-bit, non-agnostic"));
                     IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
                 }
             }
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("TranslatePEToArchitectureType"), hr);
         return hr;
     }
         
@@ -465,8 +453,6 @@ namespace BINDER_SPACE
         LONG kContextVersion = 0;
         BindResult bindResult;
         
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindAssembly"));
-
 #ifndef CROSSGEN_COMPILE
     Retry:
         {
@@ -564,7 +550,6 @@ namespace BINDER_SPACE
 #endif // CROSSGEN_COMPILE
         }
 
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindAssembly"), hr);
         return hr;
     }
 
@@ -577,7 +562,6 @@ namespace BINDER_SPACE
         _ASSERTE(g_BinderVariables != NULL);
 
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder:BindToSystem"));
 
         _ASSERTE(ppSystemAssembly != NULL);
 
@@ -602,7 +586,6 @@ namespace BINDER_SPACE
         *ppSystemAssembly = pSystemAssembly.Extract();
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindToSystem"), hr);
         return hr;
     }
 
@@ -617,7 +600,6 @@ namespace BINDER_SPACE
         _ASSERTE(g_BinderVariables != NULL);
 
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder:BindToSystemSatellite"));
 
         _ASSERTE(ppSystemAssembly != NULL);
 
@@ -644,7 +626,6 @@ namespace BINDER_SPACE
         *ppSystemAssembly = pSystemAssembly.Extract();
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindToSystemSatellite"), hr);
         return hr;
     }
 
@@ -657,7 +638,6 @@ namespace BINDER_SPACE
                                        BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindByName"));
         PathString assemblyDisplayName;
 
         // Look for already cached binding failure (ignore PA, every PA will lock the context)
@@ -719,9 +699,8 @@ namespace BINDER_SPACE
 
             hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
         }
-    LogExit:
 
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindByName"), hr);
+    LogExit:
         return hr;
     }
 
@@ -737,7 +716,6 @@ namespace BINDER_SPACE
                                          BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindWhereRef"));
 
         ReleaseHolder<Assembly> pAssembly;
         BindResult lockedBindResult;
@@ -794,8 +772,6 @@ namespace BINDER_SPACE
         }
 
     LogExit:
-
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindWhereRef"), hr);
         return hr;
     }
 
@@ -807,7 +783,6 @@ namespace BINDER_SPACE
                                        BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindLocked"));
         
 #ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
@@ -846,7 +821,6 @@ namespace BINDER_SPACE
             }
         }
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindLocked"), hr);
         return hr;
     }
 
@@ -857,7 +831,6 @@ namespace BINDER_SPACE
                                                    ContextEntry       **ppContextEntry)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::FindInExecutionContext"));
 
         _ASSERTE(pApplicationContext != NULL);
         _ASSERTE(pAssemblyName != NULL);
@@ -889,7 +862,6 @@ namespace BINDER_SPACE
         *ppContextEntry = pContextEntry;
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::FindInExecutionContext"), hr);
         return hr;
     }
 
@@ -919,8 +891,6 @@ namespace BINDER_SPACE
         {
             dwIncludeFlags |= AssemblyName::INCLUDE_ARCHITECTURE;
         }
-
-        BINDER_LOG_ASSEMBLY_NAME(W("pBoundAssemblyName"), pBoundAssemblyName);
 
         return pBoundAssemblyName->Equals(pRequestedAssemblyName, dwIncludeFlags);
     }
@@ -1004,7 +974,6 @@ namespace BINDER_SPACE
                                           BindResult          *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::BindByTpaList"));
 
         SString &culture = pRequestedAssemblyName->GetCulture();
         bool fPartialMatchOnTpa = false;
@@ -1224,7 +1193,6 @@ namespace BINDER_SPACE
         hr = S_OK;
         
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindByTpaList"), hr);
         return hr;  
     }
     
@@ -1246,9 +1214,6 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
-        BINDER_LOG_ENTER(W("Assembly::GetAssembly"));
-        BINDER_LOG_STRING(W("assemblyPath"), assemblyPath);
-
         _ASSERTE(ppAssembly != NULL);
 
         ReleaseHolder<Assembly> pAssembly;
@@ -1265,9 +1230,7 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            BINDER_LOG_ENTER(W("BinderAcquirePEImage"));
             hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage);
-            BINDER_LOG_LEAVE_HR(W("BinderAcquirePEImage"), hr);
             IF_FAIL_GO(hr);
 
             // If we found a native image, it might be an MSIL assembly masquerading as an native image
@@ -1282,20 +1245,16 @@ namespace BINDER_SPACE
                     BinderReleasePEImage(pPEImage);
                     BinderReleasePEImage(pNativePEImage);
 
-                    BINDER_LOG_ENTER(W("BinderAcquirePEImageIL"));
                     hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false);
-                    BINDER_LOG_LEAVE_HR(W("BinderAcquirePEImageIL"), hr);
                     IF_FAIL_GO(hr);
                 }
             }
 
-            BINDER_LOG_ENTER(W("BinderAcquireImport"));
             if (pNativePEImage)
                 hr = BinderAcquireImport(pNativePEImage, &pIMetaDataAssemblyImport, dwPAFlags, TRUE);
             else
                 hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
 
-            BINDER_LOG_LEAVE_HR(W("BinderAcquireImport"), hr);
             IF_FAIL_GO(hr);
 
             if (pIMetaDataAssemblyImport == NULL && pNativePEImage != NULL)
@@ -1312,14 +1271,10 @@ namespace BINDER_SPACE
                 }
                 else
                 {
-                    BINDER_LOG_ENTER(W("BinderAcquirePEImage"));
                     hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE);
-                    BINDER_LOG_LEAVE_HR(W("BinderAcquirePEImage"), hr);
                     IF_FAIL_GO(hr);
 
-                    BINDER_LOG_ENTER(W("BinderAcquireImport"));
                     hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
-                    BINDER_LOG_LEAVE_HR(W("BinderAcquireImport"), hr);
                     IF_FAIL_GO(hr);
                 }
             }
@@ -1343,8 +1298,6 @@ namespace BINDER_SPACE
         BinderReleasePEImage(pPEImage);
         BinderReleasePEImage(pNativePEImage);
         
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::GetAssembly"), hr);
-
         // Normalize file not found
         if ((FAILED(hr)) && IsFileNotFound(hr))
         {
@@ -1361,7 +1314,6 @@ namespace BINDER_SPACE
                                      BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::Register"));
 
         _ASSERTE(!pBindResult->GetIsContextBound());
 
@@ -1386,7 +1338,6 @@ namespace BINDER_SPACE
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::Register"), hr);
         return hr;
     }
 
@@ -1397,7 +1348,6 @@ namespace BINDER_SPACE
                                                      BindResult         *pHostBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("AssemblyBinder::RegisterHostChosen"));
 
         _ASSERTE(pBindResult != NULL);
         _ASSERTE(pBindResult->HaveResult());
@@ -1436,7 +1386,6 @@ namespace BINDER_SPACE
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::RegisterHostChosen"), hr);
         return hr;
     }
 
@@ -1445,7 +1394,6 @@ namespace BINDER_SPACE
                                                 BindResult         *pBindResult)
     {
         HRESULT hr = S_FALSE;
-        BINDER_LOG_ENTER(W("AssemblyBinder::OtherBindInterfered"));
         AssemblyName *pAssemblyName = pBindResult->GetAssemblyName();
         PathString assemblyDisplayName;
 
@@ -1472,7 +1420,6 @@ namespace BINDER_SPACE
         GO_WITH_HRESULT(S_FALSE);
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("AssemblyBinder::OtherBindInterfered"), hr);
         return hr;
     }
 
@@ -1486,7 +1433,6 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
-    BINDER_LOG_ENTER(W("AssemblyBinder::BindUsingHostAssemblyResolver"));
     
     _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
     
@@ -1500,7 +1446,6 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
         *ppAssembly = static_cast<Assembly *>(pLoadedAssembly);
     }
 
-    BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindUsingHostAssemblyResolver"), hr);
     return hr;
 }
 
@@ -1513,7 +1458,6 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
                                          /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
-    BINDER_LOG_ENTER(W("AssemblyBinder::BindUsingPEImage"));
     
     // Indirect check that binder was initialized.
     _ASSERTE(g_BinderVariables != NULL);
@@ -1611,8 +1555,6 @@ Retry:
     }
 
 Exit:
-        
-    BINDER_LOG_LEAVE_HR(W("AssemblyBinder::BindUsingPEImage"), hr);
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

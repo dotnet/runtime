@@ -246,7 +246,6 @@ namespace BINDER_SPACE
                               CDebugLog          **ppCDebugLog)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::Create");
         ReleaseHolder<CDebugLog> pDebugLog;
 
         // Validate input arguments
@@ -259,7 +258,6 @@ namespace BINDER_SPACE
         *ppCDebugLog = pDebugLog.Extract();
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::Create", hr);
         return hr;
     }
 
@@ -286,14 +284,12 @@ namespace BINDER_SPACE
                                      HRESULT hrResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::SetResultCode");
 
         IF_FALSE_GO(dwLogCategory < FUSION_BIND_LOG_CATEGORY_MAX);
 
         m_HrResult[dwLogCategory] = hrResult;
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::SetResultCode", hr);
         return hr;
     }
 
@@ -302,14 +298,12 @@ namespace BINDER_SPACE
                                   SString &sDebugString)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::LogMessage");
 
         IF_FALSE_GO(dwLogCategory < FUSION_BIND_LOG_CATEGORY_MAX);
 
         m_content[dwLogCategory].AddTail(const_cast<const SString &>(sDebugString));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::LogMessage", hr);
         return hr;
     }
 
@@ -317,7 +311,6 @@ namespace BINDER_SPACE
                              DWORD dwLogCategory)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::Flush");
         SmallStackSString sCategory(LogCategoryToString(dwLogCategory));
         PathString logFilePath;
         ListNode<SString> *pListNode = NULL;
@@ -327,8 +320,6 @@ namespace BINDER_SPACE
         CombinePath(g_BinderVariables->logPath, sCategory, logFilePath);
         CombinePath(logFilePath, m_applicationName, logFilePath);
         CombinePath(logFilePath, m_logFileName, logFilePath);
-
-        BINDER_LOG_STRING(L"logFilePath", logFilePath);
 
         IF_FAIL_GO(CreateFilePathHierarchy(logFilePath.GetUnicode()));
 
@@ -343,7 +334,6 @@ namespace BINDER_SPACE
         if (m_hLogFile == INVALID_HANDLE_VALUE)
         {
             // Silently ignore unability to log.
-            BINDER_LOG(L"Unable to open binding log");
             GO_WITH_HRESULT(S_OK);
         }
 
@@ -366,7 +356,6 @@ namespace BINDER_SPACE
         CloseHandle(m_hLogFile.Extract());
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::Flush", hr);
         return hr;
     }
 
@@ -375,14 +364,12 @@ namespace BINDER_SPACE
                             SString            &sCodeBase)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::Init");
 
         m_applicationName.Set(pApplicationContext->GetApplicationName());
         ReplaceInvalidFileCharacters(m_applicationName);
 
         if (m_applicationName.IsEmpty())
         {
-            BINDER_LOG(L"empty application name");
             m_applicationName.Set(L"unknown");
         }
 
@@ -412,14 +399,12 @@ namespace BINDER_SPACE
             m_logFileName.Append(L".HTM");
         }
 
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::Init", hr);
         return hr;
     }
 
     HRESULT CDebugLog::LogHeader(DWORD dwLogCategory)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::LogHeader");
         PathString info;
         PathString temp;
         PathString format;
@@ -462,19 +447,16 @@ namespace BINDER_SPACE
         IF_FAIL_GO(WriteLog(m_hLogFile, DEBUG_LOG_NEW_LINE DEBUG_LOG_NEW_LINE));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::LogHeader", hr);
         return hr;
     }
 
     HRESULT CDebugLog::LogFooter(DWORD)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"CDebugLog::LogFooter");
 
         IF_FAIL_GO(WriteLog(m_hLogFile, DEBUG_LOG_HTML_END));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"CDebugLog::LogFooter", hr);
         return hr;
     }
 };

@@ -81,8 +81,6 @@ namespace BINDER_SPACE
 
     Assembly::~Assembly()
     {
-        BINDER_LOG_ASSEMBLY_NAME(L"destructing assembly", m_pAssemblyName);
-
         if (m_pPEImage != NULL)
         {
             BinderReleasePEImage(m_pPEImage);
@@ -109,7 +107,6 @@ namespace BINDER_SPACE
                            BOOL                     fIsInGAC)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"Assembly::Init");
 
         ReleaseHolder<AssemblyName> pAssemblyName;
         SAFE_NEW(pAssemblyName, AssemblyName);
@@ -121,10 +118,6 @@ namespace BINDER_SPACE
         {
             GetPath().Set(assemblyPath);
         }
-
-        BINDER_LOG_ASSEMBLY_NAME(L"AssemblyNameDef", pAssemblyName);
-        BINDER_LOG_STRING(L"System Architecture",
-                          AssemblyName::ArchitectureToString(GetSystemArchitecture()));
 
         // Safe architecture for validation
         PEKIND kAssemblyArchitecture;
@@ -145,7 +138,6 @@ namespace BINDER_SPACE
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"Assembly::Init", hr);
         return hr;
     }
 

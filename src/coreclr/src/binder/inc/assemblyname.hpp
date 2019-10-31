@@ -68,15 +68,8 @@ namespace BINDER_SPACE
         inline void SetHave(DWORD dwIdentityFlags);
 
         inline BOOL HaveAssemblyVersion();
-        inline BOOL HaveNeutralCulture();
-
-        SString &GetDeNormalizedCulture();
-        BOOL IsStronglyNamed();
 
         BOOL IsMscorlib();
-
-        // Translate textual identity into appropriate PEKIND
-        HRESULT SetArchitecture(SString &architecture);
 
         ULONG Hash(/* in */ DWORD dwIncludeFlags);
         BOOL Equals(/* in */ AssemblyName *pAssemblyName,
@@ -87,7 +80,6 @@ namespace BINDER_SPACE
         void GetDisplayName(/* out */ PathString &displayName,
                             /* in */  DWORD       dwIncludeFlags);
 
-        static SString &ArchitectureToString(PEKIND kArchitecture);        
     protected:
         enum
         {
