@@ -342,14 +342,11 @@ namespace System
         //   For this reason it returns a char[] that is usually the same ref as the input "dest" value.
         //
         internal static unsafe void UnescapeString(string input, int start, int end, ref ValueStringBuilder dest,
-            ref int destPosition, char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax,
-            bool isQuery)
+            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
             fixed (char* pStr = input)
             {
-                UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode,
-                    syntax, isQuery);
-                destPosition = dest.Length;
+                UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
         internal static unsafe void UnescapeString(char* pStr, int start, int end, ref ValueStringBuilder dest,

@@ -546,30 +546,21 @@ namespace System
             if (stringToUnescape.Length == 0)
                 return string.Empty;
 
-            unsafe
-            {
-                fixed (char* pStr = stringToUnescape)
-                {
-                    int position;
-                    for (position = 0; position < stringToUnescape.Length; ++position)
-                        if (pStr[position] == '%')
-                            break;
+            int position = stringToUnescape.IndexOf('%');
+            if (position == -1)
+                return stringToUnescape;
 
-                    if (position == stringToUnescape.Length)
-                        return stringToUnescape;
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            vsb.EnsureCapacity(stringToUnescape.Length);
 
-                    UnescapeMode unescapeMode = UnescapeMode.Unescape | UnescapeMode.UnescapeAll;
-                    position = 0;
-                    ValueStringBuilder vsb = new ValueStringBuilder(stringToUnescape.Length);
-                    UriHelper.UnescapeString(stringToUnescape, 0, stringToUnescape.Length, ref vsb, ref position,
-                        c_DummyChar, c_DummyChar, c_DummyChar, unescapeMode, null, false);
+            vsb.Append(stringToUnescape.AsSpan(0, position));
+            UriHelper.UnescapeString(
+                stringToUnescape, position, stringToUnescape.Length, ref vsb,
+                c_DummyChar, c_DummyChar, c_DummyChar,
+                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                syntax: null, isQuery: false);
 
-                    ReadOnlySpan<char> resultSpan = vsb.AsSpan(0, position);
-                    string result = resultSpan.SequenceEqual(stringToUnescape) ? stringToUnescape : resultSpan.ToString();
-                    vsb.Dispose();
-                    return result;
-                }
-            }
+            return vsb.ToString();
         }
 
         // Where stringToEscape is intended to be a completely unescaped URI string.
