@@ -88,7 +88,7 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
-            int processorCount = PlatformHelper.ProcessorCount;
+            int processorCount = Environment.ProcessorCount;
             int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
             while (spinIndex < _spinCount)
             {

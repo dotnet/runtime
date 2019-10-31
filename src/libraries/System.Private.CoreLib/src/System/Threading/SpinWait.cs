@@ -86,7 +86,7 @@ namespace System.Threading
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
         /// </remarks>
-        internal static readonly int SpinCountforSpinBeforeWait = PlatformHelper.IsSingleProcessor ? 1 : 35;
+        internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
 
         // The number of times we've spun already.
         private int _count;
@@ -114,7 +114,7 @@ namespace System.Threading
         /// On a single-CPU machine, <see cref="SpinOnce()"/> always yields the processor. On machines with
         /// multiple CPUs, <see cref="SpinOnce()"/> may yield after an unspecified number of calls.
         /// </remarks>
-        public bool NextSpinWillYield => _count >= YieldThreshold || PlatformHelper.IsSingleProcessor;
+        public bool NextSpinWillYield => _count >= YieldThreshold || Environment.IsSingleProcessor;
 
         /// <summary>
         /// Performs a single spin.
@@ -175,7 +175,7 @@ namespace System.Threading
                     _count >= YieldThreshold &&
                     ((_count >= sleep1Threshold && sleep1Threshold >= 0) || (_count - YieldThreshold) % 2 == 0)
                 ) ||
-                PlatformHelper.IsSingleProcessor)
+                Environment.IsSingleProcessor)
             {
                 //
                 // We must yield.
@@ -345,43 +345,5 @@ namespace System.Threading
             return true;
         }
         #endregion
-    }
-
-    /// <summary>
-    /// A helper class to get the number of processors, it updates the numbers of processors every sampling interval.
-    /// </summary>
-    internal static class PlatformHelper
-    {
-        private const int PROCESSOR_COUNT_REFRESH_INTERVAL_MS = 30000; // How often to refresh the count, in milliseconds.
-        private static volatile int s_processorCount; // The last count seen.
-        private static volatile int s_lastProcessorCountRefreshTicks; // The last time we refreshed.
-
-        /// <summary>
-        /// Gets the number of available processors
-        /// </summary>
-        internal static int ProcessorCount
-        {
-            get
-            {
-                int now = Environment.TickCount;
-                int procCount = s_processorCount;
-                if (procCount == 0 || (now - s_lastProcessorCountRefreshTicks) >= PROCESSOR_COUNT_REFRESH_INTERVAL_MS)
-                {
-                    s_processorCount = procCount = Environment.ProcessorCount;
-                    s_lastProcessorCountRefreshTicks = now;
-                }
-
-                Debug.Assert(procCount > 0,
-                    "Processor count should be greater than 0.");
-
-                return procCount;
-            }
-        }
-
-        /// <summary>
-        /// Gets whether the current machine has only a single processor.
-        /// </summary>
-        /// <remarks>This typically does not change on a machine, so it's checked only once.</remarks>
-        internal static readonly bool IsSingleProcessor = ProcessorCount == 1;
     }
 }

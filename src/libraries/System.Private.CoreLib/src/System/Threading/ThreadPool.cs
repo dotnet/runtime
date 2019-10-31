@@ -25,8 +25,6 @@ namespace System.Threading
 {
     internal static class ThreadPoolGlobals
     {
-        public static readonly int processorCount = Environment.ProcessorCount;
-
         public static volatile bool threadPoolInitialized;
         public static bool enableWorkerTracking;
 
@@ -436,7 +434,7 @@ namespace System.Threading
             // by the VM by the time we reach this point.
             //
             int count = numOutstandingThreadRequests;
-            while (count < ThreadPoolGlobals.processorCount)
+            while (count < Environment.ProcessorCount)
             {
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
