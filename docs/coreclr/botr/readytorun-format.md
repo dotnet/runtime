@@ -460,7 +460,50 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Hashtable
 
-**TODO**: Document native format hashtable
+Conceptually, a native hash table is a header that describe the dimensions of the table, a table that maps hash values of the keys to buckets followed with a list of buckets that store the values. These three things are stored consecutively in the format.
+
+To make look up fast, the number of buckets is always a power of 2. The table is simply a sequence of `(1 + number of buckets)` cells, for the first `(number of buckets)` cells, its stores the offset of the bucket list from the beginning of the whole native hash table. The last cell stores the offset to the end of the buckets.
+
+Each bucket is a sequence of entries. An entry has a hash code and an offset to the object stored. The entries are sorted by hash code.
+
+Physically, the header is a single byte. The most significant six bits is used to store the number of buckets in its base-2 logarithm. The remaining two bits are used for storing the entry size, as explained below:
+
+Because the offsets to the bucket lists are often small numbers, the table cells are variable sized. 
+It could be either 1 byte, 2 bytes or 4 bytes. The three cases are described with two bits. `00` means it is one byte, `01` means it is two bytes and `10` means it is four bytes.
+
+The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table.
+
+To perform a lookup, one starts with reading the header, computing the hash code, using the number of buckets to determine the number of bits to mask away from the hash code, look it up in the table using the right pointer size, find the bucket list, find the next bucket list (or the end of the table) so that we know where to stop, search the entries in that list and then we will find the object if we have a hit, or we have a miss.
+
+To enumerate all the values, simply walk from the first entry and go all the way to the end of the hash table. 
+
+To see this in action, we can take a look at the following example, with these objects placed in the native hash table.
+
+| Object | HashCode |
+|:-------|:--------:|
+| P      | 0x1231   |
+| Q      | 0x1232   |
+| R      | 0x1234   |
+| S      | 0x1238   |
+
+Suppose we decided to have only two buckets, then only the least signficant digit will be used to index the table, the whole hash table will look like this:
+
+| Part    | Offset | Content  | Meaning                                                                                                                                                                                   |
+|:--------|:-------|:--------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Header  | 0      | 0x04     | This is the header, the least signficant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
+| Table   | 1      | 0x08     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
+| Table   | 2      | 0x14     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
+| Table   | 3      | 0x18     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
+| Bucket1 | 4      | 0x32     | This is the least significant byte of the hash code of P                                                                                                                                  |
+| Bucket1 | 5      | P        | This should be the offset to the object P                                                                                                                                                 |
+| Bucket1 | 6      | 0x34     | This is the least significant byte of the hash code of Q                                                                                                                                  |
+| Bucket1 | 7      | Q        | This should be the offset to the object Q                                                                                                                                                 |
+| Bucket1 | 8      | 0x38     | This is the least significant byte of the hash code of R                                                                                                                                  |
+| Bucket1 | 9      | R        | This should be the offset to the object R                                                                                                                                                 |
+| Bucket2 | 10     | 0x31     | This is the least significant byte of the hash code of S                                                                                                                                  |
+| Bucket2 | 11     | S        | This should be the offset to the object S                                                                                                                                                 |
+
+
 
 # Helper calls
 
