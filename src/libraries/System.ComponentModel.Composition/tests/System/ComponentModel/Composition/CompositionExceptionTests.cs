@@ -14,6 +14,7 @@ using System.Text;
 using System.UnitTesting;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.ComponentModel.Composition
 {
@@ -416,10 +417,12 @@ namespace System.ComponentModel.Composition
                 }
                 else
                 {
-                    Assert.True(
-                        line.Contains(string.Format(CultureInfo.CurrentCulture, SR.CompositionException_SingleErrorWithMultiplePaths, rootCauseCount)) ||
-                        line.Contains(string.Format(CultureInfo.CurrentCulture, SR.CompositionException_MultipleErrorsWithMultiplePaths, rootCauseCount))
-                        );
+                    string option1 = string.Format(CultureInfo.CurrentCulture, SR.CompositionException_SingleErrorWithMultiplePaths, rootCauseCount);
+                    string option2 = string.Format(CultureInfo.CurrentCulture, SR.CompositionException_MultipleErrorsWithMultiplePaths, rootCauseCount);
+                    if (!line.Contains(option1) && !line.Contains(option2))
+                    {
+                        throw new XunitException($"`{line}` contains neither `{option1}` nor `{option2}`");
+                    }
                 }
             }
         }
