@@ -349,7 +349,7 @@ namespace System.Threading
 
             // *** Step 2, Spinning and Yielding
             var spinner = new SpinWait();
-            if (turn > PlatformHelper.ProcessorCount)
+            if (turn > Environment.ProcessorCount)
             {
                 spinner.Count = SpinWait.YieldThreshold;
             }

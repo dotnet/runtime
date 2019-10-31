@@ -202,7 +202,7 @@ namespace System.Threading
             Debug.Assert(DEFAULT_SPIN_SP >= 0, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");
             Debug.Assert(DEFAULT_SPIN_SP <= SpinCountState_MaxValue, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");
 
-            SpinCount = PlatformHelper.IsSingleProcessor ? DEFAULT_SPIN_SP : spinCount;
+            SpinCount = Environment.IsSingleProcessor ? DEFAULT_SPIN_SP : spinCount;
         }
 
         /// <summary>
