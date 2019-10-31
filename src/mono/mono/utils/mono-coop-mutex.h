@@ -15,11 +15,14 @@
  * we use mono_os_(mutex|cond|sem)_... on MonoCoop(Mutex|Cond|Sem) structures */
 
 typedef struct _MonoCoopMutex MonoCoopMutex;
+typedef struct _MonoCoopCond MonoCoopCond;
+
+#ifndef DISABLE_THREADS
+
 struct _MonoCoopMutex {
 	mono_mutex_t m;
 };
 
-typedef struct _MonoCoopCond MonoCoopCond;
 struct _MonoCoopCond {
 	mono_cond_t c;
 };
@@ -129,5 +132,79 @@ mono_coop_cond_broadcast (MonoCoopCond *cond)
 	mono_os_cond_broadcast (&cond->c);
 	MONO_EXIT_GC_SAFE;
 }
+
+#else /* DISABLE_THREADS */
+
+struct _MonoCoopMutex {
+	int dummy;
+};
+
+struct _MonoCoopCond {
+	int dummy;
+};
+
+static inline void
+mono_coop_mutex_init (MonoCoopMutex *mutex)
+{
+}
+
+static inline void
+mono_coop_mutex_init_recursive (MonoCoopMutex *mutex)
+{
+}
+
+static inline void
+mono_coop_mutex_destroy (MonoCoopMutex *mutex)
+{
+}
+
+static inline void
+mono_coop_mutex_lock (MonoCoopMutex *mutex)
+{
+}
+
+static inline gint
+mono_coop_mutex_trylock (MonoCoopMutex *mutex)
+{
+	return 0;
+}
+
+static inline void
+mono_coop_mutex_unlock (MonoCoopMutex *mutex)
+{
+}
+
+static inline void
+mono_coop_cond_init (MonoCoopCond *cond)
+{
+}
+
+static inline void
+mono_coop_cond_destroy (MonoCoopCond *cond)
+{
+}
+
+static inline void
+mono_coop_cond_wait (MonoCoopCond *cond, MonoCoopMutex *mutex)
+{
+}
+
+static inline gint
+mono_coop_cond_timedwait (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms)
+{
+	return 0;
+}
+
+static inline void
+mono_coop_cond_signal (MonoCoopCond *cond)
+{
+}
+
+static inline void
+mono_coop_cond_broadcast (MonoCoopCond *cond)
+{
+}
+
+#endif /* DISABLE_THREADS */
 
 #endif /* __MONO_COOP_MUTEX_H__ */

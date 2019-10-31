@@ -43,6 +43,8 @@
 typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_cond_t mono_cond_t;
 
+#ifndef DISABLE_THREADS
+
 static inline void
 mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 {
@@ -126,6 +128,46 @@ mono_os_mutex_unlock (mono_mutex_t *mutex)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_unlock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
+
+#else /* DISABLE_THREADS */
+
+static inline void
+mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
+{
+}
+
+static inline void
+mono_os_mutex_init (mono_mutex_t *mutex)
+{
+}
+
+static inline void
+mono_os_mutex_init_recursive (mono_mutex_t *mutex)
+{
+}
+
+static inline void
+mono_os_mutex_destroy (mono_mutex_t *mutex)
+{
+}
+
+static inline void
+mono_os_mutex_lock (mono_mutex_t *mutex)
+{
+}
+
+static inline int
+mono_os_mutex_trylock (mono_mutex_t *mutex)
+{
+	return 0;
+}
+
+static inline void
+mono_os_mutex_unlock (mono_mutex_t *mutex)
+{
+}
+
+#endif /* DISABLE_THREADS */
 
 static inline void
 mono_os_cond_init (mono_cond_t *cond)
