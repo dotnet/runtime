@@ -4289,18 +4289,14 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
             {
                 bTest->bbFlags |= BBF_RUN_RARELY;
                 // All out edge weights are set to zero
-                edgeToNext->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edgeToNext->flEdgeWeightMax = BB_ZERO_WEIGHT;
-                edgeToJump->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edgeToJump->flEdgeWeightMax = BB_ZERO_WEIGHT;
+                edgeToNext->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT);
+                edgeToJump->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT);
             }
             else
             {
                 // Update the our edge weights
-                edgeToNext->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edgeToNext->flEdgeWeightMax = min(edgeToNext->flEdgeWeightMax, newWeightTest);
-                edgeToJump->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edgeToJump->flEdgeWeightMax = min(edgeToJump->flEdgeWeightMax, newWeightTest);
+                edgeToNext->setEdgeWeights(BB_ZERO_WEIGHT, min(edgeToNext->edgeWeightMax(), newWeightTest));
+                edgeToJump->setEdgeWeights(BB_ZERO_WEIGHT, min(edgeToJump->edgeWeightMax(), newWeightTest));
             }
         }
     }
@@ -7399,9 +7395,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(edgeToJump != nullptr);
 
                     loopEnteredCount =
-                        ((double)edgeToNext->flEdgeWeightMin + (double)edgeToNext->flEdgeWeightMax) / 2.0;
+                        ((double)edgeToNext->edgeWeightMin() + (double)edgeToNext->edgeWeightMax()) / 2.0;
                     loopSkippedCount =
-                        ((double)edgeToJump->flEdgeWeightMin + (double)edgeToJump->flEdgeWeightMax) / 2.0;
+                        ((double)edgeToJump->edgeWeightMin() + (double)edgeToJump->edgeWeightMax()) / 2.0;
                 }
                 else
                 {
@@ -9089,17 +9085,15 @@ void Compiler::optOptimizeBools()
             noway_assert(edge1 != nullptr);
             noway_assert(edge2 != nullptr);
 
-            BasicBlock::weight_t edgeSumMin = edge1->flEdgeWeightMin + edge2->flEdgeWeightMin;
-            BasicBlock::weight_t edgeSumMax = edge1->flEdgeWeightMax + edge2->flEdgeWeightMax;
-            if ((edgeSumMax >= edge1->flEdgeWeightMax) && (edgeSumMax >= edge2->flEdgeWeightMax))
+            BasicBlock::weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
+            BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
+            if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
             {
-                edge1->flEdgeWeightMin = edgeSumMin;
-                edge1->flEdgeWeightMax = edgeSumMax;
+                edge1->setEdgeWeights(edgeSumMin, edgeSumMax);
             }
             else
             {
-                edge1->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edge1->flEdgeWeightMax = BB_MAX_WEIGHT;
+                edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
             }
 
             /* Get rid of the second block (which is a BBJ_COND) */

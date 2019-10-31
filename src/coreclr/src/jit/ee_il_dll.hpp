@@ -109,6 +109,13 @@ inline var_types Compiler::eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SI
     return JITtype2varType(strip(type));
 }
 
+/*****************************************************************************/
+inline CORINFO_CLASS_HANDLE Compiler::eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list)
+{
+    CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, list);
+    return argClass;
+}
+
 /*****************************************************************************
  *
  *                  Native Direct Optimizations

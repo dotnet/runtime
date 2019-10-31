@@ -28,10 +28,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 /*****************************************************************************
-*
-*  Filter wrapper to handle exception filtering.
-*  On Unix compilers don't support SEH.
-*/
+ *
+ *  Filter wrapper to handle exception filtering.
+ *  On Unix compilers don't support SEH.
+ */
 
 struct FilterSuperPMIExceptionsParam_eeinterface
 {
@@ -43,6 +43,7 @@ struct FilterSuperPMIExceptionsParam_eeinterface
     CORINFO_ARG_LIST_HANDLE argLst;
     CORINFO_METHOD_HANDLE   hnd;
     const char*             returnType;
+    const char**            pArgNames;
     EXCEPTION_POINTERS      exceptionPointers;
 };
 
@@ -103,17 +104,50 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 
     /* figure out the signature */
 
+    param.pThis->eeGetMethodSig(param.hnd, &param.sig);
+
+    // allocate space to hold the class names for each of the parameters
+
+    if (param.sig.numArgs > 0)
+    {
+        param.pArgNames = getAllocator(CMK_DebugOnly).allocate<const char*>(param.sig.numArgs);
+    }
+    else
+    {
+        param.pArgNames = nullptr;
+    }
+
     PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
     {
         unsigned i;
-        pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
         pParam->argLst = pParam->sig.args;
 
         for (i = 0; i < pParam->sig.numArgs; i++)
         {
             var_types type = pParam->pThis->eeGetArgType(pParam->argLst, &pParam->sig);
-
-            pParam->siglength += strlen(varTypeName(type));
+            switch (type)
+            {
+                case TYP_REF:
+                case TYP_STRUCT:
+                {
+                    CORINFO_CLASS_HANDLE clsHnd = pParam->pThis->eeGetArgClass(&pParam->sig, pParam->argLst);
+                    // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
+                        if (clsName != nullptr)
+                        {
+                            pParam->pArgNames[i] = clsName;
+                            break;
+                        }
+                    }
+                }
+                    __fallthrough;
+                default:
+                    pParam->pArgNames[i] = varTypeName(type);
+                    break;
+            }
+            pParam->siglength += strlen(pParam->pArgNames[i]);
             pParam->argLst = pParam->pJitInfo->compCompHnd->getArgNext(pParam->argLst);
         }
 
@@ -124,9 +158,30 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
             pParam->siglength += (pParam->sig.numArgs - 1);
         }
 
-        if (JITtype2varType(pParam->sig.retType) != TYP_VOID)
+        var_types retType = JITtype2varType(pParam->sig.retType);
+        if (retType != TYP_VOID)
         {
-            pParam->returnType = varTypeName(JITtype2varType(pParam->sig.retType));
+            switch (retType)
+            {
+                case TYP_REF:
+                case TYP_STRUCT:
+                {
+                    CORINFO_CLASS_HANDLE clsHnd = pParam->sig.retTypeClass;
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
+                        if (clsName != nullptr)
+                        {
+                            pParam->returnType = clsName;
+                            break;
+                        }
+                    }
+                }
+                    __fallthrough;
+                default:
+                    pParam->returnType = varTypeName(retType);
+                    break;
+            }
             pParam->siglength += strlen(pParam->returnType) + 1; // don't forget the delimiter ':'
         }
 
@@ -175,8 +230,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
         for (i = 0; i < param.sig.numArgs; i++)
         {
             var_types type = eeGetArgType(param.argLst, &param.sig);
-            strcat_s(retName, length, varTypeName(type));
-
+            strcat_s(retName, length, param.pArgNames[i]);
             param.argLst = info.compCompHnd->getArgNext(param.argLst);
             if (i + 1 < param.sig.numArgs)
             {
