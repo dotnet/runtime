@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions
     {
         public readonly int[] Positive;
         public readonly int[] NegativeASCII;
-        public readonly int[][] NegativeUnicode;
+        public readonly int[][]? NegativeUnicode;
         public readonly string Pattern;
         public readonly int LowASCII;
         public readonly int HighASCII;

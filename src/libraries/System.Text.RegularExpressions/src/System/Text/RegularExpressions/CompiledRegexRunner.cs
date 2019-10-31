@@ -6,9 +6,9 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class CompiledRegexRunner : RegexRunner
     {
-        private Action<RegexRunner> _goMethod;
-        private Func<RegexRunner, bool> _findFirstCharMethod;
-        private Action<RegexRunner> _initTrackCountMethod;
+        private Action<RegexRunner>? _goMethod;
+        private Func<RegexRunner, bool>? _findFirstCharMethod;
+        private Action<RegexRunner>? _initTrackCountMethod;
 
         public CompiledRegexRunner() { }
 
@@ -21,17 +21,17 @@ namespace System.Text.RegularExpressions
 
         protected override void Go()
         {
-            _goMethod(this);
+            _goMethod!(this);
         }
 
         protected override bool FindFirstChar()
         {
-            return _findFirstCharMethod(this);
+            return _findFirstCharMethod!(this);
         }
 
         protected override void InitTrackCount()
         {
-            _initTrackCountMethod(this);
+            _initTrackCountMethod!(this);
         }
     }
 }

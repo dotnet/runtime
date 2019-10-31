@@ -11,8 +11,8 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal sealed class ExclusiveReference
     {
-        private RegexRunner _ref;
-        private RegexRunner _obj;
+        private RegexRunner? _ref;
+        private RegexRunner? _obj;
         private volatile int _locked;
 
         /// <summary>
@@ -21,14 +21,14 @@ namespace System.Text.RegularExpressions
         /// If the exclusive lock can't be obtained, null is returned;
         /// if the object can't be returned, the lock is released.
         /// </summary>
-        public RegexRunner Get()
+        public RegexRunner? Get()
         {
             // try to obtain the lock
 
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {
                 // grab reference
-                RegexRunner obj = _ref;
+                RegexRunner? obj = _ref;
 
                 // release the lock and return null if no reference
                 if (obj == null)

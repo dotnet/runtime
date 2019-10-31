@@ -45,7 +45,7 @@ namespace System.Text.RegularExpressions
                 switch (child.Type())
                 {
                     case RegexNode.Multi:
-                        vsb.Append(child.Str);
+                        vsb.Append(child.Str!);
                         break;
 
                     case RegexNode.One:
@@ -62,7 +62,7 @@ namespace System.Text.RegularExpressions
                         int slot = child.M;
 
                         if (_caps != null && slot >= 0)
-                            slot = (int)_caps[slot];
+                            slot = (int)_caps[slot]!;
 
                         rules.Add(-Specials - 1 - slot);
                         break;
@@ -90,7 +90,7 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement> replRef, string replacement, Hashtable caps,
             int capsize, Hashtable capnames, RegexOptions roptions)
         {
-            RegexReplacement repl;
+            RegexReplacement? repl;
 
             if (!replRef.TryGetTarget(out repl) || !repl.Pattern.Equals(replacement))
             {

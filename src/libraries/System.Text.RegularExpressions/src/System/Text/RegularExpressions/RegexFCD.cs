@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions
             Span<int> intSpan = stackalloc int[StackBufferSize];
 
             RegexFCD s = new RegexFCD(intSpan);
-            RegexFC fc = s.RegexFCFromRegexTree(t);
+            RegexFC? fc = s.RegexFCFromRegexTree(t);
             s.Dispose();
 
             if (fc == null || fc._nullable)
@@ -76,7 +76,7 @@ namespace System.Text.RegularExpressions
         public static RegexPrefix Prefix(RegexTree tree)
         {
             RegexNode curNode = tree.Root;
-            RegexNode concatNode = null;
+            RegexNode? concatNode = null;
             int nextChild = 0;
 
             while (true)
@@ -121,7 +121,7 @@ namespace System.Text.RegularExpressions
                         return new RegexPrefix(curNode.Ch.ToString(), 0 != (curNode.Options & RegexOptions.IgnoreCase));
 
                     case RegexNode.Multi:
-                        return new RegexPrefix(curNode.Str, 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                        return new RegexPrefix(curNode.Str!, 0 != (curNode.Options & RegexOptions.IgnoreCase));
 
                     case RegexNode.Bol:
                     case RegexNode.Eol:
@@ -154,7 +154,7 @@ namespace System.Text.RegularExpressions
         public static int Anchors(RegexTree tree)
         {
             RegexNode curNode;
-            RegexNode concatNode = null;
+            RegexNode? concatNode = null;
             int nextChild = 0;
             int result = 0;
 
@@ -307,9 +307,9 @@ namespace System.Text.RegularExpressions
         /// through the tree and calls CalculateFC to emits code before
         /// and after each child of an interior node, and at each leaf.
         /// </summary>
-        private RegexFC RegexFCFromRegexTree(RegexTree tree)
+        private RegexFC? RegexFCFromRegexTree(RegexTree tree)
         {
-            RegexNode curNode = tree.Root;
+            RegexNode? curNode = tree.Root;
             int curChild = 0;
 
             while (true)
@@ -349,7 +349,7 @@ namespace System.Text.RegularExpressions
                 curChild = PopInt();
                 curNode = curNode.Next;
 
-                CalculateFC(curNode.NType | AfterChild, curNode, curChild);
+                CalculateFC(curNode!.NType | AfterChild, curNode, curChild);
                 if (_failed)
                     return null;
 
@@ -478,7 +478,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Multi:
-                    if (node.Str.Length == 0)
+                    if (node.Str!.Length == 0)
                         PushFC(new RegexFC(true));
                     else if (!rtl)
                         PushFC(new RegexFC(node.Str[0], false, false, ci));
@@ -487,12 +487,12 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Set:
-                    PushFC(new RegexFC(node.Str, false, ci));
+                    PushFC(new RegexFC(node.Str!, false, ci));
                     break;
 
                 case RegexNode.Setloop:
                 case RegexNode.Setlazy:
-                    PushFC(new RegexFC(node.Str, node.M == 0, ci));
+                    PushFC(new RegexFC(node.Str!, node.M == 0, ci));
                     break;
 
                 case RegexNode.Ref:

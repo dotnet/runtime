@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions
         private ValueListBuilder<int> _intStack;
         private readonly Dictionary<string, int> _stringHash;
         private readonly List<string> _stringTable;
-        private Hashtable _caps;
+        private Hashtable? _caps;
         private int _trackCount;
 
         private RegexWriter(Span<int> emittedSpan, Span<int> intStackSpan)
@@ -98,7 +98,7 @@ namespace System.Text.RegularExpressions
                     _caps[tree.CapNumList[i]] = i;
             }
 
-            RegexNode curNode = tree.Root;
+            RegexNode? curNode = tree.Root;
             int curChild = 0;
 
             Emit(RegexCode.Lazybranch, 0);
@@ -125,7 +125,7 @@ namespace System.Text.RegularExpressions
                 curChild = _intStack.Pop();
                 curNode = curNode.Next;
 
-                EmitFragment(curNode.NType | AfterChild, curNode, curChild);
+                EmitFragment(curNode!.NType | AfterChild, curNode, curChild);
                 curChild++;
             }
 
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions
             bool rtl = ((tree.Options & RegexOptions.RightToLeft) != 0);
 
             CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            RegexBoyerMoore bmPrefix;
+            RegexBoyerMoore? bmPrefix;
 
             if (prefix.Prefix.Length > 0)
                 bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions
         /// Returns an index in the string table for a string;
         /// uses a hashtable to eliminate duplicates.
         /// </summary>
-        private int StringCode(string str)
+        private int StringCode(string? str)
         {
             if (str == null)
                 str = string.Empty;
@@ -229,7 +229,7 @@ namespace System.Text.RegularExpressions
                 return -1;
 
             if (_caps != null)
-                return (int)_caps[capnum];
+                return (int)_caps[capnum]!;
             else
                 return capnum;
         }
@@ -259,7 +259,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Alternate | BeforeChild:
-                    if (curIndex < node.Children.Count - 1)
+                    if (curIndex < node.Children!.Count - 1)
                     {
                         _intStack.Append(_emitted.Length);
                         Emit(RegexCode.Lazybranch, 0);
@@ -268,7 +268,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.Alternate | AfterChild:
                     {
-                        if (curIndex < node.Children.Count - 1)
+                        if (curIndex < node.Children!.Count - 1)
                         {
                             int LBPos = _intStack.Pop();
                             _intStack.Append(_emitted.Length);
@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions
                                 Emit(RegexCode.Goto, 0);
                                 PatchJump(Branchpos, _emitted.Length);
                                 Emit(RegexCode.Forejump);
-                                if (node.Children.Count > 1)
+                                if (node.Children!.Count > 1)
                                     break;
                                 // else fallthrough
                                 goto case 1;
@@ -347,7 +347,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexCode.Getmark);
                             Emit(RegexCode.Forejump);
 
-                            if (node.Children.Count > 2)
+                            if (node.Children!.Count > 2)
                                 break;
                             // else fallthrough
                             goto case 2;

@@ -72,7 +72,7 @@ namespace System.Text.RegularExpressions
                 if (i < 0)
                     throw new ArgumentOutOfRangeException(nameof(i));
 
-                Match match = GetMatch(i);
+                Match? match = GetMatch(i);
 
                 if (match == null)
                     throw new ArgumentOutOfRangeException(nameof(i));
@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
 
         IEnumerator<Match> IEnumerable<Match>.GetEnumerator() => new Enumerator(this);
 
-        private Match GetMatch(int i)
+        private Match? GetMatch(int i)
         {
             Debug.Assert(i >= 0, "i cannot be negative.");
 
@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions
 
             do
             {
-                match = _regex.Run(false, _prevlen, _input, _beginning, _length, _startat);
+                match = _regex.Run(false, _prevlen, _input, _beginning, _length, _startat)!;
 
                 if (!match.Success)
                 {
@@ -186,7 +186,7 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
@@ -196,20 +196,20 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        bool IList.Contains(object value) =>
+        bool IList.Contains(object? value) =>
             value is Match && ((ICollection<Match>)this).Contains((Match)value);
 
-        int IList.IndexOf(object value) =>
+        int IList.IndexOf(object? value) =>
             value is Match ? ((IList<Match>)this).IndexOf((Match)value) : -1;
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
         bool IList.IsFixedSize => true;
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
@@ -219,7 +219,7 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return this[index]; }
             set { throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection); }
@@ -244,7 +244,7 @@ namespace System.Text.RegularExpressions
                     return false;
 
                 _index++;
-                Match match = _collection.GetMatch(_index);
+                Match? match = _collection.GetMatch(_index);
 
                 if (match == null)
                 {
@@ -262,7 +262,7 @@ namespace System.Text.RegularExpressions
                     if (_index < 0)
                         throw new InvalidOperationException(SR.EnumNotStarted);
 
-                    return _collection.GetMatch(_index);
+                    return _collection.GetMatch(_index)!;
                 }
             }
 

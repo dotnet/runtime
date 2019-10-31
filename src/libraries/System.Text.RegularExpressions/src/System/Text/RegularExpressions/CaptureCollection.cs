@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions
     {
         private readonly Group _group;
         private readonly int _capcount;
-        private Capture[] _captures;
+        private Capture[]? _captures;
 
         internal CaptureCollection(Group group)
         {
@@ -68,6 +68,7 @@ namespace System.Text.RegularExpressions
             if (_captures == null)
             {
                 ForceInitialized();
+                Debug.Assert(_captures != null);
             }
 
             return _captures[i];
@@ -162,7 +163,7 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
@@ -172,20 +173,20 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        bool IList.Contains(object value) =>
+        bool IList.Contains(object? value) =>
             value is Capture && ((ICollection<Capture>)this).Contains((Capture)value);
 
-        int IList.IndexOf(object value) =>
+        int IList.IndexOf(object? value) =>
             value is Capture ? ((IList<Capture>)this).IndexOf((Capture)value) : -1;
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
         bool IList.IsFixedSize => true;
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
@@ -195,7 +196,7 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return this[index]; }
             set { throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection); }

@@ -25,10 +25,10 @@ namespace System.Text.RegularExpressions
         protected internal int runtextend;         // end of text to search
         protected internal int runtextstart;       // starting point for search
 
-        protected internal string runtext;         // text to search
+        protected internal string? runtext;        // text to search
         protected internal int runtextpos;         // current position in text
 
-        protected internal int[] runtrack;         // The backtracking stack.  Opcodes use this to store data regarding
+        protected internal int[]? runtrack;        // The backtracking stack.  Opcodes use this to store data regarding
         protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on
                                                    // the stack takes the form of [CodePosition Data1 Data2...], where
                                                    // CodePosition is the position of the current opcode and
@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions
                                                    // with a backtracking flag ("Back").  Each opcode then knows how to
                                                    // handle its own data.
 
-        protected internal int[] runstack;         // This stack is used to track text positions across different opcodes.
+        protected internal int[]? runstack;        // This stack is used to track text positions across different opcodes.
         protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
                                                    // pair. SetMark records the text position before we match a*b.  Then
                                                    // CaptureMark uses that position to figure out where the capture starts.
@@ -49,14 +49,14 @@ namespace System.Text.RegularExpressions
                                                    // which will pop the value from it later.  A successful match should mean
                                                    // that this stack is empty.
 
-        protected internal int[] runcrawl;         // The crawl stack is used to keep track of captures.  Every time a group
+        protected internal int[]? runcrawl;        // The crawl stack is used to keep track of captures.  Every time a group
         protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In
                                                    // the case of a balanced match, we push BOTH groups onto the stack.
 
         protected internal int runtrackcount;      // count of states that may do backtracking
 
-        protected internal Match runmatch;         // result object
-        protected internal Regex runregex;         // regex object
+        protected internal Match? runmatch;        // result object
+        protected internal Regex? runregex;        // regex object
 
         private int _timeout;              // timeout in milliseconds (needed for actual)
         private bool _ignoreTimeout;
@@ -84,12 +84,12 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
+        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
         {
             return Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
         }
 
-        protected internal Match Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
             int bump;
             int stoppos;
@@ -155,16 +155,16 @@ namespace System.Text.RegularExpressions
 #endif
                     Go();
 
-                    if (runmatch._matchcount[0] > 0)
+                    if (runmatch!._matchcount[0] > 0)
                     {
                         // We'll return a match even if it touches a previous empty match
                         return TidyMatch(quick);
                     }
 
                     // reset state for another go
-                    runtrackpos = runtrack.Length;
-                    runstackpos = runstack.Length;
-                    runcrawlpos = runcrawl.Length;
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
                 }
 
                 // failure!
@@ -228,7 +228,7 @@ namespace System.Text.RegularExpressions
                 return;
 
 #if DEBUG
-            if (runregex.Debug)
+            if (runregex!.Debug)
             {
                 Debug.WriteLine("");
                 Debug.WriteLine("RegEx match timeout occurred!");
@@ -240,7 +240,7 @@ namespace System.Text.RegularExpressions
             }
 #endif
 
-            throw new RegexMatchTimeoutException(runtext, runregex.pattern, TimeSpan.FromMilliseconds(_timeout));
+            throw new RegexMatchTimeoutException(runtext!, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
         /// <summary>
@@ -274,14 +274,14 @@ namespace System.Text.RegularExpressions
 
             if (runmatch == null)
             {
-                if (runregex.caps != null)
-                    runmatch = new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+                if (runregex!.caps != null)
+                    runmatch = new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
                 else
-                    runmatch = new Match(runregex, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+                    runmatch = new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
             }
             else
             {
-                runmatch.Reset(runregex, runtext, runtextbeg, runtextend, runtextstart);
+                runmatch.Reset(runregex!, runtext!, runtextbeg, runtextend, runtextstart);
             }
 
             // note we test runcrawl, because it is the last one to be allocated
@@ -291,8 +291,8 @@ namespace System.Text.RegularExpressions
 
             if (runcrawl != null)
             {
-                runtrackpos = runtrack.Length;
-                runstackpos = runstack.Length;
+                runtrackpos = runtrack!.Length;
+                runstackpos = runstack!.Length;
                 runcrawlpos = runcrawl.Length;
                 return;
             }
@@ -320,11 +320,11 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Put match in its canonical form before returning it.
         /// </summary>
-        private Match TidyMatch(bool quick)
+        private Match? TidyMatch(bool quick)
         {
             if (!quick)
             {
-                Match match = runmatch;
+                Match match = runmatch!;
 
                 runmatch = null;
 
@@ -358,14 +358,14 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsWordChar(runtext[index - 1])) !=
-                   (index < endpos && RegexCharClass.IsWordChar(runtext[index]));
+            return (index > startpos && RegexCharClass.IsWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsWordChar(runtext![index]));
         }
 
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext[index - 1])) !=
-                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext[index]));
+            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
         }
 
         protected static bool CharInSet(char ch, string set, string category)
@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions
         {
             int[] newtrack;
 
-            newtrack = new int[runtrack.Length * 2];
+            newtrack = new int[runtrack!.Length * 2];
 
             Array.Copy(runtrack, 0, newtrack, runtrack.Length, runtrack.Length);
             runtrackpos += runtrack.Length;
@@ -402,7 +402,7 @@ namespace System.Text.RegularExpressions
         {
             int[] newstack;
 
-            newstack = new int[runstack.Length * 2];
+            newstack = new int[runstack!.Length * 2];
 
             Array.Copy(runstack, 0, newstack, runstack.Length, runstack.Length);
             runstackpos += runstack.Length;
@@ -416,7 +416,7 @@ namespace System.Text.RegularExpressions
         {
             int[] newcrawl;
 
-            newcrawl = new int[runcrawl.Length * 2];
+            newcrawl = new int[runcrawl!.Length * 2];
 
             Array.Copy(runcrawl, 0, newcrawl, runcrawl.Length, runcrawl.Length);
             runcrawlpos += runcrawl.Length;
@@ -431,7 +431,7 @@ namespace System.Text.RegularExpressions
             if (runcrawlpos == 0)
                 DoubleCrawl();
 
-            runcrawl[--runcrawlpos] = i;
+            runcrawl![--runcrawlpos] = i;
         }
 
         /// <summary>
@@ -439,7 +439,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected int Popcrawl()
         {
-            return runcrawl[runcrawlpos++];
+            return runcrawl![runcrawlpos++];
         }
 
         /// <summary>
@@ -447,7 +447,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected int Crawlpos()
         {
-            return runcrawl.Length - runcrawlpos;
+            return runcrawl!.Length - runcrawlpos;
         }
 
         /// <summary>
@@ -467,7 +467,7 @@ namespace System.Text.RegularExpressions
             }
 
             Crawl(capnum);
-            runmatch.AddMatch(capnum, start, end - start);
+            runmatch!.AddMatch(capnum, start, end - start);
         }
 
         /// <summary>
@@ -514,7 +514,7 @@ namespace System.Text.RegularExpressions
             }
 
             Crawl(uncapnum);
-            runmatch.BalanceMatch(uncapnum);
+            runmatch!.BalanceMatch(uncapnum);
 
             if (capnum != -1)
             {
@@ -529,7 +529,7 @@ namespace System.Text.RegularExpressions
         protected void Uncapture()
         {
             int capnum = Popcrawl();
-            runmatch.RemoveMatch(capnum);
+            runmatch!.RemoveMatch(capnum);
         }
 
         /// <summary>
@@ -537,7 +537,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsMatched(int cap)
         {
-            return runmatch.IsMatched(cap);
+            return runmatch!.IsMatched(cap);
         }
 
         /// <summary>
@@ -545,7 +545,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected int MatchIndex(int cap)
         {
-            return runmatch.MatchIndex(cap);
+            return runmatch!.MatchIndex(cap);
         }
 
         /// <summary>
@@ -553,7 +553,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected int MatchLength(int cap)
         {
-            return runmatch.MatchLength(cap);
+            return runmatch!.MatchLength(cap);
         }
 
 #if DEBUG
@@ -563,8 +563,8 @@ namespace System.Text.RegularExpressions
         internal virtual void DumpState()
         {
             Debug.WriteLine("Text:  " + TextposDescription());
-            Debug.WriteLine("Track: " + StackDescription(runtrack, runtrackpos));
-            Debug.WriteLine("Stack: " + StackDescription(runstack, runstackpos));
+            Debug.WriteLine("Track: " + StackDescription(runtrack!, runtrackpos));
+            Debug.WriteLine("Stack: " + StackDescription(runstack!, runstackpos));
         }
 
         private static string StackDescription(int[] a, int index)
@@ -602,7 +602,7 @@ namespace System.Text.RegularExpressions
                 sb.Append(' ', 8 - sb.Length);
 
             if (runtextpos > runtextbeg)
-                sb.Append(RegexCharClass.CharDescription(runtext[runtextpos - 1]));
+                sb.Append(RegexCharClass.CharDescription(runtext![runtextpos - 1]));
             else
                 sb.Append('^');
 
@@ -610,7 +610,7 @@ namespace System.Text.RegularExpressions
 
             for (int i = runtextpos; i < runtextend; i++)
             {
-                sb.Append(RegexCharClass.CharDescription(runtext[i]));
+                sb.Append(RegexCharClass.CharDescription(runtext![i]));
             }
             if (sb.Length >= 64)
             {

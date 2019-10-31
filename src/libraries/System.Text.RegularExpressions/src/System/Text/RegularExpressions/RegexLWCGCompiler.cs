@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions
         /*
          * Begins the definition of a new method (no args) with a specified return value
          */
-        public DynamicMethod DefineDynamicMethod(string methname, Type returntype, Type hostType)
+        public DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType)
         {
             // We're claiming that these are static methods, but really they are instance methods.
             // By giving them a parameter which represents "this", we're tricking them into
