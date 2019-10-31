@@ -7412,6 +7412,42 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
     if (call->IsVirtualStub())
     {
         call->gtFlags |= GTF_CALL_NULLCHECK;
+
+#if defined(_TARGET_AMD64_)
+        // If we already inited arg info here then we will have added the VSD
+        // arg on AMD64. So we remove it here as we will handle this case
+        // specially below.
+        fgArgInfo* argInfo = call->fgArgInfo;
+        assert(argInfo != nullptr);
+
+        GenTreeCall::Use* vsdArg = nullptr;
+
+        for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
+        {
+            fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
+            if (arg->isNonStandard)
+            {
+                // The only supported nonstandard arg for slow tailcalls is
+                // VSD arg.
+                assert(vsdArg == nullptr);
+                vsdArg = arg->use;
+#ifndef DEBUG
+                break;
+#endif
+            }
+        }
+
+        assert(vsdArg != nullptr);
+        // Find the arg in the linked list keeping track of the pointer to it so
+        // we can unlink it.
+        GenTreeCall::Use** ptr = &call->gtCallArgs;
+        while ((*ptr) != vsdArg)
+        {
+            ptr = &(*ptr)->NextRef();
+        }
+
+        *ptr = vsdArg->GetNext();
+#endif
     }
 
 #if defined(_TARGET_ARM_)

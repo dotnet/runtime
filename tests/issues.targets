@@ -81,6 +81,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
+            <Issue>Unix does not support tailcall helper</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -233,7 +236,10 @@
             <Issue>26105</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
-            <Issue>arm32 does not support tailcall helper</Issue>
+            <Issue>Unix arm32 does not support tailcall helper</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
+            <Issue>Unix arm32 does not support tailcall helper</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -279,6 +285,9 @@
             <Issue>23124</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
+            <Issue>arm64 does not support tailcall helper</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>arm64 does not support tailcall helper</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26491/**/*">
@@ -897,12 +906,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Tests that run only on x86 Windows -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' != 'x86' or '$(TargetsWindows)' != 'true')">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
-            <Issue>x64 Windows has bugs with helper-based tailcall to VSD (#26311); rest of platforms do not support it</Issue>
-        </ExcludeList>
-    </ItemGroup>
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. -->
