@@ -1394,7 +1394,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genUpdateLife(tree);
         }
 #ifdef FEATURE_HW_INTRINSICS
-        else if (tree->OperIs(GT_HWIntrinsic))
+        else if (tree->OperIs(GT_HWINTRINSIC))
         {
             // Only load/store HW intrinsics can be contained (and the address may also be contained).
             HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->gtHWIntrinsicId);
@@ -1457,7 +1457,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// genConsumeHWIntrinsicOperands: Do liveness update for the operands of a GT_HWIntrinsic node
+// genConsumeHWIntrinsicOperands: Do liveness update for the operands of a GT_HWINTRINSIC node
 //
 // Arguments:
 //    node - the GenTreeHWIntrinsic node whose operands will have their liveness updated.

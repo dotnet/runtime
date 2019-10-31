@@ -120,7 +120,7 @@ Structs only appear as rvalues in the following contexts:
 
 * As an operand to a hardware or SIMD intrinsic (for `TYP_SIMD*` only)
   * In this case the struct handle is generally assumed to be unneeded, as it is captured (directly or
-    indirectly) in the `GT_SIMD` or `GT_HWIntrinsic` node.
+    indirectly) in the `GT_SIMD` or `GT_HWINTRINSIC` node.
 
 After morph, a struct-typed value on the RHS of assignment is one of:
 * `GT_IND`: in this case the LHS is expected to provide the struct handle

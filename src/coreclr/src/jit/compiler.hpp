@@ -4294,7 +4294,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
             if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
             {
                 this->AsHWIntrinsic()->gtOp1->VisitListOperands(visitor);

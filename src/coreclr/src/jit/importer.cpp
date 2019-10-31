@@ -1672,7 +1672,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
 #endif
