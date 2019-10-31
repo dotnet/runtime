@@ -114,6 +114,9 @@
     <Compile Include="..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Common\FunctionPointerType.cs">
       <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
