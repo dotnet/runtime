@@ -76,7 +76,7 @@ build -clean
 ```
 ### Build Native
 The native build produces shims over libc, openssl, gssapi, libcurl and libz.
-The build system uses CMake (2.8.12 or higher) to generate Makefiles using clang (3.5 or higher).
+The build system uses CMake to generate Makefiles using clang.
 The build also uses git for generating some version information.
 
 The native component should be buildable on any system.
