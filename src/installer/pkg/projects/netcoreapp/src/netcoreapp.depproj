@@ -34,7 +34,7 @@
   <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveReferences;GetPackagePaths">
     <ItemGroup>
       <_coreFxVersionFile
-        Include="$(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
+        Include="$(NuGetPackageRoot)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
         Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))"
         Name="corefx" />
       <_coreClrVersionFile

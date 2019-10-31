@@ -63,7 +63,7 @@ package() {
 
     containerized "$image" bash -c "
         eng/common/msbuild.sh \
-            tools-local/tasks/core-setup.tasks.csproj \
+            tools-local/tasks/installer.tasks/installer.tasks.csproj \
             /t:Restore /t:Build /t:CreateHostMachineInfoFile \
             /p:Configuration=Release \
             /p:OSGroup=Linux \

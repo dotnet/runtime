@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 
   <PropertyGroup>
-    <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
   </PropertyGroup>
 
   <!--
@@ -99,7 +99,7 @@
              Importance="High" />
   </Target>
 
-  <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="GenerateMsiVersionString">
     <PropertyGroup>

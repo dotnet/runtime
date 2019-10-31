@@ -2,12 +2,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
-    <TestDir>$(SetupRoot)src\test\</TestDir>
+    <TestDir>$(InstallerProjectRoot)test\</TestDir>
     <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
-    <TestStabilizedLegacyPackagesDir>$(ObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
-    <TestRestorePackagesPath>$(ObjDir)TestPackageCache\</TestRestorePackagesPath>
-    <TestRestoreNuGetConfigFile>$(ObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
-    <InternalNupkgCacheDir>$(ObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
+    <TestStabilizedLegacyPackagesDir>$(ArtifactsObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
+    <TestRestorePackagesPath>$(ArtifactsObjDir)TestPackageCache\</TestRestorePackagesPath>
+    <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
+    <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>netcoreapp3.0</TestInfraTargetFramework>
   </PropertyGroup>

@@ -158,8 +158,6 @@ if [ "$RootRepo" == "" ]; then
     usage
 fi
 
-SetupRoot="$RootRepo/src/setup"
-
 __bin_dir="$RootRepo/artifacts/bin"
 __baseIntermediateOutputPath="$RootRepo/artifacts/obj"
 __versionSourceFile="$__baseIntermediateOutputPath/_version.c"
@@ -190,7 +188,7 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     if ! [[ -n $ROOTFS_DIR ]]; then
-        export ROOTFS_DIR="$SetupRoot/cross/rootfs/$__build_arch"
+        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
     fi
 fi
 

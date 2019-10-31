@@ -13,7 +13,7 @@ steps:
       df -h
       $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
         --ci \
-        /root/coresetup/tools-local/tasks/core-setup.tasks.csproj \
+        /root/coresetup/tools-local/tasks/installer.tasks/installer.tasks.csproj \
         /t:Restore /t:Build /t:CreateHostMachineInfoFile \
         $(CommonMSBuildArgs) \
         /bl:msbuild.${{ parameters.distroRid }}.traversaldependencies.binlog

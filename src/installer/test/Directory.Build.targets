@@ -63,7 +63,7 @@
       the same as the package's version. Fetch this directly from the project to avoid guesswork.
     -->
     <MSBuild
-      Projects="$(SourceDir)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
     </MSBuild>
@@ -102,7 +102,7 @@
   -->
   <Target Name="GetNETCoreAppRuntimePackVersion">
     <MSBuild
-      Projects="$(SourceDir)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
     </MSBuild>
@@ -114,7 +114,7 @@
   -->
   <Target Name="GetNETCoreAppInternalPackageVersion">
     <MSBuild
-      Projects="$(SourceDir)pkg\projects\netcoreapp\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppInternalPackageVersion" />
     </MSBuild>
