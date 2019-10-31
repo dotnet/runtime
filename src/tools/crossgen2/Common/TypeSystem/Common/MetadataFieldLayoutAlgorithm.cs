@@ -367,6 +367,8 @@ namespace Internal.TypeSystem
             computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             computedLayout.Offsets = offsets;
 
+            ExplicitLayoutValidator.Validate(type, computedLayout);
+
             return computedLayout;
         }
 
