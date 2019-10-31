@@ -186,13 +186,6 @@
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
-  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
-    <Copyright>$(CopyrightNetFoundation)</Copyright>
-    <!-- Temporarily disable PackageLicenseExpression until we can workaround 
-         https://github.com/NuGet/Home/issues/7894 -->
-    <!-- PackageLicenseExpression>MIT</PackageLicenseExpression -->
-  </PropertyGroup>
-
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
 

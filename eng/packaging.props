@@ -6,7 +6,8 @@
     <RuntimeIdGraphDefinitionFile>$(PkgDir)Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl Condition="'$(ProjectUrl)' == ''">https://github.com/dotnet/corefx</ProjectUrl>
-    <LicenseUrl Condition="'$(LicenseUrl)' == ''">https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
