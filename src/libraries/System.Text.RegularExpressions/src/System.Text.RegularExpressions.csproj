@@ -5,6 +5,7 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />

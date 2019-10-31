@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions
                 throw new ArgumentNullException(nameof(replacement));
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_replref, replacement, caps, capsize, capnames, roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions);
 
             return repl.Replace(this, input, count, startat);
         }

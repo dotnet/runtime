@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Run(false, -1, input, 0, input.Length, startat);
+            return Run(false, -1, input, 0, input.Length, startat)!;
         }
 
         /*
@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Run(false, -1, input, beginning, length, UseOptionR() ? beginning + length : beginning);
+            return Run(false, -1, input, beginning, length, UseOptionR() ? beginning + length : beginning)!;
         }
 
         /// <summary>

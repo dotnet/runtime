@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -20,8 +21,8 @@ namespace System.Text.RegularExpressions
         private static readonly Dictionary<CachedCodeEntryKey, CachedCodeEntry> s_cache = new Dictionary<CachedCodeEntryKey, CachedCodeEntry>(s_cacheSize);
         // linked list for LRU and for small cache
         private static int s_cacheCount = 0;
-        private static CachedCodeEntry s_cacheFirst;
-        private static CachedCodeEntry s_cacheLast;
+        private static CachedCodeEntry? s_cacheFirst;
+        private static CachedCodeEntry? s_cacheLast;
 
         public static int CacheSize
         {
@@ -39,7 +40,7 @@ namespace System.Text.RegularExpressions
                     s_cacheSize = value;  // not to allow other thread to change it while we use cache
                     while (s_cacheCount > s_cacheSize)
                     {
-                        CachedCodeEntry last = s_cacheLast;
+                        CachedCodeEntry last = s_cacheLast!;
                         if (s_cacheCount >= CacheDictionarySwitchLimit)
                         {
                             SysDebug.Assert(s_cache.ContainsKey(last.Key));
@@ -71,10 +72,10 @@ namespace System.Text.RegularExpressions
         ///  Find cache based on options+pattern+culture and optionally add new cache if not found
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private CachedCodeEntry GetCachedCode(CachedCodeEntryKey key, bool isToAdd)
+        private CachedCodeEntry? GetCachedCode(CachedCodeEntryKey key, bool isToAdd)
         {
             // to avoid lock:
-            CachedCodeEntry first = s_cacheFirst;
+            CachedCodeEntry? first = s_cacheFirst;
             if (first?.Key == key)
                 return first;
             if (s_cacheSize == 0)
@@ -83,16 +84,16 @@ namespace System.Text.RegularExpressions
             return GetCachedCodeEntryInternal(key, isToAdd);
         }
 
-        private CachedCodeEntry GetCachedCodeEntryInternal(CachedCodeEntryKey key, bool isToAdd)
+        private CachedCodeEntry? GetCachedCodeEntryInternal(CachedCodeEntryKey key, bool isToAdd)
         {
             lock (s_cache)
             {
                 // first look for it in the cache and move it to the head
-                CachedCodeEntry entry = LookupCachedAndPromote(key);
+                CachedCodeEntry? entry = LookupCachedAndPromote(key);
                 // it wasn't in the cache, so we'll add a new one
                 if (entry == null && isToAdd && s_cacheSize != 0) // check cache size again in case it changed
                 {
-                    entry = new CachedCodeEntry(key, capnames, capslist, _code, caps, capsize, _runnerref, _replref);
+                    entry = new CachedCodeEntry(key, capnames!, capslist!, _code!, caps!, capsize, _runnerref!, _replref!);
                     // put first in linked list:
                     if (s_cacheFirst != null)
                     {
@@ -142,7 +143,7 @@ namespace System.Text.RegularExpressions
         private void FillCacheDictionary()
         {
             s_cache.Clear();
-            CachedCodeEntry next = s_cacheFirst;
+            CachedCodeEntry? next = s_cacheFirst;
             while (next != null)
             {
                 s_cache.Add(next.Key, next);
@@ -151,7 +152,7 @@ namespace System.Text.RegularExpressions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // Unprofitable inline - JIT overly pessimistic
-        private static bool TryGetCacheValue(CachedCodeEntryKey key, out CachedCodeEntry entry)
+        private static bool TryGetCacheValue(CachedCodeEntryKey key, [NotNullWhen(true)] out CachedCodeEntry? entry)
         {
             if (s_cacheCount >= CacheDictionarySwitchLimit)
             {
@@ -164,7 +165,7 @@ namespace System.Text.RegularExpressions
             return TryGetCacheValueSmall(key, out entry);
         }
 
-        private static bool TryGetCacheValueSmall(CachedCodeEntryKey key, out CachedCodeEntry entry)
+        private static bool TryGetCacheValueSmall(CachedCodeEntryKey key, [NotNullWhen(true)] out CachedCodeEntry? entry)
         {
             entry = s_cacheFirst?.Previous; // first already checked
             while (entry != null)
@@ -177,13 +178,13 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        private static CachedCodeEntry LookupCachedAndPromote(CachedCodeEntryKey key)
+        private static CachedCodeEntry? LookupCachedAndPromote(CachedCodeEntryKey key)
         {
             SysDebug.Assert(Monitor.IsEntered(s_cache));
             if (s_cacheFirst?.Key == key) // again check this as could have been promoted by other thread
                 return s_cacheFirst;
 
-            if (TryGetCacheValue(key, out CachedCodeEntry entry))
+            if (TryGetCacheValue(key, out CachedCodeEntry? entry))
             {
                 // promote:
                 SysDebug.Assert(s_cacheFirst != entry, "key should not get s_livecode_first");
@@ -233,7 +234,7 @@ namespace System.Text.RegularExpressions
                 _pattern = pattern;
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 return obj is CachedCodeEntryKey && Equals((CachedCodeEntryKey)obj);
             }
@@ -264,22 +265,22 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal sealed class CachedCodeEntry
         {
-            public CachedCodeEntry Next;
-            public CachedCodeEntry Previous;
+            public CachedCodeEntry? Next;
+            public CachedCodeEntry? Previous;
             public readonly CachedCodeEntryKey Key;
-            public RegexCode Code;
+            public RegexCode? Code;
             public readonly Hashtable Caps;
             public readonly Hashtable Capnames;
             public readonly string[] Capslist;
 #if FEATURE_COMPILED
-            public RegexRunnerFactory Factory;
+            public RegexRunnerFactory? Factory;
 #endif
             public readonly int Capsize;
             public readonly ExclusiveReference Runnerref;
-            public readonly WeakReference<RegexReplacement> ReplRef;
+            public readonly WeakReference<RegexReplacement?> ReplRef;
 
             public CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code,
-                Hashtable caps, int capsize, ExclusiveReference runner, WeakReference<RegexReplacement> replref)
+                Hashtable caps, int capsize, ExclusiveReference runner, WeakReference<RegexReplacement?> replref)
             {
                 Key = key;
                 Capnames = capnames;

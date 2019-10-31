@@ -70,7 +70,7 @@ namespace System.Text.RegularExpressions
         {
             // Query AppDomain
             AppDomain ad = AppDomain.CurrentDomain;
-            object defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
+            object? defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
 
             // If no default is specified, use fallback
             if (defaultMatchTimeoutObj == null)

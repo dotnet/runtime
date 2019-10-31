@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions
 
         internal readonly int[] _caps;
         internal int _capcount;
-        internal CaptureCollection _capcoll;
+        internal CaptureCollection? _capcoll;
 
         internal Group(string text, int[] caps, int capcount, string name)
             : base(text, capcount == 0 ? 0 : caps[(capcount - 1) * 2],

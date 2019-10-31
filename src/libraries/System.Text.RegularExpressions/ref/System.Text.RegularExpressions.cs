@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         public object SyncRoot { get { throw null; } }
         System.Text.RegularExpressions.Capture System.Collections.Generic.IList<System.Text.RegularExpressions.Capture>.this[int index] { get { throw null; } set { } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public void CopyTo(System.Array array, int arrayIndex) { }
         public void CopyTo(System.Text.RegularExpressions.Capture[] array, int arrayIndex) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions
         public object SyncRoot { get { throw null; } }
         System.Text.RegularExpressions.Group System.Collections.Generic.IList<System.Text.RegularExpressions.Group>.this[int index] { get { throw null; } set { } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Group> Values { get { throw null; } }
         public bool ContainsKey(string key) { throw null; }
         public void CopyTo(System.Array array, int arrayIndex) { }
@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
         void System.Collections.Generic.ICollection<System.Text.RegularExpressions.Group>.Clear() { }
         bool System.Collections.Generic.ICollection<System.Text.RegularExpressions.Group>.Contains(System.Text.RegularExpressions.Group item) { throw null; }
         bool System.Collections.Generic.ICollection<System.Text.RegularExpressions.Group>.Remove(System.Text.RegularExpressions.Group item) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.RegularExpressions.Group>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Text.RegularExpressions.Group>>.GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.RegularExpressions.Group>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.RegularExpressions.Group>>.GetEnumerator() { throw null; }
         System.Collections.Generic.IEnumerator<System.Text.RegularExpressions.Group> System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Group>.GetEnumerator() { throw null; }
         int System.Collections.Generic.IList<System.Text.RegularExpressions.Group>.IndexOf(System.Text.RegularExpressions.Group item) { throw null; }
         void System.Collections.Generic.IList<System.Text.RegularExpressions.Group>.Insert(int index, System.Text.RegularExpressions.Group item) { }
@@ -87,7 +87,9 @@ namespace System.Text.RegularExpressions
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        public bool TryGetValue(string key, out System.Text.RegularExpressions.Group value) { throw null; }
+#pragma warning disable CS8614 // Nullability of reference types in type of parameter doesn't match implicitly implemented member.
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.RegularExpressions.Group? value) { throw null; }
+#pragma warning restore CS8614
     }
     public partial class Match : System.Text.RegularExpressions.Group
     {
@@ -108,7 +110,7 @@ namespace System.Text.RegularExpressions
         public object SyncRoot { get { throw null; } }
         System.Text.RegularExpressions.Match System.Collections.Generic.IList<System.Text.RegularExpressions.Match>.this[int index] { get { throw null; } set { } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public void CopyTo(System.Array array, int arrayIndex) { }
         public void CopyTo(System.Text.RegularExpressions.Match[] array, int arrayIndex) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -131,14 +133,14 @@ namespace System.Text.RegularExpressions
     public delegate string MatchEvaluator(System.Text.RegularExpressions.Match match);
     public partial class Regex : System.Runtime.Serialization.ISerializable
     {
-        protected internal System.Collections.Hashtable capnames;
-        protected internal System.Collections.Hashtable caps;
+        protected internal System.Collections.Hashtable? capnames;
+        protected internal System.Collections.Hashtable? caps;
         protected internal int capsize;
-        protected internal string[] capslist;
-        protected internal System.Text.RegularExpressions.RegexRunnerFactory factory;
+        protected internal string[]? capslist;
+        protected internal System.Text.RegularExpressions.RegexRunnerFactory? factory;
         public static readonly System.TimeSpan InfiniteMatchTimeout;
         protected internal System.TimeSpan internalMatchTimeout;
-        protected internal string pattern;
+        protected internal string? pattern;
         protected internal System.Text.RegularExpressions.RegexOptions roptions;
         protected Regex() { }
         protected Regex(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -147,12 +149,17 @@ namespace System.Text.RegularExpressions
         public Regex(string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
         public static int CacheSize { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        protected System.Collections.IDictionary CapNames { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        protected System.Collections.IDictionary? CapNames { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        protected System.Collections.IDictionary Caps { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        protected System.Collections.IDictionary? Caps { get { throw null; } set { } }
         public System.TimeSpan MatchTimeout { get { throw null; } }
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } }
         public bool RightToLeft { get { throw null; } }
+        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname) { }
+        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[] attributes) { }
+        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[] attributes, string resourceFile) { }
         public static string Escape(string str) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }
@@ -197,7 +204,7 @@ namespace System.Text.RegularExpressions
         public override string ToString() { throw null; }
         public static string Unescape(string str) { throw null; }
         protected bool UseOptionC() { throw null; }
-        protected bool UseOptionR() { throw null; }
+        protected internal bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
     }
     public partial class RegexCompilationInfo
@@ -221,7 +228,7 @@ namespace System.Text.RegularExpressions
         public string Input { get { throw null; } }
         public System.TimeSpan MatchTimeout { get { throw null; } }
         public string Pattern { get { throw null; } }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
     public enum RegexOptions
@@ -239,18 +246,18 @@ namespace System.Text.RegularExpressions
     }
     public abstract partial class RegexRunner
     {
-        protected internal int[] runcrawl;
+        protected internal int[]? runcrawl;
         protected internal int runcrawlpos;
-        protected internal System.Text.RegularExpressions.Match runmatch;
-        protected internal System.Text.RegularExpressions.Regex runregex;
-        protected internal int[] runstack;
+        protected internal System.Text.RegularExpressions.Match? runmatch;
+        protected internal System.Text.RegularExpressions.Regex? runregex;
+        protected internal int[]? runstack;
         protected internal int runstackpos;
-        protected internal string runtext;
+        protected internal string? runtext;
         protected internal int runtextbeg;
         protected internal int runtextend;
         protected internal int runtextpos;
         protected internal int runtextstart;
-        protected internal int[] runtrack;
+        protected internal int[]? runtrack;
         protected internal int runtrackcount;
         protected internal int runtrackpos;
         protected internal RegexRunner() { }
@@ -273,8 +280,8 @@ namespace System.Text.RegularExpressions
         protected int MatchIndex(int cap) { throw null; }
         protected int MatchLength(int cap) { throw null; }
         protected int Popcrawl() { throw null; }
-        protected internal System.Text.RegularExpressions.Match Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
-        protected internal System.Text.RegularExpressions.Match Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
+        protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
+        protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
         protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
         protected void Uncapture() { }
     }

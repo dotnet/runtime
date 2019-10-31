@@ -1,14 +1,17 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
     public class RegexCompilationInfo
     {
-        private string _pattern;
-        private string _name;
-        private string _nspace;
+        // initialized by setter called by constructor
+        private string _pattern = null!;
+        private string _name = null!;
+        private string _nspace = null!;
+
         private TimeSpan _matchTimeout;
 
         public RegexCompilationInfo(string pattern, RegexOptions options, string name, string fullnamespace, bool ispublic)

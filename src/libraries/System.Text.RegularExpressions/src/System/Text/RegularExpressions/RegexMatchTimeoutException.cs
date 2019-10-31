@@ -54,8 +54,8 @@ namespace System.Text.RegularExpressions
         protected RegexMatchTimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Input = info.GetString("regexInput");
-            Pattern = info.GetString("regexPattern");
+            Input = info.GetString("regexInput")!;
+            Pattern = info.GetString("regexPattern")!;
             MatchTimeout = new TimeSpan(info.GetInt64("timeoutTicks"));
         }
 

@@ -401,7 +401,7 @@ namespace System.Text.RegularExpressions
         private readonly StringBuilder _categories;
         private bool _canonical;
         private bool _negate;
-        private RegexCharClass _subtractor;
+        private RegexCharClass? _subtractor;
 
 #if DEBUG
         static RegexCharClass()
@@ -431,7 +431,7 @@ namespace System.Text.RegularExpressions
             _categories = new StringBuilder();
         }
 
-        private RegexCharClass(bool negate, List<SingleRange> ranges, StringBuilder categories, RegexCharClass subtraction)
+        private RegexCharClass(bool negate, List<SingleRange> ranges, StringBuilder categories, RegexCharClass? subtraction)
         {
             _rangelist = ranges;
             _categories = categories;
@@ -525,7 +525,7 @@ namespace System.Text.RegularExpressions
 
         public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
-            if (s_definedCategories.TryGetValue(categoryName, out string category) && !categoryName.Equals(InternalRegexIgnoreCase))
+            if (s_definedCategories.TryGetValue(categoryName, out string? category) && !categoryName.Equals(InternalRegexIgnoreCase))
             {
                 if (caseInsensitive)
                 {
@@ -957,7 +957,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static string NegateCategory(string category)
+        private static string? NegateCategory(string category)
         {
             if (category == null)
                 return null;
@@ -1000,7 +1000,7 @@ namespace System.Text.RegularExpressions
                 ranges.Add(new SingleRange(first, last));
             }
 
-            RegexCharClass sub = null;
+            RegexCharClass? sub = null;
             if (charClass.Length > myEndPosition)
                 sub = ParseRecursive(charClass, myEndPosition);
 

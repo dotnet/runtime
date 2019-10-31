@@ -36,10 +36,10 @@ namespace System.Text.RegularExpressions
     public class Match : Group
     {
         private const int ReplaceBufferSize = 256;
-        internal GroupCollection _groupcoll;
+        internal GroupCollection? _groupcoll;
 
         // input to the match
-        internal Regex _regex;
+        internal Regex? _regex;
         internal int _textbeg;
         internal int _textpos;
         internal int _textend;
@@ -51,7 +51,7 @@ namespace System.Text.RegularExpressions
         internal bool _balancing;        // whether we've done any balancing with this match.  If we
                                          // have done balancing, we'll need to do extra work in Tidy().
 
-        internal Match(Regex regex, int capcount, string text, int begpos, int len, int startpos)
+        internal Match(Regex? regex, int capcount, string text, int begpos, int len, int startpos)
             : base(text, new int[2], 0, "0")
         {
             _regex = regex;
@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions
             if (_regex == null)
                 return this;
 
-            return _regex.Run(false, Length, Text, _textbeg, _textend - _textbeg, _textpos);
+            return _regex.Run(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)!;
         }
 
         /// <summary>
@@ -127,8 +127,8 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException(SR.NoResultOnFailed);
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref, replacement, _regex.caps, _regex.capsize,
-                _regex.capnames, _regex.roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize,
+                _regex.capnames!, _regex.roptions);
             Span<char> charInitSpan = stackalloc char[ReplaceBufferSize];
             var vsb = new ValueStringBuilder(charInitSpan);
 
@@ -397,9 +397,10 @@ namespace System.Text.RegularExpressions
         {
             if (_caps != null)
             {
-                foreach (DictionaryEntry kvp in _caps)
+                foreach (object? entry in _caps)
                 {
-                    System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value.ToString());
+                    DictionaryEntry kvp = (DictionaryEntry)entry!;
+                    System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value!.ToString());
                 }
             }
 
