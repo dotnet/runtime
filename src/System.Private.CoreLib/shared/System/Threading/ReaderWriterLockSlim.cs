@@ -53,8 +53,6 @@ namespace System.Threading
     /// </summary>
     public class ReaderWriterLockSlim : IDisposable
     {
-        private static readonly int ProcessorCount = Environment.ProcessorCount;
-
         // Specifying if the lock can be reacquired recursively.
         private readonly bool _fIsReentrant;
 
@@ -1233,7 +1231,7 @@ namespace System.Threading
             const int LockSpinCycles = 20;
 
             // Exponential back-off
-            if ((spinCount < 5) && (ProcessorCount > 1))
+            if ((spinCount < 5) && (Environment.ProcessorCount > 1))
             {
                 Thread.SpinWait(LockSpinCycles * spinCount);
             }
@@ -1563,7 +1561,7 @@ namespace System.Threading
                     Interlocked.Add(ref _enterDeprioritizationState, deprioritizationStateChange);
                 }
 
-                int processorCount = ProcessorCount;
+                int processorCount = Environment.ProcessorCount;
                 for (int spinIndex = 0; ; spinIndex++)
                 {
                     if (spinIndex < LockSpinCount && processorCount > 1)

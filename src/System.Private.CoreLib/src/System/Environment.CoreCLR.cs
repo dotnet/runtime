@@ -80,11 +80,6 @@ namespace System
                 GetCommandLineArgsNative();
         }
 
-        // Unconditionally return false since .NET Core does not support object finalization during shutdown.
-        public static bool HasShutdownStarted => false;
-
-        public static int ProcessorCount => GetProcessorCount();
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetProcessorCount();
 
