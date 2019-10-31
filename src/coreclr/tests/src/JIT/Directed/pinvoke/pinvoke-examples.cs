@@ -6,6 +6,7 @@
 // along with the impact of EH.
 
 using System;
+using System.Threading;
 using System.Runtime.CompilerServices;
 
 
@@ -14,20 +15,20 @@ namespace PInvokeTest
     internal class Test
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int AsForceInline()
+        static bool AsForceInline()
         {
-            return Environment.ProcessorCount;
+            return Thread.Yield();
         }
 
-        static int AsNormalInline()
+        static bool AsNormalInline()
         {
-            return Environment.ProcessorCount;
+            return Thread.Yield();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int AsNoInline()
+        static bool AsNoInline()
         {
-            return Environment.ProcessorCount;
+            return Thread.Yield();
         }
 
         static bool FromTryCatch()
@@ -36,7 +37,7 @@ namespace PInvokeTest
             try 
             {
                 // All pinvokes should be inline, except on x64
-                result = (Environment.ProcessorCount == AsNormalInline());
+                result = (Thread.Yield() == AsNormalInline());
             }
             catch (Exception)
             {
@@ -53,8 +54,8 @@ namespace PInvokeTest
             try 
             {
                 // All pinvokes should be inline, except on x64
-                result1 = (Environment.ProcessorCount == AsNormalInline());
-                result2 = (Environment.ProcessorCount == AsNormalInline());
+                result1 = (Thread.Yield() == AsNormalInline());
+                result2 = (Thread.Yield() == AsNormalInline());
             }
             finally
             {
@@ -72,12 +73,12 @@ namespace PInvokeTest
             try 
             {
                 // These two pinvokes should be inline, except on x64
-                result1 = (Environment.ProcessorCount == AsNormalInline());
+                result1 = (Thread.Yield() == AsNormalInline());
             }
             finally
             {
                 // These two pinvokes should *not* be inline (finally)
-                result2 = (Environment.ProcessorCount == AsNormalInline());
+                result2 = (Thread.Yield() == AsNormalInline());
                 result = result1 && result2;
             }
 
@@ -93,14 +94,14 @@ namespace PInvokeTest
             try 
             {
                 // These two pinvokes should be inline, except on x64
-                result1 = (Environment.ProcessorCount == AsNormalInline());
+                result1 = (Thread.Yield() == AsNormalInline());
             }
             finally
             {
                 try 
                 {
                     // These two pinvokes should *not* be inline (finally)
-                    result2 = (Environment.ProcessorCount == AsNormalInline());
+                    result2 = (Thread.Yield() == AsNormalInline());
                 }
                 catch (Exception)
                 {
@@ -117,7 +118,7 @@ namespace PInvokeTest
         static bool FromInline()
         {
             // These two pinvokes should be inline
-            bool result = (Environment.ProcessorCount == AsForceInline());
+            bool result = (Thread.Yield() == AsForceInline());
             return result;
         }
 
@@ -125,8 +126,8 @@ namespace PInvokeTest
         static bool FromInline2()
         {
             // These four pinvokes should be inline
-            bool result1 = (Environment.ProcessorCount == AsNormalInline());
-            bool result2 = (Environment.ProcessorCount == AsForceInline());
+            bool result1 = (Thread.Yield() == AsNormalInline());
+            bool result2 = (Thread.Yield() == AsForceInline());
             return result1 && result2;
         }
 
@@ -134,7 +135,7 @@ namespace PInvokeTest
         static bool FromNoInline()
         {
             // The only pinvoke should be inline
-            bool result = (Environment.ProcessorCount == AsNoInline());
+            bool result = (Thread.Yield() == AsNoInline());
             return result;
         }
 
@@ -142,8 +143,8 @@ namespace PInvokeTest
         static bool FromNoInline2()
         {
             // Three pinvokes should be inline
-            bool result1 = (Environment.ProcessorCount == AsNormalInline());
-            bool result2 = (Environment.ProcessorCount == AsNoInline());
+            bool result1 = (Thread.Yield() == AsNormalInline());
+            bool result2 = (Thread.Yield() == AsNoInline());
             return result1 && result2;
         }
 
@@ -161,10 +162,10 @@ namespace PInvokeTest
             // it just calls get_ProcessorCount.
             //
             // For the second call, the force inline works, and the
-            // subsequent inline of get_ProcessorCount exposes a call
-            // to the pinvoke GetProcessorCount.  This pinvoke will
+            // subsequent inline of Thread.Yield exposes a call
+            // to the pinvoke YieldInternal.  This pinvoke will
             // not be inline.
-            catch (Exception) when (Environment.ProcessorCount == AsForceInline())
+            catch (Exception) when (Thread.Yield() == AsForceInline())
             {
                 result = true;
             }
@@ -174,14 +175,14 @@ namespace PInvokeTest
 
         static bool FromColdCode()
         {
-            int pc = 0;
+            bool yield = false;
             bool result1 = false;
             bool result2 = false;
 
             try
             {
                 // This pinvoke should not be inline (cold)
-                pc = Environment.ProcessorCount;
+                yield = Thread.Yield();
                 throw new Exception("expected");
             }
             catch (Exception)
@@ -189,14 +190,14 @@ namespace PInvokeTest
                 // These two pinvokes should not be inline (catch)
                 //
                 // For the first call the jit won't inline the
-                // wrapper, so it just calls get_ProcessorCount.
+                // wrapper, so it just calls Thread.Yield.
                 //
                 // For the second call, the force inline works, and
-                // the subsequent inline of get_ProcessorCount exposes
-                // a call to the pinvoke GetProcessorCount.  This
+                // the subsequent inline of Thread.Yield exposes
+                // a call to the pinvoke YieldInternal.  This
                 // pinvoke will not be inline.
-                result1 = (pc == Environment.ProcessorCount);
-                result2 = (pc == AsForceInline());
+                result1 = (yield == Thread.Yield());
+                result2 = (yield == AsForceInline());
             }
 
             return result1 && result2;

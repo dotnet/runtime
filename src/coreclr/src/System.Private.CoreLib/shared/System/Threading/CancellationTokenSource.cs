@@ -726,7 +726,7 @@ namespace System.Threading
         /// <returns>A power of 2 representing the number of partitions to use.</returns>
         private static int GetPartitionCount()
         {
-            int procs = PlatformHelper.ProcessorCount;
+            int procs = Environment.ProcessorCount;
             int count =
                 procs > 8 ? 16 : // capped at 16 to limit memory usage on larger machines
                 procs > 4 ? 8 :
