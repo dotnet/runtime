@@ -561,7 +561,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
     // First, remove any preceeding list nodes, which are not otherwise visited by the tree walk.
     //
-    // NOTE: GT_LIST nodes used by GT_HWIntrinsic nodes will in fact be visited.
+    // NOTE: GT_LIST nodes used by GT_HWINTRINSIC nodes will in fact be visited.
     for (GenTree* prev = node->gtPrev; (prev != nullptr) && prev->OperIs(GT_LIST); prev = node->gtPrev)
     {
         prev->gtFlags &= ~GTF_REVERSE_OPS;

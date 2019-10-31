@@ -302,7 +302,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
 
@@ -2013,7 +2013,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
 #ifdef FEATURE_HW_INTRINSICS
-            case GT_HWIntrinsic:
+            case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
                 // Never remove these nodes, as they are always side-effecting.
                 //

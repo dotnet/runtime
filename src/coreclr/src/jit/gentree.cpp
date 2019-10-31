@@ -1446,7 +1446,7 @@ AGAIN:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-                case GT_HWIntrinsic:
+                case GT_HWINTRINSIC:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
@@ -2116,7 +2116,7 @@ AGAIN:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-                case GT_HWIntrinsic:
+                case GT_HWINTRINSIC:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
@@ -3645,7 +3645,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
-                case GT_HWIntrinsic:
+                case GT_HWINTRINSIC:
                 {
                     if (tree->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
                     {
@@ -4558,7 +4558,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 DONE:
 
 #ifdef FEATURE_HW_INTRINSICS
-    if ((oper == GT_HWIntrinsic) && (tree->gtGetOp1() == nullptr))
+    if ((oper == GT_HWINTRINSIC) && (tree->gtGetOp1() == nullptr))
     {
         // We can have nullary HWIntrinsic nodes, and we must have non-zero cost.
         costEx = 1;
@@ -4981,7 +4981,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
             if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
             {
                 return this->AsHWIntrinsic()->gtOp1->TryGetUseList(def, use);
@@ -5306,7 +5306,7 @@ bool GenTree::OperRequiresAsgFlag()
         return true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    if (gtOper == GT_HWIntrinsic)
+    if (gtOper == GT_HWINTRINSIC)
     {
         GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
         if (hwIntrinsicNode->OperIsMemoryStore())
@@ -5364,7 +5364,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 // Return Value:
 //    True if the given node contains an implicit indirection
 //
-// Note that for the GT_HWIntrinsic node we have to examine the
+// Note that for the GT_HWINTRINSIC node we have to examine the
 // details of the node to determine its result.
 //
 
@@ -5388,7 +5388,7 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_OFFSET:
             return true;
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = (const_cast<GenTree*>(this))->AsHWIntrinsic();
             return hwIntrinsicNode->OperIsMemoryLoadOrStore();
@@ -5487,7 +5487,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
             return true;
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
@@ -6696,7 +6696,7 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
             src = src->AsIndir()->Addr()->gtGetOp1();
         }
 #ifdef FEATURE_HW_INTRINSICS
-        if ((src->OperGet() == GT_SIMD) || (src->OperGet() == GT_HWIntrinsic))
+        if ((src->OperGet() == GT_SIMD) || (src->OperGet() == GT_HWINTRINSIC))
 #else
         if (src->OperGet() == GT_SIMD)
 #endif // FEATURE_HW_INTRINSICS
@@ -7362,10 +7362,10 @@ GenTree* Compiler::gtCloneExpr(
 #endif
 
 #ifdef FEATURE_HW_INTRINSICS
-            case GT_HWIntrinsic:
+            case GT_HWINTRINSIC:
             {
                 GenTreeHWIntrinsic* hwintrinsicOp = tree->AsHWIntrinsic();
-                copy                              = new (this, GT_HWIntrinsic)
+                copy                              = new (this, GT_HWINTRINSIC)
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
@@ -8282,8 +8282,8 @@ unsigned GenTree::NumChildren()
             return childCount;
         }
 #ifdef FEATURE_HW_INTRINSICS
-        // GT_HWIntrinsic require special handling
-        if (OperGet() == GT_HWIntrinsic)
+        // GT_HWINTRINSIC require special handling
+        if (OperGet() == GT_HWINTRINSIC)
         {
             if (AsOp()->gtOp1 == nullptr)
             {
@@ -8729,7 +8729,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
             if (m_node->AsHWIntrinsic()->gtOp1 == nullptr)
             {
                 assert(m_node->NullOp1Legal());
@@ -11042,7 +11042,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-        if (tree->gtOper == GT_HWIntrinsic)
+        if (tree->gtOper == GT_HWINTRINSIC)
         {
             printf(" %s %s", tree->AsHWIntrinsic()->gtSIMDBaseType == TYP_UNKNOWN
                                  ? ""
@@ -13340,7 +13340,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     }
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-    if (tree->OperGet() == GT_HWIntrinsic)
+    if (tree->OperGet() == GT_HWINTRINSIC)
     {
         return tree;
     }
@@ -16871,7 +16871,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 break;
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-            case GT_HWIntrinsic:
+            case GT_HWINTRINSIC:
                 structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsHWIntrinsic()->gtSIMDBaseType);
                 break;
 #endif
@@ -18017,7 +18017,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 #ifdef FEATURE_HW_INTRINSICS
 bool GenTree::isCommutativeHWIntrinsic() const
 {
-    assert(gtOper == GT_HWIntrinsic);
+    assert(gtOper == GT_HWINTRINSIC);
 
 #ifdef _TARGET_XARCH_
     return HWIntrinsicInfo::IsCommutative(AsHWIntrinsic()->gtHWIntrinsicId);
@@ -18028,7 +18028,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
 
 bool GenTree::isContainableHWIntrinsic() const
 {
-    assert(gtOper == GT_HWIntrinsic);
+    assert(gtOper == GT_HWINTRINSIC);
 
 #ifdef _TARGET_XARCH_
     switch (AsHWIntrinsic()->gtHWIntrinsicId)
@@ -18059,7 +18059,7 @@ bool GenTree::isContainableHWIntrinsic() const
 
 bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 {
-    assert(gtOper == GT_HWIntrinsic);
+    assert(gtOper == GT_HWINTRINSIC);
     assert(comp != nullptr);
 
 #ifdef _TARGET_XARCH_
@@ -18103,7 +18103,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      baseType,
                                                        unsigned       size)
 {
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, hwIntrinsicID, baseType, size);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
@@ -18111,7 +18111,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, baseType, simdSize);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, baseType, simdSize);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
@@ -18120,7 +18120,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, simdSize);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, simdSize);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
@@ -18135,7 +18135,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
     SetOpLclRelatedToSIMDIntrinsic(op2);
     SetOpLclRelatedToSIMDIntrinsic(op3);
 
-    return new (this, GT_HWIntrinsic)
+    return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, baseType, size);
 }
 
@@ -18153,7 +18153,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
     SetOpLclRelatedToSIMDIntrinsic(op3);
     SetOpLclRelatedToSIMDIntrinsic(op4);
 
-    return new (this, GT_HWIntrinsic)
+    return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
 }
 
@@ -18161,7 +18161,7 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, TYP_UNKNOWN, 0);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
@@ -18172,7 +18172,7 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, TYP_UNKNOWN, 0);
+    return new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
@@ -18182,7 +18182,7 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
     SetOpLclRelatedToSIMDIntrinsic(op2);
     SetOpLclRelatedToSIMDIntrinsic(op3);
 
-    return new (this, GT_HWIntrinsic)
+    return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 

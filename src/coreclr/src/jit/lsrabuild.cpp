@@ -1092,7 +1092,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 #endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_HW_INTRINSICS
-        case GT_HWIntrinsic:
+        case GT_HWINTRINSIC:
             killMask = getKillSetForHWIntrinsic(tree->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
