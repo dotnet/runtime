@@ -12,8 +12,6 @@
 //
 // ============================================================
 
-#define DISABLE_BINDER_DEBUG_LOGGING
-
 #include "utils.hpp"
 
 #include "strongname.h"
@@ -35,11 +33,8 @@ namespace BINDER_SPACE
 
     void MutateUrlToPath(SString &urlOrPath)
     {
-        BINDER_LOG_ENTER(W("Utils::MutateUrlToPath"));
         const SString fileUrlPrefix(SString::Literal, W("file://"));
         SString::Iterator i = urlOrPath.Begin();
-
-        BINDER_LOG_STRING(W("URL"), urlOrPath);
 
         if (urlOrPath.MatchCaseInsensitive(i, fileUrlPrefix))
         {
@@ -76,20 +71,12 @@ namespace BINDER_SPACE
         {
             urlOrPath.Replace(i, W('\\'));
         }
-
-        BINDER_LOG_STRING(W("Path"), urlOrPath);
-        BINDER_LOG_LEAVE(W("Utils::MutateUrlToPath"));
     }
 
     void CombinePath(SString &pathA,
                      SString &pathB,
                      SString &combinedPath)
     {
-        BINDER_LOG_ENTER(W("Utils::CombinePath"));
-
-        BINDER_LOG_STRING(W("path A"), pathA);
-        BINDER_LOG_STRING(W("path B"), pathB);
-
         SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
         combinedPath.Set(pathA);
         
@@ -99,15 +86,12 @@ namespace BINDER_SPACE
         }
         
         combinedPath.Append(pathB);
-        
-        BINDER_LOG_LEAVE(W("Utils::CombinePath"));
     }
 
     HRESULT GetTokenFromPublicKey(SBuffer &publicKeyBLOB,
                                   SBuffer &publicKeyTokenBLOB)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(W("GetTokenFromPublicKey"));
 
         const BYTE *pByteKey = publicKeyBLOB;
         DWORD dwKeyLen = publicKeyBLOB.GetSize();
@@ -119,7 +103,6 @@ namespace BINDER_SPACE
                                           &pByteToken,
                                           &dwTokenLen))
         {
-            BINDER_LOG(W("StrongNameTokenFromPublicKey failed!"));
             IF_FAIL_GO(StrongNameErrorInfo());
         }
         else
@@ -130,7 +113,6 @@ namespace BINDER_SPACE
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(W("GetTokenFromPublicKey"), hr);
         return hr;
     }
 

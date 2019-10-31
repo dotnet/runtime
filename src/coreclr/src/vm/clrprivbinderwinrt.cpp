@@ -27,7 +27,6 @@
 #include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybinder.hpp"
 #include "../binder/inc/assembly.hpp"
-#include "../binder/inc/debuglog.hpp"
 #include "../binder/inc/utils.hpp"
 #include "../binder/inc/fusionassemblyname.hpp"
 
@@ -217,9 +216,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     ReleaseHolder<CLRPrivAssemblyWinRT> pAssembly;
     LPWSTR wszFullTypeName = nullptr;
 
-#ifndef CROSSGEN_COMPILE
-    BINDER_SPACE::BINDER_LOG_ENTER(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"));
-#endif
     VALIDATE_ARG_RET(pAssemblyName != nullptr);
     VALIDATE_ARG_RET(ppAssembly != nullptr);
     
@@ -365,9 +361,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
             IfFailGo(hr = m_pTypeCache->ContainsType(pAssembly, wszFullTypeName));
             if (hr == S_OK)
             {   // The type we are looking for has been found in this assembly
-#ifndef CROSSGEN_COMPILE
-                BINDER_SPACE::BINDER_LOG_LEAVE_HR(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"), hr);
-#endif
                 *ppAssembly = pAssembly.Extract();
                 return (hr = S_OK);
             }
@@ -379,7 +372,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     hr = CLR_E_BIND_TYPE_NOT_FOUND;
  ErrExit:
 
-    BINDER_SPACE::BINDER_LOG_LEAVE_HR(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"), hr);
     return hr;
 } // CLRPrivBinderWinRT::BindWinRTAssemblyByName
 

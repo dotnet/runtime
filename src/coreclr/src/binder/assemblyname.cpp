@@ -12,8 +12,6 @@
 //
 // ============================================================
 
-#define DISABLE_BINDER_DEBUG_LOGGING
-
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "utils.hpp"
@@ -57,15 +55,11 @@ namespace BINDER_SPACE
         DWORD dwRefOrDefFlags = 0;
         DWORD dwHashAlgId = 0;
 
-        BINDER_LOG_ENTER(L"AssemblyName::Init(IMetaDataAssemblyImport)");
-
         if (fIsDefinition)
         {
             // Get the assembly token
             IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyFromScope(&mda));
         }
-
-        BINDER_LOG(L"Have mda scope!");
 
         // Get name and metadata
         if (fIsDefinition)
@@ -93,8 +87,6 @@ namespace BINDER_SPACE
                             &dwRefOrDefFlags // [OUT] Flags.
                             ));
         }
-
-        BINDER_LOG(L"Have props!");
 
         {
             StackSString culture;
@@ -176,22 +168,12 @@ namespace BINDER_SPACE
         SetArchitecture(PeKind);
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"AssemblyName::Init(IMetaDataAssemblyImport)", hr);
         return hr;
     }
 
     HRESULT AssemblyName::Init(SString &assemblyDisplayName)
     {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"AssemblyName::Init(assemblyDisplayName)");
-
-        BINDER_LOG_STRING(L"assemblyDisplayName", assemblyDisplayName);
-
-        IF_FAIL_GO(TextualIdentityParser::Parse(assemblyDisplayName, this));
-        
-    Exit:
-        BINDER_LOG_LEAVE_HR(L"AssemblyName::Init(assemblyDisplayName)", hr);
-        return hr;
+        return TextualIdentityParser::Parse(assemblyDisplayName, this);
     }
 
     HRESULT AssemblyName::Init(IAssemblyName *pIAssemblyName)
@@ -405,63 +387,10 @@ Exit:
         return ulRef;
     }
 
-    SString &AssemblyName::GetDeNormalizedCulture()
-    {
-        SString &culture = GetCulture();
-
-        if (EqualsCaseInsensitive(culture, g_BinderVariables->cultureNeutral))
-        {
-            culture = g_BinderVariables->emptyString;
-        }
-
-        return culture;
-    }
-
-    BOOL AssemblyName::IsStronglyNamed()
-    {
-        return Have(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
-    }
-    
     BOOL AssemblyName::IsMscorlib()
     {
         // TODO: Is this simple comparison enough?
         return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->mscorlib);
-    }
-
-    HRESULT AssemblyName::SetArchitecture(SString &architecture)
-    {
-        HRESULT hr = S_OK;
-
-        if (architecture.IsEmpty())
-        {
-            SetArchitecture(peNone);
-        }
-        else if (EqualsCaseInsensitive(architecture, g_BinderVariables->architectureMSIL))
-        {
-            SetArchitecture(peMSIL);
-        }
-        else if (EqualsCaseInsensitive(architecture, g_BinderVariables->architectureX86))
-        {
-            SetArchitecture(peI386);
-        }
-        else if (EqualsCaseInsensitive(architecture, g_BinderVariables->architectureAMD64))
-        {
-            SetArchitecture(peAMD64);
-        }
-        else if (EqualsCaseInsensitive(architecture, g_BinderVariables->architectureARM))
-        {
-            SetArchitecture(peARM);
-        }
-        else if (EqualsCaseInsensitive(architecture, g_BinderVariables->architectureARM64))
-        {
-            SetArchitecture(peARM64);
-        }
-        else
-        {
-            hr = FUSION_E_MANIFEST_PARSE_ERROR;
-        }
-
-        return hr;
     }
 
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)
@@ -640,28 +569,6 @@ Exit:
         }
 
         TextualIdentityParser::ToString(this, dwUseIdentityFlags, displayName);
-    }
-
-    SString &AssemblyName::ArchitectureToString(PEKIND kArchitecture)
-    {
-            switch (kArchitecture)
-            {
-            case peNone:
-                return g_BinderVariables->emptyString;
-            case peMSIL:
-                return g_BinderVariables->architectureMSIL;
-            case peI386:
-                return g_BinderVariables->architectureX86;
-            case peAMD64:
-                return g_BinderVariables->architectureAMD64;
-            case peARM:
-                return g_BinderVariables->architectureARM;
-            case peARM64:
-                return g_BinderVariables->architectureARM64;
-            default:
-                _ASSERTE(0);
-                return g_BinderVariables->emptyString;
-            }
     }
 
     SString &AssemblyName::GetNormalizedCulture()

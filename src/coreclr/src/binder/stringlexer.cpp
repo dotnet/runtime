@@ -12,8 +12,6 @@
 //
 // ============================================================
 
-#define DISABLE_BINDER_DEBUG_LOGGING
-
 #include "stringlexer.hpp"
 #include "utils.hpp"
 
@@ -26,7 +24,6 @@ namespace BINDER_SPACE
     {
         BOOL fIsEscaped = FALSE;
         WCHAR wcCurrentChar = INVALID_CHARACTER;
-        BINDER_LOG_ENTER(L"StringLexer::GetNextLexeme");
 
         // Remove any white spaces
         do
@@ -36,11 +33,9 @@ namespace BINDER_SPACE
         while (IsWhitespace(wcCurrentChar));
 
         // Determine lexeme type
-        LEXEME_TYPE kLexemeType = LEXEME_TYPE_INVALID;
         if (!fIsEscaped)
         {
-            kLexemeType = GetLexemeType(wcCurrentChar);
-
+            LEXEME_TYPE kLexemeType = GetLexemeType(wcCurrentChar);
             if (kLexemeType != LEXEME_TYPE_STRING)
             {
                 return kLexemeType;
@@ -49,18 +44,7 @@ namespace BINDER_SPACE
 
         // First character of string lexeme; push it back
         PushCharacter(wcCurrentChar, fIsEscaped);
-        kLexemeType = ParseString(currentString, fPermitUnescapedQuotes);
-        if (kLexemeType == LEXEME_TYPE_STRING)
-        {
-            BINDER_LOG_LEAVE_HR(L"StringLexer::GetNextLexeme(LEXEME_TYPE_STRING)", S_OK);
-        }
-        else
-        {
-            BINDER_LOG_LEAVE_HR(L"StringLexer::GetNextLexeme(LEXEME_TYPE_INVALID)",
-                                S_FALSE);
-        }
-
-        return kLexemeType;
+        return ParseString(currentString, fPermitUnescapedQuotes);
     }
 
     StringLexer::LEXEME_TYPE
@@ -81,7 +65,6 @@ namespace BINDER_SPACE
             if (wcCurrentChar == INVALID_CHARACTER)
             {
                 // Found invalid character encoding
-                BINDER_LOG(L"StringLexer::ParseString: Invalid character encoding");
                 return LEXEME_TYPE_INVALID;
             }
 
@@ -90,7 +73,6 @@ namespace BINDER_SPACE
                 if (IsQuoteCharacter(wcOpeningQuote))
                 {
                     // EOS and unclosed quotes is an error
-                    BINDER_LOG(L"StringLexer::ParseString: EOS and unclosed quotes");
                     return LEXEME_TYPE_INVALID;
                 }
                 else
@@ -121,7 +103,6 @@ namespace BINDER_SPACE
             if (!fPermitUnescapedQuotes && !fIsEscaped && IsQuoteCharacter(wcCurrentChar) && !IsQuoteCharacter(wcOpeningQuote))
             {
                 // Unescaped quotes in the middle of the string are an error
-                BINDER_LOG(L"StringLexer::ParseString: Quote in the middle of a string");
                 return LEXEME_TYPE_INVALID;
             }
 
@@ -139,11 +120,8 @@ namespace BINDER_SPACE
         if (!IsQuoteCharacter(wcOpeningQuote))
         {
             // Remove trailing white spaces from unquoted string
-            BINDER_LOG(L"StringLexer::ParseString: Trimming string");
             TrimTrailingWhiteSpaces(currentString);
         }
-
-        BINDER_LOG_STRING(L"string", currentString);
 
         return LEXEME_TYPE_STRING;
     }
