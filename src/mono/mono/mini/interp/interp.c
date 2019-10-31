@@ -3326,6 +3326,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #endif
 	//g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
 
+#if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
+	mono_threads_safepoint ();
+#endif
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug

@@ -3343,9 +3343,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		else if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 			interp_add_ins (td, MINT_PROF_ENTER);
 
+		/*
+		 * If safepoints are required by default, always check for polling,
+		 * without emitting new instructions. This optimizes method entry in
+		 * the common scenario, which is coop.
+		 */
+#if !defined(ENABLE_HYBRID_SUSPEND) && !defined(ENABLE_COOP_SUSPEND)
 		/* safepoint is required on method entry */
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
+#endif
 	} else {
 		int local;
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
