@@ -1125,31 +1125,29 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
                 // If our caller has given us the old edge weights
                 // then we will use them.
                 //
-                flow->flEdgeWeightMin = oldEdge->flEdgeWeightMin;
-                flow->flEdgeWeightMax = oldEdge->flEdgeWeightMax;
+                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax());
             }
             else
             {
                 // Set the max edge weight to be the minimum of block's or blockPred's weight
                 //
-                flow->flEdgeWeightMax = min(block->bbWeight, blockPred->bbWeight);
+                BasicBlock::weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
 
                 // If we are inserting a conditional block the minimum weight is zero,
                 // otherwise it is the same as the edge's max weight.
                 if (blockPred->NumSucc() > 1)
                 {
-                    flow->flEdgeWeightMin = BB_ZERO_WEIGHT;
+                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax);
                 }
                 else
                 {
-                    flow->flEdgeWeightMin = flow->flEdgeWeightMax;
+                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax);
                 }
             }
         }
         else
         {
-            flow->flEdgeWeightMin = BB_ZERO_WEIGHT;
-            flow->flEdgeWeightMax = BB_MAX_WEIGHT;
+            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
         }
     }
     return flow;
@@ -11438,7 +11436,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                         flowList* newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
-                        jmpBlk->bbWeight = (newEdge->flEdgeWeightMin + newEdge->flEdgeWeightMax) / 2;
+                        jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
                         if (bSrc->bbWeight == 0)
                         {
                             jmpBlk->bbWeight = 0;
@@ -11449,7 +11447,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                             jmpBlk->bbFlags |= BBF_RUN_RARELY;
                         }
 
-                        BasicBlock::weight_t weightDiff = (newEdge->flEdgeWeightMax - newEdge->flEdgeWeightMin);
+                        BasicBlock::weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
                         BasicBlock::weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
 
                         //
@@ -13091,6 +13089,23 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBloc
     return result;
 }
 
+//------------------------------------------------------------------------
+// setEdgeWeights: Sets the minimum lower (flEdgeWeightMin) value
+//                  and the maximum upper (flEdgeWeightMax) value
+//                 Asserts that the max value is greater or equal to the min value
+//
+// Arguments:
+//    theMinWeight - the new minimum lower (flEdgeWeightMin)
+//    theMaxWeight - the new maximum upper (flEdgeWeightMin)
+//
+void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight)
+{
+    assert(theMinWeight <= theMaxWeight);
+
+    flEdgeWeightMin = theMinWeight;
+    flEdgeWeightMax = theMaxWeight;
+}
+
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
@@ -13111,19 +13126,19 @@ void Compiler::fgPrintEdgeWeights()
 
                 printf(FMT_BB " ", bSrc->bbNum);
 
-                if (edge->flEdgeWeightMin < BB_MAX_WEIGHT)
+                if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
                 {
-                    printf("(%u", edge->flEdgeWeightMin);
+                    printf("(%u", edge->edgeWeightMin());
                 }
                 else
                 {
                     printf("(MAX");
                 }
-                if (edge->flEdgeWeightMin != edge->flEdgeWeightMax)
+                if (edge->edgeWeightMin() != edge->edgeWeightMax())
                 {
-                    if (edge->flEdgeWeightMax < BB_MAX_WEIGHT)
+                    if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
                     {
-                        printf("..%u", edge->flEdgeWeightMax);
+                        printf("..%u", edge->edgeWeightMax());
                     }
                     else
                     {
@@ -13450,8 +13465,7 @@ void Compiler::fgComputeEdgeWeights()
 
             if (!bSrc->hasProfileWeight() || !bDst->hasProfileWeight())
             {
-                edge->flEdgeWeightMin = BB_ZERO_WEIGHT;
-                edge->flEdgeWeightMax = BB_MAX_WEIGHT;
+                edge->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
@@ -13470,7 +13484,7 @@ void Compiler::fgComputeEdgeWeights()
                 case BBJ_SWITCH:
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFILTERRET:
-                    if (edge->flEdgeWeightMax > bSrc->bbWeight)
+                    if (edge->edgeWeightMax() > bSrc->bbWeight)
                     {
                         // The maximum edge weight to block can't be greater than the weight of bSrc
                         assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, slop, &usedSlop);
@@ -13484,7 +13498,7 @@ void Compiler::fgComputeEdgeWeights()
             }
 
             // The maximum edge weight to block can't be greater than the weight of bDst
-            if (edge->flEdgeWeightMax > bDstWeight)
+            if (edge->edgeWeightMax() > bDstWeight)
             {
                 assignOK &= edge->setEdgeWeightMaxChecked(bDstWeight, slop, &usedSlop);
             }
@@ -13532,31 +13546,31 @@ void Compiler::fgComputeEdgeWeights()
                     {
                         otherEdge = fgGetPredForBlock(bSrc->bbNext, bSrc);
                     }
-                    noway_assert(edge->flEdgeWeightMin <= edge->flEdgeWeightMax);
-                    noway_assert(otherEdge->flEdgeWeightMin <= otherEdge->flEdgeWeightMax);
+                    noway_assert(edge->edgeWeightMin() <= edge->edgeWeightMax());
+                    noway_assert(otherEdge->edgeWeightMin() <= otherEdge->edgeWeightMax());
 
                     // Adjust edge->flEdgeWeightMin up or adjust otherEdge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->flEdgeWeightMin + (int)otherEdge->flEdgeWeightMax);
+                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
                     if (diff > 0)
                     {
-                        assignOK &= edge->setEdgeWeightMinChecked(edge->flEdgeWeightMin + diff, slop, &usedSlop);
+                        assignOK &= edge->setEdgeWeightMinChecked(edge->edgeWeightMin() + diff, slop, &usedSlop);
                     }
                     else if (diff < 0)
                     {
                         assignOK &=
-                            otherEdge->setEdgeWeightMaxChecked(otherEdge->flEdgeWeightMax + diff, slop, &usedSlop);
+                            otherEdge->setEdgeWeightMaxChecked(otherEdge->edgeWeightMax() + diff, slop, &usedSlop);
                     }
 
                     // Adjust otherEdge->flEdgeWeightMin up or adjust edge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->flEdgeWeightMin + (int)edge->flEdgeWeightMax);
+                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &=
-                            otherEdge->setEdgeWeightMinChecked(otherEdge->flEdgeWeightMin + diff, slop, &usedSlop);
+                            otherEdge->setEdgeWeightMinChecked(otherEdge->edgeWeightMin() + diff, slop, &usedSlop);
                     }
                     else if (diff < 0)
                     {
-                        assignOK &= edge->setEdgeWeightMaxChecked(edge->flEdgeWeightMax + diff, slop, &usedSlop);
+                        assignOK &= edge->setEdgeWeightMaxChecked(edge->edgeWeightMax() + diff, slop, &usedSlop);
                     }
 
                     if (!assignOK)
@@ -13568,11 +13582,11 @@ void Compiler::fgComputeEdgeWeights()
                     }
 #ifdef DEBUG
                     // Now edge->flEdgeWeightMin and otherEdge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->flEdgeWeightMin + (int)otherEdge->flEdgeWeightMax);
+                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
                     noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
 
                     // Now otherEdge->flEdgeWeightMin and edge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->flEdgeWeightMin + (int)edge->flEdgeWeightMax);
+                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
                     noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
 #endif // DEBUG
                 }
@@ -13608,8 +13622,8 @@ void Compiler::fgComputeEdgeWeights()
                     // We are processing the control flow edge (bSrc -> bDst)
                     bSrc = edge->flBlock;
 
-                    maxEdgeWeightSum += edge->flEdgeWeightMax;
-                    minEdgeWeightSum += edge->flEdgeWeightMin;
+                    maxEdgeWeightSum += edge->edgeWeightMax();
+                    minEdgeWeightSum += edge->edgeWeightMin();
                 }
 
                 // maxEdgeWeightSum is the sum of all flEdgeWeightMax values into bDst
@@ -13625,20 +13639,20 @@ void Compiler::fgComputeEdgeWeights()
 
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
                     // This can be used to compute a lower bound for our minimum edge weight
-                    noway_assert(maxEdgeWeightSum >= edge->flEdgeWeightMax);
-                    UINT64 otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->flEdgeWeightMax;
+                    noway_assert(maxEdgeWeightSum >= edge->edgeWeightMax());
+                    UINT64 otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
 
                     // otherMinEdgesWeightSum is the sum of all of the other edges flEdgeWeightMin values
                     // This can be used to compute an upper bound for our maximum edge weight
-                    noway_assert(minEdgeWeightSum >= edge->flEdgeWeightMin);
-                    UINT64 otherMinEdgesWeightSum = minEdgeWeightSum - edge->flEdgeWeightMin;
+                    noway_assert(minEdgeWeightSum >= edge->edgeWeightMin());
+                    UINT64 otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
 
                     if (bDstWeight >= otherMaxEdgesWeightSum)
                     {
                         // minWeightCalc is our minWeight when every other path to bDst takes it's flEdgeWeightMax value
                         BasicBlock::weight_t minWeightCalc =
                             (BasicBlock::weight_t)(bDstWeight - otherMaxEdgesWeightSum);
-                        if (minWeightCalc > edge->flEdgeWeightMin)
+                        if (minWeightCalc > edge->edgeWeightMin())
                         {
                             assignOK &= edge->setEdgeWeightMinChecked(minWeightCalc, slop, &usedSlop);
                         }
@@ -13649,7 +13663,7 @@ void Compiler::fgComputeEdgeWeights()
                         // maxWeightCalc is our maxWeight when every other path to bDst takes it's flEdgeWeightMin value
                         BasicBlock::weight_t maxWeightCalc =
                             (BasicBlock::weight_t)(bDstWeight - otherMinEdgesWeightSum);
-                        if (maxWeightCalc < edge->flEdgeWeightMax)
+                        if (maxWeightCalc < edge->edgeWeightMax())
                         {
                             assignOK &= edge->setEdgeWeightMaxChecked(maxWeightCalc, slop, &usedSlop);
                         }
@@ -13664,7 +13678,7 @@ void Compiler::fgComputeEdgeWeights()
                     }
 
                     // When flEdgeWeightMin equals flEdgeWeightMax we have a "good" edge weight
-                    if (edge->flEdgeWeightMin == edge->flEdgeWeightMax)
+                    if (edge->edgeWeightMin() == edge->edgeWeightMax())
                     {
                         // Count how many "good" edge weights we have
                         // Each time through we should have more "good" weights
@@ -13734,7 +13748,7 @@ EARLY_EXIT:;
                 bSrc = edge->flBlock;
                 // This is the control flow edge (bSrc -> bDst)
 
-                if (edge->flEdgeWeightMin != edge->flEdgeWeightMax)
+                if (edge->edgeWeightMin() != edge->edgeWeightMax())
                 {
                     fgRangeUsedInEdgeWeights = true;
                     break;
@@ -13835,12 +13849,12 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
             BasicBlock::weight_t edgeWeight;
 
-            if (edge1->flEdgeWeightMin != edge1->flEdgeWeightMax)
+            if (edge1->edgeWeightMin() != edge1->edgeWeightMax())
             {
                 //
                 // We only have an estimate for the edge weight
                 //
-                edgeWeight = (edge1->flEdgeWeightMin + edge1->flEdgeWeightMax) / 2;
+                edgeWeight = (edge1->edgeWeightMin() + edge1->edgeWeightMax()) / 2;
                 //
                 //  Clear the profile weight flag
                 //
@@ -13851,7 +13865,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 //
                 // We only have the exact edge weight
                 //
-                edgeWeight = edge1->flEdgeWeightMin;
+                edgeWeight = edge1->edgeWeightMin();
             }
 
             //
@@ -13874,23 +13888,27 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 //
                 // Update the edge2 min/max weights
                 //
-                if (edge2->flEdgeWeightMin > edge1->flEdgeWeightMin)
+                BasicBlock::weight_t newEdge2Min;
+                BasicBlock::weight_t newEdge2Max;
+
+                if (edge2->edgeWeightMin() > edge1->edgeWeightMin())
                 {
-                    edge2->flEdgeWeightMin -= edge1->flEdgeWeightMin;
+                    newEdge2Min = edge2->edgeWeightMin() - edge1->edgeWeightMin();
                 }
                 else
                 {
-                    edge2->flEdgeWeightMin = BB_ZERO_WEIGHT;
+                    newEdge2Min = BB_ZERO_WEIGHT;
                 }
 
-                if (edge2->flEdgeWeightMax > edge1->flEdgeWeightMin)
+                if (edge2->edgeWeightMax() > edge1->edgeWeightMin())
                 {
-                    edge2->flEdgeWeightMax -= edge1->flEdgeWeightMin;
+                    newEdge2Max = edge2->edgeWeightMax() - edge1->edgeWeightMin();
                 }
                 else
                 {
-                    edge2->flEdgeWeightMax = BB_ZERO_WEIGHT;
+                    newEdge2Max = BB_ZERO_WEIGHT;
                 }
+                edge2->setEdgeWeights(newEdge2Min, newEdge2Max);
             }
         }
 
@@ -14195,7 +14213,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 if (fgHaveValidEdgeWeights)
                 {
                     flowList*            edge                = fgGetPredForBlock(bDest, block);
-                    BasicBlock::weight_t branchThroughWeight = edge->flEdgeWeightMin;
+                    BasicBlock::weight_t branchThroughWeight = edge->edgeWeightMin();
 
                     if (bDest->bbWeight > branchThroughWeight)
                     {
@@ -15101,7 +15119,7 @@ bool Compiler::fgOptimizeSwitchJumps()
             {
                 BasicBlock*   bDst       = *jumpTab;
                 flowList*     edgeToDst  = fgGetPredForBlock(bDst, bSrc);
-                double        outRatio   = (double) edgeToDst->flEdgeWeightMin  / (double) bSrc->bbWeight;
+                double        outRatio   = (double) edgeToDst->edgeWeightMin()  / (double) bSrc->bbWeight;
 
                 if (outRatio >= 0.60)
                 {
@@ -15271,7 +15289,7 @@ void Compiler::fgReorderBlocks()
                             {
                                 if (edge != edgeFromPrev)
                                 {
-                                    if (edge->flEdgeWeightMax >= edgeFromPrev->flEdgeWeightMin)
+                                    if (edge->edgeWeightMax() >= edgeFromPrev->edgeWeightMin())
                                     {
                                         moveDestUp = false;
                                         break;
@@ -15368,9 +15386,9 @@ void Compiler::fgReorderBlocks()
                         //   A takenRation of 0.90 means taken 90% of the time, not taken 10% of the time
                         //
                         double takenCount =
-                            ((double)edgeToDest->flEdgeWeightMin + (double)edgeToDest->flEdgeWeightMax) / 2.0;
+                            ((double)edgeToDest->edgeWeightMin() + (double)edgeToDest->edgeWeightMax()) / 2.0;
                         double notTakenCount =
-                            ((double)edgeToBlock->flEdgeWeightMin + (double)edgeToBlock->flEdgeWeightMax) / 2.0;
+                            ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
                         double totalCount = takenCount + notTakenCount;
                         double takenRatio = takenCount / totalCount;
 
@@ -15382,7 +15400,7 @@ void Compiler::fgReorderBlocks()
                         else
                         {
                             // set profHotWeight
-                            profHotWeight = (edgeToBlock->flEdgeWeightMin + edgeToBlock->flEdgeWeightMax) / 2 - 1;
+                            profHotWeight = (edgeToBlock->edgeWeightMin() + edgeToBlock->edgeWeightMax()) / 2 - 1;
                         }
                     }
                     else
@@ -17423,7 +17441,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
         noway_assert(edgeFromCur != nullptr);
         noway_assert(edgeFromAlt != nullptr);
 
-        result = (edgeFromAlt->flEdgeWeightMin > edgeFromCur->flEdgeWeightMax);
+        result = (edgeFromAlt->edgeWeightMin() > edgeFromCur->edgeWeightMax());
     }
     else
     {
@@ -19947,16 +19965,16 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 }
                 if (validWeights)
                 {
-                    unsigned edgeWeight = (edge->flEdgeWeightMin + edge->flEdgeWeightMax) / 2;
+                    unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                     fprintf(fgxFile, "\n            weight=");
                     fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
-                    if (edge->flEdgeWeightMin != edge->flEdgeWeightMax)
+                    if (edge->edgeWeightMin() != edge->edgeWeightMax())
                     {
                         fprintf(fgxFile, "\n            minWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->flEdgeWeightMin) / weightDivisor);
+                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
                         fprintf(fgxFile, "\n            maxWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->flEdgeWeightMax) / weightDivisor);
+                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
                     }
 
                     if (edgeWeight > 0)

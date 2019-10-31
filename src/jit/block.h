@@ -1277,13 +1277,23 @@ struct BasicBlockList
 
 struct flowList
 {
-    flowList*   flNext;  // The next BasicBlock in the list, nullptr for end of list.
-    BasicBlock* flBlock; // The BasicBlock of interest.
+    flowList*   flNext;     // The next BasicBlock in the list, nullptr for end of list.
+    BasicBlock* flBlock;    // The BasicBlock of interest.
+    unsigned    flDupCount; // The count of duplicate "edges" (use only for switch stmts)
 
+private:
     BasicBlock::weight_t flEdgeWeightMin;
     BasicBlock::weight_t flEdgeWeightMax;
 
-    unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
+public:
+    BasicBlock::weight_t edgeWeightMin() const
+    {
+        return flEdgeWeightMin;
+    }
+    BasicBlock::weight_t edgeWeightMax() const
+    {
+        return flEdgeWeightMax;
+    }
 
     // These two methods are used to set new values for flEdgeWeightMin and flEdgeWeightMax
     // they are used only during the computation of the edge weights
@@ -1292,13 +1302,14 @@ struct flowList
     //
     bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
     bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
+    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
 
-    flowList() : flNext(nullptr), flBlock(nullptr), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
+    flowList() : flNext(nullptr), flBlock(nullptr), flDupCount(0), flEdgeWeightMin(0), flEdgeWeightMax(0)
     {
     }
 
     flowList(BasicBlock* blk, flowList* rest)
-        : flNext(rest), flBlock(blk), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
+        : flNext(rest), flBlock(blk), flDupCount(0), flEdgeWeightMin(0), flEdgeWeightMax(0)
     {
     }
 };
