@@ -76,9 +76,9 @@ namespace System.Reflection
         public static System.Reflection.PropertyInfo[] GetProperties(this System.Type type, System.Reflection.BindingFlags bindingAttr) { throw null; }
         public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name) { throw null; }
         public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
-        public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name, System.Type returnType) { throw null; }
-        public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name, System.Type returnType, System.Type[] types) { throw null; }
-        public static bool IsAssignableFrom(this System.Type type, System.Type c) { throw null; }
-        public static bool IsInstanceOfType(this System.Type type, object o) { throw null; }
+        public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name, System.Type? returnType) { throw null; }
+        public static System.Reflection.PropertyInfo? GetProperty(this System.Type type, string name, System.Type? returnType, System.Type[] types) { throw null; }
+        public static bool IsAssignableFrom(this System.Type type, System.Type? c) { throw null; }
+        public static bool IsInstanceOfType(this System.Type type, object? o) { throw null; }
     }
 }
