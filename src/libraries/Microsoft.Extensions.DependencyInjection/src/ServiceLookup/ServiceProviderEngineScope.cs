@@ -9,10 +9,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ServiceProviderEngineScope : IServiceScope, IServiceProvider
-#if DISPOSE_ASYNC
-        , IAsyncDisposable
-#endif
+    internal class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable
     {
         // For testing only
         internal Action<object> _captureDisposableCallback;
@@ -48,12 +45,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             _captureDisposableCallback?.Invoke(service);
 
-            if (ReferenceEquals(this, service) ||
-               !(service is IDisposable
-#if DISPOSE_ASYNC
-                || service is IAsyncDisposable
-#endif
-                ))
+            if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
                 return service;
             }
@@ -90,7 +82,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-#if DISPOSE_ASYNC
         public ValueTask DisposeAsync()
         {
             var toDispose = BeginDispose();
@@ -146,7 +137,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
         }
-#endif
 
         private List<object> BeginDispose()
         {

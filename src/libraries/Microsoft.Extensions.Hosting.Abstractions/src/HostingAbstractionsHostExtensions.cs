@@ -65,13 +65,11 @@ namespace Microsoft.Extensions.Hosting
             }
             finally
             {
-#if DISPOSE_ASYNC
                 if (host is IAsyncDisposable asyncDisposable)
                 {
                     await asyncDisposable.DisposeAsync();
                 }
                 else
-#endif
                 {
                     host.Dispose();
                 }

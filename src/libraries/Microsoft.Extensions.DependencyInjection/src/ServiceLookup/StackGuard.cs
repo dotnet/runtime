@@ -18,12 +18,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public bool TryEnterOnCurrentStack()
         {
-#if NETCOREAPP2_0
-            if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            {
-                return true;
-            }
-#else
             try
             {
                 RuntimeHelpers.EnsureSufficientExecutionStack();
@@ -32,7 +26,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             catch (InsufficientExecutionStackException)
             {
             }
-#endif
 
             if (_executionStackCount < MaxExecutionStackCount)
             {
