@@ -4456,13 +4456,24 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
     if  (info.interruptible)
     {
-        // If we are not on the active stack frame, we need to report gc registers
-        // that are live before the call. The reason is that the liveness of gc registers
-        // may change across a call to a method that does not return. In this case the instruction
-        // after the call may be a jump target and a register that didn't have a live gc pointer
-        // before the call may have a live gc pointer after the jump. To make sure we report the
-        // registers that have live gc pointers before the call we subtract 1 from curOffs.
-        unsigned curOffsRegs = (flags & ActiveStackFrame) != 0 ? curOffs : curOffs - 1;
+        unsigned curOffsRegs = curOffs;
+
+        // Don't decrement curOffsRegs when it is 0, as it is an unsigned and will wrap to MAX_UINT
+        //
+        if (curOffsRegs > 0)
+        {
+            // If we are not on the active stack frame, we need to report gc registers
+            // that are live before the call. The reason is that the liveness of gc registers
+            // may change across a call to a method that does not return. In this case the instruction
+            // after the call may be a jump target and a register that didn't have a live gc pointer
+            // before the call may have a live gc pointer after the jump. To make sure we report the
+            // registers that have live gc pointers before the call we subtract 1 from curOffs.
+            if ((flags & ActiveStackFrame) == 0)
+            {
+                // We are not the top most stack frame (i.e. the ActiveStackFrame)
+                curOffsRegs--;   // decrement curOffsRegs
+            }
+        }
 
         pushedSize = scanArgRegTableI(skipToArgReg(info, table), curOffsRegs, curOffs, &info);
 
