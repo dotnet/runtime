@@ -86,39 +86,21 @@ mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 la
 
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32) */
 
-static MonoImage *system_image;
-
-static void
-stash_system_image (MonoImage *image)
-{
-	system_image = image;
-}
-
 static MonoClass*
-get_file_version_info_class (void)
+get_file_version_info_class (MonoImage *system_image)
 {
-	static MonoClass *file_version_info_class;
-
-	if (file_version_info_class)
-		return file_version_info_class;
-
 	g_assert (system_image);
 
-	return file_version_info_class = mono_class_load_from_name (
+	return mono_class_load_from_name (
 		system_image, "System.Diagnostics", "FileVersionInfo");
 }
 
 static MonoClass*
-get_process_module_class (void)
+get_process_module_class (MonoImage *system_image)
 {
-	static MonoClass *process_module_class;
-
-	if (process_module_class)
-		return process_module_class;
-
 	g_assert (system_image);
 
-	return process_module_class = mono_class_load_from_name (
+	return mono_class_load_from_name (
 		system_image, "System.Diagnostics", "ProcessModule");
 }
 
@@ -398,8 +380,6 @@ ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject
 {
 	MonoStringHandle str = MONO_HANDLE_CAST (MonoString, mono_new_null ());
 
-	stash_system_image (m_class_get_image (mono_handle_class (this_obj)));
-
 	mono_w32process_get_fileversion (this_obj, str, filename, error);
 	return_if_nok (error);
 
@@ -453,7 +433,7 @@ process_add_module (MonoObjectHandle item, MonoObjectHandle filever, MonoStringH
 	MONO_HANDLE_ASSIGN (item, mono_object_new_handle (domain, proc_class, error));
 	goto_if_nok (error, exit);
 
-	MONO_HANDLE_ASSIGN (filever, mono_object_new_handle (domain, get_file_version_info_class (), error));
+	MONO_HANDLE_ASSIGN (filever, mono_object_new_handle (domain, get_file_version_info_class (m_class_get_image (proc_class)), error));
 	goto_if_nok (error, exit);
 
 	mono_w32process_get_fileversion (filever, str, filename, error);
@@ -502,7 +482,7 @@ process_get_module (MonoObjectHandle item, MonoObjectHandle filever,
 	MONO_HANDLE_ASSIGN (item, mono_object_new_handle (domain, proc_class, error));
 	goto_if_nok (error, exit);
 
-	MONO_HANDLE_ASSIGN (filever, mono_object_new_handle (domain, get_file_version_info_class (), error));
+	MONO_HANDLE_ASSIGN (filever, mono_object_new_handle (domain, get_file_version_info_class (m_class_get_image (proc_class)), error));
 	goto_if_nok (error, exit);
 
 	process_get_assembly_fileversion (filever, assembly);
@@ -540,6 +520,9 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 	guint32 i = 0;
 	guint32 num_added = 0;
 	GPtrArray *assemblies = NULL;
+	MonoClass *process_module_class;
+
+	process_module_class = get_process_module_class (m_class_get_image (mono_handle_class (this_obj)));
 
 	// Coop handles are created here, once, in order to cut down on
 	// handle creation and ease use of loops that would
@@ -547,8 +530,6 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 	MonoObjectHandle module = mono_new_null ();
 	MonoObjectHandle filever = mono_new_null ();
 	MonoStringHandle str = MONO_HANDLE_CAST (MonoString, mono_new_null ());
-
-	stash_system_image (m_class_get_image (mono_handle_class (this_obj)));
 
 	if (mono_w32process_get_pid (process) == mono_process_current_pid ()) {
 		assemblies = get_domain_assemblies (mono_domain_get ());
@@ -559,12 +540,12 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 		module_count += needed / sizeof (HMODULE);
 
 	count = module_count + assembly_count;
-	temp_arr = mono_array_new_handle (mono_domain_get (), get_process_module_class (), count, error);
+	temp_arr = mono_array_new_handle (mono_domain_get (), process_module_class, count, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	for (i = 0; i < module_count; i++) {
 		if (mono_w32process_module_get_name (process, mods [i], &modname, &modname_len) && mono_w32process_module_get_filename (process, mods [i], &filename, &filename_len)) {
-			process_add_module (module, filever, str, process, mods [i], filename, modname, get_process_module_class (), error);
+			process_add_module (module, filever, str, process, mods [i], filename, modname, process_module_class, error);
 			if (is_ok (error))
 				MONO_HANDLE_ARRAY_SETREF (temp_arr, num_added++, module);
 		}
@@ -577,7 +558,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 	if (assemblies) {
 		for (i = 0; i < assembly_count; i++) {
 			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-			process_get_module (module, filever, str, ass, get_process_module_class (), error);
+			process_get_module (module, filever, str, ass, process_module_class, error);
 			return_val_if_nok (error, NULL_HANDLE_ARRAY);
 			MONO_HANDLE_ARRAY_SETREF (temp_arr, num_added++, module);
 		}
@@ -588,7 +569,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_
 		return temp_arr;
 
 	/* shorter version of the array */
-	arr = mono_array_new_handle (mono_domain_get (), get_process_module_class (), num_added, error);
+	arr = mono_array_new_handle (mono_domain_get (), process_module_class, num_added, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	for (i = 0; i < num_added; i++) {
