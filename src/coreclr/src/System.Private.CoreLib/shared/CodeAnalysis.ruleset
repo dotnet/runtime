@@ -71,6 +71,7 @@
     <Rule Id="CA5369" Action="None" /> <!-- Use XmlReader For Deserialize -->
     <Rule Id="CA5371" Action="None" /> <!-- Use XmlReader For Schema Read -->
     <Rule Id="CA5372" Action="None" /> <!-- Use XmlReader For XPathDocument -->
+    <Rule Id="CA5397" Action="None" /> <!-- Security protocol version is deprecated -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->
