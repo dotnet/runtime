@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -116,7 +115,7 @@ namespace System.ComponentModel.Composition.Registration
                     if (argument.NodeType == ExpressionType.Call)
                     {
                         var methodCallExpression = (MethodCallExpression)argument;
-                        if (methodCallExpression.Arguments.Count() == 1)
+                        if (methodCallExpression.Arguments.Count == 1)
                         {
                             Expression parameter = methodCallExpression.Arguments[0];
                             if (parameter.NodeType == ExpressionType.Lambda)
