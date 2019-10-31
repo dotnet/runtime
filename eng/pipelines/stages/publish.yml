@@ -11,7 +11,7 @@ stages:
     variables:
     - template: /eng/common/templates/post-build/common-variables.yml
     jobs:
-    - template: /eng/jobs/run-publish-project.yml
+    - template: /eng/pipelines/jobs/run-publish-project.yml
       parameters:
         projectName: publish-blobs
         dependency: ${{ dependency }}
@@ -40,7 +40,7 @@ stages:
     variables:
     - template: /eng/common/templates/post-build/common-variables.yml
     jobs:
-    - template: /eng/jobs/run-publish-project.yml
+    - template: /eng/pipelines/jobs/run-publish-project.yml
       parameters:
         projectName: publish-final
         dependency: ${{ dependency }}

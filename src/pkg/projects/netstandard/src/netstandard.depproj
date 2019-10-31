@@ -17,7 +17,7 @@
           BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <FilesToPackage
-        Include="$(PackagesDir)$(NETStandardLibraryPackage.ToLowerInvariant())\$(NETStandardLibraryPackageVersion)\build\$(NETStandardTargetFramework)\ref\*"
+        Include="$(NuGetPackageRoot)$(NETStandardLibraryPackage.ToLowerInvariant())\$(NETStandardLibraryPackageVersion)\build\$(NETStandardTargetFramework)\ref\*"
         TargetPath="ref/$(NETStandardTargetFramework)" />
     </ItemGroup>
   </Target>

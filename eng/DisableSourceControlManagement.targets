@@ -1,10 +1,6 @@
 <Project>
 
   <PropertyGroup>
-    <DisableSourceControlManagementTargetsImported>true</DisableSourceControlManagementTargetsImported>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
   </PropertyGroup>
 

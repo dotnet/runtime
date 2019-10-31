@@ -129,7 +129,7 @@ jobs:
 
   - script: >-
       build.cmd -ci
-      -projects $(Build.SourcesDirectory)\publish\${{ parameters.projectName }}.proj
+      -projects $(Build.SourcesDirectory)\src\publish\${{ parameters.projectName }}.proj
       /p:Channel=${{ parameters.dependency.channel.storage }}
       /p:Configuration=Release
       $(_CommonPublishArgs)

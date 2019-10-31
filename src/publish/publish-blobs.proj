@@ -1,8 +1,8 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(LocalBuildToolsTaskFile)" />
-  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="CreateChecksums"
           DependsOnTargets="FindDownloadedArtifacts">

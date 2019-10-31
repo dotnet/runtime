@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <UsingTask TaskName="CopyNupkgAndChangeVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="CopyNupkgAndChangeVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="PrepareTestAssets"
           DependsOnTargets="
@@ -99,7 +99,7 @@
       Text="Copying all nupkgs in package cache to a local source for test restore..." />
 
     <ItemGroup>
-      <PackageCacheNupkgFile Include="$(PackagesDir)*\*\*.nupkg" />
+      <PackageCacheNupkgFile Include="$(NuGetPackageRoot)*\*\*.nupkg" />
     </ItemGroup>
 
     <Copy SourceFiles="@(PackageCacheNupkgFile)" DestinationFolder="$(InternalNupkgCacheDir)" />

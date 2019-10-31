@@ -15,7 +15,7 @@
     <MSBuild Projects="$(SigningToolsDir)\SignBinaries.proj" Targets="Build" />
 
     <ItemGroup>
-      <ManagedProject Include="$(SetupRoot)src\managed\**\*.csproj" />
+      <ManagedProject Include="$(InstallerProjectRoot)managed\**\*.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(ManagedProject)" Targets="Pack" />

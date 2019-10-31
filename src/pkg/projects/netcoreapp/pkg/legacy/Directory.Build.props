@@ -16,7 +16,7 @@
     <!-- references the host packages -->
     <Dependency
       Include="Microsoft.NETCore.DotNetHostPolicy"
-      VersionFromProject="$(SourceDir)pkg\projects\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj"
+      VersionFromProject="$(InstallerProjectRoot)pkg\projects\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj"
       TargetFramework="$(NETCoreAppFramework)" />
   </ItemGroup>
 

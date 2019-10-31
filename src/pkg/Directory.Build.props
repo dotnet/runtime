@@ -9,8 +9,8 @@
   <PropertyGroup>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</LicenseUrl>
-    <PackageDescriptionFile>$(SetupRoot)src/pkg/projects/descriptions.json</PackageDescriptionFile>
+    <LicenseUrl Condition="'$(LicenseUrl)' == ''">https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</LicenseUrl>
+    <PackageDescriptionFile>$(InstallerProjectRoot)pkg/projects/descriptions.json</PackageDescriptionFile>
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
@@ -32,9 +32,9 @@
       Intermediate dir the debtool project is copied to. Use DebtoolAssemblyFile for "dotnet
       deb-tool" commands, after depending on InitializeDotnetDebTool target.
     -->
-    <DebToolBinDir>$(BinDir)dotnet-deb-tool\</DebToolBinDir>
+    <DebToolBinDir>$(ArtifactsBinDir)dotnet-deb-tool\</DebToolBinDir>
     <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\netcoreapp3.0\dotnet-deb-tool.dll</DebtoolAssemblyFile>
-    <DotnetDebToolSourceDir>$(SetupRoot)tools-local/setuptools/dotnet-deb-tool/</DotnetDebToolSourceDir>
+    <DotnetDebToolSourceDir>$(RepoRoot)tools-local/dotnet-deb-tool/</DotnetDebToolSourceDir>
 
     <IsDebianBasedDistro
       Condition="

@@ -68,8 +68,8 @@
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
     <ItemGroup>
-      <InstallerProject Include="$(SourceDir)pkg\projects\**\*.pkgproj" />
-      <InstallerProject Include="$(SourceDir)pkg\projects\**\*.sfxproj" />
+      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
+      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(InstallerProject)" Targets="GenerateInstallers" />
@@ -96,7 +96,7 @@
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
-    <Copy SourceFiles="$(SetupRoot)resources/LICENSE-MSFT.txt"
+    <Copy SourceFiles="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' != 'true'"/>
 
@@ -116,7 +116,7 @@
 
     <!-- Copy nethost -->
     <PropertyGroup>
-      <_NetHostOutputDir>$(BinDir)$(InstallerSourceOSPlatformConfig)\corehost\</_NetHostOutputDir>
+      <_NetHostOutputDir>$(ArtifactsBinDir)$(InstallerSourceOSPlatformConfig)\corehost\</_NetHostOutputDir>
     </PropertyGroup>
     <ItemGroup>
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
@@ -157,7 +157,7 @@
 
   <Target Name="GenerateVersionBadge">
     <PropertyGroup>
-      <templateSvg>$(SetupRoot)resources/images/version_badge.svg</templateSvg>
+      <templateSvg>$(MSBuildThisFileDirectory)version_badge.svg</templateSvg>
     </PropertyGroup>
 
     <MakeDir  Condition="!Exists('$(BaseOutputRootPath)')" Directories="$(BaseOutputRootPath)" />
@@ -177,7 +177,7 @@
             GenerateTarBall"
           Condition="'$(UsePrebuiltPortableBinariesForInstallers)' != 'true'"/>
 
-  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateZip"
           Condition="'$(OSGroup)'=='Windows_NT'">
 

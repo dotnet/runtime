@@ -15,7 +15,7 @@
       signing that isn't (can't be?) supported by Arcade's single pass, such as MSIs and bundles:
       https://github.com/dotnet/arcade/issues/388
   -->
-  <Import Project="$(MSBuildThisFileDirectory)..\Subsets.props" />
+  <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
   <Target Name="CheckSpecifiedSubsetValidity"
           DependsOnTargets="
@@ -74,8 +74,12 @@
           BeforeTargets="Execute"
           Inputs="@(RepoTasksSrc)"
           Outputs="$(RepoTasksOutputFile)">
+    <ItemGroup>
+      <RepoTaskProjects Include="$(RepoTasksDir)**\*.csproj" />
+    </ItemGroup>
+
     <MSBuild
-      Projects="$(RepoTasksDir)core-setup.tasks.csproj"
+      Projects="@(RepoTaskProjects)"
       Properties="RepoRoot=$(RepoRoot)"
       Targets="
         Restore;
@@ -91,7 +95,7 @@
   <Target Name="GetRepoTasksSrc">
     <PropertyGroup>
       <RepoTasksDir>$(RepoRoot)tools-local\tasks\</RepoTasksDir>
-      <RepoTasksOutputFile>$(ArtifactsObjDir)core-setup.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
+      <RepoTasksOutputFile>$(ArtifactsObjDir)installer.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
     </PropertyGroup>
 
     <ItemGroup>

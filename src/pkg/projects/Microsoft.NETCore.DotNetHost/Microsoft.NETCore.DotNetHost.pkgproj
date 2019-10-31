@@ -29,11 +29,11 @@
     <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(PublishRootDir)ThirdPartyNotices.txt" />
 
-    <Copy SourceFiles="$(RepoRoot)LICENSE"
+    <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
           DestinationFiles="$(PublishRootDir)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
-    <Copy SourceFiles="$(SetupRoot)resources/LICENSE-MSFT.txt"
+    <Copy SourceFiles="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
           DestinationFiles="$(PublishRootDir)LICENSE.txt"
           Condition="'$(TargetsUnix)' != 'true'"/>
 

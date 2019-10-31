@@ -1,7 +1,7 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-  <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <!--
     Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
