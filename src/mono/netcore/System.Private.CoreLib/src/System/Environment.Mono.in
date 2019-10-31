@@ -23,15 +23,8 @@ namespace System
 			set;
 		}
 
-		public static extern bool HasShutdownStarted {
-			[MethodImplAttribute (MethodImplOptions.InternalCall)]
-			get;
-		}
-
-		public static extern int ProcessorCount {
-			[MethodImplAttribute (MethodImplOptions.InternalCall)]
-			get;
-		}
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		static extern int GetProcessorCount ();
 
 		public static string StackTrace {
 			[MethodImpl (MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
