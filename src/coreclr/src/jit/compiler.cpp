@@ -3996,8 +3996,8 @@ void Compiler::compSetOptimizationLevel()
 			sscanf_s(histr, "%x", &methHashHi);
 			if (methHash >= methHashLo && methHash <= methHashHi)
 			{
-				printf("MinOpts for method %s, hash = 0x%x.\n",
-					info.compFullName, info.compMethodHash());
+				printf("MinOpts for method %s, hash = %08x.\n",
+					info.compFullName, methHash);
 				printf("");         // in our logic this causes a flush
 				theMinOptsValue = true;
 			}
@@ -5495,7 +5495,12 @@ unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
     {
-        compMethodHashPrivate = compCompHnd->getMethodHash(compMethodHnd);
+        // compMethodHashPrivate = compCompHnd->getMethodHash(compMethodHnd);
+        assert(compFullName != nullptr);
+        assert(*compFullName != 0);
+        COUNT_T hash = HashStringA(compFullName); // Use compFullName to generate the hash, as it contains the signature
+                                                  // and return type
+        compMethodHashPrivate = hash;
     }
     return compMethodHashPrivate;
 }
@@ -5588,14 +5593,34 @@ void Compiler::compCompileFinish()
         {
             // clang-format off
             headerPrinted = true;
-            printf("         |  Profiled  | Exec-    |   Method has    |   calls   | Num |LclV |AProp| CSE |   Reg   |bytes | %3s code size | \n", Target::g_tgtCPUName);
-            printf(" mdToken |     |  RGN |    Count | EH | FRM | LOOP | NRM | IND | BBs | Cnt | Cnt | Cnt |  Alloc  |  IL  |   HOT |  COLD | method name \n");
-            printf("---------+-----+------+----------+----+-----+------+-----+-----+-----+-----+-----+-----+---------+------+-------+-------+-----------\n");
-            //      06001234 | PRF |  HOT |      219 | EH | ebp | LOOP |  15 |   6 |  12 |  17 |  12 |   8 |   28 p2 |  145 |   211 |   123 | System.Example(int)
+            printf("         |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | %3s codesize| \n", Target::g_tgtCPUName);
+            printf(" mdToken |  CNT |  RGN |    Hash  | EH | FRM | LOOP | NRM | IND | BBs | Cnt | Cnt | Cnt |  Score  |  IL  |   HOT | CLD | method name \n");
+            printf("---------+------+------+----------+----+-----+------+-----+-----+-----+-----+-----+-----+---------+------+-------+-----+\n");
+            //      06001234 | 1234 |  HOT | 0f1e2d3c | EH | ebp | LOOP |  15 |   6 |  12 |  17 |  12 |   8 | 1234.56 |  145 |  1234 | 123 | System.Example(int)
             // clang-format on
         }
 
         printf("%08X | ", currentMethodToken);
+
+        if (fgHaveProfileData())
+        {
+            if (profCallCount <= 9999)
+            {
+                printf("%4d | ", profCallCount);
+            }
+            else if (profCallCount <= 999500)
+            {
+                printf("%3dK | ", (profCallCount + 500) / 1000);
+            }
+            else
+            {
+                printf("%3dM | ", (profCallCount + 500000) / 1000000);
+            }
+        }
+        else
+        {
+            printf("     | ");
+        }
 
         CorInfoRegionKind regionKind = info.compMethodInfo->regionKind;
 
@@ -5603,16 +5628,7 @@ void Compiler::compCompileFinish()
         {
             printf("ALT | ");
         }
-        else if (fgHaveProfileData())
-        {
-            printf("PRF | ");
-        }
-        else
-        {
-            printf("    | ");
-        }
-
-        if (regionKind == CORINFO_REGION_NONE)
+        else if (regionKind == CORINFO_REGION_NONE)
         {
             printf("     | ");
         }
@@ -5633,7 +5649,7 @@ void Compiler::compCompileFinish()
             printf("UNKN | ");
         }
 
-        printf("%8d | ", profCallCount);
+        printf("%08x | ", info.compMethodHash());
 
         if (compHndBBtabCount > 0)
         {
@@ -5691,10 +5707,18 @@ void Compiler::compCompileFinish()
 #endif // FEATURE_ANYCSE
         }
 
-        printf(" LSRA    |"); // TODO-Cleanup: dump some interesting LSRA stat into the order file?
+        if (info.compPerfScore < 9999.995)
+        {
+            printf(" %7.2f |", info.compPerfScore);
+        }
+        else
+        {
+            printf(" %7.0f |", info.compPerfScore);
+        }
+
         printf(" %4d |", info.compMethodInfo->ILCodeSize);
         printf(" %5d |", info.compTotalHotCodeSize);
-        printf(" %5d |", info.compTotalColdCodeSize);
+        printf(" %3d |", info.compTotalColdCodeSize);
 
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
         printf(""); // in our logic this causes a flush
@@ -6115,9 +6139,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #ifdef DEBUG
     if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hsh=0x%x %s\n", Compiler::jitTotalMethodCompiled,
-               info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName());
+        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x\n", Compiler::jitTotalMethodCompiled, info.compClassName,
+               info.compMethodName, info.compILCodeSize, info.compMethodHash(), compGetTieringName());
     }
     if (compIsForInlining())
     {
@@ -8638,7 +8661,7 @@ void cFuncIR(Compiler* comp)
 {
     BasicBlock* block;
 
-    printf("Method %s::%s, hsh=0x%x\n", comp->info.compClassName, comp->info.compMethodName,
+    printf("Method %s::%s, hash=%08x\n", comp->info.compClassName, comp->info.compMethodName,
            comp->info.compMethodHash());
 
     printf("\n");
