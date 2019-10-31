@@ -1170,8 +1170,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree*  dest      = nullptr;
-    unsigned  destFlags = 0;
+    GenTree* dest      = nullptr;
+    unsigned destFlags = 0;
 
     if (ilOffset == BAD_IL_OFFSET)
     {
