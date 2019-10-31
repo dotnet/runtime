@@ -1482,7 +1482,7 @@ public:
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
     {
 #ifdef FEATURE_HW_INTRINSICS
-        return gtOper == GT_HWIntrinsic;
+        return gtOper == GT_HWINTRINSIC;
 #else
         return false;
 #endif // FEATURE_HW_INTRINSICS
@@ -1554,7 +1554,7 @@ public:
             case GT_RETFILT:
             case GT_NOP:
 #ifdef FEATURE_HW_INTRINSICS
-            case GT_HWIntrinsic:
+            case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
                 return true;
             case GT_RETURN:
@@ -1581,7 +1581,7 @@ public:
 #endif // !FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-            case GT_HWIntrinsic:
+            case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(_TARGET_ARM_)
@@ -4491,14 +4491,14 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     var_types      gtIndexBaseType; // for AVX2 Gather* intrinsics
 
     GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, nullptr, nullptr, baseType, size)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, baseType, size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
     }
 
     GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, nullptr, baseType, size)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, baseType, size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
@@ -4510,7 +4510,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     GenTreeHWIntrinsic(
         var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, op2, baseType, size)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, baseType, size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {

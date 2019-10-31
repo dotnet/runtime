@@ -497,7 +497,7 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
-// impHWIntrinsic: Import a hardware intrinsic as a GT_HWIntrinsic node if possible
+// impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
@@ -505,7 +505,7 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 //    sig       -- signature of the intrinsic call
 //
 // Return Value:
-//    The GT_HWIntrinsic node, or nullptr if not a supported intrinsic
+//    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
 //
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,

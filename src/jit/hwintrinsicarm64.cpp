@@ -211,7 +211,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 }
 
 //------------------------------------------------------------------------
-// impSpecialIntrinsic: Import a hardware intrinsic that requires special handling as a GT_HWIntrinsic node if possible
+// impSpecialIntrinsic: Import a hardware intrinsic that requires special handling as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
 //    intrinsic  -- id of the intrinsic function.
@@ -220,7 +220,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    mustExpand -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
 //
 // Return Value:
-//    The GT_HWIntrinsic node, or nullptr if not a supported intrinsic
+//    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
 //
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
