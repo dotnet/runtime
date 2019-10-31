@@ -39,11 +39,6 @@ namespace BINDER_SPACE
         SString httpURLPrefix;
 
         // AssemblyName string constants
-        SString architectureMSIL;
-        SString architectureX86;
-        SString architectureAMD64;
-        SString architectureARM;
-        SString architectureARM64;
         SString cultureNeutral;
         SString emptyString;
         SString mscorlib;
@@ -52,12 +47,6 @@ namespace BINDER_SPACE
         BOOL fLoggingNeeded;
         SString logPath;
 #endif // FEATURE_VERSIONING_LOG
-#ifndef DACCESS_COMPILE
-#ifdef BINDER_DEBUG_LOG
-        CRITSEC_COOKIE m_logCS;
-        HandleHolder m_hDebugLogFile;
-#endif // BINDER_DEBUG_LOG
-#endif
     };
 
     extern Variables *g_BinderVariables;

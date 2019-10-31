@@ -52,49 +52,26 @@ BOOL StringLexer::IsQuoteCharacter(WCHAR wcChar)
 WCHAR StringLexer::PopCharacter(BOOL *pfIsEscaped)
 {
     WCHAR wcCurrentChar = m_wcCurrentChar;
-    BINDER_LOG_ENTER(L"StringLexer::PopCharacter");
-
     if (wcCurrentChar != INVALID_CHARACTER)
     {
-        BINDER_LOG(L"HAVE wcCurrentChar");
         m_wcCurrentChar = INVALID_CHARACTER;
         *pfIsEscaped = m_fCurrentCharIsEscaped;
     }
     else
     {
-        BINDER_LOG(L"GET wcCurrentChar");
         wcCurrentChar = GetNextCharacter(pfIsEscaped);
     }
 
-#ifdef BINDER_DEBUG_LOG
-    PathString info;
-
-    info.Printf(L"wcCurrentChar=%p", (void *) wcCurrentChar);
-    BINDER_LOG((WCHAR *) info.GetUnicode());
-#endif
-
-    BINDER_LOG_LEAVE(L"StringLexer::PopCharacter");
     return wcCurrentChar;
 }
 
 void StringLexer::PushCharacter(WCHAR wcCurrentChar,
                                 BOOL  fIsEscaped)
 {
-    BINDER_LOG_ENTER(L"StringLexer::PushCharacter");
-
-#ifdef BINDER_DEBUG_LOG
-    PathString info;
-
-    info.Printf(L"wcCurrentChar=%p, fIsEscaped=%d", (void *) wcCurrentChar, fIsEscaped);
-    BINDER_LOG((WCHAR *) info.GetUnicode());
-#endif
-
     _ASSERTE(m_wcCurrentChar == INVALID_CHARACTER);
 
     m_wcCurrentChar = wcCurrentChar;
     m_fCurrentCharIsEscaped = fIsEscaped;
-
-    BINDER_LOG_LEAVE(L"StringLexer::PushCharacter");
 }
 
 WCHAR StringLexer::GetRawCharacter()

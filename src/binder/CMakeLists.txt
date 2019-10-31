@@ -4,24 +4,23 @@ include_directories(BEFORE "../vm")
 include_directories(BEFORE "inc")
 
 set(BINDER_COMMON_SOURCES
-    variables.cpp
-    utils.cpp
-    assemblyname.cpp
-    propertymap.cpp
     applicationcontext.cpp
     assembly.cpp
-    failurecache.cpp
     assemblybinder.cpp
-    stringlexer.cpp
-    clrprivbindercoreclr.cpp
-    debuglog.cpp
-    bindinglog.cpp
-    cdebuglog.cpp
-    textualidentityparser.cpp
     assemblyidentitycache.cpp
-    coreclrbindercommon.cpp
-    fusionassemblyname.cpp
+    assemblyname.cpp
+    bindinglog.cpp
     bindertracing.cpp
+    cdebuglog.cpp
+    clrprivbindercoreclr.cpp
+    coreclrbindercommon.cpp
+    failurecache.cpp
+    fusionassemblyname.cpp
+    propertymap.cpp
+    stringlexer.cpp
+    textualidentityparser.cpp
+    utils.cpp
+    variables.cpp
 )
 
 set(BINDER_COMMON_HEADERS
@@ -47,7 +46,6 @@ set(BINDER_COMMON_HEADERS
     inc/cdebuglog.hpp
     inc/clrprivbindercoreclr.h
     inc/coreclrbindercommon.h
-    inc/debuglog.hpp
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
     inc/fusionassemblyname.hpp

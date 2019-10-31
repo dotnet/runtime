@@ -595,7 +595,6 @@ Name | Description | Type | Class | Default Value | Flags
 Name | Description | Type | Class | Default Value | Flags
 -----|-------------|------|-------|---------------|-------
 `APIThreadStress` | Used to test Loader for race conditions | `DWORD` | `INTERNAL` | |
-`CoreClrBinderLog` | Debug flag that enabled detailed log for new binder (similar to stress logging). | `STRING` | `INTERNAL` | |
 `ForceLog` | Fusion flag to enforce assembly binding log. Heavily used and documented in MSDN and BLOGS. | `DWORD` | `EXTERNAL` | |
 `WinMDPath` | Path for Windows WinMD files | `STRING` | `INTERNAL` | |
 

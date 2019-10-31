@@ -77,11 +77,6 @@ namespace BINDER_SPACE
             httpURLPrefix.SetLiteral(W("http://"));
 
             // AssemblyName string constants
-            architectureMSIL.SetLiteral(W("MSIL"));
-            architectureX86.SetLiteral(W("x86"));
-            architectureAMD64.SetLiteral(W("AMD64"));
-            architectureARM.SetLiteral(W("ARM"));
-            architectureARM64.SetLiteral(W("ARM64"));
             cultureNeutral.SetLiteral(W("neutral"));
             mscorlib.SetLiteral(CoreLibName_W);
             

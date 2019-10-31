@@ -14,8 +14,6 @@
 
 #ifdef FEATURE_VERSIONING_LOG
 
-#define DISABLE_BINDER_DEBUG_LOGGING
-
 #include "bindinglog.hpp"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
@@ -69,17 +67,10 @@ namespace BINDER_SPACE
                                         SString            &assemblyPath,
                                         PEAssembly         *pParentAssembly)
     {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::CreateInContext (assemblyPath)");
-
-        if (IsLoggingNeeded())
-        {
-            IF_FAIL_GO(CreateInContext(pApplicationContext, NULL, assemblyPath, pParentAssembly));
-        }
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::CreateInContext (assemblyPath)", hr);
-        return hr;
+        if (!IsLoggingNeeded())
+            return S_OK;
+        
+        return CreateInContext(pApplicationContext, NULL, assemblyPath, pParentAssembly);
     }                               
 
     /* static */
@@ -98,7 +89,6 @@ namespace BINDER_SPACE
                                         PEAssembly         *pParentAssembly)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::CreateInContext (pAssemblyName)");
 
         if (IsLoggingNeeded())
         {
@@ -112,27 +102,18 @@ namespace BINDER_SPACE
         }
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::CreateInContext (pAssemblyName)", hr);
         return hr;
     }                               
 
     HRESULT BindingLog::Log(SString &info)
     {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::Log");
-
-        IF_FAIL_GO(GetDebugLog()->LogMessage(0, FUSION_BIND_LOG_CATEGORY_DEFAULT, info));
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::Log", hr);
-        return hr;
+        return GetDebugLog()->LogMessage(0, FUSION_BIND_LOG_CATEGORY_DEFAULT, info);
     }
 
     HRESULT BindingLog::LogAssemblyName(LPCWSTR       pwzPrefix,
                                         AssemblyName *pAssemblyName)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::LogAssemblyName");
         PathString assemblyDisplayName;
 
         // Verify input arguments
@@ -145,26 +126,17 @@ namespace BINDER_SPACE
         IF_FAIL_GO(Log(pwzPrefix, assemblyDisplayName));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::LogAssemblyName", hr);
         return hr;
     }
 
     HRESULT BindingLog::LogHR(HRESULT logHR)
     {
-        HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::LogHR");
-
-        IF_FAIL_GO(GetDebugLog()->SetResultCode(0, logHR));
-
-    Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::LogHR", hr);
-        return hr;
+        return GetDebugLog()->SetResultCode(0, logHR);
     }
 
     HRESULT BindingLog::LogResult(BindResult *pBindResult)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::LogResult");
         PathString assemblyDisplayName;
         PathString format;
         PathString info;
@@ -209,24 +181,20 @@ namespace BINDER_SPACE
         IF_FAIL_GO(Log(info));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::LogResult", hr);
         return hr;
     }
 
     HRESULT BindingLog::Flush()
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::Flush");
 
         hr = GetDebugLog()->Flush(0, FUSION_BIND_LOG_CATEGORY_DEFAULT);
         if (hr == E_ACCESSDENIED)
         {
             // We've been impersonated differently and have a old log entry
-            BINDER_LOG(L"Impersonated: E_ACCESSDENIED");
             hr = S_OK;
         }
 
-        BINDER_LOG_LEAVE_HR(L"BindingLog::Flush", hr);
         return hr;
     }
 
@@ -237,7 +205,6 @@ namespace BINDER_SPACE
                                         PEAssembly         *pParentAssembly)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::CreateInContext");
 
         BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
 
@@ -254,7 +221,6 @@ namespace BINDER_SPACE
                                                 assemblyPath,
                                                 pParentAssembly));
     Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::CreateInContext", hr);
         return hr;
     }
 
@@ -264,7 +230,6 @@ namespace BINDER_SPACE
                                         PEAssembly         *pParentAssembly)
     {
         HRESULT hr = S_OK;
-        BINDER_LOG_ENTER(L"BindingLog::LogPreBindState");
         PathString format;
         PathString info;
 
@@ -316,7 +281,6 @@ namespace BINDER_SPACE
         IF_FAIL_GO(Log(info));
 
     Exit:
-        BINDER_LOG_LEAVE_HR(L"BindingLog::LogPreBindState", hr);
         return hr;
     }
 
