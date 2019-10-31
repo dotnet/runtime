@@ -286,7 +286,7 @@ namespace System.Text
 
             char[] poolArray = ArrayPool<char>.Shared.Rent(Math.Max(_pos + additionalCapacityBeyondPos, _chars.Length * 2));
 
-            _chars.CopyTo(poolArray);
+            _chars.Slice(0, _pos).CopyTo(poolArray);
 
             char[]? toReturn = _arrayToReturnToPool;
             _chars = _arrayToReturnToPool = poolArray;
