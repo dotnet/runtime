@@ -24,20 +24,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))", "abcdefghiklmnop", "$3", RegexOptions.None, 15, 0, "cdefghiklmnop" };
 
             // Stress
-            string pattern = string.Empty;
-            for (int i = 0; i < 1000; i++)
-                pattern += "([a-z]";
-            for (int i = 0; i < 1000; i++)
-                pattern += ")";
-            string input = string.Empty;
-            for (int i = 0; i < 200; i++)
-                input += "abcde";
-            yield return new object[] { pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
+            string pattern = string.Concat(Enumerable.Repeat("([a-z]", 1000).Concat(Enumerable.Repeat(")", 1000)));
+            string input = string.Concat(Enumerable.Repeat("abcde", 200));
 
-            string expected = string.Empty;
-            for (int i = 0; i < 200; i++)
-                expected += "abcde";
-            yield return new object[] { pattern, input, "$1", RegexOptions.None, input.Length, 0, expected };
+            yield return new object[] { pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
+            yield return new object[] { pattern, input, "$1", RegexOptions.None, input.Length, 0, input };
 
             // Undefined group
             yield return new object[] { "([a_z])(.+)", "abc", "$3", RegexOptions.None, 3, 0, "$3" };
