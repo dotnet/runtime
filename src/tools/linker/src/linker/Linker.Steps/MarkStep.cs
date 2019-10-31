@@ -1162,6 +1162,9 @@ namespace Mono.Linker.Steps {
 				case "EventDataAttribute" when attrType.Namespace == "System.Diagnostics.Tracing":
 					MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
 					break;
+				case "TypeDescriptionProviderAttribute" when attrType.Namespace == "System.ComponentModel":
+					MarkTypeConverterLikeDependency (attribute, l => l.IsDefaultConstructor ());
+					break;
 				}
 			}
 		}
@@ -1173,7 +1176,9 @@ namespace Mono.Linker.Steps {
 		{
 			var dt = ca.Constructor.DeclaringType;
 			if (dt.Name == "TypeConverterAttribute" && dt.Namespace == "System.ComponentModel") {
-				MarkTypeConverterDependency (ca);
+				MarkTypeConverterLikeDependency (ca, l =>
+					l.IsDefaultConstructor () ||
+					l.Parameters.Count == 1 && l.Parameters [0].ParameterType.IsTypeOf ("System", "Type"));
 				return true;
 			}
 
@@ -1203,7 +1208,7 @@ namespace Mono.Linker.Steps {
 			MarkNamedMethod (type, method_name);
 		}
 
-		void MarkTypeConverterDependency (CustomAttribute attribute)
+		void MarkTypeConverterLikeDependency (CustomAttribute attribute, Func<MethodDefinition, bool> predicate)
 		{
 			var args = attribute.ConstructorArguments;
 			if (args.Count < 1)
@@ -1222,9 +1227,7 @@ namespace Mono.Linker.Steps {
 			if (tdef == null)
 				return;
 
-			MarkMethodsIf (tdef.Methods, l =>
-				l.IsDefaultConstructor () ||
-				l.Parameters.Count == 1 && l.Parameters [0].ParameterType.IsTypeOf ("System", "Type"));
+			MarkMethodsIf (tdef.Methods, predicate);
 		}
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
