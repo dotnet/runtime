@@ -1,0 +1,9 @@
+cryptui.dll!CryptUIDlgViewCertificateW
+cryptui.dll!CryptUIDlgSelectCertificateW
+user32.dll!MessageBeep
+winmm.dll!mmioAscend
+winmm.dll!mmioDescend
+winmm.dll!mmioClose
+winmm.dll!mmioOpen
+winmm.dll!mmioRead
+winmm.dll!PlaySoundW

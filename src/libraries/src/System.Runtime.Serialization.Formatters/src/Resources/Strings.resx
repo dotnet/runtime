@@ -1,0 +1,252 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="Serialization_NonSerType" xml:space="preserve">
+    <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
+  </data>
+  <data name="Argument_DataLengthDifferent" xml:space="preserve">
+    <value>Parameters 'members' and 'data' must have the same length.</value>
+  </data>
+  <data name="ArgumentNull_NullMember" xml:space="preserve">
+    <value>Member at position {0} was null.</value>
+  </data>
+  <data name="Serialization_UnknownMemberInfo" xml:space="preserve">
+    <value>Only FieldInfo, PropertyInfo, and SerializationMemberInfo are recognized.</value>
+  </data>
+  <data name="Serialization_NoID" xml:space="preserve">
+    <value>Object has never been assigned an objectID.</value>
+  </data>
+  <data name="Serialization_TooManyElements" xml:space="preserve">
+    <value>The internal array cannot expand to greater than Int32.MaxValue elements.</value>
+  </data>
+  <data name="Argument_InvalidFieldInfo" xml:space="preserve">
+    <value>The FieldInfo object is not valid.</value>
+  </data>
+  <data name="Serialization_NeverSeen" xml:space="preserve">
+    <value>A fixup is registered to the object with ID {0}, but the object does not appear in the graph.</value>
+  </data>
+  <data name="Serialization_IORIncomplete" xml:space="preserve">
+    <value>The object with ID {0} implements the IObjectReference interface for which all dependencies cannot be resolved. The likely cause is two instances of IObjectReference that have a mutual dependency on each other.</value>
+  </data>
+  <data name="Serialization_ObjectNotSupplied" xml:space="preserve">
+    <value>The object with ID {0} was referenced in a fixup but does not exist.</value>
+  </data>
+  <data name="Serialization_NotCyclicallyReferenceableSurrogate" xml:space="preserve">
+    <value>{0}.SetObjectData returns a value that is neither null nor equal to the first parameter. Such Surrogates cannot be part of cyclical reference.</value>
+  </data>
+  <data name="Serialization_TooManyReferences" xml:space="preserve">
+    <value>The implementation of the IObjectReference interface returns too many nested references to other objects that implement IObjectReference.</value>
+  </data>
+  <data name="Serialization_MissingObject" xml:space="preserve">
+    <value>The object with ID {0} was referenced in a fixup but has not been registered.</value>
+  </data>
+  <data name="Serialization_InvalidFixupDiscovered" xml:space="preserve">
+    <value>A fixup on an object implementing ISerializable or having a surrogate was discovered for an object which does not have a SerializationInfo available.</value>
+  </data>
+  <data name="Serialization_TypeLoadFailure" xml:space="preserve">
+    <value>Unable to load type {0} required for deserialization.</value>
+  </data>
+  <data name="Serialization_ValueTypeFixup" xml:space="preserve">
+    <value>ValueType fixup on Arrays is not implemented.</value>
+  </data>
+  <data name="Serialization_PartialValueTypeFixup" xml:space="preserve">
+    <value>Fixing up a partially available ValueType chain is not implemented.</value>
+  </data>
+  <data name="Serialization_UnableToFixup" xml:space="preserve">
+    <value>Cannot perform fixup.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ObjectID" xml:space="preserve">
+    <value>objectID cannot be less than or equal to zero.</value>
+  </data>
+  <data name="Serialization_RegisterTwice" xml:space="preserve">
+    <value>An object cannot be registered twice.</value>
+  </data>
+  <data name="Serialization_NotISer" xml:space="preserve">
+    <value>The given object does not implement the ISerializable interface.</value>
+  </data>
+  <data name="Serialization_ConstructorNotFound" xml:space="preserve">
+    <value>The constructor to deserialize an object of type '{0}' was not found.</value>
+  </data>
+  <data name="Serialization_IncorrectNumberOfFixups" xml:space="preserve">
+    <value>The ObjectManager found an invalid number of fixups. This usually indicates a problem in the Formatter.</value>
+  </data>
+  <data name="Serialization_InvalidFixupType" xml:space="preserve">
+    <value>A member fixup was registered for an object which implements ISerializable or has a surrogate. In this situation, a delayed fixup must be used.</value>
+  </data>
+  <data name="Serialization_IdTooSmall" xml:space="preserve">
+    <value>Object IDs must be greater than zero.</value>
+  </data>
+  <data name="Serialization_ParentChildIdentical" xml:space="preserve">
+    <value>The ID of the containing object cannot be the same as the object ID.</value>
+  </data>
+  <data name="Serialization_InvalidType" xml:space="preserve">
+    <value>Only system-provided types can be passed to the GetUninitializedObject method. '{0}' is not a valid instance of a type.</value>
+  </data>
+  <data name="Argument_MustSupplyParent" xml:space="preserve">
+    <value>When supplying the ID of a containing object, the FieldInfo that identifies the current field within that object must also be supplied.</value>
+  </data>
+  <data name="Argument_MemberAndArray" xml:space="preserve">
+    <value>Cannot supply both a MemberInfo and an Array to indicate the parent of a value type.</value>
+  </data>
+  <data name="Serialization_CorruptedStream" xml:space="preserve">
+    <value>Invalid BinaryFormatter stream.</value>
+  </data>
+  <data name="Serialization_Stream" xml:space="preserve">
+    <value>Attempting to deserialize an empty stream.</value>
+  </data>
+  <data name="Serialization_BinaryHeader" xml:space="preserve">
+    <value>Binary stream '{0}' does not contain a valid BinaryHeader. Possible causes are invalid stream or object version change between serialization and deserialization.</value>
+  </data>
+  <data name="Serialization_TypeExpected" xml:space="preserve">
+    <value>Invalid expected type.</value>
+  </data>
+  <data name="Serialization_StreamEnd" xml:space="preserve">
+    <value>End of Stream encountered before parsing was completed.</value>
+  </data>
+  <data name="Serialization_CrossAppDomainError" xml:space="preserve">
+    <value>Cross-AppDomain BinaryFormatter error; expected '{0}' but received '{1}'.</value>
+  </data>
+  <data name="Serialization_Map" xml:space="preserve">
+    <value>No map for object '{0}'.</value>
+  </data>
+  <data name="Serialization_Assembly" xml:space="preserve">
+    <value>No assembly information is available for object on the wire, '{0}'.</value>
+  </data>
+  <data name="Serialization_ObjectTypeEnum" xml:space="preserve">
+    <value>Invalid ObjectTypeEnum {0}.</value>
+  </data>
+  <data name="Serialization_AssemblyId" xml:space="preserve">
+    <value>No assembly ID for object type '{0}'.</value>
+  </data>
+  <data name="Serialization_ArrayType" xml:space="preserve">
+    <value>Invalid array type '{0}'.</value>
+  </data>
+  <data name="Serialization_TypeCode" xml:space="preserve">
+    <value>Invalid type code in stream '{0}'.</value>
+  </data>
+  <data name="Serialization_TypeWrite" xml:space="preserve">
+    <value>Invalid write type request '{0}'.</value>
+  </data>
+  <data name="Serialization_TypeRead" xml:space="preserve">
+    <value>Invalid read type request '{0}'.</value>
+  </data>
+  <data name="Serialization_AssemblyNotFound" xml:space="preserve">
+    <value>Unable to find assembly '{0}'.</value>
+  </data>
+  <data name="Serialization_InvalidFormat" xml:space="preserve">
+    <value>The input stream is not a valid binary format. The starting contents (in bytes) are: {0} ...</value>
+  </data>
+  <data name="Serialization_TopObject" xml:space="preserve">
+    <value>No top object.</value>
+  </data>
+  <data name="Serialization_XMLElement" xml:space="preserve">
+    <value>Invalid element '{0}'.</value>
+  </data>
+  <data name="Serialization_TopObjectInstantiate" xml:space="preserve">
+    <value>Top object cannot be instantiated for element '{0}'.</value>
+  </data>
+  <data name="Serialization_ArrayTypeObject" xml:space="preserve">
+    <value>Array element type is Object, 'dt' attribute is null.</value>
+  </data>
+  <data name="Serialization_TypeMissing" xml:space="preserve">
+    <value>Type is missing for member of type Object '{0}'.</value>
+  </data>
+  <data name="Serialization_ObjNoID" xml:space="preserve">
+    <value>Object {0} has never been assigned an objectID.</value>
+  </data>
+  <data name="Serialization_SerMemberInfo" xml:space="preserve">
+    <value>MemberInfo type {0} cannot be serialized.</value>
+  </data>
+  <data name="Argument_MustSupplyContainer" xml:space="preserve">
+    <value>When supplying a FieldInfo for fixing up a nested type, a valid ID for that containing object must also be supplied.</value>
+  </data>
+  <data name="Serialization_ParseError" xml:space="preserve">
+    <value>Parse error. Current element is not compatible with the next element, {0}.</value>
+  </data>
+  <data name="Serialization_ISerializableMemberInfo" xml:space="preserve">
+    <value>MemberInfo requested for ISerializable type.</value>
+  </data>
+  <data name="Serialization_MemberInfo" xml:space="preserve">
+    <value>MemberInfo cannot be obtained for ISerialized Object '{0}'.</value>
+  </data>
+  <data name="Serialization_ISerializableTypes" xml:space="preserve">
+    <value>Types not available for ISerializable object '{0}'.</value>
+  </data>
+  <data name="Serialization_MissingMember" xml:space="preserve">
+    <value>Member '{0}' in class '{1}' is not present in the serialized stream and is not marked with {2}.</value>
+  </data>
+  <data name="Serialization_NoMemberInfo" xml:space="preserve">
+    <value>No MemberInfo for Object {0}.</value>
+  </data>
+  <data name="Serialization_DuplicateSelector" xml:space="preserve">
+    <value>Type {0} and the types derived from it (such as {1}) are not permitted to be deserialized at this security level.</value>
+  </data>
+  <data name="Serialization_SurrogateCycleInArgument" xml:space="preserve">
+    <value>Selector contained a cycle.</value>
+  </data>
+  <data name="Serialization_SurrogateCycle" xml:space="preserve">
+    <value>Adding selector will introduce a cycle.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+</root>

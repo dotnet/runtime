@@ -1,0 +1,14 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.IO.Ports.csproj">
+      <SupportedFramework>net461</SupportedFramework>
+    </ProjectReference>
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/uap10.0.16299</TargetPath>
+    </File>
+    <InboxOnTargetFramework Include="uap10.0.16299" />
+    <ProjectReference Include="..\src\System.IO.Ports.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

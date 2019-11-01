@@ -1,0 +1,14 @@
+#
+# netstandard dll has been shipped with IDbColumnSchemaGenerator inherited and SqlDataReader.GetColumnScheme() implemented in source, but not exposed in ref contract.
+# Removing SqlDataReader.GetColumnScheme() from netstandard implementation potentially breaks existing customer source code
+# that utilizes SqlDataReader.GetColumnScheme() indirectly by casting SqlDataReader to IDbColumnSchemaGenerator type.
+# In order to prevent it, the API needs to be kept in public, and following 5 error message should be remaining in this baseline file.
+#
+# PoolBlockingPeriod was not added until .NET Framework 4.6.2, hence, the respective APIs are netcoreapp specific only. 
+Compat issues with assembly System.Data.SqlClient:
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlDataReader' does not implement interface 'System.Data.Common.IDbColumnSchemaGenerator' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.GetColumnSchema()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Data.SqlClient.PoolBlockingPeriod' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.PoolBlockingPeriod.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.PoolBlockingPeriod.set(System.Data.SqlClient.PoolBlockingPeriod)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 5

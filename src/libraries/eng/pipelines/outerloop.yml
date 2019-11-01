@@ -1,0 +1,54 @@
+trigger: none
+
+schedules:
+- cron: "0 3 * * *"
+  displayName: Outerloop scheduled build
+  branches:
+    include:
+    - master
+    - release/3.0
+
+resources:
+  containers:
+  - container: rhel7_container
+    image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
+
+  - container: rhel6_container
+    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+
+  - container: alpine_36_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
+
+  - container: alpine_37_arm64_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+  - container: ubuntu_1604_arm_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
+
+stages:
+  # Windows outerloop legs
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
+    - template: /eng/pipelines/windows.yml
+      parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+        testScope: outerloop
+
+  # Linux outerloop legs
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'linux'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
+    - template: /eng/pipelines/linux.yml
+      parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+        testScope: outerloop
+
+  # MacOS outerloop legs
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'osx'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
+    - template: /eng/pipelines/macos.yml
+      parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+        testScope: outerloop

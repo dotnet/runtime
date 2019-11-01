@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Rfc3161TstInfo"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3161#section-2.4.2
+
+    TSTInfo ::= SEQUENCE {
+        version INTEGER { v1(1) },
+        policy TSAPolicyId,
+        messageImprint MessageImprint,
+          - MUST have the same value as the similar field in
+          - TimeStampReq
+        serialNumber INTEGER,
+          - Time-Stamping users MUST be ready to accommodate integers
+          - up to 160 bits.
+        genTime GeneralizedTime,
+        accuracy Accuracy OPTIONAL,
+        ordering BOOLEAN DEFAULT FALSE,
+        nonce INTEGER                  OPTIONAL,
+          - MUST be present if the similar field was present
+          - in TimeStampReq.In that case it MUST have the same value.
+        tsa[0] GeneralName OPTIONAL,
+        extensions[1] IMPLICIT Extensions OPTIONAL
+    }
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:ObjectIdentifier name="Policy" />
+  <asn:AsnType name="MessageImprint" typeName="System.Security.Cryptography.Pkcs.Asn1.MessageImprint" />
+  <asn:Integer name="SerialNumber"  backingType="ReadOnlyMemory" />
+  <asn:GeneralizedTime name="GenTime" />
+  <asn:AsnType name="Accuracy" typeName="System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy" optional="true" />
+  <asn:Boolean name="Ordering" defaultDerInit="0x01, 0x01, 0x00" />
+  <asn:Integer name="Nonce"  backingType="ReadOnlyMemory" optional="true" />
+  <asn:AsnType name="Tsa" typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" explicitTag="0" optional="true" />
+  <asn:SequenceOf name="Extensions" implicitTag="1" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.X509ExtensionAsn" />
+  </asn:SequenceOf>
+</asn:Sequence>

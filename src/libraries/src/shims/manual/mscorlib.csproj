@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="mscorlib.forwards.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+Compat issues with assembly System.Reflection.Emit.ILGeneration:
+MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter, System.Int32, System.Int32, System.Int32, System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String, System.Int32, System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ParameterBuilder.GetToken()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHelper(System.Reflection.Module, System.Runtime.InteropServices.CallingConvention, System.Type)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHelper(System.Runtime.InteropServices.CallingConvention, System.Type)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 6

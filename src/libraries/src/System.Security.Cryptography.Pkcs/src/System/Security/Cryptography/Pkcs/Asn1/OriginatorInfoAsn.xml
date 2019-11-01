@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="OriginatorInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.1
+
+    OriginatorInfo ::= SEQUENCE {
+        certs[0] IMPLICIT CertificateSet OPTIONAL,
+        crls[1] IMPLICIT RevocationInfoChoices OPTIONAL
+    }
+  -->
+  <asn:SetOf name="CertificateSet" implicitTag="0" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn" />
+  </asn:SetOf>
+  <asn:SetOf name="RevocationInfoChoices" implicitTag="1" optional="true">
+    <asn:AnyValue />
+  </asn:SetOf>
+</asn:Sequence>

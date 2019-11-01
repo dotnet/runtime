@@ -1,0 +1,1 @@
+﻿<?xml version="1.0" encoding="utf-8"?><result xmlns:myObj1="urn:http://www.w3.org/1999/XSL/Transform" xmlns:myObj2="urn:tmp" xmlns:myObj3="urn:my-object" xmlns:myObj4="urn:MY-OBJECT"><arg1>1.Test1</arg1><arg2>2.Test2</arg2><arg3>3.Test3</arg3><arg4>4.Test4</arg4><arg5>5.No Value Specified</arg5><arg6>6.No Value Specified</arg6></result>

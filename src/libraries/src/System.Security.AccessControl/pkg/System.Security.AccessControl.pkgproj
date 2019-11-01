@@ -1,0 +1,19 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Security.AccessControl.csproj">
+      <SupportedFramework>net461</SupportedFramework>
+    </ProjectReference>
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/uap10.0.16299</TargetPath>
+    </File>
+    <InboxOnTargetFramework Include="uap10.0.16299" />
+    <ProjectReference Include="..\src\System.Security.AccessControl.csproj" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3">
+      <SupportedFramework>netcore50</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

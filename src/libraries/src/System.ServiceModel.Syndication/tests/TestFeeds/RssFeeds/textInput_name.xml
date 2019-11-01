@@ -1,0 +1,18 @@
+<!--
+  Description:  textInput contains name
+  Expect:       !MissingElement{parent:textInput,element:name}
+-->
+
+<rss version="2.0">
+<channel>
+<title>RSS 2.0 test case</title>
+<link>http://www.contoso.com/testcases/rss20/</link>
+<description>textInput contains name</description>
+<textInput>
+<title>Search Slashdot</title>
+<description>Search Slashdot stories</description>
+<link>http://contoso.com/test</link>
+<name>query</name>
+</textInput>
+</channel>
+</rss>

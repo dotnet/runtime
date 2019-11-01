@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.ObjectModel</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Collections\Generic\DebugView.cs" />
+    <Compile Include="System\Collections\Specialized\INotifyCollectionChanged.cs" />
+    <Compile Include="System\Collections\Specialized\NotifyCollectionChangedAction.cs" />
+    <Compile Include="System\Collections\Specialized\NotifyCollectionChangedEventArgs.cs" />
+    <Compile Include="System\Collections\ObjectModel\KeyedCollection.cs" />
+    <Compile Include="System\Collections\ObjectModel\ObservableCollection.cs" />
+    <Compile Include="System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
+    <Compile Include="System\Collections\ObjectModel\ReadOnlyObservableCollection.cs" />
+    <Compile Include="System\ComponentModel\DataErrorsChangedEventArgs.cs" />
+    <Compile Include="System\ComponentModel\INotifyDataErrorInfo.cs" />
+    <Compile Include="System\ComponentModel\INotifyPropertyChanged.cs" />
+    <Compile Include="System\ComponentModel\INotifyPropertyChanging.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangedEventArgs.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangedEventHandler.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangingEventArgs.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangingEventHandler.cs" />
+    <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
+    <Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />
+    <Compile Include="System\Reflection\ICustomTypeProvider.cs" />
+    <Compile Include="System\Windows\Markup\ValueSerializerAttribute.cs" />
+    <Compile Include="System\Windows\Input\ICommand.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,210 @@
+﻿<xs:schema id="asn"
+    targetNamespace="http://schemas.dot.net/asnxml/201808/"
+    elementFormDefault="qualified"
+    xmlns="http://schemas.dot.net/asnxml/201808/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+>
+  <xs:element name="Sequence">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="TypeDefType" />
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Choice">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="TypeDefType" />
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="TypeDefType">
+    <xs:sequence>
+      <xs:choice minOccurs="1" maxOccurs="unbounded">
+        <xs:element name="AsnType" type="ExternalTypeRef" />
+        <xs:element name="AnyValue" type="AnyValueType" />
+        <xs:element name="Boolean" type="FieldBase" />
+        <xs:element name="Integer" type="IntegerType" />
+        <xs:element name="BitString" type="FieldBase" />
+        <xs:element name="NamedBitList" type="EnumerationType" />
+        <xs:element name="OctetString" type="FieldBase" />
+        <xs:element name="ObjectIdentifier" type="ObjectIdentifierType" />
+        <xs:element name="Enumerated" type="EnumerationType" />
+        <xs:element name="UTF8String" type="FieldBase" />
+        <xs:element name="SequenceOf" type="CollectionType" />
+        <xs:element name="SetOf" type="CollectionType" />
+        <xs:element name="PrintableString" type="FieldBase" />
+        <xs:element name="T61String" type="FieldBase" />
+        <xs:element name="IA5String" type="FieldBase" />
+        <xs:element name="UtcTime" type="UtcTimeType" />
+        <xs:element name="GeneralizedTime" type="GeneralizedTimeType" />
+        <xs:element name="VisibleString" type="FieldBase" />
+        <xs:element name="BMPString" type="FieldBase" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" use="required" type="xs:NCName" />
+    <xs:attribute name="namespace" use="required" type="QualifiedName" />
+  </xs:complexType>
+
+  <xs:complexType name="FieldBase">
+    <xs:attribute name="name" use="required" type="xs:NCName" />
+    <xs:attribute name="defaultDerInit" use="optional" type="ByteArrayInitializer" />
+    <xs:attribute name="implicitTag" use="optional" type="xs:nonNegativeInteger" />
+    <xs:attribute name="explicitTag" use="optional" type="xs:nonNegativeInteger" />
+    <xs:attribute name="optional" use="optional" type="xs:boolean" default="false" />
+  </xs:complexType>
+
+  <xs:complexType name="ExternalTypeRef">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="typeName" use="required" type="QualifiedName" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ExternalCollectionTypeRef">
+    <xs:attribute name="typeName" use="required" type="QualifiedName" />
+  </xs:complexType>
+
+  <xs:complexType name="AnyValueType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="universalTagNumber" use="optional" type="xs:unsignedShort" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="IntegerType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="backingType" default="BigInteger">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="byte" />
+              <xs:enumeration value="int" />
+              <xs:enumeration value="BigInteger" />
+              <xs:enumeration value="ReadOnlyMemory" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="IntegerCollectionType">
+    <xs:attribute name="backingType" default="BigInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="byte" />
+          <xs:enumeration value="int" />
+          <xs:enumeration value="BigInteger" />
+          <xs:enumeration value="ReadOnlyMemory" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ObjectIdentifierType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="backingType" default="Oid">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="Oid" />
+              <xs:enumeration value="string" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ObjectIdentifierCollectionType">
+    <xs:attribute name="backingType" default="Oid">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Oid" />
+          <xs:enumeration value="string" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="EnumerationType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="backingType" use="required" type="QualifiedName" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="EnumerationCollectionType">
+    <xs:attribute name="backingType" use="required" type="QualifiedName" />
+  </xs:complexType>
+
+  <xs:complexType name="CollectionType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:sequence>
+          <xs:choice>
+            <xs:element name="AsnType" type="ExternalCollectionTypeRef"/>
+            <xs:element name="AnyValue"/>
+            <xs:element name="Boolean"/>
+            <xs:element name="Integer" type="IntegerCollectionType" />
+            <xs:element name="BitString"/>
+            <xs:element name="NamedBitList" type="EnumerationCollectionType" />
+            <xs:element name="OctetString"/>
+            <xs:element name="ObjectIdentifier" type="ObjectIdentifierCollectionType" />
+            <xs:element name="Enumerated"/>
+            <xs:element name="UTF8String"/>
+            <xs:element name="PrintableString"/>
+            <xs:element name="T61String"/>
+            <xs:element name="IA5String"/>
+            <xs:element name="UtcTime" type="UtcTimeCollectionType" />
+            <xs:element name="GeneralizedTime" type="GeneralizedTimeCollectionType" />
+            <xs:element name="VisibleString"/>
+            <xs:element name="BMPString"/>
+          </xs:choice>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="UtcTimeType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="twoDigitYearMax" use="optional" type="xs:unsignedShort" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="UtcTimeCollectionType">
+    <xs:attribute name="twoDigitYearMax" use="optional" type="xs:unsignedShort" />
+  </xs:complexType>
+
+  <xs:complexType name="GeneralizedTimeType">
+    <xs:complexContent>
+      <xs:extension base="FieldBase">
+        <xs:attribute name="omitFractionalSeconds" default="false" type="xs:boolean" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="GeneralizedTimeCollectionType">
+    <xs:attribute name="omitFractionalSeconds" default="false" type="xs:boolean" />
+  </xs:complexType>
+
+  <xs:simpleType name="QualifiedName">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([A-Za-z_][A-Za-z_0-9]*\.)*[A-Za-z_][A-Za-z_0-9]*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ByteArrayInitializer">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(0x[A-Fa-f0-9][A-Fa-f0-9],[\s]*)*0x[A-Fa-f0-9][A-Fa-f0-9]" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

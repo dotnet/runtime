@@ -1,0 +1,25 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.Emit.ILGeneration.csproj">
+      <SupportedFramework>netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Reflection.Emit.ILGeneration.csproj" />
+    <HarvestIncludePaths Include="ref/netstandard1.0" >
+      <SupportedFramework>net45;netcoreapp1.0;wp80;netcore45;wpa81</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="lib/netcore50" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="netstandard2.1" />
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="portable-net45+wp8" />
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

@@ -1,0 +1,5 @@
+Compat issues with assembly System.Runtime.WindowsRuntime:
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBuffer' does not implement interface 'Windows.Storage.Streams.IBuffer' in the reference but it does in the implementation.
+TypesMustExist : Type 'System.Threading.DispatcherQueueHandler' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Threading.DispatcherQueuePriority' does not exist in the reference but it does exist in the implementation.
+Total Issues: 3

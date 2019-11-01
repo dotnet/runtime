@@ -1,0 +1,12 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.ComponentModel.Annotations">
+    <Namespace Name="System.ComponentModel.DataAnnotations" Dynamic="Required All" />
+    <Assembly Name="System.ComponentModel.Annotations">
+      <Type Name="System.ComponentModel.DataAnnotations.ValidationAttribute">
+        <Method Name="GetValidationResult">
+          <Parameter Name="value" Dynamic="Required All"/>
+        </Method>
+      </Type>
+    </Assembly>
+  </Library>
+</Directives>

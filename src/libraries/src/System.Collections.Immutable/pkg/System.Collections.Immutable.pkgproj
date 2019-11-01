@@ -1,0 +1,22 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- we need to be supported on pre-nuget-3 platforms (Dev12, Dev11, etc) -->
+    <MinClientVersion>2.8.6</MinClientVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.Immutable.csproj">
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+
+    <!-- Since UAP and .NETCoreApp are package based we still want to enable
+         OOBing libraries that happen to overlap with their framework package.
+         This avoids us having to lock the API in our NuGet packages just 
+         to match what shipped inbox: since we can provide a new library 
+         we can update it to add API without raising the netstandard version. -->
+    <ValidatePackageSuppression Include="TreatAsOutOfBox">
+      <Value>.NETCoreApp;UAP</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

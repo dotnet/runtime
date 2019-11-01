@@ -1,0 +1,13 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+
+    <!-- These types are loaded through CryptoConfig -->
+    <Type Name="System.Security.Cryptography.RSAPKCS1SignatureFormatter" Dynamic="Required Public" />
+    <Type Name="System.Security.Cryptography.RSAPKCS1SignatureDeformatter" Dynamic="Required Public" />
+    <Type Name="System.Security.Cryptography.DSASignatureFormatter" Dynamic="Required Public" />
+    <Type Name="System.Security.Cryptography.DSASignatureDeformatter" Dynamic="Required Public" />
+
+  </Library>
+</Directives>
+
+

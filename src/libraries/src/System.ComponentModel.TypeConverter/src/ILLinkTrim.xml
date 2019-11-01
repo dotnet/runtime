@@ -1,0 +1,14 @@
+<linker>
+  <assembly fullname="System.ComponentModel.TypeConverter">
+    <!-- Used by TypeDescriptionProvider attributes in System.Private.Xml.Linq: -->
+    <type fullname="MS.Internal.Xml.Linq.ComponentModel.*" />
+    <!-- Called through reflection by System.ComponentModel.DefaultValueAttribute in CoreLib: -->
+    <type fullname="System.ComponentModel.TypeDescriptor">
+      <method name="ConvertFromInvariantString" />
+    </type>
+    <!-- The following types support the CLR's IClassFactory2 marshaling from CoreLib: -->
+    <type fullname="System.ComponentModel.LicenseManager/LicenseInteropHelper" />
+    <type fullname="System.ComponentModel.LicenseManager/CLRLicenseContext" />
+    <type fullname="System.ComponentModel.LicenseManager/LicInfoHelperLicenseContext" />
+  </assembly>
+</linker>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CadesIssuerSerial"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5035#section-4
+
+    IssuerSerial ::= SEQUENCE {
+        issuer                   GeneralNames,
+        serialNumber             CertificateSerialNumber
+    }
+
+    CertificateSerialNumber ::= INTEGER
+  -->
+  <asn:SequenceOf name="Issuer">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" />
+  </asn:SequenceOf>
+  <asn:Integer name="SerialNumber"  backingType="ReadOnlyMemory" />
+</asn:Sequence>

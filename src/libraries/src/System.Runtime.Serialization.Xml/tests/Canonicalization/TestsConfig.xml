@@ -1,0 +1,261 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<testcases>
+  <testcase name="test">
+    <input>
+      <argu name="argName" value="argValue" />
+      <argu name="argChoices">
+        <choice>c1</choice>
+        <choice>c2</choice>
+        <choice>c3</choice>
+      </argu>
+      <expect>pass</expect>
+    </input>
+  </testcase>
+  <testcase name="TestC14NInclusivePrefixes">
+    <input>
+      <argu name="ReaderWriterType" value="Binary" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="utf-16" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="unicodeFFFE" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="utf-16" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="unicodeFFFE" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>    
+  </testcase>
+  <testcase name="C14NWriterNegativeTests">
+    <input>
+      <argu name="TestType" value="Null Stream" />
+      <argu name="Result" value="System.ArgumentNullException" />
+    </input>
+    <input>
+      <argu name="TestType" value="Null element in IncludePrefixes" />
+      <argu name="Result" value="System.ArgumentException"/>
+    </input>
+  </testcase>
+  <testcase name="ReaderWriter_C14N_DifferentReadersWriters_ParamGroup1">
+    <input>
+      <argu name="ReaderWriterType" value="Binary" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="utf-16" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Webdata" />
+      <argu name="Encoding" value="unicodeFFFE" />
+      <argu name="MustSupportC14N" value="false" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="utf-16" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="unicodeFFFE" />
+      <argu name="MustSupportC14N" value="true" />
+    </input>
+    </testcase>
+  <testcase name="ReaderWriter_C14N_DifferentReadersWriters_ParamGroup2">
+    <!--another set-->
+    <input>
+      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="NiceName" value="with LFs" />
+    </input>
+    <input>
+      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML.xml" />
+      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_OnlyLF.xml" />
+      <argu name="NiceName" value="with CRLFs" />
+    </input>
+    <input>
+      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
+      <argu name="BaselineFile" value="ReaderWriter_C14N_BaselineXML_NoCRLF.xml" />
+      <argu name="NiceName" value="without CRLFs" />
+    </input>
+  </testcase>
+  <testcase name="ReaderWriter_C14N_DifferentReadersWriters_ParamGroup3">
+    <!--another set-->
+    <input>
+      <argu name="TestWithComments" value="true" />
+      <argu name="TestWithCommentsNiceName" value="including comments" />
+    </input>
+    <input>
+      <argu name="TestWithComments" value="false" />
+      <argu name="TestWithCommentsNiceName" value="not including comments" />
+    </input>
+  </testcase>
+  <testcase name="ReaderWriter_C14N_DifferentReadersWriters_ParamGroup4">
+    <!--another set-->
+    <input>
+      <argu name="ReaderWriterType" value="Text" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_UTF8.xml" />
+    </input>
+    <input>
+      <argu name="ReaderWriterType" value="Binary" />
+      <argu name="Encoding" value="utf-8" />
+      <argu name="MustSupportC14N" value="true" />
+      <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_Binary.xml" />
+    </input>
+  </testcase>
+  <testcase name="CryptoCanonicalization">
+    <input>
+      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="n3" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default n3" />
+      <argu name="StartAtElement" value="y3" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="False" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default" />
+      <argu name="StartAtElement" value="n1:y5" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="AttrNorm.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="LineFeedNorm.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="ExcC14nSpecExample1.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />     
+    </input>
+    <input>
+      <argu name="FilePath" value="ExcC14nSpecExample2.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="AttrSort.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />      
+    </input>
+    <input>
+      <argu name="FilePath" value="SoapMessage1.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="wsse" />
+      <argu name="StartAtElement" value="ds:SignedInfo" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="False" />
+    </input>
+    <input>
+      <argu name="FilePath" value="CharEntities.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+  </testcase>
+</testcases>

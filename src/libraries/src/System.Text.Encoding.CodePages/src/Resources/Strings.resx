@@ -1,0 +1,534 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentNull_Array" xml:space="preserve">
+    <value>Array cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
+    <value>Index and count must refer to a location within the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
+    <value>Index and count must refer to a location within the buffer.</value>
+  </data>
+  <data name="NotSupported_NoCodepageData" xml:space="preserve">
+    <value>No data is available for encoding {0}.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
+    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
+    <value>String contains invalid Unicode code points.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
+    <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
+    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
+    <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
+  </data>
+  <data name="Argument_EncoderFallbackNotEmpty" xml:space="preserve">
+    <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="Argument_RecursiveFallback" xml:space="preserve">
+    <value>Recursive fallback not allowed for character \\u{0:X4}.</value>
+  </data>
+  <data name="Argument_RecursiveFallbackBytes" xml:space="preserve">
+    <value>Recursive fallback not allowed for bytes {0}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Range" xml:space="preserve">
+    <value>Valid values are between {0} and {1}, inclusive.</value>
+  </data>
+  <data name="Argument_CodepageNotSupported" xml:space="preserve">
+    <value>{0} is not a supported code page.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="MissingEncodingNameResource" xml:space="preserve">
+    <value>Could not find a resource entry for the encoding codepage '{0} - {1}'</value>
+  </data>
+  <data name="Globalization_cp_37" xml:space="preserve">
+    <value>IBM EBCDIC (US-Canada)</value>
+  </data>
+  <data name="Globalization_cp_437" xml:space="preserve">
+    <value>OEM United States</value>
+  </data>
+  <data name="Globalization_cp_500" xml:space="preserve">
+    <value>IBM EBCDIC (International)</value>
+  </data>
+  <data name="Globalization_cp_708" xml:space="preserve">
+    <value>Arabic (ASMO 708)</value>
+  </data>
+  <data name="Globalization_cp_720" xml:space="preserve">
+    <value>Arabic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_737" xml:space="preserve">
+    <value>Greek (DOS)</value>
+  </data>
+  <data name="Globalization_cp_775" xml:space="preserve">
+    <value>Baltic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_850" xml:space="preserve">
+    <value>Western European (DOS)</value>
+  </data>
+  <data name="Globalization_cp_852" xml:space="preserve">
+    <value>Central European (DOS)</value>
+  </data>
+  <data name="Globalization_cp_855" xml:space="preserve">
+    <value>OEM Cyrillic</value>
+  </data>
+  <data name="Globalization_cp_857" xml:space="preserve">
+    <value>Turkish (DOS)</value>
+  </data>
+  <data name="Globalization_cp_858" xml:space="preserve">
+    <value>OEM Multilingual Latin I</value>
+  </data>
+  <data name="Globalization_cp_860" xml:space="preserve">
+    <value>Portuguese (DOS)</value>
+  </data>
+  <data name="Globalization_cp_861" xml:space="preserve">
+    <value>Icelandic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_862" xml:space="preserve">
+    <value>Hebrew (DOS)</value>
+  </data>
+  <data name="Globalization_cp_863" xml:space="preserve">
+    <value>French Canadian (DOS)</value>
+  </data>
+  <data name="Globalization_cp_864" xml:space="preserve">
+    <value>Arabic (864)</value>
+  </data>
+  <data name="Globalization_cp_865" xml:space="preserve">
+    <value>Nordic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_866" xml:space="preserve">
+    <value>Cyrillic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_869" xml:space="preserve">
+    <value>Greek, Modern (DOS)</value>
+  </data>
+  <data name="Globalization_cp_870" xml:space="preserve">
+    <value>IBM EBCDIC (Multilingual Latin-2)</value>
+  </data>
+  <data name="Globalization_cp_874" xml:space="preserve">
+    <value>Thai (Windows)</value>
+  </data>
+  <data name="Globalization_cp_875" xml:space="preserve">
+    <value>IBM EBCDIC (Greek Modern)</value>
+  </data>
+  <data name="Globalization_cp_932" xml:space="preserve">
+    <value>Japanese (Shift-JIS)</value>
+  </data>
+  <data name="Globalization_cp_936" xml:space="preserve">
+    <value>Chinese Simplified (GB2312)</value>
+  </data>
+  <data name="Globalization_cp_949" xml:space="preserve">
+    <value>Korean</value>
+  </data>
+  <data name="Globalization_cp_950" xml:space="preserve">
+    <value>Chinese Traditional (Big5)</value>
+  </data>
+  <data name="Globalization_cp_1026" xml:space="preserve">
+    <value>IBM EBCDIC (Turkish Latin-5)</value>
+  </data>
+  <data name="Globalization_cp_1047" xml:space="preserve">
+    <value>IBM Latin-1</value>
+  </data>
+  <data name="Globalization_cp_1140" xml:space="preserve">
+    <value>IBM EBCDIC (US-Canada-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1141" xml:space="preserve">
+    <value>IBM EBCDIC (Germany-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1142" xml:space="preserve">
+    <value>IBM EBCDIC (Denmark-Norway-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1143" xml:space="preserve">
+    <value>IBM EBCDIC (Finland-Sweden-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1144" xml:space="preserve">
+    <value>IBM EBCDIC (Italy-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1145" xml:space="preserve">
+    <value>IBM EBCDIC (Spain-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1146" xml:space="preserve">
+    <value>IBM EBCDIC (UK-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1147" xml:space="preserve">
+    <value>IBM EBCDIC (France-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1148" xml:space="preserve">
+    <value>IBM EBCDIC (International-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1149" xml:space="preserve">
+    <value>IBM EBCDIC (Icelandic-Euro)</value>
+  </data>
+  <data name="Globalization_cp_1250" xml:space="preserve">
+    <value>Central European (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1251" xml:space="preserve">
+    <value>Cyrillic (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1252" xml:space="preserve">
+    <value>Western European (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1253" xml:space="preserve">
+    <value>Greek (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1254" xml:space="preserve">
+    <value>Turkish (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1255" xml:space="preserve">
+    <value>Hebrew (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1256" xml:space="preserve">
+    <value>Arabic (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1257" xml:space="preserve">
+    <value>Baltic (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1258" xml:space="preserve">
+    <value>Vietnamese (Windows)</value>
+  </data>
+  <data name="Globalization_cp_1361" xml:space="preserve">
+    <value>Korean (Johab)</value>
+  </data>
+  <data name="Globalization_cp_10000" xml:space="preserve">
+    <value>Western European (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10001" xml:space="preserve">
+    <value>Japanese (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10002" xml:space="preserve">
+    <value>Chinese Traditional (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10003" xml:space="preserve">
+    <value>Korean (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10004" xml:space="preserve">
+    <value>Arabic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10005" xml:space="preserve">
+    <value>Hebrew (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10006" xml:space="preserve">
+    <value>Greek (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10007" xml:space="preserve">
+    <value>Cyrillic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10008" xml:space="preserve">
+    <value>Chinese Simplified (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10010" xml:space="preserve">
+    <value>Romanian (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10017" xml:space="preserve">
+    <value>Ukrainian (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10021" xml:space="preserve">
+    <value>Thai (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10029" xml:space="preserve">
+    <value>Central European (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10079" xml:space="preserve">
+    <value>Icelandic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10081" xml:space="preserve">
+    <value>Turkish (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10082" xml:space="preserve">
+    <value>Croatian (Mac)</value>
+  </data>
+  <data name="Globalization_cp_20000" xml:space="preserve">
+    <value>Chinese Traditional (CNS)</value>
+  </data>
+  <data name="Globalization_cp_20001" xml:space="preserve">
+    <value>TCA Taiwan</value>
+  </data>
+  <data name="Globalization_cp_20002" xml:space="preserve">
+    <value>Chinese Traditional (Eten)</value>
+  </data>
+  <data name="Globalization_cp_20003" xml:space="preserve">
+    <value>IBM5550 Taiwan</value>
+  </data>
+  <data name="Globalization_cp_20004" xml:space="preserve">
+    <value>TeleText Taiwan</value>
+  </data>
+  <data name="Globalization_cp_20005" xml:space="preserve">
+    <value>Wang Taiwan</value>
+  </data>
+  <data name="Globalization_cp_20105" xml:space="preserve">
+    <value>Western European (IA5)</value>
+  </data>
+  <data name="Globalization_cp_20106" xml:space="preserve">
+    <value>German (IA5)</value>
+  </data>
+  <data name="Globalization_cp_20107" xml:space="preserve">
+    <value>Swedish (IA5)</value>
+  </data>
+  <data name="Globalization_cp_20108" xml:space="preserve">
+    <value>Norwegian (IA5)</value>
+  </data>
+  <data name="Globalization_cp_20261" xml:space="preserve">
+    <value>T.61</value>
+  </data>
+  <data name="Globalization_cp_20269" xml:space="preserve">
+    <value>ISO-6937</value>
+  </data>
+  <data name="Globalization_cp_20273" xml:space="preserve">
+    <value>IBM EBCDIC (Germany)</value>
+  </data>
+  <data name="Globalization_cp_20277" xml:space="preserve">
+    <value>IBM EBCDIC (Denmark-Norway)</value>
+  </data>
+  <data name="Globalization_cp_20278" xml:space="preserve">
+    <value>IBM EBCDIC (Finland-Sweden)</value>
+  </data>
+  <data name="Globalization_cp_20280" xml:space="preserve">
+    <value>IBM EBCDIC (Italy)</value>
+  </data>
+  <data name="Globalization_cp_20284" xml:space="preserve">
+    <value>IBM EBCDIC (Spain)</value>
+  </data>
+  <data name="Globalization_cp_20285" xml:space="preserve">
+    <value>IBM EBCDIC (UK)</value>
+  </data>
+  <data name="Globalization_cp_20290" xml:space="preserve">
+    <value>IBM EBCDIC (Japanese katakana)</value>
+  </data>
+  <data name="Globalization_cp_20297" xml:space="preserve">
+    <value>IBM EBCDIC (France)</value>
+  </data>
+  <data name="Globalization_cp_20420" xml:space="preserve">
+    <value>IBM EBCDIC (Arabic)</value>
+  </data>
+  <data name="Globalization_cp_20423" xml:space="preserve">
+    <value>IBM EBCDIC (Greek)</value>
+  </data>
+  <data name="Globalization_cp_20424" xml:space="preserve">
+    <value>IBM EBCDIC (Hebrew)</value>
+  </data>
+  <data name="Globalization_cp_20833" xml:space="preserve">
+    <value>IBM EBCDIC (Korean Extended)</value>
+  </data>
+  <data name="Globalization_cp_20838" xml:space="preserve">
+    <value>IBM EBCDIC (Thai)</value>
+  </data>
+  <data name="Globalization_cp_20866" xml:space="preserve">
+    <value>Cyrillic (KOI8-R)</value>
+  </data>
+  <data name="Globalization_cp_20871" xml:space="preserve">
+    <value>IBM EBCDIC (Icelandic)</value>
+  </data>
+  <data name="Globalization_cp_20880" xml:space="preserve">
+    <value>IBM EBCDIC (Cyrillic Russian)</value>
+  </data>
+  <data name="Globalization_cp_20905" xml:space="preserve">
+    <value>IBM EBCDIC (Turkish)</value>
+  </data>
+  <data name="Globalization_cp_20924" xml:space="preserve">
+    <value>IBM Latin-1</value>
+  </data>
+  <data name="Globalization_cp_20932" xml:space="preserve">
+    <value>Japanese (JIS 0208-1990 and 0212-1990)</value>
+  </data>
+  <data name="Globalization_cp_20936" xml:space="preserve">
+    <value>Chinese Simplified (GB2312-80)</value>
+  </data>
+  <data name="Globalization_cp_20949" xml:space="preserve">
+    <value>Korean Wansung</value>
+  </data>
+  <data name="Globalization_cp_21025" xml:space="preserve">
+    <value>IBM EBCDIC (Cyrillic Serbian-Bulgarian)</value>
+  </data>
+  <data name="Globalization_cp_21027" xml:space="preserve">
+    <value>Ext Alpha Lowercase</value>
+  </data>
+  <data name="Globalization_cp_21866" xml:space="preserve">
+    <value>Cyrillic (KOI8-U)</value>
+  </data>
+  <data name="Globalization_cp_28592" xml:space="preserve">
+    <value>Central European (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28593" xml:space="preserve">
+    <value>Latin 3 (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28594" xml:space="preserve">
+    <value>Baltic (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28595" xml:space="preserve">
+    <value>Cyrillic (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28596" xml:space="preserve">
+    <value>Arabic (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28597" xml:space="preserve">
+    <value>Greek (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28598" xml:space="preserve">
+    <value>Hebrew (ISO-Visual)</value>
+  </data>
+  <data name="Globalization_cp_28599" xml:space="preserve">
+    <value>Turkish (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28603" xml:space="preserve">
+    <value>Estonian (ISO)</value>
+  </data>
+  <data name="Globalization_cp_28605" xml:space="preserve">
+    <value>Latin 9 (ISO)</value>
+  </data>
+  <data name="Globalization_cp_29001" xml:space="preserve">
+    <value>Europa</value>
+  </data>
+  <data name="Globalization_cp_38598" xml:space="preserve">
+    <value>Hebrew (ISO-Logical)</value>
+  </data>
+  <data name="Globalization_cp_50000" xml:space="preserve">
+    <value>User Defined</value>
+  </data>
+  <data name="Globalization_cp_50220" xml:space="preserve">
+    <value>Japanese (JIS)</value>
+  </data>
+  <data name="Globalization_cp_50221" xml:space="preserve">
+    <value>Japanese (JIS-Allow 1 byte Kana)</value>
+  </data>
+  <data name="Globalization_cp_50222" xml:space="preserve">
+    <value>Japanese (JIS-Allow 1 byte Kana - SO/SI)</value>
+  </data>
+  <data name="Globalization_cp_50225" xml:space="preserve">
+    <value>Korean (ISO)</value>
+  </data>
+  <data name="Globalization_cp_50227" xml:space="preserve">
+    <value>Chinese Simplified (ISO-2022)</value>
+  </data>
+  <data name="Globalization_cp_50229" xml:space="preserve">
+    <value>Chinese Traditional (ISO-2022)</value>
+  </data>
+  <data name="Globalization_cp_50930" xml:space="preserve">
+    <value>IBM EBCDIC (Japanese and Japanese Katakana)</value>
+  </data>
+  <data name="Globalization_cp_50931" xml:space="preserve">
+    <value>IBM EBCDIC (Japanese and US-Canada)</value>
+  </data>
+  <data name="Globalization_cp_50933" xml:space="preserve">
+    <value>IBM EBCDIC (Korean and Korean Extended)</value>
+  </data>
+  <data name="Globalization_cp_50935" xml:space="preserve">
+    <value>IBM EBCDIC (Simplified Chinese)</value>
+  </data>
+  <data name="Globalization_cp_50937" xml:space="preserve">
+    <value>IBM EBCDIC (Traditional Chinese)</value>
+  </data>
+  <data name="Globalization_cp_50939" xml:space="preserve">
+    <value>IBM EBCDIC (Japanese and Japanese-Latin)</value>
+  </data>
+  <data name="Globalization_cp_51932" xml:space="preserve">
+    <value>Japanese (EUC)</value>
+  </data>
+  <data name="Globalization_cp_51936" xml:space="preserve">
+    <value>Chinese Simplified (EUC)</value>
+  </data>
+  <data name="Globalization_cp_51949" xml:space="preserve">
+    <value>Korean (EUC)</value>
+  </data>
+  <data name="Globalization_cp_52936" xml:space="preserve">
+    <value>Chinese Simplified (HZ)</value>
+  </data>
+  <data name="Globalization_cp_54936" xml:space="preserve">
+    <value>Chinese Simplified (GB18030)</value>
+  </data>
+  <data name="Globalization_cp_57002" xml:space="preserve">
+    <value>ISCII Devanagari</value>
+  </data>
+  <data name="Globalization_cp_57003" xml:space="preserve">
+    <value>ISCII Bengali</value>
+  </data>
+  <data name="Globalization_cp_57004" xml:space="preserve">
+    <value>ISCII Tamil</value>
+  </data>
+  <data name="Globalization_cp_57005" xml:space="preserve">
+    <value>ISCII Telugu</value>
+  </data>
+  <data name="Globalization_cp_57006" xml:space="preserve">
+    <value>ISCII Assamese</value>
+  </data>
+  <data name="Globalization_cp_57007" xml:space="preserve">
+    <value>ISCII Oriya</value>
+  </data>
+  <data name="Globalization_cp_57008" xml:space="preserve">
+    <value>ISCII Kannada</value>
+  </data>
+  <data name="Globalization_cp_57009" xml:space="preserve">
+    <value>ISCII Malayalam</value>
+  </data>
+  <data name="Globalization_cp_57010" xml:space="preserve">
+    <value>ISCII Gujarati</value>
+  </data>
+  <data name="Globalization_cp_57011" xml:space="preserve">
+    <value>ISCII Punjabi</value>
+  </data>
+</root>

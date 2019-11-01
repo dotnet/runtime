@@ -1,0 +1,17 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- we need to be supported on pre-nuget-3 platforms (Dev12, Dev11, etc) -->
+    <MinClientVersion>2.8.6</MinClientVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- We don't include the reference project for two reasons:
+         1. It is identical to the implementation assembly, which is very small and not a partial facade
+         2. We don't currently have a good mechanism for telling nuget to include the xml doc from the
+            implementation project in the ref folder for the generated package -->
+    <ProjectReference Include="..\src\System.Numerics.Tensors.csproj">
+        <SupportedFramework>net45;wpa81;win8;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

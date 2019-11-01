@@ -1,0 +1,105 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_BadFormatSpecifier" xml:space="preserve">
+    <value>Format specifier was invalid.</value>
+  </data>
+  <data name="Argument_InvalidNumberStyles" xml:space="preserve">
+    <value>An undefined NumberStyles value is being used.</value>
+  </data>
+  <data name="Argument_InvalidHexStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of those in HexNumber.</value>
+  </data>
+  <data name="Argument_MustBeBigInt" xml:space="preserve">
+    <value>The parameter must be a BigInteger.</value>
+  </data>
+  <data name="Format_TooLarge" xml:space="preserve">
+    <value>The value is too large to be represented by this format specifier.</value>
+  </data>
+  <data name="ArgumentOutOfRange_MustBeNonNeg" xml:space="preserve">
+    <value>The number must be greater than or equal to zero.</value>
+  </data>
+  <data name="Overflow_BigIntInfinity" xml:space="preserve">
+    <value>BigInteger cannot represent infinity.</value>
+  </data>
+  <data name="Overflow_NotANumber" xml:space="preserve">
+    <value>The value is not a number.</value>
+  </data>
+  <data name="Overflow_ParseBigInteger" xml:space="preserve">
+    <value>The value could not be parsed.</value>
+  </data>
+  <data name="Overflow_Int32" xml:space="preserve">
+    <value>Value was either too large or too small for an Int32.</value>
+  </data>
+  <data name="Overflow_Int64" xml:space="preserve">
+    <value>Value was either too large or too small for an Int64.</value>
+  </data>
+  <data name="Overflow_UInt32" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt32.</value>
+  </data>
+  <data name="Overflow_UInt64" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt64.</value>
+  </data>
+  <data name="Overflow_Decimal" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal.</value>
+  </data>
+  <data name="Overflow_Negative_Unsigned" xml:space="preserve">
+    <value>Negative values do not have an unsigned representation.</value>
+  </data>
+</root>

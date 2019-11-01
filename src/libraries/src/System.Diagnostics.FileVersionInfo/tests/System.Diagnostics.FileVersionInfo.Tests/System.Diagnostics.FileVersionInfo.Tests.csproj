@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Checked in test binaries for FileVersionInfoTest -->
+    <Content Include="NativeConsoleApp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SecondNativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FileVersionInfoTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="FileVersionInfoTest.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VerLanguageName.cs">
+      <Link>ProductionCode\Common\Interop\Windows\Kernel32\Interop.VerLanguageName.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="FileVersionInfoTest.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
+  </ItemGroup>
+  <Target Name="MangleTestAssemblyExtension" AfterTargets="PrepareForRun">
+    <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
+    <Copy SourceFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
+  </Target>
+</Project>

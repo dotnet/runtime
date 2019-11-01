@@ -1,0 +1,38 @@
+<Project>
+  <PropertyGroup>
+    <!-- shared configurations between shims and apicompat -->
+    <BuildConfigurations>
+      $(BuildConfigurations);
+      netcoreapp;;
+    </BuildConfigurations>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props" />
+
+  <Import Project="netfxreference.props" />
+
+  <PropertyGroup>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
+    <IncludeDefaultReferences>false</IncludeDefaultReferences>
+    <HasMatchingContract>true</HasMatchingContract>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' OR '$(MSBuildProjectName)' == 'mscorlib' OR '$(MSBuildProjectName)' == 'netstandard'">
+    <!-- Omit System.Void since C# doesn't permit the use of the `System.Void`
+         typename and instead requires callers to use the `void` keyword. -->
+    <GenFacadesOmitType Include="System.Void" />
+    <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- include any forwards needed by both generated and manual projects -->
+    <Compile Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')"
+                 Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs" />
+  </ItemGroup>
+</Project>

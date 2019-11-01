@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.IO.Compression.Brotli</AssemblyName>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <!-- Platform agnostic files -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Interop.Brotli.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\BrotliUtils.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoder.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoder.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
+    <Compile Include="System\IO\Compression\BrotliStream.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows specific files -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+</Project>

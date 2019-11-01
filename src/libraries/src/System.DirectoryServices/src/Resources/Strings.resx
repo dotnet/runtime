@@ -1,0 +1,588 @@
+﻿<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+
+    There are any number of "resheader" rows that contain simple
+    name/value pairs.
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
+    mimetype set.
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly:
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
+    read any of the formats listed below.
+
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+    <data name="DSDoesNotImplementIADs" xml:space="preserve">
+        <value>The value provided for adsObject does not implement IADs.</value>
+    </data>
+    <data name="DSNoObject" xml:space="preserve">
+        <value>There is no such object on the server.</value>
+    </data>
+    <data name="DSInvalidPath" xml:space="preserve">
+        <value>The path is invalid.</value>
+    </data>
+    <data name="DSNotAContainer" xml:space="preserve">
+        <value>The Active Directory object located at the path {0} is not a container.</value>
+    </data>
+    <data name="DSCannotDelete" xml:space="preserve">
+        <value>The object cannot be deleted.</value>
+    </data>
+    <data name="DSNoCurrentChild" xml:space="preserve">
+        <value>There is no current child object.</value>
+    </data>
+    <data name="DSCannotCount" xml:space="preserve">
+        <value>The directory cannot report the number of properties.</value>
+    </data>
+    <data name="DSCannotEmunerate" xml:space="preserve">
+        <value>The entry properties cannot be enumerated. Consider using the entry schema to determine what properties are available.</value>
+    </data>
+    <data name="DSNoCurrentProperty" xml:space="preserve">
+        <value>No current property exists.</value>
+    </data>
+    <data name="DSNoCurrentValue" xml:space="preserve">
+        <value>No current value is available.</value>
+    </data>
+    <data name="DSBadPageSize" xml:space="preserve">
+        <value>The PageSize must be greater than 0 or set to 0 for no paging.</value>
+    </data>
+    <data name="DSBadSizeLimit" xml:space="preserve">
+        <value>SizeLimit must be greater than or equal to 0.</value>
+    </data>
+    <data name="DSSearchUnsupported" xml:space="preserve">
+        <value>The provider does not support searching and cannot search {0}.</value>
+    </data>
+    <data name="DSNoCurrentEntry" xml:space="preserve">
+        <value>No current entry exists.</value>
+    </data>
+    <data name="DSInvalidSearchFilter" xml:space="preserve">
+        <value>The {0} search filter is invalid.</value>
+    </data>
+    <data name="DSConvertFailed" xml:space="preserve">
+        <value>The ADSVALUE with the union value {0} cannot be converted to the ADSTYPEENUM type {1}.</value>
+    </data>
+    <data name="DSConvertTypeInvalid" xml:space="preserve">
+        <value>ADSVALUE type is invalid.</value>
+    </data>
+    <data name="DSAdsvalueTypeNYI" xml:space="preserve">
+        <value>Handling of this ADSVALUE type is not yet implemented (type = {0}).</value>
+    </data>
+    <data name="DSAdsiNotInstalled" xml:space="preserve">
+        <value>Active Directory Client is not installed on this computer.</value>
+    </data>
+    <data name="DSNotSet" xml:space="preserve">
+        <value>[Not Set]</value>
+    </data>
+    <data name="DSEnumerator" xml:space="preserve">
+        <value>Enumerator is positioned before the first item or after the last item.</value>
+    </data>
+    <data name="DSPropertySetSupported" xml:space="preserve">
+        <value>New PropertyValueCollection cannot be set into a DirectoryEntry PropertyCollection.</value>
+    </data>
+    <data name="DSAddNotSupported" xml:space="preserve">
+        <value>New properties cannot be added to a DirectoryEntry PropertyCollection.</value>
+    </data>
+    <data name="DSClearNotSupported" xml:space="preserve">
+        <value>DirectoryEntry PropertyCollection cannot be cleared.</value>
+    </data>
+    <data name="DSRemoveNotSupported" xml:space="preserve">
+        <value>Properties cannot be removed from a DirectoryEntry PropertyCollection.</value>
+    </data>
+    <data name="DSSearchPreferencesNotAccepted" xml:space="preserve">
+        <value>The value for the property {0} cannot be set.</value>
+    </data>
+    <data name="DSBadBeforeCount" xml:space="preserve">
+        <value>BeforeCount must be greater than or equal to 0.</value>
+    </data>
+    <data name="DSBadAfterCount" xml:space="preserve">
+        <value>AfterCount must be greater than or equal to 0.</value>
+    </data>
+    <data name="DSBadOffset" xml:space="preserve">
+        <value>Offset must be greater than or equal to 0.</value>
+    </data>
+    <data name="DSBadTargetPercentage" xml:space="preserve">
+        <value>Target percentage should be in the range of 0 to 100 inclusively.</value>
+    </data>
+    <data name="DSBadApproximateTotal" xml:space="preserve">
+        <value>ApproximateTotal must be greater or equal to 0.</value>
+    </data>
+    <data name="DSBadPageSizeDirsync" xml:space="preserve">
+        <value>DirectorySynchronization cannot be combined with PageSize.</value>
+    </data>
+    <data name="DSBadCacheResultsVLV" xml:space="preserve">
+        <value>VirtualListView cannot be combined with CacheResults.</value>
+    </data>
+    <data name="DSBadASQSearchScope" xml:space="preserve">
+        <value>When AttributeScopeQuery is specified, only SearchScope.Base is supported.</value>
+    </data>
+    <data name="DSPropertyValueSupportOneOperation" xml:space="preserve">
+        <value>Only one type of operation can be performed in a sequence.</value>
+    </data>
+    <data name="ConfigSectionsUnique" xml:space="preserve">
+        <value>The '{0}' section can only appear once in a configuration file.</value>
+    </data>
+    <data name="DSUnknownFailure" xml:space="preserve">
+        <value>An unknown error occurred.</value>
+    </data>
+    <data name="DSNotSupportOnClient" xml:space="preserve">
+        <value>This property is only supported on computers running Windows XP and later operating systems.</value>
+    </data>
+    <data name="DSNotSupportOnDC" xml:space="preserve">
+        <value>This property is not supported when targeting Windows Server 2000 domain controllers.</value>
+    </data>
+    <data name="DirectoryContextNeedHost" xml:space="preserve">
+        <value>The target of the directory context should be an Active Directory domain controller or ADAM instance.</value>
+    </data>
+    <data name="DSSyncAllFailure" xml:space="preserve">
+        <value>An error occurred when synchronizing the server.</value>
+    </data>
+    <data name="UnknownTransport" xml:space="preserve">
+        <value>"{0}" is an unknown ActiveDirectoryTransportType.</value>
+    </data>
+    <data name="NotSupportTransportSMTP" xml:space="preserve">
+        <value>ActiveDirectoryTransportType.Smtp not supported. </value>
+    </data>
+    <data name="CannotDelete" xml:space="preserve">
+        <value>The newly created object has not been committed to the backend store, so it cannot be deleted.</value>
+    </data>
+    <data name="CannotGetObject" xml:space="preserve">
+        <value>The newly created object has not been committed to the backend store, so GetDirectoryEntry cannot be called.</value>
+    </data>
+    <data name="DSNotFound" xml:space="preserve">
+        <value>The Specified directory object cannot be found.</value>
+    </data>
+    <data name="TransportNotFound" xml:space="preserve">
+        <value>The transport "{0}" cannot be found.</value>
+    </data>
+    <data name="SiteNotExist" xml:space="preserve">
+        <value>The site "{0}" does not exist.</value>
+    </data>
+    <data name="SiteNotCommitted" xml:space="preserve">
+        <value>The site "{0}" is newly created and has not been committed to the backend store.</value>
+    </data>
+    <data name="NoCurrentSite" xml:space="preserve">
+        <value>The computer is not in a site.</value>
+    </data>
+    <data name="SubnetNotCommitted" xml:space="preserve">
+        <value>The subnet "{0}" is newly created and has not been committed to the backend store.</value>
+    </data>
+    <data name="SiteLinkNotCommitted" xml:space="preserve">
+        <value>The site link "{0}" is newly created and has not been committed to the backend store.</value>
+    </data>
+    <data name="ConnectionNotCommitted" xml:space="preserve">
+        <value>The replication connection "{0}" is newly created and has not been committed to the backend store.</value>
+    </data>
+    <data name="AlreadyExistingForestTrust" xml:space="preserve">
+        <value>A forest trust relationship exists between "{0}" and "{1}".</value>
+    </data>
+    <data name="AlreadyExistingDomainTrust" xml:space="preserve">
+        <value>A domain trust relationship exists between "{0}" and "{1}".</value>
+    </data>
+    <data name="NotFoundInCollection" xml:space="preserve">
+        <value>Cannot remove "{0}". It was not found in the specified collection.</value>
+    </data>
+    <data name="AlreadyExistingInCollection" xml:space="preserve">
+        <value>Cannot add "{0}". It currently exists in the specified collection.</value>
+    </data>
+    <data name="NTDSSiteSetting" xml:space="preserve">
+        <value>The site "{0}" does not contain a nTDSSiteSettings object.</value>
+    </data>
+    <data name="NotWithinSite" xml:space="preserve">
+        <value>This directory server is not in the current site.</value>
+    </data>
+    <data name="InvalidTime" xml:space="preserve">
+        <value>The end time must be later than the start time.</value>
+    </data>
+    <data name="UnableToRetrieveDomainInfo" xml:space="preserve">
+        <value>Information about the domain could not be retrieved ({0}).</value>
+    </data>
+    <data name="UnableToOpenToken" xml:space="preserve">
+        <value>The thread or process token could not be accessed ({0}).</value>
+    </data>
+    <data name="UnableToRetrieveTokenInfo" xml:space="preserve">
+        <value>Information from the thread token could not be retrieved ({0}).</value>
+    </data>
+    <data name="UnableToRetrievePolicy" xml:space="preserve">
+        <value>This computer's policy information could not be retrieved ({0}).</value>
+    </data>
+    <data name="UpdateAvailableRIDPoolOverflowFailure" xml:space="preserve">
+        <value>Failure in updating rIDAvailablePool value. New value exceeds the maximum limit.</value>
+    </data>
+    <data name="EmptyStringParameter" xml:space="preserve">
+        <value>The specified string parameter is empty.</value>
+    </data>
+    <data name="SupportedPlatforms" xml:space="preserve">
+        <value>The System.DirectoryServices.ActiveDirectory namespace is only supported on computers running Windows 2000 and later operating systems.</value>
+    </data>
+    <data name="TargetShouldBeADAMServer" xml:space="preserve">
+        <value>The name specified in the directory context must be an ADAM instance.</value>
+    </data>
+    <data name="TargetShouldBeDC" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory domain controller.</value>
+    </data>
+    <data name="TargetShouldBeAppNCDnsName" xml:space="preserve">
+        <value>The name specified in the directory context must be the DNS name of the application partition.</value>
+    </data>
+    <data name="TargetShouldBeServerORForest" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory domain controller or a forest.</value>
+    </data>
+    <data name="TargetShouldBeServerORDomain" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory domain controller or a domain.</value>
+    </data>
+    <data name="TargetShouldBeDomain" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory domain.</value>
+    </data>
+    <data name="TargetShouldBeForest" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory forest.</value>
+    </data>
+    <data name="TargetShouldBeConfigSet" xml:space="preserve">
+        <value>The name specified in the directory context must be an ADAM configuration set.</value>
+    </data>
+    <data name="TargetShouldBeServerORConfigSet" xml:space="preserve">
+        <value>The name specified in the directory context must be an ADAM instance or an ADAM configuration set.</value>
+    </data>
+    <data name="TargetShouldBeGC" xml:space="preserve">
+        <value>The name specified in the directory context must be a global catalog.</value>
+    </data>
+    <data name="TargetShouldBeServer" xml:space="preserve">
+        <value>The name specified in the directory context must be an Active Directory domain controller or an ADAM instance.</value>
+    </data>
+    <data name="NotADOrADAM" xml:space="preserve">
+        <value>The specified name is not a forest, Active Directory domain controller, ADAM instance, or ADAM configuration set.</value>
+    </data>
+    <data name="ServerNotAReplica" xml:space="preserve">
+        <value>The directory server does not host the specified application partition.</value>
+    </data>
+    <data name="AppNCNotFound" xml:space="preserve">
+        <value>The specified application partition does not exist.</value>
+    </data>
+    <data name="ReplicaNotFound" xml:space="preserve">
+        <value>A Directory server that hosts the specified application partition not found.</value>
+    </data>
+    <data name="GCNotFoundInForest" xml:space="preserve">
+        <value>Global catalog not found in forest "{0}".</value>
+    </data>
+    <data name="DCNotFoundInDomain" xml:space="preserve">
+        <value>Domain controller not found in the domain "{0}".</value>
+    </data>
+    <data name="ADAMInstanceNotFoundInConfigSet" xml:space="preserve">
+        <value>ADAM instance not found in configuration set "{0}".</value>
+    </data>
+    <data name="DCNotFound" xml:space="preserve">
+        <value>Domain controller "{0}" does not exist or cannot be contacted.</value>
+    </data>
+    <data name="GCNotFound" xml:space="preserve">
+        <value>Global catalog "{0}" does not exist or cannot be contacted.</value>
+    </data>
+    <data name="AINotFound" xml:space="preserve">
+        <value>ADAM instance "{0}" does not exist or cannot be contacted.</value>
+    </data>
+    <data name="ServerNotFound" xml:space="preserve">
+        <value>Directory server "{0}" does not exist or cannot be contacted.</value>
+    </data>
+    <data name="DomainNotFound" xml:space="preserve">
+        <value>The specified domain does not exist or cannot be contacted.</value>
+    </data>
+    <data name="ForestNotFound" xml:space="preserve">
+        <value>The specified forest does not exist or cannot be contacted.</value>
+    </data>
+    <data name="ConfigSetNotFound" xml:space="preserve">
+        <value>The specified ADAM configuration set does not exist or cannot be contacted.</value>
+    </data>
+    <data name="NDNCNotFound" xml:space="preserve">
+        <value>The specified application partition does not exist or cannot be contacted.</value>
+    </data>
+    <data name="PropertyNotFoundOnObject" xml:space="preserve">
+        <value>Property "{0}" on object "{1}" not found.</value>
+    </data>
+    <data name="PropertyNotFound" xml:space="preserve">
+        <value>Property "{0}" not found.</value>
+    </data>
+    <data name="ADAMInstanceNotFound" xml:space="preserve">
+        <value>An ADAM instance could not be found.</value>
+    </data>
+    <data name="CannotPerformOperationOnUncommittedObject" xml:space="preserve">
+        <value>Operation valid only for objects that exist on the backend store.</value>
+    </data>
+    <data name="InvalidServerNameFormat" xml:space="preserve">
+        <value>The server object name has an invalid format.</value>
+    </data>
+    <data name="NoObjectClassForADPartition" xml:space="preserve">
+        <value>Object class must not be specified for Active Directory application partitions.</value>
+    </data>
+    <data name="InvalidDNFormat" xml:space="preserve">
+        <value>The specified distinguished name has an invalid format.</value>
+    </data>
+    <data name="ApplicationPartitionTypeUnknown" xml:space="preserve">
+        <value>Application partition is neither an Active Directory, nor ADAM application partition.</value>
+    </data>
+    <data name="UnknownSyntax" xml:space="preserve">
+        <value>Schema property "{0}" has an unknown syntax.</value>
+    </data>
+    <data name="InvalidMode" xml:space="preserve">
+        <value>The requested mode is invalid.</value>
+    </data>
+    <data name="NoW2K3DCs" xml:space="preserve">
+        <value>No Windows Server 2003 domain controllers exist in the domain.</value>
+    </data>
+    <data name="DCInfoNotFound" xml:space="preserve">
+        <value>Domain controller data not found for the specified Active Directory domain controller.</value>
+    </data>
+    <data name="NoW2K3DCsInForest" xml:space="preserve">
+        <value>No Windows Server 2003 domain controllers exist in the forest.</value>
+    </data>
+    <data name="SchemaObjectNotCommitted" xml:space="preserve">
+        <value>The schema object "{0}" is newly created and has not been committed to the backend store.</value>
+    </data>
+    <data name="InvalidFlags" xml:space="preserve">
+        <value>One or more flags are invalid.</value>
+    </data>
+    <data name="CannotPerformOnGCObject" xml:space="preserve">
+        <value>Cannot perform this operation on a global catalog object.</value>
+    </data>
+    <data name="ValueCannotBeModified" xml:space="preserve">
+        <value>The specified value cannot be removed or overwritten. It is inherited from a super class.</value>
+    </data>
+    <data name="ServerShouldBeW2K3" xml:space="preserve">
+        <value>The Active Directory domain controller must be running Windows Server 2003 operating system or later.</value>
+    </data>
+    <data name="LinkedPropertyNotFound" xml:space="preserve">
+        <value>Schema property with link id "{0}" not found.</value>
+    </data>
+    <data name="GCDisabled" xml:space="preserve">
+        <value>Cannot perform this operation on disabled global catalog object.</value>
+    </data>
+    <data name="PropertyInvalidForADAM" xml:space="preserve">
+        <value>This property is not supported for an ADAM application partition.</value>
+    </data>
+    <data name="OperationInvalidForADAM" xml:space="preserve">
+        <value>This operation is not supported for an ADAM application partition.</value>
+    </data>
+    <data name="ContextNotAssociatedWithDomain" xml:space="preserve">
+        <value>Current security context is not associated with an Active Directory domain or forest.</value>
+    </data>
+    <data name="ComputerNotJoinedToDomain" xml:space="preserve">
+        <value>The local computer is not joined to a domain or the domain cannot be contacted.</value>
+    </data>
+    <data name="VersionFailure" xml:space="preserve">
+        <value>Failed to get the version of the operating system, error is "{0}".</value>
+    </data>
+    <data name="NoHostName" xml:space="preserve">
+        <value>Unable to obtain DNS hostname of Active Directory domain controller with ntdsa object name "{0}".</value>
+    </data>
+    <data name="NoHostNameOrPortNumber" xml:space="preserve">
+        <value>Unable to obtain DNS hostname or port number of ADAM instance with ntdsa object name "{0}".</value>
+    </data>
+    <data name="Name" xml:space="preserve">
+        <value>Name: "{0}"</value>
+    </data>
+    <data name="OneLevelPartitionNotSupported" xml:space="preserve">
+        <value>Creation of single level application partition is not supported.</value>
+    </data>
+    <data name="SiteNameNotFound" xml:space="preserve">
+        <value>Unable to obtain the site name of domain controller "{0}".</value>
+    </data>
+    <data name="SiteObjectNameNotFound" xml:space="preserve">
+        <value>Unable to obtain the distinguished name of the site object for domain controller "{0}".</value>
+    </data>
+    <data name="ComputerObjectNameNotFound" xml:space="preserve">
+        <value>Unable to obtain the distinguished name of the computer object of domain controller "{0}".</value>
+    </data>
+    <data name="ServerObjectNameNotFound" xml:space="preserve">
+        <value>Unable to obtain the distinguished name of the server object of domain controller "{0}".</value>
+    </data>
+    <data name="NtdsaObjectNameNotFound" xml:space="preserve">
+        <value>Unable to obtain the distinguished name of the ntds settings object of domain controller "{0}".</value>
+    </data>
+    <data name="NtdsaObjectGuidNotFound" xml:space="preserve">
+        <value>Unable to obtain the guid of the ntds settings object of domain controller "{0}".</value>
+    </data>
+    <data name="OnlyDomainOrForest" xml:space="preserve">
+        <value>DirectoryContextType.Domain and DirectoryContextType.Forest are the only valid values for contextType when the name of the context is not specified.</value>
+    </data>
+    <data name="ServerShouldBeDC" xml:space="preserve">
+        <value>The specified directory server must be an Active Directory domain controller.</value>
+    </data>
+    <data name="ServerShouldBeAI" xml:space="preserve">
+        <value>The specified directory server must be an ADAM instance.</value>
+    </data>
+    <data name="CannotModifySacl" xml:space="preserve">
+        <value>The system acl cannot be modified as it was not retrieved from the backend store.</value>
+    </data>
+    <data name="CannotModifyDacl" xml:space="preserve">
+        <value>The discretionary acl cannot be modified as it was not retrieved from the backend store.</value>
+    </data>
+    <data name="ForestTrustCollision" xml:space="preserve">
+        <value>A collision occurred in the forest trust relationship.</value>
+    </data>
+    <data name="ForestTrustDoesNotExist" xml:space="preserve">
+        <value>A forest trust relationship does not exist between "{0}" and "{1}".</value>
+    </data>
+    <data name="DomainTrustDoesNotExist" xml:space="preserve">
+        <value>A domain trust relationship does not exist between "{0}" and "{1}".</value>
+    </data>
+    <data name="WrongForestTrust" xml:space="preserve">
+        <value>A forest trust relationship should not exist between "{0}" and "{1}".</value>
+    </data>
+    <data name="WrongTrustDirection" xml:space="preserve">
+        <value>The trust relationship between "{0}" and "{1}" is not "{2}".</value>
+    </data>
+    <data name="NT4NotSupported" xml:space="preserve">
+        <value>Trust relationship with Windows NT 4.0 domain not supported.</value>
+    </data>
+    <data name="KerberosNotSupported" xml:space="preserve">
+        <value>Operation for Kerberos type trust not supported.</value>
+    </data>
+    <data name="DSPropertyListUnsupported" xml:space="preserve">
+        <value>The provider does not support retrieval of the security descriptor in binary form.</value>
+    </data>
+    <data name="DSMultipleSDNotSupported" xml:space="preserve">
+        <value>Multiple security descriptors for an object are not supported.</value>
+    </data>
+    <data name="DSSDNoValues" xml:space="preserve">
+        <value>ntSecurityDescriptor property exists in cache, but has no values.</value>
+    </data>
+    <data name="ConnectionSourcServerShouldBeDC" xml:space="preserve">
+        <value>Must be the name of an Active Directory domain controller.</value>
+    </data>
+    <data name="ConnectionSourcServerShouldBeADAM" xml:space="preserve">
+        <value>Must be the name of an ADAM instance.</value>
+    </data>
+    <data name="ConnectionSourcServerSameForest" xml:space="preserve">
+        <value>Must be in the same Active Directory forest as the name specified in the directory context.</value>
+    </data>
+    <data name="ConnectionSourcServerSameConfigSet" xml:space="preserve">
+        <value>Must be in the same ADAM Configuration Set as the name specified in the directory context.</value>
+    </data>
+    <data name="TrustVerificationNotSupport" xml:space="preserve">
+        <value>Trust verification not supported.</value>
+    </data>
+    <data name="OnlyAllowSingleDimension" xml:space="preserve">
+        <value>Only single dimensional arrays are supported for the requested action.</value>
+    </data>
+    <data name="LessThanZero" xml:space="preserve">
+        <value>Number was less than the array's lower bound in the first dimension.</value>
+    </data>
+    <data name="DestinationArrayNotLargeEnough" xml:space="preserve">
+        <value>Destination array was not long enough. Check destIndex and length, and the array's lower bounds.</value>
+    </data>
+    <data name="NoNegativeTime" xml:space="preserve">
+        <value>A negative value is not permitted for the replication interval.</value>
+    </data>
+    <data name="ReplicationIntervalExceedMax" xml:space="preserve">
+        <value>The value exceeds the maximum allowed for replication interval.</value>
+    </data>
+    <data name="ReplicationIntervalInMinutes" xml:space="preserve">
+        <value>The value can not be represented in whole minutes.</value>
+    </data>
+    <data name="TimespanExceedMax" xml:space="preserve">
+        <value>The value exceeds the maximum allowed.</value>
+    </data>
+    <data name="DirectoryServices_PlatformNotSupported" xml:space="preserve">
+        <value>System.DirectoryServices is not supported on this platform.</value>
+    </data>
+</root>
+

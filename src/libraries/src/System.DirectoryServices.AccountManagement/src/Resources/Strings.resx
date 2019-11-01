@@ -1,0 +1,497 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ContextNoWellKnownObjects" xml:space="preserve">
+    <value>The domain's wellKnownObjects attribute does not contain values for the well-known users and/or computers containers.</value>
+  </data>
+  <data name="ContextNoContainerForMachineCtx" xml:space="preserve">
+    <value>A container cannot be specified when using the Machine context.</value>
+  </data>
+  <data name="ContextNoContainerForApplicationDirectoryCtx" xml:space="preserve">
+    <value>A container and name must be specified when using the Application Directory context.</value>
+  </data>
+  <data name="ContextBadUserPwdCombo" xml:space="preserve">
+    <value>The user name and password must either both be null or both must be non-null.</value>
+  </data>
+  <data name="StoreNotSupportMethod" xml:space="preserve">
+    <value>This store does not support this method.</value>
+  </data>
+  <data name="PrincipalCantSetContext" xml:space="preserve">
+    <value>The PrincipalContext can only be set on an unpersisted Principal.</value>
+  </data>
+  <data name="PrincipalUnsupportedProperty" xml:space="preserve">
+    <value>Principals in this type of store do not support the property '{0}'.</value>
+  </data>
+  <data name="PrincipalUnsupportPropertyForPlatform" xml:space="preserve">
+    <value>Principals in this version of the store do not support the property '{0}'.</value>
+  </data>
+  <data name="PrincipalUnsupportPropertyForType" xml:space="preserve">
+    <value>Principal objects of type {0} in this type of store do not support the property '{1}'.</value>
+  </data>
+  <data name="PrincipalMustSetContextForSave" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to an unpersisted Principal object before the Principal can be saved.</value>
+  </data>
+  <data name="PrincipalMustSetContextForNative" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to an unpersisted Principal object before the type of the underlying object can be retrieved.</value>
+  </data>
+  <data name="PrincipalMustSetContextForProperty" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to the unpersisted Principal object before this property can be accessed.</value>
+  </data>
+  <data name="PrincipalCantDeleteUnpersisted" xml:space="preserve">
+    <value>Unpersisted Principal objects can not be deleted.</value>
+  </data>
+  <data name="PrincipalDeleted" xml:space="preserve">
+    <value>Can�t delete an already deleted object</value>
+  </data>
+  <data name="PrincipalNotSupportedOnFakePrincipal" xml:space="preserve">
+    <value>This Principal object represents a well-known SID and does not correspond to an actual store object.  This operation is not supported on it.</value>
+  </data>
+  <data name="PrincipalMustPersistFirst" xml:space="preserve">
+    <value>The Principal object must be persisted before this method can be called.</value>
+  </data>
+  <data name="PrincipalIdentityTypeNotAllowed" xml:space="preserve">
+    <value>This type of identity information is not supported on principals in this type of store.</value>
+  </data>
+  <data name="PrincipalIdentityTypeNotRemovable" xml:space="preserve">
+    <value>This type of identity information can not be cleared on principals in this type of store.</value>
+  </data>
+  <data name="PrincipalCantChangeSamNameOnPersistedSAM" xml:space="preserve">
+    <value>This type of store does not permit changing the SAM account name after the principal has been persisted.</value>
+  </data>
+  <data name="EmptyIdentityType" xml:space="preserve">
+    <value>The identityType parameter cannot be empty.</value>
+  </data>
+  <data name="PrincipalSearcherPersistedPrincipal" xml:space="preserve">
+    <value>Persisted Principal objects cannot be used as query filters.</value>
+  </data>
+  <data name="PrincipalSearcherMustSetContext" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to the PrincipalSearcher before the query can be performed.</value>
+  </data>
+  <data name="PrincipalSearcherMustSetFilter" xml:space="preserve">
+    <value>A QueryFilter must first be assigned to the PrincipalSearcher before the query can be performed.</value>
+  </data>
+  <data name="PrincipalSearcherMustSetContextForUnderlying" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to the PrincipalSearcher before the underlying searcher can be retrieved.</value>
+  </data>
+  <data name="PrincipalSearcherNoUnderlying" xml:space="preserve">
+    <value>There is no underlying searcher for the type of store associated with the PrincipalContext.</value>
+  </data>
+  <data name="PrincipalSearcherNonReferentialProps" xml:space="preserve">
+    <value>Only non-referential properties (properties which do not contain or refer to Principal objects) can be used in the query filter.  The Principal object specified as the query filter has referential properties set.</value>
+  </data>
+  <data name="FindResultEnumInvalidPos" xml:space="preserve">
+    <value>The enumerator is positioned before the first element of the collection or after the last element.</value>
+  </data>
+  <data name="TrackedCollectionNotOneDimensional" xml:space="preserve">
+    <value>The destination array must be one-dimensional.</value>
+  </data>
+  <data name="TrackedCollectionIndexNotInArray" xml:space="preserve">
+    <value>The specified index is greater than or equal to than the length of the destination array.</value>
+  </data>
+  <data name="TrackedCollectionArrayTooSmall" xml:space="preserve">
+    <value>The number of elements to copy is greater than the available space in the destination array.</value>
+  </data>
+  <data name="TrackedCollectionEnumHasChanged" xml:space="preserve">
+    <value>The collection was modified after the enumerator was created.</value>
+  </data>
+  <data name="TrackedCollectionEnumInvalidPos" xml:space="preserve">
+    <value>The enumerator is positioned before the first element of the collection or after the last element.</value>
+  </data>
+  <data name="MultipleMatchesExceptionText" xml:space="preserve">
+    <value>More than one matching identity was found.</value>
+  </data>
+  <data name="MultipleMatchingPrincipals" xml:space="preserve">
+    <value>Multiple principals contain a matching Identity.</value>
+  </data>
+  <data name="NoMatchingPrincipalExceptionText" xml:space="preserve">
+    <value>No principal matching the specified parameters was found.</value>
+  </data>
+  <data name="NoMatchingGroupExceptionText" xml:space="preserve">
+    <value>No group matching the specified parameters was found.</value>
+  </data>
+  <data name="PrincipalExistsExceptionText" xml:space="preserve">
+    <value>The principal already exists in the store.</value>
+  </data>
+  <data name="PrincipalCollectionNotOneDimensional" xml:space="preserve">
+    <value>The destination array must be one-dimensional.</value>
+  </data>
+  <data name="PrincipalCollectionIndexNotInArray" xml:space="preserve">
+    <value>The specified index is greater than or equal to than the length of the destination array.</value>
+  </data>
+  <data name="PrincipalCollectionArrayTooSmall" xml:space="preserve">
+    <value>The number of elements to copy is greater than the available space in the destination array.</value>
+  </data>
+  <data name="PrincipalCollectionEnumHasChanged" xml:space="preserve">
+    <value>The collection was modified after the enumerator was created.</value>
+  </data>
+  <data name="PrincipalCollectionEnumInvalidPos" xml:space="preserve">
+    <value>The enumerator is positioned before the first element of the collection or after the last element.</value>
+  </data>
+  <data name="PrincipalCollectionAlreadyMember" xml:space="preserve">
+    <value>The Principal object already exists in the collection.</value>
+  </data>
+  <data name="AuthenticablePrincipalMustBeSubtypeOfAuthPrinc" xml:space="preserve">
+    <value>The subtype parameter must be either AuthenticablePrincipal or a subtype of AuthenticablePrincipal.</value>
+  </data>
+  <data name="PasswordInfoChangePwdOnUnpersistedPrinc" xml:space="preserve">
+    <value>The ChangePassword method can not be called on an unpersisted Principal object.</value>
+  </data>
+  <data name="UserMustSetContextForMethod" xml:space="preserve">
+    <value>A PrincipalContext must first be assigned to the unpersisted User object before this method can be called.</value>
+  </data>
+  <data name="UserDomainNotSupportedOnPlatform" xml:space="preserve">
+    <value>Domain users are not supported on this platform.</value>
+  </data>
+  <data name="UserLocalNotSupportedOnPlatform" xml:space="preserve">
+    <value>Local machine users not supported on this platform.</value>
+  </data>
+  <data name="UserCouldNotFindCurrent" xml:space="preserve">
+    <value>The User object for the current user could not be found.  You may not have access to it.</value>
+  </data>
+  <data name="UnableToRetrieveDomainInfo" xml:space="preserve">
+    <value>Information about the domain could not be retrieved ({0}).</value>
+  </data>
+  <data name="UnableToOpenToken" xml:space="preserve">
+    <value>The thread or process token could not be accessed ({0}).</value>
+  </data>
+  <data name="UnableToRetrieveTokenInfo" xml:space="preserve">
+    <value>Information from the thread token could not be retrieved ({0}).</value>
+  </data>
+  <data name="UnableToRetrievePolicy" xml:space="preserve">
+    <value>This computer's policy information could not be retrieved ({0}).</value>
+  </data>
+  <data name="UnableToImpersonateCredentials" xml:space="preserve">
+    <value>The supplied credentials could not be impersonated.</value>
+  </data>
+  <data name="StoreCtxUnsupportedPrincipalTypeForSave" xml:space="preserve">
+    <value>Principal objects of type {0} can not be saved in this store.</value>
+  </data>
+  <data name="StoreCtxUnsupportedPrincipalTypeForGroupInsert" xml:space="preserve">
+    <value>Principal objects of type {0} can not be inserted into groups in this store</value>
+  </data>
+  <data name="StoreCtxUnsupportedPrincipalTypeForQuery" xml:space="preserve">
+    <value>Principal objects of type {0} can not be used in a query against this store.</value>
+  </data>
+  <data name="StoreCtxUnsupportedPropertyForQuery" xml:space="preserve">
+    <value>The property '{0}' can not be used in a query against this store.</value>
+  </data>
+  <data name="StoreCtxUnsupportedIdentityClaimForQuery" xml:space="preserve">
+    <value>This IdentityType can not be used in a query against this store.</value>
+  </data>
+  <data name="StoreCtxIdentityClaimMustHaveScheme" xml:space="preserve">
+    <value>The IdentityClaim to use in the query must have a UrnScheme specified.</value>
+  </data>
+  <data name="StoreCtxSecurityIdentityClaimBadFormat" xml:space="preserve">
+    <value>The SID is not in a valid format.</value>
+  </data>
+  <data name="StoreCtxGuidIdentityClaimBadFormat" xml:space="preserve">
+    <value>The GUID is not in a valid format.</value>
+  </data>
+  <data name="StoreCtxNT4IdentityClaimWrongForm" xml:space="preserve">
+    <value>The samAccountName IdentityType must be in the form "domainname\\userName", "machinename\\userName", or "userName".</value>
+  </data>
+  <data name="StoreCtxCantSetTimeLimitOnIdentityClaim" xml:space="preserve">
+    <value>This store does not support setting IdentityClaims with a restricted range of times for which the IdentityClaim is valid.</value>
+  </data>
+  <data name="StoreCtxGroupHasUnpersistedInsertedPrincipal" xml:space="preserve">
+    <value>The Group object can not be saved until the unpersisted Principal object in its Members property is either saved or removed from the collection.</value>
+  </data>
+  <data name="StoreCtxNeedValueSecurityIdentityClaimToQuery" xml:space="preserve">
+    <value>The Principal object must have a valid SID IdentityType in order to perform this operation.</value>
+  </data>
+  <data name="StoreCtxExceptionUpdatingGroup" xml:space="preserve">
+    <value>An exception occurred while updating the group membership on the store.</value>
+  </data>
+  <data name="StoreCtxExceptionCommittingChanges" xml:space="preserve">
+    <value>An exception occurred while saving the changes to the store.</value>
+  </data>
+  <data name="ADStoreCtxUnsupportedPrincipalContextForGroupInsert" xml:space="preserve">
+    <value>Only domain Principal objects can be inserted into groups in this store.</value>
+  </data>
+  <data name="ADStoreCtxCouldntGetSIDForGroupMember" xml:space="preserve">
+    <value>The SID for one of the Principal objects to be inserted into the group could not be retrieved from the store.</value>
+  </data>
+  <data name="ADStoreCtxMustBeContainer" xml:space="preserve">
+    <value>Domain PrincipalContext objects must be rooted at a directory entry that is a container.</value>
+  </data>
+  <data name="ADStoreCtxCantRetrieveObjectSidForCrossStore" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the objectSid could not be retrieved from the representation of the target principal.</value>
+  </data>
+  <data name="ADStoreCtxCantResolveSidForCrossStore" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the SID of the target principal could not be resolved.  The error code is {0}.</value>
+  </data>
+  <data name="ADStoreCtxFailedFindCrossStoreTarget" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the target principal could not be found in the domain indicated by the principal's SID.</value>
+  </data>
+  <data name="ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable" xml:space="preserve">
+    <value>The principal could not be enabled because the existing account control flags could not be read.</value>
+  </data>
+  <data name="ADStoreCtxUnableToReadExistingAccountControlFlagsForUpdate" xml:space="preserve">
+    <value>The principal could not be updated because the existing account control flags could not be read.</value>
+  </data>
+  <data name="ADStoreCtxUnableToReadExistingGroupTypeFlagsForUpdate" xml:space="preserve">
+    <value>The group could not be updated because the existing group type flags could not be read.</value>
+  </data>
+  <data name="ADStoreCtxCantClearGroup" xml:space="preserve">
+    <value>The Group object's Members property can not be cleared because one or more of the group's members have this group as their primary group.</value>
+  </data>
+  <data name="ADStoreCtxCantRemoveMemberFromGroup" xml:space="preserve">
+    <value>The member can not be removed from the Group object's Members property because it has this group as its primary group.</value>
+  </data>
+  <data name="ADStoreCtxNoComputerPasswordChange" xml:space="preserve">
+    <value>Password change operation is not supported for Computer accounts in this store.</value>
+  </data>
+  <data name="SAMStoreCtxUnableToRetrieveVersion" xml:space="preserve">
+    <value>The operating system version of the target computer could not be retrieved.</value>
+  </data>
+  <data name="SAMStoreCtxUnableToRetrieveMachineName" xml:space="preserve">
+    <value>The name of the target computer could not be retrieved.</value>
+  </data>
+  <data name="SAMStoreCtxUnableToRetrieveFlatMachineName" xml:space="preserve">
+    <value>The flat name of the target computer could not be retrieved ({0}).</value>
+  </data>
+  <data name="SAMStoreCtxNoComputerPasswordSet" xml:space="preserve">
+    <value>Computer accounts in this store can not have their passwords reset or changed.</value>
+  </data>
+  <data name="SAMStoreCtxNoComputerPasswordExpire" xml:space="preserve">
+    <value>Computer accounts in this store can not have their passwords expired.</value>
+  </data>
+  <data name="SAMStoreCtxIdentityClaimsImmutable" xml:space="preserve">
+    <value>This store does not permit changing the IdentityClaims on a principal once the principal has been persisted.</value>
+  </data>
+  <data name="SAMStoreCtxCouldntGetSIDForGroupMember" xml:space="preserve">
+    <value>One of the Principal objects to be inserted into or removed from the group's membership does not contain a SID.</value>
+  </data>
+  <data name="SAMStoreCtxFailedToClearGroup" xml:space="preserve">
+    <value>An error ({0}) occurred while trying to clear the group membership.</value>
+  </data>
+  <data name="SAMStoreCtxCantRetrieveObjectSidForCrossStore" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the objectSid could not be retrieved from the representation of the target principal.</value>
+  </data>
+  <data name="SAMStoreCtxCantResolveSidForCrossStore" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the SID of the target principal could not be resolved.  The error code is {0}.</value>
+  </data>
+  <data name="SAMStoreCtxFailedFindCrossStoreTarget" xml:space="preserve">
+    <value>While trying to resolve a cross-store reference, the target principal could not be found in the domain indicated by the principal's SID.</value>
+  </data>
+  <data name="SAMStoreCtxErrorEnumeratingGroup" xml:space="preserve">
+    <value>An error ({0}) occurred while enumerating the group membership.  The member's SID could not be resolved.</value>
+  </data>
+  <data name="SAMStoreCtxLocalGroupsOnly" xml:space="preserve">
+    <value>Only local groups are supported by this store.</value>
+  </data>
+  <data name="AuthZFailedToRetrieveGroupList" xml:space="preserve">
+    <value>While trying to retrieve the authorization groups, an error ({0}) occurred.</value>
+  </data>
+  <data name="AuthZNotSupported" xml:space="preserve">
+    <value>Retrieval of authorization groups is not supported by this platform.</value>
+  </data>
+  <data name="AuthZErrorEnumeratingGroups" xml:space="preserve">
+    <value>An error ({0}) occurred while enumerating the groups.  The group's SID could not be resolved.</value>
+  </data>
+  <data name="AuthZCantFindGroup" xml:space="preserve">
+    <value>An error occurred while enumerating the groups.  The group could not be found.</value>
+  </data>
+  <data name="ConfigHandlerConfigSectionsUnique" xml:space="preserve">
+    <value>The '{0}' element can only appear once in the configuration file.</value>
+  </data>
+  <data name="ConfigHandlerInvalidBoolAttribute" xml:space="preserve">
+    <value>The '{0}' attribute for element '{1}' of the configuration file must be set to 'true' or 'false'.</value>
+  </data>
+  <data name="ConfigHandlerInvalidEnumAttribute" xml:space="preserve">
+    <value>The '{0}' attribute for element '{1}' of the configuration file is set to an unknown value.</value>
+  </data>
+  <data name="ConfigHandlerInvalidStringAttribute" xml:space="preserve">
+    <value>The '{0}' attribute for element '{1}' of the configuration file must be set to a string.</value>
+  </data>
+  <data name="ConfigHandlerUnknownConfigSection" xml:space="preserve">
+    <value>Unknown element '{0}' was found in the configuration file.</value>
+  </data>
+  <data name="PrincipalPermWrongType" xml:space="preserve">
+    <value>The target parameter is not a PrincipalPermission.</value>
+  </data>
+  <data name="PrincipalPermXmlNotPermission" xml:space="preserve">
+    <value>The SecurityElement is not a permission.</value>
+  </data>
+  <data name="PrincipalPermXmlBadVersion" xml:space="preserve">
+    <value>The SecurityElement does not have a valid version.  Version '1' was expected.</value>
+  </data>
+  <data name="PrincipalPermXmlBadContents" xml:space="preserve">
+    <value>The SecurityElement does not contain a valid value for the 'Unrestricted' attribute.</value>
+  </data>
+  <data name="ContextOptionsNotValidForMachineStore" xml:space="preserve">
+    <value>The options value is invalid.  The Machine store only supports Negotiate.</value>
+  </data>
+  <data name="PassedContextTypeDoesNotMatchDetectedType" xml:space="preserve">
+    <value>The supplied context type does not match the server contacted. The server type is {0}.</value>
+  </data>
+  <data name="NullArguments" xml:space="preserve">
+    <value>The supplied arguments cannot be null.</value>
+  </data>
+  <data name="InvalidStringValueForStore" xml:space="preserve">
+    <value>Empty string is not supported by the property {0} for this store type.</value>
+  </data>
+  <data name="ServerDown" xml:space="preserve">
+    <value>The server could not be contacted.</value>
+  </data>
+  <data name="InvalidPropertyForStore" xml:space="preserve">
+    <value>Property is not valid for this store type.</value>
+  </data>
+  <data name="InvalidOperationForStore" xml:space="preserve">
+    <value>{0} is not supported by the {1} ContextType.</value>
+  </data>
+  <data name="NameMustBeSetToPersistPrincipal" xml:space="preserve">
+    <value>SamAccountName or Name must be assigned to a newly-created Principal object in this store prior to saving.</value>
+  </data>
+  <data name="ExtensionInvalidClassDefinitionConstructor" xml:space="preserve">
+    <value>Extension class must define a constructor that accepts a PrincipalContext argument.</value>
+  </data>
+  <data name="ExtensionInvalidClassAttributes" xml:space="preserve">
+    <value>Extension class must set DirectoryObjectClassAttribute and DirectoryRdnPrefixAttribute.</value>
+  </data>
+  <data name="SaveToMustHaveSamecontextType" xml:space="preserve">
+    <value>The target context must have the same type as the object's current context.</value>
+  </data>
+  <data name="ComputerInvalidForAppDirectoryStore" xml:space="preserve">
+    <value>The ComputerPrincipal object is not supported by the ApplicationDirectory store.</value>
+  </data>
+  <data name="SaveToNotSupportedAgainstMachineStore" xml:space="preserve">
+    <value>Saving to an alternate context is not supported by the Machine store.</value>
+  </data>
+  <data name="InvalidContextOptionsForMachine" xml:space="preserve">
+    <value>The ContextOptions passed are invalid for the Machine store.  Only ContextOptions.Negotiate is supported.</value>
+  </data>
+  <data name="InvalidContextOptionsForAD" xml:space="preserve">
+    <value>The ContextOptions passed are invalid for this store type.  Either Negotiate or SimpleBind must be specified and they cannot be combined.</value>
+  </data>
+  <data name="InvalidExtensionCollectionType" xml:space="preserve">
+    <value>Collections whose elements are another collection cannot be set by ExtensionClasses.</value>
+  </data>
+  <data name="ADAMStoreUnableToPopulateSchemaList" xml:space="preserve">
+    <value>The store is unable to populate a list of bindable object types.  Check access to the Schema container.</value>
+  </data>
+  <data name="StoreCtxMultipleFiltersForPropertyUnsupported" xml:space="preserve">
+    <value>Multiple filters on the property {0} are not supported.</value>
+  </data>
+  <data name="AdsiNotInstalled" xml:space="preserve">
+    <value>Active Directory Client is not installed on this computer.</value>
+  </data>
+  <data name="DirectoryServicesAccountManagement_PlatformNotSupported" xml:space="preserve">
+    <value>System.DirectoryServices.AccountManagement is not supported on this platform.</value>
+  </data>
+</root>

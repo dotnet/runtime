@@ -1,0 +1,21 @@
+<elem xmlns="http://default1.htm">
+	Element1
+	<elem xmlns="http://default2.htm">
+		Element11
+		<elem xmlns="http://default1.htm">
+			Element111
+			<elem xmlns="http://default4.htm">
+				Element1111
+			</elem>
+		</elem>
+	</elem>
+	<elem xmlns="">
+		Element12
+	</elem>
+	<elem xmlns="http://default3.htm" xmlns:prefix="http://prefix.htm">
+		Element13
+		<prefix:elem>
+			Element131
+		</prefix:elem> 		
+	</elem>
+</elem>

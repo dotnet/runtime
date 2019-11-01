@@ -1,0 +1,34 @@
+trigger: none
+
+pool:
+  name: Hosted VS2017
+
+variables:
+  httpStressProject: src/System.Net.Http/tests/StressTests/HttpStress/
+
+steps:
+- checkout: self
+  clean: true
+  fetchDepth: 0
+  lfs: false
+
+- powershell: |
+    .\build.cmd -ci -c $(BUILD_CONFIGURATION)
+  displayName: Build Corefx
+
+- powershell: |
+    cd '$(Build.SourcesDirectory)/$(HttpStressProject)'
+    # Load testhost sdk in environment
+    . .\load-corefx-testhost.ps1 -c $(BUILD_CONFIGURATION) -b
+    # Run the stress suite
+    dotnet run -c $(BUILD_CONFIGURATION) -- $(HTTPSTRESS_ARGS)
+  displayName: Run HttpStress
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish Logs
+  inputs:
+    PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(BUILD_CONFIGURATION)'
+    PublishLocation: Container
+    ArtifactName: 'httpstress_$(Agent.Os)_$(Agent.JobName)'
+  continueOnError: true
+  condition: always()

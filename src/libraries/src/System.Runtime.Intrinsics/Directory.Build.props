@@ -1,0 +1,8 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+  </PropertyGroup>
+</Project>

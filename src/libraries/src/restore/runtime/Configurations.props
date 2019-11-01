@@ -1,0 +1,11 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp3.0-Windows_NT;
+      netcoreapp3.0-Unix;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
+      mono;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

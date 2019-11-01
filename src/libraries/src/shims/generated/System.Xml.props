@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- type is obsolete in a way that prevents compilation, as such we cannot type forward to it, omit since it can never be used -->
+    <GenFacadesOmitType Include="System.Xml.IApplicationResourceStreamResolver" />
+  </ItemGroup>
+</Project>

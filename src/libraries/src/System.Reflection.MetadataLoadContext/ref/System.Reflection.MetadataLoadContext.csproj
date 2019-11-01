@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Reflection.MetadataLoadContext.cs" />
+  </ItemGroup>
+</Project>

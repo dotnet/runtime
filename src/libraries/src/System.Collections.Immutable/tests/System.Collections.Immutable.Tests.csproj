@@ -1,0 +1,119 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>0436</NoWarn>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs" Condition="'$(TargetsNetFx)' == 'true'">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="BadHasher.cs" />
+    <Compile Include="EverythingEqual.cs" />
+    <Compile Include="ImmutableArrayExtensionsTest.cs" />
+    <Compile Include="ImmutableArrayTest.cs" />
+    <Compile Include="ImmutableArrayTestBase.cs" />
+    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests.cs" />
+    <Compile Include="ImmutableDictionaryBuilderTestBase.cs" />
+    <Compile Include="GenericParameterHelper.cs" />
+    <Compile Include="ImmutableDictionaryBuilderTest.cs" />
+    <Compile Include="ImmutableHashSetBuilderTest.cs" />
+    <Compile Include="ImmutableInterlockedTests.cs" />
+    <Compile Include="ImmutableDictionaryTest.cs" />
+    <Compile Include="ImmutableHashSetTest.cs" />
+    <Compile Include="ImmutableDictionaryTestBase.cs" />
+    <Compile Include="ImmutableQueueTest.cs" />
+    <Compile Include="ImmutableSetTest.cs" />
+    <Compile Include="ImmutableSortedDictionaryBuilderTest.cs" />
+    <Compile Include="ImmutableSortedDictionaryTest.cs" />
+    <Compile Include="ImmutableSortedSetBuilderTest.cs" />
+    <Compile Include="ImmutableSortedSetTest.cs" />
+    <Compile Include="ImmutableStackTest.cs" />
+    <Compile Include="ImmutableTestBase.cs" />
+    <Compile Include="IndexOfTests.cs" />
+    <Compile Include="SimpleElementImmutablesTestBase.cs" />
+    <Compile Include="TestExtensionsMethods.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DelegateEqualityComparer.cs">
+      <Link>Common\System\Collections\DelegateEqualityComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
+      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
+      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs">
+      <Link>Common\System\Collections\IGenericSharedAPI.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs">
+      <Link>Common\System\Collections\ISet.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
+      <Link>Common\System\Collections\TestBase.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs">
+      <Link>Common\System\Collections\DebugView.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
+      <Link>Common\System\Collections\TestingTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <DefaultReferenceExclusions Include="System.Collections.Immutable" />
+    <ReferenceFromRuntime Include="System.Collections.Immutable" />
+    <Compile Include="ImmutableListTestBase.cs" />
+    <Compile Include="ImmutableListTest.cs" />
+    <Compile Include="ImmutableListBuilderTest.cs" />
+    <Compile Include="RequiresTests.cs" />
+    <Compile Include="ImmutableArrayBuilderTest.cs" />
+    <Compile Include="ImmutableDictionaryTestBase.nonnetstandard.cs" />
+    <Compile Include="ImmutableDictionaryTest.nonnetstandard.cs" />
+    <Compile Include="TestExtensionsMethods.nonnetstandard.cs" />
+    <Compile Include="ImmutableSetTest.nonnetstandard.cs" />
+    <Compile Include="ImmutableHashSetTest.nonnetstandard.cs" />
+    <Compile Include="ImmutableSortedSetTest.nonnetstandard.cs" />
+    <Compile Include="ImmutableTestBase.nonnetstandard.cs" />
+    <Compile Include="ImmutableDictionaryBuilderTestBase.nonnetstandard.cs" />
+    <Compile Include="ImmutableSortedSetBuilderDebuggerProxyTest.cs" />
+    <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
+    <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
+  </ItemGroup>
+</Project>
