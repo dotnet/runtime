@@ -10,7 +10,7 @@
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkTasksToolsDir>$(PkgILLink_Tasks)/tools</ILLinkTasksToolsDir>
-    <ILLinkTasksDir>$(ILLinkTasksToolsDir)/net46/</ILLinkTasksDir>
+    <ILLinkTasksDir>$(ILLinkTasksToolsDir)/net472/</ILLinkTasksDir>
     <ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ILLinkTasksToolsDir)/netcoreapp2.0/</ILLinkTasksDir>
     <ILLinkTasksPath>$(ILLinkTasksDir)ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == ''">true</ILLinkTrimAssembly>
@@ -62,6 +62,8 @@
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
       <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
+      <!-- keep interface implementations -->
+      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -77,12 +79,22 @@
           Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')"
     />
 
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+         In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>dotnet</_DotNetHostFileName>
+      <_DotNetHostFileName Condition=" '$(OS)' == 'Windows_NT' ">dotnet.exe</_DotNetHostFileName>
+    </PropertyGroup>
+
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ClearInitLocals="true"
             ClearInitLocalsAssemblies="$(TargetName)"
-            ExtraArgs="$(ILLinkArgs)" />
+            ExtraArgs="$(ILLinkArgs)"
+            ToolExe="$(_DotNetHostFileName)"
+            ToolPath="$(_DotNetHostDirectory)" />
 
   </Target>
 
