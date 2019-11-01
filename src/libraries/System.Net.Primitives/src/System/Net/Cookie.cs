@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net
@@ -78,10 +78,24 @@ namespace System.Net
         }
 #endif
 
+        // These PreserveDependency attributes are a workaround for https://github.com/dotnet/corefx/issues/13607.
+        // HttpListener uses the non-public ToServerString, which isn't used by anything else in this assembly,
+        // and which accesses other internals and can't be moved to HttpListener (at least not without incurring
+        // functional differences).  However, once we do our initial System.Net.Primitives build and ToServerString
+        // survives to it, we no longer want the PreserveDependencyAttribute to remain around, so that ToServerString
+        // can be trimmed out if the relevant functionality from HttpListener isn't used when performing whole-app
+        // analysis.  As such, when trimming System.Net.Primitives, we build the assembly with ILLinkKeepDepAttributes=false,
+        // such that when this assembly is compiled, ToServerString will remain but the PreserveDependency attributes
+        // will be removed.  This hack will need to be revisited if anything else in the assembly starts using
+        // PreserveDependencyAttribute.
+        // https://github.com/mono/linker/issues/802
+
+        [PreserveDependency("ToServerString")]
         public Cookie()
         {
         }
 
+        [PreserveDependency("ToServerString")] // Workaround for https://github.com/dotnet/corefx/issues/13607
         public Cookie(string name, string value)
         {
             Name = name;
@@ -659,16 +673,6 @@ namespace System.Net
             get
             {
                 return m_cookieVariant;
-            }
-            set
-            {
-                // Only set by HttpListenerRequest::Cookies_get()
-                if (value != CookieVariant.Rfc2965)
-                {
-                    NetEventSource.Fail(this, $"value != Rfc2965:{value}");
-                }
-
-                m_cookieVariant = value;
             }
         }
 
