@@ -4,7 +4,7 @@ setlocal
 :SetupArgs
 :: Initialize the args that will be passed to cmake
 set __nativeWindowsDir=%~dp0\Windows
-set __artifactsDir=%~dp0..\..\artifacts
+set __artifactsDir=%~dp0..\..\..\artifacts
 set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""

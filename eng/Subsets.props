@@ -47,6 +47,10 @@
       artifacts to the test layout, then running the test subset.
   -->
 
+  <PropertyGroup>
+    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+  </PropertyGroup>
+
   <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
   <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(MSBuildProjectFile)' == 'Build.proj'" />
 

@@ -33,59 +33,58 @@
   <PropertyGroup>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetApiCompatPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>$(MicrosoftDotNetApiCompatPackageVersion)</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19463.3</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetCodeAnalysisPackageVersion>
     <MicrosoftDotNetGenAPIPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetGenAPIPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetGenFacadesPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetXUnitExtensionsPackageVersion>
     <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19531.4</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19463.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19463.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>$(MicrosoftDotNetBuildTasksPackagingPackageVersion)</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetRemoteExecutorPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetRemoteExecutorPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetVersionToolsTasksPackageVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>$(MicrosoftDotNetVersionToolsTasksPackageVersion)</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha.1.19531.9</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppVersion>$(MicrosoftNETCoreAppPackageVersion)</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha.1.19531.9</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha.1.19531.9</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftExtensionsDependencyModelPackageVersion>2.1.0</MicrosoftExtensionsDependencyModelPackageVersion>
     <MicrosoftDotNetPlatformAbstractionsPackageVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsPackageVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19466.3</MicrosoftNETCoreILAsmPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19466.3</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNETSdkILPackageVersion>5.0.0-alpha1.19472.2</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19525.1</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19525.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>5.0.0-alpha1.19525.1</MicrosoftNETSdkILPackageVersion>
     <!-- Libraries dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha1.19466.8</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha1.19466.8</MicrosoftNETCorePlatformsVersion>
-    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha1.19466.8</runtimenativeSystemIOPortsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>5.0.0-alpha1.19477.7</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
-    <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha1.19501.13</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftWin32RegistryVersion>5.0.0-alpha1.19501.13</MicrosoftWin32RegistryVersion>
-    <MicrosoftWin32SystemEventsVersion>5.0.0-alpha1.19501.13</MicrosoftWin32SystemEventsVersion>
-    <MicrosoftWindowsCompatibilityPackageVersion>5.0.0-alpha1.19501.13</MicrosoftWindowsCompatibilityPackageVersion>
-    <SystemCodeDomVersion>5.0.0-alpha1.19501.13</SystemCodeDomVersion>
-    <SystemConfigurationConfigurationManagerVersion>5.0.0-alpha1.19501.13</SystemConfigurationConfigurationManagerVersion>
-    <SystemDiagnosticsEventLogVersion>5.0.0-alpha1.19501.13</SystemDiagnosticsEventLogVersion>
-    <SystemDirectoryServicesVersion>5.0.0-alpha1.19501.13</SystemDirectoryServicesVersion>
-    <SystemDrawingCommonVersion>5.0.0-alpha1.19501.13</SystemDrawingCommonVersion>
-    <SystemIOFileSystemAccessControlVersion>5.0.0-alpha1.19501.13</SystemIOFileSystemAccessControlVersion>
-    <SystemIOPackagingVersion>5.0.0-alpha1.19501.13</SystemIOPackagingVersion>
-    <SystemResourcesExtensionsPackageVersion>5.0.0-alpha1.19501.13</SystemResourcesExtensionsPackageVersion>
-    <SystemSecurityAccessControlVersion>5.0.0-alpha1.19501.13</SystemSecurityAccessControlVersion>
-    <SystemSecurityCryptographyCngVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyCngVersion>
-    <SystemSecurityCryptographyPkcsVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyPkcsVersion>
-    <SystemSecurityCryptographyProtectedDataVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyProtectedDataVersion>
-    <SystemSecurityCryptographyXmlVersion>5.0.0-alpha1.19501.13</SystemSecurityCryptographyXmlVersion>
-    <SystemSecurityPermissionsVersion>5.0.0-alpha1.19501.13</SystemSecurityPermissionsVersion>
-    <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha1.19501.13</SystemSecurityPrincipalWindowsVersion>
-    <SystemTextJsonVersion>5.0.0-alpha1.19501.13</SystemTextJsonVersion>
-    <SystemTextEncodingsWebVersion>5.0.0-alpha1.19501.13</SystemTextEncodingsWebVersion>
-    <SystemThreadingAccessControlVersion>5.0.0-alpha1.19501.13</SystemThreadingAccessControlVersion>
-    <SystemWindowsExtensionsPackageVersion>5.0.0-alpha1.19501.13</SystemWindowsExtensionsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha.1.19531.5</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsVersion>$(MicrosoftNETCorePlatformsPackageVersion)</MicrosoftNETCorePlatformsVersion>
+    <runtimenativeSystemIOPortsPackageVersion>5.0.0-alpha.1.19531.5</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>5.0.0-alpha.1.19531.5</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha.1.19531.5</MicrosoftNETCoreTargetsPackageVersion>
+    <MicrosoftWin32RegistryVersion>5.0.0-alpha.1.19531.5</MicrosoftWin32RegistryVersion>
+    <MicrosoftWin32SystemEventsVersion>5.0.0-alpha.1.19531.5</MicrosoftWin32SystemEventsVersion>
+    <MicrosoftWindowsCompatibilityPackageVersion>5.0.0-alpha.1.19531.5</MicrosoftWindowsCompatibilityPackageVersion>
+    <SystemCodeDomVersion>5.0.0-alpha.1.19531.5</SystemCodeDomVersion>
+    <SystemConfigurationConfigurationManagerVersion>5.0.0-alpha.1.19531.5</SystemConfigurationConfigurationManagerVersion>
+    <SystemDiagnosticsEventLogVersion>5.0.0-alpha.1.19531.5</SystemDiagnosticsEventLogVersion>
+    <SystemDirectoryServicesVersion>5.0.0-alpha.1.19531.5</SystemDirectoryServicesVersion>
+    <SystemDrawingCommonVersion>5.0.0-alpha.1.19531.5</SystemDrawingCommonVersion>
+    <SystemIOFileSystemAccessControlVersion>5.0.0-alpha.1.19531.5</SystemIOFileSystemAccessControlVersion>
+    <SystemIOPackagingVersion>5.0.0-alpha.1.19531.5</SystemIOPackagingVersion>
+    <SystemResourcesExtensionsPackageVersion>5.0.0-alpha.1.19531.5</SystemResourcesExtensionsPackageVersion>
+    <SystemSecurityAccessControlVersion>5.0.0-alpha.1.19531.5</SystemSecurityAccessControlVersion>
+    <SystemSecurityCryptographyCngVersion>5.0.0-alpha.1.19531.5</SystemSecurityCryptographyCngVersion>
+    <SystemSecurityCryptographyPkcsVersion>5.0.0-alpha.1.19531.5</SystemSecurityCryptographyPkcsVersion>
+    <SystemSecurityCryptographyProtectedDataVersion>5.0.0-alpha.1.19531.5</SystemSecurityCryptographyProtectedDataVersion>
+    <SystemSecurityCryptographyXmlVersion>5.0.0-alpha.1.19531.5</SystemSecurityCryptographyXmlVersion>
+    <SystemSecurityPermissionsVersion>5.0.0-alpha.1.19531.5</SystemSecurityPermissionsVersion>
+    <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha.1.19531.5</SystemSecurityPrincipalWindowsVersion>
+    <SystemTextJsonVersion>5.0.0-alpha.1.19531.5</SystemTextJsonVersion>
+    <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19531.5</SystemTextEncodingsWebVersion>
+    <SystemThreadingAccessControlVersion>5.0.0-alpha.1.19531.5</SystemThreadingAccessControlVersion>
+    <SystemWindowsExtensionsPackageVersion>5.0.0-alpha.1.19531.5</SystemWindowsExtensionsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.2.0-prerelease.19531.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
@@ -109,7 +108,7 @@
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkPackageVersion>16.4.0-preview-20191007-01</MicrosoftNETTestSdkPackageVersion>
+    <MicrosoftNETTestSdkPackageVersion>16.3.0</MicrosoftNETTestSdkPackageVersion>
     <XUnitPackageVersion>2.4.1</XUnitPackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
     <NewtonsoftJsonPackageVersion>12.0.1</NewtonsoftJsonPackageVersion>

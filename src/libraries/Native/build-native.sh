@@ -174,7 +174,7 @@ build_native()
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __nativeroot=$__scriptpath/Unix
-__rootRepo="$__scriptpath/../.."
+__rootRepo="$__scriptpath/../../.."
 __artifactsDir="$__rootRepo/artifacts"
 
 # Set the various build properties here so that CMake and MSBuild can pick them up

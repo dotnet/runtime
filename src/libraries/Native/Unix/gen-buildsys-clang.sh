@@ -16,7 +16,7 @@ then
 fi
 
 #Set the root directory of the project
-project_root="$1"/../../..
+project_root="$1"/../../../..
 
 # Set up the environment to be used for building with clang.
 if which "clang-$2.$3" > /dev/null 2>&1
