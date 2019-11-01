@@ -1843,11 +1843,6 @@ namespace System
         }
 
         #endregion
-        
-        
-#region keep in sync with object-internals.h
-		MonoTypeInfo type_info;
-#endregion
 
         TypeCache cache;
 
@@ -1864,6 +1859,11 @@ namespace System
         {
             public Enum.EnumInfo EnumInfo;
             public TypeCode TypeCode;
+            // this is the displayed form: special characters
+            // ,+*&*[]\ in the identifier portions of the names
+            // have been escaped with a leading backslash (\)
+            public string full_name;
+            public RuntimeConstructorInfo default_ctor;
         }
 
 
@@ -1874,19 +1874,15 @@ namespace System
 
 		internal RuntimeConstructorInfo GetDefaultConstructor ()
 		{
-			RuntimeConstructorInfo ctor = null;
-
-			if (type_info == null)
-				type_info = new MonoTypeInfo ();
-			else
-				ctor = type_info.default_ctor;
+			var cache = Cache;
+			RuntimeConstructorInfo ctor = cache.default_ctor;
 
 			if (ctor == null) {
 				var ctors = GetConstructors (BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
 
 				for (int i = 0; i < ctors.Length; ++i) {
 					if (ctors [i].GetParametersCount () == 0) {
-						type_info.default_ctor = ctor = (RuntimeConstructorInfo) ctors [i];
+						cache.default_ctor = ctor = (RuntimeConstructorInfo) ctors [i];
 						break;
 					}
 				}
@@ -2490,11 +2486,9 @@ namespace System
 					return null;
 
 				string fullName;
-				// This doesn't need locking
-				if (type_info == null)
-					type_info = new MonoTypeInfo ();
-				if ((fullName = type_info.full_name) == null)
-					fullName = type_info.full_name = getFullName (true, false);
+				var cache = Cache;
+				if ((fullName = cache.full_name) == null)
+					fullName = cache.full_name = getFullName (true, false);
 
 				return fullName;
 			}
@@ -2563,15 +2557,5 @@ namespace System
 
             return new StructLayoutAttribute (layoutKind) { Pack = pack, Size = size, CharSet = charSet };
         }
-    }
-    
-    // Contains information about the type which is expensive to compute
-    [StructLayout (LayoutKind.Sequential)]
-    internal class MonoTypeInfo {
-        // this is the displayed form: special characters
-        // ,+*&*[]\ in the identifier portions of the names
-        // have been escaped with a leading backslash (\)
-        public string full_name;
-        public RuntimeConstructorInfo default_ctor;
     }
 }

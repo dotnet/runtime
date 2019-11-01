@@ -8125,6 +8125,8 @@ mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx)
 	eh_callbacks.mono_raise_exception_with_ctx (ex, ctx);
 }
 
+#ifndef ENABLE_NETCORE
+
 /**
  * mono_wait_handle_new:
  * \param domain Domain where the object will be created
@@ -8172,6 +8174,8 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 	mono_field_get_value_internal ((MonoObject*)handle, f_safe_handle, &sh);
 	return sh->handle;
 }
+
+#endif /* ENABLE_NETCORE */
 
 /*
  * Returns the MonoMethod to call to Capture the ExecutionContext.
@@ -8223,6 +8227,8 @@ mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 #endif
 }
 
+#ifndef ENABLE_NETCORE
+
 /**
  * mono_async_result_new:
  * \param domain domain where the object will be created.
@@ -8269,7 +8275,6 @@ mono_message_invoke (MonoThreadInfo* mono_thread_info_current_var,
 		     MonoObject* target, MonoMethodMessage* msg,
 		     MonoObject** exc, MonoArray** out_args, MonoError* error);
 
-#ifndef ENABLE_NETCORE
 MonoObjectHandle
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResultHandle aresh, MonoError* error)
 {
@@ -8342,7 +8347,7 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResultH
 	}
 	return res;
 }
-#endif
+#endif /* ENABLE_NETCORE */
 
 gboolean
 mono_message_init (MonoDomain *domain,
