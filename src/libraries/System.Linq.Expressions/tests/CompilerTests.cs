@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Xunit;
 
@@ -411,7 +412,8 @@ namespace System.Linq.Expressions.Tests
                 .Select(line => line.Trim())
                 .Where(line => line != "" && !line.StartsWith("//"));
 
-            return string.Join("\n", lines);
+            string beforeLambdaUniquifierRemoval = string.Join("\n", lines);
+            return Regex.Replace(beforeLambdaUniquifierRemoval, "lambda_method[0-9]*", "lambda_method");
         }
 
         private static void VerifyEmitConstantsToIL<T>(T value)
