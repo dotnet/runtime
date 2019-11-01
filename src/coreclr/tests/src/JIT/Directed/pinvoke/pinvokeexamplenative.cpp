@@ -112,3 +112,8 @@ GetMenuStringA(
     return cch;
 }
 
+EXPORT_API
+int GetConstantInternal()
+{
+    return 27;
+}

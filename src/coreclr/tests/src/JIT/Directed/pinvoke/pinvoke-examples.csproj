@@ -12,4 +12,7 @@
   <ItemGroup>
     <Compile Include="pinvoke-examples.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>
