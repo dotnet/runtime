@@ -67,5 +67,11 @@
     <!-- Workaround for https://github.com/mono/linker/issues/378 -->
     <type fullname="System.Runtime.InteropServices.IDispatch" />
     <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
+    <type fullname="System.Threading.ThreadPoolBoundHandle">
+        <!-- Workaround to keep .interfaceimpl even though this type
+             is not instantiated on unix:
+             https://github.com/mono/linker/pull/649 -->
+      <method name=".ctor" />
+    </type>
   </assembly>
 </linker>
