@@ -99,29 +99,27 @@ namespace System.Text.Json.Tests
             Assert.Equal(guidString, ((JsonString)jsonObject["guid"]).Value);
         }
 
-        public static IEnumerable<object[]> DateTimeData =>
-            new List<object[]>
-            {
-                new object[] { new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc) },
-                new object[] { new DateTime(2019, 1, 1) },
-                new object[] { new DateTime(2019, 1, 1, new GregorianCalendar()) },
-                new object[] { new DateTime(2019, 1, 1, new ChineseLunisolarCalendar()) }
-            };
-
         [Theory]
-        [MemberData(nameof(DateTimeData))]
-        public static void TestDateTime(DateTime dateTime)
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimBaseTests), MemberType = typeof(JsonDateTimeTestData))]
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimUtcOffsetTests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTime(string testStr, string expectedStr)
         {
+            var dateTime = DateTime.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+
             var jsonObject = new JsonObject { { "dateTime", dateTime } };
-            Assert.Equal(dateTime.ToString("s", CultureInfo.InvariantCulture), ((JsonString)jsonObject["dateTime"]).Value);
+
+            Assert.Equal(expectedStr, ((JsonString)jsonObject["dateTime"]).Value);
         }
 
         [Theory]
-        [MemberData(nameof(DateTimeData))]
-        public static void TestDateTimeOffset(DateTimeOffset dateTimeOffset)
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeOffsetFractionTrimTests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTimeOffset(string testStr, string expectedStr)
         {
+            var dateTimeOffset = DateTimeOffset.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+
             var jsonObject = new JsonObject { { "dateTimeOffset", dateTimeOffset } };
-            Assert.Equal(dateTimeOffset.ToString("s", CultureInfo.InvariantCulture), ((JsonString)jsonObject["dateTimeOffset"]).Value);
+
+            Assert.Equal(expectedStr, ((JsonString)jsonObject["dateTimeOffset"]).Value);
         }
 
         [Fact]

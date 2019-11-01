@@ -24,6 +24,74 @@ namespace System.Text.Json
             public byte OffsetToken;
         }
 
+        public static string FormatDateTimeOffset(DateTimeOffset value)
+        {
+            Span<byte> span = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+
+            JsonWriterHelper.WriteDateTimeOffsetTrimmed(span, value, out int bytesWritten);
+
+            return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
+        }
+
+        public static string FormatDateTime(DateTime value)
+        {
+            Span<byte> span = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+
+            JsonWriterHelper.WriteDateTimeTrimmed(span, value, out int bytesWritten);
+
+            return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
+        }
+
+        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTime value)
+        {
+            if (!IsValidDateTimeOffsetParseLength(source.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(source, bytes);
+
+            return TryParseAsISO(bytes.Slice(0, length), out value);
+        }
+
+        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTimeOffset value)
+        {
+            if (!IsValidDateTimeOffsetParseLength(source.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(source, bytes);
+
+            return TryParseAsISO(bytes.Slice(0, length), out value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsValidDateTimeOffsetParseLength(int length)
+        {
+            return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsValidDateTimeOffsetParseLength(long length)
+        {
+            return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+        }
+
         /// <summary>
         /// Parse the given UTF-8 <paramref name="source"/> as extended ISO 8601 format.
         /// </summary>

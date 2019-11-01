@@ -54,11 +54,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
-            bool result = Utf8Formatter.TryFormat(value, tempSpan, out int bytesWritten, s_dateTimeStandardFormat);
-            Debug.Assert(result);
-            JsonWriterHelper.TrimDateTimeOffset(tempSpan.Slice(0, bytesWritten), out bytesWritten);
-            tempSpan.Slice(0, bytesWritten).CopyTo(output.Slice(BytesPending));
+            JsonWriterHelper.WriteDateTimeTrimmed(output.Slice(BytesPending), value, out int bytesWritten);
             BytesPending += bytesWritten;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -96,16 +92,10 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
-            bool result = Utf8Formatter.TryFormat(value, tempSpan, out int bytesWritten, s_dateTimeStandardFormat);
-            Debug.Assert(result);
-            JsonWriterHelper.TrimDateTimeOffset(tempSpan.Slice(0, bytesWritten), out bytesWritten);
-            tempSpan.Slice(0, bytesWritten).CopyTo(output.Slice(BytesPending));
+            JsonWriterHelper.WriteDateTimeTrimmed(output.Slice(BytesPending), value, out int bytesWritten);
             BytesPending += bytesWritten;
 
             output[BytesPending++] = JsonConstants.Quote;
         }
-
-        private static readonly StandardFormat s_dateTimeStandardFormat = new StandardFormat('O');
     }
 }

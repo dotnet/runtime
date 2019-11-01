@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -9,6 +11,26 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
+        private static readonly StandardFormat s_dateTimeStandardFormat = new StandardFormat('O');
+
+        public static void WriteDateTimeTrimmed(Span<byte> buffer, DateTime value, out int bytesWritten)
+        {
+            Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+            bool result = Utf8Formatter.TryFormat(value, tempSpan, out bytesWritten, s_dateTimeStandardFormat);
+            Debug.Assert(result);
+            TrimDateTimeOffset(tempSpan.Slice(0, bytesWritten), out bytesWritten);
+            tempSpan.Slice(0, bytesWritten).CopyTo(buffer);
+        }
+
+        public static void WriteDateTimeOffsetTrimmed(Span<byte> buffer, DateTimeOffset value, out int bytesWritten)
+        {
+            Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+            bool result = Utf8Formatter.TryFormat(value, tempSpan, out bytesWritten, s_dateTimeStandardFormat);
+            Debug.Assert(result);
+            TrimDateTimeOffset(tempSpan.Slice(0, bytesWritten), out bytesWritten);
+            tempSpan.Slice(0, bytesWritten).CopyTo(buffer);
+        }
+
         //
         // Trims roundtrippable DateTime(Offset) input.
         // If the milliseconds part of the date is zero, we omit the fraction part of the date,

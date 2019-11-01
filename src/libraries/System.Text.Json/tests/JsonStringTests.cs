@@ -43,7 +43,7 @@ namespace System.Text.Json.Tests
             // Value constructor:
             Assert.Equal(value, new JsonString(value).Value);
 
-            // Implicit operator:            
+            // Implicit operator:
             JsonNode jsonNode = value;
             JsonString implicitlyInitializiedJsonString = (JsonString)jsonNode;
             Assert.Equal(value, implicitlyInitializiedJsonString.Value);
@@ -85,33 +85,26 @@ namespace System.Text.Json.Tests
             Assert.Equal(guid, guid2);
         }
 
-        public static IEnumerable<object[]> DateTimeData =>
-           new List<object[]>
-           {
-                new object[] { new DateTime(DateTime.MinValue.Ticks, DateTimeKind.Utc) },
-                new object[] { new DateTime(2019, 1, 1) },
-                new object[] { new DateTime(2019, 1, 1, new GregorianCalendar()) },
-                new object[] { new DateTime(2019, 1, 1, new ChineseLunisolarCalendar()) }
-           };
-
         [Theory]
-        [MemberData(nameof(DateTimeData))]
-        public static void TestDateTime(DateTime dateTime)
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimBaseTests), MemberType = typeof(JsonDateTimeTestData))]
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimUtcOffsetTests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTime(string testStr, string expectedStr)
         {
+            var dateTime = DateTime.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             var jsonString = new JsonString(dateTime);
-            Assert.Equal(dateTime.ToString("s", CultureInfo.InvariantCulture), jsonString.Value);
+            Assert.Equal(expectedStr, jsonString.Value);
             Assert.Equal(dateTime, jsonString.GetDateTime());
             Assert.True(jsonString.TryGetDateTime(out DateTime dateTime2));
             Assert.Equal(dateTime, dateTime2);
         }
 
         [Theory]
-        [MemberData(nameof(DateTimeData))]
-        public static void TestDateTimeOffset(DateTime dateTime)
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeOffsetFractionTrimTests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTimeOffset(string testStr, string expectedStr)
         {
-            var dateTimeOffset = DateTimeOffset.ParseExact(dateTime.ToString("s"), "s", CultureInfo.InvariantCulture);
+            var dateTimeOffset = DateTimeOffset.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             var jsonString = new JsonString(dateTimeOffset);
-            Assert.Equal(dateTimeOffset.ToString("s", CultureInfo.InvariantCulture), jsonString.Value);
+            Assert.Equal(expectedStr, jsonString.Value);
             Assert.Equal(dateTimeOffset, jsonString.GetDateTimeOffset());
             Assert.True(jsonString.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset2));
             Assert.Equal(dateTimeOffset, dateTimeOffset2);
@@ -126,7 +119,7 @@ namespace System.Text.Json.Tests
             jsonString.Value = "different property value";
             Assert.Equal("different property value", jsonString.Value);
         }
-        
+
         [Fact]
         public static void TestGettersFail()
         {
