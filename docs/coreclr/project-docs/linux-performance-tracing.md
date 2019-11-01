@@ -126,6 +126,7 @@ As a side effect of creating the self-contained application the dotnet tool will
 called runtime.linux-x64.microsoft.netcore.app and place it in 
 the directory ~/.nuget/packages/runtime.linux-x64.microsoft.netcore.app/VERSION, where VERSION is the version number of 
 your .NET Core runtime (e.g. 2.1.0).   Under that is a tools directory and inside there is the crossgen tool you need.
+Starting with .NET Core 3.0, the package location is ~/.nuget/packages/microsoft.netcore.app.runtime.linux-x64/VERSION.
 
 The crossgen tool needs to be put next to the runtime that is actually used by your application.   Typically your app uses the shared
 version of .NET Core that is installed at /usr/share/dotnet/shared/Microsoft.NETCore.App/VERSION where VERSION is the 
