@@ -667,11 +667,11 @@ DLLEXPORT void SystemNative_Sync(void);
 DLLEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
- * Copies all data from the source file descriptor to the destination file descriptor.
+ * Copies all data from the source file descriptor/path to the destination file path.
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd);
+DLLEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
 
 /**
 * Initializes a new inotify instance and returns a file
