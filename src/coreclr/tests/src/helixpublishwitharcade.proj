@@ -124,7 +124,7 @@
     <MSBuild Projects="xunitconsolerunner.depproj" Targets="Restore" />
 
     <ItemGroup>
-      <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage.ToLower())\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
+      <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
