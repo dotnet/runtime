@@ -375,7 +375,7 @@ namespace System.Drawing
             internal static extern int GdipComment(HandleRef graphics, int sizeData, byte[] data);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateFontFromLogfontW(IntPtr hdc, ref LOGFONT lf, out IntPtr font);
+            internal static extern int GdipCreateFontFromLogfontW(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr font);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateBitmapFromStream(Interop.Ole32.IStream stream, out IntPtr bitmap);

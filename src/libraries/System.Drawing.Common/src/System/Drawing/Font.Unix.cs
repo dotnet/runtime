@@ -162,7 +162,7 @@ namespace System.Drawing
             IntPtr newObject;
             FontStyle newStyle = FontStyle.Regular;
             float newSize;
-            SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
+            Interop.User32.LOGFONT lf = new Interop.User32.LOGFONT();
 
             // Sanity. Should we throw an exception?
             if (hfont == IntPtr.Zero)
@@ -322,7 +322,7 @@ namespace System.Drawing
         public static Font FromLogFont(object lf, IntPtr hdc)
         {
             IntPtr newObject;
-            SafeNativeMethods.LOGFONT o = (SafeNativeMethods.LOGFONT)lf;
+            Interop.User32.LOGFONT o = (Interop.User32.LOGFONT)lf;
             int status = Gdip.GdipCreateFontFromLogfont(hdc, ref o, out newObject);
             Gdip.CheckStatus(status);
             return new Font(newObject, "Microsoft Sans Serif", FontStyle.Regular, 10);

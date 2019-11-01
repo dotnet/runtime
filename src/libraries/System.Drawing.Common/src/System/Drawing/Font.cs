@@ -280,7 +280,7 @@ namespace System.Drawing
             }
 
             Type type = logFont.GetType();
-            int nativeSize = sizeof(SafeNativeMethods.LOGFONT);
+            int nativeSize = sizeof(Interop.User32.LOGFONT);
             if (Marshal.SizeOf(type) != nativeSize)
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
@@ -288,7 +288,7 @@ namespace System.Drawing
                 throw new ArgumentException();
             }
 
-            SafeNativeMethods.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
+            Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
 
             // PtrToStructure requires that the passed in object not be a value type.
             if (!type.IsValueType)
@@ -303,14 +303,14 @@ namespace System.Drawing
             }
         }
 
-        private unsafe SafeNativeMethods.LOGFONT ToLogFontInternal(Graphics graphics)
+        private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics)
         {
             if (graphics == null)
             {
                 throw new ArgumentNullException(nameof(graphics));
             }
 
-            SafeNativeMethods.LOGFONT logFont = new SafeNativeMethods.LOGFONT();
+            Interop.User32.LOGFONT logFont = new Interop.User32.LOGFONT();
             Gdip.CheckStatus(Gdip.GdipGetLogFontW(
                 new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), ref logFont));
 

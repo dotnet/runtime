@@ -37,13 +37,13 @@ namespace System.Windows.Forms
                 return;
             }
 
-            IntPtr hDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
+            IntPtr hDC = Interop.User32.GetDC(IntPtr.Zero);
             if (hDC != IntPtr.Zero)
             {
-                s_deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSX);
-                s_deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSY);
+                s_deviceDpiX = Interop.Gdi32.GetDeviceCaps(hDC, Interop.Gdi32.DeviceCapability.LOGPIXELSX);
+                s_deviceDpiY = Interop.Gdi32.GetDeviceCaps(hDC, Interop.Gdi32.DeviceCapability.LOGPIXELSY);
 
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, hDC));
+                Interop.User32.ReleaseDC(IntPtr.Zero, hDC);
             }
 
             s_isInitialized = true;

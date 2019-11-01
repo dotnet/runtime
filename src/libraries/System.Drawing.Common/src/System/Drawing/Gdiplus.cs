@@ -169,9 +169,6 @@ namespace System.Drawing
         GMEM_ZEROINIT = 0x0040,
         DM_IN_BUFFER = 8,
         DM_OUT_BUFFER = 2,
-        DT_PLOTTER = 0,
-        DT_RASPRINTER = 2,
-        TECHNOLOGY = 2,
         DC_PAPERS = 2,
         DC_PAPERSIZE = 3,
         DC_BINS = 6,
@@ -197,16 +194,6 @@ namespace System.Drawing
         IDI_WARNING = 32515,
         IDI_ERROR = 32513,
         IDI_INFORMATION = 32516,
-        PLANES = 14,
-        BITSPIXEL = 12,
-        LOGPIXELSX = 88,
-        LOGPIXELSY = 90,
-        PHYSICALWIDTH = 110,
-        PHYSICALHEIGHT = 111,
-        PHYSICALOFFSETX = 112,
-        PHYSICALOFFSETY = 113,
-        VERTRES = 10,
-        HORZRES = 8,
         DM_ORIENTATION = 0x00000001,
         DM_PAPERSIZE = 0x00000002,
         DM_PAPERLENGTH = 0x00000004,
@@ -425,60 +412,12 @@ namespace System.Drawing
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
         public static extern IntPtr /*HDC*/ ResetDC(HandleRef hDC, HandleRef /*DEVMODE*/ lpDevMode);
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true)]
-        public static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
-
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern int GetClipRgn(HandleRef hDC, HandleRef hRgn);
-
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern int SelectClipRgn(HandleRef hDC, HandleRef hRgn);
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int AddFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
 
         public static int AddFontFile(string fileName)
         {
             return AddFontResourceEx(fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
-        }
-
-        internal static IntPtr SaveClipRgn(IntPtr hDC)
-        {
-            IntPtr hTempRgn = CreateRectRgn(0, 0, 0, 0);
-            IntPtr hSaveRgn = IntPtr.Zero;
-            try
-            {
-                int result = GetClipRgn(new HandleRef(null, hDC), new HandleRef(null, hTempRgn));
-                if (result > 0)
-                {
-                    hSaveRgn = hTempRgn;
-                    hTempRgn = IntPtr.Zero;
-                }
-            }
-            finally
-            {
-                if (hTempRgn != IntPtr.Zero)
-                {
-                    DeleteObject(new HandleRef(null, hTempRgn));
-                }
-            }
-
-            return hSaveRgn;
-        }
-
-        internal static void RestoreClipRgn(IntPtr hDC, IntPtr hRgn)
-        {
-            try
-            {
-                SelectClipRgn(new HandleRef(null, hDC), new HandleRef(null, hRgn));
-            }
-            finally
-            {
-                if (hRgn != IntPtr.Zero)
-                {
-                    DeleteObject(new HandleRef(null, hRgn));
-                }
-            }
         }
 
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
@@ -639,50 +578,6 @@ namespace System.Drawing
             public int biClrImportant;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public unsafe struct LOGFONT
-        {
-            private const int LF_FACESIZE = 32;
-
-            public int lfHeight;
-            public int lfWidth;
-            public int lfEscapement;
-            public int lfOrientation;
-            public int lfWeight;
-            public byte lfItalic;
-            public byte lfUnderline;
-            public byte lfStrikeOut;
-            public byte lfCharSet;
-            public byte lfOutPrecision;
-            public byte lfClipPrecision;
-            public byte lfQuality;
-            public byte lfPitchAndFamily;
-            private fixed char _lfFaceName[LF_FACESIZE];
-            public Span<char> lfFaceName
-            {
-                get { fixed (char* c = _lfFaceName) { return new Span<char>(c, LF_FACESIZE); } }
-            }
-
-            public override string ToString()
-            {
-                return
-                    "lfHeight=" + lfHeight + ", " +
-                    "lfWidth=" + lfWidth + ", " +
-                    "lfEscapement=" + lfEscapement + ", " +
-                    "lfOrientation=" + lfOrientation + ", " +
-                    "lfWeight=" + lfWeight + ", " +
-                    "lfItalic=" + lfItalic + ", " +
-                    "lfUnderline=" + lfUnderline + ", " +
-                    "lfStrikeOut=" + lfStrikeOut + ", " +
-                    "lfCharSet=" + lfCharSet + ", " +
-                    "lfOutPrecision=" + lfOutPrecision + ", " +
-                    "lfClipPrecision=" + lfClipPrecision + ", " +
-                    "lfQuality=" + lfQuality + ", " +
-                    "lfPitchAndFamily=" + lfPitchAndFamily + ", " +
-                    "lfFaceName=" + lfFaceName.ToString();
-            }
-        }
-
         // https://devblogs.microsoft.com/oldnewthing/20101018-00/?p=12513
         // https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083
 
@@ -796,14 +691,6 @@ namespace System.Drawing
             }
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteObject", CharSet = CharSet.Auto)]
-        internal static extern int IntDeleteObject(HandleRef hObject);
-
-        public static int DeleteObject(HandleRef hObject)
-        {
-            return IntDeleteObject(hObject);
-        }
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
         public static extern IntPtr SelectObject(HandleRef hdc, HandleRef obj);
 
@@ -834,10 +721,10 @@ namespace System.Drawing
         public static extern int GetObject(HandleRef hObject, int nSize, ref BITMAP bm);
 
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern int GetObject(HandleRef hObject, int nSize, ref LOGFONT lf);
+        public static extern int GetObject(HandleRef hObject, int nSize, ref Interop.User32.LOGFONT lf);
 
-        public static unsafe int GetObject(HandleRef hObject, ref LOGFONT lp)
-            => GetObject(hObject, sizeof(LOGFONT), ref lp);
+        public static unsafe int GetObject(HandleRef hObject, ref Interop.User32.LOGFONT lp)
+            => GetObject(hObject, sizeof(Interop.User32.LOGFONT), ref lp);
 
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true)]
         public static extern bool GetIconInfo(HandleRef hIcon, ref ICONINFO info);

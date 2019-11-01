@@ -14,20 +14,10 @@ namespace System.Drawing
         public const int MAX_PATH = 260;
         internal const int SM_REMOTESESSION = 0x1000;
 
-        internal const int OBJ_DC = 3,
-                         OBJ_METADC = 4,
-                         OBJ_MEMDC = 10,
-                         OBJ_ENHMETADC = 12,
-                         DIB_RGB_COLORS = 0,
-                         BI_BITFIELDS = 3,
-                         BI_RGB = 0,
-                         BITMAPINFO_MAX_COLORSIZE = 256,
-                         DEFAULT_GUI_FONT = 17;
-
-        internal const uint SPI_GETICONTITLELOGFONT = 0x001F;
-
-        // Gets metrics associated with the nonclient area of nonminimized windows
-        internal const uint SPI_GETNONCLIENTMETRICS = 41;
+        internal const int  DIB_RGB_COLORS = 0;
+        internal const int BI_BITFIELDS = 3;
+        internal const int BI_RGB = 0;
+        internal const int BITMAPINFO_MAX_COLORSIZE = 256;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFO_FLAT
@@ -80,29 +70,6 @@ namespace System.Drawing
             public byte rgbGreen;
             public byte rgbRed;
             public byte rgbReserved;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct NONCLIENTMETRICS
-        {
-            public uint cbSize;
-            public int iBorderWidth;
-            public int iScrollWidth;
-            public int iScrollHeight;
-            public int iCaptionWidth;
-            public int iCaptionHeight;
-            public SafeNativeMethods.LOGFONT lfCaptionFont;
-            public int iSmCaptionWidth;
-            public int iSmCaptionHeight;
-            public SafeNativeMethods.LOGFONT lfSmCaptionFont;
-            public int iMenuWidth;
-            public int iMenuHeight;
-            public SafeNativeMethods.LOGFONT lfMenuFont;
-            public SafeNativeMethods.LOGFONT lfStatusFont;
-            public SafeNativeMethods.LOGFONT lfMessageFont;
-
-            // This is supported on Windows vista and later
-            public int iPaddedBorderWidth;
         }
     }
 }

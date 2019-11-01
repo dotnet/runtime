@@ -226,7 +226,7 @@ namespace System.Drawing
         /// </summary>
         public static Font FromHfont(IntPtr hfont)
         {
-            var logFont = new SafeNativeMethods.LOGFONT();
+            var logFont = new Interop.User32.LOGFONT();
             SafeNativeMethods.GetObject(new HandleRef(null, hfont), ref logFont);
 
             using (ScreenDC dc = ScreenDC.Create())
@@ -248,7 +248,7 @@ namespace System.Drawing
             }
         }
 
-        internal static Font FromLogFont(ref SafeNativeMethods.LOGFONT logFont)
+        internal static Font FromLogFont(ref Interop.User32.LOGFONT logFont)
         {
             using (ScreenDC dc = ScreenDC.Create())
             {
@@ -256,7 +256,7 @@ namespace System.Drawing
             }
         }
 
-        internal static Font FromLogFontInternal(ref SafeNativeMethods.LOGFONT logFont, IntPtr hdc)
+        internal static Font FromLogFontInternal(ref Interop.User32.LOGFONT logFont, IntPtr hdc)
         {
             int status = Gdip.GdipCreateFontFromLogfontW(hdc, ref logFont, out IntPtr font);
 
@@ -293,14 +293,14 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(lf));
             }
 
-            if (lf is SafeNativeMethods.LOGFONT logFont)
+            if (lf is Interop.User32.LOGFONT logFont)
             {
                 // A boxed LOGFONT, just use it to create the font
                 return FromLogFontInternal(ref logFont, hdc);
             }
 
             Type type = lf.GetType();
-            int nativeSize = sizeof(SafeNativeMethods.LOGFONT);
+            int nativeSize = sizeof(Interop.User32.LOGFONT);
             if (Marshal.SizeOf(type) != nativeSize)
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
@@ -309,7 +309,7 @@ namespace System.Drawing
             }
 
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
-            logFont = new SafeNativeMethods.LOGFONT();
+            logFont = new Interop.User32.LOGFONT();
 
             Marshal.StructureToPtr(lf, new IntPtr(&logFont), fDeleteOld: false);
 
@@ -388,8 +388,8 @@ namespace System.Drawing
             using (ScreenDC dc = ScreenDC.Create())
             using (Graphics graphics = Graphics.FromHdcInternal(dc))
             {
-                SafeNativeMethods.LOGFONT lf = ToLogFontInternal(graphics);
-                IntPtr handle = IntUnsafeNativeMethods.CreateFontIndirect(ref lf);
+                Interop.User32.LOGFONT lf = ToLogFontInternal(graphics);
+                IntPtr handle = Interop.Gdi32.CreateFontIndirectW(ref lf);
                 if (handle == IntPtr.Zero)
                 {
                     throw new Win32Exception();
