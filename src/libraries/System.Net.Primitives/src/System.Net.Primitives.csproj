@@ -3,6 +3,7 @@
     <AssemblyName>System.Net.Primitives</AssemblyName>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
@@ -89,6 +90,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
