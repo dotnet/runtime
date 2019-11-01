@@ -145,23 +145,26 @@ namespace System.Text.Json
                     current.JsonPropertyInfo.PropertyInfo);
             }
 
+            Debug.Assert(key != null);
+
+            if (options.DictionaryKeyPolicy != null &&
+                // We do not convert extension data.
+                current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+            {
+                key = options.DictionaryKeyPolicy.ConvertName(key);
+
+                if (key == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                }
+            }
+
             if (value == null)
             {
                 writer.WriteNull(key);
             }
             else
             {
-                if (options.DictionaryKeyPolicy != null &&
-                    current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing) // We do not convert extension data.
-                {
-                    key = options.DictionaryKeyPolicy.ConvertName(key);
-
-                    if (key == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
-                    }
-                }
-
                 writer.WritePropertyName(key);
                 converter.Write(writer, value, options);
             }
