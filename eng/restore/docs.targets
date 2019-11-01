@@ -1,7 +1,7 @@
 <Project>
 
   <ItemGroup>
-    <PackageReference Include="$(MicrosoftPrivateIntellisensePackageId)" Version="$(MicrosoftPrivateIntellisensePackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="$(MicrosoftPrivateIntellisensePackage)" Version="$(MicrosoftPrivateIntellisenseVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <!-- the intellisense package doesn't use nuget conventions so we need to select manually -->
@@ -9,7 +9,7 @@
           AfterTargets="Restore">
 
     <ItemGroup>
-      <DocFile Include="$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackageId)/$(MicrosoftPrivateIntellisensePackageVersion)/xmldocs/netcoreapp/**/*.xml"/>
+      <DocFile Include="$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/xmldocs/netcoreapp/**/*.xml"/>
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
         <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>

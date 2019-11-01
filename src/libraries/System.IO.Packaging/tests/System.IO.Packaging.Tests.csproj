@@ -6,6 +6,6 @@
     <Compile Include="Tests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataPackageVersion)" />
+    <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />
   </ItemGroup>
 </Project>

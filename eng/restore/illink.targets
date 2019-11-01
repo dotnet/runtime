@@ -1,14 +1,14 @@
 <Project>
 
   <ItemGroup>
-    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" />
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" />
   </ItemGroup>
 
   <Target Name="IncludeToolsFiles"
           AfterTargets="Restore">
 
     <ItemGroup>
-      <_illinkSrcFiles Include="$(NuGetPackageRoot)illink.tasks\$(ILLinkTasksPackageVersion)\tools\**\*" />
+      <_illinkSrcFiles Include="$(NuGetPackageRoot)illink.tasks\$(ILLinkTasksVersion)\tools\**\*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_illinkSrcFiles)"

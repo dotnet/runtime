@@ -42,6 +42,6 @@
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventPackageVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
   </ItemGroup>
 </Project>

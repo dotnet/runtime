@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="NETStandard.Library">
-      <Version>$(NETStandardLibraryPackageVersion)</Version>
+      <Version>$(NETStandardLibraryVersion)</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -77,7 +77,7 @@
 
   <Target Name="AddNETStandard21Refs" AfterTargets="ResolveReferences">
     <PropertyGroup>
-      <_NETStandard21RefFolder>$(NuGetPackageRoot)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard2.1\ref</_NETStandard21RefFolder>
+      <_NETStandard21RefFolder>$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\netstandard2.1\ref</_NETStandard21RefFolder>
     </PropertyGroup>
 
     <ItemGroup>
@@ -102,7 +102,7 @@
   <Target Name="AddNETStandard20Refs" AfterTargets="ResolveReferences"
           Condition="'$(_NETStandardTFMFolder)' != ''">
     <PropertyGroup>
-      <_NETStandardRefFolder>$(NuGetPackageRoot)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
+      <_NETStandardRefFolder>$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
 
     <ItemGroup>
@@ -117,8 +117,8 @@
     <ItemGroup>
       <Reference Include="@(NetStandardRefs)">
         <Private>False</Private>
-        <NuGetPackageId>$(NETStandardLibraryPackageId)</NuGetPackageId>
-        <NuGetPackageVersion>$(NETStandardLibraryPackageVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(NETStandardLibraryPackage)</NuGetPackageId>
+        <NuGetPackageVersion>$(NETStandardLibraryVersion)</NuGetPackageVersion>
       </Reference>
     </ItemGroup>
   </Target>

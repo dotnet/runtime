@@ -19,7 +19,7 @@
     <Compile Include="XunitTestCase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitPackageVersion)" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitPackageVersion)" />
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
 </Project>
