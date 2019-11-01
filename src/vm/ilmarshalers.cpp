@@ -2434,7 +2434,8 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -2454,7 +2455,8 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -2469,7 +2471,8 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -2577,7 +2580,8 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -2600,7 +2604,8 @@ void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -2614,7 +2619,8 @@ void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
-    EmitLoadReferenceToFirstManagedObjectField(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
     EmitLoadCleanupWorkList(pslILEmit);
@@ -4579,9 +4585,9 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToNative, MngdFixedArrayMarsh
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-
     BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     if (arrayRef != NULL && arrayRef->GetNumComponents() < pThis->m_cElements)
     {
@@ -4596,21 +4602,21 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMa
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
 
-    BASEARRAYREF* pArrayRef = (BASEARRAYREF*)pManagedHome;
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     if (pThis->m_vt == VTHACK_ANSICHAR)
     {
         SIZE_T nativeSize = sizeof(CHAR) * pThis->m_cElements;
 
-        if (*pArrayRef == NULL)
+        if (arrayRef == NULL)
         {
             FillMemory(pNativeHome, nativeSize, 0);
         }
         else
         {
-            InternalWideToAnsi((const WCHAR*)(*pArrayRef)->GetDataPtr(),
+            InternalWideToAnsi((const WCHAR*)arrayRef->GetDataPtr(),
                 pThis->m_cElements,
                 (CHAR*)pNativeHome,
                 (int)nativeSize,
@@ -4623,7 +4629,7 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMa
         SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
         SIZE_T nativeSize = cbElement * pThis->m_cElements;
 
-        if (*pArrayRef == NULL)
+        if (arrayRef == NULL)
         {
             FillMemory(pNativeHome, nativeSize, 0);
         }
@@ -4631,15 +4637,15 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMa
         {
 
             const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-            SIZE_T cElements = (*pArrayRef)->GetNumComponents();
+            SIZE_T cElements = arrayRef->GetNumComponents();
             if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
             {
                 _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
-                memcpyNoGCRefs(pNativeHome, (*pArrayRef)->GetDataPtr(), nativeSize);
+                memcpyNoGCRefs(pNativeHome, arrayRef->GetDataPtr(), nativeSize);
             }
             else
             {
-                pMarshaler->ComToOleArray(pArrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
+                pMarshaler->ComToOleArray(&arrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
                     pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
             }
         }
@@ -4656,6 +4662,11 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToManaged, MngdFixedArrayMars
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
+    // In the field scenario, pManagedHome points to a field inside a struct/object.
+    // Since we are setting the value of this field with SetObjectReference, we need to
+    // make sure that pManagedHome is GC-protected.
+    GCPROTECT_BEGININTERIOR(pManagedHome);
+
     // <TODO>@todo: lookup this class before marshal time</TODO>
     if (pThis->m_Array.IsNull())
     {
@@ -4667,7 +4678,11 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToManaged, MngdFixedArrayMars
     //
     // Allocate array
     //
-    SetObjectReference(pManagedHome, AllocateSzArray(pThis->m_Array, pThis->m_cElements));
+
+    OBJECTREF arrayRef = AllocateSzArray(pThis->m_Array, pThis->m_cElements);
+    SetObjectReference(pManagedHome, arrayRef);
+
+    GCPROTECT_END();
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4677,9 +4692,9 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayM
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
 
-    BASEARRAYREF* pArrayRef = (BASEARRAYREF*)pManagedHome;
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     if (pThis->m_vt == VTHACK_ANSICHAR)
     {
@@ -4687,7 +4702,7 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayM
             MB_PRECOMPOSED,
             (const CHAR*)pNativeHome,
             pThis->m_cElements * sizeof(CHAR), // size, in bytes, of in buffer
-            (WCHAR*)((*((I2ARRAYREF*)pArrayRef))->GetDirectPointerToNonObjectElements()),
+            (WCHAR*)(arrayRef->GetDataPtr()),
             pThis->m_cElements);               // size, in WCHAR's of outbuffer  
     }
     else
@@ -4702,11 +4717,11 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayM
         {
             // If we are copying variants, strings, etc, we need to use write barrier
             _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
-            memcpyNoGCRefs((*pArrayRef)->GetDataPtr(), pNativeHome, nativeSize);
+            memcpyNoGCRefs(arrayRef->GetDataPtr(), pNativeHome, nativeSize);
         }
         else
         {
-            pMarshaler->OleToComArray(pNativeHome, pArrayRef, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+            pMarshaler->OleToComArray(pNativeHome, &arrayRef, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
         }
     }
 
@@ -4718,13 +4733,15 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
 
     if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
     {
-        pMarshaler->ClearOleArray((BASEARRAYREF*)pManagedHome, pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+        pMarshaler->ClearOleArray(&arrayRef, pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -4839,8 +4856,10 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToNative, MngdSafeArrayMarshal
 
     if (pThis->m_fStatic & SCSF_IsStatic)
         return;
+
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
     
-    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     CONTRACTL
     {
@@ -4854,7 +4873,7 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToNative, MngdSafeArrayMarshal
     
     if (*pManagedHome != NULL)
     {
-        *pNativeHome = (void *) OleVariant::CreateSafeArrayForArrayRef((BASEARRAYREF*) pManagedHome, pThis->m_vt, pThis->m_pElementMT);
+        *pNativeHome = (void *) OleVariant::CreateSafeArrayForArrayRef(&arrayRef, pThis->m_vt, pThis->m_pElementMT);
     }
     else
     {
@@ -4876,7 +4895,8 @@ FCIMPL4(void, MngdSafeArrayMarshaler::ConvertContentsToNative, MngdSafeArrayMars
     CONTRACTL_END;
 
     OBJECTREF pOriginalManaged = ObjectToOBJECTREF(pOriginalManagedUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(pOriginalManaged);
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+    HELPER_METHOD_FRAME_BEGIN_2(arrayRef, pOriginalManaged);
 
     if ((pThis->m_fStatic & SCSF_IsStatic) &&
         (*pManagedHome != pOriginalManaged))
@@ -4886,7 +4906,7 @@ FCIMPL4(void, MngdSafeArrayMarshaler::ConvertContentsToNative, MngdSafeArrayMars
    
     if (*pManagedHome != NULL)
     {
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *) pManagedHome,
+        OleVariant::MarshalSafeArrayForArrayRef(&arrayRef,
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
@@ -4910,13 +4930,20 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
     
     HELPER_METHOD_FRAME_BEGIN_0();
 
+    // In the field scenario, pManagedHome points to a field inside a struct/object.
+    // Since we are setting the value of this field with SetObjectReference, we need to
+    // make sure that pManagedHome is GC-protected.
+    GCPROTECT_BEGININTERIOR(pManagedHome);
+
     if (*pNativeHome != NULL)
     {
+        SAFEARRAY* nativeSafeArray = (SAFEARRAY*) *pNativeHome;
+
         // If the managed array has a rank defined then make sure the rank of the
         // SafeArray matches the defined rank.
         if (pThis->m_iRank != -1)
         {
-            int iSafeArrayRank = SafeArrayGetDim((SAFEARRAY*) *pNativeHome);
+            int iSafeArrayRank = SafeArrayGetDim(nativeSafeArray);
             if (pThis->m_iRank != iSafeArrayRank)
             {                    
                 WCHAR strExpectedRank[64];
@@ -4930,23 +4957,26 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
         if (pThis->m_nolowerbounds)
         {
             LONG lowerbound;
-            if ( (SafeArrayGetDim( (SAFEARRAY*)*pNativeHome ) != 1) ||
-                 (FAILED(SafeArrayGetLBound( (SAFEARRAY*)*pNativeHome, 1, &lowerbound))) ||
+            if ( (SafeArrayGetDim(nativeSafeArray) != 1) ||
+                 (FAILED(SafeArrayGetLBound(nativeSafeArray, 1, &lowerbound))) ||
                  lowerbound != 0 )
             {
                 COMPlusThrow(kSafeArrayRankMismatchException, IDS_EE_SAFEARRAYSZARRAYMISMATCH);
             }
         }
-    
-        SetObjectReference(pManagedHome,
-            (OBJECTREF) OleVariant::CreateArrayRefForSafeArray((SAFEARRAY*) *pNativeHome,
+
+        OBJECTREF arrayRef = (OBJECTREF) OleVariant::CreateArrayRefForSafeArray(nativeSafeArray,
                                                             pThis->m_vt,
-                                                            pThis->m_pElementMT));
+                                                            pThis->m_pElementMT);
+    
+        SetObjectReference(pManagedHome, arrayRef);
     }
     else
     {
         SetObjectReference(pManagedHome, NULL);
     }
+
+    GCPROTECT_END();
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4963,7 +4993,8 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertContentsToManaged, MngdSafeArrayMar
     CONTRACTL_END;
 
     SAFEARRAY* pNative = *(SAFEARRAY**)pNativeHome;
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
 
     if (pNative && pNative->fFeatures & FADF_STATIC)
     {
@@ -4973,7 +5004,7 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertContentsToManaged, MngdSafeArrayMar
     if (*pNativeHome != NULL)
     {
         OleVariant::MarshalArrayRefForSafeArray((SAFEARRAY*)*pNativeHome,
-                                                (BASEARRAYREF *) pManagedHome,
+                                                &arrayRef,
                                                 pThis->m_vt,
                                                 pThis->m_pManagedMarshaler,
                                                 pThis->m_pElementMT);
