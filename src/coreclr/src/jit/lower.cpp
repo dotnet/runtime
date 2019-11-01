@@ -346,6 +346,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // !_TARGET_ARMARCH_
 
+        case GT_KEEPALIVE:
+            node->gtGetOp1()->SetRegOptional();
+            break;
+
         default:
             break;
     }

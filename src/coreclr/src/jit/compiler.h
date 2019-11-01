@@ -9959,6 +9959,7 @@ public:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
+            case GT_KEEPALIVE:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

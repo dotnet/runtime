@@ -4275,6 +4275,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
+        case GT_KEEPALIVE:
             visitor(this->AsUnOp()->gtOp1);
             return;
 

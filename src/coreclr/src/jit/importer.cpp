@@ -4105,6 +4105,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_GC_KeepAlive:
+            {
+                retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
+
+                // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
+                // very subtle and hard to observe. Thus we are conservatively marking it with both
+                // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
+                // necessary. The conservative side-effects are unlikely to have negative impact
+                // on code quality in this case.
+                retNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+                break;
+            }
+
             default:
                 break;
         }
@@ -4282,6 +4296,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     result = NI_System_MathF_Round;
                 }
+            }
+        }
+        else if (strcmp(className, "GC") == 0)
+        {
+            if (strcmp(methodName, "KeepAlive") == 0)
+            {
+                result = NI_System_GC_KeepAlive;
             }
         }
     }
