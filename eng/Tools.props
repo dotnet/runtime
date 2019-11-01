@@ -11,5 +11,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
+    <!-- Download the SDK in the initial restore step to work around race conditions when restoring in MSBuild -->
+    <PackageDownload Include="Microsoft.DotNet.Helix.Sdk" Version="[$(MicrosoftDotNetHelixSdkVersion)]" />
   </ItemGroup>
 </Project>
