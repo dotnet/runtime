@@ -23,6 +23,8 @@
 #define MINT_TYPE_VT 10
 
 #define INLINED_METHOD_FLAG 0xffff
+#define TRACING_FLAG 0x1
+#define PROFILING_FLAG 0x2
 
 #define MINT_VT_ALIGNMENT 8
 
