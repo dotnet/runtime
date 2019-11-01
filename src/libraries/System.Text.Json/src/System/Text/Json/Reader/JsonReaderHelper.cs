@@ -250,18 +250,6 @@ namespace System.Text.Json
                                                0x02ul << 40 |
                                                0x01ul << 48) + 1;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsValidDateTimeOffsetParseLength(int length)
-        {
-            return JsonHelpers.IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsValidDateTimeOffsetParseLength(long length)
-        {
-            return JsonHelpers.IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-        }
-
         public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {
             int backslash = source.IndexOf(JsonConstants.BackSlash);

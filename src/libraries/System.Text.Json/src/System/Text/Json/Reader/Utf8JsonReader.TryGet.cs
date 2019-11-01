@@ -823,7 +823,7 @@ namespace System.Text.Json
             {
                 long sequenceLength = ValueSequence.Length;
 
-                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(sequenceLength))
                 {
                     value = default;
                     return false;
@@ -837,7 +837,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
                 {
                     value = default;
                     return false;
@@ -853,8 +853,7 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
-            if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(span, out DateTime tmp))
+            if (JsonHelpers.TryParseAsISO(span, out DateTime tmp))
             {
                 value = tmp;
                 return true;
@@ -887,7 +886,7 @@ namespace System.Text.Json
             {
                 long sequenceLength = ValueSequence.Length;
 
-                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(sequenceLength))
                 {
                     value = default;
                     return false;
@@ -901,7 +900,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                if (!JsonHelpers.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
                 {
                     value = default;
                     return false;
@@ -917,8 +916,7 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
-            if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
+            if (JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
             {
                 value = tmp;
                 return true;
