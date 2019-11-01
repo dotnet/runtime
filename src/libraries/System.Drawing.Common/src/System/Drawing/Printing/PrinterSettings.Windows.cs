@@ -235,7 +235,7 @@ namespace System.Drawing.Printing
         {
             get
             {
-                return GetDeviceCaps(SafeNativeMethods.TECHNOLOGY, SafeNativeMethods.DT_RASPRINTER) == SafeNativeMethods.DT_PLOTTER;
+                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.TECHNOLOGY, Interop.Gdi32.DeviceTechnology.DT_RASPRINTER) == Interop.Gdi32.DeviceTechnology.DT_PLOTTER;
             }
         }
 
@@ -523,7 +523,7 @@ namespace System.Drawing.Printing
         {
             get
             {
-                return GetDeviceCaps(SafeNativeMethods.BITSPIXEL, 1) > 1;
+                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.BITSPIXEL, 1) > 1;
             }
         }
 
@@ -574,7 +574,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateDeviceContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, (string)null, new HandleRef(null, modePointer));
+            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, (string)null, modePointer);
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -603,7 +603,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateInformationContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateIC(DriverName, PrinterNameInternal, (string)null, new HandleRef(null, modePointer));
+            DeviceContext dc = DeviceContext.CreateIC(DriverName, PrinterNameInternal, (string)null, modePointer);
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -830,25 +830,12 @@ namespace System.Drawing.Printing
             }
         }
 
-        private int GetDeviceCaps(int capability, int defaultValue)
+        private int GetDeviceCaps(Interop.Gdi32.DeviceCapability capability, int defaultValue)
         {
-            DeviceContext dc = CreateInformationContext(DefaultPageSettings);
-            int result = defaultValue;
-
-            try
+            using (DeviceContext dc = CreateInformationContext(DefaultPageSettings))
             {
-                result = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(dc, dc.Hdc), capability);
+                return Interop.Gdi32.GetDeviceCaps(new HandleRef(dc, dc.Hdc), capability);
             }
-            catch (InvalidPrinterException)
-            {
-                // do nothing, will return defaultValue.
-            }
-            finally
-            {
-                dc.Dispose();
-            }
-
-            return result;
         }
 
         /// <summary>

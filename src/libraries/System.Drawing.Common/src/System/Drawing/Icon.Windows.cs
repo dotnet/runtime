@@ -227,7 +227,7 @@ namespace System.Drawing
                             new HandleRef(null, info.hbmColor),
                             sizeof(SafeNativeMethods.BITMAP),
                             ref bitmap);
-                        SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmColor));
+                        Interop.Gdi32.DeleteObject(info.hbmColor);
                         _iconSize = new Size((int)bitmap.bmWidth, (int)bitmap.bmHeight);
                     }
                     else if (info.hbmMask != IntPtr.Zero)
@@ -241,7 +241,7 @@ namespace System.Drawing
 
                     if (info.hbmMask != IntPtr.Zero)
                     {
-                        SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmMask));
+                        Interop.Gdi32.DeleteObject(info.hbmMask);
                     }
                 }
 
@@ -358,7 +358,7 @@ namespace System.Drawing
             // The ROP is SRCCOPY, so we can be simple here and take
             // advantage of clipping regions.  Drawing the cursor
             // is merely a matter of offsetting and clipping.
-            IntPtr hSaveRgn = SafeNativeMethods.SaveClipRgn(dc);
+            IntPtr hSaveRgn = SaveClipRgn(dc);
             try
             {
                 SafeNativeMethods.IntersectClipRect(new HandleRef(this, dc), targetX, targetY, targetX + clipWidth, targetY + clipHeight);
@@ -374,8 +374,28 @@ namespace System.Drawing
             }
             finally
             {
-                SafeNativeMethods.RestoreClipRgn(dc, hSaveRgn);
+                RestoreClipRgn(dc, hSaveRgn);
             }
+        }
+
+        private static IntPtr SaveClipRgn(IntPtr hDC)
+        {
+            IntPtr hTempRgn = Interop.Gdi32.CreateRectRgn(0, 0, 0, 0);
+            IntPtr hSaveRgn = IntPtr.Zero;
+
+            int result = Interop.Gdi32.GetClipRgn(hDC, hTempRgn);
+            if (result > 0)
+            {
+                hSaveRgn = hTempRgn;
+                hTempRgn = IntPtr.Zero;
+            }
+
+            return hSaveRgn;
+        }
+
+        private static void RestoreClipRgn(IntPtr hDC, IntPtr hRgn)
+        {
+            Interop.Gdi32.SelectClipRgn(new HandleRef(null, hDC), new HandleRef(null, hRgn));
         }
 
         internal void Draw(Graphics graphics, int x, int y)
@@ -450,10 +470,10 @@ namespace System.Drawing
 
             if (s_bitDepth == 0)
             {
-                IntPtr dc = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-                s_bitDepth = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, dc), SafeNativeMethods.BITSPIXEL);
-                s_bitDepth *= UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, dc), SafeNativeMethods.PLANES);
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, dc));
+                IntPtr dc = Interop.User32.GetDC(IntPtr.Zero);
+                s_bitDepth = Interop.Gdi32.GetDeviceCaps(dc, Interop.Gdi32.DeviceCapability.BITSPIXEL);
+                s_bitDepth *= Interop.Gdi32.GetDeviceCaps(dc, Interop.Gdi32.DeviceCapability.PLANES);
+                Interop.User32.ReleaseDC(IntPtr.Zero, dc);
 
                 // If the bitdepth is 8, make it 4 because windows does not
                 // choose a 256 color icon if the display is running in 256 color mode
@@ -792,11 +812,11 @@ namespace System.Drawing
                 {
                     if (info.hbmColor != IntPtr.Zero)
                     {
-                        SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmColor));
+                        Interop.Gdi32.DeleteObject(info.hbmColor);
                     }
                     if (info.hbmMask != IntPtr.Zero)
                     {
-                        SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmMask));
+                        Interop.Gdi32.DeleteObject(info.hbmMask);
                     }
                 }
             }

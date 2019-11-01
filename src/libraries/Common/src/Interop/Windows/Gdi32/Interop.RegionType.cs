@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Drawing.Internal
+internal static partial class Interop
 {
-    internal enum RegionCombineMode
+    internal enum RegionType : int
     {
-        AND = 1,
-        OR = 2,
-        XOR = 3,
-        DIFF = 4,
-        COPY = 5,
-        MIN = AND,
-        MAX = COPY
+        ERROR = 0,
+        NULLREGION = 1,
+        SIMPLEREGION = 2,
+        COMPLEXREGION = 3,
     }
 }

@@ -80,8 +80,8 @@ namespace System.Drawing.Printing
 
                 try
                 {
-                    int dpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(dc, dc.Hdc), SafeNativeMethods.LOGPIXELSX);
-                    int hardMarginX_DU = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(dc, dc.Hdc), SafeNativeMethods.PHYSICALOFFSETX);
+                    int dpiX = Interop.Gdi32.GetDeviceCaps(new HandleRef(dc, dc.Hdc), Interop.Gdi32.DeviceCapability.LOGPIXELSX);
+                    int hardMarginX_DU = Interop.Gdi32.GetDeviceCaps(new HandleRef(dc, dc.Hdc), Interop.Gdi32.DeviceCapability.PHYSICALOFFSETX);
                     hardMarginX = hardMarginX_DU * 100 / dpiX;
                 }
                 finally
@@ -105,8 +105,8 @@ namespace System.Drawing.Printing
 
                 try
                 {
-                    int dpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(dc, dc.Hdc), SafeNativeMethods.LOGPIXELSY);
-                    int hardMarginY_DU = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(dc, dc.Hdc), SafeNativeMethods.PHYSICALOFFSETY);
+                    int dpiY = Interop.Gdi32.GetDeviceCaps(new HandleRef(dc, dc.Hdc), Interop.Gdi32.DeviceCapability.LOGPIXELSY);
+                    int hardMarginY_DU = Interop.Gdi32.GetDeviceCaps(new HandleRef(dc, dc.Hdc), Interop.Gdi32.DeviceCapability.PHYSICALOFFSETY);
                     hardMarginY = hardMarginY_DU * 100 / dpiY;
                 }
                 finally
@@ -192,25 +192,25 @@ namespace System.Drawing.Printing
 
                 try
                 {
-                    int dpiX = UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.LOGPIXELSX);
-                    int dpiY = UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.LOGPIXELSY);
+                    int dpiX = Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.LOGPIXELSX);
+                    int dpiY = Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.LOGPIXELSY);
                     if (!Landscape)
                     {
                         //
                         // Need to convert the printable area to 100th of an inch from the device units
-                        printableArea.X = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.PHYSICALOFFSETX) * 100 / dpiX;
-                        printableArea.Y = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.PHYSICALOFFSETY) * 100 / dpiY;
-                        printableArea.Width = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.HORZRES) * 100 / dpiX;
-                        printableArea.Height = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.VERTRES) * 100 / dpiY;
+                        printableArea.X = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.PHYSICALOFFSETX) * 100 / dpiX;
+                        printableArea.Y = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.PHYSICALOFFSETY) * 100 / dpiY;
+                        printableArea.Width = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.HORZRES) * 100 / dpiX;
+                        printableArea.Height = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.VERTRES) * 100 / dpiY;
                     }
                     else
                     {
                         //
                         // Need to convert the printable area to 100th of an inch from the device units
-                        printableArea.Y = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.PHYSICALOFFSETX) * 100 / dpiX;
-                        printableArea.X = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.PHYSICALOFFSETY) * 100 / dpiY;
-                        printableArea.Height = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.HORZRES) * 100 / dpiX;
-                        printableArea.Width = (float)UnsafeNativeMethods.GetDeviceCaps(hdc, SafeNativeMethods.VERTRES) * 100 / dpiY;
+                        printableArea.Y = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.PHYSICALOFFSETX) * 100 / dpiX;
+                        printableArea.X = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.PHYSICALOFFSETY) * 100 / dpiY;
+                        printableArea.Height = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.HORZRES) * 100 / dpiX;
+                        printableArea.Width = (float)Interop.Gdi32.GetDeviceCaps(hdc, Interop.Gdi32.DeviceCapability.VERTRES) * 100 / dpiY;
                     }
                 }
                 finally

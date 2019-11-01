@@ -10,12 +10,12 @@ namespace System.Drawing
 {
     public static partial class SystemFonts
     {
-        private static unsafe bool GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics)
+        private static unsafe bool GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics)
         {
-            metrics = new NativeMethods.NONCLIENTMETRICS { cbSize = (uint)sizeof(NativeMethods.NONCLIENTMETRICS) };
+            metrics = new Interop.User32.NONCLIENTMETRICS { cbSize = (uint)sizeof(Interop.User32.NONCLIENTMETRICS) };
             fixed (void* m = &metrics)
             {
-                return UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, metrics.cbSize, m, 0);
+                return Interop.User32.SystemParametersInfoW(Interop.User32.SystemParametersAction.SPI_GETNONCLIENTMETRICS, metrics.cbSize, m, 0);
             }
         }
 
@@ -25,7 +25,7 @@ namespace System.Drawing
             {
                 Font captionFont = null;
 
-                if (GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics))
+                if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
                     captionFont = GetFontFromData(metrics.lfCaptionFont);
                     captionFont.SetSystemFontName(nameof(CaptionFont));
@@ -41,7 +41,7 @@ namespace System.Drawing
             {
                 Font smcaptionFont = null;
 
-                if (GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics))
+                if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
                     smcaptionFont = GetFontFromData(metrics.lfSmCaptionFont);
                     smcaptionFont.SetSystemFontName(nameof(SmallCaptionFont));
@@ -57,7 +57,7 @@ namespace System.Drawing
             {
                 Font menuFont = null;
 
-                if (GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics))
+                if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
                     menuFont = GetFontFromData(metrics.lfMenuFont);
                     menuFont.SetSystemFontName(nameof(MenuFont));
@@ -73,7 +73,7 @@ namespace System.Drawing
             {
                 Font statusFont = null;
 
-                if (GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics))
+                if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
                     statusFont = GetFontFromData(metrics.lfStatusFont);
                     statusFont.SetSystemFontName(nameof(StatusFont));
@@ -89,7 +89,7 @@ namespace System.Drawing
             {
                 Font messageBoxFont = null;
 
-                if (GetNonClientMetrics(out NativeMethods.NONCLIENTMETRICS metrics))
+                if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
                     messageBoxFont = GetFontFromData(metrics.lfMessageFont);
                     messageBoxFont.SetSystemFontName(nameof(MessageBoxFont));
@@ -117,8 +117,8 @@ namespace System.Drawing
             {
                 Font iconTitleFont = null;
 
-                var itfont = new SafeNativeMethods.LOGFONT();
-                if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETICONTITLELOGFONT, (uint)sizeof(SafeNativeMethods.LOGFONT), &itfont, 0))
+                var itfont = new Interop.User32.LOGFONT();
+                if (Interop.User32.SystemParametersInfoW(Interop.User32.SystemParametersAction.SPI_GETICONTITLELOGFONT, (uint)sizeof(Interop.User32.LOGFONT), &itfont, 0))
                 {
                     iconTitleFont = GetFontFromData(itfont);
                     iconTitleFont.SetSystemFontName(nameof(IconTitleFont));
@@ -147,7 +147,7 @@ namespace System.Drawing
                 // First try DEFAULT_GUI.
                 if (defaultFont == null)
                 {
-                    IntPtr handle = UnsafeNativeMethods.GetStockObject(NativeMethods.DEFAULT_GUI_FONT);
+                    IntPtr handle = Interop.Gdi32.GetStockObject(Interop.Gdi32.StockObject.DEFAULT_GUI_FONT);
                     try
                     {
                         using (Font fontInWorldUnits = Font.FromHfont(handle))
@@ -236,7 +236,7 @@ namespace System.Drawing
             return new Font(font.FontFamily, font.SizeInPoints, font.Style, GraphicsUnit.Point, font.GdiCharSet, font.GdiVerticalFont);
         }
 
-        private static Font GetFontFromData(SafeNativeMethods.LOGFONT logFont)
+        private static Font GetFontFromData(Interop.User32.LOGFONT logFont)
         {
             Font font = null;
             try

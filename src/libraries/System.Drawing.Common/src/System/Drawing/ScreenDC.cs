@@ -13,19 +13,13 @@ namespace System.Drawing
     {
         private IntPtr _handle;
 
-        public static ScreenDC Create()
+        public static ScreenDC Create() => new ScreenDC
         {
-            return new ScreenDC
-            {
-                _handle = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef)
-            };
-        }
+            _handle = Interop.User32.GetDC(IntPtr.Zero)
+        };
 
         public static implicit operator IntPtr(ScreenDC screenDC) => screenDC._handle;
 
-        public void Dispose()
-        {
-            UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, _handle));
-        }
+        public void Dispose() => Interop.User32.ReleaseDC(IntPtr.Zero, _handle);
     }
 }

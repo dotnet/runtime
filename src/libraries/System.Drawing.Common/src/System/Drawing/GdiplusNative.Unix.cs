@@ -340,10 +340,10 @@ namespace System.Drawing
             internal static extern int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromLogfont(IntPtr hdc, ref LOGFONT lf, out IntPtr ptr);
+            internal static extern int GdipCreateFontFromLogfont(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr ptr);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref LOGFONT lf);
+            internal static extern int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref Interop.User32.LOGFONT lf);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);

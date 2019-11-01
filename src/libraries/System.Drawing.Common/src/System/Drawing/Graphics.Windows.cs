@@ -924,7 +924,7 @@ namespace System.Drawing
         {
             if (s_halftonePalette != IntPtr.Zero)
             {
-                SafeNativeMethods.IntDeleteObject(new HandleRef(null, s_halftonePalette));
+                Interop.Gdi32.DeleteObject(s_halftonePalette);
                 s_halftonePalette = IntPtr.Zero;
             }
         }
