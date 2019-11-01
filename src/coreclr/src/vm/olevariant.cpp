@@ -2134,7 +2134,7 @@ void OleVariant::ClearNonBlittableRecordArray(BASEARRAYREF* pComArray, void *ole
     SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
     BYTE *pOle = (BYTE *) oleArray;
     BYTE *pOleEnd = pOle + elemSize * cElements;
-    SIZE_T srcofs = ArrayBase::GetDataPtrOffset((*pComArray)->GetMethodTable());
+    SIZE_T srcofs = *pComArray != NULL ? ArrayBase::GetDataPtrOffset((*pComArray)->GetMethodTable()) : 0;
     while (pOle < pOleEnd)
     {
         BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + srcofs;
