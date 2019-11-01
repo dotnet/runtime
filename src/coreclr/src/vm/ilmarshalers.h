@@ -3053,26 +3053,7 @@ protected:
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 };
 
-class ILLayoutClassMarshalerBase : public ILMarshaler
-{
-protected:
-    void EmitLoadReferenceToFirstManagedObjectField(ILCodeStream* pslILEmit)
-    {
-        LocalDesc byteByref(ELEMENT_TYPE_I1);
-        byteByref.MakeByRef();
-
-        DWORD managedObjectFieldLocal = pslILEmit->NewLocal(byteByref);
-
-        // Get "ref byte" value that points to first field in the managed object.
-        EmitLoadManagedValue(pslILEmit);
-        pslILEmit->EmitSTLOC(managedObjectFieldLocal);
-        pslILEmit->EmitLDLOC(managedObjectFieldLocal);
-        pslILEmit->EmitLDC(Object::GetOffsetOfFirstField());
-        pslILEmit->EmitADD();
-    }
-};
-
-class ILLayoutClassPtrMarshalerBase : public ILLayoutClassMarshalerBase
+class ILLayoutClassPtrMarshalerBase : public ILMarshaler
 {
 public:
     enum
@@ -3123,7 +3104,7 @@ private:
     bool CanUsePinnedLayoutClass();
 };
 
-class ILLayoutClassMarshaler : public ILLayoutClassMarshalerBase
+class ILLayoutClassMarshaler : public ILMarshaler
 {
 public:
     enum
@@ -3429,13 +3410,39 @@ protected:
     void EmitClearNative(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
+        ILCodeLabel* pNoManagedValueLabel = nullptr;
+        if (IsFieldMarshal(m_dwMarshalFlags))
+        {
+            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
+            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
+            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
+        }
+
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeMethod());
+
+        if (IsFieldMarshal(m_dwMarshalFlags))
+        {
+            pslILEmit->EmitLabel(pNoManagedValueLabel);
+        }
     }
     
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
+        ILCodeLabel* pNoManagedValueLabel = nullptr;
+        if (IsFieldMarshal(m_dwMarshalFlags))
+        {
+            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
+            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
+            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
+        }
+        
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeContentsMethod());
+
+        if (IsFieldMarshal(m_dwMarshalFlags))
+        {
+            pslILEmit->EmitLabel(pNoManagedValueLabel);
+        }
     }
 
     bool NeedsClearCLR() override
