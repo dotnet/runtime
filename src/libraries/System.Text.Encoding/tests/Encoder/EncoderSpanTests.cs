@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Text.Encodings.Tests
 {
-    public partial class EncoderTests
+    public class EncoderTests
     {
         [Fact]
         public static void GetByteCount_Span_MatchesEncodingByteCount()

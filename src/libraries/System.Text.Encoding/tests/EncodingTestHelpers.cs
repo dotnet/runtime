@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public static partial class EncodingHelpers
+    public static class EncodingHelpers
     {
         public static void Encode(Encoding encoding, string chars, int index, int count, byte[] expected)
         {
@@ -232,11 +232,64 @@ namespace System.Text.Tests
             Assert.Equal(expected, encoding.GetString(bytes, index, count));
         }
 
-        // Netcoreapp adds several Encoding members.
-        static partial void GetByteCount_NetCoreApp(Encoding encoding, string chars, int index, int count, int expected);
-        static partial void GetBytes_NetCoreApp(Encoding encoding, string chars, int index, int count, byte[] expected);
-        static partial void GetCharCount_NetCoreApp(Encoding encoding, byte[] bytes, int index, int count, int expected);
-        static partial void VerifyGetChars_NetCoreApp(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars);
-        static partial void GetString_NetCoreApp(Encoding encoding, byte[] bytes, int index, int count, string expected);
+        static void GetByteCount_NetCoreApp(Encoding encoding, string chars, int index, int count, int expected)
+        {
+            // Use GetByteCount(string, int, int)
+            Assert.Equal(expected, encoding.GetByteCount(chars, index, count));
+
+            // Use GetByteCount(ReadOnlySpan<char> chars)
+            Assert.Equal(expected, encoding.GetByteCount(chars.AsSpan(index, count)));
+
+            if (count == 0)
+                Assert.Equal(expected, encoding.GetByteCount(ReadOnlySpan<char>.Empty));
+        }
+
+        static void GetBytes_NetCoreApp(Encoding encoding, string chars, int index, int count, byte[] expected)
+        {
+            // Use GetBytes(string, int, int)
+            byte[] stringResultAdvanced = encoding.GetBytes(chars, index, count);
+            VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
+
+            // Use GetBytes(ReadOnlySpan<char>, Span<byte>)
+            Array.Clear(stringResultAdvanced, 0, stringResultAdvanced.Length);
+            Assert.Equal(expected.Length, encoding.GetBytes(chars.AsSpan(index, count), (Span<byte>)stringResultAdvanced));
+            VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
+
+            if (count == 0)
+                Assert.Equal(expected.Length, encoding.GetBytes(ReadOnlySpan<char>.Empty, (Span<byte>)stringResultAdvanced));
+        }
+
+        static void GetCharCount_NetCoreApp(Encoding encoding, byte[] bytes, int index, int count, int expected)
+        {
+            // Use GetCharCount(ReadOnlySpan<byte>)
+            Assert.Equal(expected, encoding.GetCharCount(new ReadOnlySpan<byte>(bytes, index, count)));
+
+            if (count == 0)
+                Assert.Equal(expected, encoding.GetCharCount(ReadOnlySpan<byte>.Empty));
+        }
+
+        static void VerifyGetChars_NetCoreApp(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, char[] expectedChars)
+        {
+            // Use GetChars(ReadOnlySpan<byte>, Span<char>)
+            char[] byteChars = (char[])chars.Clone();
+            int charCount = encoding.GetChars(new ReadOnlySpan<byte>(bytes, byteIndex, byteCount), new Span<char>(byteChars).Slice(charIndex));
+            VerifyGetChars(byteChars, charIndex, charCount, (char[])chars.Clone(), expectedChars);
+            Assert.Equal(expectedChars.Length, charCount);
+
+            if (byteCount == 0)
+            {
+                charCount = encoding.GetChars(ReadOnlySpan<byte>.Empty, new Span<char>(byteChars).Slice(charIndex));
+                Assert.Equal(expectedChars.Length, charCount);
+            }
+        }
+
+        static void GetString_NetCoreApp(Encoding encoding, byte[] bytes, int index, int count, string expected)
+        {
+            // Use GetString(ReadOnlySpan<byte>)
+            Assert.Equal(expected, encoding.GetString(new ReadOnlySpan<byte>(bytes, index, count)));
+
+            if (count == 0)
+                Assert.Equal(expected, encoding.GetString(ReadOnlySpan<byte>.Empty));
+        }
     }
 }
