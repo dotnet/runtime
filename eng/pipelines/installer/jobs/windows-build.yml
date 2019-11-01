@@ -58,10 +58,14 @@ jobs:
       displayName: Clear NuGet http cache (if exists)
 
     - script: >-
+        installer.cmd -ci -restore -build
+        $(CommonMSBuildArgs)
+        $(MsbuildSigningArguments)
+
         installer.cmd -ci -test
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
-      displayName: Build
+      displayName: Build and Test
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetCommand@2
