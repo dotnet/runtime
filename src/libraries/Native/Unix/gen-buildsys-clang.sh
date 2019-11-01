@@ -3,10 +3,10 @@
 # This file invokes cmake and generates the build system for Clang.
 #
 
-if [ $# -lt 4 -o $# -gt 6 ]
+if [ $# -lt 5 -o $# -gt 7 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [cmakeargs]"
+  echo "gen-buildsys-clang.sh <path to repo root> <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <corefx>/src/Native/Unix"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Specify the target architecture." 
@@ -15,16 +15,16 @@ then
   exit 1
 fi
 
-#Set the root directory of the project
-project_root="$1"/../../..
+#root directory of the project
+repo_root=$1
 
 # Set up the environment to be used for building with clang.
-if which "clang-$2.$3" > /dev/null 2>&1
+if which "clang-$3.$4" > /dev/null 2>&1
     then
-        export CC="$(which clang-$2.$3)"
-elif which "clang$2$3" > /dev/null 2>&1
+        export CC="$(which clang-$3.$4)"
+elif which "clang$3$4" > /dev/null 2>&1
     then
-        export CC="$(which clang$2$3)"
+        export CC="$(which clang$3$4)"
 elif which clang > /dev/null 2>&1
     then
         export CC="$(which clang)"
@@ -33,15 +33,15 @@ else
     exit 1
 fi
 
-build_arch="$4"
+build_arch="$5"
 # Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
 # Default to DEBUG
-if [ -z "$5" ]
+if [ -z "$6" ]
 then
   echo "Defaulting to DEBUG build."
   buildtype="DEBUG"
 else
-  buildtype="$5"
+  buildtype="$6"
 fi
 
 cmake_cmd=cmake
@@ -52,7 +52,7 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         exit 1
     fi
     if [[ -z "$CONFIG_DIR" ]]; then
-        CONFIG_DIR="$project_root/cross"
+        CONFIG_DIR=$repo_root/cross
     fi
     export TARGET_BUILD_ARCH=$build_arch
     cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
@@ -70,13 +70,13 @@ if [ "$build_arch" == "wasm" ]; then
 fi
 
 __UnprocessedCMakeArgs=""
-if [ -z "$6" ]; then
+if [ -z "$7" ]; then
     echo "No CMake extra Args specified"
 else
-    __UnprocessedCMakeArgs="$6"
+    __UnprocessedCMakeArgs="$7"
 fi
 
-echo "Invoking \"$cmake_cmd $cmake_extra_defines $__UnprocessedCMakeArgs $1\""
+echo "Invoking \"$cmake_cmd $cmake_extra_defines $__UnprocessedCMakeArgs $2\""
 $cmake_cmd $cmake_extra_defines \
     $__UnprocessedCMakeArgs \
-    $1
+    $2
