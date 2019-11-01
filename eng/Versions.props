@@ -32,11 +32,11 @@
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- corefx -->
-    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCorePlatformsVersion>
-    <MicrosoftNETCoreTargetsVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCoreTargetsVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha.1.19551.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
-    <SystemTextJsonVersion>5.0.0-alpha.1.19551.1</SystemTextJsonVersion>
-    <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19551.1</SystemTextEncodingsWebVersion>
+    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha.1.19551.3</MicrosoftNETCorePlatformsVersion>
+    <MicrosoftNETCoreTargetsVersion>5.0.0-alpha.1.19551.3</MicrosoftNETCoreTargetsVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha.1.19551.3</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <SystemTextJsonVersion>5.0.0-alpha.1.19551.3</SystemTextJsonVersion>
+    <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19551.3</SystemTextEncodingsWebVersion>
     <!-- standard -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19551.1</NETStandardLibraryVersion>
     <!-- coreclr -->
