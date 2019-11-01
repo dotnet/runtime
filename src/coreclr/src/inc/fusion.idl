@@ -32,28 +32,6 @@ cpp_quote("#pragma once")
 cpp_quote("#endif")
 
 
-interface IAssemblyCache;
-interface IAssemblyCacheItem;
-interface IAssemblyName;
-interface IAssemblyEnum;
-
-
-cpp_quote("#ifndef PEKIND_ENUM_DEFINED")
-cpp_quote("#define PEKIND_ENUM_DEFINED")
-// This must match the definition of pekind in peinformation.h
-typedef enum _tagPEKIND 
-{
-    peNone      = 0x00000000,
-    peMSIL      = 0x00000001,
-    peI386      = 0x00000002,
-    peIA64      = 0x00000003,
-    peAMD64     = 0x00000004,
-    peARM       = 0x00000005,
-    peARM64     = 0x00000006,
-    peInvalid   = 0xffffffff
-} PEKIND;
-cpp_quote("#endif")
-
 typedef enum _tagAssemblyContentType
 {
     AssemblyContentType_Default         = 0x00000000, 
@@ -81,14 +59,7 @@ cpp_quote("EXTERN_GUID(IID_IAssemblyName, 0xCD193BC0, 0xB4BC, 0x11d2, 0x98, 0x33
 interface IAssemblyName: IUnknown
 {
     typedef [unique] IAssemblyName *LPASSEMBLYNAME;
-    
-    typedef enum {
-         CANOF_PARSE_DISPLAY_NAME = 0x1,
-         CANOF_SET_DEFAULT_VALUES = 0x2,
-         CANOF_VERIFY_FRIEND_ASSEMBLYNAME = 0x4,
-         CANOF_PARSE_FRIEND_DISPLAY_NAME = CANOF_PARSE_DISPLAY_NAME | CANOF_VERIFY_FRIEND_ASSEMBLYNAME
-    } CREATE_ASM_NAME_OBJ_FLAGS;
-    
+
     typedef enum
     {
         ASM_NAME_PUBLIC_KEY = 0,        //  0
@@ -153,43 +124,6 @@ interface IAssemblyName: IUnknown
                                 | ASM_DISPLAYF_PROCESSORARCHITECTURE
                                 | ASM_DISPLAYF_CONTENT_TYPE,
     } ASM_DISPLAY_FLAGS;
-    
-    typedef enum
-    {
-        ASM_CMPF_NAME               = 0x1,
-
-        ASM_CMPF_MAJOR_VERSION      = 0x2,
-        ASM_CMPF_MINOR_VERSION      = 0x4,
-        ASM_CMPF_BUILD_NUMBER       = 0x8,
-        ASM_CMPF_REVISION_NUMBER    = 0x10,
-        
-        ASM_CMPF_VERSION = ASM_CMPF_MAJOR_VERSION
-                          |ASM_CMPF_MINOR_VERSION
-                          |ASM_CMPF_BUILD_NUMBER
-                          |ASM_CMPF_REVISION_NUMBER,
-
-        ASM_CMPF_PUBLIC_KEY_TOKEN       = 0x20,
-        ASM_CMPF_CULTURE                = 0x40,
-        ASM_CMPF_CUSTOM                 = 0x80,
-
-        ASM_CMPF_DEFAULT                = 0x100,
-
-        ASM_CMPF_RETARGET               = 0x200,
-        ASM_CMPF_ARCHITECTURE           = 0x400,
-        ASM_CMPF_CONFIG_MASK            = 0x800,
-        ASM_CMPF_MVID                   = 0x1000,
-        ASM_CMPF_SIGNATURE              = 0x2000,
-        ASM_CMPF_CONTENT_TYPE           = 0x4000, 
-
-        ASM_CMPF_IL_ALL = ASM_CMPF_NAME
-                        | ASM_CMPF_VERSION
-                        | ASM_CMPF_PUBLIC_KEY_TOKEN
-                        | ASM_CMPF_CULTURE,
-
-        ASM_CMPF_IL_NO_VERSION = ASM_CMPF_NAME
-                        | ASM_CMPF_PUBLIC_KEY_TOKEN
-                        | ASM_CMPF_CULTURE
-    } ASM_CMP_FLAGS;                       
 
     HRESULT SetProperty(
         [in]    DWORD        PropertyId, 
@@ -201,42 +135,8 @@ interface IAssemblyName: IUnknown
         [out]        LPVOID   pvProperty,
         [in, out]    LPDWORD  pcbProperty);
 
-    HRESULT Finalize();
-
-    HRESULT GetDisplayName(
-        [out, annotation("_Out_writes_opt_(*pccDisplayName)")]
-                     LPOLESTR  szDisplayName,
-        [in, out]   LPDWORD   pccDisplayName,
-        [in]        DWORD     dwDisplayFlags);
-
-    HRESULT Reserved(
-        [in]      REFIID               refIID,
-        [in]      IUnknown            *pUnkReserved1, 
-        [in]      IUnknown            *pUnkReserved2,
-        [in]      LPCOLESTR            szReserved,
-        [in]      LONGLONG             llReserved,
-        [in]      LPVOID               pvReserved,
-        [in]      DWORD                cbReserved,
-        [out]     LPVOID               *ppReserved);
-
-
     HRESULT GetName(
         [in, out, annotation("_Inout_")] LPDWORD lpcwBuffer,
         [out, annotation("_Out_writes_opt_(*lpcwBuffer)")] WCHAR *pwzName);
-        
-    HRESULT GetVersion(
-        [out] LPDWORD pdwVersionHi,
-        [out] LPDWORD pdwVersionLow);
-
-    HRESULT IsEqual(
-        [in] IAssemblyName *pName,
-        [in] DWORD dwCmpFlags);
-        
-    HRESULT Clone(
-        [out] IAssemblyName **pName);
-        
 }
-
-
-#pragma midl_echo("STDAPI CreateAssemblyNameObject(LPASSEMBLYNAME *ppAssemblyNameObj, LPCWSTR szAssemblyName, DWORD dwFlags, LPVOID pvReserved);             ")
 

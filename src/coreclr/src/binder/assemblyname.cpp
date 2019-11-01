@@ -304,73 +304,6 @@ namespace BINDER_SPACE
 Exit:        
         return hr;
     }
-    
-    HRESULT AssemblyName::CreateFusionName(IAssemblyName **ppIAssemblyName)
-    {
-        HRESULT hr = S_OK;
-        ReleaseHolder<IAssemblyName> pIAssemblyName;
-
-        IF_FAIL_GO(CreateAssemblyNameObject(&pIAssemblyName, NULL, 0, NULL));
-
-        IF_FAIL_GO(LegacyFusion::SetStringProperty(pIAssemblyName, ASM_NAME_NAME, GetSimpleName()));
-
-        if (Have(AssemblyIdentity::IDENTITY_FLAG_VERSION))
-        {
-            AssemblyVersion *pAssemblyVersion = GetVersion();
-
-            IF_FAIL_GO(LegacyFusion::SetWordProperty(pIAssemblyName,
-                                       ASM_NAME_MAJOR_VERSION,
-                                       pAssemblyVersion->GetMajor()));
-            IF_FAIL_GO(LegacyFusion::SetWordProperty(pIAssemblyName,
-                                       ASM_NAME_MINOR_VERSION,
-                                       pAssemblyVersion->GetMinor()));
-            IF_FAIL_GO(LegacyFusion::SetWordProperty(pIAssemblyName,
-                                       ASM_NAME_BUILD_NUMBER,
-                                       pAssemblyVersion->GetBuild()));
-            IF_FAIL_GO(LegacyFusion::SetWordProperty(pIAssemblyName,
-                                       ASM_NAME_REVISION_NUMBER,
-                                       pAssemblyVersion->GetRevision()));
-        }
-
-        if (Have(AssemblyIdentity::IDENTITY_FLAG_CULTURE))
-        {
-            IF_FAIL_GO(LegacyFusion::SetStringProperty(pIAssemblyName, ASM_NAME_CULTURE, GetCulture()));
-        }
-
-        if (Have(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
-        {
-            // GetPublicKeyTokenBLOB contains either PK or PKT.
-            IF_FAIL_GO(LegacyFusion::SetBufferProperty(pIAssemblyName,
-                                         ASM_NAME_PUBLIC_KEY,
-                                         GetPublicKeyTokenBLOB()));
-        }
-        else if (Have(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN))
-        {
-            // GetPublicKeyTokenBLOB contains either PK or PKT.
-            IF_FAIL_GO(LegacyFusion::SetBufferProperty(pIAssemblyName,
-                                         ASM_NAME_PUBLIC_KEY_TOKEN,
-                                         GetPublicKeyTokenBLOB()));
-        }
-
-        if (Have(AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE))
-        {
-            IF_FAIL_GO(LegacyFusion::SetDwordProperty(pIAssemblyName,
-                                        ASM_NAME_ARCHITECTURE,
-                                        static_cast<DWORD>(GetArchitecture())));
-        }
-
-        if (Have(AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-        {
-            IF_FAIL_GO(LegacyFusion::SetDwordProperty(pIAssemblyName,
-                                        ASM_NAME_CONTENT_TYPE,
-                                        GetContentType()));
-        }
-        
-        *ppIAssemblyName = pIAssemblyName.Extract();
-
-    Exit:
-        return hr;
-    }
 
     ULONG AssemblyName::AddRef()
     {
@@ -528,21 +461,6 @@ Exit:
         }
 
         return fEquals;
-    }
-
-    HRESULT AssemblyName::Clone(AssemblyName **ppAssemblyName)
-    {
-        HRESULT hr = S_OK;
-        AssemblyName *pClonedAssemblyName = NULL;
-
-        SAFE_NEW(pClonedAssemblyName, AssemblyName);
-        CloneInto(pClonedAssemblyName);
-        pClonedAssemblyName->m_dwNameFlags = m_dwNameFlags;
-
-        *ppAssemblyName = pClonedAssemblyName;
-
-    Exit:
-        return hr;
     }
 
     void AssemblyName::GetDisplayName(PathString &displayName,
