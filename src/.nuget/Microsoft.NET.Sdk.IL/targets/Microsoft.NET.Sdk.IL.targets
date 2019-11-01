@@ -27,7 +27,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNetCoreIlasmPackageVersion Condition="'$(MicrosoftNetCoreIlasmPackageVersion)' == ''">5.0.0</MicrosoftNetCoreIlasmPackageVersion>
+    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">5.0.0</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
     
@@ -39,8 +39,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ILAsmToolPath)' == ''">
-    <_IlasmPackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
-    <_IlasmPackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNETCoreILAsmVersion)" />
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNETCoreILAsmVersion)" />
     <PackageReference Include="@(_IlasmPackageReference)" ExcludeAssets="native" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
