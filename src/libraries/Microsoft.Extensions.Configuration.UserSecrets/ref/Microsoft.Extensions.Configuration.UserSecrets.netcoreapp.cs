@@ -26,6 +26,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
     public partial class UserSecretsIdAttribute : System.Attribute
     {
         public UserSecretsIdAttribute(string userSecretId) { }
-        public string UserSecretsId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string UserSecretsId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
     }
 }
