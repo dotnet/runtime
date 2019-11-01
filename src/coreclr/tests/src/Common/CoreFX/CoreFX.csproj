@@ -41,6 +41,9 @@
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreAppVersion)" />
 
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
   </ItemGroup>
 
   <!-- Target SetupTestingHost needs to run after "AfterResolveReferences" so @(ReferenceCopyLocalPaths) is
