@@ -1,24 +1,11 @@
 trigger:
-  batch: true
   branches:
     include:
-    - master
-    - release/3.*
+    - installer
   paths:
     exclude:
-    - Documentation/*
-    - README.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - THIRD-PARTY-NOTICES.TXT
-
-pr:
-  branches:
-    include:
-    - master
-    - release/3.*
-  paths:
-    exclude:
+    - src/coreclr/*
+    - src/libraries/*
     - Documentation/*
     - README.md
     - CONTRIBUTING.md
@@ -57,7 +44,7 @@ stages:
 - stage: Build
   jobs:
   # -------- Build Bash legs (Linux and FreeBSD) --------
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       crossBuild: true
       name: Linux_Arm
@@ -67,7 +54,7 @@ stages:
       skipTests: true
       targetArchitecture: arm
 
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       crossBuild: true
       name: Linux_Arm64
@@ -79,7 +66,7 @@ stages:
 
   # # Tizen build only for PR build
   # - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-  #   - template: /eng/pipelines/jobs/bash-build.yml
+  #   - template: /eng/pipelines/installer/jobs/bash-build.yml
   #     parameters:
   #       additionalMSBuildArgs: /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.5.0.0-armel
   #       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/armel.tizen.build
@@ -91,7 +78,7 @@ stages:
   #       skipTests: true
   #       targetArchitecture: armel
 
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
       crossBuild: true
@@ -102,7 +89,7 @@ stages:
       skipTests: true
       targetArchitecture: arm64
 
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
       name: Linux_x64_Alpine39
@@ -110,7 +97,7 @@ stages:
       portableBuild: false
       targetArchitecture: x64
 
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       name: Linux_x64_glibc
       dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-50f0d02-20190918214028
@@ -129,7 +116,7 @@ stages:
       portableBuild: true
       targetArchitecture: x64
 
-  - template: /eng/pipelines/jobs/bash-build.yml
+  - template: /eng/pipelines/installer/jobs/bash-build.yml
     parameters:
       additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
       name: Linux_x64_Rhel6
@@ -138,34 +125,34 @@ stages:
       targetArchitecture: x64
 
   # -------- Build OSX (macOS) leg --------
-  - template: /eng/pipelines/jobs/osx-build.yml
+  - template: /eng/pipelines/installer/jobs/osx-build.yml
     parameters:
       name: OSX
 
   # -------- Build Windows legs --------
   # Windows Arm
-  - template: /eng/pipelines/jobs/windows-build.yml
+  - template: /eng/pipelines/installer/jobs/windows-build.yml
     parameters:
       name: Windows_Arm
       skipTests: true
       targetArchitecture: arm
 
   # Windows Arm64
-  - template: /eng/pipelines/jobs/windows-build.yml
+  - template: /eng/pipelines/installer/jobs/windows-build.yml
     parameters:
       name: Windows_Arm64
       skipTests: true
       targetArchitecture: arm64
 
   # Windows x64
-  - template: /eng/pipelines/jobs/windows-build.yml
+  - template: /eng/pipelines/installer/jobs/windows-build.yml
     parameters:
       name: Windows_x64
       publishRidAgnosticPackages: true
       targetArchitecture: x64
 
   # Windows x86
-  - template: /eng/pipelines/jobs/windows-build.yml
+  - template: /eng/pipelines/installer/jobs/windows-build.yml
     parameters:
       name: Windows_x86
       targetArchitecture: x86
@@ -176,7 +163,7 @@ stages:
     dependsOn: Build
     jobs:
     # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
-    - template: /eng/pipelines/jobs/prepare-signed-artifacts.yml
+    - template: /eng/pipelines/installer/jobs/prepare-signed-artifacts.yml
       parameters:
         PublishRidAgnosticPackagesFromJobName: Windows_x64
     # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.

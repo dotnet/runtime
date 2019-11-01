@@ -21,4 +21,5 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 . "$scriptroot/install-nuget-credprovider.sh"
 
-"$scriptroot/../build.sh" "$@"
+"$scriptroot/../build.sh" "$scriptroot/../build.sh" --subsetCategory $1 "${@:2}"
+

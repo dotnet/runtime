@@ -8,7 +8,7 @@ parameters:
   packageDistroList: null
   skipTests: $(SkipTests)
   strategy:
-    matrix: 
+    matrix:
       debug:
         _BuildConfig: Debug
       release:
@@ -40,22 +40,22 @@ jobs:
       ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: >-
           docker run --privileged --rm
-          -v "$(Build.SourcesDirectory):/root/coresetup"
-          -w="/root/coresetup"
+          -v "$(Build.SourcesDirectory):/root/runtime"
+          -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
-      
+
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-        BuildScript: ./eng/install-nuget-credprovider-then-build.sh
-        MSBuildScript: /root/coresetup/eng/install-nuget-credprovider-then-msbuild.sh
+        BuildScript: ./eng/install-nuget-credprovider-then-build.sh installer
+        MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-        BuildScript: ./build.sh
-        MSBuildScript: /root/coresetup/eng/common/msbuild.sh
+        BuildScript: ./installer.sh
+        MSBuildScript: /root/runtime/eng/common/msbuild.sh
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
@@ -89,9 +89,9 @@ jobs:
 
       DockerRunMSBuild: >-
         docker run
-        -v $(Build.SourcesDirectory):/root/coresetup
+        -v $(Build.SourcesDirectory):/root/runtime
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
-        -w=/root/coresetup
+        -w=/root/runtime
         $(PreserveNuGetAuthDockerArgs)
 
     steps:

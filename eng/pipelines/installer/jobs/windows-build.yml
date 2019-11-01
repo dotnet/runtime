@@ -19,14 +19,14 @@ jobs:
         name: NetCoreInternal-Pool
         queue: buildpool.windows.10.amd64.vs2019
     strategy:
-      matrix: 
+      matrix:
         debug:
           _BuildConfig: Debug
         release:
           _BuildConfig: Release
     workspace:
       clean: all
-    variables: 
+    variables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
         /p:OfficialBuildId=$(OfficialBuildId)
@@ -58,7 +58,7 @@ jobs:
       displayName: Clear NuGet http cache (if exists)
 
     - script: >-
-        build.cmd -ci -test
+        installer.cmd -ci -test
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build
