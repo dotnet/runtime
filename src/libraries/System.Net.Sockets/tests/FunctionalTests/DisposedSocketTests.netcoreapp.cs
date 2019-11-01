@@ -34,7 +34,7 @@ namespace System.Net.Sockets.Tests
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(int.MaxValue);
+                listener.Listen();
 
                 for (int i = 0; i < 100; i++)
                 {

@@ -312,6 +312,7 @@ namespace System.Net.Sockets
         public byte[] GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, int optionLength) { throw null; }
         public int IOControl(int ioControlCode, byte[] optionInValue, byte[] optionOutValue) { throw null; }
         public int IOControl(System.Net.Sockets.IOControlCode ioControlCode, byte[] optionInValue, byte[] optionOutValue) { throw null; }
+        public void Listen() { }
         public void Listen(int backlog) { }
         public bool Poll(int microSeconds, System.Net.Sockets.SelectMode mode) { throw null; }
         public int Receive(byte[] buffer) { throw null; }

@@ -303,6 +303,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Listen_Throws_ObjectDisposed()
         {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().Listen());
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().Listen(1));
         }
 
