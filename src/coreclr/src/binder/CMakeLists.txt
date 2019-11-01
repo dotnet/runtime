@@ -16,7 +16,6 @@ set(BINDER_COMMON_SOURCES
     coreclrbindercommon.cpp
     failurecache.cpp
     fusionassemblyname.cpp
-    propertymap.cpp
     stringlexer.cpp
     textualidentityparser.cpp
     utils.cpp
@@ -53,8 +52,6 @@ set(BINDER_COMMON_HEADERS
     inc/list.hpp
     inc/loadcontext.hpp
     inc/loadcontext.inl
-    inc/propertyhashtraits.hpp
-    inc/propertymap.hpp
     inc/stringlexer.hpp
     inc/stringlexer.inl
     inc/textualidentityparser.hpp
