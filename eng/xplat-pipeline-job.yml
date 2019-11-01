@@ -64,6 +64,12 @@ jobs:
     - name: nativeRootFolderPath
       value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
 
+    - name: buildProductArtifactName
+      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
+
     - name: testArtifactName
       value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
 

@@ -22,7 +22,7 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- template: xplat-test-job.yml
+- template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -113,22 +113,13 @@ jobs:
 
 
     # Download product binaries directory
-    - task: DownloadBuildArtifacts@0
-      displayName: Download product build
-      inputs:
-        buildType: current
-        downloadType: single
-        artifactName: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-        downloadPath: '$(System.ArtifactsDirectory)'
-
-
-    # Populate Product directory
-    - task: CopyFiles@2
-      displayName: Populate Product directory
-      inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-        contents: '**'
-        targetFolder: '$(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        downloadFolder: $(binTestsPath)/tmp
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'product build'
 
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
