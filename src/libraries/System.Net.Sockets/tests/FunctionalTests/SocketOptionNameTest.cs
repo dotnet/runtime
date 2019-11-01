@@ -425,7 +425,7 @@ namespace System.Net.Sockets.Tests
                 a.ExclusiveAddressUse = true;
 
                 a.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                a.Listen(10);
+                a.Listen();
                 int port = (a.LocalEndPoint as IPEndPoint).Port;
 
                 using (Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -531,7 +531,7 @@ namespace System.Net.Sockets.Tests
             {
                 a.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 port = (a.LocalEndPoint as IPEndPoint).Port;
-                a.Listen(10);
+                a.Listen();
 
                 // Connect a client
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

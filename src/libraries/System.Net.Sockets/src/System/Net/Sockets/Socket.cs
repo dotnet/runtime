@@ -945,7 +945,18 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, timeout);
         }
 
-        // Places a socket in a listening state.
+        /// <summary>
+        /// Places a <see cref="Socket"/> in a listening state.
+        /// </summary>
+        /// <remarks>
+        /// The maximum length of the pending connections queue will be determined automatically.
+        /// </remarks>
+        public void Listen() => Listen(int.MaxValue);
+
+        /// <summary>
+        /// Places a <see cref="Socket"/> in a listening state.
+        /// </summary>
+        /// <param name="backlog">The maximum length of the pending connections queue.</param>
         public void Listen(int backlog)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, backlog);

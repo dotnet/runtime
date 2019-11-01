@@ -134,7 +134,7 @@ namespace System.Net.Sockets.Tests
                 using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
                     listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                    listener.Listen(int.MaxValue);
+                    listener.Listen();
                     EndPoint ep = listener.LocalEndPoint;
 
                     // Create a client and connect to that listener.
