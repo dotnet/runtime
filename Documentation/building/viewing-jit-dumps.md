@@ -156,8 +156,6 @@ Below are some of the most useful `COMPlus` variables. Where {method-list} is sp
 * `COMPlus_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
 * `COMPlus_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
-See also: [CLR Configuration Knobs](../project-docs/clr-configuration-knobs.md)
-
 ## Dumping native images
 
 If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in mscorlib, which (by default) is compiled ahead-of-time to a native image via [crossgen](../building/crossgen.md). Telling crossgen to dump the info works slightly differently.
