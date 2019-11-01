@@ -710,9 +710,6 @@
 			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
-		<!-- marshal-ilgen.c (emit_native_icall_wrapper_ilgen) -->
-		<type fullname="Mono.RuntimeStructs/MonoError" />
-
 		<type fullname="System.Threading.WasmRuntime"/>
 
 		<!-- mini-generic-sharing.c -->

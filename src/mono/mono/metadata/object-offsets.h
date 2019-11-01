@@ -136,8 +136,6 @@ DECL_OFFSET(MonoProfilerCallContext, method)
 DECL_OFFSET(MonoProfilerCallContext, return_value)
 DECL_OFFSET(MonoProfilerCallContext, args)
 
-DECL_OFFSET(MonoErrorExternal, init)
-
 #ifdef HAVE_SGEN_GC
 DECL_OFFSET(SgenClientThreadInfo, in_critical_region)
 DECL_OFFSET(SgenThreadInfo, tlab_next)

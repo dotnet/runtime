@@ -1250,12 +1250,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 					EMIT_NEW_VARLOADA_VREG (cfg, dest, ins->dreg, m_class_get_byval_arg (ins->klass));
 
-					if (m_class_get_image (ins->klass) == mono_defaults.corlib && !strcmp (m_class_get_name (ins->klass), "MonoError")) {
-						// Used in icall wrappers, optimize initialization
-						MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, dest->dreg, MONO_STRUCT_OFFSET (MonoErrorExternal, init), 0);
-					} else {
-						mini_emit_initobj (cfg, dest, NULL, ins->klass);
-					}
+					mini_emit_initobj (cfg, dest, NULL, ins->klass);
 					
 					if (cfg->compute_gc_maps) {
 						MonoInst *tmp;
