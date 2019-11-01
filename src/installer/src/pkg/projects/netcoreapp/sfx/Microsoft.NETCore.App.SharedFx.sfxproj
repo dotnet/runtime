@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <SfxIdentity>Microsoft.NETCore.App</SfxIdentity>
+    <SfxPackageIdentity>$(SfxIdentity).Internal</SfxPackageIdentity>
+
+    <!--
+      Lay out the sfx in the legacy location for old packaging to keep working for now. This can be
+      removed when the legacy infra is phased out.
+    -->
+    <SharedFrameworkLayoutDir>$(SharedFrameworkPublishDir)</SharedFrameworkLayoutDir>
+
+    <GenerateRuntimeGraph>true</GenerateRuntimeGraph>
+
+    <!-- These components are installed by the root shared framework, but not others. -->
+    <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
+    <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
+
+    <!-- The zip/tarball is built by legacy infrastructure. -->
+    <GenerateCompressedArchive>false</GenerateCompressedArchive>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PkgProjectReference Include="..\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj" />
+    <PkgProjectReference Include="..\pkg\legacy\Microsoft.NETCore.App.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.pkgproj" />
+  </ItemGroup>
+
+  <!--
+    Make sure the installer file is generated with the old infra's name and location. This allows
+    the existing infra to bundle it without any changes. This can be removed when the legacy infra
+    is phased out.
+  -->
+  <Target Name="PutSharedFrameworkMsiInLegacyLocation"
+          DependsOnTargets="GetInstallerLocations"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerFile>$(SharedFrameworkInstallerFile)</InstallerFile>
+    </PropertyGroup>
+  </Target>
+
+</Project>

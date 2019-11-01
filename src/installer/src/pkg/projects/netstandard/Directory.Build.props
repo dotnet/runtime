@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <RIDPropsFile>$(MSBuildThisFileDirectory)netstandardRIDs.props</RIDPropsFile>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+</Project>

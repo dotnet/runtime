@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- This project isn't 3.0, don't use workaround. -->
+  <PropertyGroup>
+    <UseMicrosoftNETCoreAppInternalWorkaround>false</UseMicrosoftNETCoreAppInternalWorkaround>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+</Project>
