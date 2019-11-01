@@ -6,6 +6,17 @@
     <ItemsToSign Include="$(BinDir)*.exe" />
   </ItemGroup>
 
+  <!-- Crossgen2 -->
+  <ItemGroup>
+    <ItemsToSign Include="$(BinDir)/crossgen2/crossgen2.exe" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/crossgen2.dll" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/ILCompiler.DependencyAnalysisFramework.dll" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/ILCompiler.ReadyToRun.dll" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/ILCompiler.TypeSystem.ReadyToRun.dll" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/clrjitilc.dll" />
+    <ItemsToSign Include="$(BinDir)/crossgen2/jitinterface.dll" />
+  </ItemGroup>
+
   <ItemGroup>
     <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
   </ItemGroup>
