@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestProjectToRun>GitHub_26491_MultipleReturns.ilproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>SingleReturnSynchronized</CLRTestExecutionArguments>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DisableProjectBuild Condition="'$(Platform)' == 'x64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(Platform)' == 'arm64'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="conv_ovf_i8_i.il" />
+  </ItemGroup>
+</Project>

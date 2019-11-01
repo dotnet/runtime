@@ -1,0 +1,135 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+.assembly extern mscorlib { }
+.assembly sizeof32 { }
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.namespace JitTest
+{
+  .class private sequential ansi sealed beforefieldinit SimpleStruct
+         extends [mscorlib]System.ValueType
+  {
+    .field public int32 m_int
+    .field public unsigned int32 m_uint
+    .field public unsigned int8 m_byte
+    .field public int8 m_sbyte
+    .field public char m_char
+    .field public int16 m_short
+    .field public unsigned int16 m_ushort
+    .field public int64 m_long
+    .field public unsigned int64 m_ulong
+  }
+  .class private sequential ansi sealed beforefieldinit RefComplexStruct
+         extends [mscorlib]System.ValueType
+  {
+    .field public valuetype JitTest.SimpleStruct ss1
+    .field public valuetype JitTest.SimpleStruct[0...] ss_array
+    .field public valuetype JitTest.SimpleStruct ss2
+  }
+  .class private sequential ansi sealed beforefieldinit Test
+         extends [mscorlib]System.ValueType
+  {
+    .pack 1
+    .size 1
+    .method private hidebysig static int32
+            Main() cil managed
+    {
+      .entrypoint
+      .maxstack  4
+      .locals (int32 V_0,
+               int32 V_1,
+               valuetype JitTest.RefComplexStruct V_2,
+               valuetype JitTest.SimpleStruct V_3)
+      IL_0000:  sizeof     JitTest.RefComplexStruct
+      IL_0006:  conv.i1
+      IL_0007:  conv.i4
+      IL_0008:  stloc.0
+      IL_0009:  ldloc.0
+      IL_000a:  sizeof     JitTest.RefComplexStruct
+      IL_0010:  ldloca.s   V_2
+      IL_0012:  initobj    JitTest.RefComplexStruct
+      IL_0018:  ldloc.2
+      IL_0019:  stloc.2
+      IL_001a:  ldloca.s   V_2
+      IL_001c:  ldfld      valuetype JitTest.SimpleStruct JitTest.RefComplexStruct::ss1
+      IL_0021:  stloc.3
+      IL_0022:  ldloca.s   V_3
+      IL_0024:  ldfld      int8 JitTest.SimpleStruct::m_sbyte
+      IL_0029:  conv.i4
+      IL_002a:  add
+      IL_002b:  add
+      IL_002c:  stloc.0
+      IL_002d:  ldloc.0
+      IL_002e:  ldc.i4     144
+      IL_0033:  ldloca.s   V_2
+      IL_0035:  initobj    JitTest.RefComplexStruct
+      IL_003b:  ldloc.2
+      IL_003c:  stloc.2
+      IL_003d:  ldloca.s   V_2
+      IL_003f:  ldfld      valuetype JitTest.SimpleStruct JitTest.RefComplexStruct::ss2
+      IL_0044:  stloc.3
+      IL_0045:  ldloca.s   V_3
+      IL_0047:  ldfld      unsigned int16 JitTest.SimpleStruct::m_ushort
+      IL_004c:  conv.i4
+      IL_004d:  sub
+      IL_004e:  sizeof     JitTest.RefComplexStruct
+      IL_0054:  sub
+      IL_0055:  sub
+      IL_0056:  stloc.0
+      IL_0057:  ldloc.0
+      IL_0058:  sizeof     JitTest.RefComplexStruct
+      IL_005e:  ldloca.s   V_2
+      IL_0060:  initobj    JitTest.RefComplexStruct
+      IL_0066:  ldloc.2
+      IL_0067:  stloc.2
+      IL_0068:  ldloca.s   V_2
+      IL_006a:  ldfld      valuetype JitTest.SimpleStruct JitTest.RefComplexStruct::ss1
+      IL_006f:  stloc.3
+      IL_0070:  ldloca.s   V_3
+      IL_0072:  ldfld      unsigned int32 JitTest.SimpleStruct::m_uint
+      IL_0077:  ldc.i4.1
+      IL_0078:  add
+      IL_0079:  mul
+      IL_007a:  mul
+      IL_007b:  stloc.0
+      IL_007c:  ldloc.0
+      IL_007d:  sizeof     JitTest.RefComplexStruct
+      IL_0083:  ldloca.s   V_2
+      IL_0085:  initobj    JitTest.RefComplexStruct
+      IL_008b:  ldloc.2
+      IL_008c:  stloc.2
+      IL_008d:  ldloca.s   V_2
+      IL_008f:  ldfld      valuetype JitTest.SimpleStruct JitTest.RefComplexStruct::ss2
+      IL_0094:  stloc.3
+      IL_0095:  ldloca.s   V_3
+      IL_0097:  ldfld      unsigned int64 JitTest.SimpleStruct::m_ulong
+      IL_009c:  ldc.i4.1
+      IL_009d:  conv.i8
+      IL_009e:  add
+      IL_009f:  conv.i4
+      IL_00a0:  div
+      IL_00a1:  div
+      IL_00a2:  stloc.0
+      IL_00a3:  sizeof     JitTest.RefComplexStruct
+      IL_00a9:  ldc.i4.s   72
+      IL_00ab:  xor
+      IL_00ac:  ldloc.0
+      IL_00ad:  or
+      IL_00ae:  stloc.0
+      IL_00af:  sizeof     JitTest.RefComplexStruct
+      IL_00b5:  ldc.i4.s   -73
+      IL_00b7:  xor
+      IL_00b8:  ldloc.0
+      IL_00b9:  and
+      IL_00ba:  stloc.0
+      IL_00bb:  ldloc.0
+      IL_00bc:  ldc.i4.s   28
+      IL_00be:  add
+      IL_00bf:  stloc.1
+      IL_00c0:  br.s       IL_00c2
+      IL_00c2:  ldloc.1
+      IL_00c3:  ret
+    }
+  }
+}

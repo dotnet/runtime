@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<R2RDump>
+  <R2RReader xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Filename>GenericFunctions.ni.dll</Filename>
+    <IsR2R>true</IsR2R>
+    <Machine>I386</Machine>
+    <ImageBase>268500992</ImageBase>
+  </R2RReader>
+  <Header>
+    <R2RHeader xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <SignatureString>RTR</SignatureString>
+      <Signature>5395538</Signature>
+      <MajorVersion>2</MajorVersion>
+      <MinorVersion>2</MinorVersion>
+      <Flags>3</Flags>
+    </R2RHeader>
+  </Header>
+  <Sections>
+    <Count>8</Count>
+    <Section Index="READYTORUN_SECTION_COMPILER_IDENTIFIER">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_COMPILER_IDENTIFIER" />
+      <Contents>
+        <CompilerIdentifier>CoreCLR 4.5.30319.0 __BUILDMACHINE__</CompilerIdentifier>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_IMPORT_SECTIONS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_IMPORT_SECTIONS" />
+      <Contents>
+        <ImportSection Index="0">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <Flags>CORCOMPILE_IMPORT_FLAGS_EAGER</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <Entries>
+              <ImportSectionEntry Index="0">
+                <StartOffset>0</StartOffset>
+                <Section>0</Section>
+              </ImportSectionEntry>
+            </Entries>
+          </R2RImportSection>
+          <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <StartOffset>0</StartOffset>
+            <Section>0</Section>
+          </ImportSectionEntry>
+        </ImportSection>
+        <ImportSection Index="1">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+            <Flags>CORCOMPILE_IMPORT_FLAGS_PCODE</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <Entries>
+              <ImportSectionEntry Index="0">
+                <StartOffset>0</StartOffset>
+                <Section>268510288</Section>
+              </ImportSectionEntry>
+            </Entries>
+          </R2RImportSection>
+          <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <StartOffset>0</StartOffset>
+            <Section>268510288</Section>
+          </ImportSectionEntry>
+        </ImportSection>
+        <ImportSection Index="2">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+            <Flags>CORCOMPILE_IMPORT_FLAGS_UNKNOWN</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <Entries />
+          </R2RImportSection>
+        </ImportSection>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_RUNTIME_FUNCTIONS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_RUNTIME_FUNCTIONS" />
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_METHODDEF_ENTRYPOINTS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_METHODDEF_ENTRYPOINTS" />
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_DEBUG_INFO">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_DEBUG_INFO" />
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_AVAILABLE_TYPES">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_AVAILABLE_TYPES" />
+      <Contents>
+        <AvailableType Index="0">GenericFunctions.GenericFunctions</AvailableType>
+        <AvailableType Index="1">.&lt;Module&gt;</AvailableType>
+        <AvailableType Index="2">GenericFunctions.UserDefinedStruct</AvailableType>
+        <AvailableType Index="3">GenericFunctions.UserDefinedClass</AvailableType>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS" />
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_INLINING_INFO">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_INLINING_INFO" />
+      <Contents />
+    </Section>
+  </Sections>
+  <Methods Count="5">
+    <Method Index="0">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.UserDefinedStruct..ctor(Int32)</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.UserDefinedStruct</DeclaringType>
+        <Token>100663297</Token>
+        <Rid>1</Rid>
+        <EntryPointRuntimeFunctionId>0</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>3360</Offset>
+          <CodeLength>8</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction Index="0">
+          <MethodRid>1</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <Size>8</Size>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>8</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="1">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.UserDefinedClass..ctor(Int32)</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.UserDefinedClass</DeclaringType>
+        <Token>100663298</Token>
+        <Rid>2</Rid>
+        <EntryPointRuntimeFunctionId>1</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>3364</Offset>
+          <CodeLength>9</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction Index="1">
+          <MethodRid>2</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+            <Size>9</Size>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>9</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="2">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+        <Name>Main</Name>
+        <SignatureString>GenericFunctions.GenericFunctions.Main(String[])</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663300</Token>
+        <Rid>4</Rid>
+        <EntryPointRuntimeFunctionId>3</EntryPointRuntimeFunctionId>
+        <Fixups>
+          <FixupCell Index="0">
+            <TableIndex>2</TableIndex>
+            <CellOffset>0</CellOffset>
+          </FixupCell>
+        </Fixups>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>3374</Offset>
+          <CodeLength>19</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction Index="3">
+          <MethodRid>4</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
+            <Size>19</Size>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>19</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="3">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.GenericFunctions..ctor()</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663301</Token>
+        <Rid>5</Rid>
+        <EntryPointRuntimeFunctionId>4</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>3378</Offset>
+          <CodeLength>6</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction Index="4">
+          <MethodRid>5</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
+            <Size>6</Size>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>6</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="4">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
+        <Name>GenericFunction</Name>
+        <SignatureString>GenericFunctions.GenericFunctions.GenericFunction&lt;__Canon, __Canon&gt;(__Canon, __Canon)</SignatureString>
+        <IsGeneric>true</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663299</Token>
+        <Rid>3</Rid>
+        <EntryPointRuntimeFunctionId>2</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>7</Size>
+          <Offset>3368</Offset>
+          <CodeLength>10</CodeLength>
+          <Header>
+            <PrologSize>2</PrologSize>
+            <EpilogSize>31</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Object</ReturnKind>
+            <ArgCount>1</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction Index="2">
+          <MethodRid>3</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+            <Size>10</Size>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>10</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+  </Methods>
+</R2RDump>

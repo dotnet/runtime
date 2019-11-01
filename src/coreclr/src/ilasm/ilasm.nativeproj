@@ -1,0 +1,88 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+  <!--*****************************************************-->
+  <!--This MSBuild project file was automatically generated-->
+  <!--from the original SOURCES/DIRS file by the KBC tool.-->
+  <!--*****************************************************-->
+  <!--Import the settings-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+  <!--Leaf project Properties-->
+  <PropertyGroup>
+    <IsDesktopTool>true</IsDesktopTool>
+    <LibCLib>$(ClrCrtLib)</LibCLib>
+    <CDefines>$(CDefines);UNICODE;_UNICODE;FEATURE_NO_HOST;SELF_NO_HOST;NO_HOST_CPP_EH_ONLY</CDefines>
+    <CDefines>$(CDefines);__TODO_PORT_TO_WRAPPERS__</CDefines>
+    <OutputName>ilasm</OutputName>
+    <FileToMarkForSigning>$(BinariesDirectory)\$(OutputName).exe</FileToMarkForSigning>
+    <TargetType>PROGRAM</TargetType>
+    <LinkSubsystem>console</LinkSubsystem>
+    <EntryPoint>wmain</EntryPoint>
+    <LinkLibIgnore>$(LinkLibIgnore),4078</LinkLibIgnore>
+    <LinkGenerateManifest>true</LinkGenerateManifest>
+    <LinkAdditionalOptions>$(LinkAdditionalOptions) /MANIFEST -HEAP:4194304 </LinkAdditionalOptions>
+    <LinkStackReserve>4194304</LinkStackReserve>
+    
+    <!-- PCH baloney -->
+    <EnableCxxPCHHeaders>true</EnableCxxPCHHeaders>
+    <PCHCompile>ilasmpch.cpp</PCHCompile>
+    <PCHHeader>ilasmpch.h</PCHHeader>
+
+  </PropertyGroup>
+  <!--Leaf Project Items-->
+  <ItemGroup>
+    <ProjectReference Include="$(ClrSrcDirectory)utilcode\dyncrtnohost\dyncrtnohost.nativeproj" />
+    <LinkPreCrtLibs Include="$(ClrLibPath)\utilcodenohost.lib" />
+    <ProjectReference Include="$(ClrSrcDirectory)md\hotdata\full\mdhotdata.nativeproj" />
+    <LinkPreCrtLibs Include="$(ClrLibPath)\MDHotData.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <TargetLib Include="$(ClrLibPath)\corguids.lib">
+      <ProjectReference>$(ClrSrcDirectory)inc\corguids.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Include="$(ClrLibPath)\fusion.lib">
+      <ProjectReference>$(ClrSrcDirectory)dlls\fusion\fusion.nativeproj</ProjectReference>
+    </TargetLib>
+    <TargetLib Include="$(SdkLibPath)\mscoree.lib" />
+    <TargetLib Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Include="$(SdkLibPath)\oleaut32.lib" />
+    <TargetLib Include="$(SdkLibPath)\user32.lib" />
+    <TargetLib Include="$(SdkLibPath)\uuid.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <RCResourceFile Include="native.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CppCompile Include="assem.cpp" />
+    <CppCompile Include="writer.cpp" />
+    <CppCompile Include="writer_enc.cpp" />
+    <CppCompile Include="method.cpp" />
+    <CppCompile Include="asmman.cpp" />
+    <CppCompile Include="main.cpp" />
+    <CppCompile Include="assembler.cpp" />
+    <CppCompile Include="MscorpeSxS.cpp" />
+    <CppCompile Include="$(IntermediateOutputDirectory)\asmparse.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <DataFile Include="$(IntermediateOutputDirectory)\asmparse.grammar" />
+  </ItemGroup>
+  <!--Import the targets-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
+  
+  <PropertyGroup>
+    <BuildGeneratedDependsOn>
+      $(BuildGeneratedDependsOn);
+      GenerateAsmParseC
+    </BuildGeneratedDependsOn>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Clean Include="$O\asmparse.c" />
+    <Clean Include="$O\asmparse.grammar" />
+  </ItemGroup>
+  <Target Name="GenerateAsmParseC"
+          Inputs="asmparse.y;asmparse.h;$(ClrSrcDirectory)inc\openum.h"
+          Outputs="$(IntermediateOutputDirectory)\asmparse.c;$(IntermediateOutputDirectory)\asmparse.grammar">
+    <Delete Files="$(IntermediateOutputDirectory)\asmparse.c;$(IntermediateOutputDirectory)\asmparse.grammar" />
+    <Exec Command="$(DevDivToolsBinPath)\yacc_ms.exe -o $(IntermediateOutputDirectory)\asmparse -i asmparse.y" StandardOutputImportance="Normal" />
+    <Exec Command="$(PerlCommand) extractGrammar.pl asmparse.y &gt; $(IntermediateOutputDirectory)\asmparse.grammar" StandardOutputImportance="Normal" />
+  </Target>
+</Project>

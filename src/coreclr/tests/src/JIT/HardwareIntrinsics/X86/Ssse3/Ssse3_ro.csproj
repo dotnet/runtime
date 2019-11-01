@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Abs.Byte.cs" />
+    <Compile Include="Abs.UInt16.cs" />
+    <Compile Include="Abs.UInt32.cs" />
+    <Compile Include="AlignRight.Byte.0.cs" />
+    <Compile Include="AlignRight.Byte.1.cs" />
+    <Compile Include="AlignRight.SByte.0.cs" />
+    <Compile Include="AlignRight.SByte.1.cs" />
+    <Compile Include="AlignRight.Int16.0.cs" />
+    <Compile Include="AlignRight.Int16.2.cs" />
+    <Compile Include="AlignRight.UInt16.0.cs" />
+    <Compile Include="AlignRight.UInt16.2.cs" />
+    <Compile Include="AlignRight.Int32.0.cs" />
+    <Compile Include="AlignRight.Int32.4.cs" />
+    <Compile Include="AlignRight.UInt32.0.cs" />
+    <Compile Include="AlignRight.UInt32.4.cs" />
+    <Compile Include="AlignRight.Int64.0.cs" />
+    <Compile Include="AlignRight.Int64.8.cs" />
+    <Compile Include="AlignRight.UInt64.0.cs" />
+    <Compile Include="AlignRight.UInt64.8.cs" />
+    <Compile Include="HorizontalAdd.Int16.cs" />
+    <Compile Include="HorizontalAdd.Int32.cs" />
+    <Compile Include="HorizontalAddSaturate.Int16.cs" />
+    <Compile Include="HorizontalSubtract.Int16.cs" />
+    <Compile Include="HorizontalSubtract.Int32.cs" />
+    <Compile Include="HorizontalSubtractSaturate.Int16.cs" />
+    <Compile Include="MultiplyAddAdjacent.Int16.cs" />
+    <Compile Include="MultiplyHighRoundScale.Int16.cs" />
+    <Compile Include="Shuffle.Byte.cs" />
+    <Compile Include="Shuffle.SByte.cs" />
+    <Compile Include="Sign.SByte.cs" />
+    <Compile Include="Sign.Int16.cs" />
+    <Compile Include="Sign.Int32.cs" />
+    <Compile Include="Program.Ssse3.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+  </ItemGroup>
+</Project>

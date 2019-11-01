@@ -1,0 +1,38 @@
+trigger: none
+
+pr: none
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/checkout-job.yml
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: outerloop
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      displayNameArgs: R2R

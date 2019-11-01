@@ -1,0 +1,32 @@
+<Project>
+
+  <Target
+    Name="CreateEmbedResponseFile"
+    BeforeTargets="BeforeCompile">
+
+    <!-- Get the output for each project reference -->
+    <Message Text="Generating Response File for embedding type metadata: $(CompilerResponseFile)"/>
+    <MSBuild
+      Projects="@(ProjectReference)"
+      Condition=" '%(ProjectReference.EmbedTypes)' == 'true'"
+      Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="ResolvedProjectReferencePaths" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <EmbedProjectReferenceResponseFile>$(IntermediateOutputPath)$(MSBuildProjectName).rsp</EmbedProjectReferenceResponseFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+        File="$(EmbedProjectReferenceResponseFile)"
+        Lines="@(ResolvedProjectReferencePaths -> '/link:%(fullpath)')"
+        Overwrite="true"
+        Encoding="Unicode" />
+
+    <PropertyGroup Condition="Exists('$(EmbedProjectReferenceResponseFile)')">
+      <CompilerResponseFile>$(EmbedProjectReferenceResponseFile);$(CompilerResponseFile)</CompilerResponseFile>
+    </PropertyGroup>
+
+  </Target>
+
+</Project>

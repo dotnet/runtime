@@ -1,0 +1,21 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = InitializeCriticalSection / EnterCriticalSection / LeaveCriticalSection / DeleteCriticalSection
+Name = Positive Test for InitializeCriticalSection, EnterCriticalSection, LeaveCriticalSection and DeleteCriticalSection
+TYPE = DEFAULT
+EXE1 = initializecriticalsection
+Description 
+= Implementation of Producer / Consumer IPC problem using the 
+= "CriticalSection" functions to provide a mutual exclusion mechanism.
+= This test case exercises InitializeCriticalSection, EnterCriticalSection,
+= LeaveCriticalSection, DeleteCriticalSection, and WaitForSingleObject 
+= functions.  
+= This case doesn't work with more than one producer and one consumer.  
+= The producer thread and consumer thread each take turns blocking on 
+= the CriticalSection object and do not have any other synchronization 
+= mechanisms.  This prevents adding producers or consumers as there are
+= no mechanisms to block them once the buffer is full.

@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Miscellaneous
+Function = MessageBoxW
+Name = Positive test of MessageBoxW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Ensure that the return values are correct for each type of Message Style.
+
+
+

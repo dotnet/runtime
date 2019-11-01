@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <!-- This test takes a very long time when run with runincontext -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ByteMark.cs" />
+    <Compile Include="Huffman.cs" />
+    <Compile Include="StringSort.cs" />
+    <Compile Include="assign_jagged.cs" />
+    <Compile Include="assign_rect.cs" />
+    <Compile Include="bitops.cs" />
+    <Compile Include="emfloat.cs" />
+    <Compile Include="emfloatclass.cs" />
+    <Compile Include="fourier.cs" />
+    <Compile Include="idea.cs" />
+    <Compile Include="ludecomp.cs" />
+    <Compile Include="neural.cs" />
+    <Compile Include="neuraljagged.cs" />
+    <Compile Include="neural-dat.cs" />
+    <Compile Include="numericsort.cs" />
+    <Compile Include="utility.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

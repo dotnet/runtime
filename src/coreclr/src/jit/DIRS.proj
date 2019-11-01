@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+  <!--Import the settings-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+
+  <PropertyGroup>
+    <BuildInPhase1>true</BuildInPhase1>
+    <BuildInPhaseDefault>false</BuildInPhaseDefault>
+    <BuildCoreBinaries>true</BuildCoreBinaries>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(BuildProjectName)' != 'CoreSys' and '$(BuildArchitecture)' == 'amd64'">
+    <BuildSysBinaries>false</BuildSysBinaries>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildProjectName)' == 'CoreSys' or '$(BuildArchitecture)' != 'amd64'">
+    <BuildSysBinaries>true</BuildSysBinaries>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BuildExePhase)' == '1'">
+    <!-- x86 and ARM clrjit.dll are built in the JIT32 directory -->
+    <ProjectFile Condition="'$(BuildArchitecture)' != 'i386' and '$(BuildArchitecture)' != 'arm'"  Include="dll\jit.nativeproj" />
+  </ItemGroup>
+
+  <!-- Only the main JIT gets built for CoreSys. The other jits (e.g., altjits) do not. -->
+  <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(BuildProjectName)' != 'CoreSys'">
+
+    <!-- This might be useful, to help make sure JIT devs build all configurations of the JIT (including crossgen), but
+         it appears to cause problems with the build system, and it slows down normal JIT developer productivity by adding a seldom-useful build.
+    <ProjectFile Include="crossgen\jit_crossgen.nativeproj" />
+    -->
+
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'arm'"   Include="protojit\protojit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="protojit\protojit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="arm64altjit\arm64altjit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protojit\protojit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protononjit\protononjit.nativeproj" />
+    <!-- <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="armelnonjit\armelnonjit.nativeproj" /> -->
+  </ItemGroup>
+
+  <!--Import the targets-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Traversal.targets" />
+</Project>

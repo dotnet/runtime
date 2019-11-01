@@ -1,0 +1,64 @@
+### Check out job pulls down the GIT repository and packs its contents
+### into an Azure artifact for reuse by the subsequent build and test execution phases.
+### We're using two separate jobs for Windows and all other platforms due to the need
+### to use different compression formats (Windows doesn't support tar.gz and the Linux
+### and OSX build clients don't have 7-zip installed) and simplify other details such
+### as line endings.
+jobs:
+- job: 'checkout_windows'
+  displayName: 'Checkout (Windows)'
+
+  pool:
+    # Public Windows Build Pool
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      vmImage: 'windows-latest'
+
+    # Private Windows Build Pool
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      name: NetCoreInternal-Pool
+      queue: BuildPool.Windows.10.Amd64.VS2017
+  
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+
+  ### Zip up downloaded repo and publish to Helix
+  - template: /eng/upload-artifact-step.yml
+    parameters:
+      displayName: 'GIT repository (Windows)'
+      rootFolder: $(Build.SourcesDirectory)
+      includeRootFolder: false
+      archiveFile: $(Build.StagingDirectory)/repo_windows.zip
+      archiveType: 'zip'
+      tarCompression: ''
+      artifactName: repo_windows
+
+- job: 'checkout_unix'
+  displayName: 'Checkout (Unix)'
+
+  pool:
+    # Public Linux Build Pool
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      vmImage: 'ubuntu-latest'
+
+    # Private Linux Build Pool
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      name: NetCoreInternal-Pool
+      queue: BuildPool.Ubuntu.1604.Amd64
+
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+
+  ### Zip up downloaded repo and publish to Helix
+  - template: /eng/upload-artifact-step.yml
+    parameters:
+      displayName: 'GIT repository (Unix)'
+      rootFolder: $(Build.SourcesDirectory)
+      includeRootFolder: false
+      archiveFile: $(Build.StagingDirectory)/repo_unix.tar.gz
+      archiveType: 'tar'
+      tarCompression: 'gz'
+      artifactName: repo_unix

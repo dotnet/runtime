@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Threading
+Function = DuplicateHandle
+Name = Test for DuplicateHandle (CreateSemaphore)
+TYPE = DEFAULT
+EXE1 = test10
+Description
+= Tests the PAL implementation of the DuplicateHandle function.
+= This test duplication of a Semaphore handle.  The test will 
+= create a Semaphore and duplicate a handle to it. 
+= Then two subthreads will be used to verify that they can selectively
+= block each other with different handles that refer to the
+= same Semaphore

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CommandLine.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="FFT.cs" />
+    <Compile Include="kernel.cs" />
+    <Compile Include="LU.cs" />
+    <Compile Include="MonteCarlo.cs" />
+    <Compile Include="Random.cs" />
+    <Compile Include="SOR.cs" />
+    <Compile Include="SparseCompRow.cs" />
+    <Compile Include="Stopwatch.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

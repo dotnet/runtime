@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\crossgen2" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\crossgen2.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\ILCompiler*.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\Microsoft.DiaSymReader.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\System.CommandLine.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\libclrjitilc.so" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen2\libjitinterface.so" />
+  </ItemGroup>
+</Project>

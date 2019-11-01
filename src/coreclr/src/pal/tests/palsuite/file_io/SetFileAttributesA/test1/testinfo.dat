@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = SetFileAttributesA
+Name = Test for SetFileAttributesA which tests READONLY and NORMAL attributes
+TYPE = DEFAULT
+EXE1 = setfileattributesa
+Description 
+= Test the SetFileAttributesA function. Set a file as READONLY and
+= attempt to open it with WRITE access, to ensure that this doesn't work.
+= Then switch to NORMAL attributes, and try again -- it should work.

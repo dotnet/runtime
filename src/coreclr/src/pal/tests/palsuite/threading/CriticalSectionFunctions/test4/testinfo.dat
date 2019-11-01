@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = LeaveCriticalSection
+Name = Positive test to ensure CRITICAL_SECTION objects are released properly
+TYPE = DEFAULT
+EXE1 = test4
+Description 
+= Test to see if threads blocked on a CRITICAL_SECTION object will 
+= be released in an orderly manner.  This case looks at the following
+= scenario.  If one thread owns a CRITICAL_SECTION object and two threads 
+= block in EnterCriticalSection, trying to hold the already owned 
+= CRITICAL_SECTION object, when the first thread releases the CRITICAL_SECTION
+= object, will one and only one of the waiters get unblocked?

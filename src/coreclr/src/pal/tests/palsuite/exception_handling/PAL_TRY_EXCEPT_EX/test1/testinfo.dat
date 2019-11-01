@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = exception_handling
+Function = PAL_TRY and PAL_EXCEPT_EX
+Name = Test for PAL_TRY and PAL_EXCEPT_EX
+Type = DEFAULT 
+EXE1 = pal_try_except_ex
+LANG = cpp
+Description
+= Since these two are so closely connected, they are tested together.
+= In the PAL_TRY block, an access violation is forced to gain
+= access to the PAL_EXCEPT block. Booleans are used to ensure
+= each of the code blocks are hit.

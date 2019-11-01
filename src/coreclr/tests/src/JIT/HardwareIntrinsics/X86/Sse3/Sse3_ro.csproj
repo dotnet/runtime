@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AddSubtract.Double.cs" />
+    <Compile Include="AddSubtract.Single.cs" />
+    <Compile Include="HorizontalAdd.Double.cs" />
+    <Compile Include="HorizontalAdd.Single.cs" />
+    <Compile Include="HorizontalSubtract.Double.cs" />
+    <Compile Include="HorizontalSubtract.Single.cs" />
+    <Compile Include="Program.Sse3.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+<Project>
+
+  <!-- Ensure our properties are set before Arcade defines defaults -->
+  <Import Project="dir.common.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict;nullablePublicOnly</Features>
+  </PropertyGroup>
+</Project>

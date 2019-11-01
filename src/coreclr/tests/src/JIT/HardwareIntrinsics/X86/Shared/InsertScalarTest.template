@@ -1,0 +1,409 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace JIT.HardwareIntrinsics.X86
+{
+    public static partial class Program
+    {
+        private static void {Method}{RetBaseType}{Imm}()
+        {
+            var test = new InsertScalarTest__{Method}{RetBaseType}{Imm}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
+
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
+
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }
+
+                // Validates passing a static member works
+                test.RunClsVarScenario();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
+
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }
+
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class InsertScalarTest__{Method}{RetBaseType}{Imm}
+    {
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld;
+            public {Op1BaseType} _scalarFldData;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+                testStruct._scalarFldData = {Data};
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(InsertScalarTest__{Method}{RetBaseType}{Imm} testClass)
+            {
+                var result = {Isa}.{Method}(_fld, _scalarFldData, {Imm});
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld, _scalarFldData, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+
+        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
+        private static {Op1BaseType} _scalarClsData = {Data};
+
+        private static {Op1VectorType}<{Op1BaseType}> _clsVar;
+
+        private {Op1VectorType}<{Op1BaseType}> _fld;
+        private {Op1BaseType} _scalarFldData = {Data};
+
+        private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
+
+        static InsertScalarTest__{Method}{RetBaseType}{Imm}()
+        {
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+        }
+
+        public InsertScalarTest__{Method}{RetBaseType}{Imm}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            var result = {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                {Data},
+                {Imm}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
+        }
+
+        public unsafe void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            {Op1BaseType} localData = {Data};
+            {Op1BaseType}* ptr = &localData;
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                *ptr,
+                {Imm}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
+        }
+
+        public unsafe void RunBasicScenario_LoadAligned()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
+            {Op1BaseType} localData = {Data};
+            {Op1BaseType}* ptr = &localData;
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                *ptr,
+                {Imm}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_LoadAligned()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
+        }
+
+        public void RunClsVarScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
+            var result = {Isa}.{Method}(
+                _clsVar,
+                _scalarClsData,
+                {Imm}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_clsVar, _scalarClsData,_dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario));
+
+            {Op1BaseType} localData = {Data};
+
+            var firstOp = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
+
+            {Op1BaseType} localData = {Data};
+
+            var firstOp = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_LoadAligned()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
+
+            {Op1BaseType} localData = {Data};
+
+            var firstOp = {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
+            var test = new InsertScalarTest__{Method}{RetBaseType}{Imm}();
+            var result = {Isa}.{Method}(test._fld, test._scalarFldData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld, _scalarFldData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld, _scalarFldData, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld, test._scalarFldData, {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, {Op1BaseType} scalarData, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray, scalarData, outArray, method);
+        }
+
+        private void ValidateResult(void* firstOp, {Op1BaseType} scalarData, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray, scalarData, outArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] firstOp,  {Op1BaseType} scalarData, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < RetElementCount; i++)
+            {
+                if ({ValidateFirstResult})
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}><9>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

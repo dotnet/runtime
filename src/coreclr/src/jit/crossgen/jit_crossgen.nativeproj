@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+
+    <!--Import the settings-->
+    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\xplat\SetCrossGen.props" />
+    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+
+    <PropertyGroup>
+        <BuildSysBinaries>true</BuildSysBinaries>
+        <OutputName>jit_crossgen</OutputName>
+        <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
+        <TargetType>LIBRARY</TargetType>
+    </PropertyGroup>
+
+    <Import Project="..\jit.settings.targets" />
+
+</Project>

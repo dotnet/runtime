@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackages>true</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Condition="'$(BuildArch)' == 'x86'" Include="sizeof32.il" />
+    <Compile Condition="'$(BuildArch)' != 'x86'" Include="64sizeof32.il" />
+  </ItemGroup>
+</Project>

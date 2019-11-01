@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <GenerateRunScript>false</GenerateRunScript>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+    <DefineConstants>$(DefineConstants);NESTED_HFA;FLOAT64</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="hfa_managed.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="hfa_nested_f64_common.csproj" />
+  </ItemGroup>
+</Project>

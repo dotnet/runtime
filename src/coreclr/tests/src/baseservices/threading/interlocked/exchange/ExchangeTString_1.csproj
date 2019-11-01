@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>RunOnly</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestProjectToRun>ExchangeTString.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>empty "This is a long string that I am trying to test to be sure that the Exchange can handle this long of a string.  If it can not then that is bad and we will have to fix it."</CLRTestExecutionArguments>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+</Project>

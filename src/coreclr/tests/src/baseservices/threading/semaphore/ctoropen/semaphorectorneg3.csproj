@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExecutionArguments>/iCount:-2147483647 /mCount:-2147483647 /semName:null</CLRTestExecutionArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="semaphorectorneg3.cs" />
+  </ItemGroup>
+</Project>

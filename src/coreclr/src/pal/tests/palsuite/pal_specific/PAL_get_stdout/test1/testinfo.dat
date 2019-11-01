@@ -1,0 +1,13 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = PAL_Specific
+Function = PAL_get_stdout
+Name = Positive test PAL_get_stdout to retrieve PAL standard output stream pointer
+TYPE = DEFAULT
+EXE1 = pal_get_stdout
+Description
+=Test the PAL_get_stdout to retrieve the PAL standard output stream pointer
+=This test case will be run both manually and automatically

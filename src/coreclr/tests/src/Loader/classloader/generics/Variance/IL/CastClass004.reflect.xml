@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="CastClass004">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>
