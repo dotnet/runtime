@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CopyFile", SetLastError = true)]
-        internal static extern int CopyFile(SafeFileHandle source, SafeFileHandle destination);
+        internal static extern int CopyFile(SafeFileHandle source, string srcPath, string destPath, int overwrite);
     }
 }

@@ -344,10 +344,9 @@ check_c_source_compiles(
     "
     HAVE_SENDFILE_6)
 
-check_symbol_exists(
-    fcopyfile
-    copyfile.h
-    HAVE_FCOPYFILE)
+check_include_files(
+    "sys/clonefile.h"
+    HAVE_CLONEFILE)
 
 check_include_files(
      "sys/sockio.h"
