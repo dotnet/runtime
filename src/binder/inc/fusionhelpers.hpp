@@ -54,23 +54,6 @@
 
 #define PUBLIC_KEY_TOKEN_LEN            8
 
-inline
-WCHAR*
-WSTRDupDynamic(LPCWSTR pwszSrc)
-{
-    LPWSTR pwszDest = NULL;
-    if (pwszSrc != NULL)
-    {
-        const size_t dwLen = wcslen(pwszSrc) + 1;
-        pwszDest = FUSION_NEW_ARRAY(WCHAR, dwLen);
-
-        if( pwszDest )
-            memcpy(pwszDest, pwszSrc, dwLen * sizeof(WCHAR));
-    }
-
-    return pwszDest;
-}
-
 #define MAX_URL_LENGTH 2084 // same as INTERNET_MAX_URL_LENGTH
 
 // bit mask macro helpers

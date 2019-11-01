@@ -45,7 +45,6 @@ private:
     DWORD        _dwSig;
     Volatile<LONG> _cRef;
     CPropertyArray _rProp;
-    BOOL         _fIsFinalized;
     BOOL         _fPublicKeyToken;
     BOOL         _fCustom;
     LPWSTR       _pwzPathModifier;
@@ -69,36 +68,9 @@ public:
         /*     out */  LPVOID   pvProperty,
         /* in  out */  LPDWORD  pcbProperty);
 
-    STDMETHOD(Finalize)();
-
-    STDMETHOD(GetDisplayName)(
-        __out_ecount_opt(*pccDisplayName)  LPOLESTR  szDisplayName,
-        __inout                            LPDWORD   pccDisplayName,
-        __in                               DWORD     dwDisplayFlags);
-   
     STDMETHOD(GetName)( 
         __inout  LPDWORD lpcwBuffer,
         __out_ecount_opt(*lpcwBuffer) LPOLESTR pwzBuffer);
-
-    STDMETHOD(GetVersion)( 
-        /* [out] */ LPDWORD pwVersionHi,
-        /* [out] */ LPDWORD pwVersionLow);
-    
-    STDMETHOD (IsEqual)(
-        /* [in] */ LPASSEMBLYNAME pName,
-        /* [in] */ DWORD dwCmpFlags);
-        
-    STDMETHOD(Reserved)(
-        /* in      */  REFIID               refIID,
-        /* in      */  IUnknown            *pUnkBindSink,
-        /* in      */  IUnknown            *pUnkAppCtx,
-        /* in      */  LPCOLESTR            szCodebase,
-        /* in      */  LONGLONG             llFlags,
-        /* in      */  LPVOID               pvReserved,
-        /* in      */  DWORD                cbReserved,
-        /*     out */  VOID               **ppv);
-
-    STDMETHODIMP Clone(IAssemblyName **ppName);
 
     HRESULT SetPropertyInternal(/* in */ DWORD  PropertyId,
                                 /* in */ LPCVOID pvProperty,
@@ -109,51 +81,19 @@ public:
 
     HRESULT Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd);
     HRESULT Parse(LPCWSTR szDisplayName);
-
-    static BOOL IsStronglyNamed(IAssemblyName *pName);
-    static BOOL IsPartial(IAssemblyName *pName,
-                          LPDWORD pdwCmpMask = NULL);
-
-protected:
-    HRESULT GetVersion(DWORD   dwMajorVersionEnumValue,
-                       LPDWORD pwVersionHi,
-                       LPDWORD pwVersionLow);
-
-    HRESULT CopyProperties(CAssemblyName *pSource,
-                           CAssemblyName *pTarget,
-                           const DWORD properties[],
-                           DWORD dwSize);
 };
 
 STDAPI
 CreateAssemblyNameObject(
     LPASSEMBLYNAME    *ppAssemblyName,
     LPCOLESTR          szAssemblyName,
-    DWORD              dwFlags,
-    LPVOID             pvReserved);
+    bool               parseDisplayName);
 
 STDAPI
 CreateAssemblyNameObjectFromMetaData(
     LPASSEMBLYNAME    *ppAssemblyName,
     LPCOLESTR          szAssemblyName,
-    ASSEMBLYMETADATA  *pamd,
-    LPVOID             pvReserved);
-
-namespace LegacyFusion
-{
-    HRESULT SetStringProperty(IAssemblyName *pIAssemblyName,
-                              DWORD          dwPropertyId,
-                              SString       &value);
-    HRESULT SetBufferProperty(IAssemblyName *pIAssemblyName,
-                              DWORD          dwPropertyId,
-                              SBuffer       &value);
-    HRESULT SetWordProperty(IAssemblyName *pIAssemblyName,
-                            DWORD          dwPropertyId,
-                            DWORD          dwValue);
-    HRESULT SetDwordProperty(IAssemblyName *pIAssemblyName,
-                             DWORD          dwPropertyId,
-                             DWORD          dwValue);
-};
+    ASSEMBLYMETADATA  *pamd);
 
 namespace fusion
 {

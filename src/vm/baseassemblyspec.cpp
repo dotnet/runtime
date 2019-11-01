@@ -14,6 +14,8 @@
 #include "common.h"
 #include "thekey.h"
 
+#include "../binder/inc/fusionassemblyname.hpp"
+
 VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
 {
     CONTRACTL
@@ -618,7 +620,7 @@ HRESULT BaseAssemblySpec::CreateFusionName(
         SmallStackSString ssAssemblyName;
         fMustBeBindable ? GetEncodedName(ssAssemblyName) : GetName(ssAssemblyName);
 
-        IfFailGo(CreateAssemblyNameObject(&pFusionAssemblyName, ssAssemblyName.GetUnicode(), 0, NULL));
+        IfFailGo(CreateAssemblyNameObject(&pFusionAssemblyName, ssAssemblyName.GetUnicode(), false /*parseDisplayName*/));
 
         holder = pFusionAssemblyName;
 
