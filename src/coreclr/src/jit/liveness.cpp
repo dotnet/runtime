@@ -2012,6 +2012,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
+            case GT_KEEPALIVE:
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS

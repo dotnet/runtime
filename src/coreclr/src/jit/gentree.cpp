@@ -4947,6 +4947,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_RETFILT:
         case GT_BSWAP:
         case GT_BSWAP16:
+        case GT_KEEPALIVE:
             if (def == this->AsUnOp()->gtOp1)
             {
                 *use = &this->AsUnOp()->gtOp1;
@@ -5329,6 +5330,9 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
     switch (gtOper)
     {
         case GT_CALL:
+            return true;
+
+        case GT_KEEPALIVE:
             return true;
 
         case GT_INTRINSIC:
@@ -8689,6 +8693,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PUTARG_STK:
         case GT_BSWAP:
         case GT_BSWAP16:
+        case GT_KEEPALIVE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT

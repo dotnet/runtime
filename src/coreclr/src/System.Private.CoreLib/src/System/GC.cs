@@ -263,6 +263,7 @@ namespace System
         // If we insert a call to GC.KeepAlive(this) at the end of Problem(), then
         // Foo doesn't get finalized and the stream stays open.
         [MethodImpl(MethodImplOptions.NoInlining)] // disable optimizations
+        [Intrinsic]
         public static void KeepAlive(object? obj)
         {
         }
