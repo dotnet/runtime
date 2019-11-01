@@ -5981,7 +5981,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				 * compilation will fail.
 				 */
 				const char *spec = INS_INFO (next->opcode);
-				if (spec [MONO_INST_DEST] == 'i')
+				if (spec [MONO_INST_DEST] == 'i' && !MONO_IS_STORE_MEMBASE (next))
 					ctx->values [next->dreg] = LLVMConstNull (LLVMInt32Type ());
 				MONO_DELETE_INS (bb, next);
 			}				
