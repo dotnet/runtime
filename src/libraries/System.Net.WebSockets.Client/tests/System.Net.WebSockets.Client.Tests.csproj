@@ -60,6 +60,6 @@
     <Compile Include="WebSocketHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataPackageVersion)" />
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
 </Project>

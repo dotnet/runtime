@@ -37,6 +37,6 @@
     <ProjectReference Include="..\Tools\TDS\TDS\TDS.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
+    <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniVersion)" />
   </ItemGroup>
 </Project>

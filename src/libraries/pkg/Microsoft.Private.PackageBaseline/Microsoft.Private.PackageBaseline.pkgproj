@@ -27,10 +27,10 @@
       <FrameworkLayout Include="$(NETCoreAppPackageRefPath)">
         <TargetFramework>netcoreapp2.0</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\netstandard2.0\ref">
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\netstandard2.0\ref">
         <TargetFramework>netstandard2.0</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\net461\ref">
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\net461\ref">
         <TargetFramework>net461</TargetFramework>
       </FrameworkLayout>
     </ItemGroup>

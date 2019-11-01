@@ -1,8 +1,8 @@
 ﻿<Project>
 
   <ItemGroup>
-    <IBCPackage Include="$(WindowsCoreFxOptimizationDataPackageId)" Version="$(optimizationwindows_ntx64IBCCoreFxPackageVersion)" />
-    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackageId)" Version="$(optimizationwindows_ntx64IBCCoreFxPackageVersion)" />
+    <IBCPackage Include="$(WindowsCoreFxOptimizationDataPackage)" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
+    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackage)" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
     <PackageReference Include="@(IBCPackage)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
   

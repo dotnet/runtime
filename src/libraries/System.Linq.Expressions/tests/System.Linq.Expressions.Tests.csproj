@@ -246,6 +246,6 @@
     <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitPackageVersion)" />
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
   </ItemGroup>
 </Project>
