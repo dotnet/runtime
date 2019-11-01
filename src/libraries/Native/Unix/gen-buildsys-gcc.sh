@@ -3,10 +3,10 @@
 # This file invokes cmake and generates the build system for Gcc.
 #
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-gcc.sh <path to top level CMakeLists.txt> <GccMajorVersion> <GccMinorVersion> <Architecture> [build flavor] [cmakeargs]"
+  echo "gen-buildsys-gcc.sh <path to repo root> <path to top level CMakeLists.txt> <GccMajorVersion> <GccMinorVersion> <Architecture> [build flavor] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <corefx>/src/Native/Unix"
   echo "Specify the gcc version to use, split into major and minor version"
   echo "Specify the target architecture."
@@ -14,6 +14,9 @@ then
   echo "Optionally pass additional arguments to CMake call."
   exit 1
 fi
+
+#root directory of the project
+repo_root=$1
 
 # Locate gcc
 gcc_prefix=""
@@ -26,15 +29,15 @@ if [ "$CROSSCOMPILE" = "1" ]; then
 fi
 
 # Set up the environment to be used for building with gcc.
-if command -v "${gcc_prefix}gcc-$2.$3" > /dev/null
+if command -v "${gcc_prefix}gcc-$3.$4" > /dev/null
     then
-        desired_gcc_version="-$2.$3"
-elif command -v "${gcc_prefix}gcc$2$3" > /dev/null
+        desired_gcc_version="-$3.$4"
+elif command -v "${gcc_prefix}gcc$3$4" > /dev/null
     then
-        desired_gcc_version="$2$3"
-elif command -v "${gcc_prefix}gcc-$2$3" > /dev/null
+        desired_gcc_version="$3$4"
+elif command -v "${gcc_prefix}gcc-$3$4" > /dev/null
     then
-        desired_gcc_version="-$2$3"
+        desired_gcc_version="-$3$4"
 elif command -v "${gcc_prefix}gcc" > /dev/null
     then
         desired_gcc_version=
@@ -57,7 +60,7 @@ fi
 
 export CC CXX
 
-build_arch="$4"
+build_arch="$5"
 buildtype=DEBUG
 __UnprocessedCMakeArgs=""
 
@@ -79,18 +82,18 @@ done
 OS=$(uname)
 
 locate_gcc_exec() {
-  ENV_KNOB="CLR_$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+  ENV_KNOB="CLR_$(echo "$2" | tr '[:lower:]' '[:upper:]')"
   if env | grep -q "^$ENV_KNOB="; then
     eval "echo \"\$$ENV_KNOB\""
     return
   fi
 
-  if command -v "$gcc_prefix$1$desired_gcc_version" > /dev/null 2>&1
+  if command -v "$gcc_prefix$2$desired_gcc_version" > /dev/null 2>&1
   then
-    command -v "$gcc_prefix$1$desired_gcc_version"
-  elif command -v "$gcc_prefix$1" > /dev/null 2>&1
+    command -v "$gcc_prefix$2$desired_gcc_version"
+  elif command -v "$gcc_prefix$2" > /dev/null 2>&1
   then
-    command -v "$gcc_prefix$1"
+    command -v "$gcc_prefix$2"
   else
     exit 1
   fi
@@ -123,7 +126,7 @@ if [ "$CROSSCOMPILE" = "1" ]; then
         exit 1
     fi
     if [ -z "$CONFIG_DIR" ]; then
-        CONFIG_DIR="$1/cross"
+        CONFIG_DIR="$2/cross"
     fi
     export TARGET_BUILD_ARCH=$build_arch
     cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
@@ -146,4 +149,4 @@ cmake \
   "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   $cmake_extra_defines \
   "$__UnprocessedCMakeArgs" \
-  "$1"
+  "$2"

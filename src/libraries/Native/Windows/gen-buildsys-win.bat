@@ -26,6 +26,10 @@ if /i "%3" == "arm"     (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM)
 if /i "%3" == "arm64"   (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
 if /i "%3" == "wasm"    (set __sourceDir=%~dp0..\Unix && goto DoGen)
 
+:: cmake requires forward slashes in paths
+set __cmakeRepoRoot=%__repoRoot:\=/%
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+
 if defined CMakePath goto DoGen
 
 :: Eval the output from probe-win1.ps1
@@ -44,7 +48,7 @@ if "%3" == "wasm" (
     if "%EMSCRIPTEN_ROOT%" == "" (
       set EMSCRIPTEN_ROOT="%EMSDK_PATH/upstream/emscripten%"
     )
-    emcmake cmake "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" -G "NMake Makefiles" %__sourceDir%
+    emcmake cmake "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" -G "NMake Makefiles" %__sourceDir%
 ) else (
     "%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1 %__ExtraCmakeParams%
 )

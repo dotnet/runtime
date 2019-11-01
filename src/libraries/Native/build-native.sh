@@ -24,6 +24,17 @@ usage()
     exit 1
 }
 
+__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
+__nativeroot=$__scriptpath/Unix
+# TODO: (Consolidation) Remove when consolidated
+if [ -f "$__scriptpath/../../../.dotnet-runtime-placeholder" ]; then
+    __rootRepo=$(cd "$__scriptpath/../../.."; pwd -P)
+else
+    # we're still in corefx
+    __rootRepo=$(cd "$__scriptpath/../.."; pwd -P)
+fi
+__artifactsDir="$__rootRepo/artifacts"
+
 initHostDistroRid()
 {
     __HostDistroRid=""
@@ -147,11 +158,11 @@ build_native()
 
     # Regenerate the CMake solution
     if [ "$__GccBuild" = 0 ]; then
-        echo "Invoking \"$__nativeroot/gen-buildsys-clang.sh\" \"$__nativeroot\" \"$__ClangMajorVersion\" \"$__ClangMinorVersion\" \"$__BuildArch\" \"$__CMakeArgs\" \"$__CMakeExtraArgs\""
-        "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" "$__ClangMajorVersion" "$__ClangMinorVersion" "$__BuildArch" "$__CMakeArgs" "$__CMakeExtraArgs"
+        echo "Invoking \"$__nativeroot/gen-buildsys-clang.sh\" \"$__rootRepo\" \"$__nativeroot\" \"$__ClangMajorVersion\" \"$__ClangMinorVersion\" \"$__BuildArch\" \"$__CMakeArgs\" \"$__CMakeExtraArgs\""
+        "$__nativeroot/gen-buildsys-clang.sh" "$__rootRepo" "$__nativeroot" "$__ClangMajorVersion" "$__ClangMinorVersion" "$__BuildArch" "$__CMakeArgs" "$__CMakeExtraArgs"
     else
-        echo "Invoking \"$__nativeroot/gen-buildsys-gcc.sh\" \"$__nativeroot\" \"$__GccMajorVersion\" \"$__GccMinorVersion\" \"$__BuildArch\" \"$__CMakeArgs\" \"$__CMakeExtraArgs\""
-        "$__nativeroot/gen-buildsys-gcc.sh" "$__nativeroot" "$__GccMajorVersion" "$__GccMinorVersion" "$__BuildArch" "$__CMakeArgs" "$__CMakeExtraArgs"
+        echo "Invoking \"$__nativeroot/gen-buildsys-gcc.sh\" \"$__rootRepo\" \"$__nativeroot\" \"$__GccMajorVersion\" \"$__GccMinorVersion\" \"$__BuildArch\" \"$__CMakeArgs\" \"$__CMakeExtraArgs\""
+        "$__nativeroot/gen-buildsys-gcc.sh" "$__rootRepo" "$__nativeroot" "$__GccMajorVersion" "$__GccMinorVersion" "$__BuildArch" "$__CMakeArgs" "$__CMakeExtraArgs"
     fi
 
     # Check that the makefiles were created.
@@ -171,11 +182,6 @@ build_native()
         exit 1
     fi
 }
-
-__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-__nativeroot=$__scriptpath/Unix
-__rootRepo="$__scriptpath/../.."
-__artifactsDir="$__rootRepo/artifacts"
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __CMakeExtraArgs=""

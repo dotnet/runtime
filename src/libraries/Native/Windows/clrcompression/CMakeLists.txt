@@ -84,7 +84,7 @@ add_library(clrcompression
     SHARED
     ${NATIVECOMPRESSION_SOURCES}
     # This will add versioning to the library
-    ${CMAKE_SOURCE_DIR}/../../../artifacts/obj/NativeVersion.rc
+    ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
 )
 
 # Allow specification of arguments that should be passed to the linker
