@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -109,22 +110,26 @@ namespace System.Text.Json
 
             Debug.Assert(key != null);
 
+            if (Options.DictionaryKeyPolicy != null)
+            {
+                // We should not be in the Nullable-value implementation branch for extension data.
+                // (TValue should be typeof(object) or typeof(JsonElement)).
+                Debug.Assert(current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing);
+
+                key = Options.DictionaryKeyPolicy.ConvertName(key);
+
+                if (key == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(Options.DictionaryKeyPolicy.GetType());
+                }
+            }
+
             if (value == null)
             {
                 writer.WriteNull(key);
             }
             else
             {
-                if (Options.DictionaryKeyPolicy != null)
-                {
-                    key = Options.DictionaryKeyPolicy.ConvertName(key);
-
-                    if (key == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(Options.DictionaryKeyPolicy.GetType());
-                    }
-                }
-
                 writer.WritePropertyName(key);
                 Converter.Write(writer, value.GetValueOrDefault(), Options);
             }
