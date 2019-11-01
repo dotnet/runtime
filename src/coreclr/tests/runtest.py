@@ -1593,7 +1593,7 @@ def setup_core_root(host_os,
 
                 if host_os != "Windows_NT":
                     # Set executable bit
-                    os.chmod(os.path.join(dest, item), 0o774)
+                    os.chmod(os.path.join(dest, os.path.basename(item)), 0o774)
             else:
                 new_dir = os.path.join(dest, os.path.basename(item))
                 if os.path.isdir(new_dir):
