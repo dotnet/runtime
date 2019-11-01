@@ -102,6 +102,9 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
 DEFINE_CLASS(ASSEMBLY_BUILDER,      ReflectionEmit,         AssemblyBuilder)
 DEFINE_CLASS(INTERNAL_ASSEMBLY_BUILDER,      ReflectionEmit,         InternalAssemblyBuilder)
+#if FOR_ILLINK
+DEFINE_METHOD(INTERNAL_ASSEMBLY_BUILDER,     CTOR,          .ctor,                      IM_RetVoid)
+#endif
 
 DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
 DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
@@ -386,6 +389,9 @@ DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 DEFINE_CLASS_U(System,                 RuntimeFieldInfoStub,       ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,              ReflectFieldObject, m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
+#if FOR_ILLINK
+DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
+#endif
 
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
 DEFINE_METHOD(FIELD,                SET_VALUE,              SetValue,                   IM_Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid)
@@ -515,12 +521,18 @@ DEFINE_FIELD_U(_handlerLength,         RuntimeExceptionHandlingClause,        _h
 DEFINE_FIELD_U(_catchMetadataToken,    RuntimeExceptionHandlingClause,        _catchToken)
 DEFINE_FIELD_U(_filterOffset,          RuntimeExceptionHandlingClause,        _filterOffset)
 DEFINE_CLASS(RUNTIME_EH_CLAUSE,             Reflection,             RuntimeExceptionHandlingClause)
+#if FOR_ILLINK
+DEFINE_METHOD(RUNTIME_EH_CLAUSE,            CTOR,                   .ctor,              IM_RetVoid)
+#endif
 
 DEFINE_CLASS_U(Reflection,             RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
 DEFINE_FIELD_U(_type,                  RuntimeLocalVariableInfo,        _type)
 DEFINE_FIELD_U(_localIndex,            RuntimeLocalVariableInfo,        _localIndex)
 DEFINE_FIELD_U(_isPinned,              RuntimeLocalVariableInfo,        _isPinned)
 DEFINE_CLASS(RUNTIME_LOCAL_VARIABLE_INFO,   Reflection,             RuntimeLocalVariableInfo)
+#if FOR_ILLINK
+DEFINE_METHOD(RUNTIME_LOCAL_VARIABLE_INFO,  CTOR,                   .ctor,              IM_RetVoid)
+#endif
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodBody,           RuntimeMethodBody)
 DEFINE_FIELD_U(_IL,                    RuntimeMethodBody,         _IL)
@@ -553,6 +565,9 @@ DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
 DEFINE_FIELD(MODULE,                DATA,                   m_pData)
 
 DEFINE_CLASS(MODULE_BUILDER,        ReflectionEmit,         InternalModuleBuilder)
+#if FOR_ILLINK
+DEFINE_METHOD(MODULE_BUILDER,       CTOR,                   .ctor,                      IM_RetVoid)
+#endif
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
 
@@ -1432,6 +1447,9 @@ DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dep
 DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)
 
 DEFINE_CLASS(LAHASHDEPENDENTHASHTRACKER, CompilerServices, LAHashDependentHashTracker)
+#if FOR_ILLINK
+DEFINE_METHOD(LAHASHDEPENDENTHASHTRACKER,  CTOR,                            .ctor,        IM_RetVoid)
+#endif
 
 DEFINE_CLASS_U(CompilerServices,           LAHashKeyToTrackers,             LAHashKeyToTrackersObject)
 DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _trackerOrTrackerSet)

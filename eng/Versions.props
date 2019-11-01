@@ -31,6 +31,8 @@
     <!-- ilasm -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19413.7</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETCoreILAsmPackageVersion>$(MicrosoftNETCoreILAsmVersion)</MicrosoftNETCoreILAsmPackageVersion>
+    <!-- IL linker -->
+    <ILLinkTasksVersion>0.1.6-prerelease.19523.1</ILLinkTasksVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
