@@ -45,9 +45,9 @@
       <CoreFXSharedFrameworkImplementationPackageSpec Condition="'$(PackageRID)' != ''">$(CoreFXOverridePath)/specs/runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkImplementationPackageSpec>
     </PropertyGroup>
     
-    <Error Condition="!Exists('$(CoreFXSharedFrameworkPackageSpec)')" Text="The nuspec for the reference Microsoft.Private.CoreFx.NETCoreApp package does not exist." />
+    <Error Condition="!Exists('$(CoreFXSharedFrameworkPackageSpec)')" Text="The nuspec for the reference $(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist." />
     <Message Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And !Exists('$(CoreFXSharedFrameworkImplementationPackageSpec)')"
-      Text="The nuspec for the implementation runtime.$(PackageRID).Microsoft.Private.CoreFx.NETCoreApp package does not exist. Falling back to packaged CoreFX." />
+      Text="The nuspec for the implementation runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist. Falling back to packaged CoreFX." />
 
     <XmlPeek
       Namespaces="&lt;Namespace Prefix='nuget' Uri='http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd' /&gt;"
@@ -65,8 +65,8 @@
     </XmlPeek>
     
     <ItemGroup>
-      <CoreFXReferenceItems NuGetPackageId="Microsoft.Private.CoreFx.NETCoreApp" />
-      <CoreFXReferenceCopyLocalItems NuGetPackageId="runtime.$(PackageRID).Microsoft.Private.CoreFx.NETCoreApp" />
+      <CoreFXReferenceItems NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
+      <CoreFXReferenceCopyLocalItems NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
     </ItemGroup>
 
     <ItemGroup>

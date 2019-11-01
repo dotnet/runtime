@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 
   <PropertyGroup>
-    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
   </PropertyGroup>
 
   <!--

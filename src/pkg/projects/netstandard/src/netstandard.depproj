@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryPackageVersion)" />
+    <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryVersion)" />
   </ItemGroup>
 
   <!--
@@ -17,7 +17,7 @@
           BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <FilesToPackage
-        Include="$(NuGetPackageRoot)$(NETStandardLibraryPackage.ToLowerInvariant())\$(NETStandardLibraryPackageVersion)\build\$(NETStandardTargetFramework)\ref\*"
+        Include="$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\$(NETStandardTargetFramework)\ref\*"
         TargetPath="ref/$(NETStandardTargetFramework)" />
     </ItemGroup>
   </Target>

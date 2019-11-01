@@ -19,72 +19,41 @@
     <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
     <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
   </PropertyGroup>
-  <PropertyGroup>
-    <MicrosoftDotNetMaestroTasksVersion>1.0.0-beta.18619.4</MicrosoftDotNetMaestroTasksVersion>
-  </PropertyGroup>
   <!--Package versions-->
   <PropertyGroup>
     <!-- arcade -->
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>5.0.0-beta.19531.14</MicrosoftDotNetBuildTasksFeedPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>5.0.0-beta.19531.14</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19531.14</MicrosoftDotNetVersionToolsTasksPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>5.0.0-beta.19531.14</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.19531.14</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.19531.14</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.19531.14</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.19531.14</MicrosoftDotNetXUnitExtensionsVersion>
     <!-- Testing -->
-    <XUnitPackageVersion>2.4.1</XUnitPackageVersion>
+    <XUnitVersion>2.4.1</XUnitVersion>
     <!-- core-setup -->
-    <MicrosoftExtensionsDependencyModelPackageVersion>2.1.0</MicrosoftExtensionsDependencyModelPackageVersion>
-    <MicrosoftDotNetPlatformAbstractionsPackageVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsPackageVersion>
-    <!-- sourcelink -->
-    <MicrosoftSourceLinkVersion>1.0.0-beta2-19367-01</MicrosoftSourceLinkVersion>
+    <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
+    <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- corefx -->
-    <MicrosoftNETCorePlatformsPackageVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreTargetsPackageVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>5.0.0-alpha.1.19551.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftWin32RegistryVersion>5.0.0-alpha.1.19551.1</MicrosoftWin32RegistryVersion>
-    <MicrosoftWin32SystemEventsVersion>5.0.0-alpha.1.19551.1</MicrosoftWin32SystemEventsVersion>
-    <MicrosoftWindowsCompatibilityPackageVersion>5.0.0-alpha.1.19551.1</MicrosoftWindowsCompatibilityPackageVersion>
-    <SystemCodeDomVersion>5.0.0-alpha.1.19551.1</SystemCodeDomVersion>
-    <SystemConfigurationConfigurationManagerVersion>5.0.0-alpha.1.19551.1</SystemConfigurationConfigurationManagerVersion>
-    <SystemDiagnosticsEventLogVersion>5.0.0-alpha.1.19551.1</SystemDiagnosticsEventLogVersion>
-    <SystemDirectoryServicesVersion>5.0.0-alpha.1.19551.1</SystemDirectoryServicesVersion>
-    <SystemDrawingCommonVersion>5.0.0-alpha.1.19551.1</SystemDrawingCommonVersion>
-    <SystemIOFileSystemAccessControlVersion>5.0.0-alpha.1.19551.1</SystemIOFileSystemAccessControlVersion>
-    <SystemIOPackagingVersion>5.0.0-alpha.1.19551.1</SystemIOPackagingVersion>
-    <SystemResourcesExtensionsPackageVersion>5.0.0-alpha.1.19551.1</SystemResourcesExtensionsPackageVersion>
-    <SystemSecurityAccessControlVersion>5.0.0-alpha.1.19551.1</SystemSecurityAccessControlVersion>
-    <SystemSecurityCryptographyCngVersion>5.0.0-alpha.1.19551.1</SystemSecurityCryptographyCngVersion>
-    <SystemSecurityCryptographyPkcsVersion>5.0.0-alpha.1.19551.1</SystemSecurityCryptographyPkcsVersion>
-    <SystemSecurityCryptographyProtectedDataVersion>5.0.0-alpha.1.19551.1</SystemSecurityCryptographyProtectedDataVersion>
-    <SystemSecurityCryptographyXmlVersion>5.0.0-alpha.1.19551.1</SystemSecurityCryptographyXmlVersion>
-    <SystemSecurityPermissionsVersion>5.0.0-alpha.1.19551.1</SystemSecurityPermissionsVersion>
-    <SystemSecurityPrincipalWindowsVersion>5.0.0-alpha.1.19551.1</SystemSecurityPrincipalWindowsVersion>
+    <MicrosoftNETCorePlatformsVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCorePlatformsVersion>
+    <MicrosoftNETCoreTargetsVersion>5.0.0-alpha.1.19551.1</MicrosoftNETCoreTargetsVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha.1.19551.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <SystemTextJsonVersion>5.0.0-alpha.1.19551.1</SystemTextJsonVersion>
     <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19551.1</SystemTextEncodingsWebVersion>
-    <SystemThreadingAccessControlVersion>5.0.0-alpha.1.19551.1</SystemThreadingAccessControlVersion>
-    <SystemWindowsExtensionsPackageVersion>5.0.0-alpha.1.19551.1</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->
-    <NETStandardLibraryPackageVersion>2.2.0-prerelease.19551.1</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryVersion>2.2.0-prerelease.19551.1</NETStandardLibraryVersion>
     <!-- coreclr -->
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>5.0.0-alpha1.19525.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <!-- winforms -->
-    <MicrosoftPrivateWinformsPackageVersion>5.0.0-alpha1.19480.6</MicrosoftPrivateWinformsPackageVersion>
-    <!-- wpf -->
-    <MicrosoftDotNetWpfGitHubPackageVersion>5.0.0-alpha1.19501.4</MicrosoftDotNetWpfGitHubPackageVersion>
-    <!-- wpf-int -->
-    <MicrosoftDotNetWpfDncEngPackageVersion>5.0.0-alpha1.19501.17</MicrosoftDotNetWpfDncEngPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRVersion>5.0.0-alpha1.19525.1</MicrosoftNETCoreRuntimeCoreCLRVersion>
     <!-- Not auto-updated. -->
-    <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
-    <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
+    <MicrosoftTargetingPackPrivateWinRTVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTVersion>
+    <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
     <!--
       These are used as reference assemblies only, so they must not take a ProdCon/source-build
       version. Insert "RefOnly" to avoid assignment via PVP.
     -->
-    <RefOnlyMicrosoftBuildPackageVersion>15.7.179</RefOnlyMicrosoftBuildPackageVersion>
-    <RefOnlyMicrosoftBuildFrameworkPackageVersion>$(RefOnlyMicrosoftBuildPackageVersion)</RefOnlyMicrosoftBuildFrameworkPackageVersion>
-    <RefOnlyMicrosoftBuildTasksCorePackageVersion>$(RefOnlyMicrosoftBuildPackageVersion)</RefOnlyMicrosoftBuildTasksCorePackageVersion>
-    <RefOnlyMicrosoftBuildUtilitiesCorePackageVersion>$(RefOnlyMicrosoftBuildPackageVersion)</RefOnlyMicrosoftBuildUtilitiesCorePackageVersion>
-    <RefOnlyNugetProjectModelPackageVersion>4.9.4</RefOnlyNugetProjectModelPackageVersion>
-    <RefOnlyNugetPackagingPackageVersion>4.9.4</RefOnlyNugetPackagingPackageVersion>
+    <RefOnlyMicrosoftBuildVersion>15.7.179</RefOnlyMicrosoftBuildVersion>
+    <RefOnlyMicrosoftBuildFrameworkVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildFrameworkVersion>
+    <RefOnlyMicrosoftBuildTasksCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildTasksCoreVersion>
+    <RefOnlyMicrosoftBuildUtilitiesCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildUtilitiesCoreVersion>
+    <RefOnlyNugetProjectModelVersion>4.9.4</RefOnlyNugetProjectModelVersion>
+    <RefOnlyNugetPackagingVersion>4.9.4</RefOnlyNugetPackagingVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
@@ -92,10 +61,8 @@
     <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
     <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
-    <NETStandardLibraryPackage>NETStandard.Library</NETStandardLibraryPackage>
+    <NETStandardLibraryPackage>netstandard.library</NETStandardLibraryPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
-    <MicrosoftBclJsonSourcesPackage>Microsoft.Bcl.Json.Sources</MicrosoftBclJsonSourcesPackage>
     <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
-    <MicrosoftSymbolUploaderBuildTaskPackage>Microsoft.SymbolUploader.Build.Task</MicrosoftSymbolUploaderBuildTaskPackage>
   </PropertyGroup>
 </Project>

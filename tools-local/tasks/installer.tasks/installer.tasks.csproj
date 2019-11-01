@@ -12,17 +12,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelPackageVersion)" />
+    <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
     <!-- TODO: (Consolidation) Update version when consolidated. -->
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net46'">
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildPackageVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkPackageVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCorePackageVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCorePackageVersion)" />
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
 
     <PackageReference Include="System.Diagnostics.FileVersionInfo" Version="4.0.0" />
   </ItemGroup>

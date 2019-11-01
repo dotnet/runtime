@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingPackageVersion)" />
+    <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingVersion)" />
   </ItemGroup>
 
   <ItemGroup>
