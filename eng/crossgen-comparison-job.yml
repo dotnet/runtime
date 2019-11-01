@@ -14,7 +14,7 @@ parameters:
 ### crossgen matches that of native, e.g. arm-hosted-arm-targeting, crossgen.
 
 jobs:
-- template: xplat-job.yml
+- template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -62,22 +62,13 @@ jobs:
     steps:
 
     # Download product build
-    - task: DownloadBuildArtifacts@0
-      displayName: Download product build
-      inputs:
-        buildType: current
-        downloadType: single
-        artifactName: ${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        downloadPath: $(System.ArtifactsDirectory)
-
-
-    # Populate Product directory
-    - task: CopyFiles@2
-      displayName: Populate Product directory
-      inputs:
-        sourceFolder: $(System.ArtifactsDirectory)/${{ format('BinDir_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        contents: '**'
-        targetFolder: $(productDirectory)/$(targetFlavor)
+    - template: /eng/download-artifact-step.yml
+      parameters:
+        downloadFolder: $(binTestsPath)/tmp
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'product build'
 
 
     # Create directories and ensure crossgen is executable
