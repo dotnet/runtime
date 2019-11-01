@@ -203,8 +203,7 @@ STDAPI
 CreateAssemblyNameObjectFromMetaData(
     LPASSEMBLYNAME    *ppAssemblyName,
     LPCOLESTR          szAssemblyName,
-    ASSEMBLYMETADATA  *pamd,
-    LPVOID             pvReserved);
+    ASSEMBLYMETADATA  *pamd);
 
 //=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
@@ -311,7 +310,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 // assembly def row.
                 // See comment on CLRPrivBinderWinRT::PreBind for further details about NGEN binding and WinMDs.
                 ASSEMBLYMETADATA asmd = { 0 };
-                IfFailGo(CreateAssemblyNameObjectFromMetaData(&pAssemblyDefName, wszFileNameStripped, &asmd, NULL));
+                IfFailGo(CreateAssemblyNameObjectFromMetaData(&pAssemblyDefName, wszFileNameStripped, &asmd));
                 DWORD dwAsmContentType = AssemblyContentType_WindowsRuntime;
                 IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_CONTENT_TYPE, (LPBYTE)&dwAsmContentType, sizeof(dwAsmContentType)));
 

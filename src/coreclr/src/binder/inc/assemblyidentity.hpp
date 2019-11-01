@@ -78,20 +78,6 @@ namespace BINDER_SPACE
             m_dwIdentityFlags &= ~dwIdentityFlags;
         }
 
-        void CloneInto(AssemblyIdentity *pAssemblyIdentity)
-        {
-            pAssemblyIdentity->m_simpleName.Set(m_simpleName);
-            pAssemblyIdentity->m_simpleName.Normalize();
-            pAssemblyIdentity->m_version.SetVersion(&m_version);
-            pAssemblyIdentity->m_cultureOrLanguage.Set(m_cultureOrLanguage);
-            pAssemblyIdentity->m_cultureOrLanguage.Normalize();
-            pAssemblyIdentity->m_publicKeyOrTokenBLOB.Set(m_publicKeyOrTokenBLOB);
-            pAssemblyIdentity->m_kProcessorArchitecture = m_kProcessorArchitecture;
-            pAssemblyIdentity->m_kContentType = m_kContentType;
-            pAssemblyIdentity->m_customBLOB.Set(m_customBLOB);
-            pAssemblyIdentity->m_dwIdentityFlags = m_dwIdentityFlags;
-        }
-
         SString             m_simpleName;
         AssemblyVersion     m_version;
         SString             m_cultureOrLanguage;
