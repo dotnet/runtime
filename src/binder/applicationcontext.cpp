@@ -15,7 +15,6 @@
 #include "applicationcontext.hpp"
 #include "stringarraylist.h"
 #include "loadcontext.hpp"
-#include "propertymap.hpp"
 #include "failurecache.hpp"
 #include "assemblyidentitycache.hpp"
 #include "utils.hpp"
@@ -107,7 +106,6 @@ namespace BINDER_SPACE
 
         ReleaseHolder<ExecutionContext> pExecutionContext;
 
-        PropertyMap *pPropertyMap = NULL;
         FailureCache *pFailureCache = NULL;
 
         // Allocate context objects
@@ -120,7 +118,6 @@ namespace BINDER_SPACE
                                                CRST_REENTRANCY);
         if (!m_contextCS)
         {
-            SAFE_DELETE(pPropertyMap);
             SAFE_DELETE(pFailureCache);
             hr = E_OUTOFMEMORY;
         }

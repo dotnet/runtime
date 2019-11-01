@@ -38,7 +38,6 @@ namespace BINDER_SPACE
     class ContextEntry;
     class ExecutionContext;
 
-    class PropertyMap;
     class ApplicationContext;
 
     class BindResult;
