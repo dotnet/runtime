@@ -917,20 +917,21 @@ namespace Mono.Linker.Steps {
 
 		protected void MarkField (FieldReference reference)
 		{
-//			if (IgnoreScope (reference.DeclaringType.Scope))
-//				return;
-
 			if (reference.DeclaringType is GenericInstanceType)
 				MarkType (reference.DeclaringType);
 
 			FieldDefinition field = ResolveFieldDefinition (reference);
 
-			if (field == null)
-			{
+			if (field == null) {
 				HandleUnresolvedField (reference);
 				return;
 			}
 
+			MarkField (field);
+		}
+
+		void MarkField (FieldDefinition field)
+		{
 			if (CheckProcessed (field))
 				return;
 
@@ -940,7 +941,7 @@ namespace Mono.Linker.Steps {
 			MarkMarshalSpec (field);
 			DoAdditionalFieldProcessing (field);
 
-			var parent = reference.DeclaringType.Resolve ();
+			var parent = field.DeclaringType;
 			if (!Annotations.HasPreservedStaticCtor (parent))
 				MarkStaticConstructor (parent);
 
@@ -953,13 +954,12 @@ namespace Mono.Linker.Steps {
 			return Annotations.GetAction (assembly) != AssemblyAction.Link;
 		}
 
-		FieldDefinition ResolveFieldDefinition (FieldReference field)
+		static FieldDefinition ResolveFieldDefinition (FieldReference field)
 		{
-			FieldDefinition fd = field as FieldDefinition;
-			if (fd == null)
-				fd = field.Resolve ();
+			if (field is FieldDefinition fd)
+				return fd;
 
-			return fd;
+			return field.Resolve ();
 		}
 
 		void MarkScope (IMetadataScope scope)
@@ -1865,13 +1865,12 @@ namespace Mono.Linker.Steps {
 			return method;
 		}
 
-		MethodDefinition ResolveMethodDefinition (MethodReference method)
+		static MethodDefinition ResolveMethodDefinition (MethodReference method)
 		{
-			MethodDefinition md = method as MethodDefinition;
-			if (md == null)
-				md = method.Resolve ();
+			if (method is MethodDefinition md)
+				return md;
 
-			return md;
+			return method.Resolve ();
 		}
 
 		protected virtual void ProcessMethod (MethodDefinition method)
