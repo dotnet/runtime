@@ -640,6 +640,7 @@ addsubpd: dest:x src1:x src2:x len:6 clob:1
 duppd: dest:x src1:x len:6
 
 pand: dest:x src1:x src2:x len:5 clob:1
+pandn: dest:x src1:x src2:x len:5 clob:1
 por: dest:x src1:x src2:x len:5 clob:1
 pxor: dest:x src1:x src2:x len:5 clob:1
 

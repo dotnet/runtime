@@ -258,14 +258,10 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		ins->type = STACK_I4;
 		return ins;
 	case SN_ConvertToInt32:
-		if (!COMPILE_LLVM (cfg))
-			return NULL;
 		etype = get_vector_t_elem_type (fsig->params [0]);
 		g_assert (etype->type == MONO_TYPE_R4);
 		return emit_simd_ins (cfg, mono_class_from_mono_type_internal (fsig->ret), OP_CVTPS2DQ, args [0]->dreg, -1);
 	case SN_ConvertToSingle:
-		if (!COMPILE_LLVM (cfg))
-			return NULL;
 		etype = get_vector_t_elem_type (fsig->params [0]);
 		g_assert (etype->type == MONO_TYPE_I4 || etype->type == MONO_TYPE_U4);
 		// FIXME:
@@ -527,8 +523,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_Max:
 	case SN_Min:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
-			return NULL;
-		if (!COMPILE_LLVM (cfg) && (id == SN_Max || id == SN_Min))
 			return NULL;
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = etype->type;
