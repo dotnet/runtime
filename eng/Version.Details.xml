@@ -12,17 +12,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>7e9a177824cbefaee8985a9b517ebb0ea2e17a81</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha1.19466.2">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>9042fe6c81aa3b47f58ccd94ff02e42f9f7a4e46</Sha>
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19531.19">
+      <Uri>https://github.com/dotnet/core-setup</Uri>
+      <Sha>14e7a3b2fb40b377562d3d3e739d471841ae3316</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha1.19466.2">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>9042fe6c81aa3b47f58ccd94ff02e42f9f7a4e46</Sha>
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19531.19">
+      <Uri>https://github.com/dotnet/core-setup</Uri>
+      <Sha>14e7a3b2fb40b377562d3d3e739d471841ae3316</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha1.19466.2">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>9042fe6c81aa3b47f58ccd94ff02e42f9f7a4e46</Sha>
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.19531.19">
+      <Uri>https://github.com/dotnet/core-setup</Uri>
+      <Sha>14e7a3b2fb40b377562d3d3e739d471841ae3316</Sha>
     </Dependency>
     <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha1.19466.8">
       <Uri>https://github.com/dotnet/runtime</Uri>

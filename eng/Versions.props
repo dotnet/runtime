@@ -47,10 +47,10 @@
     <MicrosoftDotNetVersionToolsTasksPackageVersion>5.0.0-beta.19531.4</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>1.0.0-beta.19463.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>5.0.0-alpha.1.19531.19</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftNETCoreAppVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha1.19466.2</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>5.0.0-alpha.1.19531.19</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>5.0.0-alpha.1.19531.19</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftExtensionsDependencyModelPackageVersion>2.1.0</MicrosoftExtensionsDependencyModelPackageVersion>
     <MicrosoftDotNetPlatformAbstractionsPackageVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsPackageVersion>
     <!-- CoreClr dependencies -->
