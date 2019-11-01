@@ -203,9 +203,11 @@ namespace System.Text.Json.Serialization.Tests
             stream.Position = 0;
             value = await JsonSerializer.DeserializeAsync<JsonElement[]>(stream, options);
 
-            // Verify first and last elements.
-            VerifyElement(0);
-            VerifyElement(count - 1);
+            // Verify each element.
+            for (int i = 0; i < count; i++)
+            {
+                VerifyElement(i);
+            }
 
             // Round trip and verify.
             stream.Position = 3; // Skip the BOM.
@@ -218,10 +220,12 @@ namespace System.Text.Json.Serialization.Tests
             void VerifyElement(int index)
             {
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test").ValueKind);
+                Assert.False(value[index].GetProperty("Test").EnumerateObject().MoveNext());
                 Assert.Equal(JsonValueKind.Array, value[index].GetProperty("Test2").ValueKind);
                 Assert.Equal(0, value[index].GetProperty("Test2").GetArrayLength());
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").ValueKind);
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").GetProperty("Value").ValueKind);
+                Assert.False(value[index].GetProperty("Test3").GetProperty("Value").EnumerateObject().MoveNext());
                 Assert.Equal(0, value[index].GetProperty("PersonType").GetInt32());
                 Assert.Equal(2, value[index].GetProperty("Id").GetInt32());
             }
