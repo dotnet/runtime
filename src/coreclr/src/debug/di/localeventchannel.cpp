@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: LocalEventChannel.cpp
-// 
+//
 
 //
-// Implements the old-style event channel between two processes on a local Windows machine.  
+// Implements the old-style event channel between two processes on a local Windows machine.
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -17,13 +17,13 @@
 //
 // This is the implementation of the event channel for the normal case, where both the debugger and the
 // debuggee are on the same Windows machine.  See code:IEventChannel for more information.
-// 
+//
 
 class LocalEventChannel : public IEventChannel
 {
 public:
-    LocalEventChannel(CORDB_ADDRESS pLeftSideDCB, 
-                      DebuggerIPCControlBlock * pDCBBuffer, 
+    LocalEventChannel(CORDB_ADDRESS pLeftSideDCB,
+                      DebuggerIPCControlBlock * pDCBBuffer,
                       ICorDebugMutableDataTarget * pMutableDataTarget);
 
     // Inititalize the event channel.
@@ -67,21 +67,21 @@ public:
 
 
 
-    // Save an IPC event from the LS.  
+    // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
     virtual HRESULT SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide);
 
-    // Get a saved IPC event from the LS.  
+    // Get a saved IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
     virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent);
 
 private:
-    // Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that 
-    // holds information received from the LS as the result of an IPC event. 
+    // Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that
+    // holds information received from the LS as the result of an IPC event.
     TargetBuffer RemoteReceiveBuffer(SIZE_T size);
 
-    // Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that 
-    // holds information sent to the LS with an IPC event. 
+    // Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that
+    // holds information sent to the LS with an IPC event.
     TargetBuffer RemoteSendBuffer(SIZE_T size);
 
     // write memory to the LS using the data target
@@ -113,8 +113,8 @@ private:
 };
 
 // Allocate and return an old-style event channel object for this target platform.
-HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB, 
-                                       ICorDebugMutableDataTarget * pMutableDataTarget, 
+HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
+                                       ICorDebugMutableDataTarget * pMutableDataTarget,
                                        const ProcessDescriptor * pProcessDescriptor,
                                        MachineInfo machineInfo,
                                        IEventChannel ** ppEventChannel)
@@ -151,7 +151,7 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
 //    pMutableDataTarget - data target for reading from and writing to the target process's address space
 //
 
-LocalEventChannel::LocalEventChannel(CORDB_ADDRESS pLeftSideDCB, 
+LocalEventChannel::LocalEventChannel(CORDB_ADDRESS pLeftSideDCB,
                                      DebuggerIPCControlBlock * pDCBBuffer,
                                      ICorDebugMutableDataTarget * pMutableDataTarget)
 {
@@ -174,21 +174,21 @@ HRESULT LocalEventChannel::Init(HANDLE hTargetProc)
     m_hTargetProc = hTargetProc;
 
     // Duplicate the handle of the RS process (i.e. the debugger) to the LS process's address space.
-    BOOL fSuccess = 
+    BOOL fSuccess =
         m_pDCBBuffer->m_rightSideProcessHandle.DuplicateToRemoteProcess(m_hTargetProc, GetCurrentProcess());
     if (!fSuccess)
     {
         return HRESULT_FROM_GetLastError();
     }
 
-    IfFailRet(UpdateLeftSideDCBField(&(m_pDCBBuffer->m_rightSideProcessHandle), 
+    IfFailRet(UpdateLeftSideDCBField(&(m_pDCBBuffer->m_rightSideProcessHandle),
                                      sizeof(m_pDCBBuffer->m_rightSideProcessHandle)));
 
     // Dup RSEA and RSER into this process if we don't already have them.
     // On Launch, we don't have them yet, but on attach we do.
-    IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventAvailable, 
+    IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventAvailable,
                                             &m_pDCBBuffer->m_rightSideEventAvailable));
-    IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventRead, 
+    IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventRead,
                                             &m_pDCBBuffer->m_rightSideEventRead));
 
     return S_OK;
@@ -212,7 +212,7 @@ void LocalEventChannel::Detach()
 }
 
 // Delete the event channel and clean up all the resources it owns.  This function can only be called once.
-// 
+//
 // virtual
 void LocalEventChannel::Delete()
 {
@@ -251,7 +251,7 @@ void LocalEventChannel::Delete()
 
 // Update a single field with a value stored in the RS copy of the DCB.
 //
-// virtual 
+// virtual
 HRESULT LocalEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
 {
     _ASSERTE(m_pDCBBuffer != NULL);
@@ -264,19 +264,19 @@ HRESULT LocalEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T siz
 
 // Update the entire RS copy of the debugger control block by reading the LS copy.
 //
-// virtual 
+// virtual
 HRESULT LocalEventChannel::UpdateRightSideDCB()
 {
     _ASSERTE(m_pDCBBuffer != NULL);
     _ASSERTE(m_pLeftSideDCB  != NULL);
 
-    return SafeReadBuffer(TargetBuffer(m_pLeftSideDCB, sizeof(DebuggerIPCControlBlock)), 
+    return SafeReadBuffer(TargetBuffer(m_pLeftSideDCB, sizeof(DebuggerIPCControlBlock)),
                           reinterpret_cast<BYTE *>(m_pDCBBuffer));
 }
 
 // Get the pointer to the RS DCB.
-// 
-// virtual 
+//
+// virtual
 DebuggerIPCControlBlock * LocalEventChannel::GetDCB()
 {
     return m_pDCBBuffer;
@@ -285,7 +285,7 @@ DebuggerIPCControlBlock * LocalEventChannel::GetDCB()
 
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
 //
-// virtual 
+// virtual
 BOOL LocalEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
 {
     // On Windows, we need to wait for acknowledgement for every synchronous event.
@@ -294,7 +294,7 @@ BOOL LocalEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
 
 // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
 //
-// virtual 
+// virtual
 HANDLE LocalEventChannel::GetRightSideEventAckHandle()
 {
     return m_rightSideEventRead;
@@ -302,7 +302,7 @@ HANDLE LocalEventChannel::GetRightSideEventAckHandle()
 
 // Clean up the state if the wait for an acknowledgement is unsuccessful.
 //
-// virtual 
+// virtual
 void LocalEventChannel::ClearEventForLeftSide()
 {
     ResetEvent(m_rightSideEventAvailable);
@@ -310,7 +310,7 @@ void LocalEventChannel::ClearEventForLeftSide()
 
 // Send an IPC event to the LS.
 //
-// virtual 
+// virtual
 HRESULT LocalEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize)
 {
     _ASSERTE(eventSize <= CorDBIPC_BUFFER_SIZE);
@@ -357,14 +357,14 @@ HRESULT LocalEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T
 
 // Get the reply from the LS for a previously sent IPC event.
 //
-// virtual 
+// virtual
 HRESULT LocalEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize)
 {
     // Simply read the IPC event reply directly from the receive buffer on the LS.
     return SafeReadBuffer(RemoteReceiveBuffer(eventSize), reinterpret_cast<BYTE *>(pReplyEvent));
 }
 
-// Save an IPC event from the LS.  
+// Save an IPC event from the LS.
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
@@ -377,10 +377,10 @@ HRESULT LocalEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLe
     return S_OK;
 }
 
-// Get a saved IPC event from the LS.  
+// Get a saved IPC event from the LS.
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
-// virtual 
+// virtual
 HRESULT LocalEventChannel::GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent)
 {
     // See code:LocalEventChannel::SaveEventFromLeftSide.
@@ -390,8 +390,8 @@ HRESULT LocalEventChannel::GetEventFromLeftSide(DebuggerIPCEvent * pLocalManaged
 
 //-----------------------------------------------------------------------------
 //
-// Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that 
-// holds information received from the LS as the result of an IPC event. 
+// Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that
+// holds information received from the LS as the result of an IPC event.
 //
 // Arguments:
 //    size - size of the receive buffer
@@ -407,8 +407,8 @@ TargetBuffer LocalEventChannel::RemoteReceiveBuffer(SIZE_T size)
 
 //-----------------------------------------------------------------------------
 //
-// Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that 
-// holds information sent to the LS with an IPC event. 
+// Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that
+// holds information sent to the LS with an IPC event.
 //
 // Arguments:
 //    size - size of the send buffer
@@ -491,7 +491,7 @@ HRESULT LocalEventChannel::DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, 
     {
         BOOL fSuccess = pRemoteHandle->DuplicateToLocalProcess(m_hTargetProc, pLocalHandle);
         if (!fSuccess)
-        {            
+        {
             return HRESULT_FROM_GetLastError();
         }
     }

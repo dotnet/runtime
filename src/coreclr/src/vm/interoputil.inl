@@ -17,7 +17,7 @@ inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
-    
+
     LPVOID pvRetVal = (*((LPVOID**)pUnk))[slot];
 
     return (pvRetVal == (LPVOID)GetEEFuncEntryPoint(pvFunction));
@@ -28,11 +28,11 @@ inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
 inline BOOL IsInProcCCWTearOff(IUnknown* pUnk)
 {
     WRAPPER_NO_CONTRACT;
-    return ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface) || 
+    return ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface) ||
            ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface_IErrorInfo) ||
            ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface_ICCW);
 }
-    
+
 // is the tear-off represent one of the standard interfaces such as IProvideClassInfo, IErrorInfo etc.
 inline BOOL IsSimpleTearOff(IUnknown* pUnk)
 {
@@ -56,7 +56,7 @@ inline BOOL IsStandardTearOff(IUnknown* pUnk)
 
 // Convert an IUnknown to CCW, does not handle aggregation and ICustomQI.
 FORCEINLINE ComCallWrapper* MapIUnknownToWrapper(IUnknown* pUnk)
-{   
+{
     CONTRACT (ComCallWrapper*)
     {
         NOTHROW;
@@ -65,7 +65,7 @@ FORCEINLINE ComCallWrapper* MapIUnknownToWrapper(IUnknown* pUnk)
         PRECONDITION(CheckPointer(pUnk, NULL_OK));
     }
     CONTRACT_END;
-    
+
     if (IsStandardTearOff(pUnk))
         RETURN ComCallWrapper::GetWrapperFromIP(pUnk);
 

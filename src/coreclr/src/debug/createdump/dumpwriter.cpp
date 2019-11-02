@@ -43,7 +43,7 @@ DumpWriter::QueryInterface(
 STDMETHODIMP_(ULONG)
 DumpWriter::AddRef()
 {
-    LONG ref = InterlockedIncrement(&m_ref);    
+    LONG ref = InterlockedIncrement(&m_ref);
     return ref;
 }
 
@@ -181,7 +181,7 @@ DumpWriter::WriteDump()
             phdr.p_filesz = filesz = memoryRegion.Size();
             phdr.p_offset = offset;
         }
-        else 
+        else
         {
             phdr.p_filesz = 0;
             phdr.p_offset = 0;
@@ -210,7 +210,7 @@ DumpWriter::WriteDump()
     TRACE("Writing %zd thread entries to core file\n", m_crashInfo.Threads().size());
 
     // Write all the thread's state and registers
-    for (const ThreadInfo* thread : m_crashInfo.Threads()) 
+    for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
         if (!WriteThread(*thread, SIGABRT)) {
             return false;
@@ -293,7 +293,7 @@ DumpWriter::WriteProcessInfo()
     return true;
 }
 
-bool 
+bool
 DumpWriter::WriteAuxv()
 {
     Nhdr nhdr;
@@ -305,7 +305,7 @@ DumpWriter::WriteAuxv()
     TRACE("Writing %zd auxv entries to core file\n", m_crashInfo.AuxvEntries().size());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
-        !WriteData("CORE\0AUX", 8)) { 
+        !WriteData("CORE\0AUX", 8)) {
         return false;
     }
     for (const auto& auxvEntry : m_crashInfo.AuxvEntries())
@@ -362,7 +362,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
 //  [0] start_address end_address offset
 //  [1] start_address end_address offset
 //  [file name]\0[file name]\0...
-bool 
+bool
 DumpWriter::WriteNTFileInfo()
 {
     Nhdr nhdr;
@@ -392,7 +392,7 @@ DumpWriter::WriteNTFileInfo()
     for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
     {
         struct NTFileEntry entry { image.StartAddress(), image.EndAddress(), image.Offset() / pageSize };
-        if (!WriteData(&entry, sizeof(entry))) { 
+        if (!WriteData(&entry, sizeof(entry))) {
             return false;
         }
     }

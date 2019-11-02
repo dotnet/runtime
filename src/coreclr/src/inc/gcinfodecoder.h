@@ -9,7 +9,7 @@
  *****************************************************************/
 
 // ******************************************************************************
-// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should 
+// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfodecoder.h
 // ******************************************************************************
@@ -17,7 +17,7 @@
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
-#define _max(a, b) (((a) > (b)) ? (a) : (b)) 
+#define _max(a, b) (((a) > (b)) ? (a) : (b))
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
 #if !defined(_TARGET_X86_)
@@ -81,7 +81,7 @@ inline TADDR GetSP(T_CONTEXT* context)
 #endif
 }
 
-inline PCODE GetIP(T_CONTEXT* context) 
+inline PCODE GetIP(T_CONTEXT* context)
 {
 #ifdef _TARGET_AMD64_
     return (PCODE) context->Rip;
@@ -121,7 +121,7 @@ typedef SIZE_T TADDR;
 inline BOOL IS_ALIGNED( size_t val, size_t alignment )
 {
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
-    _ASSERTE( 0 == (alignment & (alignment - 1)) ); 
+    _ASSERTE( 0 == (alignment & (alignment - 1)) );
     return 0 == (val & (alignment - 1));
 }
 inline BOOL IS_ALIGNED( void* val, size_t alignment )
@@ -201,7 +201,7 @@ enum GcInfoDecoderFlags
     DECODE_GC_LIFETIMES          = 0x10,
     DECODE_NO_VALIDATION         = 0x20,
     DECODE_PSP_SYM               = 0x40,
-    DECODE_GENERICS_INST_CONTEXT = 0x80,    // stack location of instantiation context for generics 
+    DECODE_GENERICS_INST_CONTEXT = 0x80,    // stack location of instantiation context for generics
                                             // (this may be either the 'this' ptr or the instantiation secret param)
     DECODE_GS_COOKIE             = 0x100,   // stack location of the GS cookie
     DECODE_FOR_RANGES_CALLBACK   = 0x200,
@@ -300,7 +300,7 @@ public:
         result &= SAFE_SHIFT_LEFT(1, numBits) - 1;
         return result;
     }
-                
+
     // This version reads one bit, returning zero/non-zero (not 0/1)
     // NOTE: This routine is perf-critical
     __forceinline size_t ReadOneFast()
@@ -315,14 +315,14 @@ public:
         }
         return result;
     }
-                
-        
+
+
     __forceinline size_t GetCurrentPos()
     {
         SUPPORTS_DAC;
         return (size_t) ((m_pCurrent - m_pBuffer) * BITS_PER_SIZE_T + m_RelPos - m_InitialRelPos);
     }
-    
+
     __forceinline void SetCurrentPos( size_t pos )
     {
         size_t adjPos = pos + m_InitialRelPos;
@@ -359,7 +359,7 @@ public:
         return (*ptr) & (((size_t)1) << relPos);
     }
 
-    
+
     //--------------------------------------------------------------------------
     // Decode variable length numbers
     // See the corresponding methods on BitStreamWriter for more information on the format
@@ -373,7 +373,7 @@ public:
         for(int shift=0; ; shift+=base)
         {
             _ASSERTE(shift+base <= (int)BITS_PER_SIZE_T);
-            
+
             size_t currentChunk = Read(base+1);
             result |= (currentChunk & (numEncodings-1)) << shift;
             if(!(currentChunk & numEncodings))
@@ -392,7 +392,7 @@ public:
         for(int shift=0; ; shift+=base)
         {
             _ASSERTE(shift+base <= (int)BITS_PER_SIZE_T);
-            
+
             size_t currentChunk = Read(base+1);
             result |= (currentChunk & (numEncodings-1)) << shift;
             if(!(currentChunk & numEncodings))
@@ -426,7 +426,7 @@ struct GcSlotDesc
 class GcSlotDecoder
 {
 public:
-    GcSlotDecoder() 
+    GcSlotDecoder()
     {}
 
     void DecodeSlotTable(BitStreamReader& reader);
@@ -452,14 +452,14 @@ public:
     }
 
     const GcSlotDesc* GetSlotDesc(UINT32 slotIndex);
-    
-private:    
+
+private:
     GcSlotDesc m_SlotArray[MAX_PREDECODED_SLOTS];
     BitStreamReader m_SlotReader;
     UINT32 m_NumSlots;
     UINT32 m_NumRegisters;
     UINT32 m_NumUntracked;
-    
+
     UINT32 m_NumDecodedSlots;
     GcSlotDesc* m_pLastSlot;
 };

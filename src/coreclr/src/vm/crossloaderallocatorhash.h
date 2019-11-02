@@ -90,7 +90,7 @@ struct KeyToValuesGCHeapHashTraits : public DefaultGCHeapHashTraits<true>
 //
 // IMPLEMENTATION DESIGN
 // This data structure is a series of hashtables and lists.
-// 
+//
 // In general, this data structure builds a set of values associated with a key per
 // LoaderAllocator. The lists per loader allocator are controlled via the TRAITS template. The
 // TRAITS specify how the individual lists are handled, and do the copying in and out of the data
@@ -124,7 +124,7 @@ struct KeyToValuesGCHeapHashTraits : public DefaultGCHeapHashTraits<true>
 // Memory efficiency of this data structure.
 //  - This data structure is reasonably memory efficient. If many values share the same key
 //    then the memory efficiency per key trends toward 1.3333 * sizeof(Value). Otherwise basic
-//    cost per key/value pair (assuming they are pointer sized has an overhead of about 4 
+//    cost per key/value pair (assuming they are pointer sized has an overhead of about 4
 //    pointers + key/value data size.)
 template <class TRAITS>
 class CrossLoaderAllocatorHash
@@ -170,7 +170,7 @@ private:
     LAHASHDEPENDENTHASHTRACKERREF GetDependentTrackerForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
     GCHEAPHASHOBJECTREF GetKeyToValueCrossLAHashForHashkeyToTrackers(LAHASHKEYTOTRACKERSREF hashKeyToTrackersUnsafe, LoaderAllocator* pValueLoaderAllocator);
 #endif // !DACCESS_COMPILE
-    
+
     template <class Visitor>
     static bool VisitKeyValueStore(OBJECTREF *pLoaderAllocatorRef, OBJECTREF *pKeyValueStore, Visitor &visitor);
     template <class Visitor>

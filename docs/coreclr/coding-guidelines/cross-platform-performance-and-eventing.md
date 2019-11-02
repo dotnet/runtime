@@ -82,7 +82,7 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 
 - Complex kernel module is generated and compiled on-the-fly based on the tracing script.
 - Static tracing includes a fixed set of static tracing APIs with limited overloads (e.g. int, string).  Can’t consider it strongly typed tracing.
-- User-mode stack trace support requires debug information to support unwinding.  No story for JIT compiled code.  
+- User-mode stack trace support requires debug information to support unwinding.  No story for JIT compiled code.
 - User-mode stack traces are only supported on x86 and x64.
 - Data is stored as unstructured text.
 

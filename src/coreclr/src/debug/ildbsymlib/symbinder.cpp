@@ -51,7 +51,7 @@ SymBinder::QueryInterface(
     }
 
 ErrExit:
-    
+
     return hr;
 }
 
@@ -71,18 +71,18 @@ SymBinder::NewSymBinder(
         return (E_UNEXPECTED);
 
     IfFalseGo( ppObj, E_INVALIDARG );
-    
+
     *ppObj = NULL;
-    
+
     IfNullGo( pSymBinder = NEW(SymBinder()) );
     *ppObj = pSymBinder;
     pSymBinder->AddRef();
     pSymBinder = NULL;
-    
+
 ErrExit:
 
     RELEASE( pSymBinder );
-    
+
     return hr;
 }
 
@@ -107,10 +107,10 @@ SymBinder::GetReaderForFile(
     IfFailGo(IldbSymbolsCreateInstance(CLSID_CorSymReader_SxS,
                                        IID_ISymUnmanagedReader,
                                        (void**)&pSymReader));
-                                            
+
     IfFailGo(pSymReader->Initialize(importer, fileName, searchPath, NULL));
 
-    // Transfer ownership to the out parameter 
+    // Transfer ownership to the out parameter
     *ppRetVal = pSymReader;
     pSymReader = NULL;
 
@@ -137,10 +137,10 @@ SymBinder::GetReaderFromStream(
     IfFailGo(IldbSymbolsCreateInstance(CLSID_CorSymReader_SxS,
                                        IID_ISymUnmanagedReader,
                                        (void**)&pSymReader));
-                                            
+
     IfFailGo(pSymReader->Initialize(importer, NULL, NULL, pStream));
 
-    // Transfer ownership to the out parameter 
+    // Transfer ownership to the out parameter
     *ppRetVal = pSymReader;
     pSymReader = NULL;
 
@@ -149,7 +149,7 @@ ErrExit:
     return hr;
 }
 
-HRESULT SymBinder::GetReaderForFile2( 
+HRESULT SymBinder::GetReaderForFile2(
     IUnknown *importer,
     const WCHAR *fileName,
     const WCHAR *searchPath,

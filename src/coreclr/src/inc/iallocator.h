@@ -11,8 +11,8 @@
 
 // To allow utilcode collection classes to deal with this, they may be
 // written to do allocation and freeing via an instance of the
-// "IAllocator" class defined in this file.  
-// 
+// "IAllocator" class defined in this file.
+//
 #ifndef _IALLOCATOR_DEFINED_
 #define _IALLOCATOR_DEFINED_
 

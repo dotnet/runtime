@@ -46,7 +46,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 inline PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrameWorker(UINT_PTR establisherFrame)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     SIZE_T rbp = establisherFrame + REDIRECTSTUB_ESTABLISHER_OFFSET_RBP;
     PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)rbp + REDIRECTSTUB_RBP_OFFSET_CONTEXT);
     return *ppContext;
@@ -55,14 +55,14 @@ inline PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrameWorker(UINT_PTR establi
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     return GetCONTEXTFromRedirectedStubStackFrameWorker(pDispatcherContext->EstablisherFrame);
 }
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     return GetCONTEXTFromRedirectedStubStackFrameWorker(pContext->Rbp);
 }
 
@@ -71,7 +71,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     return (FaultingExceptionFrame*)(pDispatcherContext->EstablisherFrame + THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame);
 }
 
@@ -111,8 +111,8 @@ FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT
 //
 // If there is a managed patch at the address HasManagedBreakpoint is set to true.
 //
-// If there is a 0xCC at the address before the call to GetPatchedOpcode and 
-// still a 0xCC when we return then this is considered an unmanaged patch and 
+// If there is a 0xCC at the address before the call to GetPatchedOpcode and
+// still a 0xCC when we return then this is considered an unmanaged patch and
 // HasManagedBreakpoint is set to true.
 //
 UCHAR GetOpcodeFromManagedBPForAddress(ULONG64 Address, BOOL* HasManagedBreakpoint, BOOL* HasUnmanagedBreakpoint)
@@ -126,7 +126,7 @@ UCHAR GetOpcodeFromManagedBPForAddress(ULONG64 Address, BOOL* HasManagedBreakpoi
     UCHAR PatchedOpcode;
     PatchedOpcode = (UCHAR)g_pDebugInterface->GetPatchedOpcode((CORDB_ADDRESS_TYPE*)(BYTE*)Address);
 
-    // If a non Int3 opcode is returned from GetPatchedOpcode then 
+    // If a non Int3 opcode is returned from GetPatchedOpcode then
     // this function has a managed breakpoint
     if (PatchedOpcode != AMD64_INT3)
     {
@@ -153,14 +153,14 @@ RtlVirtualUnwind (
           IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
           )
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-    } 
+    }
     CONTRACTL_END;
 
-    // The indirection should be taken care of by the caller 
+    // The indirection should be taken care of by the caller
     _ASSERTE((FunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 
 #ifdef DEBUGGING_SUPPORTED
@@ -171,7 +171,7 @@ RtlVirtualUnwind (
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        return RtlVirtualUnwind_Unsafe(HandlerType, ImageBase, ControlPc, FunctionEntry, ContextRecord, HandlerData, EstablisherFrame, ContextPointers);        
+        return RtlVirtualUnwind_Unsafe(HandlerType, ImageBase, ControlPc, FunctionEntry, ContextRecord, HandlerData, EstablisherFrame, ContextPointers);
     }
 }
 
@@ -188,14 +188,14 @@ RtlVirtualUnwind_Worker (
           IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
           )
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-    } 
+    }
     CONTRACTL_END;
 
-    // b/c we're only called by the safe RtlVirtualUnwind we are guaranteed 
+    // b/c we're only called by the safe RtlVirtualUnwind we are guaranteed
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
@@ -226,14 +226,14 @@ RtlVirtualUnwind_Worker (
     {
         goto NORMAL_UNWIND;
     }
-    
+
     // ASSUMPTION: only the first byte of an opcode will be patched by the CLR debugging code
 
     // determine if we're in an epilog and if there is at least one managed breakpoint
     NextByte = (PUCHAR)ControlPc;
 
     TempOpcode = GetOpcodeFromManagedBPForAddress((ULONG64)NextByte, &HasManagedBreakpoint, &HasUnmanagedBreakpoint);
-   
+
     // TempOpcode == NextByte[0] unless NextByte[0] is a breakpoint
     _ASSERTE(TempOpcode == NextByte[0] || NextByte[0] == AMD64_INT3);
 
@@ -242,42 +242,42 @@ RtlVirtualUnwind_Worker (
     //   add rsp, imm32
     //   lea rsp, -disp8[fp]
     //   lea rsp, -disp32[fp]
-    if ((TempOpcode == AMD64_SIZE64_PREFIX) 
-        && (NextByte[1] == AMD64_ADD_IMM8_OP) 
-        && (NextByte[2] == 0xc4)) 
+    if ((TempOpcode == AMD64_SIZE64_PREFIX)
+        && (NextByte[1] == AMD64_ADD_IMM8_OP)
+        && (NextByte[2] == 0xc4))
     {
         // add rsp, imm8.
         NextByte += 4;
-    } 
-    else if ((TempOpcode == AMD64_SIZE64_PREFIX) 
-            && (NextByte[1] == AMD64_ADD_IMM32_OP) 
-            && (NextByte[2] == 0xc4)) 
+    }
+    else if ((TempOpcode == AMD64_SIZE64_PREFIX)
+            && (NextByte[1] == AMD64_ADD_IMM32_OP)
+            && (NextByte[2] == 0xc4))
     {
         // add rsp, imm32.
         NextByte += 7;
-    } 
-    else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX) 
-            && (NextByte[1] == AMD64_LEA_OP)) 
+    }
+    else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX)
+            && (NextByte[1] == AMD64_LEA_OP))
     {
         FrameRegister = ((TempOpcode & 0x7) << 3) | (NextByte[2] & 0x7);
 
         if ((FrameRegister != 0)
-            && (FrameRegister == UnwindInfo->FrameRegister)) 
+            && (FrameRegister == UnwindInfo->FrameRegister))
         {
-            if ((NextByte[2] & 0xf8) == 0x60) 
+            if ((NextByte[2] & 0xf8) == 0x60)
             {
                 // lea rsp, disp8[fp].
                 NextByte += 4;
-            } 
-            else if ((NextByte[2] &0xf8) == 0xa0) 
+            }
+            else if ((NextByte[2] &0xf8) == 0xa0)
             {
                 // lea rsp, disp32[fp].
                 NextByte += 7;
             }
         }
-    }    
+    }
 
-    // if we haven't eaten any of the code stream detecting a stack adjustment 
+    // if we haven't eaten any of the code stream detecting a stack adjustment
     // then TempOpcode is still valid
     if (((ULONG64)NextByte) != ControlPc)
     {
@@ -289,18 +289,18 @@ RtlVirtualUnwind_Worker (
 
     // Check for any number of:
     //   pop nonvolatile-integer-register[0..15].
-    while (TRUE) 
+    while (TRUE)
     {
-        if ((TempOpcode & 0xf8) == AMD64_POP_OP) 
+        if ((TempOpcode & 0xf8) == AMD64_POP_OP)
         {
             NextByte += 1;
-        } 
-        else if (AMD64_IS_REX_PREFIX(TempOpcode) 
-                && ((NextByte[1] & 0xf8) == AMD64_POP_OP)) 
+        }
+        else if (AMD64_IS_REX_PREFIX(TempOpcode)
+                && ((NextByte[1] & 0xf8) == AMD64_POP_OP))
         {
             NextByte += 2;
-        } 
-        else 
+        }
+        else
         {
             // when we break out here TempOpcode will hold the next Opcode so there
             // is no need to call GetOpcodeFromManagedBPForAddress again
@@ -314,7 +314,7 @@ RtlVirtualUnwind_Worker (
 
     // TempOpcode == NextByte[0] unless NextByte[0] is a breakpoint
     _ASSERTE(TempOpcode == NextByte[0] || NextByte[0] == AMD64_INT3);
-    
+
     // If the next instruction is a return, then control is currently in
     // an epilogue and execution of the epilogue should be emulated.
     // Otherwise, execution is not in an epilogue and the prologue should
@@ -324,25 +324,25 @@ RtlVirtualUnwind_Worker (
         // A return is an unambiguous indication of an epilogue
         InEpilogue = TRUE;
         NextByte += 1;
-    } 
+    }
     else if (TempOpcode == AMD64_REP_PREFIX && NextByte[1] == AMD64_RET_OP)
     {
         // A return is an unambiguous indication of an epilogue
         InEpilogue = TRUE;
         NextByte += 2;
-    } 
-    else if (TempOpcode == AMD64_JMP_IMM8_OP || TempOpcode == AMD64_JMP_IMM32_OP) 
+    }
+    else if (TempOpcode == AMD64_JMP_IMM8_OP || TempOpcode == AMD64_JMP_IMM32_OP)
     {
         // An unconditional branch to a target that is equal to the start of
         // or outside of this routine is logically a call to another function.
         BranchTarget = (ULONG64)NextByte - ImageBase;
 
-        if (TempOpcode == AMD64_JMP_IMM8_OP) 
+        if (TempOpcode == AMD64_JMP_IMM8_OP)
         {
             BranchTarget += 2 + (CHAR)NextByte[1];
             NextByte += 2;
-        } 
-        else 
+        }
+        else
         {
             BranchTarget += 5 + *((LONG UNALIGNED *)&NextByte[1]);
             NextByte += 5;
@@ -354,13 +354,13 @@ RtlVirtualUnwind_Worker (
         // A branch to the start of self implies a recursive call, so
         // is treated as an epilogue.
         if (BranchTarget <= FunctionEntry->BeginAddress ||
-            BranchTarget >= FunctionEntry->EndAddress) 
+            BranchTarget >= FunctionEntry->EndAddress)
         {
             _ASSERTE((UnwindInfo->Flags & UNW_FLAG_CHAININFO) == 0);
             InEpilogue = TRUE;
         }
     }
-    else if ((TempOpcode == AMD64_JMP_IND_OP) && (NextByte[1] == 0x25)) 
+    else if ((TempOpcode == AMD64_JMP_IND_OP) && (NextByte[1] == 0x25))
     {
         // An unconditional jump indirect.
 
@@ -369,9 +369,9 @@ RtlVirtualUnwind_Worker (
         InEpilogue = TRUE;
         NextByte += 2;
     }
-    else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX) 
-            && (NextByte[1] == AMD64_JMP_IND_OP) 
-            && (NextByte[2] & 0x38) == AMD64_JMP_IND_RAX) 
+    else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX)
+            && (NextByte[1] == AMD64_JMP_IND_OP)
+            && (NextByte[2] & 0x38) == AMD64_JMP_IND_RAX)
     {
         //
         // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
@@ -386,14 +386,14 @@ RtlVirtualUnwind_Worker (
     }
 
     if (InEpilogue && HasUnmanagedBreakpoint)
-    {        
+    {
         STRESS_LOG1(LF_CORDB, LL_ERROR, "RtlVirtualUnwind is about to fail b/c the ControlPc (0x%p) is in the epilog of a function which has a 0xCC in its epilog.", ControlPc);
         _ASSERTE(!"RtlVirtualUnwind is about to fail b/c you are unwinding through\n"
                   "the epilogue of a function and have a 0xCC in the codestream. This is\n"
                   "probably caused by having set that breakpoint yourself in the debugger,\n"
                   "you might try to remove the bp and ignore this assert.");
     }
-    
+
     if (!(InEpilogue && HasManagedBreakpoint))
     {
         goto NORMAL_UNWIND;
@@ -405,13 +405,13 @@ RtlVirtualUnwind_Worker (
         // We explicitly handle the case where the new below can't allocate, but we're still
         // getting an assert from inside new b/c we can be called within a FAULT_FORBID scope.
         //
-        // If new does fail we will still end up crashing, but the debugger doesn't have to 
+        // If new does fail we will still end up crashing, but the debugger doesn't have to
         // be OOM hardened in Whidbey and this is a debugger only code path so we're ok in
         // that department.
         FAULT_NOT_FATAL();
 
         LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: Function has >1 managed bp in the epilogue, and we are in the epilogue, need a code buffer for RtlVirtualUnwind\n"));
-            
+
         // IMPLEMENTATION NOTE:
         // It is of note that we are significantly pruning the funtion here in making the fake
         // code buffer, all that we are making room for is 1 byte for the prologue, 1 byte for
@@ -419,14 +419,14 @@ RtlVirtualUnwind_Worker (
         // tied to the implmentation of RtlVirtualUnwind and the knowledge that by passing the
         // the test above and having InEpilogue==TRUE then the code path which will be followed
         // through RtlVirtualUnwind is known.
-        // 
+        //
         // In making this fake code buffer we need to ensure that we don't mess with the outcome
         // of the test in RtlVirtualUnwind to determine that control stopped within a function
-        // epilogue, or the unwinding that will happen when that test comes out TRUE. To that end 
-        // we have preserved a single byte representing the Prologue as a section of the buffer 
+        // epilogue, or the unwinding that will happen when that test comes out TRUE. To that end
+        // we have preserved a single byte representing the Prologue as a section of the buffer
         // as well as a single byte representation of the Function code so that tests to make sure
-        // that we're out of the prologue will not fail. 
-    
+        // that we're out of the prologue will not fail.
+
         T_RUNTIME_FUNCTION FakeFunctionEntry;
 
         //
@@ -464,7 +464,7 @@ RtlVirtualUnwind_Worker (
         ULONG   SizeOfEpilogue = (ULONG)((ULONG64)NextByte - ControlPc);
         ULONG   SizeOfBuffer = (ULONG)(sizeof(UNWIND_INFO) + FAKE_PROLOG_SIZE + FAKE_FUNCTION_CODE_SIZE + SizeOfEpilogue);
         BYTE   *pBuffer = (BYTE*) new (nothrow) BYTE[SizeOfBuffer];
-        BYTE   *pCodeBuffer;            
+        BYTE   *pCodeBuffer;
         ULONG64 NewImageBase;
         ULONG64 NewControlPc;
 
@@ -498,7 +498,7 @@ RtlVirtualUnwind_Worker (
         HasManagedBreakpoint = FALSE;
         HasUnmanagedBreakpoint = FALSE;
 
-        // The buffer cleaning implementation here just runs through the buffer byte by byte trying 
+        // The buffer cleaning implementation here just runs through the buffer byte by byte trying
         // to get a real opcode from the patch table for any 0xCC that it finds. There is the
         // possiblity that the epilogue will contain a 0xCC in an immediate value for which a
         // patch won't be found and this will report a false positive for HasUnmanagedBreakpoint.
@@ -540,7 +540,7 @@ RtlVirtualUnwind_Worker (
 
         return NULL; // if control left in the epilog then RtlVirtualUnwind will not return an exception handler
     }
-    
+
 NORMAL_UNWIND:
     return RtlVirtualUnwind_Unsafe(HandlerType, ImageBase, ControlPc, FunctionEntry, ContextRecord, HandlerData, EstablisherFrame, ContextPointers);
 }

@@ -42,7 +42,7 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /* Global variables storing the std streams.*/
 PAL_FILE PAL_Stdout;
-PAL_FILE PAL_Stdin; 
+PAL_FILE PAL_Stdin;
 PAL_FILE PAL_Stderr;
 
 /*++
@@ -101,7 +101,7 @@ static LPSTR MapFileOpenModes(LPSTR str , BOOL * bTextMode)
     }
 
     /* The PAL behaves differently for some Windows file open modes:
-    
+
     c, n, S, R, and T: these are all hints to the system that aren't supported
     by the PAL. Since the user cannot depend on this behavior, it's safe to
     simply ignore these modes.
@@ -109,14 +109,14 @@ static LPSTR MapFileOpenModes(LPSTR str , BOOL * bTextMode)
     D: specifies a file as temporary. This file is expected to be deleted when
     the last file descriptor is closed. The PAL does not support this behavior
     and asserts when this mode is used.
-    
+
     t: represents opening in text mode. Calls to fdopen on Unix don't accept
-    't' so it is silently stripped out. However, the PAL supports the mode by 
-    having the PAL wrappers do the translation of CR-LF to LF and vice versa. 
-    
+    't' so it is silently stripped out. However, the PAL supports the mode by
+    having the PAL wrappers do the translation of CR-LF to LF and vice versa.
+
     t vs. b: To get binary mode, you must explicitly use 'b'. If neither mode
-    is specified on Windows, the default mode is defined by the global 
-    variable _fmode. The PAL simply defaults to text mode. After examining 
+    is specified on Windows, the default mode is defined by the global
+    variable _fmode. The PAL simply defaults to text mode. After examining
     CLR usage patterns, the PAL behavior seems acceptable. */
 
     /* Check if the mode specifies deleting the temporary file
@@ -291,7 +291,7 @@ PAL_fopen(const char * fileName, const char * mode)
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
-        
+
         FILEDosToUnixPathA( UnixFileName );
 
         /*I am not checking for the case where stat fails
@@ -493,7 +493,7 @@ PAL_fread(void * buffer, size_t size, size_t count, PAL_FILE * f)
     PERF_ENTRY(fread);
     ENTRY( "fread( buffer=%p, size=%d, count=%d, f=%p )\n",
            buffer, size, count, f );
-	
+
     _ASSERTE(f != NULL);
 
     CLEARERR(f);
@@ -530,7 +530,7 @@ PAL_fread(void * buffer, size_t size, size_t count, PAL_FILE * f)
         }
         nReadBytes = i;
     }
-	
+
 done:
     LOGEXIT( "fread returning size_t %d\n", nReadBytes );
     PERF_EXIT(fread);
@@ -652,11 +652,11 @@ PAL_ftell(PAL_FILE * f)
         lRetVal = -1;
     }
 #endif
-	
+
     LOGEXIT( "ftell returning %ld\n", lRetVal );
     PERF_EXIT(ftell);
     /* This explicit cast to LONG is used to silence any potential warnings
-    due to implicitly casting the native long lRetVal to LONG when returning. */    
+    due to implicitly casting the native long lRetVal to LONG when returning. */
     return (LONG)lRetVal;
 }
 
@@ -714,11 +714,11 @@ PAL_setvbuf(PAL_FILE *f, char *buf, int type, size_t size)
 
     PERF_ENTRY(setvbuf);
     ENTRY( "setvbuf( %p, %p, %d, %ul )\n", f, buf, type, size);
-    
+
     _ASSERTE(f != NULL);
-    
+
     nRetVal = setvbuf(f->bsdFilePtr, buf, type, size);
-    
+
     LOGEXIT( "setvbuf returning %d\n", nRetVal );
     PERF_EXIT(setvbuf);
     return nRetVal;

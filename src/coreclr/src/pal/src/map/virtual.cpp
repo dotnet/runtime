@@ -1181,7 +1181,7 @@ VIRTUALCommitMemory(
                 ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
                 goto error;
             }
- 
+
 #ifdef MADV_DODUMP
             // Include committed memory in coredump.
             madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
@@ -1729,7 +1729,7 @@ VirtualProtect(
         {
             *lpflOldProtect = PAGE_EXECUTE_READWRITE;
         }
-        
+
 #ifdef MADV_DONTDUMP
         // Include or exclude memory from coredump based on the protection.
         int advise = flNewProtect == PAGE_NOACCESS ? MADV_DONTDUMP : MADV_DODUMP;

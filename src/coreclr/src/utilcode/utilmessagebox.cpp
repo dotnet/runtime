@@ -37,12 +37,12 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
     // To help find issues, we will always display dialogs for critical failures
     // under debug builds. This includes asserts and other critical issues.
    return TRUE;
-#else      
+#else
     // Retrieve error mode
     UINT last = SetErrorMode(0);
     SetErrorMode(last);         //set back to previous value
-                    
-    // SEM_FAILCRITICALERRORS indicates that the system does not display the critical-error-handler 
+
+    // SEM_FAILCRITICALERRORS indicates that the system does not display the critical-error-handler
     // message box. Instead, the system sends the error to the calling process.
     return !(last & SEM_FAILCRITICALERRORS);
 #endif // _DEBUG
@@ -56,7 +56,7 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 // plumbing code for the rest of parts of the assert dialog.  Note that the simple
 // Win32 MessageBox does not support the detailedText value.
 // If we later refactor MessageBoxImpl into its own DLL, move the lines referencing
-// "Microsoft.Windows.Common-Controls" version 6 in stdafx.h as well.  
+// "Microsoft.Windows.Common-Controls" version 6 in stdafx.h as well.
 int MessageBoxImpl(
                   HWND hWnd,            // Handle to Owner Window
                   LPCWSTR message,      // Message
@@ -84,7 +84,7 @@ int UtilMessageBoxVA(
                   UINT uText,       // Resource Identifier for Text message
                   UINT uTitle,      // Resource Identifier for Title
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   va_list args)     // Additional Arguments
 {
@@ -96,15 +96,15 @@ int UtilMessageBoxVA(
     CONTRACTL_END;
 
     SString text;
-    SString title; 
+    SString title;
     int result = IDCANCEL;
-    
+
     EX_TRY
     {
         text.LoadResource(CCompRC::Error, uText);
         title.LoadResource(CCompRC::Error, uTitle);
 
-        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(), 
+        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
             (LPWSTR)title.GetUnicode(), uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
     }
     EX_CATCH
@@ -113,7 +113,7 @@ int UtilMessageBoxVA(
     }
     EX_END_CATCH(SwallowAllExceptions);
 
-    return result;            
+    return result;
 }
 
 int UtilMessageBoxNonLocalizedVA(
@@ -121,7 +121,7 @@ int UtilMessageBoxNonLocalizedVA(
                   LPCWSTR lpText,   // Text message
                   LPCWSTR lpTitle,  // Title
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
                   va_list args)     // Additional Arguments
@@ -145,7 +145,7 @@ int UtilMessageBoxNonLocalizedVA(
                   LPCWSTR lpTitle,  // Title
                   LPCWSTR lpDetails,// Details like a stack trace, etc.
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
                   va_list args)     // Additional Arguments
@@ -167,24 +167,24 @@ int UtilMessageBoxNonLocalizedVA(
 	}
 
     EX_TRY
-    {   
+    {
         StackSString formattedMessage;
         StackSString formattedTitle;
         SString details(lpDetails);
         PathString fileName;
         BOOL fDisplayMsgBox = TRUE;
-        
+
         // Format message string using optional parameters
         formattedMessage.VPrintf(lpText, args);
-       
+
         // Try to get filename of Module and add it to title
         if (showFileNameInTitle && WszGetModuleFileName(NULL, fileName))
-        {           
+        {
             LPCWSTR wszName = NULL;
             size_t cchName = 0;
 
-                  
-            
+
+
             SplitPathInterior(fileName, NULL, NULL, NULL, NULL, &wszName, &cchName, NULL, NULL);
             formattedTitle.Printf(W("%s - %s"), wszName, lpTitle);
         }
@@ -194,9 +194,9 @@ int UtilMessageBoxNonLocalizedVA(
         }
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-        // If the current process isn't interactive (a service for example), then we report the message 
-        // in the event log and via OutputDebugString. 
-        // 
+        // If the current process isn't interactive (a service for example), then we report the message
+        // in the event log and via OutputDebugString.
+        //
         // We may still however attempt to display the message box if the MB_SERVICE_NOTIFICATION
         // message box style was specified.
         if (!RunningInteractive())
@@ -210,22 +210,22 @@ int UtilMessageBoxNonLocalizedVA(
                 message.Append(formattedMessage);
 
             ClrReportEvent(W(".NET Runtime"),
-                EVENTLOG_ERROR_TYPE,    // event type 
+                EVENTLOG_ERROR_TYPE,    // event type
                 0,                      // category zero
                 1024,                   // event identifier
                 NULL,                   // no user security identifier
                 message.GetUnicode());
-            
+
             if(lpTitle != NULL)
                 WszOutputDebugString(lpTitle);
             if(!formattedMessage.IsEmpty())
                 WszOutputDebugString(formattedMessage);
 
-            // If we are running as a service and displayForNonInteractive is FALSE then IDABORT is 
-            // the best value to return as it will most likely cause callers of this API to abort the process. 
+            // If we are running as a service and displayForNonInteractive is FALSE then IDABORT is
+            // the best value to return as it will most likely cause callers of this API to abort the process.
             // This is the right thing to do since attaching a debugger doesn't make much sense when the process isn't
             // running in interactive mode.
-            if(!displayForNonInteractive)   
+            if(!displayForNonInteractive)
             {
                 fDisplayMsgBox = FALSE;
                 result = IDABORT;
@@ -233,7 +233,7 @@ int UtilMessageBoxNonLocalizedVA(
             else
             {
                 // Include in the MB_DEFAULT_DESKTOP_ONLY style.
-                uType |= MB_DEFAULT_DESKTOP_ONLY;                            
+                uType |= MB_DEFAULT_DESKTOP_ONLY;
             }
         }
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
@@ -244,15 +244,15 @@ int UtilMessageBoxNonLocalizedVA(
             // in use.  However, outside the CLR (SELF_NO_HOST) we can't assume we have resources and
             // in CORECLR we can't even necessarily expect that our CLR callbacks have been initialized.
             // This code path is used for ASSERT dialogs.
-            
+
             result = MessageBoxImpl(hWnd, formattedMessage, formattedTitle, details, uType);
-            
+
             if (pInputFromUser != NULL)
             {
                 *pInputFromUser = TRUE;
             }
         }
-    }        
+    }
     EX_CATCH
     {
         result = IDCANCEL;
@@ -267,7 +267,7 @@ int UtilMessageBox(
                   UINT uText,       // Resource Identifier for Text message
                   UINT uTitle,      // Resource Identifier for Title
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   ...)              // Additional Arguments
 {
@@ -283,7 +283,7 @@ int UtilMessageBox(
     int result = UtilMessageBoxVA(hWnd, uText, uTitle, uType, displayForNonInteractive, showFileNameInTitle, marker);
     va_end( marker );
 
-    return result;    
+    return result;
 }
 
 int UtilMessageBoxNonLocalized(
@@ -291,7 +291,7 @@ int UtilMessageBoxNonLocalized(
                   LPCWSTR lpText,   // Text message
                   LPCWSTR lpTitle,  // Title message
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   ... )             // Additional Arguments
 {
@@ -370,7 +370,7 @@ int UtilMessageBoxCatastrophicVA(
 
     HWND hwnd = NULL;
 
-    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going. 
+    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going.
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | ModeViolation);
 
     if (!ShouldDisplayMsgBoxOnCriticalFailure())
@@ -398,7 +398,7 @@ int UtilMessageBoxCatastrophicNonLocalizedVA(
 
     HWND hwnd = NULL;
 
-    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going. 
+    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going.
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | ModeViolation);
 
     if (!ShouldDisplayMsgBoxOnCriticalFailure())

@@ -120,7 +120,7 @@ HRESULT GetExceptionHResult(OBJECTREF throwable)
 
 //---------------------------------------------------------------------------------------
 //
-// Dynamically unreachable implementation of profiler callbacks. Note that we can't just 
+// Dynamically unreachable implementation of profiler callbacks. Note that we can't just
 // disable PROFILING_SUPPORTED for crossgen because of it affects data layout and FCall tables.
 //
 
@@ -310,7 +310,7 @@ Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark, AppDomai
 }
 
 void EnableStressHeapHelper()
-{ 
+{
     UNREACHABLE();
 }
 
@@ -340,11 +340,11 @@ void DynamicMethodTable::Destroy()
 }
 
 void SyncClean::AddEEHashTable(EEHashEntry** entry)
-{ 
+{
 }
 
 void SyncClean::AddHashMap(Bucket *bucket)
-{ 
+{
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -355,7 +355,7 @@ LONG ComCallWrapperTemplate::Release()
 #endif
 
 extern "C" UINT_PTR STDCALL GetCurrentIP()
-{ 
+{
     return 0;
 }
 
@@ -363,7 +363,7 @@ extern "C" UINT_PTR STDCALL GetCurrentIP()
 // If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
 // context at the point of the failure
 int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
-{ 
+{
     fprintf(stderr, "Fatal error: %08x\n", exitCode);
     ExitProcess(exitCode);
     return -1;

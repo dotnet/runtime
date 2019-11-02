@@ -13,14 +13,14 @@ namespace jitstd
 {
 
 template <typename T>
-inline 
+inline
 T&& forward(typename jitstd::remove_reference<T>::type& arg)
 {
     return static_cast<T&&>(arg);
 }
 
 template <typename T>
-inline 
+inline
 T&& forward(typename jitstd::remove_reference<T>::type&& arg)
 {
     static_assert(!jitstd::is_lvalue_reference<T>::value, "unexpected lvalue reference");
@@ -45,9 +45,9 @@ namespace utility
         const T& l;
         scoped_code(const T& l) : l(l) { }
         ~scoped_code() { l(); }
-    }; 
-    
- 
+    };
+
+
     // Ensures that "wset" is the union of the initial state of "wset" and "rset".
     // Elements from "rset" that were not in "wset" are added to "cset."
     template <typename Set>

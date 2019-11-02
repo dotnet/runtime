@@ -178,7 +178,7 @@ public:
 
     void DumpBaseRelocs();
     void DumpHelperTable();
-    
+
     void DumpMethodFixups(PTR_Module module,
                           TADDR fixupList);
 
@@ -186,13 +186,13 @@ public:
 
     void DumpMethodTable( PTR_MethodTable mt, const char * name,
                           PTR_Module module );
-    
+
 #ifndef STUB_DISPATCH_ALL
     void DumpMethodTableSlotChunk( TADDR slotChunk, COUNT_T size, bool );
 #endif
 
     void DumpSlot( unsigned index, PCODE tgt );
-    void DumpFieldDesc( PTR_FieldDesc fd, const char * name ); 
+    void DumpFieldDesc( PTR_FieldDesc fd, const char * name );
     void DumpEEClassForMethodTable( PTR_MethodTable mt );
     void DumpTypeDesc( PTR_TypeDesc td );
 
@@ -269,7 +269,7 @@ private:
 
 
     COUNT_T ** m_fixupHistogram;
-    
+
     #define COUNT_HISTOGRAM_SIZE 16
     COUNT_T m_fixupCountHistogram[COUNT_HISTOGRAM_SIZE];
     COUNT_T m_fixupCount; //used to track above counts
@@ -446,7 +446,7 @@ private:
 #endif // FEATURE_COMINTEROP
 
     void TraverseMemberRefToDescHashEntry(void *pContext, PTR_MemberRefToDescHashEntry pEntry, bool saveClasses);
-    
+
     void TraverseMemberRefToDescHash(PTR_MemberRefToDescHashTable pTable, const char * name,
                                        unsigned offset, unsigned fieldSize, bool saveClasses);
 
@@ -511,7 +511,7 @@ private:
             {
                 return TRUE;
             }
-            else if (addr > sc.addr) 
+            else if (addr > sc.addr)
             {
                 return FALSE;
             }
@@ -597,7 +597,7 @@ private:
 public:
     struct EnumMnemonics
     {
-        EnumMnemonics( DWORD val, const WCHAR * m ) 
+        EnumMnemonics( DWORD val, const WCHAR * m )
             : value(val), mask(val), mnemonic(m){ }
         EnumMnemonics( DWORD val, DWORD msk, const WCHAR * m )
             : value(val), mask(msk), mnemonic(m) { }

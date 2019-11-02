@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModelPub.h -- header file for Common Language Runtime metadata.
-// 
+//
 
-// 
+//
 //*****************************************************************************
 
 #ifndef _METAMODELPUB_H_
@@ -22,7 +22,7 @@
 # define lengthof(x) (sizeof(x)/sizeof((x)[0]))
 #endif
 
-template<class T> inline T Align4(T p) 
+template<class T> inline T Align4(T p)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -51,16 +51,16 @@ typedef ULONG RID;
 // Naming is as follows:
 //  Given some table "Xyz":
 //  class XyzRec { public:
-//    SOMETYPE  m_SomeField; 
+//    SOMETYPE  m_SomeField;
 //        // rest of the fixed fields.
-//    enum { COL_Xyz_SomeOtherField, 
+//    enum { COL_Xyz_SomeOtherField,
 //        // rest of the fields, enumerated.
 //        COL_Xyz_COUNT };
 //   };
 //
 // The important features are the class name (XyzRec), the enumerations
 //  (COL_Xyz_FieldName), and the enumeration count (COL_Xyz_COUNT).
-// 
+//
 // THESE NAMING CONVENTIONS ARE CARVED IN STONE!  DON'T TRY TO BE CREATIVE!
 //
 //*****************************************************************************
@@ -455,7 +455,7 @@ public:
     };
 };
 
-class FieldMarshalRec                                                   
+class FieldMarshalRec
 {
 public:
     enum {
@@ -1414,12 +1414,12 @@ METADATA_FIELDS_PROTECTION:
     USHORT      m_Flags;                // index; zero = first var
 public:
     enum {
-      
+
         COL_Number,                     // index; zero = first var
         COL_Flags,                      // flags, for future use
         COL_Owner,                      // typeDef/methodDef
         COL_Name,                       // Purely descriptive, not used for binding purposes
-        COL_COUNT, 
+        COL_COUNT,
         COL_KEY = COL_Owner
     };
 
@@ -1450,7 +1450,7 @@ public:
     }
 };
 
-// @todo: this definition is for reading the old (and wrong) GenericParamRec from a 
+// @todo: this definition is for reading the old (and wrong) GenericParamRec from a
 // Beta1 assembly.
 class GenericParamV1_1Rec
 {
@@ -1459,13 +1459,13 @@ METADATA_FIELDS_PROTECTION:
     USHORT      m_Flags;                // index; zero = first var
 public:
     enum {
-      
+
         COL_Number,                     // index; zero = first var
         COL_Flags,                      // flags, for future use
         COL_Owner,                      // typeDef/methodDef
         COL_Name,                       // Purely descriptive, not used for binding purposes
         COL_Kind,                       // typeDef/Ref/Spec, reserved for future use
-        COL_COUNT, 
+        COL_COUNT,
         COL_KEY = COL_Owner
     };
 
@@ -1512,10 +1512,10 @@ class GenericParamConstraintRec
 {
 public:
     enum {
-      
+
         COL_Owner,                                      // GenericParam
         COL_Constraint,                                 // typeDef/Ref/Spec
-        COL_COUNT, 
+        COL_COUNT,
         COL_KEY = COL_Owner
     };
 };
@@ -1637,7 +1637,7 @@ enum MDPools {
     MDPoolUSBlobs,                      // ...the user string pool.
 
     MDPoolCount,                        // Count of pools, for array sizing.
-}; // enum MDPools 
+}; // enum MDPools
 
 
 struct CCodedTokenDef
@@ -1661,7 +1661,7 @@ struct CMiniTableDef
     BYTE        m_iKey;                 // Column which is the key, if any.
     USHORT      m_cbRec;                // Size of the records.
 };
-struct CMiniTableDefEx 
+struct CMiniTableDefEx
 {
     CMiniTableDef   m_Def;              // Table definition.
     const char  * const *m_pColNames;   // Array of column names.

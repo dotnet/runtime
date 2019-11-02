@@ -77,7 +77,7 @@ save_xmm128_postrsp macro Reg, Offset
 
         movdqa  Offset[rsp], Reg
         .savexmm128 Reg, Offset
-    
+
         ___STACK_ADJUSTMENT_FORBIDDEN = 1
 
         endm
@@ -134,10 +134,10 @@ Section ends
 LEAF_END_MARKED macro Name, section
         public Name&_End
 Name&_End label qword
-        ; this nop is important to keep the label in 
+        ; this nop is important to keep the label in
         ; the right place in the face of BBT
         nop
-        
+
 Name    endp
 
 Section ends
@@ -190,7 +190,7 @@ Section ends
 ;
 ; Inlined version of GetThread
 ; Trashes rax and r11
-; 
+;
 INLINE_GETTHREAD macro Reg
 
         EXTERN _tls_index : DWORD
@@ -227,17 +227,17 @@ Name::
 
 ;
 ; Define alternate entry macro.
-;        
+;
 ALTERNATE_ENTRY macro Name
         public Name
 Name label proc
         endm
 
-; 
+;
 ; Appropriate instructions for certain specific scenarios:
-;  - REPRET: should be used as the return instruction when the return is a branch 
-;            target or immediately follows a conditional branch 
-;  - TAILJMP_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction 
+;  - REPRET: should be used as the return instruction when the return is a branch
+;            target or immediately follows a conditional branch
+;  - TAILJMP_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction
 ;            sequence which is recognized by the unwinder as a valid epilogue terminator
 ;
 REPRET      TEXTEQU <DB 0F3h, 0C3h>
@@ -271,13 +271,13 @@ PUSH_CALLEE_SAVED_REGISTERS macro
 SAVE_CALLEE_SAVED_REGISTERS macro ofs
 
         save_reg_postrsp    rdi, ofs + 0h
-        save_reg_postrsp    rsi, ofs + 8h 
+        save_reg_postrsp    rsi, ofs + 8h
         save_reg_postrsp    rbx, ofs + 10h
-        save_reg_postrsp    rbp, ofs + 18h 
+        save_reg_postrsp    rbp, ofs + 18h
         save_reg_postrsp    r12, ofs + 20h
-        save_reg_postrsp    r13, ofs + 28h 
+        save_reg_postrsp    r13, ofs + 28h
         save_reg_postrsp    r14, ofs + 30h
-        save_reg_postrsp    r15, ofs + 38h 
+        save_reg_postrsp    r15, ofs + 38h
 
         endm
 
@@ -403,7 +403,7 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>,
 
         if stackAllocOnEntry ge 3*8
         mov stackAllocSpill3, [rsp + __PWTB_StackAlloc + 28h]
-        save_reg_postrsp    r13, __PWTB_StackAlloc + 28h 
+        save_reg_postrsp    r13, __PWTB_StackAlloc + 28h
         endif
 
         if stackAllocOnEntry ge 2*8
@@ -413,7 +413,7 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>,
 
         if stackAllocOnEntry ge 8
         mov stackAllocSpill1, [rsp + __PWTB_StackAlloc + 38h]
-        save_reg_postrsp    r15, __PWTB_StackAlloc + 38h 
+        save_reg_postrsp    r15, __PWTB_StackAlloc + 38h
         endif
 
         END_PROLOGUE

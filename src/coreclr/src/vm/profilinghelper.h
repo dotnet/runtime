@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // ProfilingHelper.h
-// 
+//
 
 //
 // Declaration of helper classes used for miscellaneous purposes within the
@@ -43,7 +43,7 @@ enum ProfAPIFaultFlags
 //
 class ProfilingAPIUtility
 {
-private:    
+private:
     enum ProfilerCompatibilityFlag
     {
         // Default: disable V2 profiler
@@ -76,36 +76,36 @@ public:
     // ----------------------------------------------------------------------------
     // ProfilingAPIUtility::IncEvacuationCounter
     //
-    // Description: 
+    // Description:
     //    Simple helper to increase the evacuation counter inside an EE thread by one
     //
     // Arguments:
     //    * pThread - pointer to an EE Thread
     //
     template<typename ThreadType>
-    static FORCEINLINE void IncEvacuationCounter(ThreadType * pThread) 
+    static FORCEINLINE void IncEvacuationCounter(ThreadType * pThread)
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (pThread) 
+        if (pThread)
             pThread->IncProfilerEvacuationCounter();
     }
 
     // ----------------------------------------------------------------------------
     // ProfilingAPIUtility::DecEvacuationCounter
     //
-    // Description: 
+    // Description:
     //    Simple helper to decrease the evacuation counter inside an EE thread by one
-    //    
+    //
     // Arguments:
     //    * pThread - pointer to an EE Thread
     //
     template<typename ThreadType>
-    static FORCEINLINE void DecEvacuationCounter(ThreadType * pThread) 
+    static FORCEINLINE void DecEvacuationCounter(ThreadType * pThread)
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (pThread) 
+        if (pThread)
             pThread->DecProfilerEvacuationCounter();
     }
 
@@ -133,10 +133,10 @@ private:
     static HRESULT PerformDeferredInit();
     static HRESULT DoPreInitialization(
         EEToProfInterfaceImpl *pEEProf,
-        const CLSID *pClsid, 
-        LPCWSTR wszClsid, 
-        LPCWSTR wszProfilerDLL, 
-        LoadType loadType, 
+        const CLSID *pClsid,
+        LPCWSTR wszClsid,
+        LPCWSTR wszProfilerDLL,
+        LoadType loadType,
         DWORD dwConcurrentGCWaitTimeoutInMs);
     static HRESULT LoadProfiler(
         LoadType loadType,
@@ -152,7 +152,7 @@ private:
     static void AppendSupplementaryInformation(int iStringResource, SString * pString);
 
     static void LogProfEventVA(
-        int iStringResourceID, 
+        int iStringResourceID,
         WORD wEventType,
         va_list insertionArgs);
 };
@@ -168,7 +168,7 @@ class SetCallbackStateFlagsHolder
 public:
     SetCallbackStateFlagsHolder(DWORD dwFlags);
     ~SetCallbackStateFlagsHolder();
-    
+
 private:
     Thread *   m_pThread;
     DWORD      m_dwOriginalFullState;

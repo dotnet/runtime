@@ -64,7 +64,7 @@ namespace BINDER_SPACE
         // Get name and metadata
         if (fIsDefinition)
         {
-            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyProps(             
+            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyProps(
                             mda,            // [IN] The Assembly for which to get the properties.
                             &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
                             &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
@@ -76,7 +76,7 @@ namespace BINDER_SPACE
         }
         else
         {
-            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyRefProps(             
+            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyRefProps(
                             mdar,            // [IN] The Assembly for which to get the properties.
                             &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
                             &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
@@ -121,7 +121,7 @@ namespace BINDER_SPACE
         {
             SetIsRetargetable(TRUE);
         }
-        
+
         // Set ContentType
         if (IsAfContentType_Default(dwRefOrDefFlags))
         {
@@ -135,7 +135,7 @@ namespace BINDER_SPACE
         {
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
         }
-        
+
         // Set the assembly version
         {
             AssemblyVersion *pAssemblyVersion = GetVersion();
@@ -161,7 +161,7 @@ namespace BINDER_SPACE
             {
                 GetPublicKeyTokenBLOB().Set(publicKeyOrTokenBLOB);
             }
-            
+
             SetHave(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
         }
 
@@ -179,9 +179,9 @@ namespace BINDER_SPACE
     HRESULT AssemblyName::Init(IAssemblyName *pIAssemblyName)
     {
         HRESULT hr = S_OK;
-        
+
         _ASSERTE(pIAssemblyName != NULL);
-        
+
         EX_TRY
         {
             {
@@ -201,7 +201,7 @@ namespace BINDER_SPACE
             if ((hr == S_OK) && (cbVersionSize != 0))
             {
                 // Property is present - loop to get the individual version details
-                for(DWORD i = 0; i < 4; i++) 
+                for(DWORD i = 0; i < 4; i++)
                 {
                     cbVersionSize = sizeof(dwVersionParts[i]);
                     hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_MAJOR_VERSION+i, static_cast<PVOID>(&dwVersionParts[i]), &cbVersionSize);
@@ -250,7 +250,7 @@ namespace BINDER_SPACE
             if ((hr == S_OK) && (cbPeKind != 0))
             {
                 PEKIND PeKind = (PEKIND)peKind;
-                if (PeKind != peNone) 
+                if (PeKind != peNone)
                 {
                     SetArchitecture(PeKind);
                     SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE);
@@ -301,7 +301,7 @@ namespace BINDER_SPACE
             }
         }
         EX_CATCH_HRESULT(hr);
-Exit:        
+Exit:
         return hr;
     }
 
@@ -313,7 +313,7 @@ Exit:
     ULONG AssemblyName::Release()
     {
         ULONG ulRef = InterlockedDecrement(&m_cRef);
-        if (ulRef == 0) 
+        if (ulRef == 0)
         {
             delete this;
         }
@@ -428,7 +428,7 @@ Exit:
         {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
             return (GetContentType() == pAssemblyName->GetContentType());
         }
-        
+
         if (EqualsCaseInsensitive(GetSimpleName(), pAssemblyName->GetSimpleName()) &&
             (GetContentType() == pAssemblyName->GetContentType()))
         {
@@ -443,7 +443,7 @@ Exit:
             {
                 fEquals = (GetPublicKeyTokenBLOB().Equals(pAssemblyName->GetPublicKeyTokenBLOB()));
             }
-            
+
             if (fEquals && ((dwIncludeFlags & INCLUDE_ARCHITECTURE) != 0))
             {
                 fEquals = (GetArchitecture() == pAssemblyName->GetArchitecture());

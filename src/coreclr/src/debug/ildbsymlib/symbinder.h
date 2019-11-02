@@ -19,7 +19,7 @@ class SymBinder : ISymUnmanagedBinder2
 // ctor/dtor
 public:
     SymBinder()
-    {   
+    {
     m_refCount = 0;
     }
 
@@ -70,4 +70,4 @@ private:
     SIZE_T      m_refCount;
 
 };
-#endif  
+#endif

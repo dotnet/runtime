@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: DacDbiInterface.inl
 //
 // Inline functions for DacDbiStructures.h
@@ -28,17 +28,17 @@ DacDbiArrayList<T>::DacDbiArrayList():
   {
   }
 
-// conversion constructor--takes a list of type T and a count and converts to a 
+// conversion constructor--takes a list of type T and a count and converts to a
 // DacDbiArrayList
-// Arguments: 
+// Arguments:
 //      input: list  - a consecutive list (array) of elements of type T
 //             count - the number of elements in list
 // Notes: - Allocates memory and copies the elements of list into "this"
 //        - It is assumed that the list does NOT already have memory allocated; if it does,
-//          calling Init will cause a leak.   
+//          calling Init will cause a leak.
 //        - the element copy relies on the assignment operator for T
 //        - may throw OOM
-template<class T> 
+template<class T>
 inline
 DacDbiArrayList<T>::DacDbiArrayList(const T * pList, int count):
     m_pList(NULL),
@@ -49,7 +49,7 @@ DacDbiArrayList<T>::DacDbiArrayList(const T * pList, int count):
 
 // destructor: deallocates memory and sets list back to empty state
 // Arguments: none
-template<class T> 
+template<class T>
 inline
 DacDbiArrayList<T>::~DacDbiArrayList()
 {
@@ -60,7 +60,7 @@ DacDbiArrayList<T>::~DacDbiArrayList()
 // Arguments: none
 // Notes: - Dealloc can be called multiple times without danger, since it
 //          checks first that memory has been allocated
-template<class T> 
+template<class T>
 inline
 void DacDbiArrayList<T>::Dealloc()
 {
@@ -79,22 +79,22 @@ void DacDbiArrayList<T>::Dealloc()
     RETURN;
 }
 
-// Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the 
-// contents unintialized while Init provides initial values. The array contents are always 
-// mutable. 
+// Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the
+// contents unintialized while Init provides initial values. The array contents are always
+// mutable.
 
 // allocate space for the list--in some instances, we'll know the count first, and then
 // we'll compute the elements one at a time. This (along with the array access operator
 // overload) allows us to handle that situation
-// Arguments: 
+// Arguments:
 //     input: nElements -  number of elements of type T for which we need space
-// Notes: 
+// Notes:
 //     - Alloc can be called multiple times and will free previous arrays.
 //     - May throw OOM
-//     - The array is not expandable, so you must allocate for all the elements at once. 
+//     - The array is not expandable, so you must allocate for all the elements at once.
 //     - requesting an allocation of 0 or fewer bytes will not cause an error, but no memory is
 //       allocated
-template<class T> 
+template<class T>
 inline
 void DacDbiArrayList<T>::Alloc(int nElements)
 {
@@ -107,15 +107,15 @@ void DacDbiArrayList<T>::Alloc(int nElements)
 }
 
 // allocate and initialize a DacDbiArrayList from a list of type T and a count
-// Arguments: 
+// Arguments:
 //     input: list  - consecutive list (array) of elements of type T to be copied into
 //                    "this"
 //            count - number of elements in list
 // Notes:
 //     - May throw OOM
-//     - Can be called multiple times with different lists, since this will deallocate 
-//       previous arrays. 
-template<class T> 
+//     - Can be called multiple times with different lists, since this will deallocate
+//       previous arrays.
+template<class T>
 inline
 void DacDbiArrayList<T>::Init(const T * pList, int count)
 {
@@ -132,9 +132,9 @@ void DacDbiArrayList<T>::Init(const T * pList, int count)
 }
 
 // read-only list element access
-template<class T> 
+template<class T>
 inline
-const T & DacDbiArrayList<T>::operator [](int i) const 
+const T & DacDbiArrayList<T>::operator [](int i) const
 {
      _ASSERTE(m_pList != NULL);
      _ASSERTE((i >= 0) && (i < m_nEntries));
@@ -142,7 +142,7 @@ const T & DacDbiArrayList<T>::operator [](int i) const
 }
 
 // writeable list element access
-template<class T> 
+template<class T>
 inline
 T & DacDbiArrayList<T>::operator [](int i)
 {
@@ -152,7 +152,7 @@ T & DacDbiArrayList<T>::operator [](int i)
 }
 
 // get the number of elements in the list
-template<class T> 
+template<class T>
 inline
 unsigned int DacDbiArrayList<T>::Count() const
 {
@@ -188,26 +188,26 @@ TargetBuffer::TargetBuffer(void * pBuffer, ULONG cbSizeInput)
 }
 
 // Return a sub-buffer that's starts at byteOffset within this buffer and runs to the end.
-// 
+//
 // Arguments:
 //    byteOffset - offset in bytes within this buffer that the new buffer starts at.
-//    
-// Returns: 
+//
+// Returns:
 //    A new buffer that's a subset of the existing buffer.
 inline
-TargetBuffer TargetBuffer::SubBuffer(ULONG byteOffset) const 
+TargetBuffer TargetBuffer::SubBuffer(ULONG byteOffset) const
 {
     _ASSERTE(byteOffset <= cbSize);
     return TargetBuffer(pAddress + byteOffset, cbSize - byteOffset);
 }
 
 // Return a sub-buffer that starts at byteOffset within this buffer and is byteLength long.
-// 
+//
 // Arguments:
 //    byteOffset - offset in bytes within this buffer that the new buffer starts at.
 //    byteLength - length in bytes of the new buffer.
-//    
-// Returns: 
+//
+// Returns:
 //    A new buffer that's a subset of the existing buffer.
 inline
 TargetBuffer TargetBuffer::SubBuffer(ULONG byteOffset, ULONG byteLength) const
@@ -257,10 +257,10 @@ inline NativeVarData::~NativeVarData()
         m_fInitialized = false;
     }
 
-// initialize the list of native var information structures, including the starting address of the list, the number of 
+// initialize the list of native var information structures, including the starting address of the list, the number of
 // entries and the number of fixed args.
-inline void NativeVarData::InitVarDataList(ICorDebugInfo::NativeVarInfo * pListStart, 
-                                           int                            fixedArgCount, 
+inline void NativeVarData::InitVarDataList(ICorDebugInfo::NativeVarInfo * pListStart,
+                                           int                            fixedArgCount,
                                            int                            entryCount)
 {
     m_offsetInfo.Init(pListStart, entryCount);
@@ -273,7 +273,7 @@ inline void NativeVarData::InitVarDataList(ICorDebugInfo::NativeVarInfo * pListS
 //-----------------------------------------------------------------------------
 
 // initializing constructor
-inline SequencePoints::SequencePoints() : 
+inline SequencePoints::SequencePoints() :
                m_mapCount(0),
                m_lastILOffset(0),
                m_fInitialized(false)
@@ -286,8 +286,8 @@ inline SequencePoints::~SequencePoints()
         m_fInitialized = false;
     }
 
-// Initialize the m_pMap data member to the address of an allocated chunk 
-// of memory (or to NULL if the count is zero). Set m_count as the 
+// Initialize the m_pMap data member to the address of an allocated chunk
+// of memory (or to NULL if the count is zero). Set m_count as the
 // number of entries in the map.
 inline void SequencePoints::InitSequencePoints(ULONG32 count)
 {
@@ -304,7 +304,7 @@ inline void SequencePoints::InitSequencePoints(ULONG32 count)
 //
 // Return Value:
 //    Return the IL offset corresponding to the given native offset.
-//    For a prolog, return 0. 
+//    For a prolog, return 0.
 //    For an epilog, return the IL offset of the last sequence point before the epilog.
 //    If we can't map to an IL offset, then return 0, with a mapping type of MAPPING_NO_INFO.
 //
@@ -312,7 +312,7 @@ inline void SequencePoints::InitSequencePoints(ULONG32 count)
 //    The sequence points are sorted.
 //
 
-inline 
+inline
 DWORD SequencePoints::MapNativeOffsetToIL(DWORD                  dwNativeOffset,
                                           CorDebugMappingResult *pMapType)
 {
@@ -327,22 +327,22 @@ DWORD SequencePoints::MapNativeOffsetToIL(DWORD                  dwNativeOffset,
 
     int i;
 
-    for (i = 0; i < (int)m_mapCount; ++i) 
+    for (i = 0; i < (int)m_mapCount; ++i)
     {
         // Check to determine if dwNativeOffset is within this sequence point. Checking the lower bound is trivial--
         // we just make sure that dwNativeOffset >= m_map[i].nativeStartOffset.
-        // Checking to be sure it's before the end of the range is a little trickier. We can have 
+        // Checking to be sure it's before the end of the range is a little trickier. We can have
         // m_map[i].nativeEndOffset = 0 for two reasons:
-        // 1. We use an end offset of 0 to signify that this end offset is also the end of the method. 
+        // 1. We use an end offset of 0 to signify that this end offset is also the end of the method.
         // 2. We could also have an end offset of 0 if the IL prologue doesn't translate to any native
         // instructions. Thus, the first native instruction (which will not be in the prologue) is at an offset
         // of 0. The end offset is always set to the start offset of the next sequence point, so this means
         // that both the start and end offsets of the (non-existent) native instruction range for the
         // prologue is also 0.
-        // If the end offset is 0, we want to check if we're in the prologue before concluding that the 
-        // value of dwNativeOffset is out of range. 
-        if ((dwNativeOffset >= m_map[i].nativeStartOffset) &&     
-            (((m_map[i].nativeEndOffset == 0) && (m_map[i].ilOffset != (ULONG)ICorDebugInfo::PROLOG)) || 
+        // If the end offset is 0, we want to check if we're in the prologue before concluding that the
+        // value of dwNativeOffset is out of range.
+        if ((dwNativeOffset >= m_map[i].nativeStartOffset) &&
+            (((m_map[i].nativeEndOffset == 0) && (m_map[i].ilOffset != (ULONG)ICorDebugInfo::PROLOG)) ||
              (dwNativeOffset < m_map[i].nativeEndOffset)))
         {
             ULONG uILOffset = m_map[i].ilOffset;
@@ -379,8 +379,8 @@ DWORD SequencePoints::MapNativeOffsetToIL(DWORD                  dwNativeOffset,
 }
 
 //
-// Copy data from the VM map data to our own map structure and sort. The 
-// information comes to us in a data structure that differs slightly from the 
+// Copy data from the VM map data to our own map structure and sort. The
+// information comes to us in a data structure that differs slightly from the
 // one we use out of process, so we have to copy it to the right-side struct.
 // Arguments
 //    input
@@ -401,20 +401,20 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
     {
         m_map[i].ilOffset = mapCopy[i].ilOffset;
         m_map[i].nativeStartOffset = mapCopy[i].nativeOffset;
-        
+
         if (i < m_map.Count() - 1)
         {
             // We need to not use CALL_INSTRUCTION's IL start offset.
             unsigned int j = i + 1;
             while ((mapCopy[j].source & call_inst) == call_inst && j < m_map.Count()-1)
                 j++;
-            
+
             m_map[i].nativeEndOffset = mapCopy[j].nativeOffset;
         }
-        
+
         m_map[i].source = mapCopy[i].source;
 
-        // need to cast the offsets to signed values first because we do actually use 
+        // need to cast the offsets to signed values first because we do actually use
         // special negative offsets such as ICorDebugInfo::PROLOG
         if ((m_map[i].source & call_inst) != call_inst)
             lastILOffset = max((int)lastILOffset, (int)m_map[i].ilOffset);
@@ -423,15 +423,15 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
     if (m_map.Count() >= 1)
     {
         m_map[i - 1].nativeEndOffset = 0;
-        m_map[i - 1].source = 
+        m_map[i - 1].source =
             (ICorDebugInfo::SourceTypes)(m_map[i - 1].source | ICorDebugInfo::NATIVE_END_OFFSET_UNKNOWN);
     }
 
     // sort the map
     MapSortILMap mapSorter(&m_map[0], m_map.Count());
     mapSorter.Sort();
-    
-    
+
+
     m_mapCount = m_map.Count();
     while (m_mapCount > 0 && (m_map[m_mapCount-1].source & (call_inst)) == call_inst)
         m_mapCount--;
@@ -444,10 +444,10 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
 // by IL offset
 //-----------------------------------------------------------------------------
 
-// secondary key comparison--if two IL offsets are the same, 
+// secondary key comparison--if two IL offsets are the same,
 // we determine order based on native offset
 
-inline 
+inline
 int SequencePoints::MapSortILMap::CompareInternal(DebuggerILToNativeMap *first,
                                   DebuggerILToNativeMap *second)
 {
@@ -468,17 +468,17 @@ int SequencePoints::MapSortILMap::Compare(DebuggerILToNativeMap * first,
 {
     LIMITED_METHOD_CONTRACT;
     const DWORD call_inst = (DWORD)ICorDebugInfo::CALL_INSTRUCTION;
-    
+
     //PROLOGs go first
     if (first->ilOffset == (ULONG) ICorDebugInfo::PROLOG &&
         second->ilOffset == (ULONG) ICorDebugInfo::PROLOG)
     {
         return CompareInternal(first, second);
-    } 
+    }
     else if (first->ilOffset == (ULONG) ICorDebugInfo::PROLOG)
     {
         return -1;
-    } 
+    }
     else if (second->ilOffset == (ULONG) ICorDebugInfo::PROLOG)
     {
         return 1;
@@ -504,7 +504,7 @@ int SequencePoints::MapSortILMap::Compare(DebuggerILToNativeMap * first,
     else if (first->ilOffset == (ULONG) ICorDebugInfo::NO_MAPPING)
     {
         return 1;
-    } 
+    }
     else if (second->ilOffset == (ULONG) ICorDebugInfo::NO_MAPPING)
     {
         return -1;
@@ -514,11 +514,11 @@ int SequencePoints::MapSortILMap::Compare(DebuggerILToNativeMap * first,
              second->ilOffset == (ULONG) ICorDebugInfo::EPILOG)
     {
         return CompareInternal(first, second);
-    } 
+    }
     else if (first->ilOffset == (ULONG) ICorDebugInfo::EPILOG)
     {
         return 1;
-    } 
+    }
     else if (second->ilOffset == (ULONG) ICorDebugInfo::EPILOG)
     {
         return -1;
@@ -544,21 +544,21 @@ int SequencePoints::MapSortILMap::Compare(DebuggerILToNativeMap * first,
 //-----------------------------------------------------------------------------
 
 inline
-CodeBlobRegion & operator++(CodeBlobRegion & rs) 
+CodeBlobRegion & operator++(CodeBlobRegion & rs)
 {
      return rs = CodeBlobRegion(rs + 1);
 }
 
 // Convert the data in an instance of DebuggerIPCE_JITFUncData to an instance of NativeCodeFunctionData.
-// We need to have this latter type to look up or create a new CordbNativeCode object, but the stack walker is 
-// using the former type to gather information. 
+// We need to have this latter type to look up or create a new CordbNativeCode object, but the stack walker is
+// using the former type to gather information.
 // Arguments:
-//     Input: 
-//            source - an initialized instance of DebuggerIPCE_JITFuncData containing the information to 
+//     Input:
+//            source - an initialized instance of DebuggerIPCE_JITFuncData containing the information to
 //                     be copied into this instance of NativeCodeFunctionData
 // @dbgtodo dlaw: Once CordbThread::RefreshStack is fully DAC-ized, we can change the data structure that it uses
-// to have a member of type NativeCodeFunctionData which we can pass without copying. At that point, 
-// this method can disappear. 
+// to have a member of type NativeCodeFunctionData which we can pass without copying. At that point,
+// this method can disappear.
 inline
 NativeCodeFunctionData::NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source)
 {
@@ -595,17 +595,17 @@ void NativeCodeFunctionData::Clear()
 // ClassInfo member functions
 //-----------------------------------------------------------------------------------
 
-inline 
+inline
 ClassInfo::ClassInfo():
     m_objectSize(0)
     {}
 
 // clear all fields
-inline 
+inline
 void ClassInfo::Clear()
 {
     m_objectSize = 0;
-    m_fieldList.Dealloc(); 
+    m_fieldList.Dealloc();
 }
 
 inline
@@ -646,12 +646,12 @@ typedef ULONG_PTR SIZE_T;
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
-    return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS && 
+    return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS &&
             m_fFldStorageAvailable  && (m_pFldStaticAddress == NULL));
 }
 
 // If this is an instance field, store its offset
-inline 
+inline
 void FieldData::SetInstanceOffset(SIZE_T offset)
 {
     _ASSERTE(!m_fFldIsStatic);
@@ -665,7 +665,7 @@ void FieldData::SetInstanceOffset(SIZE_T offset)
 inline
 BOOL FieldData::OkToGetOrSetStaticAddress()
 {
-    return (m_fFldIsStatic && !m_fFldIsTLS && 
+    return (m_fFldIsStatic && !m_fFldIsTLS &&
             m_fFldStorageAvailable && (m_fldInstanceOffset == 0));
 }
 
@@ -680,7 +680,7 @@ void FieldData::SetStaticAddress(TADDR addr)
     m_pFldStaticAddress = TADDR(addr);
 }
 
-// Get the offset of a field 
+// Get the offset of a field
 inline
 SIZE_T FieldData::GetInstanceOffset()
 {
@@ -708,12 +708,12 @@ TADDR FieldData::GetStaticAddress()
 //-----------------------------------------------------------------------------------
 
 inline
-void EnCHangingFieldInfo::Init(VMPTR_Object     pObject, 
-                               SIZE_T           offset, 
-                               mdFieldDef       fieldToken, 
-                               CorElementType   elementType, 
+void EnCHangingFieldInfo::Init(VMPTR_Object     pObject,
+                               SIZE_T           offset,
+                               mdFieldDef       fieldToken,
+                               CorElementType   elementType,
                                mdTypeDef        metadataToken,
-                               VMPTR_DomainFile vmDomainFile)  
+                               VMPTR_DomainFile vmDomainFile)
     {
         m_vmObject = pObject;
         m_offsetToVars = offset;

@@ -200,7 +200,7 @@ namespace System.Threading
         {
             _completionCounter.Increment();
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
-            
+
             if (ShouldAdjustMaxWorkersActive() && _hillClimbingThreadAdjustmentLock.TryAcquire())
             {
                 try

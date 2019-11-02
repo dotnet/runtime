@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <windows.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <wchar.h>
 #include <assert.h>
 #include "processdescriptor.h"

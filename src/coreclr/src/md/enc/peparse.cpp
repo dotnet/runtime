@@ -24,7 +24,7 @@ HRESULT CLiteWeightStgdbRW::FindImageMetaData(PVOID pImage, DWORD dwFileLength, 
     // flat file.
     if (bMappedImage)
     {
-        if (FAILED(pe.Init(pImage, false)) || 
+        if (FAILED(pe.Init(pImage, false)) ||
             !pe.CheckNTHeaders())
         {
             return COR_E_BADIMAGEFORMAT;
@@ -47,10 +47,10 @@ HRESULT CLiteWeightStgdbRW::FindImageMetaData(PVOID pImage, DWORD dwFileLength, 
     // Couldn't find any IL metadata in this image
     if (*ppMetaData == NULL)
         return CLDB_E_NO_DATA;
-        
+
     if (pcbMetaData != NULL)
         *pcbMetaData = size;
-    
+
     return S_OK;
 #else
     DacNotImpl();
@@ -64,7 +64,7 @@ HRESULT CLiteWeightStgdbRW::FindImageMetaData(PVOID pImage, DWORD dwFileLength, 
 typedef struct ANON_OBJECT_HEADER2 {
     WORD    Sig1;            // Must be IMAGE_FILE_MACHINE_UNKNOWN
     WORD    Sig2;            // Must be 0xffff
-    WORD    Version;         // >= 2 (implies the CLSID field, Flags and metadata info are present) 
+    WORD    Version;         // >= 2 (implies the CLSID field, Flags and metadata info are present)
     WORD    Machine;
     DWORD   TimeDateStamp;
     CLSID   ClassID;         // Used to invoke CoCreateInstance
@@ -81,9 +81,9 @@ HRESULT CLiteWeightStgdbRW::FindObjMetaData(PVOID pImage, DWORD dwFileLength, PV
 {
     DWORD   dwSize = 0;
     DWORD   dwOffset = 0;
-    
+
     ANON_OBJECT_HEADER2 *pAnonImageHdr = (ANON_OBJECT_HEADER2 *) pImage;    // Anonymous object header
-    
+
     // Check to see if this is a LTCG object
     if (dwFileLength >= sizeof(ANON_OBJECT_HEADER2) &&
          pAnonImageHdr->Sig1 == VAL16(IMAGE_FILE_MACHINE_UNKNOWN) &&
@@ -92,7 +92,7 @@ HRESULT CLiteWeightStgdbRW::FindObjMetaData(PVOID pImage, DWORD dwFileLength, PV
         // Version 1 anonymous objects don't have metadata info
         if (VAL16(pAnonImageHdr->Version) < 2)
             goto BadFormat;
-        
+
         // Anonymous objects contain the metadata info in the header
         dwOffset = VAL32(pAnonImageHdr->MetaDataOffset);
         dwSize = VAL32(pAnonImageHdr->MetaDataSize);
@@ -102,19 +102,19 @@ HRESULT CLiteWeightStgdbRW::FindObjMetaData(PVOID pImage, DWORD dwFileLength, PV
         // Check to see if we have enough data
         if (dwFileLength < sizeof(IMAGE_FILE_HEADER))
             goto BadFormat;
-        
+
         IMAGE_FILE_HEADER *pImageHdr = (IMAGE_FILE_HEADER *) pImage;            // Header for the .obj file.
-        
+
         // Walk each section looking for .cormeta.
         DWORD nSections = VAL16(pImageHdr->NumberOfSections);
-        
+
         // Check to see if we have enough data
         S_UINT32 nSectionsSize = S_UINT32(sizeof(IMAGE_FILE_HEADER)) + S_UINT32(nSections) * S_UINT32(sizeof(IMAGE_SECTION_HEADER));
         if (nSectionsSize.IsOverflow() || (dwFileLength < nSectionsSize.Value()))
             goto BadFormat;
-        
+
         IMAGE_SECTION_HEADER *pSectionHdr = (IMAGE_SECTION_HEADER *)(pImageHdr + 1);  // Section header.
-        
+
         for (DWORD i=0; i<nSections;  i++, pSectionHdr++)
         {
             // Simple comparison to section name.
@@ -126,10 +126,10 @@ HRESULT CLiteWeightStgdbRW::FindObjMetaData(PVOID pImage, DWORD dwFileLength, PV
             }
         }
     }
-    
+
     if (dwOffset == 0 || dwSize == 0)
         goto BadFormat;
-    
+
     // Check that raw data in the section is actually within the file.
     {
         S_UINT32 dwEndOffset = S_UINT32(dwOffset) + S_UINT32(dwSize);
@@ -140,7 +140,7 @@ HRESULT CLiteWeightStgdbRW::FindObjMetaData(PVOID pImage, DWORD dwFileLength, PV
     *ppMetaData = (PVOID) ((ULONG_PTR) pImage + dwOffset);
     *pcbMetaData = dwSize;
     return (S_OK);
-    
+
 BadFormat:
     *ppMetaData = NULL;
     *pcbMetaData = 0;

@@ -6691,7 +6691,7 @@
                 <string id="RuntimePublisher.TieredCompilationResumeEventMessage" value="ClrInstanceID=%1;%nNewMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
-              
+
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.MethodDCStart_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
@@ -6735,11 +6735,11 @@
                 <string id="RundownPublisher.ModuleRangeDCStartEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.ModuleRangeDCEndEventMessage" value= "ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartEventMessage" value="ClrInstanceID=%1;%nFlags=%2" />
-              
+
                 <string id="StressPublisher.StressLogEventMessage" value="Facility=%1;%nLevel=%2;%nMessage=%3" />
                 <string id="StressPublisher.StressLog_V1EventMessage" value="Facility=%1;%nLevel=%2;%nMessage=%3;%nClrInstanceID=%4" />
                 <string id="StressPublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
-              
+
                 <string id="PrivatePublisher.FailFastEventMessage" value="FailFastUserMessage=%1;%nFailedEIP=%2;%nOSExitCode=%3;%nClrExitCode=%4;%nClrInstanceID=%5" />
                 <string id="PrivatePublisher.FinalizeObjectEventMessage" value="TypeName=%1;%nTypeID=%2;%nObjectID=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.SetGCHandleEventMessage" value="HandleID=%1;%nObjectID=%2;%n;%nClrInstanceID=%3" />
@@ -6853,14 +6853,14 @@
                 <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
-              
+
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
                 <string id="RundownPublisher.LoaderTaskMessage" value="Loader" />
                 <string id="RundownPublisher.StackTaskMessage" value="ClrStack" />
                 <string id="RundownPublisher.PerfTrackTaskMessage" value="ClrPerfTrack" />
                 <string id="RundownPublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
-              
+
                 <string id="PrivatePublisher.GarbageCollectionTaskMessage" value="GC" />
                 <string id="PrivatePublisher.StartupTaskMessage" value="Startup"/>
                 <string id="PrivatePublisher.StackTaskMessage" value="ClrStack" />
@@ -7007,7 +7007,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
-              
+
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
                 <string id="RundownPublisher.Assembly.DomainNeutralMapMessage" value="DomainNeutral" />
@@ -7057,7 +7057,7 @@
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
-              
+
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.ModuleSection" value="ModuleSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.EETableSection" value="EETableSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.WriteDataSection" value="WriteDataSection"/>
@@ -7154,7 +7154,7 @@
                 <string id="RuntimePublisher.EventSourceKeywordMessage" value="EventSource" />
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
-              
+
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7167,7 +7167,7 @@
                 <string id="RundownPublisher.PerfTrackRundownKeywordMessage" value="PerfTrack" />
                 <string id="RundownPublisher.StackKeywordMessage" value="Stack" />
                 <string id="RundownPublisher.CompilationKeywordMessage" value="Compilation" />
-              
+
                 <string id="PrivatePublisher.GCPrivateKeywordMessage" value="GC" />
                 <string id="PrivatePublisher.StartupKeywordMessage" value="Startup" />
                 <string id="PrivatePublisher.StackKeywordMessage" value="Stack" />
@@ -7277,7 +7277,7 @@
                 <string id="RuntimePublisher.DebugIPCEventEndOpcodeMessage" value="IPCEventEnd" />
                 <string id="RuntimePublisher.DebugExceptionProcessingStartOpcodeMessage" value="ExceptionProcessingStart" />
                 <string id="RuntimePublisher.DebugExceptionProcessingEndOpcodeMessage" value="ExceptionProcessingEnd" />
-              
+
                 <string id="RuntimePublisher.TieredCompilationSettingsOpcodeMessage" value="Settings" />
                 <string id="RuntimePublisher.TieredCompilationPauseOpcodeMessage" value="Pause" />
                 <string id="RuntimePublisher.TieredCompilationResumeOpcodeMessage" value="Resume" />
@@ -7305,7 +7305,7 @@
                 <string id="RundownPublisher.ModuleRangeDCStartOpcodeMessage" value="ModuleRangeDCStart" />
                 <string id="RundownPublisher.ModuleRangeDCEndOpcodeMessage" value="ModuleRangeDCEnd" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartOpcodeMessage" value="SettingsDCStart" />
-              
+
                 <string id="PrivatePublisher.FailFastOpcodeMessage" value="FailFast" />
 
                 <string id="PrivatePublisher.GCDecisionOpcodeMessage" value="Decision" />

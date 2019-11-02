@@ -44,16 +44,16 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do t
 Function:
   UTIL_inverse_wcspbrk
 
-  Opposite of wcspbrk : searches a string for the first character NOT in the 
+  Opposite of wcspbrk : searches a string for the first character NOT in the
   given set
 
 Parameters :
     LPWSTR lpwstr :   string to search
     LPCWSTR charset : list of characters to search for
-                                      
+
 Return value :
     pointer to first character of lpwstr that isn't in the set
-    NULL if all characters are in the set                                                                 
+    NULL if all characters are in the set
 --*/
 LPWSTR UTIL_inverse_wcspbrk(LPWSTR lpwstr, LPCWSTR charset)
 {
@@ -64,15 +64,15 @@ LPWSTR UTIL_inverse_wcspbrk(LPWSTR lpwstr, LPCWSTR charset)
             return lpwstr;
         }
         lpwstr++;
-    }                     
+    }
     return NULL;
 }
 
 
 /*++
-Function : 
+Function :
     UTIL_IsReadOnlyBitsSet
-    
+
     Takes a struct stat *
     Returns true if the file is read only,
 --*/
@@ -110,9 +110,9 @@ BOOL UTIL_IsReadOnlyBitsSet( struct stat * stat_data )
 }
 
 /*++
-Function : 
+Function :
     UTIL_IsExecuteBitsSet
-    
+
     Takes a struct stat *
     Returns true if the file is executable,
 --*/
@@ -124,7 +124,7 @@ BOOL UTIL_IsExecuteBitsSet( struct stat * stat_data )
     {
         return FALSE;
     }
-    
+
     /* Check for read permissions. */
     if ( 0 == geteuid() )
     {
@@ -160,19 +160,19 @@ BOOL UTIL_IsExecuteBitsSet( struct stat * stat_data )
 }
 
 /*++
-Function : 
+Function :
     UTIL_WCToMB_Alloc
-    
+
     Converts a wide string to a multibyte string, allocating the required buffer
-    
+
 Parameters :
     LPCWSTR lpWideCharStr : string to convert
     int cchWideChar : number of wide characters to convert
                       (-1 to convert a complete null-termnated string)
-    
+
 Return Value :
-    newly allocated buffer containing the converted string. Conversion is 
-    performed using CP_ACP. Buffer is allocated with malloc(), release it 
+    newly allocated buffer containing the converted string. Conversion is
+    performed using CP_ACP. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
@@ -182,7 +182,7 @@ LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
     LPSTR lpMultiByteStr;
 
     /* get required buffer length */
-    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar, 
+    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar,
                                  NULL, 0, NULL, NULL);
     if(0 == length)
     {
@@ -200,7 +200,7 @@ LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
     }
 
     /* convert into allocated buffer */
-    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar, 
+    length = WideCharToMultiByte(CP_ACP, 0, lpWideCharStr, cchWideChar,
                                  lpMultiByteStr, length, NULL, NULL);
     if(0 == length)
     {
@@ -212,19 +212,19 @@ LPSTR UTIL_WCToMB_Alloc(LPCWSTR lpWideCharStr, int cchWideChar)
 }
 
 /*++
-Function : 
+Function :
     UTIL_MBToWC_Alloc
-    
+
     Converts a multibyte string to a wide string, allocating the required buffer
-    
+
 Parameters :
     LPCSTR lpMultiByteStr : string to convert
     int cbMultiByte : number of bytes to convert
                       (-1 to convert a complete null-termnated string)
-    
+
 Return Value :
-    newly allocated buffer containing the converted string. Conversion is 
-    performed using CP_ACP. Buffer is allocated with malloc(), release it 
+    newly allocated buffer containing the converted string. Conversion is
+    performed using CP_ACP. Buffer is allocated with malloc(), release it
     with free().
     In case if failure, LastError will be set.
 --*/
@@ -260,7 +260,7 @@ LPWSTR UTIL_MBToWC_Alloc(LPCSTR lpMultiByteStr, int cbMultiByte)
     }
 
     /* convert into allocated buffer */
-    length = MultiByteToWideChar(CP_ACP, 0, lpMultiByteStr, cbMultiByte, 
+    length = MultiByteToWideChar(CP_ACP, 0, lpMultiByteStr, cbMultiByte,
                                       lpWideCharStr, length);
     if(0 >= length)
     {

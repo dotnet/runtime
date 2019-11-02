@@ -61,7 +61,7 @@ public:
     void DisplayTypeDefs(void);
     void DisplayTypeDefInfo(mdTypeDef inTypeDef);
     void DisplayTypeDefProps(mdTypeDef inTypeDef);
-    
+
     void DisplayModuleRefs(void);
     void DisplayModuleRefInfo(mdModuleRef inModuleRef);
 
@@ -89,7 +89,7 @@ public:
     void DisplayTypeSpecInfo(mdTypeSpec ts, const char *preFix);
     void DisplayMethodSpecs(void);
     void DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix);
-    
+
     void DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix);
     void DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *preFix);
     void DisplayCustomAttributes(mdToken inToken, const char *preFix);
@@ -104,7 +104,7 @@ public:
     void DisplayMemberInfo(mdToken inMember);
     void DisplayMethodInfo(mdMethodDef method, DWORD *pflags = 0);
     void DisplayFieldInfo(mdFieldDef field, DWORD *pflags = 0);
-    
+
     void DisplayMethods(mdTypeDef inTypeDef);
     void DisplayFields(mdTypeDef inTypeDef, COR_FIELD_OFFSET *rFieldOffset, ULONG cFieldOffset);
 
@@ -177,7 +177,7 @@ private:
     int VWrite(__in_z __in const char *str, ...);
     int VWriteLine(__in_z __in const char *str, ...);
     int VWriteMarker(__in_z __in const char *str, va_list marker);
-    
+
     void InitSigBuffer();
     HRESULT AddToSigBuffer(__in_z __in const char *string);
 

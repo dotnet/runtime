@@ -54,8 +54,8 @@ namespace CorUnix
         //
         // Length of string, not including terminating NULL
         //
-        
-        DWORD m_dwStringLength; 
+
+        DWORD m_dwStringLength;
 
         //
         // Length of buffer backing string; must be at least 1+dwStringLength
@@ -72,7 +72,7 @@ namespace CorUnix
             m_dwMaxLength(0)
         {
         };
-            
+
         CPalString(
             const WCHAR *pwsz
             )
@@ -125,7 +125,7 @@ namespace CorUnix
         {
             return m_dwMaxLength;
         };
-        
+
     };
 
     //
@@ -221,7 +221,7 @@ namespace CorUnix
     // persist security information for the object type (as would be the case
     // for, say, files) eSecurityPersistence should be set to
     // OSPersistedSecurityInfo.
-    // 
+    //
     // If the object may have a name eObjectNameSupport should be
     // ObjectCanHaveName. A named object can be opened in more than one
     // process.
@@ -310,14 +310,14 @@ namespace CorUnix
             NoOwner,
             OwnershipNotApplicable
         };
-        
+
     private:
 
         //
         // Array that maps object type IDs to the corresponding
         // CObjectType instance
         //
-        
+
         static CObjectType* s_rgotIdMapping[];
 
         PalObjectTypeId m_eTypeId;
@@ -401,7 +401,7 @@ namespace CorUnix
         {
             return m_eTypeId;
         };
-        
+
         OBJECTCLEANUPROUTINE
         GetObjectCleanupRoutine(
             void
@@ -409,7 +409,7 @@ namespace CorUnix
         {
             return m_pCleanupRoutine;
         };
-        
+
         OBJECTINITROUTINE
         GetObjectInitRoutine(
             void
@@ -417,7 +417,7 @@ namespace CorUnix
         {
             return  m_pInitRoutine;
         };
-        
+
         DWORD
         GetImmutableDataSize(
             void
@@ -425,7 +425,7 @@ namespace CorUnix
         {
             return  m_dwImmutableDataSize;
         };
-        
+
         void
         SetImmutableDataCopyRoutine(
             OBJECT_IMMUTABLE_DATA_COPY_ROUTINE ptr
@@ -481,7 +481,7 @@ namespace CorUnix
         {
             return m_dwSharedDataSize;
         };
-        
+
         DWORD
         GetSupportedAccessRights(
             void
@@ -489,7 +489,7 @@ namespace CorUnix
         {
             return m_dwSupportedAccessRights;
         };
-        
+
         // Generic access rights mapping
 
         SecuritySupport
@@ -499,7 +499,7 @@ namespace CorUnix
         {
             return  m_eSecuritySupport;
         };
-        
+
         SecurityPersistence
         GetSecurityPersistence(
             void
@@ -507,7 +507,7 @@ namespace CorUnix
         {
             return  m_eSecurityPersistence;
         };
-        
+
         ObjectNameSupport
         GetObjectNameSupport(
             void
@@ -515,7 +515,7 @@ namespace CorUnix
         {
             return  m_eObjectNameSupport;
         };
-        
+
         HandleDuplicationSupport
         GetHandleDuplicationSupport(
             void
@@ -523,7 +523,7 @@ namespace CorUnix
         {
             return  m_eHandleDuplicationSupport;
         };
-        
+
         SynchronizationSupport
         GetSynchronizationSupport(
             void
@@ -531,7 +531,7 @@ namespace CorUnix
         {
             return  m_eSynchronizationSupport;
         };
-        
+
         SignalingSemantics
         GetSignalingSemantics(
             void
@@ -539,7 +539,7 @@ namespace CorUnix
         {
             return  m_eSignalingSemantics;
         };
-        
+
         ThreadReleaseSemantics
         GetThreadReleaseSemantics(
             void
@@ -547,7 +547,7 @@ namespace CorUnix
         {
             return  m_eThreadReleaseSemantics;
         };
-        
+
         OwnershipSemantics
         GetOwnershipSemantics(
             void
@@ -614,7 +614,7 @@ namespace CorUnix
     class CObjectAttributes
     {
     public:
-        
+
         CPalString sObjectName;
         LPSECURITY_ATTRIBUTES pSecurityAttributes;
 
@@ -750,7 +750,7 @@ namespace CorUnix
         // not possible for the wait to be immediately satisfied.
         //
 
-        virtual        
+        virtual
         PAL_ERROR
         CanThreadWaitWithoutBlocking(
             bool *pfCanWaitWithoutBlocking,     // OUT
@@ -818,7 +818,7 @@ namespace CorUnix
 
     //
     // The following two enums are part of the local object
-    // optimizations 
+    // optimizations
     //
 
     enum ObjectDomain
@@ -953,7 +953,7 @@ namespace CorUnix
         GetObjectSynchData(
             VOID **ppvSynchData             // OUT
             ) = 0;
-        
+
     };
 
     class IPalProcess
@@ -965,7 +965,7 @@ namespace CorUnix
             void
             ) = 0;
     };
-    
+
     class IPalObjectManager
     {
     public:
@@ -1027,7 +1027,7 @@ namespace CorUnix
         // is needed for the OpenXXX routines and DuplicateHandle.
         //
 
-        virtual            
+        virtual
         PAL_ERROR
         LocateObject(
             CPalThread *pThread,                // IN, OPTIONAL
@@ -1045,7 +1045,7 @@ namespace CorUnix
         //
 
         virtual
-        PAL_ERROR   
+        PAL_ERROR
         ObtainHandleForObject(
             CPalThread *pThread,                // IN, OPTIONAL
             IPalObject *pObject,

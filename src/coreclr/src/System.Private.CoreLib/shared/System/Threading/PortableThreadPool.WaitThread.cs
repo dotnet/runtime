@@ -274,7 +274,7 @@ namespace System.Threading
                     Debug.Assert(_numUserWaits >= 0);
                     Debug.Assert(_numUserWaits <= _registeredWaits.Length);
                     Debug.Assert(_numPendingRemoves <= _numUserWaits, $"Num removals {_numPendingRemoves} should be less than or equal to num user waits {_numUserWaits}");
-                    
+
                     if (_numPendingRemoves == 0 || _numUserWaits == 0)
                     {
                         return;
@@ -311,7 +311,7 @@ namespace System.Threading
                     ThreadPoolInstance._waitThreadLock.Release();
                 }
             }
-            
+
             /// <summary>
             /// Queue a call to <see cref="CompleteWait(object)"/> on the ThreadPool.
             /// </summary>
@@ -364,7 +364,7 @@ namespace System.Threading
                 _changeHandlesEvent.Set();
                 return true;
             }
-            
+
             /// <summary>
             /// Unregisters a wait handle.
             /// </summary>

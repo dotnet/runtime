@@ -70,7 +70,7 @@ LiveProcDataTarget::Release(
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::GetMachineType( 
+LiveProcDataTarget::GetMachineType(
     /* [out] */ ULONG32 *machine)
 {
     LIMITED_METHOD_CONTRACT;
@@ -88,7 +88,7 @@ LiveProcDataTarget::GetMachineType(
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::GetPointerSize( 
+LiveProcDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
     LIMITED_METHOD_CONTRACT;
@@ -98,21 +98,21 @@ LiveProcDataTarget::GetPointerSize(
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::GetImageBase( 
+LiveProcDataTarget::GetImageBase(
     /* [string][in] */ LPCWSTR name,
     /* [out] */ CLRDATA_ADDRESS *base)
 {
     //
     // The only image base that the access code cares
-    // about right now is the base of mscorwks.  
+    // about right now is the base of mscorwks.
     //
-    
+
     if (wcscmp(name, MAIN_CLR_DLL_NAME_W))
     {
         return E_NOINTERFACE;
     }
 
-    // 
+    //
     // If a base address was specified, use that
     //
     if (NULL != m_baseAddressOfEngine)
@@ -121,14 +121,14 @@ LiveProcDataTarget::GetImageBase(
         return S_OK;
     }
 
-    // 
+    //
     // Our creator must have told us WHICH clr to work with.
     //
     return E_FAIL;
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::ReadVirtual( 
+LiveProcDataTarget::ReadVirtual(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [length_is][size_is][out] */ PBYTE buffer,
     /* [in] */ ULONG32 request,
@@ -173,7 +173,7 @@ LiveProcDataTarget::ReadVirtual(
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::WriteVirtual( 
+LiveProcDataTarget::WriteVirtual(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [size_is][in] */ PBYTE buffer,
     /* [in] */ ULONG32 request,
@@ -235,7 +235,7 @@ LiveProcDataTarget::SetThreadContext(
 }
 
 HRESULT STDMETHODCALLTYPE
-LiveProcDataTarget::Request( 
+LiveProcDataTarget::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,

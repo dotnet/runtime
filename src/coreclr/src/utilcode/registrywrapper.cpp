@@ -6,7 +6,7 @@
 //
 
 //
-// Wrapper around Win32 Registry Functions allowing redirection of .NET 
+// Wrapper around Win32 Registry Functions allowing redirection of .NET
 // Framework root registry location
 //
 // Notes on Offline Ngen Implementation:
@@ -17,7 +17,7 @@
 // into the mounted VHD specified in the COMPLUS config values.
 //
 // Terminology:
-//  Host Machine - The machine running a copy of windows that mounts a VHD to 
+//  Host Machine - The machine running a copy of windows that mounts a VHD to
 //      compile the assemblies within.  This is the build machine in the build lab.
 //
 //  Target Machine - The VHD that gets mounted inside the host.  We compile
@@ -41,15 +41,15 @@
 //      remain compatible in this next product release.  In order to fix this, we will
 //      need support from Windows for using the COM system on another copy of Windows.
 // - Registry Accesses under
-//      - HKLM\software[\Wow6432Node]\policies\microsoft : SQM, Cryptography, MUI, codeidentifiers, appcompat, RPC 
+//      - HKLM\software[\Wow6432Node]\policies\microsoft : SQM, Cryptography, MUI, codeidentifiers, appcompat, RPC
 //      - HKLM\software[\Wow6432Node]\RPC,OLE,COM and under these keys
 //      - HKLM\Software\Microsoft\Cryptography and under
 //      - HKLM\Software\Microsoft\SQMClient
-//      - HKLM\Software[\Wow6432Node]\Microsoft\Windows\Windows Error Reporting\WMR and under 
+//      - HKLM\Software[\Wow6432Node]\Microsoft\Windows\Windows Error Reporting\WMR and under
 //
 //      These locations are not accessed directly by the CLR, but looked up by Windows
 //      as part of other API calls.  It is safer that we are accessing these
-//      on the host machine since they correspond with the actively running copy of 
+//      on the host machine since they correspond with the actively running copy of
 //      Windows.  If we could somehow redirect these to the target VM, we would have
 //      Windows 7/2K8 OS looking up its config keys from a Win8 registry.  If Windows
 //      has made incompatible changes here, such as moving the location or redefining

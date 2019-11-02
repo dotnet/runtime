@@ -5,7 +5,7 @@
 // shimselector.inl
 //
 // implementation that select the best shim
-// 
+//
 // Note: must be platform independent
 //
 // ======================================================================================
@@ -34,9 +34,9 @@ inline void ShimSelector::SetBaseline(const VersionInfo& version)
 // Input:
 // shimInfo - the shim info
 //
-// Output: 
+// Output:
 // return value - true: better, false: worse or the same
-inline bool ShimSelector::IsAcceptable(const  ShimInfo& shimInfo)  const 
+inline bool ShimSelector::IsAcceptable(const  ShimInfo& shimInfo)  const
 {
     return ( m_Baseline.Compare(shimInfo.Version()) < 0 );
 }
@@ -46,7 +46,7 @@ inline bool ShimSelector::IsAcceptable(const  ShimInfo& shimInfo)  const
 // Input:
 // shimInfo - the shim info
 //
-// Output: 
+// Output:
 // return value - S_OK added, S_FALSE not added (not a failure) or a failure code
 inline HRESULT ShimSelector::Add(const ShimInfo& shimInfo)
 {
@@ -66,7 +66,7 @@ inline HRESULT ShimSelector::Add(const ShimInfo& shimInfo)
 
 // Returns add the best shim of the options given (see Add)
 //
-// Output: 
+// Output:
 // return value - the best option
 inline ShimInfo ShimSelector::GetBest()
 {
@@ -75,8 +75,8 @@ inline ShimInfo ShimSelector::GetBest()
 
 // Returns whether we have any usable choices
 //
-// Output: 
-// return value - true if the has something usable 
+// Output:
+// return value - true if the has something usable
 inline bool ShimSelector::HasUsefulShimInfo()
 {
     return m_bHasSomething;
@@ -84,12 +84,12 @@ inline bool ShimSelector::HasUsefulShimInfo()
 
 // Compares two given options
 //
-// Input: 
+// Input:
 // si1, si2 - shims to compare
 //
-// Output: 
+// Output:
 // return value - true if si1 is better than si2
-inline bool ShimSelector::IsBetter(const ShimInfo& si1, const ShimInfo& si2) 
+inline bool ShimSelector::IsBetter(const ShimInfo& si1, const ShimInfo& si2)
 {
     switch(si1.Version().Compare(si2.Version()))
     {

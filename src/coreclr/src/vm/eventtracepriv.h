@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // File: eventtracepriv.h
-// 
+//
 // Contains some private definitions used by eventrace.cpp, but that aren't needed by
 // clients of eventtrace.cpp, and thus don't belong in eventtrace.h. Also, since
 // inclusions of this file are tightly controlled (basically just by eventtrace.cpp), we
@@ -23,9 +23,9 @@
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif
 
-// ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with 
+// ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
 // the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
-// far away to avoid problems without sacrificing the perf of bulk processing.  
+// far away to avoid problems without sacrificing the perf of bulk processing.
 const UINT cbMaxEtwEvent = 63 * 1024;
 
 //---------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ struct EventStaticEntry
         // The location in the structure to write to.  We won't actually write here unless we have sufficient buffer.
         WCHAR *name = (WCHAR *)(ptr + offsetof(EventStaticEntry, Name));
         int len = 0;
-        
+
         LPCUTF8 utf8Name = 0;
         if (SUCCEEDED(fieldDesc->GetName_NoThrow(&utf8Name)))
         {
@@ -207,7 +207,7 @@ public:
     // event?
     int GetByteCountInEvent()
     {
-        return 
+        return
             sizeof(fixedSizedData) +
             sizeof(cTypeParameters) +
 #ifdef FEATURE_REDHAWK
@@ -235,7 +235,7 @@ public:
 #ifdef FEATURE_REDHAWK
     // If > 1 type parameter, this is an array of their EEType*'s
     NewArrayHolder<ULONGLONG> rgTypeParameters;
-    
+
     // If exactly one type parameter, this is its EEType*.  (If != 1 type parameter,
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
@@ -264,7 +264,7 @@ private:
     // Estimate of how many type value elements we can put into the struct array, while
     // staying under the ETW event size limit. Note that this is impossible to calculate
     // perfectly, since each element of the struct array has variable size.
-    // 
+    //
     // In addition to the byte-size limit per event, Windows always forces on us a
     // max-number-of-descriptors per event, which in the case of BulkType, will kick in
     // far sooner. There's a max number of 128 descriptors allowed per event. 2 are used
@@ -276,13 +276,13 @@ private:
     // would let us max out the number of type values to batch by allowing the byte-size
     // limit to kick in before the max-descriptor limit. We could esimate that as
     // follows:
-    // 
-    //     static const int kMaxCountTypeValues = kMaxBytesTypeValues / 
+    //
+    //     static const int kMaxCountTypeValues = kMaxBytesTypeValues /
     //        (sizeof(EventStructBulkTypeFixedSizedData) +
     //         200 * sizeof(WCHAR) +       // Assume 199 + 1 terminating-NULL character in type name
     //         sizeof(UINT) +              // Type parameter count
     //         10 * sizeof(ULONGLONG));    // Assume 10 type parameters
-    // 
+    //
     // The downside, though, is that we would have to do a lot more copying to fill out
     // that buffer before sending the event. It's unclear that increasing the batch size
     // is enough of a win to offset all the extra buffer copying. So for now, we'll keep
@@ -290,10 +290,10 @@ private:
 
     // How many types have we batched?
     int m_nBulkTypeValueCount;
-    
+
     // What is the byte size of all the types we've batched?
     int m_nBulkTypeValueByteCount;
-    
+
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
@@ -351,7 +351,7 @@ public:
     // information will be logged.
     BulkComLogger(BulkTypeEventLogger *typeLogger);
     ~BulkComLogger();
-    
+
     // Walks all RCW/CCW objects.
     void LogAllComObjects();
 
@@ -364,7 +364,7 @@ private:
 
     // Writes one CCW to the CCW buffer.  May or may not fire the event.
     void WriteCcw(ComCallWrapper *ccw, Object **handle, Object *obj);
-    
+
     // Forces a flush of all RCW ETW events not yet fired.
     void FlushRcw();
 
@@ -376,7 +376,7 @@ private:
 
     // Used during CCW enumeration to keep track of all object handles which point to a CCW.
     void AddCcwHandle(Object **handle);
-    
+
 private:
     struct CCWEnumerationEntry
     {
@@ -412,7 +412,7 @@ class BulkStaticsLogger
 public:
     BulkStaticsLogger(BulkTypeEventLogger *typeLogger);
     ~BulkStaticsLogger();
-    
+
     // Walk all static variables in the process and write them to the buffer, firing ETW events
     // as we reach the max buffer size.
     void LogAllStatics();
@@ -423,7 +423,7 @@ public:
 private:
     // Write a single static variable to the log.
     void WriteEntry(AppDomain *domain, Object **address, Object *obj, FieldDesc *fieldDesc);
-    
+
 private:
     // The maximum bytes we can emit in the statics buffer.
     static const int kMaxBytesValues = (cbMaxEtwEvent - 0x30);

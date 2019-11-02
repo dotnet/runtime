@@ -38,7 +38,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     add x2, sp, #32
     stp x2, lr, [x0, CONTEXT_Sp]
 
-LOCAL_LABEL(Done_CONTEXT_CONTROL): 
+LOCAL_LABEL(Done_CONTEXT_CONTROL):
     // we dont clobber x1 in the CONTEXT_CONTROL case
     // ldr w1, [x0, CONTEXT_ContextFlags]
     // clangs assembler doesn't seem to support the mov Wx, imm32 yet
@@ -69,7 +69,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     str x28,      [x0, CONTEXT_X28]
 
 
-LOCAL_LABEL(Done_CONTEXT_INTEGER): 
+LOCAL_LABEL(Done_CONTEXT_INTEGER):
     ldr w1, [x0, CONTEXT_ContextFlags]
     // clangs assembler doesn't seem to support the mov Wx, imm32 yet
     movz w2, #0x40, lsl #16
@@ -103,7 +103,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     sub x0, x0,   CONTEXT_FLOAT_CONTROL_OFFSET + CONTEXT_NEON_OFFSET
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
-    
+
     add sp, sp, #32
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
@@ -206,7 +206,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     mov sp, x17
     ldr x17, [x16, CONTEXT_Pc]
     br x17
- 
+
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
    ret
 

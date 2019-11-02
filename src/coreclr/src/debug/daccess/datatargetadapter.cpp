@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // DataTargetAdapter.cpp
-// 
+//
 
-// 
+//
 // implementation of compatibility adapter for ICLRDataTarget
 //*****************************************************************************
 
@@ -20,10 +20,10 @@
 
 //
 // DataTargetAdaptor ctor
-// 
+//
 // Instantiate a DataTargetAdapter over the supplied legacy DataTarget interface.
 // Takes a ref on the supplied interface and releases it in our dtor.
-// 
+//
 DataTargetAdapter::DataTargetAdapter(ICLRDataTarget * pLegacyTarget) :
     m_ref(0),
     m_pLegacyTarget(pLegacyTarget)
@@ -33,9 +33,9 @@ DataTargetAdapter::DataTargetAdapter(ICLRDataTarget * pLegacyTarget) :
 
 //
 // DataTargetAdapter dtor
-// 
+//
 // Releases the underlying DataTarget interface
-// 
+//
 DataTargetAdapter::~DataTargetAdapter()
 {
     m_pLegacyTarget->Release();
@@ -76,7 +76,7 @@ DataTargetAdapter::QueryInterface(
 ULONG STDMETHODCALLTYPE
 DataTargetAdapter::AddRef()
 {
-    LONG ref = InterlockedIncrement(&m_ref);    
+    LONG ref = InterlockedIncrement(&m_ref);
     return ref;
 }
 
@@ -95,7 +95,7 @@ DataTargetAdapter::Release()
 
 // impl of interface method ICorDebugDataTarget::GetPlatform
 HRESULT STDMETHODCALLTYPE
-DataTargetAdapter::GetPlatform( 
+DataTargetAdapter::GetPlatform(
     CorDebugPlatform * pPlatform)
 {
     SUPPORTS_DAC_HOST_ONLY;
@@ -105,13 +105,13 @@ DataTargetAdapter::GetPlatform(
 
     ULONG32 ulMachineType;
     IfFailRet(m_pLegacyTarget->GetMachineType(&ulMachineType));
-    
+
     ULONG32 ulExpectedPointerSize;
     CorDebugPlatform platform;
 
     switch(ulMachineType)
     {
-#ifdef FEATURE_PAL        
+#ifdef FEATURE_PAL
     case IMAGE_FILE_MACHINE_I386:
         ulExpectedPointerSize = 4;
         platform = CORDB_PLATFORM_POSIX_X86;
@@ -135,8 +135,8 @@ DataTargetAdapter::GetPlatform(
     case IMAGE_FILE_MACHINE_IA64:
         _ASSERTE_MSG(false, "Not supported platform.");
         return E_NOTIMPL;
-        
-#else   // FEATURE_PAL        
+
+#else   // FEATURE_PAL
     case IMAGE_FILE_MACHINE_I386:
         ulExpectedPointerSize = 4;
         platform = CORDB_PLATFORM_WINDOWS_X86;
@@ -151,7 +151,7 @@ DataTargetAdapter::GetPlatform(
         ulExpectedPointerSize = 8;
         platform = CORDB_PLATFORM_WINDOWS_IA64;
         break;
-        
+
     case IMAGE_FILE_MACHINE_ARMNT:
         ulExpectedPointerSize = 4;
         platform = CORDB_PLATFORM_WINDOWS_ARM;
@@ -160,9 +160,9 @@ DataTargetAdapter::GetPlatform(
     case IMAGE_FILE_MACHINE_ARM64:
         ulExpectedPointerSize = 8;
         platform = CORDB_PLATFORM_WINDOWS_ARM64;
-        break;        
+        break;
 #endif  // FEATURE_PAL
-        
+
     default:
         // No other platforms are current supported
         return E_NOTIMPL;
@@ -184,7 +184,7 @@ DataTargetAdapter::GetPlatform(
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
 HRESULT STDMETHODCALLTYPE
-DataTargetAdapter::ReadVirtual( 
+DataTargetAdapter::ReadVirtual(
     CORDB_ADDRESS address,
     PBYTE pBuffer,
     ULONG32 cbRequestSize,
@@ -197,7 +197,7 @@ DataTargetAdapter::ReadVirtual(
 
 // impl of interface method ICorDebugMutableDataTarget::WriteVirtual
 HRESULT STDMETHODCALLTYPE
-DataTargetAdapter::WriteVirtual( 
+DataTargetAdapter::WriteVirtual(
     CORDB_ADDRESS address,
     const BYTE * pBuffer,
     ULONG32 cbRequestSize)
@@ -211,8 +211,8 @@ DataTargetAdapter::WriteVirtual(
 
     if (SUCCEEDED(hr) && cbWritten != cbRequestSize)
     {
-        // This shouldn't happen - existing data target implementations make writes atomic (eg. 
-        // WriteProcessMemory), even though that isn't strictly required by the old interface.  
+        // This shouldn't happen - existing data target implementations make writes atomic (eg.
+        // WriteProcessMemory), even though that isn't strictly required by the old interface.
         // If this does happen, we technically leave the process in an inconsistent state, and we make no
         // attempt to recover from that here.
         _ASSERTE_MSG(false, "Legacy data target WriteVirtual partial write - target left in inconsistent state");

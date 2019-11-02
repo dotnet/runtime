@@ -25,7 +25,7 @@ inline HRESULT HrFromWin32(DWORD dwWin32Error)
 
 // Some helper #def's to safely Release, close & delete Objects under
 // failure conditions
-	
+
 #define RELEASE(x) 			    \
 	do						    \
 	{						    \
@@ -35,10 +35,10 @@ inline HRESULT HrFromWin32(DWORD dwWin32Error)
             x = NULL;           \
             punk->Release();    \
 		}					    \
-	} while (0)				
-	
+	} while (0)
 
-#include "debugmacros.h"	
+
+#include "debugmacros.h"
 //
 // Good for verifying params withing range.
 //

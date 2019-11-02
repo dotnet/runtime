@@ -27,7 +27,7 @@
 // 32K length strings were allowed and event header size was over it. Vista onwards, the total
 // permissible length of the string and event header became 32K, resulting in strings becoming
 // shorter in length. Hence, the change in size.
-#define MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA 0x7C62 // decimal 31842 
+#define MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA 0x7C62 // decimal 31842
 
 class EventReporter
 {
@@ -52,7 +52,7 @@ private:
     static void GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * pdwMinor, DWORD * pdwBuild, DWORD * pdwRevision);
 
 public:
-    // Construct 
+    // Construct
     EventReporter(EventReporterType type);
     // Add extra info into description part of the log
     void AddDescription(__in WCHAR *pString);

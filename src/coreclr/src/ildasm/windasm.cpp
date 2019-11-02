@@ -148,7 +148,7 @@ void GetInputFileFullPath()
     WCHAR* wzArg = new WCHAR[len];
     memset(wzArg, 0, len * sizeof(WCHAR));
     WszMultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
-            
+
     // Get the full path
     len = WszGetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
     VDELETE(wzArg);
@@ -164,7 +164,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     if(szArg[0] == '-')
 #else
     if((szArg[0] == '/') || (szArg[0] == '-'))
-#endif	
+#endif
     {
         strncpy_s(szOpt,128, &szArg[1],10);
         szOpt[3] = 0;
@@ -364,23 +364,23 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         }
         else if ((_stricmp(szOpt, "met") == 0)&&g_fTDC)
         {
-            char *pStr = EqualOrColon(szArg); 
-            g_fDumpMetaInfo = TRUE; 
-            if(pStr) 
-            { 
+            char *pStr = EqualOrColon(szArg);
+            g_fDumpMetaInfo = TRUE;
+            if(pStr)
+            {
                 char szOptn[64];
-                strncpy_s(szOptn, 64, pStr+1,10); 
+                strncpy_s(szOptn, 64, pStr+1,10);
                 szOptn[3] = 0; // recognize metainfo specifier by first 3 chars
-                if     (_stricmp(szOptn, "hex") == 0) g_ulMetaInfoFilter |= MDInfo::dumpMoreHex; 
-                else if(_stricmp(szOptn, "csv") == 0) g_ulMetaInfoFilter |= MDInfo::dumpCSV; 
-                else if(_stricmp(szOptn, "mdh") == 0) g_ulMetaInfoFilter |= MDInfo::dumpHeader; 
-                else if(_stricmp(szOptn, "raw") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRaw; 
-                else if(_stricmp(szOptn, "hea") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRawHeaps; 
-                else if(_stricmp(szOptn, "sch") == 0) g_ulMetaInfoFilter |= MDInfo::dumpSchema; 
-                else if(_stricmp(szOptn, "unr") == 0) g_ulMetaInfoFilter |= MDInfo::dumpUnsat; 
-                else if(_stricmp(szOptn, "val") == 0) g_ulMetaInfoFilter |= MDInfo::dumpValidate; 
-                else if(_stricmp(szOptn, "sta") == 0) g_ulMetaInfoFilter |= MDInfo::dumpStats; 
-                else return -1; 
+                if     (_stricmp(szOptn, "hex") == 0) g_ulMetaInfoFilter |= MDInfo::dumpMoreHex;
+                else if(_stricmp(szOptn, "csv") == 0) g_ulMetaInfoFilter |= MDInfo::dumpCSV;
+                else if(_stricmp(szOptn, "mdh") == 0) g_ulMetaInfoFilter |= MDInfo::dumpHeader;
+                else if(_stricmp(szOptn, "raw") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRaw;
+                else if(_stricmp(szOptn, "hea") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRawHeaps;
+                else if(_stricmp(szOptn, "sch") == 0) g_ulMetaInfoFilter |= MDInfo::dumpSchema;
+                else if(_stricmp(szOptn, "unr") == 0) g_ulMetaInfoFilter |= MDInfo::dumpUnsat;
+                else if(_stricmp(szOptn, "val") == 0) g_ulMetaInfoFilter |= MDInfo::dumpValidate;
+                else if(_stricmp(szOptn, "sta") == 0) g_ulMetaInfoFilter |= MDInfo::dumpStats;
+                else return -1;
             }
         }
         else if (_stricmp(szOpt, "obj") == 0)
@@ -423,7 +423,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         szArg = CheckForDQuotes(szArg);
         strncpy_s(g_szInputFile, MAX_FILENAME_LENGTH,szArg,MAX_FILENAME_LENGTH-1);
         g_szInputFile[MAX_FILENAME_LENGTH-1] = 0;
-        GetInputFileFullPath();        
+        GetInputFileFullPath();
     }
     return 0;
 }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #include "stdafx.h"
 #include "utilcode.h"
@@ -113,7 +113,7 @@ static const UINT16 ConditionTable[16] =
 
 
 //
-// This table describes the size of each unwind code, in bytes (lower nibble), 
+// This table describes the size of each unwind code, in bytes (lower nibble),
 // along with the size of the corresponding machine code, in halfwords
 // (upper nibble).
 //
@@ -187,7 +187,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x003f0,     // 0 0 0 101
     0x007f0,     // 0 0 0 110
     0x00ff0,     // 0 0 0 111
-    
+
     0x10000,     // 0 0 1 000
     0x20000,     // 0 0 1 001
     0x30000,     // 0 0 1 010
@@ -196,7 +196,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x60000,     // 0 0 1 101
     0x70000,     // 0 0 1 110
     0x00000,     // 0 0 1 111
-    
+
     0x04010,     // 0 1 0 000
     0x04030,     // 0 1 0 001
     0x04070,     // 0 1 0 010
@@ -205,7 +205,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x043f0,     // 0 1 0 101
     0x047f0,     // 0 1 0 110
     0x04ff0,     // 0 1 0 111
-    
+
     0x14000,     // 0 1 1 000
     0x24000,     // 0 1 1 001
     0x34000,     // 0 1 1 010
@@ -214,7 +214,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x64000,     // 0 1 1 101
     0x74000,     // 0 1 1 110
     0x04000,     // 0 1 1 111
-    
+
     0x00810,     // 1 0 0 000
     0x00830,     // 1 0 0 001
     0x00870,     // 1 0 0 010
@@ -223,7 +223,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x00bf0,     // 1 0 0 101
     0x00ff0,     // 1 0 0 110
     0x0ffff,     // 1 0 0 111
-    
+
     0x1ffff,     // 1 0 1 000
     0x2ffff,     // 1 0 1 001
     0x3ffff,     // 1 0 1 010
@@ -232,7 +232,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x6ffff,     // 1 0 1 101
     0x7ffff,     // 1 0 1 110
     0x0ffff,     // 1 0 1 111
-    
+
     0x04810,     // 1 1 0 000
     0x04830,     // 1 1 0 001
     0x04870,     // 1 1 0 010
@@ -241,7 +241,7 @@ static const ULONG RegisterMaskLookup[1 << 6] =
     0x04bf0,     // 1 1 0 101
     0x04ff0,     // 1 1 0 110
     0x0ffff,     // 1 1 0 111
-    
+
     0x14800,     // 1 1 1 000
     0x24800,     // 1 1 1 001
     0x34800,     // 1 1 1 010
@@ -325,7 +325,7 @@ Return Value:
         if (Offsets->RegOffset[RegIndex] != (UINT16)~0) {
             SourceAddress = ContextRecord->Sp + Offsets->RegOffset[RegIndex];
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-            CONTEXT_REGISTER(ContextRecord, RegIndex) = 
+            CONTEXT_REGISTER(ContextRecord, RegIndex) =
                     MEMORY_READ_DWORD(UnwindParams, SourceAddress);
         }
     }
@@ -416,11 +416,11 @@ Return Value:
     ULONG RegCount;
     ULONG RegIndex;
     NTSTATUS Status;
-    
+
     //
     // Count and validate the number of registers.
     //
-    
+
     RegCount = RegStop + 1 - RegStart;
     Status = STATUS_SUCCESS;
     VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, 8 * RegCount, 8, &Status);
@@ -431,13 +431,13 @@ Return Value:
     //
     // Then pop each register in sequence.
     //
-    
+
     for (RegIndex = RegStart; RegIndex <= RegStop; RegIndex++) {
         UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, ContextRecord->Sp);
         ContextRecord->D[RegIndex] = MEMORY_READ_QWORD(UnwindParams, ContextRecord->Sp);
         ContextRecord->Sp += 8;
     }
-    
+
     return STATUS_SUCCESS;
 }
 
@@ -461,7 +461,7 @@ Arguments:
     Start - Supplies the index of the first register in the range.
 
     Stop - Supplies the index of the last register in the range.
-    
+
     Lr - Supplies a value which, if non-zero, indicates that the LR
         register is to be included in the mask.
 
@@ -473,7 +473,7 @@ Return Value:
 
 {
     WORD Result;
-    
+
     Result = 0;
     if (Start <= Stop) {
         Result |= ((1 << (Stop + 1)) - 1) - ((1 << Start) - 1);
@@ -512,11 +512,11 @@ Return Value:
     ULONG RegCount;
     ULONG RegIndex;
     NTSTATUS Status;
-    
+
     //
     // Count and validate the number of registers.
     //
-    
+
     RegCount = 0;
     for (RegIndex = 0; RegIndex < 15; RegIndex++) {
         RegCount += (RegMask >> RegIndex) & 1;
@@ -531,11 +531,11 @@ Return Value:
     //
     // Then pop each register in sequence.
     //
-    
+
     for (RegIndex = 0; RegIndex < 15; RegIndex++) {
         if ((RegMask & (1 << RegIndex)) != 0) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, ContextRecord->Sp);
-            CONTEXT_REGISTER(ContextRecord, RegIndex) = 
+            CONTEXT_REGISTER(ContextRecord, RegIndex) =
                     MEMORY_READ_DWORD(UnwindParams, ContextRecord->Sp);
             ContextRecord->Sp += 4;
         }
@@ -548,7 +548,7 @@ Return Value:
     if ((RegMask & 0x4000) != 0) {
         ContextRecord->Pc = ContextRecord->Lr;
     }
-    
+
     return STATUS_SUCCESS;
 }
 
@@ -600,10 +600,10 @@ Arguments:
 
     UnwindCodePtr - Supplies a pointer to the start of the unwind
         code sequence.
-    
+
     UnwindCodesEndPtr - Supplies a pointer to the byte immediately
         following the unwind code table, as described by the header.
-    
+
     IsEpilog - Specifies TRUE if the scope describes an epilog,
         or FALSE if it describes a prolog.
 
@@ -624,7 +624,7 @@ Return Value:
     // Iterate through the unwind codes until we hit an end marker.
     // While iterating, accumulate the total scope size.
     //
-    
+
     ScopeSize = 0;
     Opcode = 0;
     while (UnwindCodePtr < UnwindCodesEndPtr && (Opcode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr)) < 0xfd) {
@@ -632,11 +632,11 @@ Return Value:
         ScopeSize += TableValue >> 4;
         UnwindCodePtr += TableValue & 0xf;
     }
-    
+
     //
     // Handle the special epilog-only end codes.
     //
-    
+
     if (Opcode >= 0xfd && Opcode <= 0xfe && IsEpilog) {
         ScopeSize += Opcode - 0xfc;
     }
@@ -680,13 +680,13 @@ RtlpUnwindFunctionCompact(
 
     UnwindData = FunctionEntry->UnwindData;
     Status = STATUS_SUCCESS;
-    
+
     //
     // Compact records always describe an unwind to a call.
     //
 
     ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-    
+
     //
     // Extract the basic information about how to do a full unwind.
     //
@@ -701,21 +701,21 @@ RtlpUnwindFunctionCompact(
     // Determine push/pop masks based on this information. This comes
     // from a mix of the C, L, R, and Reg fields.
     //
-    
+
     VfpSaveCount = RegisterMaskLookup[(UnwindData >> 16) & 0x3f];
     PushMask = PopMask = VfpSaveCount & 0xffff;
     VfpSaveCount >>= 16;
-    
+
     //
     // Move LR->PC for the pop case if the Ret field is 0. This must be
     // accurate so that the opcode size computation below is correct.
     //
-    
+
     if (RetBits == 0) {
         _ASSERTE((PopMask & 0x4000) != 0);
         PopMask = (PopMask & ~0x4000) | 0x8000;
     }
-    
+
     //
     // If the stack adjustment is folded into the push/pop, encode this
     // by setting one of the low 4 bits of the push/pop mask and recovering
@@ -727,19 +727,19 @@ RtlpUnwindFunctionCompact(
         PopMask |= StackAdjust & 8;
         StackAdjust = (StackAdjust & 3) + 1;
     }
-    
+
     //
-    // If we're near the start of the function (within 9 halfwords), 
+    // If we're near the start of the function (within 9 halfwords),
     // see if we are within the prolog.
     //
     // N.B. If the low 2 bits of the UnwindData are 2, then we have
     // no prolog.
     //
-    
+
     OffsetInFunction = (ControlPcRva - (FunctionEntry->BeginAddress & ~1)) / 2;
     OffsetInScope = 0;
     if (OffsetInFunction < 9 && (UnwindData & 3) != 2) {
-    
+
         //
         // Compute sizes for each opcode in the prolog.
         //
@@ -752,7 +752,7 @@ RtlpUnwindFunctionCompact(
         PushPopFloatingPointLength = (VfpSaveCount != 0) ? 2 : 0;
         StackAdjustLength = (StackAdjust == 0 || (PushMask & 4) != 0) ? 0 :
                             (StackAdjust < 0x80) ? 1 : 2;
-    
+
         //
         // Compute the total prolog length and determine if we are within
         // its scope.
@@ -771,16 +771,16 @@ RtlpUnwindFunctionCompact(
             OffsetInScope = PrologLength - OffsetInFunction;
         }
     }
-    
+
     //
-    // If we're near the end of the function (within 8 halfwords), see if 
+    // If we're near the end of the function (within 8 halfwords), see if
     // we are within the epilog.
     //
     // N.B. If Ret == 3, then we have no epilog.
     //
-    
+
     if (OffsetInScope == 0 && OffsetInFunction + 8 >= FunctionLength && RetBits != 3) {
-    
+
         //
         // Compute sizes for each opcode in the epilog.
         //
@@ -814,16 +814,16 @@ RtlpUnwindFunctionCompact(
             }
         }
     }
-    
+
     //
     // Process operations backwards, in the order: stack deallocation,
-    // VFP register popping, integer register popping, parameter home 
+    // VFP register popping, integer register popping, parameter home
     // area recovery.
     //
     // First case is simple: we process everything with no regard for
     // the current offset within the scope.
     //
-    
+
     if (OffsetInScope == 0) {
 
         ContextRecord->Sp += 4 * StackAdjust;
@@ -838,12 +838,12 @@ RtlpUnwindFunctionCompact(
             ContextRecord->Sp += 4 * 4;
         }
     }
-    
+
     //
     // Second case is more complex: we must step along each operation
     // to ensure it should be executed.
     //
-    
+
     else {
 
         CurrentOffset = 0;
@@ -860,13 +860,13 @@ RtlpUnwindFunctionCompact(
         //
         // N.B. We don't need to undo any side effects of frame pointer linkage
         //
-        
+
         CurrentOffset += ComputeFramePointerLength;
-        
+
         //
         // N.B. In the epilog case above, we copied PopMask to PushMask
         //
-        
+
         if (CurrentOffset >= OffsetInScope && PushPopIntegerLength != 0) {
             PushMask &= 0xfff0;
             Status = RtlpPopRegisterMask(ContextRecord, (WORD)PushMask, UnwindParams);
@@ -875,11 +875,11 @@ RtlpUnwindFunctionCompact(
             }
         }
         CurrentOffset += PushPopIntegerLength;
-        
+
         //
         // N.B. In the epilog case, we also need to pop the return address
         //
-        
+
         if (CurrentOffset >= OffsetInScope && PushPopParamsLength != 0) {
             if (PushPopParamsLength == 2) {
                 Status = RtlpPopRegisterMask(ContextRecord, 1 << 14, UnwindParams);
@@ -891,14 +891,14 @@ RtlpUnwindFunctionCompact(
     //
     // If we succeeded, post-process the results a bit
     //
-    
+
     if (Status == STATUS_SUCCESS) {
 
         //
         // Since we always POP to the LR, recover the final PC from there.
         // Also set the establisher frame equal to the final stack pointer.
         //
-        
+
         ContextRecord->Pc = ContextRecord->Lr;
         *EstablisherFrame = ContextRecord->Sp;
 
@@ -934,8 +934,8 @@ Routine Description:
     is, and then executing unwind codes that map to the function's prolog
     or epilog behavior.
 
-    If a context pointers record is specified (in the UnwindParams), then 
-    the address where each nonvolatile register is restored from is recorded 
+    If a context pointers record is specified (in the UnwindParams), then
+    the address where each nonvolatile register is restored from is recorded
     in the appropriate element of the context pointers record.
 
 Arguments:
@@ -994,7 +994,7 @@ Return Value:
     ULONG UnwindDataPtr;
     ULONG UnwindIndex;
     ULONG UnwindWords;
-    
+
     //
     // Unless we encounter a special frame, assume that any unwinding
     // will return us to the return address of a call and set the flag
@@ -1006,7 +1006,7 @@ Return Value:
     //
     // Fetch the header word from the .xdata blob
     //
-    
+
     UnwindDataPtr = ImageBase + FunctionEntry->UnwindData;
     HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
     UnwindDataPtr += 4;
@@ -1014,7 +1014,7 @@ Return Value:
     //
     // Verify the version before we do anything else
     //
-    
+
     if (((HeaderWord >> 18) & 3) != 0) {
         return E_UNEXPECTED;
     }
@@ -1025,7 +1025,7 @@ Return Value:
     if (OffsetInFunction >= FunctionLength) {
         return E_UNEXPECTED;
     }
-    
+
     //
     // Determine the number of epilog scope records and the maximum number
     // of unwind codes.
@@ -1043,7 +1043,7 @@ Return Value:
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
     }
-    
+
     //
     // If exception data is present, extract it now.
     //
@@ -1051,11 +1051,11 @@ Return Value:
     ExceptionHandler = NULL;
     ExceptionHandlerData = NULL;
     if ((HeaderWord & (1 << 20)) != 0) {
-        ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase + 
+        ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase +
                         MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords)));
         ExceptionHandlerData = (PVOID)(UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords + 1));
     }
-    
+
     //
     // Unless we are in a prolog/epilog, we execute the unwind codes
     // that immediately follow the epilog scope list.
@@ -1064,7 +1064,7 @@ Return Value:
     UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
     UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
     SkipHalfwords = 0;
-    
+
     //
     // If we're near the start of the function, and this function has a prolog,
     // compute the size of the prolog from the unwind codes. If we're in the
@@ -1082,7 +1082,7 @@ Return Value:
             goto ExecuteCodes;
         }
     }
-    
+
     //
     // We're not in the prolog, now check to see if we are in the epilog.
     // In the simple case, the 'E' bit is set indicating there is a single
@@ -1091,12 +1091,12 @@ Return Value:
     // unwind codes. If we're in the midst of it, adjust the unwind code
     // pointer to the start of the codes and determine how many we need to skip.
     //
-    
+
     if ((HeaderWord & (1 << 21)) != 0) {
         if (OffsetInFunction + MAX_EPILOG_SIZE >= FunctionLength) {
             ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
             ScopeStart = FunctionLength - ScopeSize;
-            
+
             if (OffsetInFunction >= ScopeStart) {
                 UnwindCodePtr += UnwindIndex;
                 SkipHalfwords = OffsetInFunction - ScopeStart;
@@ -1105,7 +1105,7 @@ Return Value:
             }
         }
     }
-    
+
     //
     // In the multiple-epilog case, we scan forward to see if we are within
     // shooting distance of any of the epilogs. If we are, we compute the
@@ -1127,14 +1127,14 @@ Return Value:
             if (OffsetInFunction < ScopeStart) {
                 break;
             }
-            
+
             if (OffsetInFunction < ScopeStart + MAX_EPILOG_SIZE) {
                 UnwindIndex = HeaderWord >> 24;
                 ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
 
-                if (RtlpCheckCondition(ContextRecord, HeaderWord >> 20) && 
+                if (RtlpCheckCondition(ContextRecord, HeaderWord >> 20) &&
                     OffsetInFunction < ScopeStart + ScopeSize) {
-                    
+
                     UnwindCodePtr += UnwindIndex;
                     SkipHalfwords = OffsetInFunction - ScopeStart;
                     ExceptionHandler = NULL;
@@ -1161,7 +1161,7 @@ ExecuteCodes:
         SkipHalfwords -= TableValue >> 4;
         UnwindCodePtr += TableValue & 0xf;
     }
-    
+
     //
     // Now execute codes until we hit the end.
     //
@@ -1171,42 +1171,42 @@ ExecuteCodes:
 
         CurCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
         UnwindCodePtr++;
-        
+
         //
         // 0x00-0x7f: 2-byte stack adjust ... add sp, sp, #0xval
         //
-        
+
         if (CurCode < 0x80) {
             ContextRecord->Sp += (CurCode & 0x7f) * 4;
         }
-        
+
         //
         // 0x80-0xbf: 4-byte bitmasked pop ... pop {r0-r12, lr}
         //
-        
+
         else if (CurCode < 0xc0) {
             if (UnwindCodePtr >= UnwindCodesEndPtr) {
                 Status = E_FAIL;
             } else {
                 Param = ((CurCode & 0x20) << 9) |
-                        ((CurCode & 0x1f) << 8) | 
+                        ((CurCode & 0x1f) << 8) |
                         MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
                 UnwindCodePtr++;
                 Status = RtlpPopRegisterMask(ContextRecord, (WORD)Param, UnwindParams);
             }
         }
-        
+
         //
         // 0xc0-0xcf: 2-byte stack restore ... mov sp, rX
         //
-        
+
         else if (CurCode < 0xd0) {
             ContextRecord->Sp = CONTEXT_REGISTER(ContextRecord, CurCode & 0x0f);
         }
-        
+
         else {
             switch (CurCode) {
-            
+
             //
             // 0xd0-0xd7: 2-byte range pop ... pop {r4-r7, lr}
             //
@@ -1217,7 +1217,7 @@ ExecuteCodes:
                                              RtlpRangeToMask(4, 4 + (CurCode & 3), CurCode & 4),
                                              UnwindParams);
                 break;
-            
+
             //
             // 0xd8-0xdf: 4-byte range pop ... pop {r4-r11, lr}
             //
@@ -1228,7 +1228,7 @@ ExecuteCodes:
                                              RtlpRangeToMask(4, 8 + (CurCode & 3), CurCode & 4),
                                              UnwindParams);
                 break;
-            
+
             //
             // 0xe0-0xe7: 4-byte range vpop ... vpop {d8-d15}
             //
@@ -1239,7 +1239,7 @@ ExecuteCodes:
                                                  8, 8 + (CurCode & 0x07),
                                                  UnwindParams);
                 break;
-            
+
             //
             // 0xe8-0xeb: 4-byte stack adjust ... addw sp, sp, #0xval
             //
@@ -1253,7 +1253,7 @@ ExecuteCodes:
                 ContextRecord->Sp += 4 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
                 UnwindCodePtr++;
                 break;
-            
+
             //
             // 0xec-0xed: 2-byte bitmasked pop ... pop {r0-r7,lr}
             //
@@ -1264,12 +1264,12 @@ ExecuteCodes:
                     break;
                 }
                 Status = RtlpPopRegisterMask(ContextRecord,
-                                             MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr) 
-                                                    | ((CurCode << 14) & 0x4000), 
+                                             MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr)
+                                                    | ((CurCode << 14) & 0x4000),
                                              UnwindParams);
                 UnwindCodePtr++;
                 break;
-            
+
             //
             // 0xee: 0-byte custom opcode
             //
@@ -1282,14 +1282,14 @@ ExecuteCodes:
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
                 UnwindCodePtr++;
                 if ((Param & 0xf0) == 0x00) {
-                    Status = RtlpUnwindCustom(ContextRecord, 
+                    Status = RtlpUnwindCustom(ContextRecord,
                                               Param & 0x0f,
                                               UnwindParams);
                 } else {
                     Status = E_FAIL;
                 }
                 break;
-            
+
             //
             // 0xef: 4-byte stack restore with post-increment ... ldr pc, [sp], #X
             //
@@ -1302,7 +1302,7 @@ ExecuteCodes:
                 Param = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
                 UnwindCodePtr++;
                 if ((Param & 0xf0) == 0x00) {
-                    Status = RtlpPopRegisterMask(ContextRecord, 
+                    Status = RtlpPopRegisterMask(ContextRecord,
                                                  0x4000,
                                                  UnwindParams);
                     ContextRecord->Sp += ((Param & 15) - 1) * 4;
@@ -1310,7 +1310,7 @@ ExecuteCodes:
                     Status = E_FAIL;
                 }
                 break;
-            
+
             //
             // 0xf5: 4-byte range vpop ... vpop {d0-d15}
             //
@@ -1326,7 +1326,7 @@ ExecuteCodes:
                                                  Param >> 4, Param & 0x0f,
                                                  UnwindParams);
                 break;
-            
+
             //
             // 0xf6: 4-byte range vpop ... vpop {d16-d31}
             //
@@ -1342,12 +1342,12 @@ ExecuteCodes:
                                                  16 + (Param >> 4), 16 + (Param & 0x0f),
                                                  UnwindParams);
                 break;
-            
+
             //
             // 0xf7: 2-byte stack adjust ... add sp, sp, <reg>
             // 0xf9: 4-byte stack adjust ... add sp, sp, <reg>
             //
-            
+
             case 0xf7:
             case 0xf9:
                 if (UnwindCodePtr + 2 > UnwindCodesEndPtr) {
@@ -1358,12 +1358,12 @@ ExecuteCodes:
                 ContextRecord->Sp += 4 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr + 1);
                 UnwindCodePtr += 2;
                 break;
-            
+
             //
             // 0xf8: 2-byte stack adjust ... add sp, sp, <reg>
             // 0xfa: 4-byte stack adjust ... add sp, sp, <reg>
             //
-            
+
             case 0xf8:
             case 0xfa:
                 if (UnwindCodePtr + 3 > UnwindCodesEndPtr) {
@@ -1375,27 +1375,27 @@ ExecuteCodes:
                 ContextRecord->Sp += 4 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr + 2);
                 UnwindCodePtr += 3;
                 break;
-            
+
             //
             // 0xfb: 2-byte no-op/misc instruction
             // 0xfc: 4-byte no-op/misc instruction
             //
-            
+
             case 0xfb:
             case 0xfc:
                 break;
-            
+
             //
             // 0xfd: 2-byte end (epilog)
             // 0xfe: 4-byte end (epilog)
             // 0xff: generic end
             //
-            
+
             case 0xfd:
             case 0xfe:
             case 0xff:
                 goto finished;
-            
+
             default:
                 Status = E_FAIL;
                 break;
@@ -1414,7 +1414,7 @@ finished:
         // it was overwritten due to a special case custom unwinding operation.
         // Also set the establisher frame equal to the final stack pointer.
         //
-        
+
         if ((ContextRecord->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0) {
             ContextRecord->Pc = ContextRecord->Lr;
         }
@@ -1425,7 +1425,7 @@ finished:
         }
         *HandlerData = ExceptionHandlerData;
     }
-    
+
     return Status;
 }
 
@@ -1443,12 +1443,12 @@ BOOL OOPStackUnwinderArm::Unwind(T_CONTEXT * pContext)
 
     DWORD startingPc = pContext->Pc;
     DWORD startingSp = pContext->Sp;
-    
+
     T_RUNTIME_FUNCTION Rfe;
     if (FAILED(GetFunctionEntry(DBS_EXTEND64(pContext->Pc), &Rfe, sizeof(Rfe))))
         return FALSE;
 
-    if ((Rfe.UnwindData & 3) != 0) 
+    if ((Rfe.UnwindData & 3) != 0)
     {
         hr = RtlpUnwindFunctionCompact(pContext->Pc - (ULONG)ImageBase,
                                         &Rfe,
@@ -1484,7 +1484,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 {
     OOPStackUnwinderArm unwinder;
     BOOL res = unwinder.Unwind(pContext);
-    
+
     if (res && pContextPointers)
     {
         for (int i = 0; i < 8; i++)
@@ -1492,7 +1492,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
             *(&pContextPointers->R4 + i) = &pContext->R4 + i;
         }
     }
-    
+
     return res;
 }
 
@@ -1510,11 +1510,11 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind(
 {
     PEXCEPTION_ROUTINE handlerRoutine;
     HRESULT res;
-    
+
     ARM_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
-    
-    if ((FunctionEntry->UnwindData & 3) != 0) 
+
+    if ((FunctionEntry->UnwindData & 3) != 0)
     {
         res = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
                                         FunctionEntry,
@@ -1538,7 +1538,7 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind(
     }
 
     _ASSERTE(SUCCEEDED(res));
-    
+
     return handlerRoutine;
 }
 #endif

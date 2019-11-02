@@ -39,9 +39,9 @@ public:
     }
 
     ~SigBuilder();
-    
+
     SigBuilder(DWORD cbPreallocationSize);
-    
+
     PVOID GetSignature(DWORD * pdwLength)
     {
         LIMITED_METHOD_CONTRACT;

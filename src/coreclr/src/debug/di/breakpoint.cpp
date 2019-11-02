@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: breakpoint.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -14,7 +14,7 @@
  * ------------------------------------------------------------------------- */
 
 CordbBreakpoint::CordbBreakpoint(CordbProcess * pProcess, CordbBreakpointType bpType)
-  : CordbBase(pProcess, 0, enumCordbBreakpoint), 
+  : CordbBase(pProcess, 0, enumCordbBreakpoint),
   m_active(false), m_pAppDomain(NULL), m_type(bpType)
 {
 }
@@ -59,7 +59,7 @@ HRESULT CordbBreakpoint::BaseIsActive(BOOL *pbActive)
 CordbFunctionBreakpoint::CordbFunctionBreakpoint(CordbCode *code,
                                                  SIZE_T offset,
                                                  BOOL offsetIsIl)
-  : CordbBreakpoint(code->GetProcess(), CBT_FUNCTION), 
+  : CordbBreakpoint(code->GetProcess(), CBT_FUNCTION),
   m_code(code), m_offset(offset),
   m_offsetIsIl(offsetIsIl)
 {
@@ -108,7 +108,7 @@ HRESULT CordbFunctionBreakpoint::GetFunction(ICorDebugFunction **ppFunction)
     if (m_code == NULL)
     {
         return CORDBG_E_PROCESS_TERMINATED;
-    }        
+    }
     if (m_code->IsNeutered())
     {
         return CORDBG_E_CODE_NOT_AVAILABLE;
@@ -134,7 +134,7 @@ HRESULT CordbFunctionBreakpoint::GetOffset(ULONG32 *pnOffset)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pnOffset, SIZE_T *);
-    
+
     *pnOffset = (ULONG32)m_offset;
 
     return S_OK;
@@ -142,7 +142,7 @@ HRESULT CordbFunctionBreakpoint::GetOffset(ULONG32 *pnOffset)
 
 //---------------------------------------------------------------------------------------
 //
-// Activates or removes a breakpoint 
+// Activates or removes a breakpoint
 //
 // Arguments:
 //    fActivate - TRUE if to activate the breakpoint, else FALSE.
@@ -181,7 +181,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         return CORDBG_E_CODE_NOT_AVAILABLE;
     }
 
-        
+
     //
     // <REVISIT_TODO>@todo: when we implement module and value breakpoints, then
     // we'll want to factor some of this code out.</REVISIT_TODO>
@@ -189,7 +189,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
     CordbProcess * pProcess = GetProcess();
 
     RSLockHolder lockHolder(pProcess->GetProcessLock());
-    pProcess->ClearPatchTable(); // if we add something, then the right side 
+    pProcess->ClearPatchTable(); // if we add something, then the right side
                                 // view of the patch table is no longer valid
 
     DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
@@ -215,7 +215,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         }
         else
         {
-            pEvent->BreakpointData.nativeCodeMethodDescToken = 
+            pEvent->BreakpointData.nativeCodeMethodDescToken =
                 (m_code.GetValue()->AsNativeCode())->GetVMNativeCodeMethodDescToken().ToLsPtr();
         }
 
@@ -233,7 +233,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
             return hr;
         }
 
-            
+
         m_id = LsPtrToCookie(pEvent->BreakpointData.breakpointToken);
 
         // If we weren't able to allocate the BP, we should have set the
@@ -251,13 +251,13 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         _ASSERTE (pAppDomain != NULL);
 
         if (pProcess->IsSafeToSendEvents())
-        {            
+        {
             pProcess->InitIPCEvent(pEvent, DB_IPCE_BREAKPOINT_REMOVE, false, pAppDomain->GetADToken());
 
-            pEvent->BreakpointData.breakpointToken = GetLsPtrBP(); 
+            pEvent->BreakpointData.breakpointToken = GetLsPtrBP();
 
             lockHolder.Release();
-            hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);            
+            hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
             lockHolder.Acquire();
 
             hr = WORST_HR(hr, pEvent->hr);
@@ -265,8 +265,8 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         else
         {
             hr = CORDBHRFromProcessState(pProcess, pAppDomain);
-        }            
-        
+        }
+
         pAppDomain->m_breakpoints.RemoveBase(LsPtrToCookie(GetLsPtrBP()));
         m_active = false;
     }
@@ -284,7 +284,7 @@ void CordbFunctionBreakpoint::Disconnect()
  * ------------------------------------------------------------------------- */
 
 CordbStepper::CordbStepper(CordbThread *thread, CordbFrame *frame)
-  : CordbBase(thread->GetProcess(), 0, enumCordbStepper), 
+  : CordbBase(thread->GetProcess(), 0, enumCordbStepper),
     m_thread(thread), m_frame(frame),
     m_stepperToken(0), m_active(false),
     m_rangeIL(TRUE),
@@ -325,7 +325,7 @@ HRESULT CordbStepper::SetJMC(BOOL fIsJMCStepper)
     // Can't have JMC and stopping with anything else.
     if (m_rgfMappingStop & STOP_ALL)
         return E_INVALIDARG;
-            
+
     m_fIsJMCStepper = (fIsJMCStepper != FALSE);
     return S_OK;
 }
@@ -335,7 +335,7 @@ HRESULT CordbStepper::IsActive(BOOL *pbActive)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pbActive, BOOL *);
-    
+
     *pbActive = m_active;
 
     return S_OK;
@@ -354,7 +354,7 @@ HRESULT CordbStepper::Deactivate()
     PUBLIC_REENTRANT_API_ENTRY(this);
     if (!m_active)
         return S_OK;
-        
+
     FAIL_IF_NEUTERED(this);
 
     if (m_thread == NULL)
@@ -363,7 +363,7 @@ HRESULT CordbStepper::Deactivate()
     HRESULT hr;
     CordbProcess *process = GetProcess();
     ATT_ALLOW_LIVE_DO_STOPGO(process);
-    
+
     process->Lock();
 
     if (!m_active) // another thread may be deactivating (e.g. step complete event)
@@ -376,12 +376,12 @@ HRESULT CordbStepper::Deactivate()
     _ASSERTE (pAppDomain != NULL);
 
     DebuggerIPCEvent event;
-    process->InitIPCEvent(&event, 
-                          DB_IPCE_STEP_CANCEL, 
+    process->InitIPCEvent(&event,
+                          DB_IPCE_STEP_CANCEL,
                           false,
                           pAppDomain->GetADToken());
 
-    event.StepData.stepperToken = GetLsPtrStepper(); 
+    event.StepData.stepperToken = GetLsPtrStepper();
 
     process->Unlock();
     hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
@@ -409,15 +409,15 @@ HRESULT CordbStepper::SetUnmappedStopMask(CorDebugUnmappedStop mask)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    
+
     // You must be Win32 attached to stop in unmanaged code.
     if ((mask & STOP_UNMANAGED) && !GetProcess()->IsInteropDebugging())
         return E_INVALIDARG;
 
     // Limitations on JMC Stepping - if JMC stepping is active,
     // all other stop masks must be disabled.
-    // The jit can't place JMC probes before the prolog, so if we're 
-    // we're JMC stepping, we'll stop after the prolog. 
+    // The jit can't place JMC probes before the prolog, so if we're
+    // we're JMC stepping, we'll stop after the prolog.
     // The implementation for JMC stepping also doesn't let us stop in
     // unmanaged code. (because there are no probes there).
     // So enforce those implementation limitations here.
@@ -428,8 +428,8 @@ HRESULT CordbStepper::SetUnmappedStopMask(CorDebugUnmappedStop mask)
     }
 
     // @todo- Ensure that we only set valid bits.
-    
-    
+
+
     m_rgfMappingStop = mask;
     return S_OK;
 }
@@ -439,7 +439,7 @@ HRESULT CordbStepper::Step(BOOL bStepIn)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     if (m_thread == NULL)
         return CORDBG_E_PROCESS_TERMINATED;
 
@@ -458,9 +458,9 @@ HRESULT CordbStepper::Step(BOOL bStepIn)
 //
 // Returns:
 //    S_OK if the stepper is successfully set-up, else an appropriate error code.
-//  
-HRESULT CordbStepper::StepRange(BOOL fStepIn, 
-                                COR_DEBUG_STEP_RANGE rgRanges[], 
+//
+HRESULT CordbStepper::StepRange(BOOL fStepIn,
+                                COR_DEBUG_STEP_RANGE rgRanges[],
                                 ULONG32 cRanges)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -479,7 +479,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
     if (m_active)
     {
         //
-        // Deactivate the current stepping. 
+        // Deactivate the current stepping.
         // or return an error???
         //
         hr = Deactivate();
@@ -502,9 +502,9 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
             return ErrWrapper(E_INVALIDARG);
         }
     }
-    
+
     CordbProcess * pProcess = GetProcess();
-    
+
     //
     // Build step event
     //
@@ -518,7 +518,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
     pEvent->StepData.rgfInterceptStop = m_rgfInterceptStop;
     pEvent->StepData.IsJMCStop = !!m_fIsJMCStepper;
 
-        
+
     if (m_frame == NULL)
     {
         pEvent->StepData.frameToken = LEAF_MOST_FRAME;
@@ -567,7 +567,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
             while (cRangesCopied != cRangesToCopy)
             {
                 pRangeStart[cRangesCopied] = rgRanges[cRanges - cRangesToGo + cRangesCopied];
-                cRangesCopied++; 
+                cRangesCopied++;
             }
 
             pEvent->StepData.rangeCount = cRangesCopied;
@@ -581,7 +581,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
             hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
 
             hr = WORST_HR(hr, pEvent->hr);
-            
+
             if (FAILED(hr))
             {
                 return hr;
@@ -606,8 +606,8 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
 
     m_id = LsPtrToCookie(pEvent->StepData.stepperToken);
 
-    LOG((LF_CORDB,LL_INFO10000, "CS::SR: m_id:0x%x | 0x%x \n", 
-         m_id, 
+    LOG((LF_CORDB,LL_INFO10000, "CS::SR: m_id:0x%x | 0x%x \n",
+         m_id,
          LsPtrToCookie(pEvent->StepData.stepperToken)));
 
 #ifdef _DEBUG
@@ -632,13 +632,13 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
 //
 // Returns:
 //    S_OK if the stepper is successfully set-up, else an appropriate error code.
-//  
+//
 HRESULT CordbStepper::StepOut()
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-        
+
     if (m_thread == NULL)
     {
         return CORDBG_E_PROCESS_TERMINATED;
@@ -649,7 +649,7 @@ HRESULT CordbStepper::StepOut()
     if (m_active)
     {
         //
-        // Deactivate the current stepping. 
+        // Deactivate the current stepping.
         // or return an error???
         //
 
@@ -671,7 +671,7 @@ HRESULT CordbStepper::StepOut()
             return ErrWrapper(CORDBG_E_CANT_INTEROP_STEP_OUT);
         }
     }
-    
+
     //
     // Build step event
     //
@@ -698,9 +698,9 @@ HRESULT CordbStepper::StepOut()
 
     // Note: two-way event here...
     hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
-    
+
     hr = WORST_HR(hr, pEvent->hr);
-    
+
     if (FAILED(hr))
     {
         return hr;
@@ -719,6 +719,6 @@ HRESULT CordbStepper::StepOut()
     m_active = true;
 
     pProcess->Unlock();
-    
+
     return S_OK;
 }

@@ -64,7 +64,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 
     TableMask(table) = size - 1;
 
-    // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1' 
+    // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
     DWORD bitCnt;
 #if BIT64
     BitScanReverse64(&bitCnt, size - 1);
@@ -159,7 +159,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
         if (entrySource == source)
         {
             TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
-    
+
             // target never has its lower bit set.
             // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
             entryTargetAndResult ^= target;
@@ -168,7 +168,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
                 DWORD version2 = pEntry->version;
                 if (version2 != version1 || (version1 & 1))
                 {
-                    // oh, so close, the entry is in inconsistent state. 
+                    // oh, so close, the entry is in inconsistent state.
                     // it is either changing or has changed while we were reading.
                     // treat it as a miss.
                     break;
@@ -222,14 +222,14 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
         for (DWORD i = 0; i < BUCKET_SIZE; i++)
         {
             // claim the entry if unused or is more distant than us from its origin.
-            // Note - someone familiar with Robin Hood hashing will notice that 
+            // Note - someone familiar with Robin Hood hashing will notice that
             //        we do the opposite - we are "robbing the poor".
-            //        Robin Hood strategy improves average lookup in a lossles dictionary by reducing 
-            //        outliers via giving preference to more distant entries. 
+            //        Robin Hood strategy improves average lookup in a lossles dictionary by reducing
+            //        outliers via giving preference to more distant entries.
             //        What we have here is a lossy cache with outliers bounded by the bucket size.
             //        We improve average lookup by giving preference to the "richer" entries.
-            //        If we used Robin Hood strategy we could eventually end up with all 
-            //        entries in the table being maximally "poor". 
+            //        If we used Robin Hood strategy we could eventually end up with all
+            //        entries in the table being maximally "poor".
             DWORD version = pEntry->version;
             if (version == 0 || (version >> VERSION_NUM_SIZE) > i)
             {
@@ -239,7 +239,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
                 {
                     pEntry->SetEntry(source, target, result);
 
-                    // entry is in inconsistent state and cannot be read or written to until we 
+                    // entry is in inconsistent state and cannot be read or written to until we
                     // update the version, which is the last thing we do here
                     VolatileStore(&pEntry->version, newVersion + 1);
                     return;
@@ -249,7 +249,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
             if (pEntry->Source() == source && pEntry->Target() == target)
             {
-                // looks like we already have an entry for this. 
+                // looks like we already have an entry for this.
                 // duplicate entries are harmless, but a bit of a waste.
                 return;
             }
@@ -270,7 +270,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
         return;
     }
 
-    // pick a victim somewhat randomly within a bucket 
+    // pick a victim somewhat randomly within a bucket
     // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
     DWORD victimDistance = VictimCounter(table)++ & (BUCKET_SIZE - 1);
     // position the victim in a quadratic reprobe bucket

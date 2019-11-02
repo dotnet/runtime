@@ -201,7 +201,7 @@ Assembler::~Assembler()
     m_DocWriterList.RESET(true);
 
     m_MethodBodyList.RESET(true);
-    
+
     m_TypeDefDList.RESET(true);
 
     if (m_pSymWriter != NULL)
@@ -235,7 +235,7 @@ BOOL Assembler::Init()
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);
-        
+
         DestroyICeeFileGen(&m_pCeeFileGen);
 
         m_pCeeFileGen = NULL;
@@ -1096,14 +1096,14 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     for(int j=0; j < nOthers; j++)
     {
         mdOthers[j] = ResolveLocalMemberRef((mdToken)(UINT_PTR)(pPD->m_tklOthers.PEEK(j)));     // @WARNING: casting down from 'mdToken*' to 'mdToken'
-        
+
         if((RidFromToken(mdOthers[j])!=0)&&(TypeFromToken(mdOthers[j]) != mdtMethodDef))
         {
             report->error("Invalid Other method of property '%s'\n",pPD->m_szName);
             delete [] mdOthers;
             return FALSE;
         }
-        
+
     }
     mdOthers[nOthers] = mdMethodDefNil; // like null-terminator
 
@@ -1242,8 +1242,8 @@ BOOL Assembler::EmitClass(Class *pClass)
             }
         }
         EmitGenericParamConstraints(pClass->m_NumTyPars, pClass->m_TyPars, pClass->m_cl, &(pClass->m_GPCList));
-    }    
-    
+    }
+
     EmitCustomAttributes(pClass->m_cl, &(pClass->m_CustDList));
     hr = S_OK;
 
@@ -1509,16 +1509,16 @@ For every delta with one or two bits set, and the deltas of all three
   have at least 1/4 probability of changing.
 * If mix() is run forward, every bit of c will change between 1/3 and
   2/3 of the time.  (Well, 22/100 and 78/100 for some 2-bit deltas.)
-mix() was built out of 36 single-cycle latency instructions in a 
+mix() was built out of 36 single-cycle latency instructions in a
   structure that could supported 2x parallelism, like so:
-      a -= b; 
+      a -= b;
       a -= c; x = (c>>13);
       b -= c; a ^= x;
       b -= a; x = (a<<8);
       c -= a; b ^= x;
       c -= b; x = (b>>13);
       ...
-  Unfortunately, superscalar Pentiums and Sparcs can't take advantage 
+  Unfortunately, superscalar Pentiums and Sparcs can't take advantage
   of that parallelism.  They've also turned some of those single-cycle
   latency instructions into multi-cycle latency instructions.  Still,
   this is the fastest good hash I could find.  There were about 2^^68
@@ -1566,7 +1566,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 --------------------------------------------------------------------
 */
 
-unsigned hash( 
+unsigned hash(
      __in_ecount(length) const BYTE *k,        /* the key */
      unsigned  length,   /* the length of the key */
      unsigned  initval)  /* the previous hash, or an arbitrary value */

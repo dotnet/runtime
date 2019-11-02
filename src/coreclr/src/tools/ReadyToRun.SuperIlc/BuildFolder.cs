@@ -29,7 +29,7 @@ namespace ReadyToRun.SuperIlc
         public string IssueID;
 
         public BuildFolder(
-            List<string> compilationInputFiles, 
+            List<string> compilationInputFiles,
             List<string> mainExecutables,
             List<string> executionScripts,
             IEnumerable<CompilerRunner> compilerRunners,

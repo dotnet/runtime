@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifdef _MSC_VER
 #pragma once
@@ -105,11 +105,11 @@ struct FakeStub
     UINT    m_numCodeBytes;
 #ifdef _DEBUG
     UINT32  m_signature;
-#else 
+#else
 #ifdef BIT64
     //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
     //                   after the Stub struct. This is to pad properly
-    UINT    m_pad_code_bytes; 
+    UINT    m_pad_code_bytes;
 #endif // BIT64
 #endif // _DEBUG
 };
@@ -204,10 +204,10 @@ BOOL WINAPI             DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID pReserved
 extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);
 
 
-// OutOfProcessFunctionTableCallbackEx is like the standard OS-defined OutOfProcessFunctionTableCallback, but rather 
+// OutOfProcessFunctionTableCallbackEx is like the standard OS-defined OutOfProcessFunctionTableCallback, but rather
 // than take a handle to a process, it takes a callback function which can read from the target.  This allows the API to work on
-// targets other than live processes (such as TTT trace files). 
-// pUserContext is passed directly to fpReadMemory, and the semantics of all other ReadMemoryFunction arguments (and return value) are 
+// targets other than live processes (such as TTT trace files).
+// pUserContext is passed directly to fpReadMemory, and the semantics of all other ReadMemoryFunction arguments (and return value) are
 // the same as those for kernel32!ReadProcessMemory.
 typedef BOOL (ReadMemoryFunction)(PVOID pUserContext, LPCVOID lpBaseAddress, PVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead);
 extern "C" NTSTATUS     OutOfProcessFunctionTableCallbackEx(IN ReadMemoryFunction fpReadMemory, IN PVOID pUserContext, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);

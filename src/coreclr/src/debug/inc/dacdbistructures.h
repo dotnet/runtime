@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: DacDbiStructures.h
-// 
+//
 
 //
-// Declarations and inline functions for data structures shared between by the 
+// Declarations and inline functions for data structures shared between by the
 // DAC/DBI interface functions and the right side.
 //
 // Note that for MAC these structures are marshalled between Windows and Mac
@@ -24,29 +24,29 @@
 // classes shared by the DAC/DBI interface functions and the right side
 //-------------------------------------------------------------------------------
 
-// DacDbiArrayList encapsulates an array and the number of elements in the array. 
+// DacDbiArrayList encapsulates an array and the number of elements in the array.
 // Notes:
 // - storage is always on the DacDbi heap
 // - this class owns the memory. Its dtor will free.
 // - Operations that initialize list elements use the assignment
 //   operator defined for type T.  If T is a pointer type or has pointer
-//   type components and no assignment operator override, this will make a shallow copy of 
+//   type components and no assignment operator override, this will make a shallow copy of
 //   the element. If T has an assignment operator override that makes a deep copy of pointer
-//   types, T must also have a destructor that will deallocate any memory allocated.  
+//   types, T must also have a destructor that will deallocate any memory allocated.
 // - this is NOT thread safe!!!
 // - the array elements are always mutable, but the number of elements is fixed between allocations
-// - you can gain access to the array using &(list[0]) but this is NOT safe if the array is empty. You 
+// - you can gain access to the array using &(list[0]) but this is NOT safe if the array is empty. You
 //   can call IsEmpty to determine if it is safe to access the array portion
 //   This list is not designed to have unused elements at the end of the array (extra space) nor to be growable
-    
+
 // usage examples:
 // typedef DacDbiArrayList<Bar> BarList;       // handy typedef
 // void GetAListOfBars(BarList * pBarList)
-// { 
+// {
 //     DacDbiArrayList<Foo> fooList;   // fooList is an empty array of objects of type Foo
 //     int elementCount = GetNumberOfFoos();
-//     Bar * pBars = new Bar[elementCount];     
-// 
+//     Bar * pBars = new Bar[elementCount];
+//
 //     fooList.Alloc(elementCount);            // get space for the list of Foo instances
 //     for (int i = 0; i < fooList.Count(); ++i)
 //     {
@@ -55,7 +55,7 @@
 //     ConvertFoosToBars(pBars, &fooList);     // always pass by reference
 //     pBarList->Init(pBars, fooList.Count()); // initialize  a list
 // }
-// 
+//
 // void ConvertFoosToBars(Bar * pBars, DacDbiArrayList<Foo> * pFooList)
 // {
 //    for (int i = 0; i < pFooList->Count(); ++i)
@@ -63,16 +63,16 @@
 //        if ((*pFooList)[i].IsBaz())
 //            pBars [i] = ConvertBazToBar(&(*pFooList)[i]);
 //        else pBars [i] = (*pFooList)[i].barPart;
-//    } 
+//    }
 // }
-//    
-template<class T> 
+//
+template<class T>
 class MSLAYOUT DacDbiArrayList
 {
 public:
     // construct an empty list
     DacDbiArrayList();
- 
+
     // deep copy constructor
     DacDbiArrayList(const T * list, int count);
 
@@ -81,7 +81,7 @@ public:
 
     // explicitly deallocate the list and set it back to the empty state
     void Dealloc();
-    
+
     // allocate a list with space for nElements items
     void Alloc(int nElements);
 
@@ -93,7 +93,7 @@ public:
 
     // read-only element accessor
     const T & operator [](int index) const;
-    
+
     // writeable element accessor
     T & operator [](int index);
 
@@ -104,22 +104,22 @@ public:
     // @dbgtodo  Mac - cleaner way to expose this for serialization?
     void PrepareForDeserialize()
     {
-        m_pList = NULL; 
+        m_pList = NULL;
     }
 private:
-    // because these are private (and unimplemented), calls will generate a compiler (or linker) error. 
+    // because these are private (and unimplemented), calls will generate a compiler (or linker) error.
     // This prevents accidentally invoking the default (shallow) copy ctor or assignment operator.
-    // This prevents having multiple instances point to the same list memory (eg. due to passing by value), 
+    // This prevents having multiple instances point to the same list memory (eg. due to passing by value),
     // which would result in memory corruption when the first copy is destroyed and the list memory is deallocated.
     DacDbiArrayList(const DacDbiArrayList<T> & sourceList);
     T & operator = (const DacDbiArrayList<T> & rhs);
- 
+
 // data members
 protected:
-    T *  m_pList;           // the list 
-    
-    // - the count is managed by the member functions and is not settable, so (m_pList == NULL) == (m_nEntries == 0) 
-    //   is always true. 
+    T *  m_pList;           // the list
+
+    // - the count is managed by the member functions and is not settable, so (m_pList == NULL) == (m_nEntries == 0)
+    //   is always true.
     int  m_nEntries;        // the number of items in the list
 
 };
@@ -137,14 +137,14 @@ struct MSLAYOUT TargetBuffer
     //
     // Helper methods
     //
-    
+
     // Return a sub-buffer that's starts at byteOffset within this buffer and runs to the end.
     TargetBuffer SubBuffer(ULONG byteOffset) const;
 
     // Return a sub-buffer that starts at byteOffset within this buffer and is byteLength long.
     TargetBuffer SubBuffer(ULONG byteOffset, ULONG byteLength) const;
 
-    // Returns true if the buffer length is 0. 
+    // Returns true if the buffer length is 0.
     bool IsEmpty() const;
 
     // Sets address to NULL and size to 0
@@ -163,7 +163,7 @@ struct MSLAYOUT TargetBuffer
 
 //===================================================================================
 // Module properties, retrieved by DAC.
-// Describes a VMPTR_DomainFile representing a module. 
+// Describes a VMPTR_DomainFile representing a module.
 // In the VM, a raw Module may be domain neutral and shared by many appdomains.
 // Whereas a DomainFile is like a { AppDomain, Module} pair. DomainFile corresponds
 // much more to ICorDebugModule (which also has appdomain affinity).
@@ -172,7 +172,7 @@ struct MSLAYOUT DomainFileInfo
 {
     // The appdomain that the DomainFile is associated with.
     // Although VMPTR_Module may be shared across multiple domains, a DomainFile has appdomain affinity.
-    VMPTR_AppDomain vmAppDomain; 
+    VMPTR_AppDomain vmAppDomain;
 
     // The assembly this module belongs to. All modules live in an assembly.
     VMPTR_DomainAssembly vmDomainAssembly;
@@ -182,20 +182,20 @@ struct MSLAYOUT ModuleInfo
 {
     // The non-domain specific assembly which this module resides in.
     VMPTR_Assembly vmAssembly;
-    
+
     // The PE Base address and size of the module. These may be 0 if there is no image
     // (such as for a dynamic module that's not persisted to disk).
     CORDB_ADDRESS pPEBaseAddress;
 
-    // The PEFile associated with the module. Every module (even non-file-based ones) has a PEFile. 
+    // The PEFile associated with the module. Every module (even non-file-based ones) has a PEFile.
     // This is critical because DAC may ask for a metadata importer via PE-file.
     // a PEFile may have 1 or more PEImage child objects (1 for IL, 1 for native image, etc)
-    VMPTR_PEFile vmPEFile; 
-  
+    VMPTR_PEFile vmPEFile;
+
     // The PE Base address and size of the module. These may be 0 if there is no image
     // (such as for a dynamic module that's not persisted to disk).
     ULONG nPESize;
-    
+
     // Is this a dynamic (reflection.emit) module?
     // This means that new classes can be added to the module; and so
     // the module's metadata and symbols can be updated. Debugger will have to do extra work
@@ -203,50 +203,50 @@ struct MSLAYOUT ModuleInfo
     // Dynamic modules may be transient (entirely in-memory) or persisted to disk (have a file associated with them).
     BOOL  fIsDynamic;
 
-    // Is this an inmemory module? 
-    // Assemblies can be instantiated purely in-memory from just a Byte[]. 
+    // Is this an inmemory module?
+    // Assemblies can be instantiated purely in-memory from just a Byte[].
     // This means the module (and pdb) are not in files, and thus the debugger
     // needs to do extra work to retrieve them from the Target's memory.
     BOOL  fInMemory;
 };
 
-// the following two classes track native offsets for local variables and sequence 
-// points. This information is initialized on demand. 
+// the following two classes track native offsets for local variables and sequence
+// points. This information is initialized on demand.
 
 
 //===================================================================================
 // NativeVarData holds a list of structs that provide the following information for
-// each local variable and fixed argument in a function: the offsets between which the 
-// variable or argument lives in a particular location, the location itself, and the 
+// each local variable and fixed argument in a function: the offsets between which the
+// variable or argument lives in a particular location, the location itself, and the
 // variable number (ID). This allows us to determine where a value is at any given IP.
 
-// Lifetime management of the list is the responsibility of the NativeVarData class. 
+// Lifetime management of the list is the responsibility of the NativeVarData class.
 // Callers that allocate memory for a new list should NOT maintain a separate pointer
-// to the list. 
+// to the list.
 
 // The arguments we track are the "fixed" arguments, specifically, the explicit arguments
-// that appear in the source code and the "this" pointer for non-static methods. 
-// Varargs and other implicit arguments, such as the generic handle are counted in 
-// CordbJITILFrame::m_allArgsCount. 
+// that appear in the source code and the "this" pointer for non-static methods.
+// Varargs and other implicit arguments, such as the generic handle are counted in
+// CordbJITILFrame::m_allArgsCount.
 
-// Although logically, we really don't differentiate between arguments and locals when 
-// all we want to know is where to find a value, we need to have two 
-// separate counts. The full explanation is in the comment in rsthread.cpp in 
-// CordbJITILFrame::ILVariableToNative, but the short version is that it allows us to  
-// compute the correct ID for a value. 
+// Although logically, we really don't differentiate between arguments and locals when
+// all we want to know is where to find a value, we need to have two
+// separate counts. The full explanation is in the comment in rsthread.cpp in
+// CordbJITILFrame::ILVariableToNative, but the short version is that it allows us to
+// compute the correct ID for a value.
 
-// m_fixedArgsCount, accessed through GetFixedArgCount, is the actual number of fixed 
-// arguments. 
+// m_fixedArgsCount, accessed through GetFixedArgCount, is the actual number of fixed
+// arguments.
 // m_allArgsCount, accessed through GetAllArgsCount, is the number of fixed args plus the
 // number of varargs.
 
-// The number of entries in m_offsetInfo, accessed through Count(), is NOT the 
-// number of locals, nor the number of locals plus the number of arguments. It is the 
-// number of entries in the list. Any particular value may have an arbitrary number of 
-// entries, depending on how many different places it is stored during the execution of 
-// the method. The list is not sorted, so searches for data within it must be linear. 
+// The number of entries in m_offsetInfo, accessed through Count(), is NOT the
+// number of locals, nor the number of locals plus the number of arguments. It is the
+// number of entries in the list. Any particular value may have an arbitrary number of
+// entries, depending on how many different places it is stored during the execution of
+// the method. The list is not sorted, so searches for data within it must be linear.
 //===================================================================================
-class MSLAYOUT NativeVarData 
+class MSLAYOUT NativeVarData
 {
 public:
     // constructor
@@ -258,9 +258,9 @@ public:
     // initialize the list of native var information structures, including the starting address of the list
     // (m_pOffsetInfo, the number of entries (m_count) and the number of fixed args (m_fixedArgsCount).
     // NativeVarData will manage the lifetime of the allocated memory for the list, so the caller should not
-    // hold on to its address. 
+    // hold on to its address.
     void InitVarDataList(ICorDebugInfo::NativeVarInfo * plistStart, int fixedArgCount, int entryCount);
-    
+
 private:
     // non-existent copy constructor to disable the (shallow) compiler-generated
     // one. If you attempt to use this, you will get a compiler or linker error.
@@ -317,24 +317,24 @@ public:
 //----------------------------------------------------------------------------------
 
 // @dbgtodo  Mac - making this public for serializing for remote DAC on mac. Need to make this private again.
-public: 
-    // contains a list of structs providing information about the location of a local 
+public:
+    // contains a list of structs providing information about the location of a local
     // variable or argument between a pair of offsets and the number of entries in the list
-    DacDbiArrayList<ICorDebugInfo::NativeVarInfo> m_offsetInfo;   
+    DacDbiArrayList<ICorDebugInfo::NativeVarInfo> m_offsetInfo;
 
     // number of fixed arguments to the function i.e., the explicit arguments and "this" pointer
-    ULONG32                                     m_fixedArgsCount;     
+    ULONG32                                     m_fixedArgsCount;
 
     // number of fixed arguments plus number of varargs
-    ULONG32                                     m_allArgsCount;   
+    ULONG32                                     m_allArgsCount;
 
     // indicates whether an attempt has been made to initialize the var data already
-    bool                                        m_fInitialized;   
+    bool                                        m_fInitialized;
 }; // class NativeVarData
 
 //===================================================================================
-// SequencePoints holds a list of sequence points that map IL offsets to native offsets. In addition,  
-// it keeps track of the number of entries in the list and whether the list is sorted. 
+// SequencePoints holds a list of sequence points that map IL offsets to native offsets. In addition,
+// it keeps track of the number of entries in the list and whether the list is sorted.
 //===================================================================================
 class MSLAYOUT SequencePoints
 {
@@ -343,8 +343,8 @@ public:
 
     ~SequencePoints();
 
-    // Initialize the m_pMap data member to the address of an allocated chunk 
-    // of memory (or to NULL if the count is zero). Set m_count as the 
+    // Initialize the m_pMap data member to the address of an allocated chunk
+    // of memory (or to NULL if the count is zero). Set m_count as the
     // number of entries in the map.
     void InitSequencePoints(ULONG32 count);
 
@@ -359,7 +359,7 @@ private:
 
     //----------------------------------------------------------------------------------
     // class MapSortILMap:  A template class that will sort an array of DebuggerILToNativeMap.
-    // This class is intended to be instantiated on the stack / in temporary storage, and used 
+    // This class is intended to be instantiated on the stack / in temporary storage, and used
     // to reorder the sequence map.
     //----------------------------------------------------------------------------------
     class MapSortILMap : public CQuickSort<DebuggerILToNativeMap>
@@ -370,7 +370,7 @@ private:
                   int count)
           : CQuickSort<DebuggerILToNativeMap>(map, count) {}
 
-        // secondary key comparison--if two IL offsets are the same, 
+        // secondary key comparison--if two IL offsets are the same,
         // we determine order based on native offset
         int CompareInternal(DebuggerILToNativeMap * first,
                             DebuggerILToNativeMap * second);
@@ -388,43 +388,43 @@ public:
     // it would be better to make ExportILToNativeMap expect a DacDbiArrayList instead of the
     // array and size. At present, there's a call to ExportILToNativeMap in debugger.cpp where
     // DacDbiArrayLists aren't available, so at present, we need to pass the array and size.
-    // We should be able to eliminate the debugger.cpp call when we get rid of in-proc 
-    // inspection. At that point, we can delete this function too, as well as GetEntryCount. 
-    // In the meantime, it would be great if no one else took a dependency on this. 
+    // We should be able to eliminate the debugger.cpp call when we get rid of in-proc
+    // inspection. At that point, we can delete this function too, as well as GetEntryCount.
+    // In the meantime, it would be great if no one else took a dependency on this.
 
     // get value of m_pMap
     DebuggerILToNativeMap * GetMapAddr()
     {
         // Please don't call this function
-       _ASSERTE(m_fInitialized); 
+       _ASSERTE(m_fInitialized);
        return &(m_map[0]);
     }
 
     // get value of m_count
     ULONG32 GetEntryCount()
     {
-        _ASSERTE(m_fInitialized); 
+        _ASSERTE(m_fInitialized);
         return m_mapCount;
     }
-    
+
     ULONG32 GetCallsiteEntryCount()
     {
-        _ASSERTE(m_fInitialized); 
+        _ASSERTE(m_fInitialized);
         return m_map.Count() - m_mapCount; //m_map.Count();
     }
-    
+
     DebuggerILToNativeMap * GetCallsiteMapAddr()
     {
         // Please don't call this function
        _ASSERTE(m_fInitialized);
-       
+
        if (m_map.Count() == m_mapCount)
           return NULL;
-       
+
        return &(m_map[m_mapCount]);
     }
-    
-    
+
+
 
     // determine whether we have initialized this
     BOOL IsInitialized()
@@ -432,13 +432,13 @@ public:
         return m_fInitialized == true;
     }
 
-    // Copy data from the VM map data to our own map structure and sort. The 
-    // information comes to us in a data structure that differs slightly from the 
+    // Copy data from the VM map data to our own map structure and sort. The
+    // information comes to us in a data structure that differs slightly from the
     // one we use out of process, so we have to copy it to the right-side struct.
     void CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMapping  mapCopy[]);
 
 
-    // Set the IL offset of the last sequence point before the epilog.  
+    // Set the IL offset of the last sequence point before the epilog.
     // If a native offset maps to the epilog, we will return the this IL offset.
     void SetLastILOffset(ULONG32 lastILOffset)
     {
@@ -459,14 +459,14 @@ public:
 
     // map of IL to native offsets for sequence points
     DacDbiArrayList<DebuggerILToNativeMap> m_map;
-    
+
     //
     ULONG32 m_mapCount;
-         
+
     // the IL offset of the last sequence point before the epilog
-    ULONG32                                m_lastILOffset; 
+    ULONG32                                m_lastILOffset;
     // indicates whether an attempt has been made to initialize the sequence points already
-    bool                                   m_fInitialized; 
+    bool                                   m_fInitialized;
 }; // class SequencePoints
 
 //----------------------------------------------------------------------------------
@@ -477,7 +477,7 @@ public:
 // The jitter doesn't do this optimization w/ debuggable code, so we'll
 // rarely see the cold region information as non-null values.
 
-// This enumeration provides symbolic indices into m_rgCodeRegions. 
+// This enumeration provides symbolic indices into m_rgCodeRegions.
 typedef enum {kHot = 0, kCold, MAX_REGIONS} CodeBlobRegion;
 
 // This contains the information we need to initialize a CordbNativeCode object
@@ -486,35 +486,35 @@ class MSLAYOUT NativeCodeFunctionData
 public:
     // set all fields to default values (NULL, FALSE, or zero as appropriate)
     NativeCodeFunctionData();
-    
-    // conversion constructor to convert from an instance of DebuggerIPCE_JITFUncData to an instance of 
+
+    // conversion constructor to convert from an instance of DebuggerIPCE_JITFUncData to an instance of
     // NativeCodeFunctionData.
     NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source);
 
     // The hot region start address could be NULL in the following circumstances:
     // 1. We haven't yet tried to get the information
-    // 2. We tried to get the information, but the function hasn't been jitted yet 
-    // 3. We tried to get the information, but the MethodDesc wasn't available yet (very early in 
+    // 2. We tried to get the information, but the function hasn't been jitted yet
+    // 3. We tried to get the information, but the MethodDesc wasn't available yet (very early in
     //    module initialization), which implies that the code isn't available either.
     // 4. We tried to get the information, but a method edit has reset the MethodDesc, but the
-    //    method hasn't been jitted yet. 
+    //    method hasn't been jitted yet.
     // In all cases, we can check the hot region start address to determine whether the rest of the
     // the information is valid.
     BOOL IsValid() { return (m_rgCodeRegions[kHot].pAddress != NULL); }
     void Clear();
-       
+
     // data members
     // start addresses and sizes of hot & cold regions
-    TargetBuffer     m_rgCodeRegions[MAX_REGIONS]; 
+    TargetBuffer     m_rgCodeRegions[MAX_REGIONS];
 
     // indicates whether the function is a generic function, or a method inside a generic class (or both).
-    BOOL             isInstantiatedGeneric;     
+    BOOL             isInstantiatedGeneric;
 
     // MethodDesc for the function
-    VMPTR_MethodDesc vmNativeCodeMethodDescToken;  
+    VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
     // EnC version number of the function
-    SIZE_T           encVersion;                    
+    SIZE_T           encVersion;
 };
 
 //----------------------------------------------------------------------------------
@@ -538,10 +538,10 @@ public:
     // clear various fields for a new instance of FieldData
     void ClearFields();
 
-    // Make sure it's okay to get or set an instance field offset. 
+    // Make sure it's okay to get or set an instance field offset.
     BOOL OkToGetOrSetInstanceOffset();
 
-    // Make sure it's okay to get or set a static field address. 
+    // Make sure it's okay to get or set a static field address.
     BOOL OkToGetOrSetStaticAddress();
 
     // If this is an instance field, store its offset
@@ -562,7 +562,7 @@ public:
 
 //
 // Data members
-// 
+//
     mdFieldDef      m_fldMetadataToken;
     // m_fFldStorageAvailable is true whenever the storage for this field is available.
     // If this is a field that is newly added with EnC and hasn't had any storage
@@ -580,13 +580,13 @@ private:
     // The m_fldInstanceOffset and m_pFldStaticAddress are mutually exclusive. Only one is ever set at a time.
     SIZE_T          m_fldInstanceOffset;      // The offset of a field within an object instance
                                               // For EnC fields, this isn't actually within the object instance,
-                                              // but has been cooked to still be relative to the beginning of 
+                                              // but has been cooked to still be relative to the beginning of
                                               // the object.
     TADDR           m_pFldStaticAddress;      // The absolute target address of a static field
 
-    PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD 
+    PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
                                               // NEVER BE ACCESSED DIRECTLY!
-    ULONG           m_fldSignatureCacheSize;  // This is passed across as 0. It is a RS-only cache, and SHOULD 
+    ULONG           m_fldSignatureCacheSize;  // This is passed across as 0. It is a RS-only cache, and SHOULD
                                               // NEVER BE ACCESSED DIRECTLY!
 public:
     VMPTR_FieldDesc m_vmFieldDesc;
@@ -602,16 +602,16 @@ public:
 
     ~ClassInfo();
 
-    void Clear(); 
+    void Clear();
 
     // Size of object in bytes, for non-generic types. Note: this is NOT valid for constructed value types,
     // e.g. value type Pair<DateTime,int>.  Use CordbType::m_objectSize instead.
-    SIZE_T                     m_objectSize;        
+    SIZE_T                     m_objectSize;
 
     // list of structs containing information about all the fields in this Class, along with the number of entries
     // in the list. Does not include inherited fields. DON'T KEEP POINTERS TO ELEMENTS OF m_fieldList AROUND!!
                                                 // This may be deleted if the class gets EnC'd.
-    DacDbiArrayList<FieldData> m_fieldList;         
+    DacDbiArrayList<FieldData> m_fieldList;
 }; // class ClassInfo
 
 // EnCHangingFieldInfo holds information describing a field added with Edit And Continue. This data
@@ -619,13 +619,13 @@ public:
 class MSLAYOUT EnCHangingFieldInfo
 {
 public:
-    // Init will initialize fields, taking into account whether the field is static or not. 
-    void Init(VMPTR_Object     pObject, 
-              SIZE_T           offset, 
-              mdFieldDef       fieldToken, 
-              CorElementType   elementType, 
+    // Init will initialize fields, taking into account whether the field is static or not.
+    void Init(VMPTR_Object     pObject,
+              SIZE_T           offset,
+              mdFieldDef       fieldToken,
+              CorElementType   elementType,
               mdTypeDef        metadataToken,
-              VMPTR_DomainFile vmDomainFile); 
+              VMPTR_DomainFile vmDomainFile);
 
     DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
@@ -634,7 +634,7 @@ public:
 
 private:
     DebuggerIPCE_BasicTypeData m_objectTypeData; // type data for the EnC field
-    VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is 
+    VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is
                                                  // static, this will be NULL instead of pointing to an instance
     SIZE_T                     m_offsetToVars;   // offset to the beginning of variable storage in the object
     mdFieldDef                 m_fldToken;       // metadata token for the added field
@@ -656,9 +656,9 @@ private:
 //      and in this case none of the types are considered boxed (
 enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
 
-// TypeRefData is used for resolving a type reference (see code:CordbModule::ResolveTypeRef and 
+// TypeRefData is used for resolving a type reference (see code:CordbModule::ResolveTypeRef and
 // code:DacDbiInterfaceImpl::ResolveTypeReference) to store relevant information about the type
-typedef struct MSLAYOUT 
+typedef struct MSLAYOUT
 {
     // domain file for the type
     VMPTR_DomainFile vmDomainFile;
@@ -676,7 +676,7 @@ typedef DacDbiArrayList<DebuggerIPCE_BasicTypeData> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
 typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
-    
+
 // A struct for passing version information from DBI to DAC.
 // See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
 const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 1;
@@ -735,7 +735,7 @@ struct MSLAYOUT DacGcReference
         VMPTR_OBJECTHANDLE objHnd;  // A reference to the object, valid if (pAddress & 1) == 0
     };
     DWORD dwType;           // Where the root came from.
-    
+
     /*
         DependentSource - for HandleDependent
         RefCount - for HandleStrongRefCount

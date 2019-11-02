@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-#include "common.h" 
+#include "common.h"
 
 // This is a simplified implementation of IsTextUnicode.
 // https://github.com/dotnet/coreclr/issues/2307

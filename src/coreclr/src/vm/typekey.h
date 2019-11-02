@@ -30,21 +30,21 @@ class TypeKey
     // ELEMENT_TYPE_VALUETYPE for native value types (used in IL stubs)
     CorElementType m_kind;
 
-    union 
+    union
     {
-        // m_kind = CLASS 
-        struct 
+        // m_kind = CLASS
+        struct
         {
             Module *       m_pModule;
             mdToken        m_typeDef;
             DWORD          m_numGenericArgs; // 0 for non-generic types
-            FixupPointer<TypeHandle> * m_pGenericArgs;   // NULL for non-generic types 
-            // Note that for DAC builds, m_pGenericArgs is a host allocated buffer (eg. by in SigPointer::GetTypeHandleThrowing), 
+            FixupPointer<TypeHandle> * m_pGenericArgs;   // NULL for non-generic types
+            // Note that for DAC builds, m_pGenericArgs is a host allocated buffer (eg. by in SigPointer::GetTypeHandleThrowing),
             // not a copy of an object marshalled by DAC.
         } asClass;
 
         // m_kind = ARRAY, SZARRAY, PTR or BYREF
-        struct 
+        struct
         {
             TADDR m_paramType;   // The element type (actually a TypeHandle, but we don't want its constructor
                                  // run on a C++ union)
@@ -53,13 +53,13 @@ class TypeKey
         } asParamType;
 
         // m_kind = FNPTR
-        struct 
+        struct
         {
             BYTE m_callConv;
             DWORD m_numArgs;
             TypeHandle* m_pRetAndArgTypes;
         } asFnPtr;
-    } u; 
+    } u;
 
 public:
 
@@ -68,7 +68,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        PRECONDITION(rank > 0 && etype == ELEMENT_TYPE_ARRAY || 
+        PRECONDITION(rank > 0 && etype == ELEMENT_TYPE_ARRAY ||
                      rank == 1 && etype == ELEMENT_TYPE_SZARRAY ||
                      rank == 0 && (etype == ELEMENT_TYPE_PTR || etype == ELEMENT_TYPE_BYREF || etype == ELEMENT_TYPE_VALUETYPE));
         PRECONDITION(CheckPointer(paramType));
@@ -91,7 +91,7 @@ public:
         u.asClass.m_numGenericArgs = inst.GetNumArgs();
         u.asClass.m_pGenericArgs = inst.GetRawArgs();
     }
-    
+
     // Constructor for function pointer type
     TypeKey(BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes)
     {
@@ -200,7 +200,7 @@ public:
         PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
         return u.asFnPtr.m_numArgs;
     }
-        
+
     BYTE GetCallConv() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -208,14 +208,14 @@ public:
         PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
         return u.asFnPtr.m_callConv;
     }
-        
+
     TypeHandle* GetRetAndArgTypes() const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
         return u.asFnPtr.m_pRetAndArgTypes;
-    }       
+    }
 
     BOOL Equals(TypeKey *pKey) const
     {
@@ -224,7 +224,7 @@ public:
     }
 
     // Comparison and hashing
-    static BOOL Equals(const TypeKey *pKey1, const TypeKey *pKey2) 
+    static BOOL Equals(const TypeKey *pKey1, const TypeKey *pKey2)
     {
         WRAPPER_NO_CONTRACT;
         if (pKey1->m_kind != pKey2->m_kind)
@@ -258,7 +258,7 @@ public:
             if (pKey1->u.asFnPtr.m_callConv != pKey2->u.asFnPtr.m_callConv ||
                 pKey1->u.asFnPtr.m_numArgs != pKey2->u.asFnPtr.m_numArgs)
                 return FALSE;
-            
+
             // Includes return type
             for (DWORD i = 0; i <= pKey1->u.asFnPtr.m_numArgs; i++)
             {

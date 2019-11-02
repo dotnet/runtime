@@ -3,7 +3,7 @@
 //
 // This file is used solely to aid VS Intellisense while editing.  It is not
 // used as part of any build.
-// 
+//
 // VS Intellisense does not run the C preprocessor, so it's possible for some macros
 // to confuse it, particularly when those macros expand to control-flow keywords
 // or portions of declarations.  That's where this file comes in.  Any macro

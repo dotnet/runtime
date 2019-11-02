@@ -3,9 +3,9 @@
 ; See the LICENSE file in the project root for more information.
 
 ; ==++==
-; 
+;
 
-; 
+;
 ; ==--==
 
 include <AsmMacros.inc>
@@ -44,7 +44,7 @@ SIZEOF_FIXED_FRAME                  equ OFFSETOF_FRAME_REGISTERS + \
 ;
 ;
 ; Stack Layout:
-; 
+;
 ; rsp-> callee scratch
 ; + 8h  callee scratch
 ; +10h  callee scratch
@@ -65,7 +65,7 @@ SIZEOF_FIXED_FRAME                  equ OFFSETOF_FRAME_REGISTERS + \
 ; +a8h  rdx home
 ; +b0h  r8 home
 ; +b8h  r9 home
-; 
+;
 NESTED_ENTRY InstantiatingMethodStubWorker, _TEXT
         .allocstack             SIZEOF_FIXED_FRAME - 8h     ; -8 for return address
 
@@ -132,7 +132,7 @@ endif ; _DEBUG
         mov     rcx, [rbp + OFFSETOF_FRAME + OFFSETOF__Frame__m_Next]
         mov     [r12 + OFFSETOF__Thread__m_pFrame], rcx
 
-        ; 
+        ;
         ; epilog
         ;
 
@@ -146,4 +146,4 @@ NESTED_END InstantiatingMethodStubWorker, _TEXT
 
 
         end
-        
+

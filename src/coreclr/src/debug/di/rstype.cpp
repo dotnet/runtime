@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: rstype.cpp
-// 
+//
 
 //
 // Define implementation of ICorDebugType
@@ -17,7 +17,7 @@
 
 //-----------------------------------------------------------------------------
 // Public method to get the static field from a type.
-// 
+//
 // Parameters:
 //   fieldDef - metadata token for which field on this type to retrieve.
 //   pFrame - context for Thread/AppDomains statics.
@@ -43,10 +43,10 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
     {
         // Ensure we were actually passed a mdFieldDef. This is especially useful to protect
         // against an accidental mdPropertyDef, because properties look like fields.
-        // 
+        //
         if (TypeFromToken(fieldDef) != mdtFieldDef)
         {
-            ThrowHR(E_INVALIDARG);   
+            ThrowHR(E_INVALIDARG);
         }
 
         pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
@@ -56,7 +56,7 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
             ThrowHR(E_INVALIDARG);
         }
 
-        
+
 
         BOOL fSyncBlockField = FALSE;
 
@@ -100,7 +100,7 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
                                                   ppValue);
             // fall through to translate HR
         }
-            
+
     }
     EX_CATCH_HRESULT(hr);
     if (pImport != NULL)
@@ -137,7 +137,7 @@ CordbType::CordbType(CordbAppDomain *appdomain, CorElementType et, unsigned int 
     EX_TRY
     {
         m_appdomain->AddToTypeList(this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
@@ -165,13 +165,13 @@ CordbType::CordbType(CordbAppDomain *appdomain, CorElementType et, CordbClass *c
     EX_TRY
     {
         m_appdomain->AddToTypeList(this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
 
 //-----------------------------------------------------------------------------
-// Constructor 
+// Constructor
 // Builds a Partial-Type, instantiation is tycon's instantation plus tyarg.
 // Eg, if tycon is "Dict<int>", and tyarg is "string", then this yields
 // "Dict<int, string>"
@@ -194,7 +194,7 @@ CordbType::CordbType(CordbType *tycon, CordbType *tyarg)
     EX_TRY
     {
         m_appdomain->AddToTypeList(this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
@@ -232,7 +232,7 @@ ULONG STDMETHODCALLTYPE CordbType::Release()
 //-----------------------------------------------------------------------------
 CordbType::~CordbType()
 {
-    _ASSERTE(IsNeutered());    
+    _ASSERTE(IsNeutered());
 }
 
 //-----------------------------------------------------------------------------
@@ -251,7 +251,7 @@ void CordbType::Neuter()
         return;
     }
 
-    for (unsigned int i = 0; i < m_inst.m_cInst; i++) 
+    for (unsigned int i = 0; i < m_inst.m_cInst; i++)
     {
         m_inst.m_ppInst[i]->Release();
     }
@@ -312,8 +312,8 @@ HRESULT CordbType::QueryInterface(REFIID id, void **pInterface)
 //   S_OK on success.
 //
 //
-HRESULT CordbType::MkType(CordbAppDomain * pAppDomain, 
-                          CorElementType elementType, 
+HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
+                          CorElementType elementType,
                           CordbType ** ppResultType)
 {
     _ASSERTE(pAppDomain != NULL);
@@ -327,8 +327,8 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
     // cases we can just use the type for "Object" - the code for dereferencing the value
     // will update the type correctly once it has been determined.  We don't do this for ELEMENT_TYPE_STRING
     // as that is actually a NullaryType and at other places in the code we will want exactly that type!
-    if ((elementType == ELEMENT_TYPE_CLASS) || 
-        (elementType == ELEMENT_TYPE_SZARRAY) || 
+    if ((elementType == ELEMENT_TYPE_CLASS) ||
+        (elementType == ELEMENT_TYPE_SZARRAY) ||
         (elementType == ELEMENT_TYPE_ARRAY))
     {
         elementType = ELEMENT_TYPE_OBJECT;
@@ -336,10 +336,10 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
     switch (elementType)
     {
-    // this one is included because we need a "seed" type to uniquely hash FNPTR types, 
-    // i.e. the nullary FNPTR type is used as the type constructor for all function pointer types, 
+    // this one is included because we need a "seed" type to uniquely hash FNPTR types,
+    // i.e. the nullary FNPTR type is used as the type constructor for all function pointer types,
     // when combined with an appropriate instantiation.
-    case ELEMENT_TYPE_FNPTR: 
+    case ELEMENT_TYPE_FNPTR:
         // fall through ...
 
     case ELEMENT_TYPE_VOID:
@@ -362,7 +362,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
     case ELEMENT_TYPE_U:
 
         *ppResultType = pAppDomain->m_sharedtypes.GetBase(CORDBTYPE_ID(elementType, 0));
-        
+
         if (*ppResultType == NULL)
         {
             CordbType * pNewType = new (nothrow) CordbType(pAppDomain, elementType, (unsigned int) 0);
@@ -378,7 +378,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
             {
                 *ppResultType = pNewType;
             }
-            else 
+            else
             {
                 _ASSERTE(!"unexpected failure!");
                 delete pNewType;
@@ -402,9 +402,9 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 //
 // Arguments:
 //   pAppDomain - appdomain containing the type.
-//   elementType - element type to create around. This is limited to: ELEMENT_TYPE_PTR, 
+//   elementType - element type to create around. This is limited to: ELEMENT_TYPE_PTR,
 //          ELEMENT_TYPE_BYREF, ELEMENT_TYPE_SZARRAY or ELEMENT_TYPE_ARRAY.
-//   rank - for non-arrays, this must be 0. For szarray, this must be 1. 
+//   rank - for non-arrays, this must be 0. For szarray, this must be 1.
 //          For multi-dimensional arrays, this is the rank.
 //   pType - the single input type-parameter required for the specified element type.
 //   ppResultType - OUT: the output parameter to get the corresponding CordbType
@@ -412,10 +412,10 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 // Returns:
 //   S_OK on success.
 //
-HRESULT CordbType::MkType(CordbAppDomain *pAppDomain, 
-                          CorElementType elementType, 
-                          ULONG rank, 
-                          CordbType * pType, 
+HRESULT CordbType::MkType(CordbAppDomain *pAppDomain,
+                          CorElementType elementType,
+                          ULONG rank,
+                          CordbType * pType,
                           CordbType ** ppResultType)
 {
     _ASSERTE(pAppDomain != NULL);
@@ -484,7 +484,7 @@ LUnary:
 // The fully instantiated one (the last one) is returned via the out parameter *pRes.
 //
 // Arguments:
-//   pAppDomain - the appdomain that the type lives in. 
+//   pAppDomain - the appdomain that the type lives in.
 //   pType - the open type to instantiate. Eg, CordbType(List<T>)
 //   pInst - instantiation parameters.
 //   ppResultType - OUT: out parameter to hold resulting type.
@@ -492,9 +492,9 @@ LUnary:
 // Returns:
 //  S_OK on success.
 //
-HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain, 
-                               CordbType * pType, 
-                               const Instantiation * pInst, 
+HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain,
+                               CordbType * pType,
+                               const Instantiation * pInst,
                                CordbType ** ppResultType)
 {
     _ASSERTE(pAppDomain == pType->GetAppDomain());
@@ -502,7 +502,7 @@ HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain,
     CordbType * pCordbType = pType;
 
     // Loop through and create each of the subordinate types, building up to the final fully Closed type.
-    for (unsigned int i = 0; i < pInst->m_cClassTyPars; i++) 
+    for (unsigned int i = 0; i < pInst->m_cClassTyPars; i++)
     {
 
         CordbType * pCordbBaseType = pCordbType->m_spinetypes.GetBase((UINT_PTR) (pInst->m_ppInst[i]));
@@ -530,14 +530,14 @@ HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain,
             pCordbBaseType->m_inst.m_cClassTyPars = i + 1;
             pCordbBaseType->m_inst.m_ppInst = new (nothrow) CordbType *[i+1];
 
-            if (pCordbBaseType->m_inst.m_ppInst == NULL) 
+            if (pCordbBaseType->m_inst.m_ppInst == NULL)
             {
                 delete pCordbBaseType;
                 // @dbgtodo Microsoft leaks: Doesn't release the previously created types if this fails later in the loop
                 return E_OUTOFMEMORY;
             }
-            
-            for (unsigned int j = 0; j < (i + 1); j++) 
+
+            for (unsigned int j = 0; j < (i + 1); j++)
             {
                 // Constructed types include pointers across to other types - increase
                 // the reference counts on these....
@@ -571,10 +571,10 @@ HRESULT CordbType::MkTyAppType(CordbAppDomain * pAppDomain,
 // Returns:
 //   S_OK on success.
 //
-HRESULT CordbType::MkType(CordbAppDomain * pAppDomain, 
-                          CorElementType elementType,  
-                          CordbClass * pClass, 
-                          const Instantiation * pInst, 
+HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
+                          CorElementType elementType,
+                          CordbClass * pClass,
+                          const Instantiation * pInst,
                           CordbType ** ppResultType)
 {
     _ASSERTE(pAppDomain != NULL);
@@ -586,7 +586,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
       // Update our view of whether a class is a VC based on the evidence we have here.
     case ELEMENT_TYPE_VALUETYPE:
 
-      _ASSERTE(((pClass != NULL) && (!pClass->IsValueClassKnown() || pClass->IsValueClassNoInit())) || 
+      _ASSERTE(((pClass != NULL) && (!pClass->IsValueClassKnown() || pClass->IsValueClassNoInit())) ||
                !"A non-value class is being used with ELEMENT_TYPE_VALUETYPE");
 
       pClass->SetIsValueClass(true);
@@ -625,7 +625,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
     default:
 LReallyObject:
-        
+
         _ASSERTE(pInst->m_cInst == 0);
         return MkType(pAppDomain, elementType, ppResultType);
 
@@ -634,7 +634,7 @@ LReallyObject:
 
 //-----------------------------------------------------------------------------
 // Make a CordbType for a function pointer type (ELEMENT_TYPE_FNPTR).
-// 
+//
 // Arguments:
 //   pAppDomain - the Appdomain the type lives in.
 //   elementType - must be ELEMENT_TYPE_FNPTR.
@@ -644,9 +644,9 @@ LReallyObject:
 // Return:
 //   S_OK on success.
 //
-HRESULT CordbType::MkType(CordbAppDomain * pAppDomain, 
-                          CorElementType elementType, 
-                          const Instantiation * pInst, 
+HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
+                          CorElementType elementType,
+                          const Instantiation * pInst,
                           CordbType ** ppResultType)
 {
     CordbType * pType;
@@ -655,7 +655,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
     HRESULT hr = MkType(pAppDomain, elementType, &pType);
 
-    if (!SUCCEEDED(hr)) 
+    if (!SUCCEEDED(hr))
     {
         return hr;
     }
@@ -665,7 +665,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
 //-----------------------------------------------------------------------------
 // Public API to get the CorElementType of the type.
-// 
+//
 // Parameters:
 //    pType - OUT: on return, gets the CorElementType
 //
@@ -706,9 +706,9 @@ HRESULT CordbType::GetType(CorElementType *pType)
 
 //-----------------------------------------------------------------------------
 // Public method to get the ICorDebugClass that matches this type.
-// ICorDebugType has instantiated type-params (eg, List<int>), whereas 
+// ICorDebugType has instantiated type-params (eg, List<int>), whereas
 // ICorDebugClass is open (eg, List<T>).
-// 
+//
 // Parameters:
 //    pClass - OUT: gets class on return.
 // Returns:
@@ -737,7 +737,7 @@ HRESULT CordbType::GetClass(ICorDebugClass **pClass)
 
 //-----------------------------------------------------------------------------
 // Public method to get array rank. This is only valid for arrays.
-// 
+//
 // Parameters:
 //   pnRank - OUT: *pnRank is set to rank on return
 //
@@ -760,9 +760,9 @@ HRESULT CordbType::GetRank(ULONG32 *pnRank)
 
 //-----------------------------------------------------------------------------
 // Public convenience method to get the first type parameter.
-// This is purely to avoid needing to call EnumerateTypeParameters for 
+// This is purely to avoid needing to call EnumerateTypeParameters for
 // the set of types that only have 1 type-parameter.
-// 
+//
 // Parameters:
 //    pType - OUT: get the ICorDebugType for the first type-parameter.
 // Returns:
@@ -797,7 +797,7 @@ HRESULT CordbType::GetFirstTypeParameter(ICorDebugType **pType)
 //   pRes - OUT: out parameter to return the newly created CordbType object.
 //
 // Return:
-//   S_OK on success. 
+//   S_OK on success.
 //-----------------------------------------------------------------------------
 HRESULT CordbType::MkUnparameterizedType(CordbAppDomain *appdomain, CorElementType et, CordbClass *cl,CordbType **pRes)
 {
@@ -855,18 +855,18 @@ CordbType::DestNaryType(Instantiation *inst)
 //-----------------------------------------------------------------------------
 // CordbType::SigToType
 // Internal helper to create a CordbType from a Metadata signature (SigParser)
-// 
+//
 // This parses a metadata signature in the context of a module to return a CordbType.
 // This heavily relies on the metadata and signature format. See ECMA Partition II for details.
 // Since signatures may be recursive, this function can be called recursively.
-// Since metadata signatures exist all over, this can be called in many different scenarios, including 
+// Since metadata signatures exist all over, this can be called in many different scenarios, including
 // resolving a TypeSpec, looking up a field.
-// 
+//
 // pModule - module that the signature lives in.
-// pSigParse - Signature, positioned at the point to read the Type from. 
+// pSigParse - Signature, positioned at the point to read the Type from.
 //          This will not change the SigParser's current position.
 // inst - instantiation containing Type Params for the context of the SigParser.
-//            For a local var or argument lookup, this would be the type-params from the Frame. 
+//            For a local var or argument lookup, this would be the type-params from the Frame.
 //            For a field lookup, this would be the type-params for the containing type.
 // pRes - OUT: yields the CordbType for this signature.
 //
@@ -874,9 +874,9 @@ CordbType::DestNaryType(Instantiation *inst)
 //   S_OK on success
 //-----------------------------------------------------------------------------
 HRESULT
-CordbType::SigToType(CordbModule * pModule, 
-                     SigParser * pSigParser, 
-                     const Instantiation * pInst, 
+CordbType::SigToType(CordbModule * pModule,
+                     SigParser * pSigParser,
+                     const Instantiation * pInst,
                      CordbType ** ppResultType)
 {
     FAIL_IF_NEUTERED(pModule);
@@ -889,17 +889,17 @@ CordbType::SigToType(CordbModule * pModule,
     // Make a local copy of the SigParser since we are going to mutate it.
     //
     SigParser sigParser = *pSigParser;
-    
+
     CorElementType elementType;
     HRESULT hr;
-     
+
     IfFailRet(sigParser.GetElemType(&elementType));
 
     switch (elementType)
     {
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
-        {                        
+        {
             ULONG tyvar_num;
 
             IfFailRet(sigParser.GetData(&tyvar_num));
@@ -907,9 +907,9 @@ CordbType::SigToType(CordbModule * pModule,
 
             if (elementType == ELEMENT_TYPE_VAR)
             {
-                // ELEMENT_TYPE_VAR refers to an indexed type-parameter in the containing Type. 
+                // ELEMENT_TYPE_VAR refers to an indexed type-parameter in the containing Type.
                 // Eg, we may be doing a field lookup on 'List<T> { T m_head}', and the field's return type 'T' is Type-parameter #0.
-                // Or this maybe part of a base class's TypeSpec. 
+                // Or this maybe part of a base class's TypeSpec.
                 _ASSERTE (tyvar_num < (pInst->m_cClassTyPars));
                 if (tyvar_num >= (pInst->m_cClassTyPars))
                     return E_FAIL;
@@ -920,12 +920,12 @@ CordbType::SigToType(CordbModule * pModule,
             else
             {
                 //ELEMENT_TYPE_MVAR refers to an indexed type-parameter in the containing Method.
-                // Eg, we may be in Class::Func<T> and refering to T. 
-                // The Instantiation array has Type type-parameters first, and then any Method Type-parameters. 
+                // Eg, we may be in Class::Func<T> and refering to T.
+                // The Instantiation array has Type type-parameters first, and then any Method Type-parameters.
                 // The m_cClassTyPars field indicats where the split is between Type and Method type-parameters. Type type-params
                 // come first.
                 _ASSERTE(elementType == ELEMENT_TYPE_MVAR);
-                
+
 
                 _ASSERTE (tyvar_num < (pInst->m_cInst - pInst->m_cClassTyPars));
                 if (tyvar_num >= (pInst->m_cInst - pInst->m_cClassTyPars))
@@ -934,7 +934,7 @@ CordbType::SigToType(CordbModule * pModule,
                 _ASSERTE (pInst->m_ppInst != NULL);
                 *ppResultType = pInst->m_ppInst[tyvar_num + pInst->m_cClassTyPars];
             }
-            
+
             return S_OK;
         }
     case ELEMENT_TYPE_GENERICINST:
@@ -947,7 +947,7 @@ CordbType::SigToType(CordbModule * pModule,
 
 
             // ignore "WITH", look at next ELEMENT_TYPE to get CLASS or VALUE
-            
+
             IfFailRet(sigParser.GetElemType(&elementType));
 
             mdToken token;
@@ -959,8 +959,8 @@ CordbType::SigToType(CordbModule * pModule,
             IfFailRet( pModule->ResolveTypeRefOrDef(token, &pClass));
 
             // The use of a class in a signature provides definite evidence as to whether it is a VC or not.
-            _ASSERTE(!pClass->IsValueClassKnown() || 
-                     (pClass->IsValueClassNoInit() ==  (elementType == ELEMENT_TYPE_VALUETYPE)) || 
+            _ASSERTE(!pClass->IsValueClassKnown() ||
+                     (pClass->IsValueClassNoInit() ==  (elementType == ELEMENT_TYPE_VALUETYPE)) ||
                      !"A value class is being used with ELEMENT_TYPE_GENERICINST");
 
             pClass->SetIsValueClass(elementType ==  ELEMENT_TYPE_VALUETYPE);
@@ -972,7 +972,7 @@ CordbType::SigToType(CordbModule * pModule,
             IfFailRet(sigParser.GetData(&cArgs));
 
             S_UINT32 allocSize = S_UINT32( cArgs ) * S_UINT32( sizeof(CordbType *) );
-            
+
             if (allocSize.IsOverflow())
             {
                 IfFailRet(E_OUTOFMEMORY);
@@ -980,7 +980,7 @@ CordbType::SigToType(CordbModule * pModule,
 
             CordbType ** ppTypeInstantiations = reinterpret_cast<CordbType **>(_alloca( allocSize.Value()));
 
-            for (unsigned int i = 0; i < cArgs;i++) 
+            for (unsigned int i = 0; i < cArgs;i++)
             {
                 IfFailRet(CordbType::SigToType(pModule, &sigParser, pInst, &ppTypeInstantiations[i]));
 
@@ -998,7 +998,7 @@ CordbType::SigToType(CordbModule * pModule,
             // Path for non-generic types
 
             mdToken token;
-            
+
             IfFailRet(sigParser.GetToken(&token));
 
             CordbClass * pClass;
@@ -1007,8 +1007,8 @@ CordbType::SigToType(CordbModule * pModule,
 
             // The use of a class in a signature provides definite evidence as to whether it is a VC or not.
 
-            _ASSERTE(!pClass->IsValueClassKnown() || 
-                     (pClass->IsValueClassNoInit() ==  (elementType == ELEMENT_TYPE_VALUETYPE)) || 
+            _ASSERTE(!pClass->IsValueClassKnown() ||
+                     (pClass->IsValueClassNoInit() ==  (elementType == ELEMENT_TYPE_VALUETYPE)) ||
                      !"A non-value class is being used with ELEMENT_TYPE_VALUETYPE");
 
             pClass->SetIsValueClass(elementType ==  ELEMENT_TYPE_VALUETYPE);
@@ -1086,7 +1086,7 @@ CordbType::SigToType(CordbModule * pModule,
 
             CordbType ** ppTypeInstantiations = (CordbType **) _alloca( allocSize.Value() );
 
-            for (unsigned int i = 0; i <= cArgs; i++) 
+            for (unsigned int i = 0; i <= cArgs; i++)
             {
                 IfFailRet(CordbType::SigToType(pModule, &sigParser, pInst, &ppTypeInstantiations[i]));
 
@@ -1129,8 +1129,8 @@ CordbType::SigToType(CordbModule * pModule,
 //
 // This will build up a DebuggerIPCE_ExpandedTypeData and convert that into
 //  a CordbType. This may send additional IPC events if needed to
-// go from Basic --> Expanded data. Note that this is designed to handle generics. 
-// 
+// go from Basic --> Expanded data. Note that this is designed to handle generics.
+//
 // Parameters:
 //   pAppDomain - the AppDomain the type lives in.
 //   data - DebuggerIPCE_BasicTypeData from Left-Side containing type description.
@@ -1175,7 +1175,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
                 }
                 EX_CATCH_HRESULT(hr);
                 return hr;
-                
+
             }
 
         case ELEMENT_TYPE_FNPTR:
@@ -1208,7 +1208,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 //   pAppDomain - the appdomain that all the types live in.
 //   data - data used to build up CordbType
 //   pRes - OUT: out param to get back CordbType on return.
-//   
+//
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
@@ -1247,7 +1247,7 @@ ETObject:
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:  // OK: this E_T_VALUETYPE comes from the EE
     {
-        // 
+        //
         if (data->ClassTypeData.metadataToken == mdTokenNil) {
             et = ELEMENT_TYPE_OBJECT;
             goto ETObject;
@@ -1336,26 +1336,26 @@ ETObject:
 // Builds (Left-Side) TypeHandle --> (Right-Side) CordbType
 // This is very useful when we get a typehandle from the LeftSide. A common
 // scenario is when we get an Object back from the LS, which happens when
-// we build the CordbType corresponding to a Cordb*Value. 
-// 
+// we build the CordbType corresponding to a Cordb*Value.
+//
 // Parameters:
 //   pAppdomain      - the appdomain the type lives in.
 //   vmTypeHandle    - a Left-Side typehandle describing the type.
-//   elementType     - convenient way to indicate whether we've got ELEMENT_TYPE_FNPTR or 
+//   elementType     - convenient way to indicate whether we've got ELEMENT_TYPE_FNPTR or
 //                     something else. We should be able to retrieve this from the TypeHandle,
 //                     but our caller already has it available.
 //   typeConstructor - CordbClass corresponding to the typeHandle. This could be built
-//                     up from typehandle, but our caller already has it. 
+//                     up from typehandle, but our caller already has it.
 //                     Will be NULL for ELEMENT_TYPE_FNPTR
 //   pResultType     - OUT: out parameter to yield CordbType for the TypeHandle.
 //
 // Returns:
 //    S_OK on success.
 //-----------------------------------------------------------------------------
-HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain, 
-                                             VMPTR_TypeHandle vmTypeHandle, 
-                                             CorElementType   elementType, 
-                                             CordbClass *     typeConstructor, 
+HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
+                                             VMPTR_TypeHandle vmTypeHandle,
+                                             CorElementType   elementType,
+                                             CordbClass *     typeConstructor,
                                              CordbType **     pResultType)
 {
     HRESULT hr = S_OK;
@@ -1387,7 +1387,7 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
             IfFailThrow(TypeDataToType(pAppDomain, &(params[i]), &(typeList[i])));
         }
 
-        // now make an instance of CordbType from an instantiation  
+        // now make an instance of CordbType from an instantiation
         Instantiation instantiation(params.Count(), &(typeList[0]));
         if (elementType == ELEMENT_TYPE_FNPTR)
         {
@@ -1407,12 +1407,12 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
 // This will involve a lot of queries to the Left-side.
 // This means finding the type-handle, getting / creating associated CordbClass,
 // filling out the instantiation, getting field info, etc.
-// 
+//
 // Parameters:
 //   fForceInit - if false, may skip initialization if TypeHandle already known.
 //
 // Returns:
-//   S_OK if success, CORDBG_E_CLASS_NOT_LOADED, E_INVALIDARG, OOM on failure 
+//   S_OK if success, CORDBG_E_CLASS_NOT_LOADED, E_INVALIDARG, OOM on failure
 //-----------------------------------------------------------------------------
 HRESULT CordbType::Init(BOOL fForceInit)
 {
@@ -1519,7 +1519,7 @@ HRESULT CordbType::Init(BOOL fForceInit)
 }
 
 //-----------------------------------------------------------------------------
-// Internal function to communicate with Left-Side to get an exact TypeHandle 
+// Internal function to communicate with Left-Side to get an exact TypeHandle
 // (runtime type representation) for this CordbType.
 //
 // Parameters:
@@ -1541,7 +1541,7 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
     // Create an array of DebuggerIPCE_BasicTypeData structures from the array of type parameters.
     // First, get a buffer to hold the information
     CordbProcess *pProcess = GetProcess();
-    S_UINT32 bufferSize = S_UINT32(sizeof(DebuggerIPCE_BasicTypeData)) * 
+    S_UINT32 bufferSize = S_UINT32(sizeof(DebuggerIPCE_BasicTypeData)) *
                                    S_UINT32(m_inst.m_cClassTyPars);
     EX_TRY
     {
@@ -1559,10 +1559,10 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
             _ASSERTE(m_inst.m_ppInst[i] != NULL);
             IfFailThrow(m_inst.m_ppInst[i]->TypeToBasicTypeData(&pArgTypeData[i]));
         }
-          
+
         DebuggerIPCE_ExpandedTypeData typeData;
 
-        // get the top-level type information 
+        // get the top-level type information
         TypeToExpandedTypeData(&typeData);
 
         ArgInfoList argInfo(pArgTypeData, m_inst.m_cClassTyPars);
@@ -1588,8 +1588,8 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
 //
 // Returns:
 //    S_OK on success or CORDBG_E_CLASS_NOT_LOADED on failure.
-//    
-// Note: verification with IPC result may assert  
+//
+// Note: verification with IPC result may assert
 //-----------------------------------------------------------------------------
 
 HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
@@ -1608,7 +1608,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
     EX_TRY
     {
         //
-        // Step 1a) Send a request to the DAC to map: CorElementType --> {token, Module} 
+        // Step 1a) Send a request to the DAC to map: CorElementType --> {token, Module}
         //
         CordbProcess *pProcess = GetProcess();
         mdTypeDef metadataToken;
@@ -1617,7 +1617,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
 
         {
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-            pProcess->GetDAC()->GetSimpleType(m_appdomain->GetADToken(), 
+            pProcess->GetDAC()->GetSimpleType(m_appdomain->GetADToken(),
                                               m_elementType,
                                               &metadataToken,
                                               &vmModule,
@@ -1628,7 +1628,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
         // Step 2) Lookup CordbClass based off token + Module.
         //
         CordbModule * pTypeModule = m_appdomain->LookupOrCreateModule(vmModule, vmDomainFile);
-        
+
         _ASSERTE(pTypeModule != NULL);
         IfFailThrow(pTypeModule->LookupOrCreateClass(metadataToken, &m_pClass));
 
@@ -1671,7 +1671,7 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
     if (typeHandleApprox.IsNull())
     {
         // set up a buffer to hold type parameter information for the type. (See
-        // code:CordbType::GatherTypeData for more information). First, compute its size. 
+        // code:CordbType::GatherTypeData for more information). First, compute its size.
         unsigned int typeDataNodeCount = 0;
         this->CountTypeDataNodes(&typeDataNodeCount);
 
@@ -1679,8 +1679,8 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
         {
             // allocate a buffer to hold the parameter data
             TypeInfoList typeData;
-            
-            typeData.Alloc(typeDataNodeCount); 
+
+            typeData.Alloc(typeDataNodeCount);
 
             // fill the buffer
             DebuggerIPCE_TypeArgData * pCurrent = &(typeData[0]);
@@ -1705,8 +1705,8 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainFile(),  
-                                                          m_typeHandleExact, 
+            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainFile(),
+                                                          m_typeHandleExact,
                                                           typeHandleApprox,
                                                           &m_fieldList,
                                                           &m_objectSize);
@@ -1724,10 +1724,10 @@ HRESULT CordbType::ReturnedByValue()
     if (!IsValueType())
         return S_OK;
 
-    
+
     ULONG32 unboxedSize = 0;
     IfFailRet(GetUnboxedObjectSize(&unboxedSize));
-    
+
     if (unboxedSize > sizeof(SIZE_T))
         return S_FALSE;
 
@@ -1748,7 +1748,7 @@ HRESULT CordbType::ReturnedByValue()
         PCCOR_SIGNATURE sigBlob = 0;
         ULONG sigLen = 0;
         hr = pImport->GetFieldProps(mdField, NULL, NULL, 0, NULL, &attr, &sigBlob, &sigLen, NULL, NULL, NULL);
-        
+
         if (SUCCEEDED(hr))
         {
             // !static
@@ -1787,17 +1787,17 @@ HRESULT CordbType::ReturnedByValue()
                         break;
                 }
             }
-            
+
             hr = pImport->EnumFields(&fields, mdClass, &mdField, 1, &fetched);
         }
-        
+
         if (FAILED(hr))
         {
             pImport->CloseEnum(fields);
             return hr;
         }
     }
-    
+
     pImport->CloseEnum(fields);
 
     if (unsupported)
@@ -1830,7 +1830,7 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
 
     HRESULT hr = S_OK;
     bool isVC = false;
-	
+
     EX_TRY
     {
         isVC = IsValueType();
@@ -1856,8 +1856,8 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     {
         // Caller guarantees that we're not a class. And the check above guarantees we're not a value-type.
         // So we're some sort of primitive, and thus we can determine size from the signature.
-        // 
-        // @dbgtodo inspection - We didn't have this assert in Whidbey, and it's firing in vararg 
+        //
+        // @dbgtodo inspection - We didn't have this assert in Whidbey, and it's firing in vararg
         // scenarios even though it's returning the right value for reference types (i.e. 4 on x86 and 8 on
         // 64-bit).  Commenting it out for now.
         //_ASSERTE(m_elementType != ELEMENT_TYPE_CLASS);
@@ -1865,7 +1865,7 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
         // We need to use a temporary variable here -- attempting to cast among pointer types
         // (i.e., (PCCOR_SIGNATURE) &m_elementType) yields incorrect results on big-endian machines
         COR_SIGNATURE corSig = (COR_SIGNATURE) m_elementType;
-        
+
         SigParser sigParser(&corSig, sizeof(corSig));
 
         ULONG size;
@@ -1884,14 +1884,14 @@ VMPTR_DomainFile CordbType::GetDomainFile()
         CordbModule * pModule = m_pClass->GetModule();
         if (pModule)
         {
-            return pModule->m_vmDomainFile; 
+            return pModule->m_vmDomainFile;
         }
-        else 
+        else
         {
             return VMPTR_DomainFile::NullPtr();
         }
     }
-    else 
+    else
     {
         return VMPTR_DomainFile::NullPtr();
     }
@@ -1905,14 +1905,14 @@ VMPTR_Module CordbType::GetModule()
         CordbModule * pModule = m_pClass->GetModule();
         if (pModule)
         {
-            return pModule->GetRuntimeModule(); 
+            return pModule->GetRuntimeModule();
         }
-        else 
+        else
         {
             return VMPTR_Module::NullPtr();
         }
     }
-    else 
+    else
     {
         return VMPTR_Module::NullPtr();
     }
@@ -1924,7 +1924,7 @@ VMPTR_Module CordbType::GetModule()
 //
 // Parameters:
 //   data - OUT: BasicTypeData instance to fill out.
-// 
+//
 // Returns:
 //   S_OK on success, CORDBG_E_CLASS_NOT_LOADED on failure
 //-----------------------------------------------------------------------------
@@ -1937,7 +1937,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
     case ELEMENT_TYPE_BYREF:
     case ELEMENT_TYPE_PTR:
         data->elementType = m_elementType;
-        data->metadataToken = mdTokenNil;        
+        data->metadataToken = mdTokenNil;
         data->vmDomainFile = VMPTR_DomainFile::NullPtr();
         data->vmTypeHandle = m_typeHandleExact;
         if (data->vmTypeHandle.IsNull())
@@ -2029,7 +2029,7 @@ void CordbType::TypeToTypeArgData(DebuggerIPCE_TypeArgData *data)
 // Query if this CordbType represents a ValueType (Does not include primitives).
 // Since CordbType doesn't record ValueType status, this may involve querying
 // the CordbClass or even asking the Left-Side (if the CordbClass is not init)
-// 
+//
 // Return Value:
 //   indicates whether this is a value type
 // Note:
@@ -2041,7 +2041,7 @@ bool CordbType::IsValueType()
   {
       return m_pClass->IsValueClass();
   }
-  else 
+  else
         return false;
 }
 
@@ -2070,8 +2070,8 @@ CordbType * CordbType::GetPointerElementType()
 // Determine if the element type is a non GC-root candidate.
 // Updating GC-roots requires coordinating with the GC's write-barrier.
 // Whereas non-GC roots can be updated more freely.
-// 
-// Parameters: 
+//
+// Parameters:
 //   et - An element type.
 // Returns:
 //   True if variables of et can be used as a GC root.
@@ -2093,7 +2093,7 @@ static inline bool IsElementTypeNonGcRoot(CorElementType et)
 //------------------------------------------------------------------------
 // Helper for IsGcRoot
 // Non-gc roots include Value types + non-gc elemement types (like E_T_I4, E_T_FNPTR)
-// 
+//
 // Parameters:
 //   pType - type to check whether it's a GC-root.
 // Returns:
@@ -2213,7 +2213,7 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
         mdToken extendsToken;
 
         IMetaDataImport * pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
-        
+
         hr = pImport->GetTypeDefProps(m_pClass->MDToken(), NULL, 0, NULL, NULL, &extendsToken);
         IfFailThrow(hr);
 
@@ -2227,9 +2227,9 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
         {
             // TypeSpec has a signature. So get the sig and convert it to a CordbType.
             // generic base class of a generic type is a TypeSpec.
-            // If we have: 
+            // If we have:
             //    class Triple<T,U,V> derives from Pair<T,V>,
-            // then the base class for Triple would be a TypeSpec: 
+            // then the base class for Triple would be a TypeSpec:
             //   Class(Pair<T,V>), 2 args, ELEMENT_TYPE_VAR #0, ELEMENT_TYPE_VAR#2.
             // m_inst provides the type-parameters to resolve the ELEMENT_TYPE_VAR types.
 
@@ -2250,7 +2250,7 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
             IfFailThrow(hr);
         }
         else if ((TypeFromToken(extendsToken) == mdtTypeRef) || (TypeFromToken(extendsToken) == mdtTypeDef))
-        {        
+        {
             // TypeDef/TypeRef for non-generic base-class class.
             CordbClass * pSuperClass;
 
@@ -2258,7 +2258,7 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
             IfFailThrow(hr);
 
             _ASSERTE(pSuperClass != NULL);
-            
+
             hr = MkUnparameterizedType(m_appdomain, ELEMENT_TYPE_CLASS, pSuperClass, &pType);
             IfFailThrow(hr);
         }
@@ -2269,8 +2269,8 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
         }
 
         // At this point, we've succeeded
-        _ASSERTE(SUCCEEDED(hr));        
-        
+        _ASSERTE(SUCCEEDED(hr));
+
         (*ppType) = pType;
 
         if (*ppType)
@@ -2301,7 +2301,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
     LOG((LF_CORDB, LL_INFO1000, "GetTypeID\n"));
     if (pId == NULL)
         return E_POINTER;
-    
+
     HRESULT hr = S_OK;
 
     PUBLIC_API_ENTRY(this);
@@ -2314,7 +2314,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
         IfFailThrow(hr);
 
         VMPTR_TypeHandle vmTypeHandle;
-            
+
         CorElementType et = GetElementType();
         switch (et)
         {
@@ -2347,7 +2347,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                                                       &mdToken,
                                                       &vmModule,
                                                       &vmDomainFile);
-                
+
                 vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
             }
             break;
@@ -2370,7 +2370,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                 IfFailThrow(hr);
                 CordbClass *pClass = (CordbClass*)pICDClass;
                 _ASSERTE(pClass != NULL);
-                
+
                 if (pClass->HasTypeParams())
                 {
                     vmTypeHandle = m_typeHandleExact;
@@ -2380,7 +2380,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                     mdTypeDef mdToken;
                     hr = pClass->GetToken(&mdToken);
                     IfFailThrow(hr);
-                    
+
                     VMPTR_Module vmModule = GetModule();
                     vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
                 }
@@ -2405,7 +2405,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
 
 //-----------------------------------------------------------------------------
 // Get rich field information given a token.
-// 
+//
 // Parameters:
 //    fldToken - metadata field token specifying a field on this Type.
 //    ppFieldData - OUT: get the rich field information for the given field
@@ -2426,7 +2426,7 @@ HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
         if (m_elementType != ELEMENT_TYPE_CLASS)
         {
             ThrowHR(E_INVALIDARG);
-        }        
+        }
 
         // Initialize so that the field information is up-to-date.
         hr = Init(FALSE);
@@ -2442,10 +2442,10 @@ HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
             {
                 // Use a static helper function in CordbClass, though we're really
                 // searching through this->m_fields
-                hr = CordbClass::SearchFieldInfo(m_pClass->GetModule(), 
-                                                 &m_fieldList, 
-                                                 m_pClass->MDToken(), 
-                                                 fldToken, 
+                hr = CordbClass::SearchFieldInfo(m_pClass->GetModule(),
+                                                 &m_fieldList,
+                                                 m_pClass->MDToken(),
+                                                 fldToken,
                                                  ppFieldData);
                 // fall through and return.
                 // Let possible CORDBG_E_ENC_HANGING_FIELD errors propogate
@@ -2469,7 +2469,7 @@ HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
 // from the current CordbType.
 // In other words, instantiate a CordbType from baseClass, using the type-params
 // in the current Type.
-// 
+//
 // For example, given:
 //     class C<T>
 //     class D : C<int>
@@ -2578,7 +2578,7 @@ HRESULT CordbType::GetParentType(CordbClass *baseClass, CordbType **ppRes)
 // Walk a type tree, writing the number of type args including internal nodes.
 //
 // Parameters:
-//    count - IN/OUT: counter to update. 
+//    count - IN/OUT: counter to update.
 //-----------------------------------------------------------------------------
 void CordbType::CountTypeDataNodes(unsigned int *count)
 {
@@ -2598,10 +2598,10 @@ void CordbType::CountTypeDataNodes(unsigned int *count)
 //    genericArgsCount - size of the genericArgs array in elements.
 //    genericArgs - array of type parameters.
 //    count - IN/OUT - will increment with total number of generic args.
-//        caller must intialize this (likely to 0). 
+//        caller must intialize this (likely to 0).
 //-----------------------------------------------------------------------------
 void CordbType::CountTypeDataNodesForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], unsigned int *count)
-{    
+{
     for (unsigned int i = 0; i < genericArgsCount; i++)
     {
         (static_cast<CordbType *>(genericArgs[i]))->CountTypeDataNodes(count);
@@ -2615,7 +2615,7 @@ void CordbType::CountTypeDataNodesForInstantiation(unsigned int genericArgsCount
 //
 // Parameters:
 //   curr_tyargData - IN/OUT: Pointer into buffer of TypeArgData structures.
-//      Caller must ensure this buffer is large enough (probably by calling 
+//      Caller must ensure this buffer is large enough (probably by calling
 //      CountTypeDataNodes).
 //      On output, set to the next element in the buffer.
 //-----------------------------------------------------------------------------
@@ -2630,18 +2630,18 @@ void CordbType::GatherTypeData(CordbType *type, DebuggerIPCE_TypeArgData **curr_
 }
 
 //-----------------------------------------------------------------------------
-// Flatten Instantiation into a linear buffer of TypeArgData 
-// Use CountTypeDataNodesForInstantiation on the instantiation to get a large 
+// Flatten Instantiation into a linear buffer of TypeArgData
+// Use CountTypeDataNodesForInstantiation on the instantiation to get a large
 // enough buffer.
 //
 // Parameters:
 //    genericArgsCount - size of genericArgs array in elements.
 //    genericArgs - incoming array to walk
 //    curr_tyargData - IN/OUT: Pointer into buffer of TypeArgData structures.
-//      Caller must ensure this buffer is large enough (probably by calling 
+//      Caller must ensure this buffer is large enough (probably by calling
 //      CountTypeDataNodes).
 //      On output, set to the next element in the buffer.
-//    
+//
 //-----------------------------------------------------------------------------
 void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], DebuggerIPCE_TypeArgData **curr_tyargData)
 {
@@ -2688,7 +2688,7 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
                 }
             }
         }
-    } 
+    }
     EX_CATCH_HRESULT(hr);
 
     return hr;
@@ -2711,10 +2711,10 @@ CordbTypeEnum* CordbTypeEnum::Build(CordbAppDomain * pAppDomain, NeuterList * pN
 }
 
 //-----------------------------------------------------------------------------
-// We need to support taking both an array of CordbType* and an array of RSSmartPtr<CordbType>, 
-// but the code is identical in both cases.  Rather than duplicate any code explicity, it's better to 
+// We need to support taking both an array of CordbType* and an array of RSSmartPtr<CordbType>,
+// but the code is identical in both cases.  Rather than duplicate any code explicity, it's better to
 // have the compiler do it for us using this template method.
-// Another option would be to create an IList<T> interface and implementations for both arrays 
+// Another option would be to create an IList<T> interface and implementations for both arrays
 // of T* and arrays of RSSmartPtr<T>.  This would be more generally useful, but much more code.
 //-----------------------------------------------------------------------------
 template<class T> CordbTypeEnum* CordbTypeEnum::BuildImpl(CordbAppDomain * pAppDomain, NeuterList * pNeuterList, unsigned int cTypars, T* ppTypars)
@@ -2732,7 +2732,7 @@ template<class T> CordbTypeEnum* CordbTypeEnum::BuildImpl(CordbAppDomain * pAppD
         delete newEnum;
         return NULL;
     }
-    
+
     newEnum->m_iMax = cTypars;
     for (unsigned int i = 0; i < cTypars; i++)
     {
@@ -2758,7 +2758,7 @@ CordbTypeEnum::CordbTypeEnum(CordbAppDomain * pAppDomain, NeuterList * pNeuterLi
     EX_TRY
     {
         pNeuterList->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }

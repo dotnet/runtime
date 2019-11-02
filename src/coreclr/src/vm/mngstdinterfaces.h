@@ -58,7 +58,7 @@ public:
         LPUTF8 strTypeName;
         name = th.GetMethodTable()->GetFullyQualifiedNameInfo(&ns);
         MAKE_FULL_PATH_ON_STACK_UTF8(strTypeName, ns, name);
-    
+
         if (m_pMngStdItfMap == NULL) {
             MngStdInterfaceMap *tmp = new MngStdInterfaceMap;
             if (FastInterlockCompareExchangePointer(&m_pMngStdItfMap, tmp, NULL) != NULL) {
@@ -99,25 +99,25 @@ class MngStdItfBase
 {
 protected:
     static void InitHelper(
-                    LPCUTF8 strMngItfTypeName, 
-                    LPCUTF8 strUComItfTypeName, 
-                    LPCUTF8 strCMTypeName, 
-                    LPCUTF8 strCookie, 
-                    LPCUTF8 strManagedViewName, 
-                    TypeHandle *pMngItfType, 
-                    TypeHandle *pUComItfType, 
-                    TypeHandle *pCustomMarshalerType, 
-                    TypeHandle *pManagedViewType, 
+                    LPCUTF8 strMngItfTypeName,
+                    LPCUTF8 strUComItfTypeName,
+                    LPCUTF8 strCMTypeName,
+                    LPCUTF8 strCookie,
+                    LPCUTF8 strManagedViewName,
+                    TypeHandle *pMngItfType,
+                    TypeHandle *pUComItfType,
+                    TypeHandle *pCustomMarshalerType,
+                    TypeHandle *pManagedViewType,
                     OBJECTHANDLE *phndMarshaler);
 
     static LPVOID ForwardCallToManagedView(
-                    OBJECTHANDLE hndMarshaler, 
-                    MethodDesc *pMngItfMD, 
-                    MethodDesc *pUComItfMD, 
-                    MethodDesc *pMarshalNativeToManagedMD, 
-                    MethodDesc *pMngViewMD, 
-                    IID *pMngItfIID, 
-                    IID *pNativeItfIID, 
+                    OBJECTHANDLE hndMarshaler,
+                    MethodDesc *pMngItfMD,
+                    MethodDesc *pUComItfMD,
+                    MethodDesc *pMarshalNativeToManagedMD,
+                    MethodDesc *pMngViewMD,
+                    IID *pMngItfIID,
+                    IID *pNativeItfIID,
                     ARG_SLOT* pArgs);
 };
 
@@ -134,7 +134,7 @@ enum FriendlyName##Methods \
 
 
 #define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, ECallMethName, MethName, MethSig, FcallDecl) \
-    FriendlyName##Methods_##ECallMethName, 
+    FriendlyName##Methods_##ECallMethName,
 
 
 #define MNGSTDITF_END_INTERFACE(FriendlyName) \

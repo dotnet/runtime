@@ -46,17 +46,17 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         _ASSERTE(!"NO BASE METADATA!");
         return E_FAIL;
     }
-   
+
     VARIANT encOption;
     V_VT(&encOption) = VT_UI4;
     V_UI4(&encOption) = MDUpdateENC;
     m_pDisp->SetOption(MetaDataSetENC, &encOption);
     V_UI4(&encOption) = MDErrorOutOfOrderDefault;
     m_pDisp->SetOption(MetaDataErrorIfEmitOutOfOrder, &encOption);
-    hr = m_pDisp->OpenScopeOnMemory( m_pbsMD->ptr(), 
-                                     m_pbsMD->length(), 
-                                     ofWrite, 
-                                     IID_IMetaDataEmit2, 
+    hr = m_pDisp->OpenScopeOnMemory( m_pbsMD->ptr(),
+                                     m_pbsMD->length(),
+                                     ofWrite,
+                                     IID_IMetaDataEmit2,
                                      (IUnknown **)&m_pEmitter);
     _ASSERTE(SUCCEEDED(hr));
     if (FAILED(hr))
@@ -133,11 +133,11 @@ BOOL Assembler::EmitFieldsMethodsENC(Class* pClass)
                 _ASSERTE(j == N);
                 pOffsets[j].ridOfField = mdFieldDefNil;
             }
-            m_pEmitter->SetClassLayout   (   
-                        pClass->m_cl,       // [IN] typedef 
-                        ul,                     // [IN] packing size specified as 1, 2, 4, 8, or 16 
-                        pOffsets,               // [IN] array of layout specification   
-                        pClass->m_ulSize); // [IN] size of the class   
+            m_pEmitter->SetClassLayout   (
+                        pClass->m_cl,       // [IN] typedef
+                        ul,                     // [IN] packing size specified as 1, 2, 4, 8, or 16
+                        pOffsets,               // [IN] array of layout specification
+                        pClass->m_ulSize); // [IN] size of the class
             if(pOffsets) delete [] pOffsets;
         }
     }
@@ -252,7 +252,7 @@ REPT_STEP
             {
                 if(m_fReportProgress)
                     printf("Class %d:\t%s\n",i,pSearch->m_szFQN);
-                
+
                 if(pSearch->m_bIsMaster)
                 {
                     report->msg("Error: Reference to undefined class '%s'\n",pSearch->m_szFQN);
@@ -266,7 +266,7 @@ REPT_STEP
             }
         }
         if(bIsUndefClass && !OnErrGo) return E_FAIL;
-        
+
         if(m_fReportProgress)   printf("\nEmitting fields and methods:\n");
         for (i=0; (pSearch = m_lstClass.PEEK(i)) != NULL; i++)
         {
@@ -294,7 +294,7 @@ REPT_STEP
     {
         Class *pSearch;
         int i;
-    
+
         if(m_fReportProgress)   printf("\nEmitting events and properties:\n");
         for (i=0; (pSearch = m_lstClass.PEEK(i)); i++)
         {
@@ -324,7 +324,7 @@ REPT_STEP
 REPT_STEP
     // Emit the rest of the metadata
     hr = S_OK;
-    if(m_pManifest) 
+    if(m_pManifest)
     {
         if (FAILED(hr = m_pManifest->EmitManifest())) goto exit;
     }
@@ -370,7 +370,7 @@ REPT_STEP
                             report->msg("Error: failed to emit body of '%s'\n",pMethod->m_szName);
                             hr = E_FAIL;
                             if(!OnErrGo)
-                            { 
+                            {
                                 fclose(pF);
                                 *pEnd = 0;
                                 goto exit;
@@ -390,10 +390,10 @@ REPT_STEP
         *pEnd = 0;
     }
 REPT_STEP
-    
+
     //if (DoGlobalFixups() == FALSE)
     //    return E_FAIL;
-    
+
     //if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
     // Emit the meta-data to a separate file
@@ -401,7 +401,7 @@ REPT_STEP
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataEmit2, (void**)&pENCEmitter)))
         goto exit;
 
-    DWORD metaDataSize; 
+    DWORD metaDataSize;
     if (FAILED(hr=pENCEmitter->GetDeltaSaveSize(cssAccurate, &metaDataSize))) goto exit;
 
     wcscat_s(pwzOutputFilename,MAX_SCOPE_LENGTH,W(".dmeta"));
@@ -418,7 +418,7 @@ REPT_STEP
                                                   ofWrite,
                                                   IID_IMetaDataEmit2,
                                     (IUnknown **)&pBaseMDEmit))) goto exit;
-    
+
         if(FAILED(hr = pBaseMDEmit->ApplyEditAndContinue((IUnknown*)m_pImporter))) goto exit;
         delete m_pbsMD;
         if((m_pbsMD = new BinStr()) != NULL)
@@ -453,14 +453,14 @@ REPT_STEP
     return S_OK;
 
 REPT_STEP
-    
+
     // set managed resource entry, if any
     if(m_pManifest && m_pManifest->m_dwMResSizeTotal)
     {
         mresourceSize = m_pManifest->m_dwMResSizeTotal;
 
-        if (FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pILSection, mresourceSize, 
-                                            sizeof(DWORD), (void**) &mresourceData))) goto exit; 
+        if (FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pILSection, mresourceSize,
+                                            sizeof(DWORD), (void**) &mresourceData))) goto exit;
         if (FAILED(hr=m_pCeeFileGen->SetManifestEntry(m_pCeeFile, mresourceSize, 0))) goto exit;
     }
 REPT_STEP
@@ -475,7 +475,7 @@ REPT_STEP
     {
         if (FAILED(hr=m_pCeeFileGen->SetSubsystem(m_pCeeFile, m_dwSubsystem, 4, 0))) goto exit;
     }
-    
+
     if (FAILED(hr=m_pCeeFileGen->ClearComImageFlags(m_pCeeFile, COMIMAGE_FLAGS_ILONLY))) goto exit;
     if (FAILED(hr=m_pCeeFileGen->SetComImageFlags(m_pCeeFile, m_dwComImageFlags & ~COMIMAGE_FLAGS_STRONGNAMESIGNED))) goto exit;
 
@@ -499,7 +499,7 @@ REPT_STEP
         hr = S_OK;
         ULONG dataSectionRVA;
         if (FAILED(hr=m_pCeeFileGen->GetSectionRVA(m_pGlobalDataSection, &dataSectionRVA))) goto exit;
-        
+
         ULONG tlsSectionRVA;
         if (FAILED(hr=m_pCeeFileGen->GetSectionRVA(m_pTLSSection, &tlsSectionRVA))) goto exit;
 
@@ -509,7 +509,7 @@ REPT_STEP
         {
             for(int j=0; (pListFD = pClass->m_FieldDList.PEEK(j)); j++)
             {
-                if (pListFD->m_rvaLabel != 0) 
+                if (pListFD->m_rvaLabel != 0)
                 {
                     DWORD rva;
                     if(*(pListFD->m_rvaLabel)=='@')
@@ -525,7 +525,7 @@ REPT_STEP
                             hr = E_FAIL;
                             continue;
                         }
-                    
+
                         rva = pLabel->m_GlobalOffset;
                         if (pLabel->m_Section == m_pTLSSection)
                             rva += tlsSectionRVA;
@@ -583,8 +583,8 @@ REPT_STEP
                 ptr += L;
             }
         }
-        if(mrfail) 
-        { 
+        if(mrfail)
+        {
             hr = E_FAIL;
             goto exit;
         }

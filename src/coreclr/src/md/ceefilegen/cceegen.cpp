@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 
 #include "stdafx.h"
@@ -17,7 +17,7 @@
 //*****************************************************************************
 // Creation for new CCeeGen instances
 //
-// Both allocate and call virtual Init() (Can't call v-func in a ctor, 
+// Both allocate and call virtual Init() (Can't call v-func in a ctor,
 // but we want to create in 1 call);
 //*****************************************************************************
 
@@ -41,8 +41,8 @@ HRESULT CCeeGen::CreateNewInstance(CCeeGen* & pGen) // static, public
     NewHolder<CCeeGen> pGenHolder(new CCeeGen());
     _ASSERTE(pGenHolder != NULL);
     TESTANDRETURNMEMORY(pGenHolder);
-    
-    pGenHolder->m_peSectionMan = new PESectionMan;    
+
+    pGenHolder->m_peSectionMan = new PESectionMan;
     _ASSERTE(pGenHolder->m_peSectionMan != NULL);
     TESTANDRETURNMEMORY(pGenHolder->m_peSectionMan);
 
@@ -87,7 +87,7 @@ STDMETHODIMP_(ULONG) CCeeGen::AddRef(void)
 {
     return InterlockedIncrement(&m_cRefs);
 }
- 
+
 STDMETHODIMP_(ULONG) CCeeGen::Release(void)
 {
     if (InterlockedDecrement(&m_cRefs) == 0) {
@@ -114,7 +114,7 @@ STDMETHODIMP CCeeGen::EmitString (__in LPWSTR lpString, ULONG *RVA)
         IfFailGo(E_POINTER);
     hr = getStringSection().getEmittedStringRef(lpString, RVA);
 ErrExit:
-    
+
     END_ENTRYPOINT_NOTHROW;
     return hr;
 }
@@ -152,7 +152,7 @@ STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, UL
     IfNullGo(*lpBuffer);
 
         // have to compute the method offset after getting the block, not
-        // before (since alignment might shift it up 
+        // before (since alignment might shift it up
     // for in-memory, just return address and will calc later
     methodOffset = getIlSection().dataLen() - cchBuffer;
 
@@ -200,7 +200,7 @@ ErrExit:
     return hr;
 }
 
-STDMETHODIMP CCeeGen::GetIMapTokenIface (  
+STDMETHODIMP CCeeGen::GetIMapTokenIface (
         IUnknown **pIMapToken)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -211,7 +211,7 @@ STDMETHODIMP CCeeGen::GetIMapTokenIface (
     return E_NOTIMPL;
 }
 
-STDMETHODIMP CCeeGen::AddNotificationHandler (  
+STDMETHODIMP CCeeGen::AddNotificationHandler (
         IUnknown *pHandler)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -241,7 +241,7 @@ STDMETHODIMP CCeeGen::GenerateCeeMemoryImage (void **)
     return E_NOTIMPL;
 }
 
-STDMETHODIMP CCeeGen::GetIlSection ( 
+STDMETHODIMP CCeeGen::GetIlSection (
         HCEESECTION *section)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -262,10 +262,10 @@ STDMETHODIMP CCeeGen::GetStringSection(HCEESECTION *section)
     return E_NOTIMPL;
 }
 
-STDMETHODIMP CCeeGen::AddSectionReloc ( 
-        HCEESECTION section, 
-        ULONG offset, 
-        HCEESECTION relativeTo, 
+STDMETHODIMP CCeeGen::AddSectionReloc (
+        HCEESECTION section,
+        ULONG offset,
+        HCEESECTION relativeTo,
         CeeSectionRelocType relocType)
 {
     HRESULT hr = S_OK;
@@ -276,9 +276,9 @@ STDMETHODIMP CCeeGen::AddSectionReloc (
     return hr;
 }
 
-STDMETHODIMP CCeeGen::GetSectionCreate ( 
-        const char *name, 
-        DWORD flags, 
+STDMETHODIMP CCeeGen::GetSectionCreate (
+        const char *name,
+        DWORD flags,
         HCEESECTION *section)
 {
     HRESULT hr = S_OK;
@@ -290,8 +290,8 @@ STDMETHODIMP CCeeGen::GetSectionCreate (
     return hr;
 }
 
-STDMETHODIMP CCeeGen::GetSectionDataLen ( 
-        HCEESECTION section, 
+STDMETHODIMP CCeeGen::GetSectionDataLen (
+        HCEESECTION section,
         ULONG *dataLen)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -303,10 +303,10 @@ STDMETHODIMP CCeeGen::GetSectionDataLen (
     return NOERROR;
 }
 
-STDMETHODIMP CCeeGen::GetSectionBlock ( 
-        HCEESECTION section, 
-        ULONG len, 
-        ULONG align, 
+STDMETHODIMP CCeeGen::GetSectionBlock (
+        HCEESECTION section,
+        ULONG len,
+        ULONG align,
         void **ppBytes)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -320,8 +320,8 @@ STDMETHODIMP CCeeGen::GetSectionBlock (
     return NOERROR;
 }
 
-STDMETHODIMP CCeeGen::TruncateSection ( 
-        HCEESECTION section, 
+STDMETHODIMP CCeeGen::TruncateSection (
+        HCEESECTION section,
         ULONG len)
 {
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -346,12 +346,12 @@ CCeeGen::CCeeGen() // protected ctor
 // Shared init code between derived classes, called by virtual Init()
 HRESULT CCeeGen::Init() // not-virtual, protected
 {
-// Public, Virtual init must create our SectionManager, and 
+// Public, Virtual init must create our SectionManager, and
 // Common init does the rest
     _ASSERTE(m_peSectionMan != NULL);
 
     HRESULT hr = S_OK;
-  
+
     PESection *section = NULL;
     CeeSection *ceeSection = NULL;
 
@@ -386,7 +386,7 @@ HRESULT CCeeGen::Init() // not-virtual, protected
 
     hr = addSection(ceeSection, &m_stringIdx);
 
-    m_textIdx = m_stringIdx;    
+    m_textIdx = m_stringIdx;
 
     m_metaIdx = m_textIdx;  // meta section is actually in .text
     m_ilIdx = m_textIdx;    // il section is actually in .text
@@ -421,7 +421,7 @@ HRESULT CCeeGen::setEnCMode()
 
 HRESULT CCeeGen::cloneInstance(CCeeGen *destination) { //public, virtual
     _ASSERTE(destination);
-    
+
     destination->m_pTokenMap =          m_pTokenMap;
     destination->m_fTokenMapSupported = m_fTokenMapSupported;
     destination->m_pRemapHandler =      m_pRemapHandler;
@@ -430,7 +430,7 @@ HRESULT CCeeGen::cloneInstance(CCeeGen *destination) { //public, virtual
     return m_peSectionMan->cloneInstance(destination->m_peSectionMan);
 }
 
-HRESULT CCeeGen::Cleanup() // virtual 
+HRESULT CCeeGen::Cleanup() // virtual
 {
     HRESULT hr;
     for (int i = 0; i < m_numSections; i++) {
@@ -518,7 +518,7 @@ HRESULT CCeeGen::getSectionCreate (const char *name, DWORD flags, CeeSection **s
     {
         return E_OUTOFMEMORY;
     }
-    
+
     hr = addSection(newSect, sectionIdx);
     TESTANDRETURNHR(hr);
     if (section)
@@ -532,9 +532,9 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
     HRESULT hr = S_OK;
 
     ReleaseHolder<IStream> metaStream(NULL);
-    
+
     IfFailRet((HRESULT)CreateStreamOnHGlobal(NULL, TRUE, &metaStream));
-    
+
     if (! m_fTokenMapSupported) {
         IUnknown *pMapTokenIface;
         IfFailGoto(getMapTokenIface(&pMapTokenIface, emitter), Exit);
@@ -585,7 +585,7 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
         WCHAR szFileName[256];
         DWORD len = GetEnvironmentVariable(W("COMP_ENC_EMIT"), szFileName, ARRAYSIZE(szFileName));
         _ASSERTE(len < (ARRAYSIZE(szFileName) + 6)); // +6 for the .dmeta
-        if (len > 0 && len < (ARRAYSIZE(szFileName) + 6)) 
+        if (len > 0 && len < (ARRAYSIZE(szFileName) + 6))
         {
             wcscat_s(szFileName, ARRAYSIZE(szFileName), W(".dmeta"));
             FILE *pDelta;
@@ -598,16 +598,16 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
 #endif
 
 
-    // Set meta virtual address to offset of metadata within .meta, and 
-    // and add a reloc for this offset, which will get turned 
-    // into an rva when the pewriter writes out the file. 
+    // Set meta virtual address to offset of metadata within .meta, and
+    // and add a reloc for this offset, which will get turned
+    // into an rva when the pewriter writes out the file.
 
     m_corHeader->MetaData.VirtualAddress = VAL32(offset);
     getCorHeaderSection().addSectReloc(m_corHeaderOffset + offsetof(IMAGE_COR20_HEADER, MetaData), *section, srRelocAbsolute);
     m_corHeader->MetaData.Size = VAL32(metaDataLen);
 
 Exit:
-    
+
     if (! m_fTokenMapSupported) {
         // Remove the handler that we set
         hr = emitter->SetHandler(NULL);
@@ -617,7 +617,7 @@ Exit:
     if (FAILED(hr) && hr != E_OUTOFMEMORY)
         _ASSERTE(!"Unexpected Failure");
 #endif
-    
+
     return hr;
 }
 
@@ -631,7 +631,7 @@ HRESULT CCeeGen::allocateCorHeader()
     if (m_corHdrIdx < 0) {
         hr = getSectionCreate(".text0", sdExecute, &corHeaderSection, &m_corHdrIdx);
         TESTANDRETURNHR(hr);
-        
+
         m_corHeaderOffset = corHeaderSection->dataLen();
         m_corHeader = (IMAGE_COR20_HEADER*)corHeaderSection->getBlock(sizeof(IMAGE_COR20_HEADER));
         if (! m_corHeader)
@@ -647,9 +647,9 @@ HRESULT CCeeGen::getMethodRVA(ULONG codeOffset, ULONG *codeRVA)
     // for runtime conversion, just return the offset and will calculate real address when need the code
     *codeRVA = codeOffset;
     return S_OK;
-} 
+}
 
-HRESULT CCeeGen::getMapTokenIface(IUnknown **pIMapToken, IMetaDataEmit *emitter) 
+HRESULT CCeeGen::getMapTokenIface(IUnknown **pIMapToken, IMetaDataEmit *emitter)
 {
     if (! pIMapToken)
         return E_POINTER;
@@ -661,7 +661,7 @@ HRESULT CCeeGen::getMapTokenIface(IUnknown **pIMapToken, IMetaDataEmit *emitter)
         {
             return E_OUTOFMEMORY;
         }
-        
+
         if (emitter) {
             HRESULT hr;
             hr = emitter->QueryInterface(IID_IMetaDataImport, (PVOID *) &pMapper->m_pIImport);

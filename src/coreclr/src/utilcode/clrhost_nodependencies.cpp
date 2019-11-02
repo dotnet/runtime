@@ -77,7 +77,7 @@ void FreeClrDebugState(LPVOID pTlsData)
     {
 #undef HeapFree
 #undef GetProcessHeap
-        
+
         // Since "!(pClrDebugState->m_violationmask & BadDebugState)", we know we have
         // a valid m_pLockData
         _ASSERTE(pClrDebugState->GetDbgStateLockData() != NULL);
@@ -454,8 +454,8 @@ operator delete[](void *p) NOEXCEPT
  * New operator overloading for the executable heap
  * ------------------------------------------------------------------------ */
 
-#ifndef FEATURE_PAL 
- 
+#ifndef FEATURE_PAL
+
 const CExecutable executable = { 0 };
 
 void * __cdecl operator new(size_t n, const CExecutable&)
@@ -505,7 +505,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
 }
 
 void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
-{    
+{
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -538,7 +538,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
     return result;
 }
 
-#endif // FEATURE_PAL 
+#endif // FEATURE_PAL
 
 #ifdef _DEBUG
 
@@ -548,7 +548,7 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 #if defined(CROSSGEN_COMPILE) || defined(FEATURE_PAL)
     // No NX support on PAL or for crossgen compilations.
     return TRUE;
-#else // !(CROSSGEN_COMPILE || FEATURE_PAL) 
+#else // !(CROSSGEN_COMPILE || FEATURE_PAL)
     BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
     BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, GetOsPageSize());
     _ASSERTE(length > 0);
@@ -602,7 +602,7 @@ IExecutionEngine *GetExecutionEngine()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC_HOST_ONLY;
-       
+
     if (g_pExecutionEngine == NULL)
     {
         IExecutionEngine* pExecutionEngine;
@@ -619,7 +619,7 @@ IExecutionEngine *GetExecutionEngine()
 #endif  // SELF_NO_HOST
 
         //We use an explicit memory barrier here so that the reference g_pExecutionEngine is valid when
-        //it is used, This ia a requirement on platforms with weak memory model . We cannot use VolatileStore  
+        //it is used, This ia a requirement on platforms with weak memory model . We cannot use VolatileStore
         //because they are the same as normal assignment for DAC builds [see code:VOLATILE]
 
         MemoryBarrier();

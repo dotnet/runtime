@@ -12,13 +12,13 @@ FCIMPL2(StringObject*, CompatibilitySwitch::GetValue, StringObject* switchNameUN
         FCALL_CHECK;
     }
     CONTRACTL_END;
-        
+
     if (!switchNameUNSAFE)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidSwitchName"));
 
     STRINGREF name = (STRINGREF) switchNameUNSAFE;
     VALIDATEOBJECTREF(name);
-        
+
     STRINGREF refName = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(name);
@@ -28,21 +28,21 @@ FCIMPL2(StringObject*, CompatibilitySwitch::GetValue, StringObject* switchNameUN
     {
         // for public managed apis we ignore checking in registry/config/env
         // only check in windows appcompat DB
-        info.options = CLRConfig::IgnoreEnv | 
+        info.options = CLRConfig::IgnoreEnv |
                        CLRConfig::IgnoreHKLM |
                        CLRConfig::IgnoreHKCU |
-                       CLRConfig::IgnoreConfigFiles; 
+                       CLRConfig::IgnoreConfigFiles;
     }
     else
     {
-        // for mscorlib (i.e. which use internal apis) also check in 
+        // for mscorlib (i.e. which use internal apis) also check in
         // registry/config/env in addition to windows appcompat DB
         info.options = CLRConfig::EEConfig_default;
     }
     LPWSTR strVal = CLRConfig::GetConfigValue(info);
     refName = StringObject::NewString(strVal);
-    HELPER_METHOD_FRAME_END();            
-    
+    HELPER_METHOD_FRAME_END();
+
     return (StringObject*)OBJECTREFToObject(refName);
 }
 FCIMPLEND

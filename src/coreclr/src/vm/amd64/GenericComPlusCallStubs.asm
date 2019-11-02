@@ -38,7 +38,7 @@ NESTED_ENTRY GenericComPlusCallStub, _TEXT, ProcessCLRException
         cmp             rax, 4
         jne             @F
         movss           xmm0, real4 ptr [rcx]
-@@:        
+@@:
         cmp             rax, 8
         jne             @F
         movsd           xmm0, real8 ptr [rcx]

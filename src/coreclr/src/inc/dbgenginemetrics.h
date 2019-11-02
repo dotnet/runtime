@@ -5,7 +5,7 @@
 // DbgEngineMetrics.h
 //
 // This file contains the defintion of CLR_ENGINE_METRICS.  This struct is used for Silverlight debugging.
-// 
+//
 // ======================================================================================
 
 
@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------------------
 //
 // This struct contains information necessary for Silverlight debugging.  coreclr.dll has a static struct
-// of this type.  It is read by dbgshim.dll to help synchronize the debugger and coreclr.dll in launch 
+// of this type.  It is read by dbgshim.dll to help synchronize the debugger and coreclr.dll in launch
 // and early attach scenarios.
 //
 

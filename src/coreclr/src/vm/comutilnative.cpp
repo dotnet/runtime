@@ -9,7 +9,7 @@
 **
 ** File:  COMUtilNative
 **
-**  
+**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the EE.
@@ -79,7 +79,7 @@ bool IsDigit(WCHAR c, int radix, int *result)
 }
 
 INT32 wtoi(__in_ecount(length) WCHAR* wstr, DWORD length)
-{  
+{
     CONTRACTL
     {
         NOTHROW;
@@ -166,13 +166,13 @@ FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
 
     // GC protect the array reference
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-    
+
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
 
     // Fetch the stacktrace details from the exception under a lock
     gc.refException->GetStackTrace(gc.stackTrace, &gc.dynamicMethodsArray);
-    
+
     bool fHaveStackTrace = false;
     bool fHaveDynamicMethodArray = false;
 
@@ -182,15 +182,15 @@ FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
         gc.stackTraceCopy.CopyFrom(gc.stackTrace);
         fHaveStackTrace = true;
     }
-    
+
     if (gc.dynamicMethodsArray != NULL)
     {
         // Get the number of elements in the dynamic methods array
         unsigned   cOrigDynamic = gc.dynamicMethodsArray->GetNumComponents();
-    
+
         // ..and allocate a new array. This can trigger GC or throw under OOM.
         gc.dynamicMethodsArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigDynamic, g_pObjectClass);
-    
+
         // Deepcopy references to the new array we just allocated
         memmoveGCRefs(gc.dynamicMethodsArrayCopy->GetDataPtr(), gc.dynamicMethodsArray->GetDataPtr(),
                                                   cOrigDynamic * sizeof(Object *));
@@ -228,7 +228,7 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
 
     // GC protect the array reference
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-    
+
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
 
@@ -280,10 +280,10 @@ FCIMPL1(Object*, ExceptionNative::CopyStackTrace, Object* pStackTraceUNSAFE)
 
     // GC protect the array reference
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-        
+
     // Deepcopy the array
     gc.stackTraceCopy.CopyFrom(gc.stackTrace);
-    
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.stackTraceCopy.Get());
@@ -307,14 +307,14 @@ FCIMPL1(Object*, ExceptionNative::CopyDynamicMethods, Object* pDynamicMethodsUNS
     _gc gc;
     ZeroMemory(&gc, sizeof(gc));
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    
+
     gc.dynamicMethodsArray = (PTRARRAYREF)(ObjectToOBJECTREF(pDynamicMethodsUNSAFE));
 
     // Get the number of elements in the array
     unsigned   cOrigDynamic = gc.dynamicMethodsArray->GetNumComponents();
     // ..and allocate a new array. This can trigger GC or throw under OOM.
     gc.dynamicMethodsArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigDynamic, g_pObjectClass);
-    
+
     // Copy references to the new array we just allocated
     memmoveGCRefs(gc.dynamicMethodsArrayCopy->GetDataPtr(), gc.dynamicMethodsArray->GetDataPtr(),
                                               cOrigDynamic * sizeof(Object *));
@@ -673,7 +673,7 @@ void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKi
     default:
         _ASSERTE(!"Unknown ExceptionMessageKind value!");
     }
-    if (FAILED(hr)) {       
+    if (FAILED(hr)) {
         STRESS_LOG1(LF_BCL, LL_ALWAYS, "LoadResource error: %x", hr);
         _ASSERTE(wszFallbackString != NULL);
         retMesg.Set(wszFallbackString);
@@ -769,9 +769,9 @@ FCIMPL6(void, GCInterface::GetMemoryInfo, UINT64* highMemLoadThreshold, UINT64* 
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
-    
+
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalAvailableMemoryBytes,
-                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct, 
+                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct,
                                                        lastRecordedHeapSizeBytes, lastRecordedFragmentationBytes);
 }
 FCIMPLEND
@@ -792,7 +792,7 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
-    
+
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 FCIMPLEND
@@ -813,7 +813,7 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
-    
+
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLOHCompactionyMode);
 }
 FCIMPLEND
@@ -848,7 +848,7 @@ FCIMPL1(int, GCInterface::WaitForFullGCApproach, int millisecondsTimeout)
     }
     CONTRACTL_END;
 
-    int result = 0; 
+    int result = 0;
 
     //We don't need to check the top end because the GC will take care of that.
     HELPER_METHOD_FRAME_BEGIN_RET_0();
@@ -872,7 +872,7 @@ FCIMPL1(int, GCInterface::WaitForFullGCComplete, int millisecondsTimeout)
     }
     CONTRACTL_END;
 
-    int result = 0; 
+    int result = 0;
 
     //We don't need to check the top end because the GC will take care of that.
     HELPER_METHOD_FRAME_BEGIN_RET_0();
@@ -955,7 +955,7 @@ int QCALLTYPE GCInterface::StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, I
 
     GCX_COOP();
 
-    retVal = GCHeapUtilities::GetGCHeap()->StartNoGCRegion((ULONGLONG)totalSize, 
+    retVal = GCHeapUtilities::GetGCHeap()->StartNoGCRegion((ULONGLONG)totalSize,
                                                   !!lohSizeKnown,
                                                   (ULONGLONG)lohSize,
                                                   !!disallowFullBlockingGC);
@@ -1122,8 +1122,8 @@ FCIMPLEND
 /*===============================AllocateNewArray===============================
 **Action: Allocates a new array object. Allows passing extra flags
 **Returns: The allocated array.
-**Arguments: elementTypeHandle -> type of the element, 
-**           length -> number of elements, 
+**Arguments: elementTypeHandle -> type of the element,
+**           length -> number of elements,
 **           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
@@ -1168,7 +1168,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 
         uint64_t current_high = high_watermark;
         while (allocated_bytes > current_high)
-        {           
+        {
             uint64_t orig = FastInterlockCompareExchangeLong((LONG64*)& high_watermark, allocated_bytes, current_high);
             if (orig == current_high)
                 return allocated_bytes;
@@ -1340,17 +1340,17 @@ FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahe
         // check for underflow
         if (newMemValue > oldMemValue)
             newMemValue = 0;
-        
+
     } while (InterlockedCompareExchange64((LONGLONG*) pMinuend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
 
     return newMemValue;
 }
 
-void QCALLTYPE GCInterface::_AddMemoryPressure(UINT64 bytesAllocated) 
+void QCALLTYPE GCInterface::_AddMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
-    // AddMemoryPressure could cause a GC, so we need a frame 
+    // AddMemoryPressure could cause a GC, so we need a frame
     BEGIN_QCALL;
     AddMemoryPressure(bytesAllocated);
     END_QCALL;
@@ -1377,8 +1377,8 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
             GCX_PREEMP();
             CrstHolder holder(&m_MemoryPressureLock);
 
-            // to avoid collecting too often, take the max threshold of the linear and geometric growth 
-            // heuristics.          
+            // to avoid collecting too often, take the max threshold of the linear and geometric growth
+            // heuristics.
             UINT64 addMethod;
             UINT64 multMethod;
             UINT64 bytesAllocatedMax = (UINT64_MAX - m_ulThreshold) / 8;
@@ -1416,7 +1416,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
             GarbageCollectModeAny(gen_collect);
         }
 
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
             m_gc_counts [i] = GCHeapUtilities::GetGCHeap()->CollectionCount(i);
         }
@@ -1438,10 +1438,10 @@ void GCInterface::CheckCollectionCount()
     LIMITED_METHOD_CONTRACT;
 
     IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
-    
+
     if (m_gc_counts[2] != pHeap->CollectionCount(2))
     {
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
             m_gc_counts[i] = pHeap->CollectionCount(i);
         }
@@ -1451,7 +1451,7 @@ void GCInterface::CheckCollectionCount()
         UINT p = m_iteration % NEW_PRESSURE_COUNT;
 
         m_addPressure[p] = 0;   // new pressure will be accumulated here
-        m_remPressure[p] = 0; 
+        m_remPressure[p] = 0;
     }
 }
 
@@ -1496,7 +1496,7 @@ void GCInterface::NewAddMemoryPressure(UINT64 bytesAllocated)
     STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %I64u => added=%I64u total_added=%I64u total_removed=%I64u",
         bytesAllocated, newMemValue, add, rem);
 
-    SendEtwAddMemoryPressureEvent(bytesAllocated); 
+    SendEtwAddMemoryPressureEvent(bytesAllocated);
 
     if (newMemValue >= MIN_MEMORYPRESSURE_BUDGET)
     {
@@ -1569,7 +1569,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     SendEtwRemoveMemoryPressureEvent(bytesAllocated);
 
     UINT64 newMemValue = InterlockedSub(&m_ulMemPressure, bytesAllocated);
-    UINT64 new_th;  
+    UINT64 new_th;
     UINT64 bytesAllocatedMax = (m_ulThreshold / 4);
     UINT64 addMethod;
     UINT64 multMethod = (m_ulThreshold - m_ulThreshold / 20); // can never underflow
@@ -1594,7 +1594,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
         else
             m_ulThreshold = MIN_GC_MEMORYPRESSURE_THRESHOLD;
 
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
             m_gc_counts [i] = GCHeapUtilities::GetGCHeap()->CollectionCount(i);
         }
@@ -1612,7 +1612,7 @@ void GCInterface::NewRemoveMemoryPressure(UINT64 bytesAllocated)
     CONTRACTL_END;
 
     CheckCollectionCount();
-    
+
     UINT p = m_iteration % NEW_PRESSURE_COUNT;
 
     SendEtwRemoveMemoryPressureEvent(bytesAllocated);
@@ -2023,7 +2023,7 @@ NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objR
     FC_RETURN_BOOL(ret);
 }
 
-// Return true if the valuetype does not contain pointer, is tightly packed, 
+// Return true if the valuetype does not contain pointer, is tightly packed,
 // does not have floating point number field and does not override Equals method.
 FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
 {
@@ -2069,7 +2069,7 @@ static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 
     INT32 hashCode = 0;
     INT32 *pObj = (INT32*)pObjRef;
-            
+
     // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
     INT32 size = mt->GetNumInstanceFieldBytes();
     for (INT32 i = 0; i < (INT32)(size / sizeof(INT32)); i++)
@@ -2101,7 +2101,7 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
         canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
     }
 
-    // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to 
+    // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
     // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
     if (canUseFastGetHashCodeHelper)
     {
@@ -2204,7 +2204,7 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
     {
         // If the typeID has yet to be generated, fall back to GetTypeID
         // This only needs to be done once per MethodTable
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);        
+        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
         typeID = pMT->GetTypeID();
         HELPER_METHOD_FRAME_END();
     }
@@ -2289,7 +2289,7 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
 
     if (!g_pStreamMT->IsZapped())
     {
-        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs 
+        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
         // to detect match reliably
         if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
             return false;
@@ -2324,7 +2324,7 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
 {
     FCALL_CONTRACT;
 
-    if (stream == NULL) 
+    if (stream == NULL)
         FC_RETURN_BOOL(TRUE);
 
     if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)

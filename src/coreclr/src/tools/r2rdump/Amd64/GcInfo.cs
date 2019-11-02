@@ -106,7 +106,7 @@ namespace R2RDump.Amd64
             Version = ReadyToRunVersionToGcInfoVersion(majorVersion);
             int bitOffset = offset * 8;
             int startBitOffset = bitOffset;
-            
+
             ParseHeaderFlags(image, ref bitOffset);
 
             if (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND) // IsReturnKindAvailable
@@ -348,7 +348,7 @@ namespace R2RDump.Amd64
         }
 
         /// <summary>
-        /// GcInfo version is 1 up to ReadyTorun version 1.x. 
+        /// GcInfo version is 1 up to ReadyTorun version 1.x.
         /// GcInfo version is current from  ReadyToRun version 2.0
         /// </summary>
         private int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion)

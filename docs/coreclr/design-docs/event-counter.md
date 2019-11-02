@@ -58,12 +58,12 @@ We believe adding some new top-level types will satisfy these requests:
         TimeSpan DisplayRateTimeScale;
         void AddMetaData(string key, string value);
     }
-    
 
-EventCounter does what it has always done, producing a set of 5 stats (Min/Max/Mean/Count/StandardDeviation) and emitting a sequence of events that hold that data. PollingCounter is the same as EventCounter except instead of the caller invoking WriteMetric, the counter infrastructure invokes the callback function periodically to retrieve the data. The counter infrastructure will invoke the callback at least as often as necessary to have 1 sample of data in each aggregated sampling interval. In the current implementation it will occur exactly once at the transition point between adjacent sampling intervals. If multiple time series have an interval boundary at the same moment in time the callback is allowed to be shared for each of them but it is not required to be. 
+
+EventCounter does what it has always done, producing a set of 5 stats (Min/Max/Mean/Count/StandardDeviation) and emitting a sequence of events that hold that data. PollingCounter is the same as EventCounter except instead of the caller invoking WriteMetric, the counter infrastructure invokes the callback function periodically to retrieve the data. The counter infrastructure will invoke the callback at least as often as necessary to have 1 sample of data in each aggregated sampling interval. In the current implementation it will occur exactly once at the transition point between adjacent sampling intervals. If multiple time series have an interval boundary at the same moment in time the callback is allowed to be shared for each of them but it is not required to be.
 
 On the wire EventCounter and PollingCounter both produce an event with name "EventCounters" and example body:
-    
+
     Payload = {
         DisplayName: "Request Bytes",
         DisplayRateTimeScale: "1",
@@ -78,10 +78,10 @@ On the wire EventCounter and PollingCounter both produce an event with name "Eve
         CounterType: "Mean",
         MetaData: "key1=value1,key2=value2,key3=value3"
     }
-        
 
 
-IncrementingEventCounter and IncrementingPollingCounter, unlike the previous two, generate only a single sum value as their output statistic. IncrementingEventCounter adds together all arguments passed to its Increment() function during the time interval. IncrementingPollingCounter uses the callback to sample the count at the beginning of the interval and again at the end, using the difference between the two as the result (the increment during that interval). 
+
+IncrementingEventCounter and IncrementingPollingCounter, unlike the previous two, generate only a single sum value as their output statistic. IncrementingEventCounter adds together all arguments passed to its Increment() function during the time interval. IncrementingPollingCounter uses the callback to sample the count at the beginning of the interval and again at the end, using the difference between the two as the result (the increment during that interval).
 
 On the wire IncrementingEventCounter and IncrementingPollingCounter both produce an event with the name "EventCounters" and example body:
 

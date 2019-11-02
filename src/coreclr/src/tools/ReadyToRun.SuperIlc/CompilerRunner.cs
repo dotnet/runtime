@@ -46,7 +46,7 @@ namespace ReadyToRun.SuperIlc
         protected abstract string CompilerFileName { get; }
 
         protected virtual string CompilerPath => Path.Combine(_options.CoreRootDirectory.FullName, CompilerRelativePath, CompilerFileName);
-        
+
         protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
 
         public virtual ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
@@ -150,7 +150,7 @@ namespace ReadyToRun.SuperIlc
                 processParameters.TimeoutMilliseconds = ProcessParameters.DefaultExeTimeoutGCStress;
             }
 
-            // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics 
+            // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics
             processParameters.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
 
             processParameters.CollectJittedMethods = !noEtw;

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgTiggerStream.h
-// 
+//
 
 //
 // TiggerStream is the companion to the TiggerStorage CoClass.  It handles the
@@ -22,7 +22,7 @@
 //
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Read( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Read(
     void		*pv,
     ULONG		cb,
     ULONG		*pcbRead)
@@ -31,7 +31,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Read(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Write( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Write(
     const void	*pv,
     ULONG		cb,
     ULONG		*pcbWritten)
@@ -40,7 +40,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Write(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Seek( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Seek(
     LARGE_INTEGER dlibMove,
     DWORD		dwOrigin,
     ULARGE_INTEGER *plibNewPosition)
@@ -49,14 +49,14 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Seek(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::SetSize( 
+HRESULT STDMETHODCALLTYPE TiggerStream::SetSize(
     ULARGE_INTEGER libNewSize)
 {
 	return (E_NOTIMPL);
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::CopyTo( 
+HRESULT STDMETHODCALLTYPE TiggerStream::CopyTo(
     IStream		*pstm,
     ULARGE_INTEGER cb,
     ULARGE_INTEGER *pcbRead,
@@ -66,7 +66,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::CopyTo(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Commit( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Commit(
     DWORD		grfCommitFlags)
 {
 	return (E_NOTIMPL);
@@ -79,7 +79,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Revert()
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::LockRegion( 
+HRESULT STDMETHODCALLTYPE TiggerStream::LockRegion(
     ULARGE_INTEGER libOffset,
     ULARGE_INTEGER cb,
     DWORD		dwLockType)
@@ -88,7 +88,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::LockRegion(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::UnlockRegion( 
+HRESULT STDMETHODCALLTYPE TiggerStream::UnlockRegion(
     ULARGE_INTEGER libOffset,
     ULARGE_INTEGER cb,
     DWORD		dwLockType)
@@ -97,7 +97,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::UnlockRegion(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Stat( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Stat(
     STATSTG		*pstatstg,
     DWORD		grfStatFlag)
 {
@@ -105,7 +105,7 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Stat(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStream::Clone( 
+HRESULT STDMETHODCALLTYPE TiggerStream::Clone(
     IStream		**ppstm)
 {
 	return (E_NOTIMPL);

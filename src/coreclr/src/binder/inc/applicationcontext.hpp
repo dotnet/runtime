@@ -28,7 +28,7 @@ namespace BINDER_SPACE
     {
         LPWSTR m_wszFileName;
     };
-    
+
     class FileNameHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits< FileNameMapEntry > >
     {
      public:
@@ -46,7 +46,7 @@ namespace BINDER_SPACE
     };
 
     typedef SHash<FileNameHashTraits> TpaFileNameHash;
-    
+
     // Entry in SHash table that maps namespace to list of files
     struct SimpleNameToFileNameMapEntry
     {
@@ -54,7 +54,7 @@ namespace BINDER_SPACE
         LPWSTR m_wszILFileName;
         LPWSTR m_wszNIFileName;
     };
-    
+
     // SHash traits for Namespace -> FileNameList hash
     class SimpleNameToFileNameMapTraits : public NoRemoveSHashTraits< DefaultSHashTraits< SimpleNameToFileNameMapEntry > >
     {
@@ -70,7 +70,7 @@ namespace BINDER_SPACE
         }
         static count_t Hash(const key_t &str) { return HashiString(str); }
         static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (_wcsicmp(lhs, rhs) == 0); }
-        
+
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
             if (e.m_wszILFileName == nullptr && e.m_wszNIFileName == nullptr)
@@ -79,7 +79,7 @@ namespace BINDER_SPACE
                 // by the SimpleName -> FileName entry which reuses the same filename pointer.
                 return;
             }
-            
+
             if (e.m_wszSimpleName != nullptr)
             {
                 delete [] e.m_wszSimpleName;
@@ -97,7 +97,7 @@ namespace BINDER_SPACE
     };
 
     typedef SHash<SimpleNameToFileNameMapTraits> SimpleNameToFileNameMap;
-    
+
     class ApplicationContext
         : public IUnknown
     {
@@ -136,7 +136,7 @@ namespace BINDER_SPACE
         inline TpaFileNameHash *GetTpaFileNameList();
         inline StringArrayList *GetPlatformResourceRoots();
         inline StringArrayList *GetAppNiPaths();
-        
+
         // Using a host-configured Trusted Platform Assembly list
         bool IsTpaListProvided();
         inline CRITSEC_COOKIE GetCriticalSectionCookie();

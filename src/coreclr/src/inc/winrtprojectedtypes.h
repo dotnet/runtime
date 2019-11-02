@@ -12,7 +12,7 @@
 //   * An ASCII string representing the name in winmd of the type being projected from
 //   * An ASCII string representing the namespace in .NET which contains the type being projected to
 //   * An ASCII string representing the name in .NET of the type being projected to
-//   * A symbol which is used to represent the assembly the .NET type is defined in 
+//   * A symbol which is used to represent the assembly the .NET type is defined in
 //   * A symbol which is used to represent the contract assembly the .NET type is defined in
 //   * A symbol which is used to represent the WinRT type
 //   * A symbol which is used to represent the .NET type
@@ -22,7 +22,7 @@
 // Optionally, the DEFINE_PROJECTED_RUNTIMECLASS, DEFINE_PROJECTED_STRUCT, DEFINE_PROJECTED_ENUM, DEFINE_PROJECTED_PINTERFACE,
 // DEFINE_PROJECTED_INTERFACE, and DEFINE_PROJECTED_ATTRIBUTE macros can be defined by the consumer of this header file, in
 // order to get extra information about the projected types.
-// 
+//
 // Note that the input to these macros is in terms of the original winmd - so HResult is a DEFINE_PROJECTED_STRUCT even though it
 // projects to the class Exception.  If you are adding a projection where the WinRT and CLR views differ upon if the type is a
 // value type or not, you'll need to update the signature rewriting code in md\winmd\adapter.cpp as well as the export code in
@@ -62,7 +62,7 @@
 #endif // !DEFINE_PROJECTED_JUPITER_STRUCT
 
 #ifndef STRUCT_FIELDS
-#define STRUCT_FIELDS(...) __VA_ARGS__ 
+#define STRUCT_FIELDS(...) __VA_ARGS__
 #endif // !STRUCT_FIELDS
 
 // DEFINE_PROJECTED_ENUM adds the following parameters:
@@ -265,7 +265,7 @@ DEFINE_HIDDEN_WINRT_TYPE("Windows.Foundation", "IReferenceArray`1")
 
 #undef JUPITER_PROJECTION_NS
 #undef JUPITER_PROJECTION_CONTROLS_PRIMITIVES_NS
-#undef JUPITER_PROJECTION_MEDIA_NS              
-#undef JUPITER_PROJECTION_MEDIA_ANIMATION_NS    
-#undef JUPITER_PROJECTION_MEDIA_3D_NS           
-#undef JUPITER_FOUNDATION_PROJECTION_NS         
+#undef JUPITER_PROJECTION_MEDIA_NS
+#undef JUPITER_PROJECTION_MEDIA_ANIMATION_NS
+#undef JUPITER_PROJECTION_MEDIA_3D_NS
+#undef JUPITER_FOUNDATION_PROJECTION_NS

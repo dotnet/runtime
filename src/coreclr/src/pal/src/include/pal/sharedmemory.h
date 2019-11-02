@@ -15,8 +15,8 @@
 #define _countof(a) (sizeof(a) / sizeof(a[0]))
 #endif // !_countof
 
-// The folder used for storing shared memory files and their lock files is defined in 
-// the gSharedFilesPath global variable. The value of the variable depends on which 
+// The folder used for storing shared memory files and their lock files is defined in
+// the gSharedFilesPath global variable. The value of the variable depends on which
 // OS is being used, and if the application is running in a sandbox in Mac.
 // gSharedFilesPath ends with '/'
 // - Global shared memory files go in:
@@ -129,7 +129,7 @@ public:
     static void VerifyStringOperation(bool success);
     static void VerifyStringOperation(BOOL success)
     {
-        VerifyStringOperation(success != FALSE); 
+        VerifyStringOperation(success != FALSE);
     }
 };
 

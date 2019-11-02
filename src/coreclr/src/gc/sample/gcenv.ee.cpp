@@ -318,7 +318,7 @@ static MethodTable freeObjectMT;
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    // 
+    //
     // Initialize free object methodtable. The GC uses a special array-like methodtable as placeholder
     // for collected free space.
     //
@@ -351,5 +351,5 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 
 inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
 {
-    
+
 }

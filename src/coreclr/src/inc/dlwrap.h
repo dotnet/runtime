@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-// 
+//
 
 #ifndef _DLWRAP_H
 #define _DLWRAP_H
@@ -13,7 +13,7 @@
 //nothrow implementations
 
 #if defined(VER_H) && !defined (GetFileVersionInfoSizeW_NoThrow)
-DWORD 
+DWORD
 GetFileVersionInfoSizeW_NoThrow(
         LPCWSTR lptstrFilename, /* Filename of version stamped file */
         LPDWORD lpdwHandle
@@ -41,8 +41,8 @@ VerQueryValueW_NoThrow(
 #endif
 
 #if defined(_WININET_) && !defined (CreateUrlCacheEntryW_NoThrow)
-__success(return) 
-BOOL 
+__success(return)
+BOOL
 CreateUrlCacheEntryW_NoThrow(
         IN LPCWSTR lpszUrlName,
         IN DWORD dwExpectedFileSize,
@@ -53,7 +53,7 @@ CreateUrlCacheEntryW_NoThrow(
 #endif
 
 #if defined(_WININET_) && !defined (CommitUrlCacheEntryW_NoThrow)
-BOOL  
+BOOL
 CommitUrlCacheEntryW_NoThrow(
         IN LPCWSTR lpszUrlName,
         IN LPCWSTR lpszLocalFileName,
@@ -68,7 +68,7 @@ CommitUrlCacheEntryW_NoThrow(
 #endif
 
 #if defined(_WININET_) && !defined (InternetTimeToSystemTimeA_NoThrow)
-BOOL 
+BOOL
 InternetTimeToSystemTimeA_NoThrow(
         IN  LPCSTR lpszTime,         // NULL terminated string
         OUT SYSTEMTIME *pst,         // output in GMT time
@@ -77,16 +77,16 @@ InternetTimeToSystemTimeA_NoThrow(
 #endif
 
 #if defined(__urlmon_h__) && !defined(CoInternetCreateSecurityManager_NoThrow)
-HRESULT 
+HRESULT
 CoInternetCreateSecurityManager_NoThrow(
         IServiceProvider *pSP,
-        IInternetSecurityManager **ppSM, 
+        IInternetSecurityManager **ppSM,
         DWORD dwReserved
         );
 #endif
 
 #if defined(__urlmon_h__) && !defined(URLDownloadToCacheFileW_NoThrow)
-HRESULT 
+HRESULT
 URLDownloadToCacheFileW_NoThrow(
         LPUNKNOWN lpUnkcaller,
         LPCWSTR szURL,
@@ -98,7 +98,7 @@ URLDownloadToCacheFileW_NoThrow(
 #endif
 
 #if defined(__urlmon_h__) && !defined(CoInternetGetSession_NoThrow)
-HRESULT 
+HRESULT
 CoInternetGetSession_NoThrow(
         WORD dwSessionMode,
         IInternetSession **ppIInternetSession,
@@ -107,8 +107,8 @@ CoInternetGetSession_NoThrow(
 #endif
 
 #if defined(__urlmon_h__) && !defined(CopyBindInfo_NoThrow)
-HRESULT 
-CopyBindInfo_NoThrow( 
+HRESULT
+CopyBindInfo_NoThrow(
         const BINDINFO * pcbiSrc, BINDINFO * pbiDest
         );
 #endif
@@ -116,42 +116,42 @@ CopyBindInfo_NoThrow(
 
 
 //overrides
-#undef InternetTimeToSystemTimeA           
-#undef CommitUrlCacheEntryW                    
-#undef HttpQueryInfoA                                 
-#undef InternetCloseHandle                         
-#undef HttpSendRequestA                            
-#undef HttpOpenRequestA                            
-#undef InternetConnectA                              
-#undef InternetOpenA                                  
-#undef InternetReadFile                               
-#undef CreateUrlCacheEntryW                     
-#undef CoInternetGetSession                       
-#undef CopyBindInfo                                     
-#undef CoInternetCreateSecurityManager   
-#undef URLDownloadToCacheFileW              
-#undef FDICreate                                          
-#undef FDIIsCabinet                                     
-#undef FDICopy                                             
-#undef FDIDestroy                                                            
-#undef VerQueryValueW                               
-#undef GetFileVersionInfoW                         
-#undef GetFileVersionInfoSizeW                  
-#undef VerQueryValueA                                
-#undef GetFileVersionInfoA                          
-#undef GetFileVersionInfoSizeA                   
+#undef InternetTimeToSystemTimeA
+#undef CommitUrlCacheEntryW
+#undef HttpQueryInfoA
+#undef InternetCloseHandle
+#undef HttpSendRequestA
+#undef HttpOpenRequestA
+#undef InternetConnectA
+#undef InternetOpenA
+#undef InternetReadFile
+#undef CreateUrlCacheEntryW
+#undef CoInternetGetSession
+#undef CopyBindInfo
+#undef CoInternetCreateSecurityManager
+#undef URLDownloadToCacheFileW
+#undef FDICreate
+#undef FDIIsCabinet
+#undef FDICopy
+#undef FDIDestroy
+#undef VerQueryValueW
+#undef GetFileVersionInfoW
+#undef GetFileVersionInfoSizeW
+#undef VerQueryValueA
+#undef GetFileVersionInfoA
+#undef GetFileVersionInfoSizeA
 
 
-#define InternetTimeToSystemTimeA               InternetTimeToSystemTimeA_NoThrow    
-#define CommitUrlCacheEntryW                        CommitUrlCacheEntryW_NoThrow                                  
-#define CreateUrlCacheEntryW                        CreateUrlCacheEntryW_NoThrow               
-#define CoInternetGetSession                          CoInternetGetSession_NoThrow                
-#define CopyBindInfo                                        CopyBindInfo_NoThrow                              
-#define CoInternetCreateSecurityManager      CoInternetCreateSecurityManager_NoThrow  
-#define URLDownloadToCacheFileW                 URLDownloadToCacheFileW_NoThrow                                         
-#define VerQueryValueW                                  VerQueryValueW_NoThrow                  
-#define GetFileVersionInfoW                            GetFileVersionInfoW_NoThrow                 
-#define GetFileVersionInfoSizeW                     GetFileVersionInfoSizeW_NoThrow                 
+#define InternetTimeToSystemTimeA               InternetTimeToSystemTimeA_NoThrow
+#define CommitUrlCacheEntryW                        CommitUrlCacheEntryW_NoThrow
+#define CreateUrlCacheEntryW                        CreateUrlCacheEntryW_NoThrow
+#define CoInternetGetSession                          CoInternetGetSession_NoThrow
+#define CopyBindInfo                                        CopyBindInfo_NoThrow
+#define CoInternetCreateSecurityManager      CoInternetCreateSecurityManager_NoThrow
+#define URLDownloadToCacheFileW                 URLDownloadToCacheFileW_NoThrow
+#define VerQueryValueW                                  VerQueryValueW_NoThrow
+#define GetFileVersionInfoW                            GetFileVersionInfoW_NoThrow
+#define GetFileVersionInfoSizeW                     GetFileVersionInfoSizeW_NoThrow
 #define VerQueryValueA                                  Use_VerQueryValueW
 #define GetFileVersionInfoA                             Use_GetFileVersionInfoW
 #define GetFileVersionInfoSizeA                     Use_GetFileVersionInfoSizeW

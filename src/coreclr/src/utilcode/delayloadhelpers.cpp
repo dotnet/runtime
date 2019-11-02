@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 
-// 
+//
 // Contains convenience functionality for lazily loading modules
 // and getting entrypoints within them.
-// 
+//
 
 #include "stdafx.h"
 
@@ -95,7 +95,7 @@ namespace DelayLoad
 
             LPVOID pvFunc = reinterpret_cast<LPVOID>(::GetProcAddress(hMod, m_szFunctionName));
             hr = (pvFunc == nullptr) ? HRESULT_FROM_GetLastError() : S_OK;
-            
+
             {   // Lock scope
                 CRITSEC_Holder lock(g_pLock);
                 if (!m_fInitialized)

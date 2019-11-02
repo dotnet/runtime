@@ -43,22 +43,22 @@
 #endif
 
 RegMeta::RegMeta() :
-    m_pStgdb(0), 
-    m_pStgdbFreeList(NULL), 
-    m_pUnk(0), 
-    m_pFilterManager(NULL), 
+    m_pStgdb(0),
+    m_pStgdbFreeList(NULL),
+    m_pUnk(0),
+    m_pFilterManager(NULL),
 #ifdef FEATURE_METADATA_INTERNAL_APIS
-    m_pInternalImport(NULL), 
+    m_pInternalImport(NULL),
 #endif
-    m_pSemReadWrite(NULL), 
-    m_fOwnSem(false), 
-    m_bRemap(false), 
-    m_bSaveOptimized(false), 
-    m_hasOptimizedRefToDef(false), 
-    m_pHandler(0), 
-    m_fIsTypeDefDirty(false), 
-    m_fIsMemberDefDirty(false), 
-    m_fStartedEE(false), 
+    m_pSemReadWrite(NULL),
+    m_fOwnSem(false),
+    m_bRemap(false),
+    m_bSaveOptimized(false),
+    m_hasOptimizedRefToDef(false),
+    m_pHandler(0),
+    m_fIsTypeDefDirty(false),
+    m_fIsMemberDefDirty(false),
+    m_fStartedEE(false),
     m_pAppDomain(NULL),
     m_OpenFlags(0),
     m_cRef(0),
@@ -90,13 +90,13 @@ RegMeta::RegMeta() :
 RegMeta::~RegMeta()
 {
     BEGIN_CLEANUP_ENTRYPOINT;
-    
+
     _ASSERTE(!m_bCached);
 
     HRESULT hr = S_OK;
 
     LOCKWRITENORET();
-    
+
 #ifdef FEATURE_METADATA_INTERNAL_APIS
     // This should have worked if we've cached the public interface in the past
     _ASSERTE(SUCCEEDED(hr) || (m_pInternalImport == NULL) || (m_pInternalImport->GetCachedPublicInterface(false) == NULL));
@@ -138,16 +138,16 @@ RegMeta::~RegMeta()
     }
     else
     {   // Not a wrapper, so free our StgDB.
-        _ASSERTE(m_pUnk == NULL); 
+        _ASSERTE(m_pUnk == NULL);
         // It's possible m_pStdbg is NULL in OOM scenarios
         if (m_pStgdb != NULL)
             delete m_pStgdb;
         m_pStgdb = 0;
     }
 
-    // Delete the old copies of Stgdb list. This is the list track all of the 
+    // Delete the old copies of Stgdb list. This is the list track all of the
     //  old snapshuts with ReOpenWithMemory call.
-    CLiteWeightStgdbRW  *pCur; 
+    CLiteWeightStgdbRW  *pCur;
     while (m_pStgdbFreeList)
     {
         pCur = m_pStgdbFreeList;
@@ -155,9 +155,9 @@ RegMeta::~RegMeta()
         delete pCur;
     }
 
-    // If This RegMeta spun up the runtime (probably to process security 
+    // If This RegMeta spun up the runtime (probably to process security
     //  attributes), shut it down now.
-    if (m_fStartedEE) 
+    if (m_fStartedEE)
     {
         m_pAppDomain->Release();
     }
@@ -170,7 +170,7 @@ RegMeta::~RegMeta()
         delete[] m_OptionValue.m_RuntimeVersion;
 
     END_CLEANUP_ENTRYPOINT;
-    
+
 } // RegMeta::~RegMeta()
 
 HRESULT RegMeta::SetOption(OptionValue *pOptionValue)
@@ -181,7 +181,7 @@ HRESULT RegMeta::SetOption(OptionValue *pOptionValue)
     if (pOptionValue->m_RuntimeVersion != NULL)
     {
         SIZE_T dwBufferSize = strlen(pOptionValue->m_RuntimeVersion) + 1; // +1 for null
-        pszRuntimeVersion = new (nothrow) char[dwBufferSize]; 
+        pszRuntimeVersion = new (nothrow) char[dwBufferSize];
         if (pszRuntimeVersion == NULL)
         {
             return E_OUTOFMEMORY;
@@ -199,21 +199,21 @@ HRESULT RegMeta::SetOption(OptionValue *pOptionValue)
 //*****************************************************************************
 // Initialize with an existing stgdb.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 RegMeta::InitWithStgdb(
     IUnknown           *pUnk,       // The IUnknown that owns the life time for the existing stgdb
     CLiteWeightStgdbRW *pStgdb)     // existing light weight stgdb
 {
-    // RegMeta created this way will not create a read/write lock semaphore. 
+    // RegMeta created this way will not create a read/write lock semaphore.
     HRESULT hr = S_OK;
-    
+
     _ASSERTE(m_pStgdb == NULL);
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
     m_pStgdb = pStgdb;
-    
+
     m_OpenFlags = ofExternalStgDB;
-    
+
     // remember the owner of the light weight stgdb
     // AddRef it to ensure the lifetime
     //
@@ -229,25 +229,25 @@ ErrExit:
 //*****************************************************************************
 // call stgdb InitNew
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 RegMeta::CreateNewMD()
 {
     HRESULT hr = NOERROR;
-    
+
     m_OpenFlags = ofWrite;
-    
+
     // Allocate our m_pStgdb.
     _ASSERTE(m_pStgdb == NULL);
     IfNullGo(m_pStgdb = new (nothrow) CLiteWeightStgdbRW);
-    
+
     // Initialize the new, empty database.
-    
+
     // First tell the new database what sort of metadata to create
     m_pStgdb->m_MiniMd.m_OptionValue.m_MetadataVersion = m_OptionValue.m_MetadataVersion;
     m_pStgdb->m_MiniMd.m_OptionValue.m_InitialSize = m_OptionValue.m_InitialSize;
     IfFailGo(m_pStgdb->InitNew());
-    
+
     // Set up the Module record.
     ULONG      iRecord;
     ModuleRec *pModule;
@@ -255,24 +255,24 @@ RegMeta::CreateNewMD()
     IfFailGo(m_pStgdb->m_MiniMd.AddModuleRecord(&pModule, &iRecord));
     IfFailGo(CoCreateGuid(&mvid));
     IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Module, ModuleRec::COL_Mvid, pModule, mvid));
-    
+
     // Add the dummy module typedef which we are using to parent global items.
     TypeDefRec *pRecord;
     IfFailGo(m_pStgdb->m_MiniMd.AddTypeDefRecord(&pRecord, &iRecord));
     m_tdModule = TokenFromRid(iRecord, mdtTypeDef);
     IfFailGo(m_pStgdb->m_MiniMd.PutStringW(TBL_TypeDef, TypeDefRec::COL_Name, pRecord, COR_WMODULE_CLASS));
     IfFailGo(m_pStgdb->m_MiniMd.SetOption(&m_OptionValue));
-    
+
     if (IsThreadSafetyOn())
     {
         m_pSemReadWrite = new (nothrow) UTSemReadWrite();
         IfNullGo(m_pSemReadWrite);
         IfFailGo(m_pSemReadWrite->Init());
         m_fOwnSem = true;
-        
+
         INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
     }
-    
+
 ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
@@ -290,9 +290,9 @@ HRESULT RegMeta::OpenExistingMD(
 {
     HRESULT     hr = NOERROR;
     void        *pbData = pData;        // Pointer to original or copied data.
-    
-    
-    
+
+
+
     m_OpenFlags = dwOpenFlags;
 
     if (!IsOfReOpen(dwOpenFlags))
@@ -301,11 +301,11 @@ HRESULT RegMeta::OpenExistingMD(
         _ASSERTE(m_pStgdb == NULL);
         IfNullGo( m_pStgdb = new (nothrow) CLiteWeightStgdbRW );
     }
-    
+
     IfFailGo( m_pStgdb->OpenForRead(
-        szDatabase, 
-        pbData, 
-        cbData, 
+        szDatabase,
+        pbData,
+        cbData,
         m_OpenFlags) );
 
     if (m_pStgdb->m_MiniMd.m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0 &&
@@ -314,8 +314,8 @@ HRESULT RegMeta::OpenExistingMD(
 
     else
         m_OptionValue.m_MetadataVersion = MDVersion2;
-        
-    
+
+
 
     IfFailGo( m_pStgdb->m_MiniMd.SetOption(&m_OptionValue) );
 
@@ -325,7 +325,7 @@ HRESULT RegMeta::OpenExistingMD(
         IfNullGo(m_pSemReadWrite);
         IfFailGo(m_pSemReadWrite->Init());
         m_fOwnSem = true;
-        
+
         INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
     }
 
@@ -399,9 +399,9 @@ ErrExit:
 
 //*****************************************************************************
 // Gets a cached Internal importer, if available.
-// 
+//
 // Arguments:
-//     fWithLock - if true, takes a reader lock. 
+//     fWithLock - if true, takes a reader lock.
 //     If false, assumes caller is handling the synchronization.
 //
 // Returns:
@@ -411,18 +411,18 @@ ErrExit:
 // Notes:
 //     This function also does not trigger the creation of Internal interface.
 //     Set the cached importer via code:RegMeta.SetCachedInternalInterface
-// 
+//
 // Implements internal API code:IMetaDataHelper::GetCachedInternalInterface.
 //*****************************************************************************
-IUnknown* RegMeta::GetCachedInternalInterface(BOOL fWithLock) 
+IUnknown* RegMeta::GetCachedInternalInterface(BOOL fWithLock)
 {
     IUnknown        *pRet = NULL;
     HRESULT hr = S_OK;
-    
+
     if (fWithLock)
     {
         LOCKREAD();
-        
+
         pRet = m_pInternalImport;
     }
     else
@@ -440,13 +440,13 @@ ErrExit:
 // Set the cached Internal interface. This function will return an Error is the
 // current cached internal interface is not empty and trying set a non-empty internal
 // interface. One RegMeta will only associated
-// with one Internal Object. Unless we have bugs somewhere else. It will QI on the 
+// with one Internal Object. Unless we have bugs somewhere else. It will QI on the
 // IUnknown for the IMDInternalImport. If this failed, error will be returned.
 // Note: Caller should take a write lock
 //
-// This does addref the importer (the public and private importers maintain 
+// This does addref the importer (the public and private importers maintain
 // weak references to each other).
-// 
+//
 // Implements internal API code:IMetaDataHelper::SetCachedInternalInterface.
 //*****************************************************************************
 HRESULT RegMeta::SetCachedInternalInterface(IUnknown *pUnk)
@@ -465,13 +465,13 @@ HRESULT RegMeta::SetCachedInternalInterface(IUnknown *pUnk)
         // Should be non-null
         _ASSERTE(pInternal);
         m_pInternalImport = pInternal;
-    
+
         // We don't want to add ref the internal interface, so undo the AddRef() from the QI.
         pInternal->Release();
     }
     else
     {
-        // Internal interface is going away before the public interface. Take ownership on the 
+        // Internal interface is going away before the public interface. Take ownership on the
         // reader writer lock.
         m_fOwnSem = true;
         m_pInternalImport = NULL;
@@ -491,9 +491,9 @@ ULONG RegMeta::AddRef()
 } // ULONG RegMeta::AddRef()
 
 
-HRESULT 
+HRESULT
 RegMeta::QueryInterface(
-    REFIID  riid, 
+    REFIID  riid,
     void ** ppUnk)
 {
     HRESULT hr = S_OK;
@@ -599,13 +599,13 @@ RegMeta::QueryInterface(
                 {
                     // First time! Create the FreeThreadedMarshaler
                     IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
-                }                
+                }
             }
-            
+
             _ASSERTE(m_pFreeThreadedMarshaler != NULL);
-            
+
             IfFailGo(m_pFreeThreadedMarshaler->QueryInterface(riid, ppUnk));
-            
+
             // AddRef has happened in the QueryInterface and thus should just return
             goto ErrExit;
         }
@@ -658,7 +658,7 @@ RegMeta::QueryInterface(
 
     AddRef();
 ErrExit:
-    
+
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -666,65 +666,65 @@ ErrExit:
 
 
 //---------------------------------------------------------------------------------------
-// 
-// Returns the memory region of the mapped file and type of its mapping. The choice of the file mapping type 
+//
+// Returns the memory region of the mapped file and type of its mapping. The choice of the file mapping type
 // for each scope is CLR implementation specific and user cannot explicitly set it.
-// 
-// The memory is valid only as long as the underlying MetaData scope is opened (there's a reference to 
+//
+// The memory is valid only as long as the underlying MetaData scope is opened (there's a reference to
 // a MetaData interface for this scope).
-// 
+//
 // Implements public API code:IMetaDataInfo::GetFileMapping.
-// 
+//
 // Arguments:
 //    ppvData - Fills with pointer to the start of the mapped file.
-//    pcbData - Fills with the size of the mapped memory region (for flat-mapping it is the size of the 
+//    pcbData - Fills with the size of the mapped memory region (for flat-mapping it is the size of the
 //              file).
 //    pdwMappingType - Fills with type of file mapping (code:CorFileMapping).
-//        Current CLR implementation returns always code:fmFlat. The other value(s) are reserved for future 
+//        Current CLR implementation returns always code:fmFlat. The other value(s) are reserved for future
 //        usage. See code:StgIO::MapFileToMem#CreateFileMapping_SEC_IMAGE for more details.
-// 
+//
 // Return Value:
 //    S_OK               - All output data are filled.
 //    COR_E_NOTSUPPORTED - CLR cannot (or doesn't want to) provide the memory region.
 //        This can happen when:
 //          - The MetaData scope was opened with flag code:ofWrite or code:ofCopyMemory.
-//            Note: code:ofCopyMemory could be supported in future CLR versions. For example if we change 
+//            Note: code:ofCopyMemory could be supported in future CLR versions. For example if we change
 //            code:CLiteWeightStgdbRW::OpenForRead to copy whole file (or add a new flag ofCopyWholeFile).
 //          - The MetaData scope was opened without flag code:ofReadOnly.
-//            Note: We could support this API without code:ofReadOnly flag in future CLR versions. We just 
+//            Note: We could support this API without code:ofReadOnly flag in future CLR versions. We just
 //            need some test coverage and user scenario for it.
 //          - Only MetaData part of the file was opened using code:OpenScopeOnMemory.
 //          - The file is not NT PE file (e.g. it is NT OBJ = .obj file produced by managed C++).
 //    E_INVALIDARG       - NULL was passed as an argument value.
-// 
-HRESULT 
+//
+HRESULT
 RegMeta::GetFileMapping(
-    const void ** ppvData, 
-    ULONGLONG *   pcbData, 
+    const void ** ppvData,
+    ULONGLONG *   pcbData,
     DWORD *       pdwMappingType)
 {
     HRESULT hr = S_OK;
-    
+
     if ((ppvData == NULL) || (pcbData == NULL) || (pdwMappingType == NULL))
     {
         return E_INVALIDARG;
     }
-    
-    // Note: Some of the following checks are duplicit (as some combinations are invalid and ensured by CLR 
+
+    // Note: Some of the following checks are duplicit (as some combinations are invalid and ensured by CLR
     // implementation), but it is easier to check them all
-    
-    // OpenScope flags have to be (ofRead | ofReadOnly) and not ofCopyMemory 
+
+    // OpenScope flags have to be (ofRead | ofReadOnly) and not ofCopyMemory
     // (as code:CLiteWeightStgdbRW::OpenForRead will copy only the MetaData part of the file)
-    if (((m_OpenFlags & ofReadWriteMask) != ofRead) || 
-        ((m_OpenFlags & ofReadOnly) == 0) || 
+    if (((m_OpenFlags & ofReadWriteMask) != ofRead) ||
+        ((m_OpenFlags & ofReadOnly) == 0) ||
         ((m_OpenFlags & ofCopyMemory) != 0))
     {
         IfFailGo(COR_E_NOTSUPPORTED);
     }
-    // The file has to be NT PE file (not CLDB = managed C++ .obj file) and we have to have its full mapping 
+    // The file has to be NT PE file (not CLDB = managed C++ .obj file) and we have to have its full mapping
     // (see code:CLiteWeightStgdbRW::OpenForRead)
-    if ((m_pStgdb->m_pImage == NULL) || 
-        (m_pStgdb->m_dwImageSize == 0) || 
+    if ((m_pStgdb->m_pImage == NULL) ||
+        (m_pStgdb->m_dwImageSize == 0) ||
         (m_pStgdb->GetFileType() != FILETYPE_NTPE))
     {
         IfFailGo(COR_E_NOTSUPPORTED);
@@ -733,21 +733,21 @@ RegMeta::GetFileMapping(
     {
         IfFailGo(COR_E_NOTSUPPORTED);
     }
-    // The file has to be flat-mapped, or copied to memory (file mapping code:MTYPE_IMAGE is not currently 
+    // The file has to be flat-mapped, or copied to memory (file mapping code:MTYPE_IMAGE is not currently
     // supported - see code:StgIO::MapFileToMem#CreateFileMapping_SEC_IMAGE)
     // Note: Only small files (<=64K) are copied to memory - see code:StgIO::MapFileToMem#CopySmallFiles
-    if ((m_pStgdb->m_pStgIO->GetMemoryMappedType() != MTYPE_FLAT) && 
+    if ((m_pStgdb->m_pStgIO->GetMemoryMappedType() != MTYPE_FLAT) &&
         (m_pStgdb->m_pStgIO->GetMemoryMappedType() != MTYPE_NOMAPPING))
     {
         IfFailGo(COR_E_NOTSUPPORTED);
     }
     // All necessary conditions are satisfied
-    
+
     *ppvData = m_pStgdb->m_pImage;
     *pcbData = m_pStgdb->m_dwImageSize;
     // We checked that the file was flat-mapped above
     *pdwMappingType = fmFlat;
-    
+
 ErrExit:
     if (FAILED(hr))
     {
@@ -755,13 +755,13 @@ ErrExit:
         *pcbData = 0;
         *pdwMappingType = 0;
     }
-    
+
     return hr;
 } // RegMeta::GetFileMapping
 
 
 //------------------------------------------------------------------------------
-// Metadata dump 
+// Metadata dump
 //
 #ifdef _DEBUG
 
@@ -784,7 +784,7 @@ int DumpMD_WriteLine(__in __in_z const char *str)
 int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
 {
     CQuickBytes m_output;
-    
+
     int     count = -1;
     int     i = 1;
     HRESULT hr;
@@ -892,7 +892,7 @@ void DumpMD_DumpRawCol(RegMeta *pMD, ULONG ixTbl, ULONG ixCol, ULONG rid, bool b
     // Is the field a coded token?
     if (ulType <= iCodedTokenMax)
     {
-        int iCdTkn = ulType - iCodedToken; 
+        int iCdTkn = ulType - iCodedToken;
         const char *pNameCdTkn;
         pMD->GetCodedTokenInfo(iCdTkn, 0,0, &pNameCdTkn);
         DumpMD_VWrite("%s[%08x]", pNameCdTkn, ulVal);
@@ -1025,7 +1025,7 @@ int DumpMD_DumpHex(
             ++nPrefix;
     }
     //nPrefix = strlen(szPrefix);
-    do 
+    do
     {   // Write the line prefix.
         if (szPrefix)
             DumpMD_VWrite("%s:", szPrefix);
@@ -1083,7 +1083,7 @@ void DumpMD_DisplayUserStrings(
     ULONG       totalCount = 1;         // Running count of strings.
     bool        bUnprint = false;       // Is an unprintable character found?
     HRESULT     hr;                     // A result.
-    while (SUCCEEDED(hr = pMD->EnumUserStrings( &stringEnum, 
+    while (SUCCEEDED(hr = pMD->EnumUserStrings( &stringEnum,
                              Strings, NumItems(Strings), &count)) &&
             count > 0)
     {
@@ -1124,7 +1124,7 @@ void DumpMD_DisplayUserStrings(
                 default:
                     if (iswprint(*szUserString))
                         DumpMD_VWrite("%lc", *szUserString);
-                    else 
+                    else
                     {
                         bUnprint = true;
                         DumpMD_Write(".");
@@ -1179,7 +1179,7 @@ void DumpMD_DumpRawHeaps(
     DumpMD_VWriteLine("");
     DumpMD_VWriteLine("Blob Heap:  %d(%#x) bytes", ulSize,ulSize);
     oData = 0;
-    do 
+    do
     {
         pMD->GetBlob(oData, &cbData, (const void**)&pData);
         sprintf_s(rcPrefix, NumItems(rcPrefix), "%5x,%-2x", oData, cbData);
@@ -1193,7 +1193,7 @@ void DumpMD_DumpRawHeaps(
     DumpMD_VWriteLine("String Heap:  %d(%#x) bytes", ulSize,ulSize);
     oData = 0;
     const char *pString;
-    do 
+    do
     {
         pMD->GetString(oData, &pString);
         sprintf_s(rcPrefix, NumItems(rcPrefix), "%08x", oData);
@@ -1204,7 +1204,7 @@ void DumpMD_DumpRawHeaps(
     }
     while (hr == S_OK);
     DumpMD_VWriteLine("");
-    
+
     DumpMD_DisplayUserStrings(pMD);
 
 } // void DumpMD_DumpRawHeaps()
@@ -1244,7 +1244,7 @@ void DumpMD_DumpRaw(RegMeta *pMD, int iDump, bool bStats)
 
         if (iDump >= 2)
             DumpMD_VWriteLine("=================================================");
-        DumpMD_VWriteLine("%2d: %-20s cRecs:%5d(%#x), cbRec:%3d(%#x), cbTable:%6d(%#x)", 
+        DumpMD_VWriteLine("%2d: %-20s cRecs:%5d(%#x), cbRec:%3d(%#x), cbTable:%6d(%#x)",
             ixTbl, pNameTable, cRows, cRows, cbRow, cbRow, cbRow * cRows, cbRow * cRows);
 
         if (iDump < 2)
@@ -1256,7 +1256,7 @@ void DumpMD_DumpRaw(RegMeta *pMD, int iDump, bool bStats)
         {
             pMD->GetColumnInfo(ixTbl, ixCol, &oCol, &cbCol, &ulType, &pNameColumn);
 
-            DumpMD_VWrite("  col %2x:%c %-12s oCol:%2x, cbCol:%x, %-7s", 
+            DumpMD_VWrite("  col %2x:%c %-12s oCol:%2x, cbCol:%x, %-7s",
                 ixCol, ((ixCol==iKey)?'*':' '), pNameColumn, oCol, cbCol, DumpMD_DumpRawNameOfType(pMD, ulType));
 
             if (bStats)
@@ -1268,7 +1268,7 @@ void DumpMD_DumpRaw(RegMeta *pMD, int iDump, bool bStats)
             DumpMD_VWriteLine("");
         }
 
-        if (iDump < 3) 
+        if (iDump < 3)
             continue;
 
         // Dump the rows.
@@ -1317,13 +1317,13 @@ HRESULT RegMeta::ReOpenWithMemory(
 {
     HRESULT hr = NOERROR;
 
-    // Only allow the ofCopyMemory and ofTakeOwnership flags 
+    // Only allow the ofCopyMemory and ofTakeOwnership flags
     if (dwReOpenFlags != 0 && ((dwReOpenFlags & (~(ofCopyMemory|ofTakeOwnership))) > 0))
         return E_INVALIDARG;
 
     LOCKWRITE();
 
-    
+
     // put the current m_pStgdb to the free list
     m_pStgdb->m_pNextStgdb = m_pStgdbFreeList;
     m_pStgdbFreeList = m_pStgdb;
@@ -1333,7 +1333,7 @@ HRESULT RegMeta::ReOpenWithMemory(
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
     // We've created a new Stgdb, but may still have an Internal Importer hanging around accessing the old Stgdb.
-    // The free list ensures we don't have a dangling pointer, but the 
+    // The free list ensures we don't have a dangling pointer, but the
     // If we have a corresponding InternalInterface, need to clear it because it's now using stale data.
     // Others will need to update their Internal interface to get the new data.
     {
@@ -1392,7 +1392,7 @@ STDAPI MDReOpenMetaDataWithMemoryEx(
     IUnknown            *pUnk = (IUnknown *) pImport;
     IMetaDataImport2    *pMDImport = NULL;
     RegMeta             *pRegMeta = NULL;
-   
+
     _ASSERTE(pImport);
 
     IfFailGo( pUnk->QueryInterface(IID_IMetaDataImport2, (void **) &pMDImport) );
@@ -1403,7 +1403,7 @@ STDAPI MDReOpenMetaDataWithMemoryEx(
 ErrExit:
     if (pMDImport)
         pMDImport->Release();
-   
+
     return hr;
 } // MDReOpenMetaDataWithMemoryEx
 
@@ -1416,31 +1416,31 @@ STDAPI MDReOpenMetaDataWithMemory(
 }
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Zeros used by public APIs as return value (or pointer to this memory) for invalid input.
 // It is used by methods:
 //  * code:RegMeta::GetPublicApiCompatibilityZeros, and
 //  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
-//  
-const BYTE 
-RegMeta::s_rgMetaDataPublicApiCompatibilityZeros[64] = 
+//
+const BYTE
+RegMeta::s_rgMetaDataPublicApiCompatibilityZeros[64] =
 {
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
 };
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Returns pointer to zeros of size (cbSize).
 // Used by public APIs to return compatible values with previous releases.
-// 
-const BYTE * 
+//
+const BYTE *
 RegMeta::GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize)
 {
     if (cbSize <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros))
@@ -1471,7 +1471,7 @@ HRESULT RegMeta::GetVersionString(      // S_OK or error.
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     }
     else
-    {   
+    {
         //This emptry string matches the fallback behavior we have in other places that query the version string.
         //From what I can tell the only caller to this method is the code that tests if we need to apply the WinMD adapter
         //and it checks if pVer == "WindowsRuntime". We don't support the debugger custom metadata source scenario with WinMDs (yet?)
@@ -1496,13 +1496,13 @@ HRESULT RegMeta::GetIMDInternalImport(
     MDInternalRW *pInternalRW = NULL;
     bool          isLockedForWrite = false;
     IUnknown     *pIUnkInternal = NULL;
-    IUnknown     *pThis = (IMetaDataImport2*)this;  
+    IUnknown     *pThis = (IMetaDataImport2*)this;
 
     pIUnkInternal = this->GetCachedInternalInterface(TRUE);
     if (pIUnkInternal)
     {
-        // there is already a cached Internal interface. GetCachedInternalInterface does add ref the 
-        // returned interface 
+        // there is already a cached Internal interface. GetCachedInternalInterface does add ref the
+        // returned interface
         IfFailGo(pIUnkInternal->QueryInterface(IID_IMDInternalImport, (void**)ppIMDInternalImport));
         goto ErrExit;
     }
@@ -1519,18 +1519,18 @@ HRESULT RegMeta::GetIMDInternalImport(
     pIUnkInternal = this->GetCachedInternalInterface(FALSE);
     if (pIUnkInternal)
     {
-        // there is already a cached Internal interface. GetCachedInternalInterface does add ref the 
-        // returned interface 
+        // there is already a cached Internal interface. GetCachedInternalInterface does add ref the
+        // returned interface
         IfFailGo(pIUnkInternal->QueryInterface(IID_IMDInternalImport, (void**)ppIMDInternalImport));
         goto ErrExit;
     }
-        
+
     // now create the compressed object
     IfNullGo( pInternalRW = new (nothrow) MDInternalRW );
     IfFailGo( pInternalRW->InitWithStgdb(pThis, this->GetMiniStgdb() ) );
 
     // make the public object and the internal object point to each other.
-    _ASSERTE( pInternalRW->GetReaderWriterLock() == NULL && 
+    _ASSERTE( pInternalRW->GetReaderWriterLock() == NULL &&
               (! this->IsThreadSafetyOn() || this->GetReaderWriterLock() != NULL ));
     IfFailGo( this->SetCachedInternalInterface(static_cast<IMDInternalImportENC*>(pInternalRW)) );
     IfFailGo( pInternalRW->SetCachedPublicInterface(pThis));

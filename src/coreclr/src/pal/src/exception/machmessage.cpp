@@ -36,7 +36,7 @@ MachMessage::MachMessage()
 void MachMessage::Receive(mach_port_t hPort)
 {
     kern_return_t machret;
-    
+
     // Erase any stale data.
     ResetMessage();
 
@@ -72,7 +72,7 @@ void MachMessage::Receive(mach_port_t hPort)
     default:
         NONPAL_RETAIL_ASSERT("Unsupported message type: %u", m_pMessage->header.msgh_id);
     }
-    
+
     m_fPortsOwned = true;
 }
 
@@ -201,7 +201,7 @@ void MachMessage::GetPorts(bool fCalculate, bool fValidThread)
     case FORWARD_EXCEPTION_MESSAGE_ID:
         m_hThread = m_pMessage->data.forward_exception.thread;
         break;
-    
+
     case EXCEPTION_RAISE_MESSAGE_ID:
         m_hThread = m_pMessage->data.raise.thread_port.name;
         m_hTask = m_pMessage->data.raise.task_port.name;
@@ -239,7 +239,7 @@ void MachMessage::GetPorts(bool fCalculate, bool fValidThread)
         m_hThread = m_pMessage->data.raise_state_identity_64.thread_port.name;
         m_hTask = m_pMessage->data.raise_state_identity_64.task_port.name;
         break;
-        
+
     default:
         if (fValidThread)
         {
@@ -249,8 +249,8 @@ void MachMessage::GetPorts(bool fCalculate, bool fValidThread)
     }
 }
 
-// Get the properties of a set thread or forward exception request. Fills in the provided 
-// context structure with the context from the message and returns the target thread to 
+// Get the properties of a set thread or forward exception request. Fills in the provided
+// context structure with the context from the message and returns the target thread to
 // which the context should be applied.
 thread_act_t MachMessage::GetThreadContext(CONTEXT *pContext)
 {
@@ -712,7 +712,7 @@ void MachMessage::ForwardNotification(MachExceptionHandler *pHandler, MachMessag
 }
 
 // Initialize the message to represent a reply to the given exception notification message
-// and send that reply back to the original sender of the notification. This is used when 
+// and send that reply back to the original sender of the notification. This is used when
 // our handler handles the exception rather than forwarding it to a chain-back handler.
 // Clean up the message afterwards.
 void MachMessage::ReplyToNotification(MachMessage& message, kern_return_t eResult)
@@ -770,14 +770,14 @@ void MachMessage::ResetMessage()
     if (m_fPortsOwned)
     {
         kern_return_t machret;
-        
+
         GetPorts(false /* fCalculate */, false /* fValidThread */);
         if (m_hThread != MACH_PORT_NULL)
         {
             machret = mach_port_deallocate(mach_task_self(), m_hThread);
             CHECK_MACH("mach_port_deallocate(m_hThread)", machret);
         }
-        
+
         if (m_hTask != MACH_PORT_NULL)
         {
             machret = mach_port_deallocate(mach_task_self(), m_hTask);
@@ -888,7 +888,7 @@ void MachMessage::InitFixedFields()
     }
 
     m_pMessage->header.msgh_reserved = 0;
-    
+
     if (m_hTask)
     {
         kern_return_t machret;
@@ -1050,7 +1050,7 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
 #endif
             {
                 thread_act_t thread = pThreads[i];
-                
+
                 // Increment the refcount; the thread is a "send" right.
                 machret = mach_port_mod_refs(mach_task_self(), thread, MACH_PORT_RIGHT_SEND, 1);
                 CHECK_MACH("mach_port_mod_refs()", machret);
@@ -1164,7 +1164,7 @@ void MachMessage::SetThread(thread_act_t thread)
     default:
         NONPAL_RETAIL_ASSERT("Unsupported message type: %u", m_pMessage->header.msgh_id);
     }
-    
+
     if (fSet)
     {
         // Addref the thread port.

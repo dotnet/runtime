@@ -6,7 +6,7 @@
 //
 // ===========================================================================
 // File: memorystream.cpp
-// 
+//
 // ===========================================================================
 /*++
 
@@ -15,7 +15,7 @@ Abstract:
     in memory stream
 
 
- 
+
 
 Revision History:
 
@@ -84,11 +84,11 @@ public:
         free(m_pData);
     }
 
-    HRESULT STDMETHODCALLTYPE QueryInterface( 
+    HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID riid,
         void **ppvObject)
     {
-        if (riid == IID_IStream || 
+        if (riid == IID_IStream ||
             riid == IID_ISequentialStream ||
             riid == IID_IUnknown)
         {
@@ -102,12 +102,12 @@ public:
             return E_NOINTERFACE;
         }
     }
-        
+
     ULONG STDMETHODCALLTYPE AddRef()
     {
         return InterlockedIncrement(&m_cRef);
     }
-        
+
     ULONG STDMETHODCALLTYPE Release()
     {
         LONG cRef = InterlockedDecrement(&m_cRef);
@@ -186,7 +186,7 @@ public:
         LARGE_INTEGER dlibMove,
         DWORD dwOrigin,
         ULARGE_INTEGER *plibNewPosition)
-    {       
+    {
         ULONG           lStartPos;
         LONGLONG        lNewPos;
 

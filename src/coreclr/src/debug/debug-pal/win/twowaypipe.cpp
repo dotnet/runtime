@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <windows.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <wchar.h>
 #include <assert.h>
 #include "twowaypipe.h"
@@ -14,8 +14,8 @@
 // It is implemented on top of two one-directional names pipes (fifos on UNIX)
 
 
-// Creates a server side of the pipe. 
-// Id is used to create pipes names and uniquely identify the pipe on the machine. 
+// Creates a server side of the pipe.
+// Id is used to create pipes names and uniquely identify the pipe on the machine.
 // true - success, false - failure (use GetLastError() for more details)
 bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 {
@@ -43,7 +43,7 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 
 
 // Connects to a previously opened server side of the pipe.
-// Id is used to locate the pipe on the machine. 
+// Id is used to locate the pipe on the machine.
 // true - success, false - failure (use GetLastError() for more details)
 bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 {
@@ -156,8 +156,8 @@ bool TwoWayPipe::Disconnect()
         m_inboundPipe = INVALID_HANDLE_VALUE;
         m_state = NotInitialized;
         return true;
-    } 
-    else 
+    }
+    else
     {
         // nothign to do
         return true;
@@ -178,11 +178,11 @@ HANDLE TwoWayPipe::OpenOneWayPipe(DWORD id, bool inbound)
     HANDLE handle = CreateFileW(
         fullName,
         inbound ? GENERIC_READ : GENERIC_WRITE,
-        0,              // no sharing 
+        0,              // no sharing
         NULL,           // default security attributes
-        OPEN_EXISTING,  // opens existing pipe 
-        0,              // default attributes 
-        NULL);          // no template file 
+        OPEN_EXISTING,  // opens existing pipe
+        0,              // default attributes
+        NULL);          // no template file
 
     return handle;
 }

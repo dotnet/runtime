@@ -17,7 +17,7 @@ typedef ArrayDPTR(COR_IL_MAP) ARRAY_PTR_COR_IL_MAP;
 //---------------------------------------------------------------------------------------
 //
 // A profiler may instrument a method by changing the IL.  This is typically done when the profiler receives
-// a JITCompilationStarted notification.  The profiler also has the option to provide the runtime with 
+// a JITCompilationStarted notification.  The profiler also has the option to provide the runtime with
 // a mapping between original IL offsets and instrumented IL offsets.  This struct is a simple container
 // for storing the mapping information.  We store the mapping information on the Module class, where it can
 // be accessed by the debugger from out-of-process.
@@ -76,7 +76,7 @@ struct ILOffsetMappingEntry
 //---------------------------------------------------------------------------------------
 //
 // This class is used to create the hash table for the instrumented IL offset mapping.
-// It encapsulates the desired behaviour of the templated hash table and implements 
+// It encapsulates the desired behaviour of the templated hash table and implements
 // the various functions needed by the hash table.
 //
 

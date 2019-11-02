@@ -323,7 +323,7 @@
 #undef __inner_adt_transfer_prop
 #undef __inner_adt_type_props
 #undef __inner_analysis_assume_nulltermianted_dec
-#undef __inner_analysis_assume_nullterminated               
+#undef __inner_analysis_assume_nullterminated
 #undef __inner_assume_bound
 #undef __inner_assume_bound_dec
 #undef __inner_assume_validated

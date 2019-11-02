@@ -53,10 +53,10 @@ DoRestore:
         // location on the stack and it would have been updated on the
         // stack by the GC already and it will be popped back into the
         // appropriate register when the appropriate epilog is run.
-        // 
+        //
         // Otherwise, the register is preserved across all the code
         // in this HCALL or FCALL, so we need to update those registers
-        // here because the GC will have updated our copies in the 
+        // here because the GC will have updated our copies in the
         // frame.
         //
         // So, if m_pReg points into the MachState, we need to update
@@ -99,11 +99,11 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
-        
+
         //
         // Allocate space for XMM parameter registers
         //
-        alloc_stack     0x80 
+        alloc_stack     0x80
 
         SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -114,7 +114,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         mov             rdi, METHODDESC_REGISTER
         call            C_FUNC(NDirectImportWorker)
-        
+
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
         //
@@ -127,7 +127,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         pop_register r11
         POP_ARGUMENT_REGISTERS
-        
+
     TAILJMP_RAX
 NESTED_END NDirectImportThunk, _TEXT
 
@@ -213,19 +213,19 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT                                        
-                                                                                      
-        test    rdi, rdi                                                              
-        jz      NullObject                                                            
-                                                                                      
-                                                                                      
-        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]                     
+LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
+
+        test    rdi, rdi
+        jz      NullObject
+
+
+        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]
         mov     rdi, [rdi + OFFSETOF__DelegateObject___target]  // replace "this" pointer
-                                                                                      
-        jmp     rax                                                                   
-                                                                                      
-NullObject:                                                                           
-        mov     rdi, CORINFO_NullReferenceException_ASM                               
+
+        jmp     rax
+
+NullObject:
+        mov     rdi, CORINFO_NullReferenceException_ASM
         jmp     C_FUNC(JIT_InternalThrow)
-                                                                                      
+
 LEAF_END SinglecastDelegateInvokeStub, _TEXT

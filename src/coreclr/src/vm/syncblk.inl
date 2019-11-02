@@ -666,7 +666,7 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
     return AwareLock::EnterHelperResult_UseSlowPath;
 }
 
-// Helper encapsulating the core logic for releasing monitor. Returns what kind of 
+// Helper encapsulating the core logic for releasing monitor. Returns what kind of
 // follow up action is necessary. This is FORCEINLINE to make it provide a very efficient implementation.
 FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThread)
 {
@@ -706,7 +706,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     return AwareLock::LeaveHelperAction_None;
 }
 
-// Helper encapsulating the core logic for releasing monitor. Returns what kind of 
+// Helper encapsulating the core logic for releasing monitor. Returns what kind of
 // follow up action is necessary. This is FORCEINLINE to make it provide a very efficient implementation.
 FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread* pCurThread)
 {
@@ -723,7 +723,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
         if ((syncBlockValue & SBLK_MASK_LOCK_THREADID) != pCurThread->GetThreadId())
         {
             // This thread does not own the lock.
-            return AwareLock::LeaveHelperAction_Error;                
+            return AwareLock::LeaveHelperAction_Error;
         }
 
         if (!(syncBlockValue & SBLK_MASK_LOCK_RECLEVEL))
@@ -759,7 +759,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
 
     if (syncBlockValue & BIT_SBLK_SPIN_LOCK)
     {
-        return AwareLock::LeaveHelperAction_Contention;        
+        return AwareLock::LeaveHelperAction_Contention;
     }
 
     // This thread does not own the lock.

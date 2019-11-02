@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 // This tool exists to transform a high level description of Crst dependencies (i.e. which Crst type may be
 // acquired before or after other Crst types) into a header file that defines a enum to describe each Crst
 // type and tables that map type to numerical ranking and a string based name.
 //
 // To use the tool, run "csc.exe CrstTypeTool.cs" and run the resulting executable.
-// 
+//
 // The Crst type definition file is written in a very simple language. Comments begin with '//' and continue
 // to the end of the line. All remaining tokens after comment removal are simply sequences of non-whitespace
 // characters separated by whitespace. Keywords are case-insensitive and identifiers (which are always Crst
@@ -173,10 +173,10 @@ class CrstTypeTool
         writer.WriteLine("int g_rgCrstLevelMap[] =");
         writer.WriteLine("{");
         foreach (CrstType crst in crsts)
-        { 
-            string crstLine = "    " + crst.Level + ","; 
-            crstLine = crstLine + new string(' ', 16 - crstLine.Length); 
-            writer.WriteLine(crstLine + "// Crst" + crst.Name); 
+        {
+            string crstLine = "    " + crst.Level + ",";
+            crstLine = crstLine + new string(' ', 16 - crstLine.Length);
+            writer.WriteLine(crstLine + "// Crst" + crst.Name);
         }
         writer.WriteLine("};");
         writer.WriteLine();
@@ -803,7 +803,7 @@ class TypeFileParser
                 for (int i = 0; i < expected.Length - 1; i++)
                     message.Append(String.Format("{0}, ", IdToName(expected[i])));
                 message.Append(IdToName(expected[expected.Length - 1]));
-                    
+
             }
 
             return message.ToString();

@@ -106,7 +106,7 @@ The slot maps are bit-encoded and take advantage of typical interface implementa
 Type ID Map
 -----------
 
-This will map types to IDs, which are allocated as monotonically increasing values as each previously unmapped type is encountered. Currently, all such types are interfaces. 
+This will map types to IDs, which are allocated as monotonically increasing values as each previously unmapped type is encountered. Currently, all such types are interfaces.
 
 Currently, this is implemented using a HashMap, and contains entries for both lookup directions.
 

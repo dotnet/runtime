@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: WindowsPipeline.cpp
-// 
+//
 
 //
 // Implements the native-pipeline on Windows OS.
@@ -43,7 +43,7 @@ BOOL IsExceptionEvent(const DEBUG_EVENT * pEvent, BOOL * pfFirstChance, const EX
 
 //---------------------------------------------------------------------------------------
 // Class serves as a connector to win32 native-debugging API.
-class WindowsNativePipeline : 
+class WindowsNativePipeline :
     public INativeEventPipeline
 {
 public:
@@ -143,7 +143,7 @@ void WindowsNativePipeline::UpdateDebugSetProcessKillOnExit()
         return;
 
     typedef BOOL (*DebugSetProcessKillOnExitSig) (BOOL);
-    DebugSetProcessKillOnExitSig pDebugSetProcessKillOnExit = 
+    DebugSetProcessKillOnExitSig pDebugSetProcessKillOnExit =
         reinterpret_cast<DebugSetProcessKillOnExitSig>(GetProcAddress(hKernel32, "DebugSetProcessKillOnExit"));
 
     // If the API doesn't exist (eg. Win2k) - there isn't anything we can do, just
@@ -153,11 +153,11 @@ void WindowsNativePipeline::UpdateDebugSetProcessKillOnExit()
 
     BOOL ret = pDebugSetProcessKillOnExit(m_fKillOnExit);
 
-    // Not a good failure path here. 
+    // Not a good failure path here.
     // 1) This shouldn't fail.
     // 2) Even if it does, this is likely called after the debuggee
     // has already been created, and if this API fails, most scenarios will
-    // be unaffected, so we don't want to fail the overall debugging session. 
+    // be unaffected, so we don't want to fail the overall debugging session.
     SIMPLIFYING_ASSUMPTION(ret);
 
 #else
@@ -201,7 +201,7 @@ HRESULT WindowsNativePipeline::CreateProcessUnderDebugger(
 
     m_dwProcessId = lpProcessInformation->dwProcessId;
     UpdateDebugSetProcessKillOnExit();
-    return S_OK;    
+    return S_OK;
 }
 
 // Attach the debugger to this process.
@@ -220,7 +220,7 @@ HRESULT WindowsNativePipeline::DebugActiveProcess(MachineInfo machineInfo, const
     {
         hr = HRESULT_FROM_GetLastError();
 
-        // There are at least two scenarios in which DebugActiveProcess() returns E_INVALIDARG: 
+        // There are at least two scenarios in which DebugActiveProcess() returns E_INVALIDARG:
         //     1) if the specified process doesn't exist, or
         //     2) if the specified process already has a debugger atttached
         // We need to distinguish these two cases in order to return the correct HR.
@@ -263,7 +263,7 @@ HRESULT WindowsNativePipeline::IsRemoteDebuggerPresent(DWORD processId, BOOL* pf
         return HRESULT_FROM_GetLastError();
 
     typedef BOOL (*CheckRemoteDebuggerPresentSig) (HANDLE, PBOOL);
-    CheckRemoteDebuggerPresentSig pCheckRemoteDebuggerPresent = 
+    CheckRemoteDebuggerPresentSig pCheckRemoteDebuggerPresent =
         reinterpret_cast<CheckRemoteDebuggerPresentSig>(GetProcAddress(hKernel32, "CheckRemoteDebuggerPresent"));
     if (pCheckRemoteDebuggerPresent == NULL)
         return HRESULT_FROM_GetLastError();
@@ -291,7 +291,7 @@ HRESULT WindowsNativePipeline::DebugActiveProcessStop(DWORD processId)
         return HRESULT_FROM_GetLastError();
 
     typedef BOOL (*DebugActiveProcessStopSig) (DWORD);
-    DebugActiveProcessStopSig pDebugActiveProcessStop = 
+    DebugActiveProcessStopSig pDebugActiveProcessStop =
         reinterpret_cast<DebugActiveProcessStopSig>(GetProcAddress(hKernel32, "DebugActiveProcessStop"));
 
     // Win2K will fail here - can't find DebugActiveProcessStop
@@ -371,23 +371,23 @@ HRESULT WindowsNativePipeline::EnsureThreadsRunning()
     _ASSERTE(m_dwProcessId != 0);
 
     // Take a snapshot of all running threads (similar to ShimProcess::QueueFakeThreadAttachEventsNativeOrder)
-    // Alternately we could return thread creation/exit in WaitForDebugEvent.  But we expect this to be used 
+    // Alternately we could return thread creation/exit in WaitForDebugEvent.  But we expect this to be used
     // very rarely, so no need to complicate more common codepaths.
-    HANDLE hThreadSnap = INVALID_HANDLE_VALUE; 
-    THREADENTRY32 te32; 
+    HANDLE hThreadSnap = INVALID_HANDLE_VALUE;
+    THREADENTRY32 te32;
 
-    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0); 
-    if (hThreadSnap == INVALID_HANDLE_VALUE) 
+    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (hThreadSnap == INVALID_HANDLE_VALUE)
         return HRESULT_FROM_GetLastError();
 
     // HandleHolder doesn't deal with INVALID_HANDLE_VALUE, so we only assign if we have a legal value.
     HandleHolder hSnapshotHolder(hThreadSnap);
 
-    // Fill in the size of the structure before using it. 
-    te32.dwSize = sizeof(THREADENTRY32); 
+    // Fill in the size of the structure before using it.
+    te32.dwSize = sizeof(THREADENTRY32);
 
     // Retrieve information about the first thread, and exit if unsuccessful
-    if (!Thread32First(hThreadSnap, &te32)) 
+    if (!Thread32First(hThreadSnap, &te32))
         return HRESULT_FROM_GetLastError();
 
     // Now walk the thread list of the system and attempt to resume any that are part of this process
@@ -395,15 +395,15 @@ HRESULT WindowsNativePipeline::EnsureThreadsRunning()
     // in practice - we expect the process to be frozen at a debug event, so no races etc.)
 
     HRESULT hr = S_FALSE;   // no thread was resumed
-    do 
-    { 
+    do
+    {
         if (te32.th32OwnerProcessID == m_dwProcessId)
         {
             HandleHolder hThread = ::OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
             _ASSERTE(hThread != NULL);
             if (hThread != NULL)
             {
-                // Resume each thread exactly once (if they were suspended multiple times, 
+                // Resume each thread exactly once (if they were suspended multiple times,
                 // then EnsureThreadsRunning would need to be called multiple times until it
                 // returned S_FALSE.
                 DWORD prevCount = ::ResumeThread(hThread);
@@ -412,7 +412,7 @@ HRESULT WindowsNativePipeline::EnsureThreadsRunning()
                     hr = S_OK;      // some thread was resumed
             }
         }
-    } while(Thread32Next(hThreadSnap, &te32)); 
+    } while(Thread32Next(hThreadSnap, &te32));
 
     return hr;
 #endif

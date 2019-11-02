@@ -7,7 +7,7 @@
 
 //
 // ZapNode that wraps EE datastructure for zapping
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPWRAPPER_H__
@@ -71,16 +71,16 @@ class ZapWrapperTable
         typedef PVOID key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return e->GetHandle();
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return k1 == k2;
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k;

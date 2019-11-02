@@ -75,7 +75,7 @@ void BitVector::doBigInit(const BitVector& arg)
         memcpy(m_vals.m_chunks, arg.m_vals.m_chunks, (sizeof(ChunkType) * arg.m_vals.GetLength()));
         m_vals.SetLength(arg.m_vals.GetLength());
     }
-    else 
+    else
     {
         m_val = arg.m_val;
     }
@@ -99,9 +99,9 @@ void BitVector::doBigLeftShiftAssign(unsigned shift)
     // Change to Big representation
     //
     toBig();
-    
+
     int       from    = m_vals.GetLength()-1;
-    int       to      = from + numWords; 
+    int       to      = from + numWords;
     unsigned  newlen  = to + 1;
 
     ChunkType topBits = 0;
@@ -109,8 +109,8 @@ void BitVector::doBigLeftShiftAssign(unsigned shift)
     {
         topBits = m_vals.m_chunks[from] >> (CHUNK_BITS - numBits);
     }
-    
-    if (topBits != 0 || numWords != 0) 
+
+    if (topBits != 0 || numWords != 0)
     {
         if (topBits != 0)
         {
@@ -157,7 +157,7 @@ void BitVector::doBigRightShiftAssign(unsigned shift)
     // Change to Big representation
     //
     toBig();
-    
+
     unsigned  from   = numWords;
     unsigned  to     = 0;
     unsigned  len    = m_vals.GetLength();
@@ -300,7 +300,7 @@ void BitVector::doBigDiffAssign(const BitVector& arg)
     unsigned argLen = arg.m_vals.GetLength();
     bool     isZero = true;                    // until proven otherwise
 
-    for (unsigned i = 0; (i < myLen); i++) 
+    for (unsigned i = 0; (i < myLen); i++)
     {
         ChunkType nextChunk = m_vals.m_chunks[i];
         if (i < argLen)
@@ -317,12 +317,12 @@ void BitVector::doBigDiffAssign(const BitVector& arg)
         if (nextChunk != 0)
             isZero = false;
     }
-    
+
     if (isZero)
     {
         // we always encode zero in short form
         m_val = 0;
-    }   
+    }
 }
 
 BOOL BitVector::doBigEquals(const BitVector& arg) const
@@ -339,7 +339,7 @@ BOOL BitVector::doBigEquals(const BitVector& arg) const
     unsigned argLen = arg.m_vals.GetLength();
     unsigned maxLen = (myLen >= argLen) ? myLen : argLen;
 
-    for (unsigned i=0; (i < maxLen); i++) 
+    for (unsigned i=0; (i < maxLen); i++)
     {
         ChunkType myVal  = 0;
         ChunkType argVal = 0;
@@ -378,7 +378,7 @@ BOOL BitVector::doBigIntersect(const BitVector& arg) const
     unsigned argLen = arg.m_vals.GetLength();
     unsigned minLen = (myLen <= argLen) ? myLen : argLen;
 
-    for (unsigned i=0; (i <= minLen); i++) 
+    for (unsigned i=0; (i <= minLen); i++)
     {
         ChunkType myVal  = 0;
         ChunkType argVal = 0;

@@ -17,20 +17,20 @@ class ExInfo
 {
     friend class ThreadExceptionState;
     friend class ClrDataExceptionState;
-   
+
 public:
-    
-    BOOL    IsHeapAllocated() 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        return m_StackAddress != (void *) this; 
+
+    BOOL    IsHeapAllocated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_StackAddress != (void *) this;
     }
 
     void CopyAndClearSource(ExInfo *from);
 
     void UnwindExInfo(VOID* limit);
 
-    // Q: Why does this thing take an EXCEPTION_RECORD rather than an ExceptionCode? 
+    // Q: Why does this thing take an EXCEPTION_RECORD rather than an ExceptionCode?
     // A: Because m_ExceptionCode and Ex_WasThrownByUs have to be kept
     //    in sync and this function needs the exception parms inside the record to figure
     //    out the "IsTagged" part.
@@ -54,7 +54,7 @@ public:
     PTR_EXCEPTION_REGISTRATION_RECORD m_pBottomMostHandler; // most recent EH record registered
 
     // Reference to the topmost handler we saw during an SO that goes past us
-    PTR_EXCEPTION_REGISTRATION_RECORD m_pTopMostHandlerDuringSO; 
+    PTR_EXCEPTION_REGISTRATION_RECORD m_pTopMostHandlerDuringSO;
 
     LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
 
@@ -75,7 +75,7 @@ public:
     // for some records, it will be a pseudo stack location -- the place where we think
     // the record should have been (except for the re-entry case).
     //
-    // 
+    //
     //
     void* m_StackAddress; // A pseudo or real stack location for this record.
 
@@ -108,7 +108,7 @@ public:
         m_CorruptionSeverity = severityToSet;
     }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-    
+
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;
 public:
@@ -122,7 +122,7 @@ public:
     inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         m_fDeliveredFirstChanceNotification = fDelivered;
     }
 
@@ -133,12 +133,12 @@ public:
 
         return m_pPrevNestedInfo;
     }
-    
+
     // Returns the throwable associated with the tracker
     inline OBJECTREF GetThrowable()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return (m_hThrowable != NULL)?ObjectFromHandle(m_hThrowable):NULL;
     }
 
@@ -146,7 +146,7 @@ public:
     inline OBJECTHANDLE GetThrowableAsHandle()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_hThrowable;
     }
 
@@ -159,7 +159,7 @@ public:
 #if defined(_TARGET_X86_) && defined(DEBUGGING_SUPPORTED)
     EHContext           m_InterceptionContext;
     BOOL                m_ValidInterceptionContext;
-#endif 
+#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -170,7 +170,7 @@ public:
 
     void DestroyExceptionHandle();
 
-private:    
+private:
     // Don't allow this
     ExInfo& operator=(const ExInfo &from);
 };

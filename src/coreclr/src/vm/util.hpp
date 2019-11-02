@@ -20,7 +20,7 @@
 #include "posterror.h"
 #include "clr_std/type_traits"
 
-                  
+
 // Prevent the use of UtilMessageBox and WszMessageBox from inside the EE.
 #undef UtilMessageBoxCatastrophic
 #undef UtilMessageBoxCatastrophicNonLocalized
@@ -79,9 +79,9 @@ typedef double              R8;
 #define FastInterlockExchangeAddLong        InterlockedExchangeAdd64
 
 //
-// Forward FastInterlock[Compare]ExchangePointer to the 
+// Forward FastInterlock[Compare]ExchangePointer to the
 // Utilcode Interlocked[Compare]ExchangeT.
-// 
+//
 #define FastInterlockExchangePointer        InterlockedExchangeT
 #define FastInterlockCompareExchangePointer InterlockedCompareExchangeT
 
@@ -431,7 +431,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 // This has a potential race with the GC thread.  It is currently
 // used for a few cases where (a) we potentially haven't started up the EE yet, or
-// (b) we are on a "special thread". 
+// (b) we are on a "special thread".
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_COOP_NO_THREAD_BROKEN()                 GCCoopHackNoThread __gcHolder("GCX_COOP_NO_THREAD_BROKEN",  __FUNCTION__, __FILE__, __LINE__)
 #else
@@ -534,7 +534,7 @@ struct LockOwner
     FnLockOwner lockOwnerFunc;
 };
 
-// this is the standard lockowner for things that require a lock owner but which really don't 
+// this is the standard lockowner for things that require a lock owner but which really don't
 // need any validation due to their simple/safe semantics
 // the classic example of this is a hash table that is initialized and then never grows
 extern LockOwner g_lockTrustMeIAmThreadSafe;
@@ -570,7 +570,7 @@ public:
         return (m_FiberPtrId == ClrTeb::GetFiberPtrId());
     }
 
-    
+
 #ifdef _DEBUG
     bool IsUnknown() const
     {
@@ -717,7 +717,7 @@ inline int GetCantStopCount()
 // At places where we know we're calling out to native code, we can assert that we're NOT in a CS region.
 // This is _debug only since we only use it for asserts; not for real code-flow control in a retail build.
 inline bool IsInCantStopRegion()
-{    
+{
     return (GetCantStopCount() > 0);
 }
 #endif // _DEBUG
@@ -730,16 +730,16 @@ struct JITNotification
     USHORT state; // values from CLRDataMethodCodeNotification
     TADDR clrModule;
     mdToken methodToken;
-    
-    JITNotification() { SetFree(); } 
+
+    JITNotification() { SetFree(); }
     BOOL IsFree() { return state == CLRDATA_METHNOTIFY_NONE; }
     void SetFree() { state = CLRDATA_METHNOTIFY_NONE; clrModule = NULL; methodToken = 0; }
-    void SetState(TADDR moduleIn, mdToken tokenIn, USHORT NType) 
-    { 
-        _ASSERTE(IsValidMethodCodeNotification(NType)); 
-        clrModule = moduleIn; 
-        methodToken = tokenIn; 
-        state = NType; 
+    void SetState(TADDR moduleIn, mdToken tokenIn, USHORT NType)
+    {
+        _ASSERTE(IsValidMethodCodeNotification(NType));
+        clrModule = moduleIn;
+        methodToken = tokenIn;
+        state = NType;
     }
 };
 
@@ -764,15 +764,15 @@ InitializeJITNotificationTable()
 class JITNotifications
 {
 public:
-    JITNotifications(JITNotification *jitTable);    
+    JITNotifications(JITNotification *jitTable);
     BOOL SetNotification(TADDR clrModule, mdToken token, USHORT NType);
-    USHORT Requested(TADDR clrModule, mdToken token); 
+    USHORT Requested(TADDR clrModule, mdToken token);
 
     // if clrModule is NULL, all active notifications are changed to NType
     BOOL SetAllNotifications(TADDR clrModule,USHORT NType,BOOL *changedOut);
-    inline BOOL IsActive() { LIMITED_METHOD_CONTRACT; return m_jitTable!=NULL; }    
+    inline BOOL IsActive() { LIMITED_METHOD_CONTRACT; return m_jitTable!=NULL; }
 
-    UINT GetTableSize();    
+    UINT GetTableSize();
 #ifdef DACCESS_COMPILE
     static JITNotification *InitializeNotificationTable(UINT TableSize);
     // Updates target table from host copy
@@ -785,7 +785,7 @@ private:
     void DecrementLength();
 
     BOOL FindItem(TADDR clrModule, mdToken token, UINT *indexOut);
-    
+
     JITNotification *m_jitTable;
 };
 
@@ -801,12 +801,12 @@ struct GcNotification
 {
     GcEvtArgs ev;
 
-    GcNotification() { SetFree(); } 
+    GcNotification() { SetFree(); }
     BOOL IsFree() { return ev.typ == CLRDATA_GC_NONE; }
     void SetFree() { memset(this, 0, sizeof(*this)); ev.typ = (GcEvt_t) CLRDATA_GC_NONE; }
     void Set(GcEvtArgs ev_)
     {
-        _ASSERTE(IsValidGcNotification(ev_.typ)); 
+        _ASSERTE(IsValidGcNotification(ev_.typ));
         ev = ev_;
     }
     BOOL IsMatch(GcEvtArgs ev_)
@@ -838,7 +838,7 @@ GPTR_DECL(GcNotification, g_pGcNotificationTable);
 class GcNotifications
 {
 public:
-    GcNotifications(GcNotification *gcTable);    
+    GcNotifications(GcNotification *gcTable);
     BOOL SetNotification(GcEvtArgs ev);
     GcEvtArgs* GetNotification(GcEvtArgs ev)
     {
@@ -855,8 +855,8 @@ public:
     }
 
     // if clrModule is NULL, all active notifications are changed to NType
-    inline BOOL IsActive() 
-    { return m_gcTable != NULL; }    
+    inline BOOL IsActive()
+    { return m_gcTable != NULL; }
 
     UINT GetTableSize()
     { return Size(); }
@@ -909,7 +909,7 @@ public:
         CATCH_ENTER_NOTIFICATION = 7,
         JIT_NOTIFICATION2=8,
     };
-    
+
     // called from the runtime
     static void DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLocation);
     static void DoJITPitchingNotification(MethodDesc *MethodDescPtr);

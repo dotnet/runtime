@@ -7,7 +7,7 @@
 //
 #pragma once
 /*************************************************************************
-* DEFINITIONS OF NEW TYPES 
+* DEFINITIONS OF NEW TYPES
 *************************************************************************/
 #if !defined(__midl)
 #define __$compname_props \
@@ -51,7 +51,7 @@ void __inline __nothrow __SAL_ValidCompNameW(__out_has_type_adt_props(ValidCompN
 #define __assume_ValidCompNameA(expr) __SAL_ValidCompNameA(expr)
 #define __assume_ValidCompNameW(expr) __SAL_ValidCompNameW(expr)
 #else
-#define __assume_ValidCompNameA(expr) 
+#define __assume_ValidCompNameA(expr)
 #define __assume_ValidCompNameW(expr)
 #endif
 

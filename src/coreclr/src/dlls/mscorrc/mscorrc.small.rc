@@ -30,13 +30,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #include "mscorrc.common.rc"
 
 // These strings are generated from within the EE.
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_EE_LINK_FOR_DEBUGGING_MESSAGES       "Debugging resource strings are unavailable. See http://go.microsoft.com/fwlink/?linkid=106663&Version=%1!s!&File=mscorrc.dll&Key=0x%2!X! "
     IDS_EE_LINK_FOR_ERROR_MESSAGES           "Error 0x%3!X!.  Debugging resource strings are unavailable. See http://go.microsoft.com/fwlink/?linkid=106663&Version=%1!s!&File=mscorrc.dll&Key=0x%2!X! "
 END
 
 
-#endif    
+#endif
 
 

@@ -6,9 +6,9 @@
 //
 
 //
-// This module contains the implementation for the message box utility code for 
+// This module contains the implementation for the message box utility code for
 // use inside the Execution Engine. These APIs ensure the GC mode is properly
-// toggled to preemptive before the dialog is displayed. 
+// toggled to preemptive before the dialog is displayed.
 //
 //*****************************************************************************
 

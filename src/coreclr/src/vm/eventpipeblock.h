@@ -15,7 +15,7 @@ struct EventPipeSequencePoint;
 
 // The base class for all file blocks in the Nettrace file format
 // This class handles memory management to buffer the block data,
-// bookkeeping, block version numbers, and serializing the data 
+// bookkeeping, block version numbers, and serializing the data
 // to the file with correct alignment.
 // Sub-classes decide the format of the block contents and how
 // the blocks are named.
@@ -102,7 +102,7 @@ struct EventPipeEventHeader
     GUID ActivityId;
     GUID RelatedActivityId;
     DWORD DataLength;
-}; 
+};
 
 // The base type for blocks that contain events (EventBlock and EventMetadataBlock)
 class EventPipeEventBlockBase : public EventPipeBlock
@@ -202,7 +202,7 @@ public:
 
     unsigned int GetHeaderSize() override
     {
-        return sizeof(unsigned int) + // start index 
+        return sizeof(unsigned int) + // start index
                sizeof(unsigned int);  // count of indices
     }
 

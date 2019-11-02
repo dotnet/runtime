@@ -88,7 +88,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
        }
 
        entry = newEntry;
-       newEntry.SuppressRelease();   
+       newEntry.SuppressRelease();
        entry->m_dwPID = dwPID;
        entry->m_hProcess = hProcess;
        entry->m_transport = transport;
@@ -104,14 +104,14 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
     _ASSERTE(entry->m_cProcessRef > 0);
     _ASSERTE(entry->m_transport != NULL);
     _ASSERTE((intptr_t)entry->m_hProcess > 0);
-    
+
     *ppTransport = entry->m_transport;
-    if (!DuplicateHandle(GetCurrentProcess(), 
+    if (!DuplicateHandle(GetCurrentProcess(),
                          entry->m_hProcess,
-                         GetCurrentProcess(), 
+                         GetCurrentProcess(),
                          phProcessHandle,
                          0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE, 
+                         FALSE,
                          DUPLICATE_SAME_ACCESS))
     {
         return HRESULT_FROM_GetLastError();
@@ -132,7 +132,7 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
     // Pointer to the pointer that points to *entry.
     // It either points to m_pProcessList or m_pNext of some entry.
     // It is used to fix the linked list after deletion of an entry.
-    ProcessEntry **prevPtr = &m_pProcessList; 
+    ProcessEntry **prevPtr = &m_pProcessList;
 
     // Looking for ProcessEntry with a given transport
     while (entry)
@@ -175,7 +175,7 @@ HRESULT DbgTransportTarget::CreateProcess(LPCWSTR lpApplicationName,
                           LPPROCESS_INFORMATION lpProcessInformation)
 {
 
-    BOOL result = WszCreateProcess(lpApplicationName, 
+    BOOL result = WszCreateProcess(lpApplicationName,
                                    lpCommandLine,
                                    lpProcessAttributes,
                                    lpThreadAttributes,
@@ -186,7 +186,7 @@ HRESULT DbgTransportTarget::CreateProcess(LPCWSTR lpApplicationName,
                                    lpStartupInfo,
                                    lpProcessInformation);
 
-    if (!result) 
+    if (!result)
     {
         return HRESULT_FROM_GetLastError();
     }

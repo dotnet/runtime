@@ -44,7 +44,7 @@ inline UINT32 VAL32(UINT32 x)
     return SWAP32(x);
 }
 
-inline UINT64 VAL64(UINT64 x)   
+inline UINT64 VAL64(UINT64 x)
 {
     return ((UINT64)VAL32(x) << 32) | VAL32(x >> 32);
 }
@@ -67,8 +67,8 @@ inline void SwapStringLength(WCHAR *szString, ULONG StringLength)
     }
 }
 
-inline void SwapGuid(GUID *pGuid) 
-{ 
+inline void SwapGuid(GUID *pGuid)
+{
     pGuid->Data1 = VAL32(pGuid->Data1);
     pGuid->Data2 = VAL16(pGuid->Data2);
     pGuid->Data3 = VAL16(pGuid->Data3);
@@ -111,19 +111,19 @@ inline UINT16 GET_UNALIGNED_16(const void *pObject)
 {
     UINT16 temp;
     memcpy(&temp, pObject, sizeof(temp));
-    return temp; 
+    return temp;
 }
 inline UINT32 GET_UNALIGNED_32(const void *pObject)
 {
     UINT32 temp;
     memcpy(&temp, pObject, sizeof(temp));
-    return temp; 
+    return temp;
 }
 inline UINT64 GET_UNALIGNED_64(const void *pObject)
 {
     UINT64 temp;
     memcpy(&temp, pObject, sizeof(temp));
-    return temp; 
+    return temp;
 }
 
 // Set Value on an potentially unaligned object
@@ -149,10 +149,10 @@ inline void SET_UNALIGNED_64(void *pObject, UINT64 Value)
 #define GET_UNALIGNED_32(_pObject)  (*(UINT32 UNALIGNED *)(_pObject))
 #define GET_UNALIGNED_64(_pObject)  (*(UINT64 UNALIGNED *)(_pObject))
 
-// Set Value on an potentially unaligned object 
+// Set Value on an potentially unaligned object
 #define SET_UNALIGNED_16(_pObject, _Value)  (*(UNALIGNED UINT16 *)(_pObject)) = (UINT16)(_Value)
 #define SET_UNALIGNED_32(_pObject, _Value)  (*(UNALIGNED UINT32 *)(_pObject)) = (UINT32)(_Value)
-#define SET_UNALIGNED_64(_pObject, _Value)  (*(UNALIGNED UINT64 *)(_pObject)) = (UINT64)(_Value) 
+#define SET_UNALIGNED_64(_pObject, _Value)  (*(UNALIGNED UINT64 *)(_pObject)) = (UINT64)(_Value)
 
 #endif // defined(ALIGN_ACCESS) && !defined(_MSC_VER)
 
@@ -161,7 +161,7 @@ inline void SET_UNALIGNED_64(void *pObject, UINT64 Value)
 #define GET_UNALIGNED_VAL32(_pObject) VAL32(GET_UNALIGNED_32(_pObject))
 #define GET_UNALIGNED_VAL64(_pObject) VAL64(GET_UNALIGNED_64(_pObject))
 
-// Set a swap Value on an potentially unaligned object 
+// Set a swap Value on an potentially unaligned object
 #define SET_UNALIGNED_VAL16(_pObject, _Value) SET_UNALIGNED_16(_pObject, VAL16((UINT16)_Value))
 #define SET_UNALIGNED_VAL32(_pObject, _Value) SET_UNALIGNED_32(_pObject, VAL32((UINT32)_Value))
 #define SET_UNALIGNED_VAL64(_pObject, _Value) SET_UNALIGNED_64(_pObject, VAL64((UINT64)_Value))

@@ -30,8 +30,8 @@ Abstract:
 
 #define SHMPTR_TO_TYPED_PTR(type, shmptr) reinterpret_cast<type*>(shmptr)
 
-/* Set ptr to NULL if shmPtr == 0, else set ptr to SHMPTR_TO_TYPED_PTR(type, shmptr) 
-   return FALSE if SHMPTR_TO_TYPED_PTR returns NULL ptr from non null shmptr, 
+/* Set ptr to NULL if shmPtr == 0, else set ptr to SHMPTR_TO_TYPED_PTR(type, shmptr)
+   return FALSE if SHMPTR_TO_TYPED_PTR returns NULL ptr from non null shmptr,
    TRUE otherwise */
 #define SHMPTR_TO_TYPED_PTR_BOOL(type, ptr, shmptr) \
     ((shmptr != 0) ? ((ptr = SHMPTR_TO_TYPED_PTR(type, shmptr)) != NULL) : ((ptr = NULL) == NULL))

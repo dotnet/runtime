@@ -7,8 +7,8 @@
 // Warning: a call to this poll() takes about 4K of stack space.
 
 // Greg Parker     gparker@cs.stanford.edu     December 2000
-// This code is in the public domain and may be copied or modified without 
-// permission. 
+// This code is in the public domain and may be copied or modified without
+// permission.
 
 // Located at <http://www.sealiesoftware.com/fakepoll.h>.
 

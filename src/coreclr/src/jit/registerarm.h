@@ -69,7 +69,7 @@ REGDEF(F30,  30+FPBASE, VFPMASK(30), "f30")
 REGDEF(F31,  31+FPBASE, VFPMASK(31), "f31")
 
 
-// Allow us to call R11/FP, SP, LR and PC by their register number names 
+// Allow us to call R11/FP, SP, LR and PC by their register number names
 REGALIAS(FP,  R11)
 REGALIAS(R13, SP)
 REGALIAS(R14, LR)

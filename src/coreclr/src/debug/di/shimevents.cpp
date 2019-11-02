@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ShimEvents.cpp
-// 
+//
 
 //
 // The V3 ICD debugging APIs have a lower abstraction level than V2.
@@ -13,7 +13,7 @@
 #include "stdafx.h"
 
 #include "safewrap.h"
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 #include "shimpriv.h"
@@ -29,7 +29,7 @@ ManagedEvent::~ManagedEvent()
 #ifdef _DEBUG
 //---------------------------------------------------------------------------------------
 // For debugging, get a pointer value that can identify the type of this event.
-// 
+//
 // Returns:
 //    persistent pointer value that can be used as cookie to identify this event type.
 //---------------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ void * ManagedEvent::GetDebugCookie()
 
 //---------------------------------------------------------------------------------------
 // Ctor for DispatchArgs
-// 
+//
 // Arguments:
 //    pCallback1 - 1st callback, for debug events in V1.0, V1.1
 //    pCallback2 - 2nd callback, for debug events added in V2
@@ -92,9 +92,9 @@ DWORD ManagedEvent::GetOSTid()
 
 //---------------------------------------------------------------------------------------
 // Constructore for events with thread affinity
-// 
+//
 // Arguments:
-//     pThread -  thread that this event is associated with. 
+//     pThread -  thread that this event is associated with.
 //
 // Notes:
 //     Thread affinity is used with code:ManagedEventQueue::HasQueuedCallbacks
@@ -106,8 +106,8 @@ ManagedEvent::ManagedEvent(ICorDebugThread * pThread)
     if (pThread != NULL)
     {
         pThread->GetID(&m_dwThreadId);
-    }        
-    
+    }
+
     m_pNext = NULL;
 }
 
@@ -120,7 +120,7 @@ ManagedEvent::ManagedEvent()
     m_pNext = NULL;
 }
 
-    
+
 
 
 
@@ -139,10 +139,10 @@ ManagedEventQueue::ManagedEventQueue()
 // Arguments:
 //    pLock - lock that protects this event queue. This takes a weak ref to the lock,
 //            so caller ensures lock stays alive for lifespan of this object
-// 
+//
 // Notes:
 //    Event queue locks itself using this lock.
-//    Only call this once. 
+//    Only call this once.
 //---------------------------------------------------------------------------------------
 void ManagedEventQueue::Init(RSLock * pLock)
 {
@@ -150,16 +150,16 @@ void ManagedEventQueue::Init(RSLock * pLock)
     m_pLock = pLock;
 }
 
-//---------------------------------------------------------------------------------------    
-// Remove event from the top. 
+//---------------------------------------------------------------------------------------
+// Remove event from the top.
 //
-// Returns: 
-//    Event that was just dequeued. 
+// Returns:
+//    Event that was just dequeued.
 //
 // Notes:
 //    Caller then takes ownership of Event and will call Delete on it.
 //    If IsEmpty() function returns NULL.
-//    
+//
 //    It is an error to call Dequeue when the only elements in the queue are suspended.
 //    Suspending the queue implies there are going to be new events added which should come before
 //    the elements that are suspended.  Trying to deqeue when there are only suspended elements
@@ -175,7 +175,7 @@ ManagedEvent * ManagedEventQueue::Dequeue()
     {
         return NULL;
     }
-    
+
     ManagedEvent * pEvent = m_pFirstEvent;
     m_pFirstEvent = m_pFirstEvent->m_pNext;
     if (m_pFirstEvent == NULL)
@@ -190,8 +190,8 @@ ManagedEvent * ManagedEventQueue::Dequeue()
 //---------------------------------------------------------------------------------------
 // Append the event to the end of the queue.
 // Queue owns the event and will delete it (unless it's dequeued first).
-// 
-// Note that this can be called when a suspended queue is active.  Events are pushed onto 
+//
+// Note that this can be called when a suspended queue is active.  Events are pushed onto
 // the currently active queue (ahead of the suspended queue).
 //
 // Arguments:
@@ -203,7 +203,7 @@ void ManagedEventQueue::QueueEvent(ManagedEvent * pEvent)
     RSLockHolder lockHolder(m_pLock);
     _ASSERTE(pEvent != NULL);
     _ASSERTE(pEvent->m_pNext == NULL);
-    
+
     if (m_pLastEvent == NULL)
     {
         _ASSERTE(m_pFirstEvent == NULL);

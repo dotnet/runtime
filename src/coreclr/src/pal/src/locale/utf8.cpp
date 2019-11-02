@@ -619,7 +619,7 @@ public:
     WCHAR GetCharUnknownHigh()
     {
         return (charUnknownHigh);
-    }   
+    }
 
     WCHAR GetCharUnknownLow()
     {
@@ -1739,7 +1739,7 @@ public:
                 fallback = decoderFallback->CreateFallbackBuffer();
                 fallback->InternalInitialize(bytes, pAllocatedBufferEnd);
             }
-            
+
             // That'll back us up the appropriate # of bytes if we didn't get anywhere
             if (!FallbackInvalidByteSequence(&pSrc, ch, fallback, &pTarget))
             {
@@ -2042,7 +2042,7 @@ public:
 
                         // extra byte, we're already planning 2 chars for 2 of these bytes,
                         // but the big loop is testing the target against pStop, so we need
-                        // to subtract 2 more or we risk overrunning the input.  Subtract 
+                        // to subtract 2 more or we risk overrunning the input.  Subtract
                         // one here and one below.
                         pStop--;
                     }
@@ -2524,7 +2524,7 @@ public:
             ch = 0;
         }
 
-        InternalDelete(fallbackBuffer); 
+        InternalDelete(fallbackBuffer);
 
         return (int)(pTarget - bytes);
     }

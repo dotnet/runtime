@@ -148,7 +148,7 @@ namespace R2RDump
         }
 
         //
-        // The enumerator does not conform to the regular C# enumerator pattern to avoid paying 
+        // The enumerator does not conform to the regular C# enumerator pattern to avoid paying
         // its performance penalty (allocation, multiple calls per iteration)
         //
         public struct Enumerator

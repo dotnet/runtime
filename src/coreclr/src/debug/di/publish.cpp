@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: publish.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -27,8 +27,8 @@
 
 // Publish shares header files with the rest of ICorDebug.
 // ICorDebug should not call ReadProcessMemory & other APIs directly, it should instead go through
-// the Data-target. ICD headers #define these APIs to help enforce this. 
-// Since Publish is separate and doesn't use data-targets, it can access the APIs directly. 
+// the Data-target. ICD headers #define these APIs to help enforce this.
+// Since Publish is separate and doesn't use data-targets, it can access the APIs directly.
 // see code:RSDebuggingInfo#UseDataTarget
 #undef ReadProcessMemory
 
@@ -41,7 +41,7 @@
 BOOL GetAllProcessesInSystem(DWORD *ProcessId,
                              DWORD dwArraySize,
                              DWORD *pdwNumEntries)
-{    
+{
     HandleHolder hSnapshotHolder;
 
 #if !defined(FEATURE_CORESYSTEM)
@@ -69,8 +69,8 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
         return FALSE;
     }
 #endif
-  
-    
+
+
     // Create the Process' Snapshot
     // Get the pointer to the requested function
     FARPROC pProcAddr = GetProcAddress(hDll, "CreateToolhelp32Snapshot");
@@ -84,9 +84,9 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
         return FALSE;
     }
 
-    
 
-    // Handle from CreateToolHelp32Snapshot must be freed via CloseHandle().    
+
+    // Handle from CreateToolHelp32Snapshot must be freed via CloseHandle().
     typedef HANDLE CREATETOOLHELP32SNAPSHOT(DWORD, DWORD);
 
     HANDLE hSnapshot =
@@ -372,9 +372,9 @@ HRESULT CorpubPublish::GetProcessInternal(
     }
 
     // Get the process handle.
-    HANDLE hProcess = OpenProcess((PROCESS_VM_READ | 
-                                   PROCESS_QUERY_INFORMATION | 
-                                   PROCESS_DUP_HANDLE | 
+    HANDLE hProcess = OpenProcess((PROCESS_VM_READ |
+                                   PROCESS_QUERY_INFORMATION |
+                                   PROCESS_DUP_HANDLE |
                                    SYNCHRONIZE),
                                   FALSE, pid);
     if (hProcess == NULL)

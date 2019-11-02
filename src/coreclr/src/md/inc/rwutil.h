@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RWUtil.h
-// 
+//
 
 //
 // Contains utility code for MD directory
@@ -31,22 +31,22 @@ class UTSemReadWrite;
 //*****************************************************************************
 // Helper methods
 //*****************************************************************************
-void 
+void
 Unicode2UTF(
     LPCWSTR wszSrc, // The string to convert.
-  __out_ecount(cbDst) 
+  __out_ecount(cbDst)
     LPUTF8  szDst,  // Buffer for the output UTF8 string.
     int     cbDst); // Size of the buffer for UTF8 string.
 
 //*********************************************************************
-// The token remap record. 
+// The token remap record.
 //*********************************************************************
 struct TOKENREC
 {
     mdToken     m_tkFrom;                   // The imported token
     bool        m_isDuplicate;              // Is record duplicate? This information is recorded during merge
     bool        m_isDeleted;                // This information is recorded during RegMeta::ProcessFilter when we might have deleted a record
-    bool        m_isFoundInImport;          // This information is also recorded during RegMeta::ProcessFilter                 
+    bool        m_isFoundInImport;          // This information is also recorded during RegMeta::ProcessFilter
     mdToken     m_tkTo;                     // The new token in the merged scope
 
     void SetEmpty() {m_tkFrom = m_tkTo = (mdToken) -1;}
@@ -61,7 +61,7 @@ struct TOKENREC
 // we assert if we try to look up or sort by From token.
 //
 //*********************************************************************
-class MDTOKENMAP : public CDynArray<TOKENREC> 
+class MDTOKENMAP : public CDynArray<TOKENREC>
 {
 public:
 
@@ -72,7 +72,7 @@ public:
         Indexed = 3,                    // Indexed by table/rid.  Implies that strings are sorted by "From".
     };
 
-    MDTOKENMAP() 
+    MDTOKENMAP()
      :  m_pNextMap(NULL),
         m_pMap(NULL),
         m_iCountTotal(0),
@@ -81,13 +81,13 @@ public:
         m_iCountIndexed(0)
 #if defined(_DEBUG)
        ,m_pImport(0)
-#endif    
+#endif
     { }
     ~MDTOKENMAP();
 
     HRESULT Init(IUnknown *pImport);
 
-    // find a token in the tokenmap. 
+    // find a token in the tokenmap.
     bool Find(mdToken tkFrom, TOKENREC **ppRec);
 
     // remap a token. We assert if we don't find the tkFind in the table
@@ -122,7 +122,7 @@ public:
     } // void MDTOKENMAP::SortTokensByFromToken()
 
     HRESULT EmptyMap();
-    
+
     void SortTokensByToToken();
 
     MDTOKENMAP  *m_pNextMap;
@@ -169,12 +169,12 @@ private:
     ULONG       m_iCountSorted;             // number of entries that are sorted
 
     SortKind    m_sortKind;
-    
+
     ULONG       m_TableOffset[TBL_COUNT+1]; // Start of each table in map.
     ULONG       m_iCountIndexed;            // number of entries that are indexed.
 #if defined(_DEBUG)
     IMetaDataImport *m_pImport;             // For data validation.
-#endif    
+#endif
 };
 
 
@@ -182,8 +182,8 @@ private:
 //*********************************************************************
 //
 // This CMapToken class implemented the IMapToken. It is used in RegMeta for
-// filter process. This class can track all of the tokens are mapped. It also 
-// supplies a Find function. 
+// filter process. This class can track all of the tokens are mapped. It also
+// supplies a Find function.
 //
 //*********************************************************************
 class CMapToken : public IMapToken
@@ -249,13 +249,13 @@ public:
 
     //*********************************************************************
     //
-    // This function is called when the token kind does not change but token 
+    // This function is called when the token kind does not change but token
     // is moved. For example, when we sort CustomAttribute table or when we optimize
-    // away MethodPtr table. These operation will not change the token type. 
+    // away MethodPtr table. These operation will not change the token type.
     //
     //*********************************************************************
     FORCEINLINE HRESULT RecordTokenMovement(
-        mdToken tkFrom, 
+        mdToken tkFrom,
         mdToken tkTo)
     {
         TOKENREC    *pTokenRec;
@@ -287,7 +287,7 @@ struct OptionValue
     CorRefToDefCheck            m_RefToDefCheck;        // Bit Map for specifying whether to do a ref to def optimization.
     CorNotificationForTokenMovement m_NotifyRemap;      // Bit Map for token remap notification.
     ULONG                       m_UpdateMode;           // (CorSetENC) Specifies whether ENC or Extension mode is on.
-    CorErrorIfEmitOutOfOrder    m_ErrorIfEmitOutOfOrder;    // Do not generate pointer tables 
+    CorErrorIfEmitOutOfOrder    m_ErrorIfEmitOutOfOrder;    // Do not generate pointer tables
     CorThreadSafetyOptions      m_ThreadSafetyOptions;  // specify if thread safety is turn on or not.
     CorImportOptions            m_ImportOption;         // import options such as to skip over deleted items or not
     CorLinkerOptions            m_LinkerOption;         // Linker option. Currently only used in UnmarkAll

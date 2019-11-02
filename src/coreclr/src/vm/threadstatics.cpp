@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // ThreadStatics.cpp
-// 
+//
 
-// 
-// 
+//
+//
 
 
 #include "common.h"
@@ -166,7 +166,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
 
 #endif
 
-void ThreadLocalBlock::SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule) 
+void ThreadLocalBlock::SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule)
 {
     CONTRACTL {
         NOTHROW;
@@ -302,7 +302,7 @@ void ThreadLocalBlock::FreePinningHandles()
     }
     CONTRACTL_END;
     // Destroy all pinning handles in the list, and free the nodes
-    ObjectHandleList::NodeType* pHandleNode; 
+    ObjectHandleList::NodeType* pHandleNode;
     while ((pHandleNode = m_PinningHandleList.UnlinkHead()) != NULL)
     {
         DestroyPinningHandle(pHandleNode->data);
@@ -377,7 +377,7 @@ void ThreadLocalBlock::InitThreadStaticHandleTable()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    
+
     // If the allocation fails this will throw; callers need
     // to account for this possibility
     m_pThreadStaticHandleTable = new ThreadStaticHandleTable(GetAppDomain());
@@ -395,7 +395,7 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
     }
     CONTRACTL_END;
 
-    FieldDesc *pField = pMT->HasGenericsStaticsInfo() ? 
+    FieldDesc *pField = pMT->HasGenericsStaticsInfo() ?
         pMT->GetGenericsStaticFieldDescs() : (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields());
 
     // Move pField to point to the list of thread statics
@@ -525,7 +525,7 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
     if (dwStaticBytes > 0 || dwNumHandleStatics > 0)
     {
         if (pDynamicStatics == NULL)
-        {            
+        {
             SIZE_T dynamicEntrySize;
             if (pMT->Collectible())
             {
@@ -713,7 +713,7 @@ PTR_ThreadLocalModule ThreadStatics::AllocateTLM(Module * pModule)
 
     // The memory block has to be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
     _ASSERTE(IS_ALIGNED(pThreadLocalModule, MAX_PRIMITIVE_FIELD_SIZE));
-    
+
     // Zero out the part of memory where the TLM resides
     memset(pThreadLocalModule, 0, size);
 

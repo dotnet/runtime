@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// The code in sos.DumpLog depends on the first 32 facility codes 
+// The code in sos.DumpLog depends on the first 32 facility codes
 // being bit flags sorted in incresing order.
 
 DEFINE_LOG_FACILITY(LF_GC                ,0x00000001)

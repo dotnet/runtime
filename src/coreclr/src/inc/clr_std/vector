@@ -43,9 +43,9 @@ namespace std
                 typedef ptrdiff_t difference_type;
                 typedef T*        pointer;
                 typedef T&        reference;
-                
+
                 typedef class vector<T>::iterator _MyIter;
-                
+
                 _MyIter &operator++()
                 {
                     m_ptr++;
@@ -140,7 +140,7 @@ namespace std
             public:
                 typedef class vector<T>::const_iterator _MyIter;
                 typedef class vector<T>::iterator _MyNonConstIter;
-                
+
                 _MyIter &operator++()
                 {
                     m_ptr++;
@@ -408,7 +408,7 @@ namespace std
 
          private:
             size_t    m_size;       //# of elements
-            size_t    m_capacity;   //# of elements allocated 
+            size_t    m_capacity;   //# of elements allocated
             T        *m_pelements;  //actual array
                                     //  invariants:
                                     //    dimensions == m_capacity
@@ -422,7 +422,7 @@ namespace std
     };  // class vector
 
 }; // namespace std
- 
+
 #endif /* __clr_std_vector_h__ */
 
 #endif // !USE_STL

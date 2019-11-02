@@ -131,7 +131,7 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 
 // Constant for connection id and task id
 #define INVALID_CONNECTION_ID   0x0
-#define INVALID_TASK_ID         0x0 
+#define INVALID_TASK_ID         0x0
 #define MAX_CONNECTION_NAME     MAX_PATH
 
 
@@ -152,9 +152,9 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 //
 typedef enum tagCOINITEE
 {
-    COINITEE_DEFAULT        = 0x0,          // Default initialization mode. 
-    COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL. 
-    COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine 
+    COINITEE_DEFAULT        = 0x0,          // Default initialization mode.
+    COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL.
+    COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine
 } COINITIEE;
 
 //*****************************************************************************
@@ -166,7 +166,7 @@ typedef enum tagCOINITEE
 //*****************************************************************************
 
 
-// 
+//
 #ifndef _WINDOWS_UPDATES_
 #include <corhdr.h>
 #endif // <windows.h> updates
@@ -284,14 +284,14 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
     STDMETHOD(DefineTypeDef)(               // S_OK or error.
         LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
         DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
         mdToken     rtkImplements[],        // [IN] Implements interfaces
         mdTypeDef   *ptd) PURE;             // [OUT] Put TypeDef token here
 
     STDMETHOD(DefineNestedType)(            // S_OK or error.
         LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
         DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
         mdToken     rtkImplements[],        // [IN] Implements interfaces
         mdTypeDef   tdEncloser,             // [IN] TypeDef token of the enclosing type.
         mdTypeDef   *ptd) PURE;             // [OUT] Put TypeDef token here
@@ -299,11 +299,11 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
     STDMETHOD(SetHandler)(                  // S_OK.
         IUnknown    *pUnk) PURE;            // [IN] The new error handler.
 
-    STDMETHOD(DefineMethod)(                // S_OK or error. 
+    STDMETHOD(DefineMethod)(                // S_OK or error.
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwMethodFlags,          // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         ULONG       ulCodeRVA,
         DWORD       dwImplFlags,
@@ -331,7 +331,7 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
     STDMETHOD(DefineMemberRef)(             // S_OK or error
         mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
         LPCWSTR     szName,                 // [IN] member's name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMemberRef *pmr) PURE;             // [OUT] memberref token
 
@@ -346,19 +346,19 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
         mdMemberRef *pmr) PURE;             // [OUT] Put member ref here.
 
     STDMETHOD(DefineEvent) (
-        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined 
+        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
         LPCWSTR     szEvent,                // [IN] Name of the event
         DWORD       dwEventFlags,           // [IN] CorEventAttr
-        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class 
-        mdMethodDef mdAddOn,                // [IN] required add method 
+        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
+        mdMethodDef mdAddOn,                // [IN] required add method
         mdMethodDef mdRemoveOn,             // [IN] required remove method
         mdMethodDef mdFire,                 // [IN] optional fire method
         mdMethodDef rmdOtherMethods[],      // [IN] optional array of other methods associate with the event
-        mdEvent     *pmdEvent) PURE;        // [OUT] output event token 
+        mdEvent     *pmdEvent) PURE;        // [OUT] output event token
 
     STDMETHOD(SetClassLayout) (
-        mdTypeDef   td,                     // [IN] typedef 
-        DWORD       dwPackSize,             // [IN] packing size specified as 1, 2, 4, 8, or 16 
+        mdTypeDef   td,                     // [IN] typedef
+        DWORD       dwPackSize,             // [IN] packing size specified as 1, 2, 4, 8, or 16
         COR_FIELD_OFFSET rFieldOffsets[],   // [IN] array of layout specification
         ULONG       ulClassSize) PURE;      // [IN] size of the class
 
@@ -374,11 +374,11 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
         mdToken     tk) PURE;               // [IN] given a fieldDef or paramDef token
 
     STDMETHOD(DefinePermissionSet) (
-        mdToken     tk,                     // [IN] the object to be decorated. 
+        mdToken     tk,                     // [IN] the object to be decorated.
         DWORD       dwAction,               // [IN] CorDeclSecurity.
         void const  *pvPermission,          // [IN] permission blob.
-        ULONG       cbPermission,           // [IN] count of bytes of pvPermission. 
-        mdPermission *ppm) PURE;            // [OUT] returned permission token. 
+        ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
+        mdPermission *ppm) PURE;            // [OUT] returned permission token.
 
     STDMETHOD(SetRVA)(                      // S_OK or error.
         mdMethodDef md,                     // [IN] Method for which to set offset
@@ -386,7 +386,7 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
 
     STDMETHOD(GetTokenFromSig)(             // S_OK or error.
         PCCOR_SIGNATURE pvSig,              // [IN] Signature to define.
-        ULONG       cbSig,                  // [IN] Size of signature data. 
+        ULONG       cbSig,                  // [IN] Size of signature data.
         mdSignature *pmsig) PURE;           // [OUT] returned signature token.
 
     STDMETHOD(DefineModuleRef)(             // S_OK or error.
@@ -396,11 +396,11 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
     // <TODO>@FUTURE:  This should go away once everyone starts using SetMemberRefProps.</TODO>
     STDMETHOD(SetParent)(                   // S_OK or error.
         mdMemberRef mr,                     // [IN] Token for the ref to be fixed up.
-        mdToken     tk) PURE;               // [IN] The ref parent. 
+        mdToken     tk) PURE;               // [IN] The ref parent.
 
     STDMETHOD(GetTokenFromTypeSpec)(        // S_OK or error.
         PCCOR_SIGNATURE pvSig,              // [IN] TypeSpec Signature to define.
-        ULONG       cbSig,                  // [IN] Size of signature data. 
+        ULONG       cbSig,                  // [IN] Size of signature data.
         mdTypeSpec *ptypespec) PURE;        // [OUT] returned TypeSpec token.
 
     STDMETHOD(SaveToMemory)(                // S_OK or error.
@@ -471,35 +471,35 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
         void const  *pCustomAttribute,      // [IN] The custom value data.
         ULONG       cbCustomAttribute) PURE;// [IN] The custom value data length.
 
-    STDMETHOD(DefineField)(                 // S_OK or error. 
+    STDMETHOD(DefineField)(                 // S_OK or error.
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwFieldFlags,           // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
         ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
         mdFieldDef  *pmd) PURE;             // [OUT] Put member token here
 
-    STDMETHOD(DefineProperty)( 
+    STDMETHOD(DefineProperty)(
         mdTypeDef   td,                     // [IN] the class/interface on which the property is being defined
         LPCWSTR     szProperty,             // [IN] Name of the property
-        DWORD       dwPropFlags,            // [IN] CorPropertyAttr 
-        PCCOR_SIGNATURE pvSig,              // [IN] the required type signature 
-        ULONG       cbSig,                  // [IN] the size of the type signature blob 
+        DWORD       dwPropFlags,            // [IN] CorPropertyAttr
+        PCCOR_SIGNATURE pvSig,              // [IN] the required type signature
+        ULONG       cbSig,                  // [IN] the size of the type signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
         ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
-        mdMethodDef mdSetter,               // [IN] optional setter of the property 
-        mdMethodDef mdGetter,               // [IN] optional getter of the property 
+        mdMethodDef mdSetter,               // [IN] optional setter of the property
+        mdMethodDef mdGetter,               // [IN] optional getter of the property
         mdMethodDef rmdOtherMethods[],      // [IN] an optional array of other methods
         mdProperty  *pmdProp) PURE;         // [OUT] output property token
 
     STDMETHOD(DefineParam)(
         mdMethodDef md,                     // [IN] Owning method
-        ULONG       ulParamSeq,             // [IN] Which param 
-        LPCWSTR     szName,                 // [IN] Optional param name 
+        ULONG       ulParamSeq,             // [IN] Which param
+        LPCWSTR     szName,                 // [IN] Optional param name
         DWORD       dwParamFlags,           // [IN] Optional param flags
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
@@ -555,7 +555,7 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
         ULONG       *pcbTranslatedSig) PURE;// [OUT] count of bytes in the translated signature
 
     STDMETHOD(SetMethodImplFlags)(          // [IN] S_OK or error.
-        mdMethodDef md,                     // [IN] Method for which to set ImplFlags 
+        mdMethodDef md,                     // [IN] Method for which to set ImplFlags
         DWORD       dwImplFlags) PURE;
 
     STDMETHOD(SetFieldRVA)(                 // [IN] S_OK or error.
@@ -586,7 +586,7 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
 {
     STDMETHOD(DefineMethodSpec)(
         mdToken     tkParent,               // [IN] MethodDef or MemberRef
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature 
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodSpec *pmi) PURE;            // [OUT] method instantiation token
 
@@ -621,7 +621,7 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
         LPCWSTR      szName,                // [IN] Optional name
         DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
         mdToken      rtkConstraints[]) PURE;// [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
-    
+
     STDMETHOD(ResetENCLog)() PURE;          // S_OK or error.
 
 };
@@ -676,7 +676,7 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         mdInterfaceImpl iiImpl,             // [IN] InterfaceImpl token.
         mdTypeDef   *pClass,                // [OUT] Put implementing class token here.
         mdToken     *ptkIface) PURE;        // [OUT] Put implemented interface token here.
-            
+
     STDMETHOD(GetTypeRefProps)(             // S_OK or error.
         mdTypeRef   tr,                     // [IN] TypeRef token.
         mdToken     *ptkResolutionScope,    // [OUT] Resolution scope, ModuleRef or AssemblyRef.
@@ -687,7 +687,7 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
 
     STDMETHOD(ResolveTypeRef)(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd) PURE;
 
-    STDMETHOD(EnumMembers)(                 // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumMembers)(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdToken     rMembers[],             // [OUT] Put MemberDefs here.
@@ -702,7 +702,7 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
         ULONG       *pcTokens) PURE;        // [OUT] Put # put here.
 
-    STDMETHOD(EnumMethods)(                 // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumMethods)(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdMethodDef rMethods[],             // [OUT] Put MethodDefs here.
@@ -733,14 +733,14 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         ULONG       *pcTokens) PURE;        // [OUT] Put # put here.
 
 
-    STDMETHOD(EnumParams)(                  // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumParams)(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdParamDef  rParams[],              // [OUT] Put ParamDefs here.
         ULONG       cMax,                   // [IN] Max ParamDefs to put.
         ULONG       *pcTokens) PURE;        // [OUT] Put # put here.
 
-    STDMETHOD(EnumMemberRefs)(              // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumMemberRefs)(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tkParent,               // [IN] Parent token to scope the enumeration.
         mdMemberRef rMemberRefs[],          // [OUT] Put MemberRefs here.
@@ -755,49 +755,49 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         ULONG       cMax,                   // [IN] Max tokens to put.
         ULONG       *pcTokens) PURE;        // [OUT] Put # put here.
 
-    STDMETHOD(EnumPermissionSets)(          // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumPermissionSets)(          // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tk,                     // [IN] if !NIL, token to scope the enumeration.
         DWORD       dwActions,              // [IN] if !0, return only these actions.
         mdPermission rPermission[],         // [OUT] Put Permissions here.
-        ULONG       cMax,                   // [IN] Max Permissions to put. 
+        ULONG       cMax,                   // [IN] Max Permissions to put.
         ULONG       *pcTokens) PURE;        // [OUT] Put # put here.
 
     STDMETHOD(FindMember)(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdToken     *pmb) PURE;             // [OUT] matching memberdef 
+        mdToken     *pmb) PURE;             // [OUT] matching memberdef
 
     STDMETHOD(FindMethod)(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdMethodDef *pmb) PURE;             // [OUT] matching memberdef 
+        mdMethodDef *pmb) PURE;             // [OUT] matching memberdef
 
     STDMETHOD(FindField)(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdFieldDef  *pmb) PURE;             // [OUT] matching memberdef 
+        mdFieldDef  *pmb) PURE;             // [OUT] matching memberdef
 
     STDMETHOD(FindMemberRef)(
         mdTypeRef   td,                     // [IN] given typeRef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdMemberRef *pmr) PURE;             // [OUT] matching memberref 
+        mdMemberRef *pmr) PURE;             // [OUT] matching memberref
 
-    STDMETHOD (GetMethodProps)( 
+    STDMETHOD (GetMethodProps)(
         mdMethodDef mb,                     // The method for which to get props.
-        mdTypeDef   *pClass,                // Put method's class here. 
+        mdTypeDef   *pClass,                // Put method's class here.
       _Out_writes_to_opt_(cchMethod, *pchMethod)
         LPWSTR      szMethod,               // Put method's name here.
         ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
-        ULONG       *pchMethod,             // Put actual size here 
+        ULONG       *pchMethod,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
@@ -805,8 +805,8 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         DWORD       *pdwImplFlags) PURE;    // [OUT] Impl. Flags
 
     STDMETHOD(GetMemberRefProps)(           // S_OK or error.
-        mdMemberRef mr,                     // [IN] given memberref 
-        mdToken     *ptk,                   // [OUT] Put classref or classdef here. 
+        mdMemberRef mr,                     // [IN] given memberref
+        mdToken     *ptk,                   // [OUT] Put classref or classdef here.
       _Out_writes_to_opt_(cchMember, *pchMember)
         LPWSTR      szMember,               // [OUT] buffer to fill for member's name
         ULONG       cchMember,              // [IN] the count of char of szMember
@@ -814,26 +814,26 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value
         ULONG       *pbSig) PURE;           // [OUT] actual size of signature blob
 
-    STDMETHOD(EnumProperties)(              // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumProperties)(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdProperty  rProperties[],          // [OUT] Put Properties here.
         ULONG       cMax,                   // [IN] Max properties to put.
         ULONG       *pcProperties) PURE;    // [OUT] Put # put here.
 
-    STDMETHOD(EnumEvents)(                  // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumEvents)(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdEvent     rEvents[],              // [OUT] Put events here.
         ULONG       cMax,                   // [IN] Max events to put.
         ULONG       *pcEvents) PURE;        // [OUT] Put # put here.
 
-    STDMETHOD(GetEventProps)(               // S_OK, S_FALSE, or error. 
-        mdEvent     ev,                     // [IN] event token 
+    STDMETHOD(GetEventProps)(               // S_OK, S_FALSE, or error.
+        mdEvent     ev,                     // [IN] event token
         mdTypeDef   *pClass,                // [OUT] typedef containing the event declarion.
-        LPCWSTR     szEvent,                // [OUT] Event name 
+        LPCWSTR     szEvent,                // [OUT] Event name
         ULONG       cchEvent,               // [IN] the count of wchar of szEvent
-        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name 
+        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name
         DWORD       *pdwEventFlags,         // [OUT] Event flags.
         mdToken     *ptkEventType,          // [OUT] EventType class
         mdMethodDef *pmdAddOn,              // [OUT] AddOn method of the event
@@ -841,24 +841,24 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         mdMethodDef *pmdFire,               // [OUT] Fire method of the event
         mdMethodDef rmdOtherMethod[],       // [OUT] other method of the event
         ULONG       cMax,                   // [IN] size of rmdOtherMethod
-        ULONG       *pcOtherMethod) PURE;   // [OUT] total number of other method of this event 
+        ULONG       *pcOtherMethod) PURE;   // [OUT] total number of other method of this event
 
-    STDMETHOD(EnumMethodSemantics)(         // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumMethodSemantics)(         // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdToken     rEventProp[],           // [OUT] Put Event/Property here.
         ULONG       cMax,                   // [IN] Max properties to put.
         ULONG       *pcEventProp) PURE;     // [OUT] Put # put here.
 
-    STDMETHOD(GetMethodSemantics)(          // S_OK, S_FALSE, or error. 
+    STDMETHOD(GetMethodSemantics)(          // S_OK, S_FALSE, or error.
         mdMethodDef mb,                     // [IN] method token
         mdToken     tkEventProp,            // [IN] event/property token.
-        DWORD       *pdwSemanticsFlags) PURE; // [OUT] the role flags for the method/propevent pair 
+        DWORD       *pdwSemanticsFlags) PURE; // [OUT] the role flags for the method/propevent pair
 
-    STDMETHOD(GetClassLayout) ( 
+    STDMETHOD(GetClassLayout) (
         mdTypeDef   td,                     // [IN] give typedef
         DWORD       *pdwPackSize,           // [OUT] 1, 2, 4, 8, or 16
-        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array 
+        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array
         ULONG       cMax,                   // [IN] size of the array
         ULONG       *pcFieldOffset,         // [OUT] needed array size
         ULONG       *pulClassSize) PURE;        // [OUT] the size of the class
@@ -871,7 +871,7 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
     STDMETHOD(GetRVA)(                      // S_OK or error.
         mdToken     tk,                     // Member for which to set offset
         ULONG       *pulCodeRVA,            // The offset
-        DWORD       *pdwImplFlags) PURE;    // the implementation flags 
+        DWORD       *pdwImplFlags) PURE;    // the implementation flags
 
     STDMETHOD(GetPermissionSetProps) (
         mdPermission pm,                    // [IN] the permission token.
@@ -906,7 +906,7 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
         mdToken     tk,                     // [IN] Token to get name from.  Must have a name.
         MDUTF8CSTR  *pszUtf8NamePtr) PURE;  // [OUT] Return pointer to UTF8 name in heap.
 
-    STDMETHOD(EnumUnresolvedMethods)(       // S_OK, S_FALSE, or error. 
+    STDMETHOD(EnumUnresolvedMethods)(       // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     rMethods[],             // [OUT] Put MemberDefs here.
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
@@ -973,18 +973,18 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
 
     STDMETHOD(GetMemberProps)(
         mdToken     mb,                     // The member for which to get props.
-        mdTypeDef   *pClass,                // Put member's class here. 
+        mdTypeDef   *pClass,                // Put member's class here.
       _Out_writes_to_opt_(cchMember, *pchMember)
         LPWSTR      szMember,               // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
-        ULONG       *pchMember,             // Put actual size here 
+        ULONG       *pchMember,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         ULONG       *pulCodeRVA,            // [OUT] codeRVA
         DWORD       *pdwImplFlags,          // [OUT] Impl. Flags
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue) PURE;       // [OUT] size of constant string in chars, 0 for non-strings.
 
     STDMETHOD(GetFieldProps)(
@@ -993,25 +993,25 @@ DECLARE_INTERFACE_(IMetaDataImport, IUnknown)
       _Out_writes_to_opt_(cchField, *pchField)
         LPWSTR      szField,                // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
-        ULONG       *pchField,              // Put actual size here 
+        ULONG       *pchField,              // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue) PURE;       // [OUT] size of constant string in chars, 0 for non-strings.
 
-    STDMETHOD(GetPropertyProps)(            // S_OK, S_FALSE, or error. 
+    STDMETHOD(GetPropertyProps)(            // S_OK, S_FALSE, or error.
         mdProperty  prop,                   // [IN] property token
-        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion. 
+        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion.
         LPCWSTR     szProperty,             // [OUT] Property name
         ULONG       cchProperty,            // [IN] the count of wchar of szProperty
         ULONG       *pchProperty,           // [OUT] actual count of wchar for property name
         DWORD       *pdwPropFlags,          // [OUT] property flags.
-        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob 
+        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
         ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value 
+        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value
         ULONG       *pcchDefaultValue,      // [OUT] size of constant string in chars, 0 for non-strings.
         mdMethodDef *pmdSetter,             // [OUT] setter method of the property
         mdMethodDef *pmdGetter,             // [OUT] getter method of the property
@@ -1455,7 +1455,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         LPCWSTR  szPrivateBin,              // [IN] optional - can be NULL
         LPCWSTR  szGlobalBin,               // [IN] optional - can be NULL
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
-        LPCWSTR  szName,                    // [OUT] buffer - to hold name 
+        LPCWSTR  szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN] the name buffer's size
         ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
 
@@ -1466,7 +1466,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szModuleName,              // [IN] required - the name of the module
       _Out_writes_to_opt_(cchName, *pcName)
-        LPWSTR   szName,                    // [OUT] buffer - to hold name 
+        LPWSTR   szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
 
@@ -1476,16 +1476,16 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
 //*****************************************************************************
 //
 // Registration declarations.  Will be replace by Services' Registration
-//  implementation. 
+//  implementation.
 //
 //*****************************************************************************
 //*****************************************************************************
 // Various flags for use in installing a module or a composite
-typedef enum 
+typedef enum
 {
     regNoCopy = 0x00000001,         // Don't copy files into destination
     regConfig = 0x00000002,         // Is a configuration
-    regHasRefs = 0x00000004         // Has class references 
+    regHasRefs = 0x00000004         // Has class references
 } CorRegFlags;
 
 typedef GUID CVID;
@@ -1523,7 +1523,7 @@ typedef enum  {
     // generate only a section-relative reloc, nothing into .reloc section
     srRelocAbsolute,
 
-    // generate a .reloc for a pointer sized location, 
+    // generate a .reloc for a pointer sized location,
     // This is transformed into BASED_HIGHLOW or BASED_DIR64 based on the platform
     srRelocHighLow      = 3,
 
@@ -1531,7 +1531,7 @@ typedef enum  {
     // bottom 16 bits are included in the next word in the .reloc table
     srRelocHighAdj,     // Never Used
 
-    // generate a token map relocation, nothing into .reloc section 
+    // generate a token map relocation, nothing into .reloc section
     srRelocMapToken,
 
     // relative address fixup
@@ -1545,23 +1545,23 @@ typedef enum  {
     // code relative address fixup
     srRelocCodeRelative,
 
-    // generate a .reloc for a 64 bit address in an ia64 movl instruction 
+    // generate a .reloc for a 64 bit address in an ia64 movl instruction
     srRelocIA64Imm64,
 
     // generate a .reloc for a 64 bit address
     srRelocDir64,
 
-    // generate a .reloc for a 25-bit PC relative address in an ia64 br.call instruction 
+    // generate a .reloc for a 25-bit PC relative address in an ia64 br.call instruction
     srRelocIA64PcRel25,
 
-    // generate a .reloc for a 64-bit PC relative address in an ia64 brl.call instruction 
+    // generate a .reloc for a 64-bit PC relative address in an ia64 brl.call instruction
     srRelocIA64PcRel64,
 
     // generate a 30-bit section-relative reloc, used for tagged pointer values
     srRelocAbsoluteTagged,
 
 
-    // A sentinel value to help ensure any additions to this enum are reflected 
+    // A sentinel value to help ensure any additions to this enum are reflected
     // in PEWriter.cpp's RelocName array.
     srRelocSentinel,
 
@@ -1569,7 +1569,7 @@ typedef enum  {
 
     // do not emit base reloc
     srNoBaseReloc = 0x4000,
-    
+
     // pre-fixup contents of memory are ptr rather than a section offset
     srRelocPtr = 0x8000,
 
@@ -1607,7 +1607,7 @@ DECLARE_INTERFACE_(ICeeGen, IUnknown)
     STDMETHOD (AllocateMethodBuffer) (
         ULONG cchBuffer,                    // [IN] Length of buffer to create
         UCHAR **lpBuffer,                   // [OUT] Returned buffer
-        ULONG *RVA) PURE;                   // [OUT] RVA for method 
+        ULONG *RVA) PURE;                   // [OUT] RVA for method
 
     STDMETHOD (GetMethodBuffer) (
         ULONG RVA,                          // [IN] RVA for method to return
@@ -1619,43 +1619,43 @@ DECLARE_INTERFACE_(ICeeGen, IUnknown)
     STDMETHOD (GenerateCeeFile) () PURE;
 
     STDMETHOD (GetIlSection) (
-        HCEESECTION *section) PURE; 
+        HCEESECTION *section) PURE;
 
     STDMETHOD (GetStringSection) (
-        HCEESECTION *section) PURE; 
+        HCEESECTION *section) PURE;
 
     STDMETHOD (AddSectionReloc) (
-        HCEESECTION section, 
-        ULONG offset, 
-        HCEESECTION relativeTo, 
+        HCEESECTION section,
+        ULONG offset,
+        HCEESECTION relativeTo,
         CeeSectionRelocType relocType) PURE;
 
     // use these only if you have special section requirements not handled
     // by other APIs
     STDMETHOD (GetSectionCreate) (
-        const char *name, 
-        DWORD flags, 
-        HCEESECTION *section) PURE; 
+        const char *name,
+        DWORD flags,
+        HCEESECTION *section) PURE;
 
     STDMETHOD (GetSectionDataLen) (
-        HCEESECTION section, 
+        HCEESECTION section,
         ULONG *dataLen) PURE;
 
     STDMETHOD (GetSectionBlock) (
-        HCEESECTION section, 
-        ULONG len, 
-        ULONG align=1, 
-        void **ppBytes=0) PURE; 
+        HCEESECTION section,
+        ULONG len,
+        ULONG align=1,
+        void **ppBytes=0) PURE;
 
     STDMETHOD (TruncateSection) (
-        HCEESECTION section, 
+        HCEESECTION section,
         ULONG len) PURE;
 
     STDMETHOD (GenerateCeeMemoryImage) (
         void **ppImage) PURE;
 
     STDMETHOD (ComputePointer) (
-        HCEESECTION section, 
+        HCEESECTION section,
         ULONG RVA,                          // [IN] RVA for method to return
         UCHAR **lpBuffer) PURE;             // [OUT] Returned buffer
 
@@ -1827,7 +1827,7 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 {
     // Return Values:
     //   S_OK               - All parameters are filled.
-    //   COR_E_NOTSUPPORTED - The API is not supported for this particular scope (e.g. .obj files, scope 
+    //   COR_E_NOTSUPPORTED - The API is not supported for this particular scope (e.g. .obj files, scope
     //                        opened without whole file via code:IMetaDataDispenser::OpenScopeOnMemory, etc.).
     //   E_INVALIDARG       - If NULL is passed as parameter.
    STDMETHOD(GetFileMapping)(
@@ -1874,7 +1874,7 @@ DECLARE_INTERFACE_(IMetaDataWinMDImport, IUnknown)
 #define COR_NATIVE_LINK_CUSTOM_VALUE_CC     18
 
 #include <pshpack1.h>
-typedef struct 
+typedef struct
 {
     BYTE        m_linkType;       // see CorNativeLinkType below
     BYTE        m_flags;          // see CorNativeLinkFlags below
@@ -1882,7 +1882,7 @@ typedef struct
 } COR_NATIVE_LINK;
 #include <poppack.h>
 
-typedef enum 
+typedef enum
 {
     nltNone         = 1,    // none of the keywords are specified
     nltAnsi         = 2,    // ansi keyword specified
@@ -1891,9 +1891,9 @@ typedef enum
     nltMaxValue     = 7,    // used so we can assert how many bits are required for this enum
 } CorNativeLinkType;
 
-typedef enum 
+typedef enum
 {
-    nlfNone         = 0x00,     // no flags 
+    nlfNone         = 0x00,     // no flags
     nlfLastError    = 0x01,     // setLastError keyword specified
     nlfNoMangle     = 0x02,     // nomangle keyword specified
     nlfMaxValue     = 0x03,     // used so we can assert how many bits are required for this enum
@@ -1981,9 +1981,9 @@ FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
 }
 
 
-// Return true if element type is a modifier, i.e. ELEMENT_TYPE_MODIFIER bits are 
+// Return true if element type is a modifier, i.e. ELEMENT_TYPE_MODIFIER bits are
 // turned on. For now, it is checking for ELEMENT_TYPE_PTR and ELEMENT_TYPE_BYREF
-// as well. This will be removed when we turn on ELEMENT_TYPE_MODIFIER bits for 
+// as well. This will be removed when we turn on ELEMENT_TYPE_MODIFIER bits for
 // these two enum members.
 //
 FORCEINLINE int CorIsModifierElementType(CorElementType elementtype)
@@ -2015,7 +2015,7 @@ inline ULONG CorSigUncompressedDataSize(
 // (*pBytes & 0xE0) == 0XE0.
 /////////////////////////////////////////////////////////////////////////////////////////////
 inline ULONG CorSigUncompressBigData(
-    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed data 
+    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed data
 {
     ULONG res;
 
@@ -2028,32 +2028,32 @@ inline ULONG CorSigUncompressBigData(
         res = (ULONG)((*pData++ & 0x3f) << 8);
         res |= *pData++;
     }
-    else // 110? ???? 
+    else // 110? ????
     {
         res = (*pData++ & 0x1f) << 24;
         res |= *pData++ << 16;
         res |= *pData++ << 8;
         res |= *pData++;
     }
-    return res; 
+    return res;
 }
 FORCEINLINE ULONG CorSigUncompressData(
-    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed data 
+    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed data
 {
-    // Handle smallest data inline. 
+    // Handle smallest data inline.
     if ((*pData & 0x80) == 0x00)        // 0??? ????
         return *pData++;
     return CorSigUncompressBigData(pData);
 }
 
-inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the signature is bad 
+inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the signature is bad
     PCCOR_SIGNATURE pData,          // [IN] compressed data
     DWORD           len,            // [IN] length of the signature
     ULONG *         pDataOut,       // [OUT] the expanded *pData
     ULONG *         pDataLen)       // [OUT] length of the expanded *pData
 {
     HRESULT hr = S_OK;
-    BYTE const  *pBytes = reinterpret_cast<BYTE const*>(pData); 
+    BYTE const  *pBytes = reinterpret_cast<BYTE const*>(pData);
 
     // Smallest.
     if ((*pBytes & 0x80) == 0x00)       // 0??? ????
@@ -2067,7 +2067,7 @@ inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the si
         else
         {
             *pDataOut = *pBytes;
-            *pDataLen = 1; 
+            *pDataLen = 1;
         }
     }
     // Medium.
@@ -2082,7 +2082,7 @@ inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the si
         else
         {
             *pDataOut = (ULONG)(((*pBytes & 0x3f) << 8 | *(pBytes+1)));
-            *pDataLen = 2; 
+            *pDataLen = 2;
         }
     }
     else if ((*pBytes & 0xE0) == 0xC0)      // 110? ????
@@ -2096,7 +2096,7 @@ inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the si
         else
         {
             *pDataOut = (ULONG)(((*pBytes & 0x1f) << 24 | *(pBytes+1) << 16 | *(pBytes+2) << 8 | *(pBytes+3)));
-            *pDataLen = 4; 
+            *pDataLen = 4;
         }
     }
     else // We don't recognize this encoding
@@ -2105,23 +2105,23 @@ inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the si
         *pDataLen = 0;
         hr = META_E_BAD_SIGNATURE;
     }
-    
+
     return hr;
 }
 
-inline ULONG CorSigUncompressData(      // return number of bytes of that compressed data occupied in pData 
-    PCCOR_SIGNATURE pData,              // [IN] compressed data 
+inline ULONG CorSigUncompressData(      // return number of bytes of that compressed data occupied in pData
+    PCCOR_SIGNATURE pData,              // [IN] compressed data
     ULONG       *pDataOut)              // [OUT] the expanded *pData
 {
     ULONG dwSizeOfData = 0;
-    
+
     // We don't know how big the signature is, so we'll just say that it's big enough
     if (FAILED(CorSigUncompressData(pData, 0xff, pDataOut, &dwSizeOfData)))
     {
         *pDataOut = 0;
         return (ULONG)-1;
     }
-    
+
     return dwSizeOfData;
 }
 
@@ -2138,35 +2138,35 @@ SELECTANY const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeS
 
 // uncompress a token
 inline mdToken CorSigUncompressToken(   // return the token.
-    PCCOR_SIGNATURE &pData)             // [IN,OUT] compressed data 
+    PCCOR_SIGNATURE &pData)             // [IN,OUT] compressed data
 {
     mdToken tk;
     mdToken tkType;
 
     tk = CorSigUncompressData(pData);
     tkType = g_tkCorEncodeToken[tk & 0x3];
-    tk = TokenFromRid(tk >> 2, tkType); 
+    tk = TokenFromRid(tk >> 2, tkType);
     return tk;
 }
 
 
-inline ULONG CorSigUncompressToken( // return number of bytes of that compressed data occupied in pData 
-    PCCOR_SIGNATURE pData,          // [IN] compressed data 
+inline ULONG CorSigUncompressToken( // return number of bytes of that compressed data occupied in pData
+    PCCOR_SIGNATURE pData,          // [IN] compressed data
     mdToken *       pToken)         // [OUT] the expanded *pData
 {
     ULONG   cb;
     mdToken tk;
     mdToken tkType;
 
-    cb = CorSigUncompressData(pData, (ULONG *)&tk); 
+    cb = CorSigUncompressData(pData, (ULONG *)&tk);
     tkType = g_tkCorEncodeToken[tk & 0x3];
-    tk = TokenFromRid(tk >> 2, tkType); 
+    tk = TokenFromRid(tk >> 2, tkType);
     *pToken = tk;
     return cb;
 }
 
 inline HRESULT CorSigUncompressToken(
-    PCCOR_SIGNATURE pData,          // [IN] compressed data 
+    PCCOR_SIGNATURE pData,          // [IN] compressed data
     DWORD           dwLen,          // [IN] Remaining length of sigature
     mdToken *       pToken,         // [OUT] the expanded *pData
     DWORD *         dwTokenLength)  // [OUT] The length of the token in the sigature
@@ -2179,7 +2179,7 @@ inline HRESULT CorSigUncompressToken(
     if (SUCCEEDED(hr))
     {
         tkType = g_tkCorEncodeToken[tk & 0x3];
-        tk = TokenFromRid(tk >> 2, tkType); 
+        tk = TokenFromRid(tk >> 2, tkType);
         *pToken = tk;
     }
     else
@@ -2223,8 +2223,8 @@ enum {
 
 // uncompress a signed integer
 inline ULONG CorSigUncompressSignedInt( // return number of bytes of that compressed data occupied in pData
-    PCCOR_SIGNATURE pData,              // [IN] compressed data 
-    int *           pInt)               // [OUT] the expanded *pInt 
+    PCCOR_SIGNATURE pData,              // [IN] compressed data
+    int *           pInt)               // [OUT] the expanded *pInt
 {
     ULONG cb;
     ULONG ulSigned;
@@ -2232,17 +2232,17 @@ inline ULONG CorSigUncompressSignedInt( // return number of bytes of that compre
 
     cb = CorSigUncompressData(pData, &iData);
     if (cb == (ULONG) -1) return cb;
-    ulSigned = iData & 0x1; 
-    iData = iData >> 1; 
+    ulSigned = iData & 0x1;
+    iData = iData >> 1;
     if (ulSigned)
     {
         if (cb == 1)
         {
-            iData |= SIGN_MASK_ONEBYTE; 
+            iData |= SIGN_MASK_ONEBYTE;
         }
         else if (cb == 2)
         {
-            iData |= SIGN_MASK_TWOBYTE; 
+            iData |= SIGN_MASK_TWOBYTE;
         }
         else
         {
@@ -2256,13 +2256,13 @@ inline ULONG CorSigUncompressSignedInt( // return number of bytes of that compre
 
 // uncompress encoded element type
 FORCEINLINE CorElementType CorSigUncompressElementType( // Element type
-    PCCOR_SIGNATURE & pData)                            // [IN,OUT] Compressed data 
+    PCCOR_SIGNATURE & pData)                            // [IN,OUT] Compressed data
 {
     return (CorElementType)*pData++;
 }
 
 inline ULONG CorSigUncompressElementType(   // Return number of bytes of that compressed data occupied in pData
-    PCCOR_SIGNATURE  pData,                 // [IN] Compressed data 
+    PCCOR_SIGNATURE  pData,                 // [IN] Compressed data
     CorElementType * pElementType)          // [OUT] The expanded *pData
 {
     *pElementType = (CorElementType)(*pData & 0x7f);
@@ -2285,20 +2285,20 @@ inline ULONG CorSigCompressData(    // return number of bytes that compressed fo
     void * pDataOut)                // [OUT] buffer where iLen will be compressed and stored.
 {
     BYTE *pBytes = reinterpret_cast<BYTE *>(pDataOut);
-    
+
     if (iLen <= 0x7F)
     {
         *pBytes = BYTE(iLen);
         return 1;
     }
-    
+
     if (iLen <= 0x3FFF)
     {
         *pBytes     = BYTE((iLen >> 8) | 0x80);
         *(pBytes+1) = BYTE(iLen & 0xff);
         return 2;
     }
-    
+
     if (iLen <= 0x1FFFFFFF)
     {
         *pBytes     = BYTE((iLen >> 24) | 0xC0);
@@ -2317,15 +2317,15 @@ inline ULONG CorSigCompressToken(   // return number of bytes that compressed fo
     mdToken  tk,                    // [IN] given token
     void *   pDataOut)              // [OUT] buffer where the token will be compressed and stored.
 {
-    RID     rid = RidFromToken(tk); 
+    RID     rid = RidFromToken(tk);
     ULONG32 ulTyp = TypeFromToken(tk);
-    
+
     if (rid > 0x3FFFFFF)
         // token is too big to be compressed
         return (ULONG) -1;
-    
+
     rid = (rid << 2);
-    
+
     // TypeDef is encoded with low bits 00
     // TypeRef is encoded with low bits 01
     // TypeSpec is encoded with low bits 10
@@ -2357,11 +2357,11 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
 {
     ULONG isSigned = 0;
     BYTE *pBytes = reinterpret_cast<BYTE *>(pDataOut);
-    
+
     if (iData < 0)
         isSigned = 0x1;
-    
-    // Note that we cannot use code:CorSigCompressData to pack the iData value, because of negative values 
+
+    // Note that we cannot use code:CorSigCompressData to pack the iData value, because of negative values
     // like: 0xffffe000 (-8192) which has to be encoded as 1 in 2 bytes, i.e. 0x81 0x00
     // However CorSigCompressedData would store value 1 as 1 byte: 0x01
     if ((iData & SIGN_MASK_ONEBYTE) == 0 || (iData & SIGN_MASK_ONEBYTE) == SIGN_MASK_ONEBYTE)
@@ -2396,11 +2396,11 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
 
 // uncompress encoded element type
 inline ULONG CorSigCompressElementType( // return number of bytes of that compressed data occupied in pData
-    CorElementType et,                  // [OUT] the expanded *pData 
+    CorElementType et,                  // [OUT] the expanded *pData
     void *         pData)               // [IN] compressed data
 {
     BYTE *pBytes = (BYTE *)(pData);
-    
+
     *pBytes = BYTE(et);
     return 1;
 }

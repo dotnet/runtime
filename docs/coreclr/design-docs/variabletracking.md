@@ -42,7 +42,7 @@ There could be more than one per variable.
 There should be no overlap in terms of starting/ending native offsets for the same variable.
 Given a native offset, no two variables should share the same location.
 
-Context  
+Context
 --------
 
 We generate variables debug info while we generate the assembly intructions of the code. This is happening in `genCodeForBBList()` and `genFnProlog()`.
@@ -65,12 +65,12 @@ Also each `GenTree` has a mask `gtFlags` indicating will include if a variable:
 -   has been spilled
 
 When generating each instruction, these flags are used to know if we need to start/end tracking a variable or update its location (which means in practice "end and start").
-The blocks set of live variables are also used to start/end variables tracking information. 
+The blocks set of live variables are also used to start/end variables tracking information.
 
 Once the code is done we know the native offset of every assembly instruction, which is required for the debug info.
 While we are generating code we don't work with native offsets but `emitLocation`s that the `emitter` can generate, and once the code is done we can get the native offset corresponding to each of them.
 
-Variable Number 
+Variable Number
 --------
 
 If we compile a method and inspect the generated IL we can see there is a "locals" section which holds the local variables of you C# code named with a Vxx pattern.
@@ -147,11 +147,11 @@ and we close all the open `siScope`s when the last block is reached.
 ##### Reporting Information
 
 Once the code for the block and each of the `BasicBlock` is done, `genSetScopeInfo()` is called.
-In the case of having the flag `USING_SCOPE_INFO`, 
+In the case of having the flag `USING_SCOPE_INFO`,
 
 All the `psiScope` list is iterated filling the debug info structure.
 Then the list of `siScope` created is iterated, using the `LclVarDsc` class to get the location of the variable, which would hold the description of the last position it has.
-This is not a problem for debug code because variables live in a fixed location the whole method. 
+This is not a problem for debug code because variables live in a fixed location the whole method.
 
 This is done in `CodeGen::genSetScopeInfoUsingsiScope()`
 
@@ -231,8 +231,8 @@ We are not reporting the cases where a variable liveness is being modified and a
 
 -   We are just changing the variable location.
     We are not changing the variable value and the "old" variable location is not being modified.
-    So during that only assembly instruction, both `VariableLiveRange`s are valid, and we can increase the previous `VariableLiveRange` ending native offset a few bytes (we are not doing that now) and avoid creating a new `VariableLiveRange`. 
-     
+    So during that only assembly instruction, both `VariableLiveRange`s are valid, and we can increase the previous `VariableLiveRange` ending native offset a few bytes (we are not doing that now) and avoid creating a new `VariableLiveRange`.
+
 
 ### For debug code
 
@@ -263,12 +263,12 @@ Dumps and Debugging Support
 #### Variable Live Ranges activity during a BasicBlock
 
 If we have the flag for `VariableLiveRange`s we would get on the jitdump a verbose message after each `BasicBlock` is done indicating the changes for each variable.
-For example: 
+For example:
 
 ```
 ////////////////////////////////////////
 ////////////////////////////////////////
-Var History Dump for Block 44 
+Var History Dump for Block 44
 Var 1:
 [esi [ (G_M8533_IG29,ins#2,ofs#3), NON_CLOSED_RANGE ]; ]
 Var 12:
@@ -287,7 +287,7 @@ indicating that:
 
 -   Variable with index number 17 was living on the stack since instruction group 32 and it was unspill on ig 33, which is the instruction group of this BasicBlock, and it isn't alive at the end of the block.
 
--   Those are the only variables that are being tracked in this method and were alive during part or the whole method. 
+-   Those are the only variables that are being tracked in this method and were alive during part or the whole method.
 
 Each `VariableLiveRange` is dumped as:
 ```
@@ -340,5 +340,5 @@ There are many things we can do to improve optimized debugging:
 
 -   [Promoted structs](https://github.com/dotnet/coreclr/issues/23542): There is no debug support for fields of promoted structs, we just report the struct itself.
 
--   [Reduce space used for VariableLiveDescriptor](https://github.com/dotnet/coreclr/issues/23544): we are currently using a `jitstd::list`, which is a double linked list. 
+-   [Reduce space used for VariableLiveDescriptor](https://github.com/dotnet/coreclr/issues/23544): we are currently using a `jitstd::list`, which is a double linked list.
     We could use a simple single linked list with push_back(), head(), tail(), size() operations and an iterator and we would be saving memory.

@@ -22,7 +22,7 @@
 # Logical OR rules apply as far as support for stack for an event is concerned,
 # which is to say that if an event is marked as 'stack' and 'nostack', the logical OR'ing will give the final result of 'stack'
 #
-# Whenever a new version of an event comes up such that 
+# Whenever a new version of an event comes up such that
 # its older version is no longer used on Mac, the older
 # version's event entry must be added here
 #
@@ -32,7 +32,7 @@
 ##################################
 
 ##################
-# Used in Non Windows Platform Linux 
+# Used in Non Windows Platform Linux
 ##################
 noclrinstanceid::::EventSource
 

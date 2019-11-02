@@ -34,7 +34,7 @@ public:
 	// Given function token (methoddef) and offset, return filename and line number
 	//
 	HRESULT GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, __out_ecount(dwFileNameMaxLen) __out_z LPWSTR wszFileName, DWORD dwFileNameMaxLen, PDWORD pdwLineNumber );
-	
+
 	//
 	// Given function token (methoddef) and slot, return name of the local variable
 	//

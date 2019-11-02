@@ -15,7 +15,7 @@ inline PTR_MethodDescChunk EEClass::GetChunks()
 }
 
 //*******************************************************************************
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 // Set default values for optional fields.
 inline void EEClassOptionalFields::Init()
 {
@@ -33,7 +33,7 @@ inline void EEClassOptionalFields::Init()
     m_cbModuleDynamicID = MODULE_NON_DYNAMIC_STATICS;
 #if defined(UNIX_AMD64_ABI)
     m_numberEightBytes = 0;
-#endif // UNIX_AMD64_ABI    
+#endif // UNIX_AMD64_ABI
 }
 #endif // !DACCESS_COMPILE
 

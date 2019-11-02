@@ -122,10 +122,10 @@ endif
         ; location on the stack and it would have been updated on the
         ; stack by the GC already and it will be popped back into the
         ; appropriate register when the appropriate epilog is run.
-        ; 
+        ;
         ; Otherwise, the register is preserved across all the code
         ; in this HCALL or FCALL, so we need to update those registers
-        ; here because the GC will have updated our copies in the 
+        ; here because the GC will have updated our copies in the
         ; frame.
         ;
         ; So, if m_pReg points into the MachState, we need to update
@@ -217,7 +217,7 @@ NESTED_END NDirectImportThunk, _TEXT
 ;------------------------------------------------
 ; JIT_RareDisableHelper
 ;
-; The JIT expects this helper to preserve all 
+; The JIT expects this helper to preserve all
 ; registers that can be used for return values
 ;
 
@@ -226,13 +226,13 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT
     alloc_stack         38h
     END_PROLOGUE
 
-    movdqa      [rsp+20h], xmm0     ; Save xmm0  
-    mov         [rsp+30h], rax      ; Save rax  
+    movdqa      [rsp+20h], xmm0     ; Save xmm0
+    mov         [rsp+30h], rax      ; Save rax
 
     call        JIT_RareDisableHelperWorker
 
-    movdqa      xmm0, [rsp+20h]     ; Restore xmm0	
-    mov         rax,  [rsp+30h]     ; Restore rax  
+    movdqa      xmm0, [rsp+20h]     ; Restore xmm0
+    mov         rax,  [rsp+30h]     ; Restore rax
 
     add         rsp, 38h
     ret
@@ -428,7 +428,7 @@ NESTED_END DebugCheckStubUnwindInfo, _TEXT
 endif ; _DEBUG
 
 
-; A JITted method's return address was hijacked to return to us here.  
+; A JITted method's return address was hijacked to return to us here.
 ; VOID OnHijackTripThread()
 NESTED_ENTRY OnHijackTripThread, _TEXT
 
@@ -441,10 +441,10 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         alloc_stack         30h ; make extra room for xmm0
         save_xmm128_postrsp xmm0, 20h
-        
-        
+
+
         END_PROLOGUE
-    
+
         call                OnHijackWorker
 
         movdqa              xmm0, [rsp + 20h]
@@ -496,11 +496,11 @@ PROFILE_LEAVE                           equ 2h
 PROFILE_TAILCALL                        equ 4h
 
 ; ***********************************************************
-;   NOTE: 
+;   NOTE:
 ;
 ;   Register preservation scheme:
 ;
-;       Preserved:  
+;       Preserved:
 ;           - all non-volatile registers
 ;           - rax
 ;           - xmm0
@@ -522,18 +522,18 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 NESTED_ENTRY ProfileEnterNaked, _TEXT
         push_nonvol_reg         rax
 
-;       Upon entry : 
+;       Upon entry :
 ;           rcx = clientInfo
 ;           rdx = profiledRsp
 
         lea                     rax, [rsp + 10h]    ; caller rsp
         mov                     r10, [rax - 8h]     ; return address
 
-        alloc_stack             SIZEOF_STACK_FRAME 
+        alloc_stack             SIZEOF_STACK_FRAME
 
         ; correctness of return value in structure doesn't matter for enter probe
 
-        
+
         ; setup ProfilePlatformSpecificData structure
         xor                     r8, r8;
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
@@ -557,10 +557,10 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT
         ; rcx already contains the clientInfo
         lea                     rdx, [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA]
         call                    ProfileEnter
-    
+
         ; restore fp return register
         movdqa                  xmm0, [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
-        
+
         ; begin epilogue
         add                     rsp, SIZEOF_STACK_FRAME
         pop                     rax
@@ -571,22 +571,22 @@ NESTED_END ProfileEnterNaked, _TEXT
 NESTED_ENTRY ProfileLeaveNaked, _TEXT
         push_nonvol_reg         rax
 
-;       Upon entry : 
+;       Upon entry :
 ;           rcx = clientInfo
 ;           rdx = profiledRsp
 
         ; need to be careful with rax here because it contains the return value which we want to harvest
-        
+
         lea                     r10, [rsp + 10h]    ; caller rsp
         mov                     r11, [r10 - 8h]     ; return address
 
-        alloc_stack             SIZEOF_STACK_FRAME 
+        alloc_stack             SIZEOF_STACK_FRAME
 
         ; correctness of argument registers in structure doesn't matter for leave probe
 
         ; setup ProfilePlatformSpecificData structure
         xor                     r8, r8;
-        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field      
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
         save_reg_postrsp        rbp, OFFSETOF_PLATFORM_SPECIFIC_DATA +    8h          ;                 -- struct rbp field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], r10    ; caller rsp      -- struct probeRsp field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 18h], r11    ; return address  -- struct ip field
@@ -597,7 +597,7 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT
         movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], xmm1    ;      -- struct flt1 field
         movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 48h], xmm2    ;      -- struct flt2 field
         movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 50h], xmm3    ;      -- struct flt3 field
-        mov                     r10, PROFILE_LEAVE 
+        mov                     r10, PROFILE_LEAVE
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 58h], r10d   ; flags           -- struct flags field
 
         ; we need to be able to restore the fp return register
@@ -607,10 +607,10 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT
         ; rcx already contains the clientInfo
         lea                     rdx, [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA]
         call                    ProfileLeave
-    
+
         ; restore fp return register
         movdqa                  xmm0, [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
-        
+
         ; begin epilogue
         add                     rsp, SIZEOF_STACK_FRAME
         pop                     rax
@@ -621,16 +621,16 @@ NESTED_END ProfileLeaveNaked, _TEXT
 NESTED_ENTRY ProfileTailcallNaked, _TEXT
         push_nonvol_reg         rax
 
-;       Upon entry : 
+;       Upon entry :
 ;           rcx = clientInfo
 ;           rdx = profiledRsp
 
         lea                     rax, [rsp + 10h]    ; caller rsp
         mov                     r11, [rax - 8h]     ; return address
 
-        alloc_stack             SIZEOF_STACK_FRAME 
+        alloc_stack             SIZEOF_STACK_FRAME
 
-        ; correctness of return values and argument registers in structure 
+        ; correctness of return values and argument registers in structure
         ; doesn't matter for tailcall probe
 
 
@@ -638,13 +638,13 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         xor                     r8, r8;
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
         save_reg_postrsp        rbp, OFFSETOF_PLATFORM_SPECIFIC_DATA +    8h          ;                 -- struct rbp field
-        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], rax    ; caller rsp      -- struct probeRsp field 
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], rax    ; caller rsp      -- struct probeRsp field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 18h], r11    ; return address  -- struct ip field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 20h], rdx    ;                 -- struct profiledRsp field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 28h], r8     ; r8 is null      -- struct rax field
-        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 30h], r8     ; r8 is null      -- struct hiddenArg field 
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 30h], r8     ; r8 is null      -- struct hiddenArg field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 38h], r8     ; r8 is null      -- struct flt0 field
-        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], r8     ; r8 is null      -- struct flt1 field 
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], r8     ; r8 is null      -- struct flt1 field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 48h], r8     ; r8 is null      -- struct flt2 field
         mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 50h], r8     ; r8 is null      -- struct flt3 field
         mov                     r10, PROFILE_TAILCALL
@@ -660,7 +660,7 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
 
         ; restore fp return register
         movdqa                  xmm0, [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
-        
+
         ; begin epilogue
         add                     rsp, SIZEOF_STACK_FRAME
         pop                     rax
@@ -704,19 +704,19 @@ LEAF_ENTRY xmmYmmStateSupport, _TEXT
         ret
 LEAF_END xmmYmmStateSupport, _TEXT
 
-;The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms. 
+;The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms.
 ;  This function takes 3 arguments:
 ;     Arg1 is an input to ECX. Used as index to specify which cache level to return information on by CPUID.
-;         Arg1 is already passed in ECX on call to getextcpuid, so no explicit assignment is required;  
+;         Arg1 is already passed in ECX on call to getextcpuid, so no explicit assignment is required;
 ;     Arg2 is an input to EAX. For deterministic code enumeration, we pass in 4H in arg2.
 ;     Arg3 is a pointer to the return dwbuffer
 NESTED_ENTRY getextcpuid, _TEXT
         push_nonvol_reg    rbx
         push_nonvol_reg    rsi
     END_PROLOGUE
-        
+
         mov     eax, edx                ; second arg (input to  EAX)
-        mov     rsi, r8                 ; third arg  (pointer to return dwbuffer)       
+        mov     rsi, r8                 ; third arg  (pointer to return dwbuffer)
         cpuid
         mov     [rsi+ 0], eax
         mov     [rsi+ 4], ebx
@@ -753,7 +753,7 @@ LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
         mov     rcx, [rcx + OFFSETOF__DelegateObject___target]  ; replace "this" pointer
 
         jmp     rax
-        
+
 NullObject:
         mov     rcx, CORINFO_NullReferenceException_ASM
         jmp     JIT_InternalThrow

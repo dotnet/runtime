@@ -7,7 +7,7 @@
 
 //
 // Infrastructure for writing PE files. (Not NGEN specific)
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -80,7 +80,7 @@ void ZapWriter::Save(IStream * pStream)
     {
         ThrowHR(HRESULT_FROM_WIN32(ERROR_DISK_FULL));
     }
-    
+
     // Set the file size upfront to reduce disk fragmentation
     IfFailThrow(pStream->SetSize(estimatedFileSize));
 
@@ -334,7 +334,7 @@ void ZapWriter::Write(PVOID p, DWORD dwSize)
         ThrowHR(COR_E_OVERFLOW);
 
     DWORD cbAvailable = min(dwSize, WRITE_BUFFER_SIZE - m_nBufferPos);
-    
+
     memcpy(m_pBuffer + m_nBufferPos, p, cbAvailable);
     p = (PBYTE)p + cbAvailable;
     dwSize -= cbAvailable;
@@ -343,7 +343,7 @@ void ZapWriter::Write(PVOID p, DWORD dwSize)
 
     if (m_nBufferPos < WRITE_BUFFER_SIZE)
         return;
-    
+
     FlushWriter();
 
     if (dwSize == 0)
@@ -375,7 +375,7 @@ void ZapWriter::WritePad(DWORD dwSize, BYTE fill)
         ThrowHR(COR_E_OVERFLOW);
 
     DWORD cbAvailable = min(dwSize, WRITE_BUFFER_SIZE - m_nBufferPos);
-    
+
     memset(m_pBuffer + m_nBufferPos, fill, cbAvailable);
     dwSize -= cbAvailable;
 
@@ -383,7 +383,7 @@ void ZapWriter::WritePad(DWORD dwSize, BYTE fill)
 
     if (m_nBufferPos < WRITE_BUFFER_SIZE)
         return;
-    
+
     FlushWriter();
 
     if (dwSize == 0)
@@ -449,7 +449,7 @@ void ZapWriter::SaveDosHeader()
     header.e_lfanew = VAL32(sizeof(IMAGE_DOS_HEADER) + 0x40);
     Write(&header, sizeof(header));
 
-    // Write out padding to get to offset 0x80 
+    // Write out padding to get to offset 0x80
     WritePad(0x40);
 }
 
@@ -477,7 +477,7 @@ void ZapWriter::SaveFileHeader()
     }
     fileHeader.NumberOfSections = VAL16(nSections);
 
-    fileHeader.Characteristics = VAL16(IMAGE_FILE_EXECUTABLE_IMAGE | 
+    fileHeader.Characteristics = VAL16(IMAGE_FILE_EXECUTABLE_IMAGE |
         (Is64Bit() ? 0 : IMAGE_FILE_32BIT_MACHINE) |
         (m_isDll ? IMAGE_FILE_DLL : 0) |
         (Is64Bit() ? IMAGE_FILE_LARGE_ADDRESS_AWARE : 0) );
@@ -636,7 +636,7 @@ ZapBlob * ZapBlob::NewBlob(ZapWriter * pWriter, PVOID pData, SIZE_T cbSize)
     void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
     ZapBlob * pZapBlob = new (pMemory) ZapBlob(cbSize);
-    
+
     if (pData != NULL)
         memcpy((void*)(pZapBlob + 1), pData, cbSize);
 
@@ -663,7 +663,7 @@ public:
         S_SIZE_T cbAllocSize = S_SIZE_T(sizeof(ZapAlignedBlobConst<alignment>)) + S_SIZE_T(cbSize);
         if(cbAllocSize.IsOverflow())
             ThrowHR(COR_E_OVERFLOW);
-        
+
         void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
         ZapAlignedBlobConst<alignment> * pZapBlob = new (pMemory) ZapAlignedBlobConst<alignment>(cbSize);

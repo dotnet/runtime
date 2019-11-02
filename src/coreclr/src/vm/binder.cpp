@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
- 
+
 
 
 #include "common.h"
@@ -28,7 +28,7 @@
 
 //
 // Retrieve structures from ID.
-// 
+//
 NOINLINE PTR_MethodTable MscorlibBinder::LookupClass(BinderClassID id)
 {
     WRAPPER_NO_CONTRACT;
@@ -40,7 +40,7 @@ PTR_MethodTable MscorlibBinder::GetClassLocal(BinderClassID id)
     WRAPPER_NO_CONTRACT;
 
     PTR_MethodTable pMT = VolatileLoad(&(m_pClasses[id]));
-    if (pMT == NULL) 
+    if (pMT == NULL)
         return LookupClassLocal(id);
     return pMT;
 }
@@ -61,7 +61,7 @@ PTR_MethodTable MscorlibBinder::LookupClassLocal(BinderClassID id)
     PTR_MethodTable pMT = NULL;
 
     // Binder methods are used for loading "known" types from mscorlib.dll. Thus they are unlikely to be part
-    // of a recursive cycle. This is used too broadly to force manual overrides at every callsite. 
+    // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     const MscorlibClassDescription *d = m_classDescriptions + (int)id;
@@ -88,7 +88,7 @@ MethodDesc * MscorlibBinder::GetMethodLocal(BinderMethodID id)
     WRAPPER_NO_CONTRACT;
 
     MethodDesc * pMD = VolatileLoad(&(m_pMethods[id]));
-    if (pMD == NULL) 
+    if (pMD == NULL)
         return LookupMethodLocal(id);
     return pMD;
 }
@@ -148,7 +148,7 @@ FieldDesc * MscorlibBinder::GetFieldLocal(BinderFieldID id)
     WRAPPER_NO_CONTRACT;
 
     FieldDesc * pFD = VolatileLoad(&(m_pFields[id]));
-    if (pFD == NULL) 
+    if (pFD == NULL)
         return LookupFieldLocal(id);
     return pFD;
 }
@@ -187,7 +187,7 @@ NOINLINE PTR_MethodTable MscorlibBinder::LookupClassIfExist(BinderClassID id)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER; 
+        GC_NOTRIGGER;
         NOTHROW;
         FORBID_FAULT;
         MODE_ANY;
@@ -201,7 +201,7 @@ NOINLINE PTR_MethodTable MscorlibBinder::LookupClassIfExist(BinderClassID id)
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
     // Binder methods are used for loading "known" types from mscorlib.dll. Thus they are unlikely to be part
-    // of a recursive cycle. This is used too broadly to force manual overrides at every callsite. 
+    // of a recursive cycle. This is used too broadly to force manual overrides at every callsite.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     const MscorlibClassDescription *d = (&g_Mscorlib)->m_classDescriptions + (int)id;
@@ -503,7 +503,7 @@ DWORD MscorlibBinder::GetFieldOffset(BinderFieldID id)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetField(id)->GetOffset(); 
+    return GetField(id)->GetOffset();
 }
 
 #ifndef DACCESS_COMPILE
@@ -526,7 +526,7 @@ const MscorlibBinder::OffsetAndSizeCheck MscorlibBinder::OffsetsAndSizes[] =
 {
     #define DEFINE_CLASS_U(nameSpace, stringName, unmanagedType) \
         { PTR_CSTR((TADDR) g_ ## nameSpace ## NS ), PTR_CUTF8((TADDR) # stringName), sizeof(unmanagedType), 0, 0, 0 },
-    
+
     #define DEFINE_FIELD_U(stringName, unmanagedContainingType, unmanagedOffset) \
         { 0, 0, 0, PTR_CUTF8((TADDR) # stringName), offsetof(unmanagedContainingType, unmanagedOffset), sizeof(((unmanagedContainingType*)1)->unmanagedOffset) },
     #include "mscorlib.h"
@@ -580,13 +580,13 @@ void MscorlibBinder::Check()
                 offset += Object::GetOffsetOfFirstField();
             }
 
-            CONSISTENCY_CHECK_MSGF(offset == p->expectedFieldOffset, 
+            CONSISTENCY_CHECK_MSGF(offset == p->expectedFieldOffset,
                 ("Managed class field offset does not match unmanaged class field offset\n"
                  "man: 0x%x, unman: 0x%x, Class: %s, Name: %s\n", offset, p->expectedFieldOffset, pFD->GetApproxEnclosingMethodTable()->GetDebugClassName(), pFD->GetName()));
 
             DWORD size = pFD->LoadSize();
 
-            CONSISTENCY_CHECK_MSGF(size == p->expectedFieldSize, 
+            CONSISTENCY_CHECK_MSGF(size == p->expectedFieldSize,
                 ("Managed class field size does not match unmanaged class field size\n"
                 "man: 0x%x, unman: 0x%x, Class: %s, Name: %s\n", size, p->expectedFieldSize, pFD->GetApproxEnclosingMethodTable()->GetDebugClassName(), pFD->GetName()));
         }
@@ -598,7 +598,7 @@ void MscorlibBinder::Check()
 // check consistency of the unmanaged and managed fcall signatures
 //
 /* static */ FCSigCheck* FCSigCheck::g_pFCSigCheck;
-const char * aType[] = 
+const char * aType[] =
 {
     "void",
     "FC_BOOL_RET",
@@ -680,7 +680,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
         pSigCheck = pSigCheck->next;
     }
 
-    MetaSig msig(pMD);   
+    MetaSig msig(pMD);
     int argIndex = -2; // start with return value
     int enregisteredArguments = 0;
     const char* pUnmanagedArg = pUnmanagedSig;
@@ -779,18 +779,18 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 
             const char* pUnmanagedArgEnd = strchr(pUnmanagedArg, ',');
 
-            const char* pUnmanagedTypeEnd = (pUnmanagedArgEnd != NULL) ? 
+            const char* pUnmanagedTypeEnd = (pUnmanagedArgEnd != NULL) ?
                 pUnmanagedArgEnd : (pUnmanagedArg + strlen(pUnmanagedArg));
 
             if (argIndex != -2)
             {
                 // skip argument name
-                while(pUnmanagedTypeEnd > pUnmanagedArg) 
+                while(pUnmanagedTypeEnd > pUnmanagedArg)
                 {
                     char c = *(pUnmanagedTypeEnd-1);
-                    if ((c != '_') 
-                        && ((c < '0') || ('9' < c)) 
-                        && ((c < 'a') || ('z' < c)) 
+                    if ((c != '_')
+                        && ((c < '0') || ('9' < c))
+                        && ((c < 'a') || ('z' < c))
                         && ((c < 'A') || ('Z' < c)))
                         break;
                     pUnmanagedTypeEnd--;
@@ -798,7 +798,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
             }
 
             // skip whitespaces
-            while(pUnmanagedTypeEnd > pUnmanagedArg) 
+            while(pUnmanagedTypeEnd > pUnmanagedArg)
             {
                 char c = *(pUnmanagedTypeEnd-1);
                 if ((c != 0x20) && (c != '\t') && (c != '\n') && (c != '\r'))
@@ -887,7 +887,7 @@ void MscorlibBinder::CheckExtended()
     STANDARD_VM_CONTRACT;
 
     // check the consistency of BCL and VM
-    // note: it is not enabled by default because of it is time consuming and 
+    // note: it is not enabled by default because of it is time consuming and
     // changes the bootstrap sequence of the EE
     if (!CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ConsistencyCheck))
         return;
@@ -895,7 +895,7 @@ void MscorlibBinder::CheckExtended()
     //
     // VM referencing BCL (mscorlib.h)
     //
-    for (BinderClassID cID = (BinderClassID) 1; (int)cID < m_cClasses; cID = (BinderClassID) (cID + 1)) 
+    for (BinderClassID cID = (BinderClassID) 1; (int)cID < m_cClasses; cID = (BinderClassID) (cID + 1))
     {
         bool fError = false;
         EX_TRY
@@ -990,21 +990,21 @@ void MscorlibBinder::CheckExtended()
             break;
 
         pInternalImport->GetMethodImplProps(td, NULL, &dwImplFlags);
-        
+
         IfFailGo(pInternalImport->GetMethodDefProps(td, &dwMemberAttrs));
-        
+
         // ... that are internal calls ...
         if (!IsMiInternalCall(dwImplFlags) && !IsMdPinvokeImpl(dwMemberAttrs))
             continue;
-        
+
         IfFailGo(pInternalImport->GetParentToken(td, &tdClass));
-        
+
         TypeHandle type;
-        
+
         EX_TRY
         {
-            type = ClassLoader::LoadTypeDefOrRefThrowing(pModule, tdClass, 
-                                                         ClassLoader::ThrowIfNotFound, 
+            type = ClassLoader::LoadTypeDefOrRefThrowing(pModule, tdClass,
+                                                         ClassLoader::ThrowIfNotFound,
                                                          ClassLoader::PermitUninstDefOrRef);
         }
         EX_CATCH
@@ -1147,7 +1147,7 @@ void MscorlibBinder::AttachModule(Module * pModule)
 #if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
     MscorlibBinder * pPersistedBinder = pModule->m_pBinder;
 
-    if (pPersistedBinder != NULL 
+    if (pPersistedBinder != NULL
         // Do not use persisted binder for profiling native images. See comment in code:MscorlibBinder::Fixup.
         && !(pModule->GetNativeImage()->GetNativeVersionInfo()->wConfigFlags  & CORCOMPILE_CONFIG_PROFILING))
     {
@@ -1180,7 +1180,7 @@ void MscorlibBinder::AttachModule(Module * pModule)
 #endif
 }
 
-void MscorlibBinder::SetDescriptions(Module * pModule, 
+void MscorlibBinder::SetDescriptions(Module * pModule,
     const MscorlibClassDescription * pClassDescriptions, USHORT nClasses,
     const MscorlibMethodDescription * pMethodDescriptions, USHORT nMethods,
     const MscorlibFieldDescription * pFieldDescriptions, USHORT nFields)
@@ -1286,7 +1286,7 @@ void MscorlibBinder::Fixup(DataImage *image)
     int i;
 
     image->FixupPointerField(this, offsetof(MscorlibBinder, m_pClasses));
-    for (i = 1; i < m_cClasses; i++) 
+    for (i = 1; i < m_cClasses; i++)
     {
 #if _DEBUG
         //
@@ -1306,7 +1306,7 @@ void MscorlibBinder::Fixup(DataImage *image)
     }
 
     image->FixupPointerField(this, offsetof(MscorlibBinder, m_pMethods));
-    for (i = 1; i < m_cMethods; i++) 
+    for (i = 1; i < m_cMethods; i++)
     {
 #if _DEBUG
         // See comment above.
@@ -1320,7 +1320,7 @@ void MscorlibBinder::Fixup(DataImage *image)
     }
 
     image->FixupPointerField(this, offsetof(MscorlibBinder, m_pFields));
-    for (i = 1; i < m_cFields; i++) 
+    for (i = 1; i < m_cFields; i++)
     {
         image->FixupPointerField(m_pFields, i * sizeof(m_pFields[0]));
     }

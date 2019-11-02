@@ -49,7 +49,7 @@ IBCLoggingDisabler::IBCLoggingDisabler()
 {
     m_pInfo = NULL;
     m_fDisabled = false;
-    
+
     if (g_IBCLogger.InstrEnabled())
     {
         m_pInfo = GetThread()->GetIBCInfo();
@@ -118,7 +118,7 @@ IBCLoggerAwareAllocMemTracker::~IBCLoggerAwareAllocMemTracker()
 
 IBCLogger::IBCLogger()
     : dwInstrEnabled(0)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     m_sync.Init(CrstIbcProfile, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
 }
@@ -194,10 +194,10 @@ void IBCLogger::DelayedCallbackPtr(pfnIBCAccessCallback callback, const void * p
 
     ThreadLocalIBCInfo* pInfo = GetThread()->GetIBCInfo();
 
-    // record that we could not currently resolve this callback 
+    // record that we could not currently resolve this callback
     pInfo->SetCallbackFailed();
 
-    // If we are processing the delayed list then we don't want or need to 
+    // If we are processing the delayed list then we don't want or need to
     // add this pair <callback, pValue> to the delay list.
     if (pInfo->ProcessingDelayedList())
     {
@@ -221,7 +221,7 @@ void IBCLogger::DelayedCallbackPtr(pfnIBCAccessCallback callback, const void * p
     if (pEntry != NULL)
     {
         // Print out a debug message if we are debugging this
-        DEBUG_PRINTF4("Did not add duplicate delayed ptr callback: pfn=0x%08x, pValue1=0x%8p, pValue2=0x%8p\n", 
+        DEBUG_PRINTF4("Did not add duplicate delayed ptr callback: pfn=0x%08x, pValue1=0x%8p, pValue2=0x%8p\n",
                 pEntry->GetPfn(), pEntry->GetValue1(), pEntry->GetValue2());
         return;
     }
@@ -229,14 +229,14 @@ void IBCLogger::DelayedCallbackPtr(pfnIBCAccessCallback callback, const void * p
     // We create a new IbcCallback in the heap to use as a persisted key
     pEntry = new IbcCallback(callback, pValue1, pValue2);
 
-    // Mark this key as new valid IbcCallback 
+    // Mark this key as new valid IbcCallback
     pEntry->SetValid();
 
     // Add the entry into our hashtable.
     pTable->Add(pEntry);
 
     // Print out a debug message if we are debugging this
-    DEBUG_PRINTF4("Added a new delayed ptr callback: pfn=0x%08x, pValue1=0x%8p, pValue2=0x%8p\n", 
+    DEBUG_PRINTF4("Added a new delayed ptr callback: pfn=0x%08x, pValue1=0x%8p, pValue2=0x%8p\n",
             key.GetPfn(), key.GetValue1(), key.GetValue2());
 }
 
@@ -256,7 +256,7 @@ static const int c_minCountIncr  =   8;
 ThreadLocalIBCInfo::ThreadLocalIBCInfo()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     m_fCallbackFailed        = false;
     m_fProcessingDelayedList = false;
     m_fLoggingDisabled       = false;
@@ -267,7 +267,7 @@ ThreadLocalIBCInfo::ThreadLocalIBCInfo()
 ThreadLocalIBCInfo:: ~ThreadLocalIBCInfo()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (m_pDelayList != NULL)
     {
         // We have one last call to the CallbackHelper to
@@ -295,7 +295,7 @@ void ThreadLocalIBCInfo::DeleteDelayedCallbacks()
             (elem != end); elem++)
     {
         IbcCallback * pCallback = const_cast<IbcCallback *>(*elem);
-            
+
         _ASSERTE(pCallback->IsValid());
 
         // free up each of the IbcCallback pointers that we allocated
@@ -373,18 +373,18 @@ int ThreadLocalIBCInfo::ProcessDelayedCallbacks()
 
         _ASSERTE(pCallback->IsValid());
 
-        // For each callback that we process we use the 
-        // field m_fCallbackFailed to record wheather we 
+        // For each callback that we process we use the
+        // field m_fCallbackFailed to record wheather we
         // failed or succeeded in resolving the callback
         //
         m_fCallbackFailed = false;
-        
+
         pCallback->Invoke();
 
         if (m_fCallbackFailed == false)
         {
             // Successfully proccessed a delayed callback
-            DEBUG_PRINTF5("Successfully processed a delayed callback: pfn=0x%08x, value1=0x%8p, value2=0x%8p, retries=%d\n", 
+            DEBUG_PRINTF5("Successfully processed a delayed callback: pfn=0x%08x, value1=0x%8p, value2=0x%8p, retries=%d\n",
                     pCallback->GetPfn(), pCallback->GetValue1(), pCallback->GetValue2(), pCallback->GetTryCount());
 
             m_pDelayList->Remove(pCallback);
@@ -395,7 +395,7 @@ int ThreadLocalIBCInfo::ProcessDelayedCallbacks()
         else if (pCallback->IncrementTryCount() > c_maxRetries)
         {
             // Failed a delayed callback by hitting c_maxRetries
-            DEBUG_PRINTF4("Failed a delayed callback by hitting c_maxRetries: pfn=0x%08x, value1=0x%8p, value2=0x%8p\n", 
+            DEBUG_PRINTF4("Failed a delayed callback by hitting c_maxRetries: pfn=0x%08x, value1=0x%8p, value2=0x%8p\n",
                     pCallback->GetPfn(), pCallback->GetValue1(), pCallback->GetValue2());
 
             m_pDelayList->Remove(pCallback);
@@ -406,7 +406,7 @@ int ThreadLocalIBCInfo::ProcessDelayedCallbacks()
     }
 
     // Done Processing Delayed Callback list
-    DEBUG_PRINTF3("Done Processing Delayed Callback list: removed %d items, %d remain\n", 
+    DEBUG_PRINTF3("Done Processing Delayed Callback list: removed %d items, %d remain\n",
             removedCount, m_pDelayList->GetCount());
 
     _ASSERTE(m_fProcessingDelayedList == true);
@@ -436,17 +436,17 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
 
         // Just in case the processing of delayed list was terminated with exception
         m_fProcessingDelayedList = false;
-        
+
         if (callback != NULL)
         {
             _ASSERTE(p != NULL);
-            
-            // For each callback that we process we use the 
-            // field m_fCallbackFailed to record whether we 
+
+            // For each callback that we process we use the
+            // field m_fCallbackFailed to record whether we
             // failed or succeeded in resolving the callback
             //
             m_fCallbackFailed = false;
-        
+
             callback(&g_IBCLogger, p, NULL);
 
             if (m_fCallbackFailed == false)
@@ -454,7 +454,7 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
                 // If we were able to successfully process this ibc probe then
                 // the chances are good that the delayed probes will succeed too.
                 // Thus it may be worth proccessing the delayed call back list.
-                // We will process this list if it currently has at least 
+                // We will process this list if it currently has at least
                 // MinCountToProcess items in the delay list.
                 //
                 int delayListAfter  = (m_pDelayList == NULL) ? 0 : m_pDelayList->GetCount();
@@ -466,7 +466,7 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
                         // Reset the min count back down to the number that we still have remaining
                         m_iMinCountToProcess = m_pDelayList->GetCount();
                     }
-                
+
                     // we increase the minCount by the min count increment  so
                     // that we have to add a few new items to the delay list
                     // before we retry ProcessDelayedCallbacks() again.
@@ -478,7 +478,7 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
         {
             _ASSERTE(p == NULL);
 
-            // We just need to call ProcessDelayedCallbacks() unconditionally 
+            // We just need to call ProcessDelayedCallbacks() unconditionally
             if (m_pDelayList->GetCount() > 0)
             {
                 ProcessDelayedCallbacks();
@@ -502,7 +502,7 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
     }
     CONTRACTL_END;
 
-    {   
+    {
         // Don't set the ReadMethodCode flag for EE implemented methods such as Invoke
         if ((flagNum == ReadMethodCode) && pMD->IsEEImpl())
             return;
@@ -518,7 +518,7 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         TADDR pMaybeTaggedMT = ppMT->GetValueMaybeTagged((TADDR)ppMT);
         if (CORCOMPILE_IS_POINTER_TAGGED(pMaybeTaggedMT))
             goto DelayCallback;
-     
+
         MethodTable *pMT = (MethodTable *)pMaybeTaggedMT;
         if (!pMT->IsRestored_NoLogging())
             goto DelayCallback;
@@ -573,7 +573,7 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         }
         return;
     }
-    
+
 DelayCallback:
     DelayedCallbackPtr(LogMethodAccessWrapper, pMD, (void *)(SIZE_T)flagNum);
 }
@@ -641,7 +641,7 @@ void IBCLogger::LogMethodPrecodeWriteAccessHelper(MethodDesc *pMD)
 }
 
 // Log access to the method code and method header for NDirect calls
-void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD) 
+void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -657,7 +657,7 @@ void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD)
 }
 
 // Log access to method table
-void IBCLogger::LogMethodTableAccessHelper(MethodTable const * pMT) 
+void IBCLogger::LogMethodTableAccessHelper(MethodTable const * pMT)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -665,7 +665,7 @@ void IBCLogger::LogMethodTableAccessHelper(MethodTable const * pMT)
 }
 
 // Log access to method table
-void IBCLogger::LogTypeMethodTableAccessHelper(const TypeHandle *th) 
+void IBCLogger::LogTypeMethodTableAccessHelper(const TypeHandle *th)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -673,7 +673,7 @@ void IBCLogger::LogTypeMethodTableAccessHelper(const TypeHandle *th)
 }
 
 // Log write access to method table
-void IBCLogger::LogTypeMethodTableWriteableAccessHelper(const TypeHandle *th) 
+void IBCLogger::LogTypeMethodTableWriteableAccessHelper(const TypeHandle *th)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -682,7 +682,7 @@ void IBCLogger::LogTypeMethodTableWriteableAccessHelper(const TypeHandle *th)
 }
 
 // Log access via method table, to a token-based type or an instantiated type.
-void IBCLogger::LogTypeAccessHelper(TypeHandle th, ULONG flagNum) 
+void IBCLogger::LogTypeAccessHelper(TypeHandle th, ULONG flagNum)
 {
     CONTRACTL
     {
@@ -710,7 +710,7 @@ void IBCLogger::LogTypeAccessHelper(TypeHandle th, ULONG flagNum)
 
     //
     // We assign the pPreferredZapModule and the token, then fall out to the LogTokenAccess
-    // 
+    //
     // Logging accesses to TypeDescs is done by blob and we create a special IBC token for the blob
     if (th.IsTypeDesc())
     {
@@ -725,7 +725,7 @@ void IBCLogger::LogTypeAccessHelper(TypeHandle th, ULONG flagNum)
         if (pMT->IsArray())
         {
             pPreferredZapModule = Module::GetPreferredZapModuleForMethodTable(pMT);
-            
+
             token = pPreferredZapModule->LogInstantiatedType(th, flagNum);
         }
         else
@@ -780,7 +780,7 @@ void IBCLogger::LogTypeAccessWrapper(IBCLogger* pLogger, const void * pValue, co
 }
 
 // Log access to method tables which are private (i.e. methodtables that are updated in the ngen image)
-void IBCLogger::LogMethodTableWriteableDataAccessHelper(MethodTable const * pMT) 
+void IBCLogger::LogMethodTableWriteableDataAccessHelper(MethodTable const * pMT)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -789,7 +789,7 @@ void IBCLogger::LogMethodTableWriteableDataAccessHelper(MethodTable const * pMT)
 }
 
 // Log access to method tables which are private (i.e. methodtables that are updated in the ngen image)
-void IBCLogger::LogMethodTableWriteableDataWriteAccessHelper(MethodTable *pMT) 
+void IBCLogger::LogMethodTableWriteableDataWriteAccessHelper(MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -797,7 +797,7 @@ void IBCLogger::LogMethodTableWriteableDataWriteAccessHelper(MethodTable *pMT)
     LogTypeAccessHelper(pMT, WriteMethodTableWriteableData);
 }
 
-void IBCLogger::LogMethodTableNonVirtualSlotsAccessHelper(MethodTable const * pMT) 
+void IBCLogger::LogMethodTableNonVirtualSlotsAccessHelper(MethodTable const * pMT)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -859,10 +859,10 @@ void IBCLogger::LogFieldDescsAccessHelper(FieldDesc * pFD)
     LogTypeAccessHelper(pMT, ReadFieldDescs);
 }
 
-void IBCLogger::LogDispatchMapAccessHelper(MethodTable *pMT) 
+void IBCLogger::LogDispatchMapAccessHelper(MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, ReadDispatchMap);
 }
@@ -879,7 +879,7 @@ void IBCLogger::LogDispatchTableAccessHelper(MethodTable *pMT)
 void IBCLogger::LogDispatchTableSlotAccessHelper(DispatchSlot *pDS)
 {
     WRAPPER_NO_CONTRACT;
-   
+
     if (pDS->IsNull())
         return;
 
@@ -908,7 +908,7 @@ void IBCLogger::LogFieldMarshalersReadAccessHelper(MethodTable * pMT)
 }
 
 // Log access to cctor info table
-void IBCLogger::LogCCtorInfoReadAccessHelper(MethodTable *pMT) 
+void IBCLogger::LogCCtorInfoReadAccessHelper(MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
     LogTypeAccessHelper(pMT, ReadCCtorInfo);
@@ -923,7 +923,7 @@ void IBCLogger::LogTypeHashTableAccessHelper(const TypeHandle *th)
 }
 
 // Log access to class hash table
-void IBCLogger::LogClassHashTableAccessHelper(EEClassHashEntry *pEntry) 
+void IBCLogger::LogClassHashTableAccessHelper(EEClassHashEntry *pEntry)
 {
     CONTRACTL
     {
@@ -970,7 +970,7 @@ void IBCLogger::LogClassHashTableAccessHelper(EEClassHashEntry *pEntry)
     }
     else
         return;
-        
+
     pModule->LogTokenAccess(token, TypeProfilingData, ReadClassHashTable);
     return;
 
@@ -979,7 +979,7 @@ DelayCallback:
 }
 
 // Log access to meta data
-void IBCLogger::LogMetaDataAccessHelper(const void * addr) 
+void IBCLogger::LogMetaDataAccessHelper(const void * addr)
 {
     CONTRACTL
     {
@@ -1011,7 +1011,7 @@ void IBCLogger::LogMetaDataAccessHelper(const void * addr)
 
 // Log a search to meta data
 // See the comment above CMiniMdRW::GetHotMetadataTokensSearchAware
-void IBCLogger::LogMetaDataSearchAccessHelper(const void * result) 
+void IBCLogger::LogMetaDataSearchAccessHelper(const void * result)
 {
     CONTRACTL
     {
@@ -1056,7 +1056,7 @@ void IBCLogger::LogCerMethodListReadAccessHelper(MethodDesc *pMD)
 
     LogMethodAccessHelper(pMD, ReadCerMethodList);
 }
-    
+
 void IBCLogger::LogRidMapAccessHelper( RidMapLogData data )
 {
     WRAPPER_NO_CONTRACT;
@@ -1065,7 +1065,7 @@ void IBCLogger::LogRidMapAccessHelper( RidMapLogData data )
 }
 
 // Log access to RVA data
-void IBCLogger::LogRVADataAccessHelper(FieldDesc *pFD) 
+void IBCLogger::LogRVADataAccessHelper(FieldDesc *pFD)
 {
     CONTRACTL
     {
@@ -1088,10 +1088,10 @@ void IBCLogger::LogRVADataAccessHelper(FieldDesc *pFD)
 
     if (!pMT->IsRestored_NoLogging())
         goto DelayCallback;
-    
+
     if (pMT->HasInstantiation())
         return;
-    
+
     pMT->GetModule()->LogTokenAccess(pFD->GetMemberDef(), TypeProfilingData, RVAFieldData);
     return;
 

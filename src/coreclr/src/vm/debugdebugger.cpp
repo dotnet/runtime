@@ -33,10 +33,10 @@
 
 #ifndef DACCESS_COMPILE
 //----------------------------------------------------------------------------
-// 
-// FindMostRecentUserCodeOnStack - find out the most recent user managed code on stack 
 //
-// 
+// FindMostRecentUserCodeOnStack - find out the most recent user managed code on stack
+//
+//
 // Arguments:
 //    pContext - [optional] pointer to the context to be restored the user code's context if found
 //
@@ -44,16 +44,16 @@
 //    The most recent user managed code or NULL if not found.
 //
 // Note:
-//    It is a heuristic approach to get the address of the user managed code that calls into 
-//    BCL like System.Diagnostics.Debugger.Break assuming that we can find the original user 
+//    It is a heuristic approach to get the address of the user managed code that calls into
+//    BCL like System.Diagnostics.Debugger.Break assuming that we can find the original user
 //    code caller with stack walking.
 //
-//    DoWatsonForUserBreak has the address returned from the helper frame that points to an 
-//    internal BCL helpful function doing permission check.  From bucketing perspetive it is 
-//    more preferable to report the user managed code that invokes Debugger.Break instead.  
+//    DoWatsonForUserBreak has the address returned from the helper frame that points to an
+//    internal BCL helpful function doing permission check.  From bucketing perspetive it is
+//    more preferable to report the user managed code that invokes Debugger.Break instead.
 //
-//    User managed code is managed code in non-system assembly.   Currently, only mscorlib.dll 
-//    is marked as system assembly.  
+//    User managed code is managed code in non-system assembly.   Currently, only mscorlib.dll
+//    is marked as system assembly.
 //
 //----------------------------------------------------------------------------
 UINT_PTR FindMostRecentUserCodeOnStack(void)
@@ -84,7 +84,7 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
 
         // Is it not a system assembly?  User manged user will not be in system assembly.
         if ((pMD != NULL) && (!pMD->GetAssembly()->IsSystem()))
-        {          
+        {
             CrawlFrame * pCF = &(frameIter.m_crawl);
             address = (UINT_PTR)GetControlPC(pCF->GetRegisterSet());
             break;
@@ -129,29 +129,29 @@ FCIMPL0(void, DebugDebugger::Break)
     if (fDbgInjectFEE == -1)
         fDbgInjectFEE = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgInjectFEE);
 #endif
-    
-    // WatsonLastChance has its own complex (and changing) policy of how to behave if a debugger is attached. 
+
+    // WatsonLastChance has its own complex (and changing) policy of how to behave if a debugger is attached.
     // So caller should explicitly enforce any debugger-related policy before handing off to watson.
     // Check managed-only first, since managed debugging may be built on native-debugging.
     if (CORDebuggerAttached() INDEBUG(|| fDbgInjectFEE))
-    {  
+    {
         // A managed debugger is already attached -- let it handle the event.
         g_pDebugInterface->SendUserBreakpoint(GetThread());
     }
     else if (IsDebuggerPresent())
     {
-        // No managed debugger, but a native debug is attached. Explicitly fire a native user breakpoint. 
+        // No managed debugger, but a native debug is attached. Explicitly fire a native user breakpoint.
         // Don't rely on Watson support since that may have a different policy.
 
-        // Toggle to preemptive before firing the debug event. This allows the debugger to suspend this 
-        // thread at the debug event. 
+        // Toggle to preemptive before firing the debug event. This allows the debugger to suspend this
+        // thread at the debug event.
         GCX_PREEMP();
 
         // This becomes an unmanaged breakpoint, such as int 3.
         DebugBreak();
     }
     else
-    {   
+    {
     }
 
     HELPER_METHOD_FRAME_END();
@@ -225,16 +225,16 @@ FCIMPLEND
 }
 
 
-// Log to managed debugger. 
+// Log to managed debugger.
 // It will send a managed log event, which will faithfully send the two string parameters here without
 // appending a newline to anything.
-// It will also call OutputDebugString() which will send a native debug event. The message 
+// It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-FCIMPL3(void, DebugDebugger::Log, 
-        INT32 Level, 
-        StringObject* strModuleUNSAFE, 
+FCIMPL3(void, DebugDebugger::Log,
+        INT32 Level,
+        StringObject* strModuleUNSAFE,
         StringObject* strMessageUNSAFE
-       ) 
+       )
 {
     CONTRACTL
     {
@@ -273,7 +273,7 @@ FCIMPL3(void, DebugDebugger::Log,
 
 #ifdef DEBUGGING_SUPPORTED
 
-    // Send message for logging only if the 
+    // Send message for logging only if the
     // debugger is attached and logging is enabled
     // for the given category
     if (CORDebuggerAttached())
@@ -301,7 +301,7 @@ FCIMPL3(void, DebugDebugger::Log,
                 message.Set(strMessage->GetBuffer(), (COUNT_T) wcslen(strMessage->GetBuffer()));
             }
 
-            g_pDebugInterface->SendLogMessage (Level, &switchName, &message);            
+            g_pDebugInterface->SendLogMessage (Level, &switchName, &message);
         }
     }
 
@@ -323,20 +323,20 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
 FCIMPLEND
 
 
-FCIMPL4(void, DebugStackTrace::GetStackFramesInternal, 
-        StackFrameHelper* pStackFrameHelperUNSAFE, 
-        INT32 iSkip, 
+FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
+        StackFrameHelper* pStackFrameHelperUNSAFE,
+        INT32 iSkip,
         CLR_BOOL fNeedFileInfo,
         Object* pExceptionUNSAFE
        )
-{    
+{
     CONTRACTL
     {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pStackFrameHelperUNSAFE));
         PRECONDITION(CheckPointer(pExceptionUNSAFE, NULL_OK));
     }
-    CONTRACTL_END;   
+    CONTRACTL_END;
 
     STACKFRAMEHELPERREF pStackFrameHelper   = (STACKFRAMEHELPERREF)ObjectToOBJECTREF(pStackFrameHelperUNSAFE);
     OBJECTREF           pException          = ObjectToOBJECTREF(pExceptionUNSAFE);
@@ -386,11 +386,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         BASEARRAYREF methodInfoArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
 
-        // Allocate memory for the Offsets 
+        // Allocate memory for the Offsets
         OBJECTREF offsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
 
-        // Allocate memory for the ILOffsets 
+        // Allocate memory for the ILOffsets
         OBJECTREF ilOffsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
 
@@ -421,7 +421,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         // Allocate memory for the MethodTokens
         OBJECTREF methodTokens = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
-        
+
         // Allocate memory for the Filename string objects
         PTRARRAYREF filenameArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
@@ -459,7 +459,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         unsigned iCurDynamic = 0;
         for (int iElement=0; iElement < data.cElements; iElement++)
         {
-            MethodDesc *pMethod = data.pElements[iElement].pFunc;    
+            MethodDesc *pMethod = data.pElements[iElement].pFunc;
             if (pMethod->IsLCGMethod())
             {
                 iNumDynamics++;
@@ -470,13 +470,13 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 iNumDynamics++;
             }
         }
-        
+
         if (iNumDynamics)
-        {            
+        {
             PTRARRAYREF dynamicDataArray = (PTRARRAYREF) AllocateObjectArray(iNumDynamics, g_pObjectClass);
             SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
         }
-        
+
         int iNumValidFrames = 0;
         for (int i = 0; i < data.cElements; i++)
         {
@@ -502,7 +502,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
-            OBJECTREF pAssembly = pFunc->GetAssembly()->GetExposedObject(); 
+            OBJECTREF pAssembly = pFunc->GetAssembly()->GetExposedObject();
             pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
 
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
@@ -510,7 +510,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
                 U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace; 
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace;
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -524,7 +524,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     DynamicMethodDesc *pDMD = pMethod->AsDynamicMethodDesc();
                     OBJECTREF pResolver = pDMD->GetLCGMethodResolver()->GetManagedResolver();
                     _ASSERTE(pResolver != NULL);
-                    
+
                     ((PTRARRAYREF)pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pResolver);
                 }
                 else if (pMethod->GetMethodTable()->Collectible())
@@ -540,12 +540,12 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // If it's an EnC method, then don't give back any line info, b/c the PDB is out of date.
             // (We're using the stale PDB, not one w/ Edits applied).
             // Since the MethodDesc is always the most recent, v1 instances of EnC methods on the stack
-            // will appeared to be Enc. This means we err on the side of not showing line numbers for EnC methods. 
+            // will appeared to be Enc. This means we err on the side of not showing line numbers for EnC methods.
             // If any method in the file was changed, then our line numbers could be wrong. Since we don't
-            // have udpated PDBs from EnC, we can at best look at the module's version number as a rough guess 
-            // to if this file has been updated. 
+            // have udpated PDBs from EnC, we can at best look at the module's version number as a rough guess
+            // to if this file has been updated.
             bool fIsEnc = false;
-#ifdef EnC_SUPPORTED                
+#ifdef EnC_SUPPORTED
             if (pModule->IsEditAndContinueEnabled())
             {
                 EditAndContinueModule *eacm = (EditAndContinueModule *)pModule;
@@ -578,17 +578,17 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
                     if (pISymUnmanagedReader != NULL)
                     {
-                        // Found a ISymUnmanagedReader for the regular PDB so don't attempt to 
+                        // Found a ISymUnmanagedReader for the regular PDB so don't attempt to
                         // read it as a portable PDB in mscorlib's StackFrameHelper.
                         fPortablePDB = FALSE;
 
-                        ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;  
-                        HRESULT hr = pISymUnmanagedReader->GetMethod(pMethod->GetMemberDef(), 
+                        ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;
+                        HRESULT hr = pISymUnmanagedReader->GetMethod(pMethod->GetMemberDef(),
                                                                      &pISymUnmanagedMethod);
 
                         if (SUCCEEDED(hr))
                         {
-                            // get all the sequence points and the documents 
+                            // get all the sequence points and the documents
                             // associated with those sequence points.
                             // from the doument get the filename using GetURL()
                             ULONG32 SeqPointCount = 0;
@@ -608,7 +608,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
                                 // we free the array automatically, but we have to manually call release
                                 // on each element in the array when we're done with it.
-                                NewArrayHolder<ISymUnmanagedDocument*> documents ( 
+                                NewArrayHolder<ISymUnmanagedDocument*> documents (
                                     (ISymUnmanagedDocument **)new PVOID [SeqPointCount]);
 
                                 if ((offsets && lines && columns && documents && endlines && endcolumns))
@@ -676,14 +676,14 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 #ifdef DEBUGGING_SUPPORTED
                                         if (lines[j] != 0x00feefee)
                                         {
-                                            sourceLine = lines [j];  
-                                            sourceColumn = columns [j];  
+                                            sourceLine = lines [j];
+                                            sourceColumn = columns [j];
                                         }
                                         else
 #endif // DEBUGGING_SUPPORTED
                                         {
-                                            sourceLine = 0;  
-                                            sourceColumn = 0;  
+                                            sourceLine = 0;
+                                            sourceColumn = 0;
                                         }
 
                                         // Also get the filename from the document...
@@ -702,24 +702,24 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                                         }
                                     } // if got sequence points
 
-                                }  // if all memory allocations succeeded                              
+                                }  // if all memory allocations succeeded
 
                                 // holders will now delete the arrays.
-                            }                                
+                            }
                         }
                         // Holder will release pISymUnmanagedMethod
                     }
 
                 } // GCX_PREEMP()
-                
+
                 if (fFileInfoSet)
                 {
                     // Set the line and column numbers
                     I4 *pI4Line = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
-                    pI4Line[iNumValidFrames] = sourceLine;  
+                    pI4Line[iNumValidFrames] = sourceLine;
 
                     I4 *pI4Column = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
-                    pI4Column[iNumValidFrames] = sourceColumn;  
+                    pI4Column[iNumValidFrames] = sourceColumn;
 
                     // Set the file name
                     OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
@@ -794,10 +794,10 @@ FCIMPLEND
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
 
-// receives a custom notification object from the target and sends it to the RS via 
+// receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the the custom notification object being sent
-FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE) 
+FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
 {
     CONTRACTL
     {
@@ -823,7 +823,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         mdTypeDef classToken = pMT->GetCl();
 
         pThread->SetThreadCurrNotification(objHandle);
-        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainFile, classToken);   
+        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainFile, classToken);
         pThread->ClearThreadCurrNotification();
 
         if (pThread->IsAbortRequested())
@@ -840,8 +840,8 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
 FCIMPLEND
 
 
-void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame, 
-                                           void* pStopStack, 
+void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
+                                           void* pStopStack,
                                            GetStackFramesData *pData
                                           )
 {
@@ -854,7 +854,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
     CONTRACTL_END;
 
     ASSERT (pData != NULL);
-    
+
     pData->cElements = 0;
 
     // if the caller specified (< 20) frames are required, then allocate
@@ -870,7 +870,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
 
     // Allocate memory for the initial 'n' frames
     pData->pElements = new DebugStackTraceElement[pData->cElementsAllocated];
-    
+
     if (pData->TargetThread == NULL ||
         pData->TargetThread->GetInternal() == GetThread())
     {
@@ -931,9 +931,9 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
 
     LSafeToTrace:
-        pThread->StackWalkFrames(GetStackFramesCallback, 
-                                 pData, 
-                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK, 
+        pThread->StackWalkFrames(GetStackFramesCallback,
+                                 pData,
+                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK,
                                  pStartFrame);
     }
 
@@ -943,12 +943,12 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
     {
         pData->pElements[i].InitPass2();
     }
-    
+
 }
 
 
-void DebugStackTrace::GetStackFrames(Frame *pStartFrame, 
-                                     void* pStopStack, 
+void DebugStackTrace::GetStackFrames(Frame *pStartFrame,
+                                     void* pStopStack,
                                      GetStackFramesData *pData
                                     )
 {
@@ -969,7 +969,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; 
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -981,7 +981,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
         return SWA_CONTINUE;
     }
 
-    if (pData->skip > 0) 
+    if (pData->skip > 0)
     {
         pData->skip--;
         return SWA_CONTINUE;
@@ -993,11 +993,11 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
-    if (pData->cElements >= pData->cElementsAllocated) 
+    if (pData->cElements >= pData->cElementsAllocated)
     {
 
         DebugStackTraceElement* pTemp = new (nothrow) DebugStackTraceElement[2*pData->cElementsAllocated];
-        
+
         if (!pTemp)
         {
             return SWA_ABORT;
@@ -1009,7 +1009,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
 
         pData->pElements = pTemp;
         pData->cElementsAllocated *= 2;
-    }    
+    }
 
     PCODE ip;
     DWORD dwNativeOffset;
@@ -1023,7 +1023,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     else
     {
         ip = NULL;
-        dwNativeOffset = 0; 
+        dwNativeOffset = 0;
     }
 
     pData->pElements[pData->cElements].InitPass1(
@@ -1033,14 +1033,14 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
 
     // We'll init the IL offsets outside the TSL lock.
 
-    
+
     ++pData->cElements;
 
     // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after 
+    // check (frequently) for stack-buffer-overrun corruptions after
     // any long operation
     pCf->CheckGSCookies();
-    
+
     // check if we already have the number of frames that the user had asked for
     if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
     {
@@ -1051,7 +1051,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
 }
 #endif // !DACCESS_COMPILE
 
-void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e, 
+void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                                                   GetStackFramesData *pData,
                                                   PTRARRAYREF * pDynamicMethodArray /*= NULL*/
                                                  )
@@ -1124,7 +1124,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // Currently such methods always return an IP of 0, so they're easy
                 // to spot.
                 DWORD dwNativeOffset;
-                
+
                 if (cur.ip)
                 {
                     dwNativeOffset = (DWORD)(cur.ip - (UINT_PTR)pMD->GetNativeCode());
@@ -1138,7 +1138,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     , cur.fIsLastFrameFromForeignStackTrace
                     );
 #ifndef DACCESS_COMPILE
-                pData->pElements[i].InitPass2();            
+                pData->pElements[i].InitPass2();
 #endif
             }
         }
@@ -1181,7 +1181,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
     CONTRACTL
     {
         MODE_ANY;
-        GC_TRIGGERS; 
+        GC_TRIGGERS;
         THROWS;
     }
     CONTRACTL_END;

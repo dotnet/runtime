@@ -17,8 +17,8 @@ struct RangeSection;
 struct StackwalkCacheEntry;
 
 //
-// This type should be used internally inside the code manager only. EECodeInfo should 
-// be used in general code instead. Ideally, we would replace all uses of METHODTOKEN 
+// This type should be used internally inside the code manager only. EECodeInfo should
+// be used in general code instead. Ideally, we would replace all uses of METHODTOKEN
 // with EECodeInfo.
 //
 struct METHODTOKEN
@@ -56,7 +56,7 @@ enum StackCrawlMark
     LookForThread = 3
 };
 
-enum StackWalkAction 
+enum StackWalkAction
 {
     SWA_CONTINUE    = 0,    // continue walking
     SWA_ABORT       = 1,    // stop walking, early out in "failure case"
@@ -104,7 +104,7 @@ struct StackwalkCacheUnwindInfo
     #define STACKWALK_CACHE_ENTRY_ALIGN_BOUNDARY 0x8
 #endif // !BIT64
 
-struct 
+struct
 DECLSPEC_ALIGN(STACKWALK_CACHE_ENTRY_ALIGN_BOUNDARY)
 StackwalkCacheEntry
 {
@@ -136,16 +136,16 @@ StackwalkCacheEntry
 #if defined(_TARGET_X86_)
         this->ESPOffset         = SPOffset;
         this->argSize           = argSize;
-        
+
         this->securityObjectOffset = (WORD)pUnwindInfo->securityObjectOffset;
         _ASSERTE(this->securityObjectOffset == pUnwindInfo->securityObjectOffset);
-        
+
         this->fUseEbp           = pUnwindInfo->fUseEbp;
         this->fUseEbpAsFrameReg = pUnwindInfo->fUseEbpAsFrameReg;
         _ASSERTE(!fUseEbpAsFrameReg || fUseEbp);
 
         // return success if we fit SPOffset and argSize into
-        return ((this->ESPOffset == SPOffset) && 
+        return ((this->ESPOffset == SPOffset) &&
                 (this->argSize == argSize));
 #elif defined(_TARGET_AMD64_)
         // The size of a stack frame is guaranteed to fit in 4 bytes, so we don't need to check RSPOffset and RBPOffset.
@@ -197,7 +197,7 @@ static_assert_no_msg(sizeof(StackwalkCacheEntry) == 2 * sizeof(UINT_PTR));
 
 //************************************************************************
 
-class StackwalkCache 
+class StackwalkCache
 {
     friend struct _DacGlobals;
 
@@ -214,12 +214,12 @@ class StackwalkCache
         static void Init();
 
         StackwalkCacheEntry m_CacheEntry; // local copy of Global Cache entry for current IP
-        
+
         static void Invalidate(LoaderAllocator * pLoaderAllocator);
-        
+
     private:
         unsigned GetKey(UINT_PTR IP);
-        
+
 #ifdef DACCESS_COMPILE
         // DAC can't rely on the cache here
         const static BOOL s_Enabled;
@@ -230,10 +230,10 @@ class StackwalkCache
 
 //************************************************************************
 
-inline StackwalkCacheUnwindInfo::StackwalkCacheUnwindInfo(StackwalkCacheEntry * pCacheEntry) 
+inline StackwalkCacheUnwindInfo::StackwalkCacheUnwindInfo(StackwalkCacheEntry * pCacheEntry)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
 #if defined(_TARGET_AMD64_)
     RBPOffset = pCacheEntry->RBPOffset;
 #else  // !_TARGET_AMD64_

@@ -31,9 +31,9 @@ Abstract:
 #define SharedID SHMPTR
 #define SharedIDToPointer(shID) SHMPTR_TO_TYPED_PTR(PVOID, shID)
 #define SharedIDToTypePointer(TYPE,shID) SHMPTR_TO_TYPED_PTR(TYPE, shID)
-    
+
 namespace CorUnix
-{   
+{
     DWORD InternalWaitForMultipleObjectsEx(
         CPalThread * pthrCurrent,
         DWORD nCount,
@@ -54,7 +54,7 @@ namespace CorUnix
         CPalThread * pthrCurrent,
         DWORD dwMilliseconds,
         BOOL bAlertable);
-        
+
     enum THREAD_STATE
     {
         TS_IDLE,
@@ -68,26 +68,26 @@ namespace CorUnix
     struct _ThreadWaitInfo;
     struct _WaitingThreadsListNode;
     class CSynchData;
-    
+
     typedef struct _WaitingThreadsListNode * PWaitingThreadsListNode;
     typedef struct _OwnedObjectsListNode * POwnedObjectsListNode;
     typedef struct _ThreadApcInfoNode * PThreadApcInfoNode;
-        
+
     typedef struct _ThreadWaitInfo
-    {   
+    {
         WaitType wtWaitType;
         WaitDomain wdWaitDomain;
         LONG lObjCount;
         LONG lSharedObjCount;
-        CPalThread * pthrOwner;        
+        CPalThread * pthrOwner;
         PWaitingThreadsListNode rgpWTLNodes[MAXIMUM_WAIT_OBJECTS];
-        
-        _ThreadWaitInfo() : wtWaitType(SingleObject), wdWaitDomain(LocalWait), 
-                            lObjCount(0), lSharedObjCount(0), 
+
+        _ThreadWaitInfo() : wtWaitType(SingleObject), wdWaitDomain(LocalWait),
+                            lObjCount(0), lSharedObjCount(0),
                             pthrOwner(NULL) {}
     } ThreadWaitInfo;
 
-    typedef struct _ThreadNativeWaitData 
+    typedef struct _ThreadNativeWaitData
     {
         pthread_mutex_t     mutex;
         pthread_cond_t      cond;
@@ -97,9 +97,9 @@ namespace CorUnix
         bool                fInitialized;
 
         _ThreadNativeWaitData() :
-            iPred(0), 
-            dwObjectIndex(0), 
-            twrWakeupReason(WaitSucceeded), 
+            iPred(0),
+            dwObjectIndex(0),
+            twrWakeupReason(WaitSucceeded),
             fInitialized(false)
         {
         }
@@ -112,7 +112,7 @@ namespace CorUnix
         friend class CPalSynchronizationManager;
         friend class CSynchWaitController;
 
-        THREAD_STATE           m_tsThreadState; 
+        THREAD_STATE           m_tsThreadState;
         SharedID               m_shridWaitAwakened;
         Volatile<LONG>         m_lLocalSynchLockCount;
         Volatile<LONG>         m_lSharedSynchLockCount;
@@ -140,7 +140,7 @@ namespace CorUnix
         // CThreadInfoInitializer methods
         //
         virtual PAL_ERROR InitializePreCreate(void);
-        
+
         virtual PAL_ERROR InitializePostCreate(
             CPalThread *pthrCurrent,
             SIZE_T threadId,
@@ -165,10 +165,10 @@ namespace CorUnix
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         PAL_ERROR RunDeferredThreadConditionSignalings();
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
-    
-        // NOTE: the following methods provide non-synchronized access to 
-        //       the list of owned objects for this thread. Any thread 
-        //       accessing this list MUST own the appropriate 
+
+        // NOTE: the following methods provide non-synchronized access to
+        //       the list of owned objects for this thread. Any thread
+        //       accessing this list MUST own the appropriate
         //       synchronization lock(s).
         void AddObjectToOwnedList(POwnedObjectsListNode pooln);
         void RemoveObjectFromOwnedList(POwnedObjectsListNode pooln);
@@ -179,8 +179,8 @@ namespace CorUnix
         NamedMutexProcessData *RemoveFirstOwnedNamedMutex();
         bool OwnsNamedMutex(NamedMutexProcessData *processData);
 
-        // The following methods provide access to the native wait lock for 
-        // those implementations that need a lock to protect the support for 
+        // The following methods provide access to the native wait lock for
+        // those implementations that need a lock to protect the support for
         // native thread blocking (e.g.: pthread conditions)
         void AcquireNativeWaitLock(void);
         void ReleaseNativeWaitLock(void);
@@ -193,7 +193,7 @@ namespace CorUnix
 
         PThreadApcInfoNode m_ptainHead;
         PThreadApcInfoNode m_ptainTail;
-        
+
     public:
         CThreadApcInfo() :
             m_ptainHead(NULL),
@@ -201,7 +201,7 @@ namespace CorUnix
         {
         }
     };
-        
+
     class CPalSynchMgrController
     {
     public:
@@ -210,7 +210,7 @@ namespace CorUnix
         static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
 
         static PAL_ERROR PrepareForShutdown(void);
-        
+
         static PAL_ERROR Shutdown(CPalThread *pthrCurrent, bool fFullCleanup);
     };
 }

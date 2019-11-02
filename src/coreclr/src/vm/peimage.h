@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.h
-// 
+//
 
 // --------------------------------------------------------------------------------
 
@@ -31,10 +31,10 @@ class Thread;
 Thread* GetThreadNULLOk();
 
 // --------------------------------------------------------------------------------
-// PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage 
-// can be loaded either FLAT (same layout as on disk) or MAPPED (PE sections 
+// PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage
+// can be loaded either FLAT (same layout as on disk) or MAPPED (PE sections
 // mapped into virtual addresses.)
-// 
+//
 // The MAPPED format is currently limited to "IL only" images - this can be checked
 // for via PEDecoder::IsILOnlyImage.
 //
@@ -46,17 +46,17 @@ Thread* GetThreadNULLOk();
 #define CV_SIGNATURE_RSDS   0x53445352
 
 // CodeView RSDS debug information -> PDB 7.00
-struct CV_INFO_PDB70 
+struct CV_INFO_PDB70
 {
-    DWORD      magic; 
-    GUID       signature;       // unique identifier 
-    DWORD      age;             // an always-incrementing value 
-    char       path[MAX_LONGPATH];  // zero terminated string with the name of the PDB file 
+    DWORD      magic;
+    GUID       signature;       // unique identifier
+    DWORD      age;             // an always-incrementing value
+    char       path[MAX_LONGPATH];  // zero terminated string with the name of the PDB file
 };
 
 typedef DPTR(class PEImage)                PTR_PEImage;
 
-class PEImage 
+class PEImage
 {
     friend class PEModule;
 public:
@@ -99,7 +99,7 @@ public:
 #ifndef FEATURE_PAL
     static PTR_PEImage LoadImage(
         HMODULE hMod);
-#endif // !FEATURE_PAL        
+#endif // !FEATURE_PAL
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default);
@@ -119,13 +119,13 @@ public:
     };
 
     // pUnkResource must be one of the ICLRPrivResource* interfaces defined in CLRPrivBinding.IDL.
-    // pUnkResource will be queried for each of these to find a match and 
+    // pUnkResource will be queried for each of these to find a match and
     static PEImage * OpenImage(
         ICLRPrivResource * pIResource,
         MDInternalImportFlags flags = MDInternalImport_Default);
 
     static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
-    static PTR_PEImage FindByPath(LPCWSTR pPath);    
+    static PTR_PEImage FindByPath(LPCWSTR pPath);
     static PTR_PEImage FindByShortPath(LPCWSTR pPath);
     static PTR_PEImage FindByLongPath(LPCWSTR pPath);
     void AddToHashMap();
@@ -136,7 +136,7 @@ public:
     void   LoadNoFile();
     void   LoadFromMapped();
 #endif
-    
+
     BOOL   HasID();
     ULONG GetIDHash();
 
@@ -149,7 +149,7 @@ public:
     BOOL IsFile();
     HANDLE GetFileHandle();
     void SetFileHandle(HANDLE hFile);
-    HRESULT TryOpenFile();    
+    HRESULT TryOpenFile();
 
     LPCWSTR GetPathForErrorMessages();
 
@@ -160,7 +160,7 @@ public:
     BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
-    IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);    
+    IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);
 
     BOOL HasContents() ;
     BOOL HasNativeHeader() ;
@@ -169,8 +169,8 @@ public:
 
     // Check utilites
     CHECK CheckILFormat();
-#ifdef FEATURE_PREJIT    
-    CHECK CheckNativeFormat();    
+#ifdef FEATURE_PREJIT
+    CHECK CheckNativeFormat();
 #endif // FEATURE_PREJIT
     static CHECK CheckCanonicalFullPath(const SString &path);
     static CHECK CheckStartup();
@@ -219,7 +219,7 @@ public:
 private:
 #ifndef DACCESS_COMPILE
     // Get or create the layout corresponding to the mask, with an AddRef
-    PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask, DWORD flags); 
+    PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask, DWORD flags);
 
     // Create the mapped layout
     PTR_PEImageLayout CreateLayoutMapped();
@@ -231,7 +231,7 @@ private:
     PTR_PEImageLayout GetExistingLayoutInternal(DWORD imageLayoutMask);
 
     void OpenMDImport();
-    void OpenNativeMDImport();    
+    void OpenNativeMDImport();
     // ------------------------------------------------------------
     // Private routines
     // ------------------------------------------------------------
@@ -272,8 +272,8 @@ private:
     SString     m_path;
     LONG        m_refCount;
 
-    // This variable will have the data of module name. 
-    // It is only used by DAC to remap fusion loaded modules back to 
+    // This variable will have the data of module name.
+    // It is only used by DAC to remap fusion loaded modules back to
     // disk IL. This really is a workaround. The real fix is for fusion loader
     // hook (public API on hosting) to take an additional file name hint.
     // We are piggy backing on the fact that module name is the same as file name!!!
@@ -284,18 +284,18 @@ private:
 
 protected:
 
-    enum 
+    enum
     {
         IMAGE_FLAT=0,
         IMAGE_MAPPED=1,
         IMAGE_LOADED=2,
         IMAGE_COUNT=3
     };
-    
+
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT] ;
     BOOL      m_bInHashMap;
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif // DACCESS_COMPILE
 

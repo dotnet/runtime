@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: reimpl.cpp
-// 
+//
 
 //
 // Data-access-specific reimplementations of standard code.
@@ -14,20 +14,20 @@
 
 //
 // Get the Thread instance for a specific OS thread ID
-// 
+//
 // Arguments:
-//     osThread - the OS thread ID of interest.  
-//     
+//     osThread - the OS thread ID of interest.
+//
 // Return value:
 //     A Thread object marshalled from the target corresponding to the specified OS thread
 //     ID, or NULL if there is no such Thread.
-//     
+//
 // Notes:
 //     We used to accept a thread ID of '0' to mean "use the current thread", which was based on
 //     ICLRDataTarget::GetCurrentThreadID.  But this is error-prone and not well-defined (many data targets
 //     don't implement that API).  It's better to require explicit thread IDs to be passed down when they
 //     are needed.
-//     
+//
 Thread* __stdcall
 DacGetThread(ULONG32 osThread)
 {
@@ -70,7 +70,7 @@ EXTERN_C Thread* GetThread()
     // is actually the same "current thread" that the runtime cares
     // about.  Fail all queries of the current thread by
     // the runtime code to catch any inadvertent usage.
-    // Enumerating the ThreadStore is the proper way to get access 
+    // Enumerating the ThreadStore is the proper way to get access
     // to specific Thread objects.
     DacError(E_UNEXPECTED);
     return NULL;
@@ -98,11 +98,11 @@ DacGetThreadContext(Thread* thread, T_CONTEXT* context)
 
     ULONG32 contextFlags;
 
-    contextFlags = CONTEXT_ALL; 
+    contextFlags = CONTEXT_ALL;
 
     HRESULT status =
         g_dacImpl->m_pTarget->
-        GetThreadContext(thread->GetOSThreadId(), contextFlags, 
+        GetThreadContext(thread->GetOSThreadId(), contextFlags,
                          sizeof(*context), (PBYTE)context);
     if (status != S_OK)
     {

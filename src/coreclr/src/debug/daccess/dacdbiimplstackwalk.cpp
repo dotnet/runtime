@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //
 // DacDbiImplStackWalk.cpp
-// 
+//
 
 //
 // This file contains the implementation of the stackwalking-related functions on the DacDbiInterface.
-// 
+//
 // ======================================================================================
 
 #include "stdafx.h"
@@ -32,7 +32,7 @@ struct StackWalkData
 public:
     StackWalkData(Thread * pThread, Frame * pFrame, ULONG32 flags) :
         m_iterator(pThread, NULL, flags)
-    {   SUPPORTS_DAC;     
+    {   SUPPORTS_DAC;
     }
 
     // Unwrap a handle to get StackWalkData instance.
@@ -45,18 +45,18 @@ public:
 
     // The stackwalk iterator. This has lots of pointers into the DAC cache.
     StackFrameIterator m_iterator;
-    
+
     // The context buffer, which can be pointed to by the RegDisplay.
     T_CONTEXT m_context;
-    
-    // A regdisplay used by the stackwalker. 
+
+    // A regdisplay used by the stackwalker.
     REGDISPLAY m_regdisplay;
 };
 
 // Helper to allocate stackwalk datastructures for given parameters.
-// This is allocated on the local heap (and not via the forDbi allocator on the dac-cache), and then 
+// This is allocated on the local heap (and not via the forDbi allocator on the dac-cache), and then
 // freed via code:DacDbiInterfaceImpl::DeleteStackWalk
-// 
+//
 // Throws on error (mainly OOM).
 void AllocateStackwalk(StackWalkHandle * pHandle, Thread * pThread, Frame * pFrame, ULONG32 flags)
 {
@@ -82,7 +82,7 @@ StackFrameIterator * GetIteratorFromHandle(StackWalkHandle pSFIHandle)
 {
     SUPPORTS_DAC;
 
-    StackWalkData * pBuffer = StackWalkData::FromHandle(pSFIHandle);    
+    StackWalkData * pBuffer = StackWalkData::FromHandle(pSFIHandle);
     return &(pBuffer->m_iterator);
 }
 
@@ -115,8 +115,8 @@ void DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread      vmThread,
     Thread * pThread = vmThread.GetDacPtr();
 
     // Set the stackwalk flags.  We pretty much want to stop at everything.
-    DWORD dwFlags = (NOTIFY_ON_U2M_TRANSITIONS | 
-                     NOTIFY_ON_NO_FRAME_TRANSITIONS | 
+    DWORD dwFlags = (NOTIFY_ON_U2M_TRANSITIONS |
+                     NOTIFY_ON_NO_FRAME_TRANSITIONS |
                      NOTIFY_ON_INITIAL_NATIVE_CONTEXT);
 
     // allocate memory for various stackwalker buffers (StackFrameIterator, RegDisplay, Context)
@@ -127,9 +127,9 @@ void DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread      vmThread,
     GetContext(vmThread, pInternalContextBuffer);
 
     // initialize the stackwalker
-    SetStackWalkCurrentContext(vmThread, 
-                               *ppSFIHandle, 
-                               SET_CONTEXT_FLAG_ACTIVE_FRAME, 
+    SetStackWalkCurrentContext(vmThread,
+                               *ppSFIHandle,
+                               SET_CONTEXT_FLAG_ACTIVE_FRAME,
                                pInternalContextBuffer);
 }
 
@@ -177,7 +177,7 @@ void DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread           vmTh
     _ASSERTE(CheckContext(vmThread, pContext) == S_OK);
 #endif  // _DEBUG
 
-    // DD can't keep pointers back into the RS address space. 
+    // DD can't keep pointers back into the RS address space.
     // Allocate a context in DDImpl's memory space. DDImpl can't contain raw pointers back into
     // the client space since that may not marshal.
     T_CONTEXT * pContext2 = GetContextBufferFromHandle(pSFIHandle);
@@ -189,8 +189,8 @@ void DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread           vmTh
     BOOL fSuccess = pIter->ResetRegDisp(pRD, (flag == SET_CONTEXT_FLAG_ACTIVE_FRAME));
     if (!fSuccess)
     {
-        // ResetRegDisp() may fail for the same reason Init() may fail, i.e. 
-        // because the stackwalker tries to unwind one frame ahead of time, 
+        // ResetRegDisp() may fail for the same reason Init() may fail, i.e.
+        // because the stackwalker tries to unwind one frame ahead of time,
         // or because the stackwalker needs to filter out some frames based on the stackwalk flags.
         ThrowHR(E_FAIL);
     }
@@ -253,7 +253,7 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
             }
             else if (pIter->GetFrameState() == StackFrameIterator::SFITER_NO_FRAME_TRANSITION)
             {
-                // No frame transitions are not exposed in V2.  
+                // No frame transitions are not exposed in V2.
                 // Just continue onto the next managed stack frame.
                 continue;
             }
@@ -277,9 +277,9 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
         if (pIter->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
         {
             _ASSERTE(!pCF->IsActiveFrame());
-            AdjustRegDisplayForStackParameter(pCF->GetRegisterSet(), 
-                                              cbStackParameterSize, 
-                                              pCF->IsActiveFrame(), 
+            AdjustRegDisplayForStackParameter(pCF->GetRegisterSet(),
+                                              cbStackParameterSize,
+                                              pCF->IsActiveFrame(),
                                               kFromManagedToUnmanaged);
         }
     }
@@ -309,9 +309,9 @@ HRESULT DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
         g_fSkipStackCheckInit = true;
     }
 
-    // Skip this check if the customer has set the reg key/env var.  This is necessary for AutoCad.  They 
-    // enable fiber mode by calling the Win32 API ConvertThreadToFiber(), but when a managed debugger is 
-    // attached, they don't actually call into our hosting APIs such as SwitchInLogicalThreadState().  This 
+    // Skip this check if the customer has set the reg key/env var.  This is necessary for AutoCad.  They
+    // enable fiber mode by calling the Win32 API ConvertThreadToFiber(), but when a managed debugger is
+    // attached, they don't actually call into our hosting APIs such as SwitchInLogicalThreadState().  This
     // leads to the cached stack range on the Thread object being stale.
     if (!g_fSkipStackCheck)
     {
@@ -485,12 +485,12 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 // U2M transition frame generally don't store the target MD because we know what the target
                 // is by looking at the callee stack frame.  However, for reverse COM interop, we can try
                 // to get the MD for the interface.
-                // 
+                //
                 // Note that some reverse COM interop cases don't have an intermediate interface MD, so
                 // pMD may still be NULL.
                 //
                 // Even if there is an MD on the ComMethodFrame, it could be in a different appdomain than
-                // the ComMethodFrame itself.  The only known scenario is a cross-appdomain reverse COM 
+                // the ComMethodFrame itself.  The only known scenario is a cross-appdomain reverse COM
                 // interop call.  We need to check for this case.  The end result is that GetFunction() and
                 // GetFunctionToken() on ICDInternalFrame will return NULL.
 
@@ -550,7 +550,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
     }
 }
 
-// Given the FramePointer of the parent frame and the FramePointer of the current frame, 
+// Given the FramePointer of the parent frame and the FramePointer of the current frame,
 // check if the current frame is the parent frame.
 BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent)
 {
@@ -563,7 +563,7 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 
     // Ask the ExceptionTracker to figure out the answer.
     // Don't try to compare the StackFrames/FramePointers ourselves.
-    return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent); 
+    return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
 
 #else // !FEATURE_EH_FUNCLETS
     return FALSE;
@@ -643,7 +643,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
 // @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
-BOOL DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread       vmThread, 
+BOOL DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread       vmThread,
                                       const DT_CONTEXT * pContext)
 {
     DD_ENTER_MAY_THROW;
@@ -679,7 +679,7 @@ void DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * 
 //    pFrameData - the structure to be filled out
 //
 
-void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter, 
+void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                         FrameType              ft,
                                         DebuggerIPCE_STRData * pFrameData)
 {
@@ -757,7 +757,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         {
             // This method has a generic type token which is required to figure out the exact instantiation
             // of the method.  CrawlFrame::GetExactGenericArgsToken() can't always successfully retrieve
-            // the token because the JIT doesn't generate the required information all the time.  As such, 
+            // the token because the JIT doesn't generate the required information all the time.  As such,
             // we need to save the variable index of the generic type token in order to do the look up later.
             ALLOW_DATATARGET_MISSING_MEMORY(
                 pFrameData->v.exactGenericArgsToken = (GENERICS_TYPE_TOKEN)(dac_cast<TADDR>(pCF->GetExactGenericArgsToken()));
@@ -824,19 +824,19 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pJITFuncData->nativeColdSize = 0;
 
         pJITFuncData->nativeOffset = pCF->GetRelOffset();
-        
+
         // Here we detect (and set the appropriate flag) if the nativeOffset in the current frame points to the return address of IL_Throw()
         // (or other exception related JIT helpers like IL_Throw, IL_Rethrow, JIT_RngChkFail, IL_VerificationError, JIT_Overflow etc).
-        // Since return addres point to the next(!) instruction after [call IL_Throw] this sometimes can lead to incorrect exception stacktraces 
-        // where a next source line is spotted as an exception origin. This happends when the next instruction after [call IL_Throw] belongs to 
+        // Since return addres point to the next(!) instruction after [call IL_Throw] this sometimes can lead to incorrect exception stacktraces
+        // where a next source line is spotted as an exception origin. This happends when the next instruction after [call IL_Throw] belongs to
         // a sequence point and a source line different from a sequence point and a source line of [call IL_Throw].
-        // Later on this flag is used in order to adjust nativeOffset and make ICorDebugILFrame::GetIP return IL offset withing 
+        // Later on this flag is used in order to adjust nativeOffset and make ICorDebugILFrame::GetIP return IL offset withing
         // the same sequence point as an actuall IL throw instruction.
 
         // Here is how we detect it:
         // We can assume that nativeOffset points to an the instruction after [call IL_Throw] when these conditioins are met:
         //  1. pCF->IsInterrupted() - Exception has been thrown by this managed frame (frame attr FRAME_ATTR_EXCEPTION)
-        //  2. !pCF->HasFaulted() - It wasn't a "hardware" exception (Access violation, dev by 0, etc.) 
+        //  2. !pCF->HasFaulted() - It wasn't a "hardware" exception (Access violation, dev by 0, etc.)
         //  3. !pCF->IsIPadjusted() - It hasn't been previously adjusted to point to [call IL_Throw]
         //  4. pJITFuncData->nativeOffset != 0 - nativeOffset contains something that looks like a real return address.
         pJITFuncData->jsutAfterILThrow = pCF->IsInterrupted()
@@ -916,8 +916,8 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset, NULL);
 
         //
-        // For funclets, fpParentOrSelf is the FramePointer of the parent.  
-        // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back 
+        // For funclets, fpParentOrSelf is the FramePointer of the parent.
+        // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
         // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
         //
 
@@ -929,8 +929,8 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         StackFrame sfSelf = ExceptionTracker::GetStackFrameForParentCheck(pCF);
 
         //
-        // For non-funclets, fpParentOrSelf is the FramePointer of the current frame itself.  
-        // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back 
+        // For non-funclets, fpParentOrSelf is the FramePointer of the current frame itself.
+        // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
         // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
         //
 
@@ -957,13 +957,13 @@ ULONG32 DacDbiInterfaceImpl::GetStackParameterSize(EECodeInfo * pCodeInfo)
 //    pRD                      - the REGDISPLAY to be adjusted
 //    cbStackParameterSize     - the number of bytes for the stack parameters
 //    fIsActiveFrame           - whether the CONTEXT is for an active frame
-//    StackAdjustmentDirection - whether we are changing a CONTEXT from the managed convention 
+//    StackAdjustmentDirection - whether we are changing a CONTEXT from the managed convention
 //                               to the unmanaged convention
 //
 // Notes:
 //    Consider this code:
 //
-//       push 1 
+//       push 1
 //       push 2
 //       call Foo
 //    -> inc eax
@@ -977,13 +977,13 @@ ULONG32 DacDbiInterfaceImpl::GetStackParameterSize(EECodeInfo * pCodeInfo)
 //    0x8   1
 //    0xc   .....
 //
-//    If the CONTEXT is the active frame, i.e. the IP is the active instruction, 
+//    If the CONTEXT is the active frame, i.e. the IP is the active instruction,
 //    not the instruction at the return address, then the SP should be at 0xc.
-//    However, if the CONTEXT is not active, then the SP can be at either 0x4 or 0xc, depending on 
+//    However, if the CONTEXT is not active, then the SP can be at either 0x4 or 0xc, depending on
 //    the convention used by the stackwalker.  The managed stackwalker reports 0xc, but dbghelp reports
 //    0x4.  To bridge the gap we have to shim it in the DDI.
-//    
-//    Currently, we have no way to reliably shim the CONTEXT in all cases.  Consider this stack, 
+//
+//    Currently, we have no way to reliably shim the CONTEXT in all cases.  Consider this stack,
 //    where U* are native stack frames and M* are managed stack frames:
 //
 //    [leaf]
@@ -998,14 +998,14 @@ ULONG32 DacDbiInterfaceImpl::GetStackParameterSize(EECodeInfo * pCodeInfo)
 //    [root]
 //
 //    There are only two transition cases where we can reliably adjust for the callee stack parameter size:
-//    1) when the debugger calls SetContext() with the CONTEXT of the first managed stack frame in a 
+//    1) when the debugger calls SetContext() with the CONTEXT of the first managed stack frame in a
 //       managed stack chain (i.e. SetContext() with M2's CONTEXT)
 //      - the M2U transition is protected by an explicit frame (aka Frame-chain frame)
-//    2) when the debugger calls GetContext() on the first native stack frame in a native stack chain 
+//    2) when the debugger calls GetContext() on the first native stack frame in a native stack chain
 //       (i.e. GetContext() at U0)
 //      - we unwind from M0 to U0, so we know the stack parameter size of M0
 //
-//    If we want to do the adjustment in all cases, we need to ask the JIT to store the callee stack 
+//    If we want to do the adjustment in all cases, we need to ask the JIT to store the callee stack
 //    parameter size in either the unwind info.
 //
 
@@ -1047,7 +1047,7 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
 //    Return the CorDebugInternalFrameType of the explicit frame
 //
 // Notes:
-//    I wish this function were simpler, but it's not.  The logic in this function is adopted 
+//    I wish this function were simpler, but it's not.  The logic in this function is adopted
 //    from the logic in the old in-proc debugger stackwalker.
 //
 
@@ -1094,7 +1094,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
                 }
             }
             break;
-            
+
         case Frame::TT_M2U:
             // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
             if (pFrame->GetVTablePtr() != StubDispatchFrame::GetMethodFrameVPtr())
@@ -1166,7 +1166,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     // If we still have the pointer to the leaf CONTEXT, and the leaf CONTEXT is the same as the CONTEXT for
     // the current frame (i.e. the stackwalker is at the leaf frame), then we do a full copy.
     if ((pRegDisp->pContext != NULL) &&
-        (CompareControlRegisters(const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pContext)), 
+        (CompareControlRegisters(const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pContext)),
                                  const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pRegDisp->pContext)))))
     {
         *pContext = *pRegDisp->pContext;
@@ -1178,7 +1178,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
 
 //---------------------------------------------------------------------------------------
 //
-// Given the REGDISPLAY of a stack frame for one of the redirect functions, retrieve the original CONTEXT 
+// Given the REGDISPLAY of a stack frame for one of the redirect functions, retrieve the original CONTEXT
 // before the thread redirection.
 //
 // Arguments:
@@ -1241,7 +1241,7 @@ PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
 //
 // Assumptions:
 //    pIter is currently stopped at a special stub which the runtime knows how to unwind.
-//    
+//
 // Notes:
 //    * Refer to code:DacDbiInterfaceImpl::IsRuntimeUnwindableStub to see how we determine whether a control
 //        PC is in a runtime-unwindable stub
@@ -1265,8 +1265,8 @@ BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
     BOOL fSuccess = pIter->ResetRegDisp(pRD, true);
     if (!fSuccess)
     {
-        // ResetRegDisp() may fail for the same reason Init() may fail, i.e. 
-        // because the stackwalker tries to unwind one frame ahead of time, 
+        // ResetRegDisp() may fail for the same reason Init() may fail, i.e.
+        // because the stackwalker tries to unwind one frame ahead of time,
         // or because the stackwalker needs to filter out some frames based on the stackwalk flags.
         ThrowHR(E_FAIL);
     }
@@ -1279,7 +1279,7 @@ BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
 //---------------------------------------------------------------------------------------
 //
 // To aid in doing the stack walk, the shim needs to know if either TS_SyncSuspended or
-// TS_Hijacked is set on a given thread. This DAC helper provides that access. 
+// TS_Hijacked is set on a given thread. This DAC helper provides that access.
 //
 // Arguments:
 //    vmThread - Thread on which to check the TS_SyncSuspended & TS_Hijacked states

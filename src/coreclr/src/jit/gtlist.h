@@ -145,11 +145,11 @@ GTNODE(GE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
 GTNODE(GT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
 
 // These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
-// Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on 
+// Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on
 // XArch but ARM could too use these for the same purpose as there is a "tst" instruction.
-// Note that the general case of comparing a register against 0 is handled directly by 
+// Note that the general case of comparing a register against 0 is handled directly by
 // codegen which emits a "test reg, reg" instruction, that would be more difficult to do
-// during lowering because the source operand is used twice so it has to be a lclvar. 
+// during lowering because the source operand is used twice so it has to be a lclvar.
 // Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
 GTNODE(TEST_EQ          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
 GTNODE(TEST_NE          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
@@ -160,7 +160,7 @@ GTNODE(QMARK            , GenTreeQmark       ,0,(GTK_BINOP|GTK_EXOP|GTK_NOTLIR))
 GTNODE(COLON            , GenTreeColon       ,0,(GTK_BINOP|GTK_NOTLIR))
 
 GTNODE(INDEX            , GenTreeIndex       ,0,(GTK_BINOP|GTK_EXOP|GTK_NOTLIR))   // SZ-array-element
-GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,(GTK_BINOP|GTK_EXOP)) // addr of SZ-array-element; 
+GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,(GTK_BINOP|GTK_EXOP)) // addr of SZ-array-element;
                                                                       // used when aiming to minimize compile times.
 
 GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
@@ -216,12 +216,12 @@ GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,(GTK_BINOP|GTK_EXOP))           
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(CMP              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // Sets the condition flags according to the compare result. 
+GTNODE(CMP              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // Sets the condition flags according to the compare result.
                                                                         // N.B. Not a relop, it does not produce a value and it cannot be reversed.
 GTNODE(JCMP             , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // Makes a comparison and jump if the condition specified.  Does not set flags
 GTNODE(JCC              , GenTreeCC          ,0,(GTK_LEAF|GTK_NOVALUE))   // Checks the condition flags and branch if the condition specified
                                                                         // by GenTreeCC::gtCondition is true.
-GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified 
+GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified
                                                                         // by GenTreeCC::gtCondition is true and 0 otherwise.
 #ifdef _TARGET_XARCH_
 GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // The XARCH BT instruction. Like CMP, this sets the condition flags (CF

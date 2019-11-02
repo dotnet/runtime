@@ -140,7 +140,7 @@ public:
         JIT_FLAG_UNUSED30                = 61,
         JIT_FLAG_UNUSED31                = 62,
         JIT_FLAG_UNUSED32                = 63
-        
+
 
 #else // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 

@@ -26,12 +26,12 @@ EX_TRY
 The basic macros are, of course, EX_TRY / EX_CATCH / EX_END_CATCH, and in use they look like this:
 
     EX_TRY
-      // Call some function.  Maybe it will throw an exception. 
+      // Call some function.  Maybe it will throw an exception.
       Bar();
-    EX_CATCH 
-      // If we're here, something failed. 
-      m_finalDisposition = terminallyHopeless; 
-    EX_END_CATCH(RethrowTransientExceptions) 
+    EX_CATCH
+      // If we're here, something failed.
+      m_finalDisposition = terminallyHopeless;
+    EX_END_CATCH(RethrowTransientExceptions)
 
 The EX_TRY macro simply introduces the try block, and is much like the C++ "try", except that it also includes an opening brace, "{".
 
@@ -44,12 +44,12 @@ And here is the big difference from C++ exceptions: the CLR developer doesn't ge
 
 It bears repeating that the EX_CATCH macro catches everything. This behaviour is frequently not what a function needs. The next two sections discuss more about how to deal with exceptions that shouldn't have been caught.
 
-GET_EXCEPTION() & GET_THROWABLE() 
+GET_EXCEPTION() & GET_THROWABLE()
 ---------------------------------
 
 How, then, does a CLR developer discover just what has been caught, and determine what to do? There are several options, depending on just what the requirement is.
 
-First, whatever the (C++) exception that is caught, it will be delivered as an instance of some class derived from the global Exception class. Some of these derived classes are pretty obvious, like OutOfMemoryException. Some are somewhat domain specific, like EETypeLoadException. And some of these are just wrapper classes around another system's exceptions, like CLRException (has an OBJECTHANDLE to reference any managed exception) or HRException (wraps an HRESULT). If the original exception was not derived from Exception, the macros will wrap it up in something that is.  (Note that all of these exceptions are system-provided and well known. _New exception classes shouldn't be added without involving the Core Execution Engine Team!_) 
+First, whatever the (C++) exception that is caught, it will be delivered as an instance of some class derived from the global Exception class. Some of these derived classes are pretty obvious, like OutOfMemoryException. Some are somewhat domain specific, like EETypeLoadException. And some of these are just wrapper classes around another system's exceptions, like CLRException (has an OBJECTHANDLE to reference any managed exception) or HRException (wraps an HRESULT). If the original exception was not derived from Exception, the macros will wrap it up in something that is.  (Note that all of these exceptions are system-provided and well known. _New exception classes shouldn't be added without involving the Core Execution Engine Team!_)
 
 Next, there is always an HRESULT associated with a CLR internal exception. Sometimes, as with HRException, the value came from some COM source, but internal errors and Win32 api failures also have HRESULTS.
 
@@ -86,7 +86,7 @@ EX_END_CATCH(RethrowTransientExceptions)
 
 In the example above, "RethrowTransientExceptions" is an argument to the EX_END_CATCH macro; it is one of three pre-defined macros that can be thought of "exception disposition". Here are the macros, and their meanings:
 
-- _SwallowAllExceptions_: This is aptly named, and very simple. As the name suggests, it swallows everything. While simple and appealing, this is often not the right thing to do. 
+- _SwallowAllExceptions_: This is aptly named, and very simple. As the name suggests, it swallows everything. While simple and appealing, this is often not the right thing to do.
 - _RethrowTerminalExceptions_. A better name would be "RethrowThreadAbort", which is what this macro does.
 - _RethrowTransientExceptions_. The best definition of a "transient" exception is one that might not occur if tried again, possibly in a different context. These are the transient exceptions:
   - COR_E_THREADABORTED
@@ -119,7 +119,7 @@ Sometimes all that is needed is the HRESULT corresponding to an exception, parti
 
 _However, while very tempting, it is not always correct_. The EX_CATCH_HRESULT catches all exceptions, saves the HRESULT, and swallows the exception. So, unless that exception swallowing is what the function really needs, EX_CATCH_HRESULT is not appropriate.
 
-EX_RETHROW 
+EX_RETHROW
 ----------
 
 As noted above, the exception macros catch all exceptions; the only way to catch a specific exception is to catch all, and rethrow all but the one(s) of interest. So, if, after an exception is caught, examined, possibly logged, and so forth, it shouldn't be caught, it may be re-thrown. EX_RETHROW will re-raise the same exception.
@@ -169,7 +169,7 @@ There are some pre-defined convenience variations:
 COMPlusThrowOOM();
 ------------------
 
-Defers to ThrowOutOfMemory(), which throws the C++ OOM exception. This will throw a pre-allocated exception, to avoid the problem of being out of memory trying to throw an out of memory exception! 
+Defers to ThrowOutOfMemory(), which throws the C++ OOM exception. This will throw a pre-allocated exception, to avoid the problem of being out of memory trying to throw an out of memory exception!
 
 When getting the managed exception object for this exception, the runtime will first try to allocate a new managed object <sup>[1]</sup>, and if that fails, will return a pre-allocated, shared, global out of memory exception object.
 
@@ -180,29 +180,29 @@ COMPlusThrowHR(HRESULT theBadHR);
 
 There are a number of overloads, in case you have an IErrorInfo, etc. There is some surprisingly complicated code to figure out what kind of exception corresponds to a particular HRESULT.
 
-COMPlusThrowWin32(); / COMPlusThrowWin32(hr); 
+COMPlusThrowWin32(); / COMPlusThrowWin32(hr);
 ---------------------------------------------
 
 Basically throws an HRESULT_FROM_WIN32(GetLastError())
 
-COMPlusThrowSO(); 
+COMPlusThrowSO();
 -----------------
 
 Throws a Stack Overflow (SO) Exception. Note that this is not a hard SO, but rather an exception we throw when proceeding might lead to a hard SO.
 
 Like OOM, this throws a pre-allocated C++ SO exception object. Unlike OOM, when retrieving the managed object, the runtime always returns the pre-allocated, shared, global stack overflow exception object.
 
-COMPlusThrowArgumentNull() 
+COMPlusThrowArgumentNull()
 --------------------------
 
 A helper for throwing an "argument foo must not be null" exception.
 
-COMPlusThrowArgumentOutOfRange() 
+COMPlusThrowArgumentOutOfRange()
 --------------------------------
 
 As it sounds.
 
-COMPlusThrowArgumentException() 
+COMPlusThrowArgumentException()
 -------------------------------
 
 Yet another flavor of invalid argument exception.

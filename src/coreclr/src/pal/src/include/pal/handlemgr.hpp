@@ -15,7 +15,7 @@ Abstract:
     Simple handle table manager class
 
 
-    
+
 --*/
 
 #ifndef _PAL_HANDLEMGR_H_
@@ -69,7 +69,7 @@ namespace CorUnix
 
         HANDLE_INDEX m_hiFreeListStart;
         HANDLE_INDEX m_hiFreeListEnd;
-        
+
         DWORD m_dwTableSize;
         DWORD m_dwTableGrowthRate;
         HANDLE_TABLE_ENTRY* m_rghteHandleTable;

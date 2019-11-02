@@ -7,7 +7,7 @@
 
 //
 // Zapping of ready-to-run specific structures
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -253,7 +253,7 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
         if (sig.sigInst.classInstCount > 0 || sig.sigInst.methInstCount > 0)
         {
             _ASSERTE(rid != 0);
-            
+
             CORINFO_MODULE_HANDLE module = GetJitInfo()->getClassModule(pMethod->GetClassHandle());
             _ASSERTE(GetCompileInfo()->IsInCurrentVersionBubble(module));
             SigBuilder sigBuilder;
@@ -511,7 +511,7 @@ HRESULT EnumerateAllCustomAttributes(IMDInternalImport *pMDImport, Tlambda lambd
         hr = pMDImport->GetNameOfCustomAttribute(tkCustomAttribute, &szNamespace, &szName);
         if (FAILED(hr))
             return hr;
-        
+
         if (szNamespace == NULL)
             continue;
 
@@ -555,7 +555,7 @@ HRESULT EnumerateAllCustomAttributes(IMDInternalImport *pMDImport, Tlambda lambd
         hr = pMDImport->GetParentToken(tkCustomAttribute, &tkParent);
         if (FAILED(hr))
             return hr;
-        
+
         hr = lambda(szNamespace, szName, tkParent);
         if (FAILED(hr))
             return hr;

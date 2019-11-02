@@ -11,9 +11,9 @@ Module Name:
     include/pal/numa.h
 
 Abstract:
-    
+
     Header file for the NUMA functions.
-    
+
 
 
 --*/

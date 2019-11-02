@@ -7,7 +7,7 @@
 
 //
 // Base class for caching stubs.
-// 
+//
 
 
 #ifndef __mlcache_h__
@@ -99,7 +99,7 @@ private:
     //*****************************************************************************
     virtual unsigned int Hash(             // The key value.
         void const  *pData);                // Raw data to hash.
-    
+
     //*****************************************************************************
     // Compare is used in the typical memcmp way, 0 is eqaulity, -1/1 indicate
     // direction of miscompare.  In this system everything is always equal or not.
@@ -107,7 +107,7 @@ private:
     virtual unsigned int Compare(          // 0, -1, or 1.
         void const  *pData,                 // Raw key data on lookup.
         BYTE        *pElement);             // The element to compare data against.
-    
+
     //*****************************************************************************
     // Return true if the element is free to be used.
     //*****************************************************************************
@@ -120,7 +120,7 @@ private:
     virtual void SetStatus(
         BYTE        *pElement,              // The element to set status for.
         ELEMENTSTATUS eStatus);             // New status.
-    
+
     //*****************************************************************************
     // Returns the internal key value for an element.
     //*****************************************************************************

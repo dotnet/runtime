@@ -30,7 +30,7 @@ BOOL QCALLTYPE XplatEventSourceLogger::IsEventSourceLoggingEnabled()
     BEGIN_QCALL;
     retVal = XplatEventLogger::IsEventLoggingEnabled();
     END_QCALL;
-    
+
     return retVal;
 
 }

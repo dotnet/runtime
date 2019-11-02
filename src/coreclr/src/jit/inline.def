@@ -17,14 +17,14 @@
 //
 // Some subset of the FATAL cases here can be refined to SERIOUS,
 // LIMITATION, or PERFORMANCE. While the refined observations may
-// eventually veto inlining, the jit can safely keep making more 
+// eventually veto inlining, the jit can safely keep making more
 // observations.
 
-// ------ Initial Sentinel ------- 
+// ------ Initial Sentinel -------
 
 INLINE_OBSERVATION(UNUSED_INITIAL,            bool,   "unused initial observation",    FATAL,       CALLEE)
 
-// ------ Callee Fatal ------- 
+// ------ Callee Fatal -------
 
 INLINE_OBSERVATION(BAD_ARGUMENT_NUMBER,       bool,   "invalid argument number",       FATAL,       CALLEE)
 INLINE_OBSERVATION(BAD_LOCAL_NUMBER,          bool,   "invalid local number",          FATAL,       CALLEE)
@@ -63,13 +63,13 @@ INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",     
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLEE)
 INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix in callee",FATAL,       CALLEE)
 
-// ------ Callee Performance ------- 
+// ------ Callee Performance -------
 
 INLINE_OBSERVATION(LDFLD_STATIC_VALUECLASS,   bool,   "ldsfld of value class",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MANY_BASIC_BLOCKS,     bool,   "too many basic blocks",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",             PERFORMANCE, CALLEE)
 
-// ------ Callee Information ------- 
+// ------ Callee Information -------
 
 INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant test",  INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_TEST,            bool,   "argument feeds test",           INFORMATION, CALLEE)
@@ -113,7 +113,7 @@ INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",   
 INLINE_OBSERVATION(HAS_NEWARRAY,              bool,   "has newarray",                  INFORMATION, CALLER)
 INLINE_OBSERVATION(HAS_NEWOBJ,                bool,   "has newobj",                    INFORMATION, CALLER)
 
-// ------ Call Site Correctness ------- 
+// ------ Call Site Correctness -------
 
 INLINE_OBSERVATION(ARG_HAS_NULL_THIS,         bool,   "this pointer argument is null", FATAL,       CALLSITE)
 INLINE_OBSERVATION(ARG_IS_MKREFANY,           bool,   "argument is mkrefany",          FATAL,       CALLSITE)
@@ -161,11 +161,11 @@ INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",     
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLSITE)
 INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH",     FATAL,       CALLSITE)
 
-// ------ Call Site Performance ------- 
+// ------ Call Site Performance -------
 
 INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc struct",  INFORMATION, CALLSITE)
 
-// ------ Call Site Information ------- 
+// ------ Call Site Information -------
 
 INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",  INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
@@ -179,7 +179,7 @@ INLINE_OBSERVATION(LOG_REPLAY_ACCEPT,         bool,   "accepted by log replay", 
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLSITE)
 INLINE_OBSERVATION(WEIGHT,                    int,    "call site frequency",           INFORMATION, CALLSITE)
 
-// ------ Final Sentinel ------- 
+// ------ Final Sentinel -------
 
 INLINE_OBSERVATION(UNUSED_FINAL,              bool,   "unused final observation",      FATAL,       CALLEE)
 

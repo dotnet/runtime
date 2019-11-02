@@ -43,7 +43,7 @@ public:
             PRECONDITION(CheckPointer(pItem));
         }
         CONTRACTL_END;
-        
+
         return (pItem->szName != NULL);
     }
 
@@ -57,12 +57,12 @@ public:
             PRECONDITION(CheckPointer(pItem));
         }
         CONTRACTL_END;
-        
+
         pItem->szName = NULL;
     }
 
     virtual ULONG Hash(const void *pData)
-    { 
+    {
         CONTRACTL
         {
             NOTHROW;
@@ -71,9 +71,9 @@ public:
             PRECONDITION(CheckPointer(pData));
         }
         CONTRACTL_END;
-        
+
         // Do case-insensitive hash
-        return (HashiString(reinterpret_cast<LPCWSTR>(pData))); 
+        return (HashiString(reinterpret_cast<LPCWSTR>(pData)));
     }
 
     virtual int Cmp(const void *pData, void *pItem)
@@ -87,7 +87,7 @@ public:
             PRECONDITION(CheckPointer(pData));
         }
         CONTRACTL_END;
-        
+
         return SString::_wcsicmp(reinterpret_cast<LPCWSTR>(pData),reinterpret_cast<WSTRHASH*>(pItem)->szName);
     }
 }; // class CWStrHash : public CChainedHash<WSTRHASH>
@@ -133,7 +133,7 @@ void EEModuleTokenHashTableHelper::DeleteEntry(EEHashEntry_t *pEntry, Allocation
         PRECONDITION(CheckPointer(pEntry));
     }
     CONTRACTL_END;
-    
+
     delete [] (BYTE*)pEntry;
 } // void EEModuleTokenHashTableHelper::DeleteEntry()
 
@@ -149,7 +149,7 @@ BOOL EEModuleTokenHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, EEModuleTo
         PRECONDITION(CheckPointer(pKey));
     }
     CONTRACTL_END;
-    
+
     EEModuleTokenPair *pEntryKey = (EEModuleTokenPair*) pEntry->Key;
 
     // Compare the token.
@@ -174,7 +174,7 @@ DWORD EEModuleTokenHashTableHelper::Hash(EEModuleTokenPair *pKey)
         PRECONDITION(CheckPointer(pKey));
     }
     CONTRACTL_END;
-    
+
     size_t val = (size_t) ((DWORD_PTR)pKey->m_tk + (DWORD_PTR)pKey->m_pModule);
 #ifdef _TARGET_X86_
     return (DWORD)val;
@@ -195,7 +195,7 @@ EEModuleTokenPair *EEModuleTokenHashTableHelper::GetKey(EEHashEntry_t *pEntry)
         PRECONDITION(CheckPointer(pEntry));
     }
     CONTRACTL_END;
-    
+
     return (EEModuleTokenPair*)pEntry->Key;
 } // EEModuleTokenPair *EEModuleTokenHashTableHelper::GetKey()
 
@@ -204,7 +204,7 @@ EEModuleTokenPair *EEModuleTokenHashTableHelper::GetKey(EEHashEntry_t *pEntry)
 // ComMethodTable member info map.
 // ============================================================================
 void ComMTMemberInfoMap::Init(size_t sizeOfPtr)
-{    
+{
     CONTRACTL
     {
         THROWS;
@@ -223,7 +223,7 @@ void ComMTMemberInfoMap::Init(size_t sizeOfPtr)
     m_DefaultProp[0] = 0; // init to 'none'.
     hr = m_pMT->GetCustomAttribute(
         WellKnownAttribute::DefaultMember, reinterpret_cast<const void**>(&pData), &cbData);
-    
+
     if (hr == S_OK && cbData > 5 && pData[0] == 1 && pData[1] == 0)
     {
         CustomAttributeParser cap(pData, cbData);
@@ -269,10 +269,10 @@ ComMTMethodProps *ComMTMemberInfoMap::GetMethodProps(mdToken tk, Module *pModule
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
-        
+
     EEModuleTokenPair TokenModulePair(tk, pModule);
     HashDatum Data;
-    
+
     if (m_TokenToComMTMethodPropsMap.GetValue(&TokenModulePair, &Data))
         RETURN (ComMTMethodProps *)Data;
 
@@ -340,7 +340,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
             // It's safe to do the following case becasue that FieldSemanticOffset is 100, msSetter = 1, msGetter = 2
             m_MethodProps[i].semantic = static_cast<USHORT>(FieldSemanticOffset + (pFieldMeth->IsFieldGetter() ? msGetter : msSetter));
             m_MethodProps[i].property = mdPropertyNil;
-            wcscpy_s(m_MethodProps[i].pName, cchpName, rName.Ptr());          
+            wcscpy_s(m_MethodProps[i].pName, cchpName, rName.Ptr());
             m_MethodProps[i].dispid = dispid;
             m_MethodProps[i].oVft = 0;
             m_MethodProps[i].bMemberVisible = bFieldVisibleFromCom && (!bReadOnly || pFieldMeth->IsFieldGetter());
@@ -389,7 +389,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
         {
             // Get the indices of the getter and setter.
             size_t ixSet, ixGet;
-            
+
             if (m_MethodProps[i].semantic == msGetter)
             {
                 ixGet = i, ixSet = m_MethodProps[i].property;
@@ -552,17 +552,17 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
 
     // Used a couple of times.
     MethodTable::MethodIterator it(m_pMT);
-    
+
     if (ulComSlotMax-ulComSlotMin >= nSlots)
     {
         bSlotRemap = true;
-        
+
         // Resize the array.
         rSlotMap.ReSizeThrows(ulComSlotMax+1);
-        
+
         // Init to "slot not used" value of -1.
         memset(rSlotMap.Ptr(), -1, rSlotMap.Size()*sizeof(int));
-        
+
         // See which vtable slots are used.
         it.MoveToBegin();
         for (; it.IsValid(); it.Next())
@@ -575,7 +575,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
                 rSlotMap[tmp] = 0;
             }
         }
-        
+
         // Assign incrementing table indices to the slots.
         ULONG ix=0;
         for (iMD=0; iMD<=ulComSlotMax; ++iMD)
@@ -688,28 +688,28 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
 
     // Generally don't munge function into a getter.
     rProps[ix].bFunction2Getter = FALSE;
-    
+
     // See if there is property information for this member.
     hr = pMeth->GetModule()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
-    
+
     if (hr == S_OK)
     {
-        // There is property information.  
+        // There is property information.
         // See if there a method is already associated with this property.
         rProps[ix].property = pd;
         int i;
         for (i=ix-1; i>=0; --i)
         {
             // Same property in same scope?
-            if (rProps[i].property == pd && 
+            if (rProps[i].property == pd &&
                 rProps[i].pMeth->GetMDImport() == pMeth->GetMDImport())
             {
                 rProps[ix].property = i;
                 break;
             }
         }
-        
+
         // If there wasn't another method for this property, save the name on
         //  this method, for duplicate elimination.
         if (i < 0)
@@ -728,7 +728,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
             if (dispid != DISPID_UNKNOWN)
                 rProps[ix].dispid = dispid;
 
-            // If this is the default property, and the method or property doesn't have a dispid already, 
+            // If this is the default property, and the method or property doesn't have a dispid already,
             //  use DISPID_DEFAULT.
             if (rProps[ix].dispid == DISPID_UNKNOWN)
             {
@@ -741,7 +741,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
                 }
             }
         }
-        
+
         // Save the semantic.
         rProps[ix].semantic = static_cast<USHORT>(uSemantic);
 
@@ -753,12 +753,12 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         // Not a property, just an ordinary method.
         rProps[ix].property = mdPropertyNil;
         rProps[ix].semantic = 0;
-        
+
         // Get the name.
         pszName = pMeth->GetName();
         if (pszName == NULL)
             ThrowHR(E_FAIL);
-        
+
         if (stricmpUTF8(pszName, szInitName) == 0)
         {
             pName = szInitNameUse;
@@ -767,7 +767,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         {
             IfFailThrow(Utf2Quick(pszName, rName));
             pName = rName.Ptr();
-            
+
             // If this is a "ToString" method, make it a property get.
             if (SString::_wcsicmp(pName, szDefaultToString) == 0)
             {
@@ -775,7 +775,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
                 rProps[ix].bFunction2Getter = TRUE;
             }
         }
-        
+
         ULONG len = ((int)wcslen(pName)) + 1;
         rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
         if (rProps[ix].pName == NULL)
@@ -820,13 +820,13 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
     CorIfaceAttr ifaceType;             // VTBL, Dispinterface, IDispatch, or IInspectable
     ULONG       cBaseNames;             // Count of names in base interface.
     BOOL        bDup;                   // Is the name a duplicate?
-    HRESULT     hr          = S_OK;                 
+    HRESULT     hr          = S_OK;
     const size_t cchrcName  = MAX_CLASSNAME_LENGTH;
     LPWSTR      rcName      = (LPWSTR)qb.AllocThrows(cchrcName * sizeof(WCHAR));
-    
+
     // Tables of names of methods on IUnknown, IDispatch, and IInspectable.
     static const LPCWSTR rBaseNames_Dispatch[] =
-    {    
+    {
         W("QueryInterface"),
         W("AddRef"),
         W("Release"),
@@ -835,9 +835,9 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
         W("GetIDsOfNames"),
         W("Invoke")
     };
-    
+
     static const LPCWSTR rBaseNames_Inspectable[] =
-    {    
+    {
         W("QueryInterface"),
         W("AddRef"),
         W("Release"),
@@ -864,22 +864,22 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
     // we're wasting time if there aren't at least two items!
     if (nSlots < 2 && cBaseNames == 0)
         return;
-    
+
     else if (nSlots < 20)
     {
         // Eliminate duplicates.
         for (iCur=0; iCur<nSlots; ++iCur)
         {
             UINT iTst, iSuffix, iTry;
-            
+
             // If a property with an associated (lower indexed) property, don't need to examine it.
             if (TypeFromToken(rProps[iCur].property) != mdtProperty)
                 continue;
-            
+
             // If the member is not visible to COM then we don't need to examine it.
             if (!rProps[iCur].bMemberVisible)
                 continue;
-            
+
             // Check for duplicate with already accepted member names.
             bDup = FALSE;
             for (iTst=0; !bDup && iTst<iCur; ++iTst)
@@ -887,22 +887,22 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 // If a property with an associated (lower indexed) property, don't need to examine it.
                 if (TypeFromToken(rProps[iTst].property) != mdtProperty)
                     continue;
-                
+
                 // If the member is not visible to COM then we don't need to examine it.
                 if (!rProps[iTst].bMemberVisible)
                     continue;
-                
+
                 if (SString::_wcsicmp(rProps[iCur].pName, rProps[iTst].pName) == 0)
                     bDup = TRUE;
             }
-            
+
             // If OK with other members, check with base interface names.
             for (iTst=0; !bDup && iTst<cBaseNames; ++iTst)
             {
                 if (SString::_wcsicmp(rProps[iCur].pName, rBaseNames[iTst]) == 0)
                     bDup = TRUE;
             }
-            
+
             // If the name is a duplicate, decorate it.
             if (bDup)
             {
@@ -922,7 +922,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                     // Compare against ALL names.
                     for (iTry=0; iTry<nSlots; ++iTry)
                     {
-                        // If a property with an associated (lower indexed) property, 
+                        // If a property with an associated (lower indexed) property,
                         // or iTry is the same as iCur, don't need to examine it.
                         if (TypeFromToken(rProps[iTry].property) != mdtProperty || iTry == iCur)
                             continue;
@@ -962,7 +962,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             IfNullThrow(pItem);
             pItem->szName = rBaseNames[iCur];
         }
-        
+
         for (iCur=0; iCur<nSlots; iCur++)
         {
             // If a property with an associated (lower indexed) property, don't need to examine it.
@@ -998,19 +998,19 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
         {
             // get index to decorate
             iCur = piTable[i];
-            
+
             // Copy name into local buffer
             DWORD cchName = (DWORD) wcslen(rProps[iCur].pName);
             if (cchName > MAX_CLASSNAME_LENGTH-cchDuplicateDecoration)
                 cchName = MAX_CLASSNAME_LENGTH-cchDuplicateDecoration;
-            
+
             wcsncpy_s(rcName, cchrcName, rProps[iCur].pName, cchName);
 
             LPWSTR pSuffix = rcName + cchName;
             UINT iSuffix   = 2;
-        
+
             // We know this is a duplicate, so immediately decorate name.
-            do 
+            do
             {
                 _snwprintf_s(pSuffix, cchDuplicateDecoration, _TRUNCATE, szDuplicateDecoration, iSuffix);
                 iSuffix++;
@@ -1025,7 +1025,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 ThrowHR(E_OUTOFMEMORY);
             }
             wcscpy_s(rProps[iCur].pName, len, rcName);
-            
+
             // Stick it in the table.
             pItem = htNames.Add(rProps[iCur].pName);
             IfNullThrow(pItem);
@@ -1055,7 +1055,7 @@ void ComMTMemberInfoMap::EliminateDuplicateDispIds(
     UINT        ix;                     // Loop control.
     UINT        cDispids = 0;           // Dispids actually assigned.
     CQuickArray<ULONG> rDispid;         // Array of dispids.
-    
+
     // Count the Dispids.
     for (ix=0; ix<nSlots; ++ix)
     {
@@ -1064,7 +1064,7 @@ void ComMTMemberInfoMap::EliminateDuplicateDispIds(
     }
 
     // If not at least two, can't be a duplicate.
-    if (cDispids < 2) 
+    if (cDispids < 2)
         return;
 
     // Make space for the dispids.
@@ -1089,7 +1089,7 @@ void ComMTMemberInfoMap::EliminateDuplicateDispIds(
     {
         // If a duplicate is found...
         if (rDispid[ix] == rDispid[ix+1])
-        {   
+        {
             m_bHadDuplicateDispIds = TRUE;
 
             // iterate over all slots...
@@ -1103,13 +1103,13 @@ void ComMTMemberInfoMap::EliminateDuplicateDispIds(
                 }
             }
         }
-        
+
         // Skip through the duplicate range.
         while (ix <cDispids-1 && rDispid[ix] == rDispid[ix+1])
             ++ix;
     }
 } // HRESULT ComMTMemberInfoMap::EliminateDuplicateDispIds()
-        
+
 
 // ============================================================================
 // Assign a default member based on "Value" or "ToString", unless there is
@@ -1127,7 +1127,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     int         ix;                     // Loop control.
     int         defDispid=-1;           // Default via dispid.
     int         defValueProp=-1;        // Default via szDefaultValue on a method.
@@ -1150,15 +1150,15 @@ void ComMTMemberInfoMap::AssignDefaultMember(
             defDispid = ix;
             break;
         }
-        
+
         // If this has an assigned dispid, honor it.
         if (rProps[ix].dispid != DISPID_UNKNOWN)
             continue;
-        
+
         // Skip linked properties and non-properties.
         if (TypeFromToken(rProps[ix].property) != mdtProperty)
             continue;
-        
+
         pName = rProps[ix].pName;
         if (SString::_wcsicmp(pName, szDefaultValue) == 0)
         {
@@ -1175,7 +1175,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
         // If a potential match was found, see if it is "simple" enough.  A field is OK;
         //  a property get function is OK if it takes 0 params; a put is OK with 1.
         if (pDef)
-        {   
+        {
             // Fields are by definition simple enough, so only check if some sort of func.
             if (rProps[ix].semantic < FieldSemanticOffset)
             {
@@ -1205,7 +1205,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
             defDispid = defValueProp;
         else if (defToString > -1)
             defDispid = defToString;
-        
+
         // Make it the "Value"
         if (defDispid >= 0)
             rProps[defDispid].dispid = DISPID_VALUE;
@@ -1278,11 +1278,11 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
             rProps[badEnumDispid].dispid = DISPID_UNKNOWN;
             badEnumDispid = -1;
         }
-        
+
         // In case we have a poorly defined newenum member, we need to remember it.
         if (rProps[ix].dispid == DISPID_NEWENUM)
             badEnumDispid = ix;
-        
+
         // Only consider method.
         if (rProps[ix].semantic != 0)
             continue;
@@ -1301,7 +1301,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
         // Get the signature, skip the calling convention, get the param count.
         pMeth->GetSig(&pbSig, &cbSig);
         PREFIX_ASSUME(pbSig != NULL);
-        
+
         ixSig = CorSigUncompressData(pbSig, &callconv);
         _ASSERTE(callconv != IMAGE_CEE_CS_CALLCONV_FIELD);
         ixSig += CorSigUncompressData(&pbSig[ixSig], &cParams);
@@ -1328,7 +1328,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
             }
         }
         else
-        {   
+        {
             // Get the name of the TypeRef.
             _ASSERTE(TypeFromToken(tkTypeRef) == mdtTypeRef);
             if (FAILED(pMeth->GetMDImport()->GetNameOfTypeRef(tkTypeRef, &pNS, &pclsname)))
@@ -1338,7 +1338,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
         }
 
         if (pNS)
-        {   
+        {
             // Pre-pend the namespace to the class name.
             rName.ReSizeThrows((int)(strlen(pclsname)+strlen(pNS)+2));
             strcpy_s(rName.Ptr(), rName.Size(), pNS);
@@ -1364,7 +1364,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
 
     // If there wasn't a DISPID_NEWENUM already assigned...
     if (enumDispid == -1)
-    {   
+    {
         // If there was a GetEnumerator then give it DISPID_NEWENUM.
         if (enumGetEnumMeth > -1)
             rProps[enumGetEnumMeth].dispid = DISPID_NEWENUM;
@@ -1434,7 +1434,7 @@ public:
 }; // class MetaSigExport : public MetaSig
 
 // ============================================================================
-// For each property set and let functions, determine PROPERTYPUT and 
+// For each property set and let functions, determine PROPERTYPUT and
 //  PROPERTYPUTREF.
 // ============================================================================
 void ComMTMemberInfoMap::FixupPropertyAccessors(
@@ -1449,7 +1449,7 @@ void ComMTMemberInfoMap::FixupPropertyAccessors(
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     UINT        ix;                     // Loop control.
     UINT        j;                      // Inner loop.
     int         iSet;                   // Index of Set method.
@@ -1460,7 +1460,7 @@ void ComMTMemberInfoMap::FixupPropertyAccessors(
         // Skip linked properties and non-properties.
         if (TypeFromToken(rProps[ix].property) != mdtProperty)
             continue;
-        
+
         // What is this one?
         switch (rProps[ix].semantic)
         {
@@ -1475,10 +1475,10 @@ void ComMTMemberInfoMap::FixupPropertyAccessors(
         default:
             iSet = iOther = -1;
         }
-        
+
         // Look for the others.
         for (j=ix+1; j<nSlots && (iOther == -1 || iSet == -1); ++j)
-        {   
+        {
             if ((UINT)rProps[j].property == ix)
             {
                 // Found one -- what is it?
@@ -1495,13 +1495,13 @@ void ComMTMemberInfoMap::FixupPropertyAccessors(
                 }
             }
         }
-        
+
         // If both, or neither, or "VB Specific Let" (msOther) only, keep as-is.
         if (((iSet == -1) == (iOther == -1)) || (iSet == -1))
             continue;
-        
+
         _ASSERTE(iSet != -1 && iOther == -1);
-        
+
         // Get the signature.
         MethodDesc *pMeth = rProps[iSet].pMeth;
         MetaSigExport msig(pMeth);
@@ -1528,7 +1528,7 @@ void ComMTMemberInfoMap::AssignDefaultDispIds()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     // Assign the DISPID's using the same algorithm OLEAUT uses.
     DWORD nSlots = (DWORD)m_MethodProps.Size();
     for (DWORD i = 0; i < nSlots; i++)
@@ -1557,7 +1557,7 @@ void ComMTMemberInfoMap::AssignDefaultDispIds()
                 pProps->dispid = BASE_OLEAUT_DISPID + i;
 
             }
-            else 
+            else
             {
                 // We are dealing with a property.
                 if (TypeFromToken(pProps->property) == mdtProperty)
@@ -1618,7 +1618,7 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
             EEModuleTokenPair Key(pMD->GetMemberDef(), pMD->GetModule());
             m_TokenToComMTMethodPropsMap.InsertValue(&Key, (HashDatum)pProps);
         }
-        else 
+        else
         {
             // We are dealing with a property.
             if (TypeFromToken(pProps->property) == mdtProperty)

@@ -24,26 +24,26 @@ static CorElementType ParseMetadataForStaticsIsValueTypeEnum(Module * pModule, I
         // to be there is mscorlib.
         return ELEMENT_TYPE_END;
     }
-        
+
     // The only condition we will be checking is that the parent of the type is System.Enum
     // Rest of the checks will be handed by class loader, which will fail to load if it's malformed
     // hence, no need to do all the checks here.
     mdToken tkParent = 0;
     DWORD dwParentAttr = 0;
-    
+
     if (FAILED(pImport->GetTypeDefProps(tk, &dwParentAttr, &tkParent)))
     {
         return ELEMENT_TYPE_END;
     }
-    
+
     if (RidFromToken(tkParent) == 0)
     {
         return ELEMENT_TYPE_END;
     }
-    
+
     LPCSTR szName      = NULL;
     LPCSTR szNamespace = NULL;
-    
+
     switch (TypeFromToken(tkParent))
     {
         case mdtTypeDef:
@@ -61,7 +61,7 @@ static CorElementType ParseMetadataForStaticsIsValueTypeEnum(Module * pModule, I
         default:
             return ELEMENT_TYPE_END;
     }
-    
+
     if (szName == NULL || szNamespace == NULL)
     {
         return ELEMENT_TYPE_END;
@@ -73,7 +73,7 @@ static CorElementType ParseMetadataForStaticsIsValueTypeEnum(Module * pModule, I
     {
         return ELEMENT_TYPE_VALUETYPE;
     }
-    
+
     // OK, it's an enum; find its instance field and get its type
     HENUMInternalHolder   hEnum(pImport);
     mdToken tkField;
@@ -82,16 +82,16 @@ static CorElementType ParseMetadataForStaticsIsValueTypeEnum(Module * pModule, I
     {
         PCCOR_SIGNATURE pMemberSignature;
         DWORD           cMemberSignature;
-        
+
         // Get the type of the static field.
         DWORD dwMemberAttribs;
 
         IfFailThrow(pImport->GetFieldDefProps(tkField, &dwMemberAttribs));
-        
+
         if (!IsFdStatic(dwMemberAttribs))
         {
             IfFailThrow(pImport->GetSigOfFieldDef(tkField, &cMemberSignature, &pMemberSignature));
-            
+
             IfFailThrow(validateTokenSig(tkField,pMemberSignature,cMemberSignature,dwMemberAttribs,pImport));
 
             SigTypeContext typeContext;
@@ -127,7 +127,7 @@ static BOOL GetStaticFieldElementTypeForFieldDef(Module * pModule, IMDInternalIm
     // Use one set of variables for regular statics, and the other set for thread statics
     *pkk = (hr == S_OK) ? 1 : 0;
 
-                    
+
     // Get the type of the static field.
     IfFailThrow(pImport->GetSigOfFieldDef(field, &cMemberSignature, &pMemberSignature));
     IfFailThrow(validateTokenSig(field,pMemberSignature,cMemberSignature,dwMemberAttribs,pImport));

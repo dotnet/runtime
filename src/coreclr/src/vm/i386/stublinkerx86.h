@@ -23,7 +23,7 @@ extern PCODE GetPreStubEntryPoint();
 #define X86_INSTR_JMP_IND       0x25FF      // jmp dword ptr[addr32]
 #define X86_INSTR_JMP_EAX       0xE0FF      // jmp eax
 #define X86_INSTR_MOV_EAX_IMM32 0xB8        // mov eax, imm32
-#define X86_INSTR_MOV_EAX_ECX_IND 0x018b    // mov eax, [ecx]        
+#define X86_INSTR_MOV_EAX_ECX_IND 0x018b    // mov eax, [ecx]
 #define X86_INSTR_CMP_IND_ECX_IMM32 0x3981  // cmp [ecx], imm32
 #define X86_INSTR_MOV_RM_R      0x89        // mov r/m,reg
 
@@ -168,7 +168,7 @@ class StubLinkerCPU : public StubLinker
             k32BitOp,
             k64BitOp,
         };
-#endif        
+#endif
 
         VOID X86EmitAddReg(X86Reg reg, INT32 imm32);
         VOID X86EmitAddRegReg(X86Reg destreg, X86Reg srcReg);
@@ -178,7 +178,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg);
         VOID X86EmitMovSPReg(X86Reg srcReg);
         VOID X86EmitMovRegSP(X86Reg destReg);
-        
+
         VOID X86EmitPushReg(X86Reg reg);
         VOID X86EmitPopReg(X86Reg reg);
         VOID X86EmitPushRegs(unsigned regSet);
@@ -207,15 +207,15 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
-        VOID X86EmitZeroOutReg(X86Reg reg);        
+        VOID X86EmitZeroOutReg(X86Reg reg);
         VOID X86EmitJumpReg(X86Reg reg);
 
         VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, __int32 ofs);
         VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs);
-        
+
         VOID X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32);
         VOID X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg);
-        
+
         VOID X86EmitNearJump(CodeLabel *pTarget);
         VOID X86EmitCondJump(CodeLabel *pTarget, X86CondCode::cc condcode);
         VOID X86EmitCall(CodeLabel *target, int iArgBytes);
@@ -225,7 +225,7 @@ class StubLinkerCPU : public StubLinker
 #endif
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
-        
+
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, __int32 ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, __int32 ofs, X86Reg srcreg);
 #if defined(_TARGET_AMD64_)
@@ -280,7 +280,7 @@ class StubLinkerCPU : public StubLinker
         //    basereg and altreg may be equal to 4 (ESP) but scaledreg cannot
         //    for some opcodes, "altreg" may actually select an operation
         //      rather than a second register argument.
-        //    
+        //
 
         VOID X86EmitOp(WORD    opcode,
                        X86Reg  altreg,
@@ -327,7 +327,7 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitRegSave(X86Reg altreg, __int32 ofs)
         {
-            LIMITED_METHOD_CONTRACT;        
+            LIMITED_METHOD_CONTRACT;
             X86EmitEspOffset(0x89, altreg, ofs);
             // X86Reg values never are outside a byte.
             UnwindSavedReg(static_cast<UCHAR>(altreg), ofs);
@@ -361,13 +361,13 @@ class StubLinkerCPU : public StubLinker
         void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
                                      CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
 
-        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels, 
+        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
                                      CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
 #endif // _TARGET_X86_
 #endif // !FEATURE_STUBS_AS_IL
 
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
-#if defined(FEATURE_SHARE_GENERIC_CODE)  
+#if defined(FEATURE_SHARE_GENERIC_CODE)
         VOID EmitInstantiatingMethodStub(MethodDesc* pSharedMD, void* extra);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
@@ -534,7 +534,7 @@ struct StubPrecode {
     }
 
     PCODE GetTarget()
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return rel32Decode(PTR_HOST_MEMBER_TADDR(StubPrecode, this, m_rel32));
@@ -651,7 +651,7 @@ struct FixupPrecode {
 #else // HAS_FIXUP_PRECODE_CHUNKS
     TADDR GetMethodDesc()
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
         return m_pMethodDesc;
     }
 #endif // HAS_FIXUP_PRECODE_CHUNKS
@@ -673,7 +673,7 @@ struct FixupPrecode {
 
     static BOOL IsFixupPrecodeByASM(TADDR addr)
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
 
         return *dac_cast<PTR_BYTE>(addr) == X86_INSTR_JMP_REL32;
     }
@@ -731,7 +731,7 @@ struct ThisPtrRetBufPrecode {
 
     TADDR GetMethodDesc()
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
         return m_pMethodDesc;

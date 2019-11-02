@@ -40,12 +40,12 @@ If your `System.Private.CoreLib.dll` and JIT compiler (`clrjit.dll` on Windows o
 
     .\crossgen.exe System.Private.CoreLib.dll
     ./crossgen System.Private.CoreLib.dll
-    
+
 If your files are scattered in different directories, or if you want to create native images for other assemblies, the command line is slightly more complex:
 
     .\crossgen.exe /JITPath path\clrjit.dll /p "path1;path2;..." path\assemblyName.dll
     ./crossgen -JITPath path/libclrjit.so -p "path1:path2:..." path/assemblyName.dll
-    
+
 The /p is used to specify the locations of all the dependencies of the input assembly, including the input assembly itself.
 You should use full paths for these locations. Relative paths do not always work.
 If there are multiple paths, separate them with semicolons (`;`) on Windows, or colons (`:`) on non-Windows platforms.

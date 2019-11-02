@@ -71,7 +71,7 @@ bool NearDiffer::InitAsmDiff()
 #ifdef PLATFORM_UNIX
         // Unix will require the full path to coredistools. Assume that the
         // location is next to the full path to the superpmi.so.
-        
+
         WCHAR coreCLRLoadedPath[MAX_LONGPATH];
         HMODULE result = 0;
         int returnVal = ::GetModuleFileNameW(result, coreCLRLoadedPath, MAX_LONGPATH);
@@ -98,7 +98,7 @@ bool NearDiffer::InitAsmDiff()
             LogError("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());
             return false;
         }
-        
+
         g_PtrNewDiffer = (NewDiffer_t*)::GetProcAddress(hCoreDisToolsLib, "NewDiffer");
         if (g_PtrNewDiffer == nullptr)
         {

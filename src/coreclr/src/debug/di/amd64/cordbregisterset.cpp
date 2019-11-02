@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: CordbRegisterSet.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -58,14 +58,14 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
 
 HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
                                        CORDB_REGISTER regBuffer[])
-{ 
+{
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     UINT iRegister = 0;
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(regBuffer, CORDB_REGISTER, regCount, true, true);
-    
+
     if ( mask & (       SETBITULONG64( REGISTER_AMD64_XMM0  )
                     |   SETBITULONG64( REGISTER_AMD64_XMM1  )
                     |   SETBITULONG64( REGISTER_AMD64_XMM2  )
@@ -126,14 +126,14 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     }
 
     for ( int i = REGISTER_INSTRUCTION_POINTER
-        ; i<=REGISTER_AMD64_XMM15 && iRegister < regCount 
+        ; i<=REGISTER_AMD64_XMM15 && iRegister < regCount
         ; i++)
     {
         if( mask &  SETBITULONG64(i) )
         {
             switch( i )
             {
-            case REGISTER_INSTRUCTION_POINTER: 
+            case REGISTER_INSTRUCTION_POINTER:
                 regBuffer[iRegister++] = m_rd->PC; break;
             case REGISTER_STACK_POINTER:
                 regBuffer[iRegister++] = m_rd->SP; break;
@@ -196,18 +196,18 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount, 
+HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
                                                 BYTE    pAvailable[])
 {
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(pAvailable, CORDB_REGISTER, regCount, true, true);
-    
+
     // Defer to adapter for v1.0 interface
     return GetRegistersAvailableAdapter(regCount, pAvailable);
 }
 
 
-HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[], 
+HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
                                        ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     FAIL_IF_NEUTERED(this);

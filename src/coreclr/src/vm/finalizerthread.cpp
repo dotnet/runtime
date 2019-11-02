@@ -51,7 +51,7 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
     return GetFinalizerThread()->HaveExtraWorkForFinalizer();
 }
 
-// This helper is here to avoid EH goo associated with DefineFullyQualifiedNameForStack being 
+// This helper is here to avoid EH goo associated with DefineFullyQualifiedNameForStack being
 // invoked when logging is off.
 NOINLINE
 void LogFinalization(Object* obj)
@@ -92,7 +92,7 @@ void CallFinalizer(Object* obj)
         }
         else
         {
-            //reset the bit so the object can be put on the list 
+            //reset the bit so the object can be put on the list
             //with RegisterForFinalization
             obj->GetHeader()->ClrBit (BIT_SBLK_FINALIZER_RUN);
         }
@@ -118,7 +118,7 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
 
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
 
-    unsigned int fcount = 0; 
+    unsigned int fcount = 0;
 
     Object* fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
 
@@ -169,7 +169,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         // WaitForMultipleObjects will wait on the event handles in MHandles
         // starting at this offset
         UINT uiEventIndexOffsetForWait = 0;
-            
+
         // WaitForMultipleObjects will wait on this number of event handles
         DWORD cEventsForWait = kHandleCount;
 
@@ -207,7 +207,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             INFINITE,       // timeout
 #endif
             FALSE)          // alertable
-                
+
             // Adjust the returned array index for the offset we used, so the return
             // value is relative to entire MHandles array
             + uiEventIndexOffsetForWait)
@@ -296,7 +296,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GCHeapUtilities::GetGCHeap()->GarbageCollect(2, false, collection_blocking);
             GetFinalizerThread()->EnablePreemptiveGC();
             s_forcedGCInProgress = false;
-            
+
             LastHeapDumpTime = CLRGetTickCount64();
             g_TriggerHeapDump = FALSE;
         }
@@ -313,7 +313,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         GetFinalizerThread()->DisablePreemptiveGC();
 
 #ifdef _DEBUG
-        // <TODO> workaround.  make finalization very lazy for gcstress 3 or 4.  
+        // <TODO> workaround.  make finalization very lazy for gcstress 3 or 4.
         // only do finalization if the system is quiescent</TODO>
         if (g_pConfig->GetGCStressLevel() > 1)
         {
@@ -323,12 +323,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             do
             {
                 last_gc_count = GCHeapUtilities::GetGCHeap()->CollectionCount(0);
-                GetFinalizerThread()->m_GCOnTransitionsOK = FALSE; 
+                GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
                 GetFinalizerThread()->EnablePreemptiveGC();
                 __SwitchToThread (0, ++dwSwitchCount);
-                GetFinalizerThread()->DisablePreemptiveGC();             
+                GetFinalizerThread()->DisablePreemptiveGC();
                 // If no GCs happended, then we assume we are quiescent
-                GetFinalizerThread()->m_GCOnTransitionsOK = TRUE; 
+                GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
             } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
         }
 #endif //_DEBUG
@@ -381,7 +381,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
     // Make sure the finalizer thread is set to MTA to avoid hitting
-    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper 
+    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
     GetFinalizerThread()->SetApartment(Thread::AS_InMTA, FALSE);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
 
@@ -429,7 +429,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         }
         EE_FINALLY
         {
-            // We can have exception to reach here if policy tells us to 
+            // We can have exception to reach here if policy tells us to
             // let exception go on finalizer thread.
             //
             if (GOT_EXCEPTION() && SwallowUnhandledExceptions())
@@ -499,15 +499,15 @@ void FinalizerThread::FinalizerThreadCreate()
         DWORD dwRet = GetFinalizerThread()->StartThread();
 
         // When running under a user mode native debugger there is a race
-        // between the moment we've created the thread (in CreateNewThread) and 
-        // the moment we resume it (in StartThread); the debugger may receive 
-        // the "ct" (create thread) notification, and it will attempt to 
+        // between the moment we've created the thread (in CreateNewThread) and
+        // the moment we resume it (in StartThread); the debugger may receive
+        // the "ct" (create thread) notification, and it will attempt to
         // suspend/resume all threads in the process.  Now imagine the debugger
         // resumes this thread first, and only later does it try to resume the
         // newly created thread (the finalizer thread).  In these conditions our
         // call to ResumeThread may come before the debugger's call to ResumeThread
         // actually causing dwRet to equal 2.
-        // We cannot use IsDebuggerPresent() in the condition below because the 
+        // We cannot use IsDebuggerPresent() in the condition below because the
         // debugger may have been detached between the time it got the notification
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);

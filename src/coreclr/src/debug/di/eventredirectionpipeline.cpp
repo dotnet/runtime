@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: EventRedirectionPipeline.cpp
-// 
+//
 
 //
 // Implement a native pipeline that redirects events.
@@ -58,7 +58,7 @@ void EventRedirectionPipeline::Delete()
 //---------------------------------------------------------------------------------------
 void EventRedirectionPipeline::InitConfiguration()
 {
-    // We need some config strings. See header for possible values.    
+    // We need some config strings. See header for possible values.
     m_DebuggerCmd.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectApplication);
     m_AttachParams.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectAttachCmd);
     m_CreateParams.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectCreateCmd);
@@ -102,7 +102,7 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
 
     EX_TRY
     {
-        m_pBlock = new (nothrow) RedirectionBlock(); // $$ make throwing   
+        m_pBlock = new (nothrow) RedirectionBlock(); // $$ make throwing
 
         ZeroMemory(m_pBlock, sizeof(RedirectionBlock));
 
@@ -112,7 +112,7 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
         s.Printf(m_CommonParams.Value(), GetCurrentProcessId(), m_pBlock, szOptions, pidTarget);
         lpCommandLine = s.GetUnicode();
 
-        
+
         lpApplicationName = m_DebuggerCmd.Value(); // eg, something like L"c:\\debuggers_amd64\\windbg.exe";
 
         // Initialize events.
@@ -127,7 +127,7 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
         fRemap = true;
     }EX_CATCH {}
     EX_END_CATCH(RethrowTerminalExceptions);
-    
+
     if (!fRemap)
     {
         return HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY);
@@ -150,7 +150,7 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
         NULL,
         &startupInfo,
         &procInfo);
-    
+
     if (!fStatus)
     {
         return HRESULT_FROM_GetLastError();
@@ -212,12 +212,12 @@ BOOL EventRedirectionPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwT
         return FALSE;
     }
 
-    
+
     pEvent->dwDebugEventCode = EXCEPTION_DEBUG_EVENT;
     pEvent->dwProcessId  = m_pBlock->m_dwProcessId;
     pEvent->dwThreadId = m_pBlock->m_dwThreadId;
     pEvent->u.Exception.dwFirstChance = m_pBlock->m_dwFirstChance;
-    
+
     _ASSERTE(sizeof(m_pBlock->m_record) == sizeof(pEvent->u.Exception.ExceptionRecord));
     memcpy(&pEvent->u.Exception.ExceptionRecord, &m_pBlock->m_record, sizeof(m_pBlock->m_record));
 
@@ -235,8 +235,8 @@ BOOL EventRedirectionPipeline::ContinueDebugEvent(
     m_pBlock->m_ContinuationStatus = dwContinueStatus;
     m_pBlock->m_counterConsumed++;
 
-    // Sanity check the block. If these checks fail, then the block is corrupted (perhaps a issue in the 
-    // extension dll feeding us the events?). 
+    // Sanity check the block. If these checks fail, then the block is corrupted (perhaps a issue in the
+    // extension dll feeding us the events?).
 
 
     _ASSERTE(dwProcessId == m_pBlock->m_dwProcessId);
@@ -283,7 +283,7 @@ HRESULT EventRedirectionPipeline::CreateProcessUnderDebugger(
         return HRESULT_FROM_GetLastError();
     }
 
-    // Attach the real debugger.    
+    // Attach the real debugger.
     AttachDebuggerToTarget(m_CreateParams.Value(), lpProcessInformation->dwProcessId);
 
     m_dwProcessId = lpProcessInformation->dwProcessId;
@@ -304,7 +304,7 @@ HRESULT EventRedirectionPipeline::DebugActiveProcess(MachineInfo machineInfo, co
 
 // Detach
 HRESULT EventRedirectionPipeline::DebugActiveProcessStop(DWORD processId)
-{   
+{
     // Use redirected pipeline
     SetEvent(m_pBlock->m_hDetachEvent);
     CloseBlock();

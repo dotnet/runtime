@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
-// 
+//
 
 //
 // Implementation of CordbEnumerator, a templated COM enumeration pattern on Rs
@@ -33,7 +33,7 @@
 // Note: As of right now (10/13/08) most of the ICorDebug enumerators are not implemented using this base class,
 // however it might be good if we converged on this solution. There seems to be quite a bit of redundant and
 // one-off enumeration code that could be eliminated.
-// 
+//
 
 // A conversion function that converts from T to U by performing COM QueryInterface
 template<typename T, typename U, REFGUID IID_U>
@@ -59,7 +59,7 @@ T IdentityConvert(T obj)
 //
 // Note that the items are copied into an internal array, and no reference is kept to the users array.
 // Use RsSmartPtr types instead of Rs types directly to keep accurate ref counting for types which need it
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -88,7 +88,7 @@ m_nextIndex(0)
 //
 // Note that the items array is simply taken over, setting *items to NULL.
 // Use RsSmartPtr types instead of Rs types directly to keep accurate ref counting for types which need it
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -129,7 +129,7 @@ CordbEnumerator<ElemType,
 //
 // Return:
 //     S_OK for the supported interfaces and E_NOINTERFACE otherwise
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -163,7 +163,7 @@ HRESULT CordbEnumerator<ElemType,
 }
 
 // COM IUnknown::AddRef()
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -176,7 +176,7 @@ ULONG CordbEnumerator<ElemType,
 }
 
 // COM IUnknown::Release()
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -197,7 +197,7 @@ ULONG CordbEnumerator<ElemType,
 //
 //  Return:
 //    S_OK if the clone was created succesfully, otherwise some appropriate failing HRESULT
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -230,7 +230,7 @@ HRESULT CordbEnumerator<ElemType,
 //
 //   Return:
 //     S_OK or failing HRESULTS for other error conditions
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -251,7 +251,7 @@ HRESULT CordbEnumerator<ElemType,
 //
 //   Return:
 //     S_OK or failing HRESULTS for other error conditions
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -275,7 +275,7 @@ HRESULT CordbEnumerator<ElemType,
 //
 //   Return:
 //     S_OK or failing HRESULTS for other error conditions
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -307,7 +307,7 @@ HRESULT CordbEnumerator<ElemType,
 //   Return:
 //     S_OK if all items could be enumerated, S_FALSE if not all the requested items were enumerated,
 //     failing HRESULTS for other error conditions
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
@@ -338,13 +338,13 @@ HRESULT CordbEnumerator<ElemType,
     {
         *pceltFetched = countFetched;
     }
-    
+
     return countFetched == celt ? S_OK : S_FALSE;
 }
 
 // Neuter
 // neuters the enumerator and deletes the contents (the contents are not explicitly neutered though)
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>

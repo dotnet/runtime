@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 /*============================================================
 **
@@ -49,8 +49,8 @@ IMAGE_NT_HEADERS *Cor_RtlImageNtHeader(VOID *pvBase, ULONG FileLength)
         param.pNtHeaders = pNtHeaders;
 
         PAL_TRY(Param *, pParam, &param) {
-            if (   (pParam->pDos->e_magic == VAL16(IMAGE_DOS_SIGNATURE)) 
-                && ((DWORD)VAL32(pParam->pDos->e_lfanew) < RTLP_IMAGE_MAX_DOS_HEADER) 
+            if (   (pParam->pDos->e_magic == VAL16(IMAGE_DOS_SIGNATURE))
+                && ((DWORD)VAL32(pParam->pDos->e_lfanew) < RTLP_IMAGE_MAX_DOS_HEADER)
                 && ovadd_lt((DWORD)VAL32(pParam->pDos->e_lfanew), sizeof(IMAGE_FILE_HEADER) + sizeof(DWORD), pParam->FileLength)) {
                 pParam->pNtHeaders = (IMAGE_NT_HEADERS*)((BYTE*)pParam->pDos + VAL32(pParam->pDos->e_lfanew));
                 if (pParam->pNtHeaders->Signature != VAL32(IMAGE_NT_SIGNATURE))
@@ -87,7 +87,7 @@ Cor_RtlImageRvaToSection32(PTR_IMAGE_NT_HEADERS32 NtHeaders,
         if (Rva >= VAL32(NtSection->VirtualAddress) &&
             Rva < VAL32(NtSection->VirtualAddress) + VAL32(NtSection->SizeOfRawData))
             return NtSection;
-        
+
         ++NtSection;
     }
 
@@ -112,7 +112,7 @@ Cor_RtlImageRvaToSection64(PTR_IMAGE_NT_HEADERS64 NtHeaders,
         if (Rva >= VAL32(NtSection->VirtualAddress) &&
             Rva < VAL32(NtSection->VirtualAddress) + VAL32(NtSection->SizeOfRawData))
             return NtSection;
-        
+
         ++NtSection;
     }
 
@@ -200,12 +200,12 @@ EXTERN_C PBYTE Cor_RtlImageDirToVa(PTR_IMAGE_NT_HEADERS NtHeaders,
 {
     LIMITED_METHOD_CONTRACT;
     if (NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC))
-        return Cor_RtlImageRvaToVa32((PTR_IMAGE_NT_HEADERS32)NtHeaders, Base, 
-                                     VAL32(((PTR_IMAGE_NT_HEADERS32)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress), 
+        return Cor_RtlImageRvaToVa32((PTR_IMAGE_NT_HEADERS32)NtHeaders, Base,
+                                     VAL32(((PTR_IMAGE_NT_HEADERS32)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress),
                                      FileLength);
     else if(NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR64_MAGIC))
-        return Cor_RtlImageRvaToVa64((PTR_IMAGE_NT_HEADERS64)NtHeaders, Base, 
-                                     VAL32(((PTR_IMAGE_NT_HEADERS64)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress), 
+        return Cor_RtlImageRvaToVa64((PTR_IMAGE_NT_HEADERS64)NtHeaders, Base,
+                                     VAL32(((PTR_IMAGE_NT_HEADERS64)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress),
                                      FileLength);
     else {
         _ASSERTE(!"Invalid File Type");
@@ -235,7 +235,7 @@ Cor_RtlImageRvaRangeToSection(PTR_IMAGE_NT_HEADERS NtHeaders,
         if (Rva >= VAL32(NtSection->VirtualAddress) &&
             Rva + Range <= VAL32(NtSection->VirtualAddress) + VAL32(NtSection->SizeOfRawData))
             return NtSection;
-        
+
         ++NtSection;
     }
 

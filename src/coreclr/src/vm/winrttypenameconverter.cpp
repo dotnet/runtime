@@ -27,7 +27,7 @@ struct RedirectedTypeNames
 #define DEFINE_PROJECTED_TYPE(szWinRTNS, szWinRTName, szClrNS, szClrName, nClrAsmIdx, ncontractAsmIndex, nWinRTIndex, nClrIndex, nWinMDTypeKind) \
     { szClrNS, szClrName, WinMDAdapter::FrameworkAssembly_ ## nClrAsmIdx, WinMDAdapter::WinMDTypeKind_ ## nWinMDTypeKind },
 
-static const RedirectedTypeNames g_redirectedTypeNames[WinMDAdapter::RedirectedTypeIndex_Count] = 
+static const RedirectedTypeNames g_redirectedTypeNames[WinMDAdapter::RedirectedTypeIndex_Count] =
 {
 #include "winrtprojectedtypes.h"
 };
@@ -53,16 +53,16 @@ public:
     typedef RedirectedTypeNamesKey key_t;
 
     static key_t GetKey(element_t e)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
         return RedirectedTypeNamesKey(e->szClrNamespace, e->szClrName);
     }
-    static BOOL Equals(key_t k1, key_t k2) 
-    { 
+    static BOOL Equals(key_t k1, key_t k2)
+    {
         LIMITED_METHOD_CONTRACT;
         return (strcmp(k1.m_szName, k2.m_szName) == 0) && (strcmp(k1.m_szNamespace, k2.m_szNamespace) == 0);
     }
-    static count_t Hash(key_t k) 
+    static count_t Hash(key_t k)
     {
         LIMITED_METHOD_CONTRACT;
         // Only use the Name when calculating the hash value. Many redirected types share the same namespace so
@@ -198,10 +198,10 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
         fIsIReference = pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEIMPL));
         fIsIReferenceArray = pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEARRAYIMPL));
     }
-    
+
     WinMDAdapter::RedirectedTypeIndex index;
     if (ResolveRedirectedType(pMT, &index))
-    {   
+    {
         // Redirected types
         // Use the redirected WinRT name
         strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(index));
@@ -230,7 +230,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
                 if (!AppendWinRTTypeNameForManagedType(
                     th,
-                    strWinRTTypeName, 
+                    strWinRTTypeName,
                     bForGetRuntimeClassName,
                     NULL
                     ))
@@ -247,7 +247,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
                 //
                 return AppendWinRTTypeNameForManagedType(
                     th,
-                    strWinRTTypeName, 
+                    strWinRTTypeName,
                     bForGetRuntimeClassName,
                     pbIsPrimitive
                     );
@@ -259,10 +259,10 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
             // IReferenceArray<T>
             //
             strWinRTTypeName.Append(W("Windows.Foundation.IReferenceArray`1<"));
-            
+
             if (!AppendWinRTTypeNameForManagedType(
                 th,
-                strWinRTTypeName, 
+                strWinRTTypeName,
                 bForGetRuntimeClassName,
                 NULL))
                 return false;
@@ -270,7 +270,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
             strWinRTTypeName.Append(W('>'));
 
             return true;
-        }        
+        }
     }
     else if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT())
     {
@@ -309,7 +309,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
             if (!AppendWinRTTypeNameForManagedType(thManagedType.AsArray()->GetArrayElementTypeHandle(), strWinRTTypeName, bForGetRuntimeClassName, NULL))
                 return false;
-        
+
             strWinRTTypeName.Append(W('>'));
         }
     }
@@ -405,7 +405,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
             else
                 strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(idxTopIface));
 
-            // Since we are returning the typeName for the pTopIfaceMT we should use the same interfaceType 
+            // Since we are returning the typeName for the pTopIfaceMT we should use the same interfaceType
             // to check for instantiation and creating the closed generic.
             pMT = pTopIfaceMT;
         }
@@ -447,7 +447,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
             if (i > 0)
                 strWinRTTypeName.Append(W(','));
-            
+
             // In the recursive case, we can sometimes do a better job of getting a runtimeclass name if
             // the actual instantiated type can be substitued for a different type due to variance on the
             // generic type parameter.  In order to allow that to occur when processing this parameter,
@@ -466,7 +466,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
         strWinRTTypeName.Append(W('>'));
     }
-    
+
     return true;
 }
 
@@ -528,28 +528,28 @@ bool WinRTTypeNameConverter::GetWinRTNameForPrimitiveType(MethodTable *pMT, SStr
     if (elemType >= 0 && elemType < _countof(s_wszCorElementTypeToWinRTNameMapping))
     {
         LPCWSTR wszName = s_wszCorElementTypeToWinRTNameMapping[elemType];
-        
+
         if (wszName != NULL)
         {
             if (pName != NULL)
             {
                 pName->SetLiteral(wszName);
             }
-            
+
             return true;
         }
     }
 
     if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
-        if (pMT->GetModule()->IsSystem() && 
+        if (pMT->GetModule()->IsSystem() &&
             IsTypeRefOrDef(g_GuidClassName, pMT->GetModule(), pMT->GetCl()))
         {
             if (pName != NULL)
             {
                 pName->SetLiteral(W("Guid"));
             }
-            
+
             return true;
         }
     }
@@ -561,7 +561,7 @@ bool WinRTTypeNameConverter::GetWinRTNameForPrimitiveType(MethodTable *pMT, SStr
             {
                 pName->SetLiteral(W("Object"));
             }
-            
+
             return true;
         }
         if (pMT == g_pStringClass)
@@ -570,7 +570,7 @@ bool WinRTTypeNameConverter::GetWinRTNameForPrimitiveType(MethodTable *pMT, SStr
             {
                 pName->SetLiteral(W("String"));
             }
-            
+
             return true;
         }
     }
@@ -593,7 +593,7 @@ bool WinRTTypeNameConverter::AppendWinRTNameForPrimitiveType(MethodTable *pMT, S
         PRECONDITION(CheckPointer(pMT, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     SString strPrimitiveTypeName;
     if (GetWinRTNameForPrimitiveType(pMT, &strPrimitiveTypeName))
     {
@@ -604,7 +604,7 @@ bool WinRTTypeNameConverter::AppendWinRTNameForPrimitiveType(MethodTable *pMT, S
     return false;
 }
 
-// static 
+// static
 bool WinRTTypeNameConverter::IsRedirectedType(MethodTable *pMT, WinMDAdapter::WinMDTypeKind kind)
 {
     LIMITED_METHOD_CONTRACT;
@@ -620,7 +620,7 @@ bool WinRTTypeNameConverter::IsRedirectedType(MethodTable *pMT, WinMDAdapter::Wi
 
 // static
 WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndexByName(
-    Module *pModule, 
+    Module *pModule,
     mdTypeDef token)
 {
     CONTRACTL
@@ -661,7 +661,7 @@ WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndex
     UINT redirectedTypeIndex = (UINT)(*ppRedirectedNames - g_redirectedTypeNames);
     _ASSERTE(redirectedTypeIndex < COUNTOF(g_redirectedTypeNames));
 
-    // If the redirected assembly is mscorlib just compare it directly. This is necessary because 
+    // If the redirected assembly is mscorlib just compare it directly. This is necessary because
     // WinMDAdapter::GetExtraAssemblyRefProps does not support mscorlib
     if (g_redirectedTypeNames[redirectedTypeIndex].assembly == WinMDAdapter::FrameworkAssembly_Mscorlib)
     {
@@ -685,10 +685,10 @@ WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndex
 
     AssemblySpec spec;
     IfFailThrow(spec.Init(
-        pSimpleName, 
+        pSimpleName,
         &context,
-        pbKeyToken, 
-        cbKeyTokenLength, 
+        pbKeyToken,
+        cbKeyTokenLength,
         dwFlags));
     Assembly* pRedirectedAssembly = spec.LoadAssembly(
         FILE_LOADED,
@@ -698,7 +698,7 @@ WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndex
     {
         return WinMDAdapter::RedirectedTypeIndex_Invalid;
     }
-            
+
     // Resolve the name in the redirected assembly to the actual type def and assembly
     NameHandle nameHandle(szNamespace, szName);
     nameHandle.SetTokenNotToLoad(tdAllTypes);
@@ -735,7 +735,7 @@ struct WinRTPrimitiveTypeMapping
 //
 // Pre-sorted mapping : WinRT primitive type string -> BinderClassID
 //
-const WinRTPrimitiveTypeMapping s_winRTPrimitiveTypeMapping[] = 
+const WinRTPrimitiveTypeMapping s_winRTPrimitiveTypeMapping[] =
 {
     DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__BOOLEAN, "Boolean")
     DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__CHAR,    "Char16")
@@ -750,7 +750,7 @@ const WinRTPrimitiveTypeMapping s_winRTPrimitiveTypeMapping[] =
     DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__UINT16,  "UInt16")
     DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__UINT32,  "UInt32")
     DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__UINT64,  "UInt64")
-    DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__BYTE,    "UInt8")   
+    DEFINE_PRIMITIVE_TYPE_MAPPING(CLASS__BYTE,    "UInt8")
 };
 
 //
@@ -777,7 +777,7 @@ bool WinRTTypeNameConverter::GetMethodTableFromWinRTPrimitiveType(LPCWSTR wszTyp
         {
             _ASSERTE(begin >= 0 && begin <= _countof(s_winRTPrimitiveTypeMapping) - 1);
             _ASSERTE(end >= 0 && end <= _countof(s_winRTPrimitiveTypeMapping) - 1);
-            
+
             int mid = (begin + end) / 2;
             int ret = wcscmp(wszTypeName, s_winRTPrimitiveTypeMapping[mid].wszWinRTName);
             if (ret == 0)
@@ -795,7 +795,7 @@ bool WinRTTypeNameConverter::GetMethodTableFromWinRTPrimitiveType(LPCWSTR wszTyp
             }
         }
     }
-    
+
     // it's not a primitive
     return false;
 }
@@ -820,7 +820,7 @@ bool WinRTTypeNameConverter::IsRedirectedWinRTSourceType(MethodTable *pMT)
 
     DefineFullyQualifiedNameForClassW();
     LPCWSTR pszName = GetFullyQualifiedNameForClassW_WinRT(pMT);
-    
+
     return !!WinMDAdapter::ConvertWellKnownFullTypeNameFromWinRTToClr(&pszName, NULL);
 }
 
@@ -841,11 +841,11 @@ TypeHandle WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(LPCWSTR wszWi
     CONTRACTL_END;
 
     SString ssTypeName(SString::Literal, wszWinRTTypeName);
-    
+
     TypeHandle th = LoadManagedTypeForWinRTTypeNameInternal(&ssTypeName, loadBinder, pbIsPrimitive);
     if (th.IsNull())
     {
-        COMPlusThrowArgumentException(W("typeName"), NULL);    
+        COMPlusThrowArgumentException(W("typeName"), NULL);
     }
 
     return th;
@@ -880,7 +880,7 @@ static TypeHandle ComposeTypeRecursively(CQuickArray<TypeHandle> &rqPartTypes, D
         th = th.Instantiate(inst);
     }
     else if (th == g_pArrayClass)
-    {    
+    {
         // Support for arrays
         rqPartTypes[index] = ComposeTypeRecursively(rqPartTypes, pIndex);
         th = ClassLoader::LoadArrayTypeThrowing(rqPartTypes[index], ELEMENT_TYPE_SZARRAY, 1);
@@ -898,7 +898,7 @@ extern "C" HRESULT WINAPI CrossgenRoParseTypeName(SString* typeName, DWORD *part
 
 //
 // Return TypeHandle for the specified WinRT type name (supports generic type)
-// Updates wszWinRTTypeName pointer as it parse the string    
+// Updates wszWinRTTypeName pointer as it parse the string
 //
 TypeHandle WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeNameInternal(SString *ssTypeName, ICLRPrivBinder* loadBinder, bool *pbIsPrimitive)
 {
@@ -914,10 +914,10 @@ TypeHandle WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeNameInternal(SStri
 
     if (pbIsPrimitive)
         *pbIsPrimitive = false;
-    
+
     if (ssTypeName->IsEmpty())
         return TypeHandle();
-    
+
     TypeHandle typeHandle;
 
     SString::Iterator it = ssTypeName->Begin();
@@ -1005,7 +1005,7 @@ TypeHandle WinRTTypeNameConverter::GetManagedTypeFromSimpleWinRTNameInternal(SSt
 
     if (ssTypeName->IsEmpty())
         return TypeHandle();
-    
+
     //
     // Redirection
     //

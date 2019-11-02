@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDInternalRW.h
-// 
+//
 
-// 
+//
 // Contains utility code for MD directory
-// 
+//
 //*****************************************************************************
 #ifndef __MDInternalRW__h__
 #define __MDInternalRW__h__
@@ -26,20 +26,20 @@ public:
 
     MDInternalRW();
     virtual ~MDInternalRW();
-    __checkReturn 
+    __checkReturn
     HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly);
-    __checkReturn 
+    __checkReturn
     HRESULT InitWithStgdb(IUnknown *pUnk, CLiteWeightStgdbRW *pStgdb);
-    __checkReturn 
+    __checkReturn
     HRESULT InitWithRO(MDInternalRO *pRO, int bReadOnly);
-    
+
     // *** IUnknown methods ***
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
-    STDMETHODIMP_(ULONG) AddRef(void); 
+    STDMETHODIMP_(ULONG) AddRef(void);
     STDMETHODIMP_(ULONG) Release(void);
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP TranslateSigWithScope(
         IMDInternalImport *pAssemImport,    // [IN] import assembly scope.
         const void  *pbHashValue,           // [IN] hash value for the import assembly.
@@ -51,13 +51,13 @@ public:
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig)                // [OUT] count of bytes in the translated signature
         DAC_UNEXPECTED();
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetTypeDefRefTokenInTypeSpec(// return S_FALSE if enclosing type does not have a token
         mdTypeSpec  tkTypeSpec,             // [IN] TypeSpec token to look at
         mdToken    *tkEnclosedToken)        // [OUT] The enclosed type token
         DAC_UNEXPECTED();
-    
+
     STDMETHODIMP_(IMetaModelCommon*) GetMetaModelCommon()
     {
         return static_cast<IMetaModelCommon*>(&m_pStgdb->m_MiniMd);
@@ -74,7 +74,7 @@ public:
         return static_cast<IMetaModelCommonRO*>(&m_pStgdb->m_MiniMd);
     }
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP SetOptimizeAccessForSpeed(// return hresult
         BOOL    fOptSpeed)
     {
@@ -85,25 +85,25 @@ public:
     }
 
     //*****************************************************************************
-    // return the count of entries of a given kind in a scope 
-    // For example, pass in mdtMethodDef will tell you how many MethodDef 
+    // return the count of entries of a given kind in a scope
+    // For example, pass in mdtMethodDef will tell you how many MethodDef
     // contained in a scope
     //*****************************************************************************
     STDMETHODIMP_(ULONG) GetCountWithTokenKind(// return hresult
-        DWORD       tkKind)                 // [IN] pass in the kind of token. 
+        DWORD       tkKind)                 // [IN] pass in the kind of token.
         DAC_UNEXPECTED();
 
     //*****************************************************************************
     // enumerator for typedef
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumTypeDefInit(           // return hresult
         HENUMInternal *phEnum);             // [OUT] buffer to fill for enumerator data
 
     //*****************************************************************************
     // enumerator for MethodImpl
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumMethodImplInit(        // return hresult
         mdTypeDef       td,                 // [IN] TypeDef over which to scope the enumeration.
         HENUMInternal   *phEnumBody,        // [OUT] buffer to fill for enumerator data for MethodBody tokens.
@@ -111,7 +111,7 @@ public:
         DAC_UNEXPECTED();
 
     STDMETHODIMP_(ULONG) EnumMethodImplGetCount(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.  
+        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
         HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
@@ -120,14 +120,14 @@ public:
         HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumMethodImplNext(        // return hresult (S_OK = TRUE, S_FALSE = FALSE or error code)
         HENUMInternal   *phEnumBody,        // [IN] input enum for MethodBody
         HENUMInternal   *phEnumDecl,        // [IN] input enum for MethodDecl
         mdToken         *ptkBody,           // [OUT] return token for MethodBody
         mdToken         *ptkDecl)           // [OUT] return token for MethodDecl
-        DAC_UNEXPECTED(); 
-    
+        DAC_UNEXPECTED();
+
     STDMETHODIMP_(void) EnumMethodImplClose(
         HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
         HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
@@ -136,71 +136,71 @@ public:
     //*****************************************
     // Enumerator helpers for memberdef, memberref, interfaceimp,
     // event, property, param, methodimpl
-    //***************************************** 
+    //*****************************************
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumGlobalFunctionsInit(   // return hresult
         HENUMInternal   *phEnum);           // [OUT] buffer to fill for enumerator data
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumGlobalFieldsInit(      // return hresult
         HENUMInternal   *phEnum);           // [OUT] buffer to fill for enumerator data
 
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumInit(                  // return S_FALSE if record not found
         DWORD       tkKind,                 // [IN] which table to work on
         mdToken     tkParent,               // [IN] token to scope the search
-        HENUMInternal *phEnum);             // [OUT] the enumerator to fill 
+        HENUMInternal *phEnum);             // [OUT] the enumerator to fill
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumAllInit(               // return S_FALSE if record not found
         DWORD       tkKind,                 // [IN] which table to work on
-        HENUMInternal *phEnum);             // [OUT] the enumerator to fill 
+        HENUMInternal *phEnum);             // [OUT] the enumerator to fill
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumCustomAttributeByNameInit(// return S_FALSE if record not found
         mdToken     tkParent,               // [IN] token to scope the search
         LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
-        HENUMInternal *phEnum);             // [OUT] the enumerator to fill 
+        HENUMInternal *phEnum);             // [OUT] the enumerator to fill
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetParentToken(
         mdToken     tkChild,                // [IN] given child token
         mdToken     *ptkParent);            // [OUT] returning parent
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetCustomAttributeProps(
         mdCustomAttribute at,               // The attribute.
         mdToken     *ptkType);              // Put attribute type here.
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetCustomAttributeAsBlob(
         mdCustomAttribute cv,               // [IN] given custom attribute token
         void const  **ppBlob,               // [OUT] return the pointer to internal blob
         ULONG       *pcbSize);              // [OUT] return the size of the blob
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetCustomAttributeByName(  // S_OK or error.
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         const void  **ppData,               // [OUT] Put pointer to data here.
         ULONG       *pcbData);              // [OUT] Put size of data here.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNameOfCustomAttribute(  // S_OK or error.
         mdCustomAttribute mdAttribute,      // [IN] The Custom Attribute
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName);         // [OUT] Name of Custom Attribute.
 
     // returned void in v1.0/v1.1
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetScopeProps(
         LPCSTR      *pszName,               // [OUT] scope name
         GUID        *pmvid);                // [OUT] version id
 
-    // finding a particular method 
-    __checkReturn 
+    // finding a particular method
+    __checkReturn
     STDMETHODIMP FindMethodDef(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
@@ -209,7 +209,7 @@ public:
         mdMethodDef *pmd);                  // [OUT] matching memberdef
 
     // return a iSeq's param given a MethodDef
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindParamOfMethod(         // S_OK or error.
         mdMethodDef md,                     // [IN] The owning method of the param.
         ULONG       iSeq,                   // [IN} The sequence # of the param.
@@ -222,55 +222,55 @@ public:
     //*****************************************
 
     // return the name and namespace of typedef
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNameOfTypeDef(
         mdTypeDef   classdef,               // given classdef
         LPCSTR      *pszname,               // return class name(unqualified)
         LPCSTR      *psznamespace);         // return the name space name
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetIsDualOfTypeDef(
         mdTypeDef   classdef,               // [IN] given classdef.
         ULONG       *pDual);                // [OUT] return dual flag here.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetIfaceTypeOfTypeDef(
-        mdTypeDef tkTypeDef, 
+        mdTypeDef tkTypeDef,
         ULONG *   pIface);  // [OUT] 0=dual, 1=vtable, 2=dispinterface
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetNameOfMethodDef(
-        mdMethodDef tkMethodDef, 
+        mdMethodDef tkMethodDef,
         LPCSTR *    pszName);
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetNameAndSigOfMethodDef(
         mdMethodDef      methoddef,     // [IN] given memberdef
         PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of COM+ signature
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
-    
+
     // return the name of a FieldDef
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNameOfFieldDef(
         mdFieldDef fd,          // given memberdef
         LPCSTR    *pszName);
-    
+
     // return the name of typeref
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNameOfTypeRef(
         mdTypeRef   classref,               // [IN] given typeref
         LPCSTR      *psznamespace,          // [OUT] return typeref name
         LPCSTR      *pszname);              // [OUT] return typeref namespace
 
     // return the resolutionscope of typeref
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetResolutionScopeOfTypeRef(
         mdTypeRef classref,                 // given classref
         mdToken  *ptkResolutionScope);
-    
+
     // return the typeref token given the name.
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindTypeRefByName(
         LPCSTR      szNamespace,            // [IN] Namespace for the TypeRef.
         LPCSTR      szName,                 // [IN] Name of the TypeRef.
@@ -278,40 +278,40 @@ public:
         mdTypeRef   *ptk);                  // [OUT] TypeRef token returned.
 
     // return the TypeDef properties
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetTypeDefProps(    // return hresult
         mdTypeDef   classdef,               // given classdef
         DWORD       *pdwAttr,               // return flags on class, tdPublic, tdAbstract
         mdToken     *ptkExtends);           // [OUT] Put base class TypeDef/TypeRef here.
 
     // return the item's guid
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetItemGuid(               // return hresult
         mdToken     tkObj,                  // [IN] given item.
         CLSID       *pGuid);                // [OUT] Put guid here.
 
     // get enclosing class of NestedClass.
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNestedClassProps(       // S_OK or error
         mdTypeDef   tkNestedClass,          // [IN] NestedClass token.
         mdTypeDef   *ptkEnclosingClass);    // [OUT] EnclosingClass token.
 
     // Get count of Nested classes given the enclosing class.
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetCountNestedClasses(     // return count of Nested classes.
         mdTypeDef   tkEnclosingClass,       // [IN]Enclosing class.
         ULONG      *pcNestedClassesCount);
-    
+
     // Return array of Nested classes given the enclosing class.
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNestedClasses(      // Return actual count.
         mdTypeDef   tkEnclosingClass,       // [IN] Enclosing class.
         mdTypeDef   *rNestedClasses,        // [OUT] Array of nested class tokens.
         ULONG       ulNestedClasses,        // [IN] Size of array.
         ULONG      *pcNestedClasses);
-    
+
     // return the ModuleRef properties
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetModuleRefProps(
         mdModuleRef mur,                    // [IN] moduleref token
         LPCSTR      *pszName);              // [OUT] buffer to fill with the moduleref name
@@ -322,41 +322,41 @@ public:
     // GetSig* functions
     //
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetSigOfMethodDef(
         mdMethodDef      methoddef,         // [IN] given memberdef
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         PCCOR_SIGNATURE *ppSig);
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetSigOfFieldDef(
         mdMethodDef      methoddef,         // [IN] given memberdef
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         PCCOR_SIGNATURE *ppSig);
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetSigFromToken(
         mdToken           tk, // FieldDef, MethodDef, Signature or TypeSpec token
-        ULONG *           pcbSig, 
+        ULONG *           pcbSig,
         PCCOR_SIGNATURE * ppSig);
-    
-    
-    
+
+
+
     //*****************************************
     // get method property
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetMethodDefProps(
         mdMethodDef md,             // The method for which to get props.
         DWORD      *pdwFlags);
-    
+
     STDMETHODIMP_(ULONG) GetMethodDefSlot(
         mdMethodDef mb);                    // The method for which to get props.
 
     //*****************************************
     // return method implementation informaiton, like RVA and implflags
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetMethodImplProps(
         mdToken     tk,                     // [IN] MethodDef or MethodImpl
         DWORD       *pulCodeRVA,            // [OUT] CodeRVA
@@ -365,70 +365,70 @@ public:
     //*****************************************************************************
     // return the field RVA
     //*****************************************************************************
-    __checkReturn 
-    STDMETHODIMP GetFieldRVA(   
+    __checkReturn
+    STDMETHODIMP GetFieldRVA(
         mdToken     fd,                     // [IN] FieldDef
         ULONG       *pulCodeRVA);           // [OUT] CodeRVA
 
     //*****************************************************************************
     // return the field offset for a given field
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetFieldOffset(
-        mdFieldDef  fd,                     // [IN] fielddef 
+        mdFieldDef  fd,                     // [IN] fielddef
         ULONG       *pulOffset);            // [OUT] FieldOffset
-    
+
     //*****************************************
     // get field property
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetFieldDefProps(
         mdFieldDef fd,              // [IN] given fielddef
         DWORD     *pdwFlags);       // [OUT] return fdPublic, fdPrive, etc flags
-    
+
     //*****************************************************************************
     // return default value of a token(could be paramdef, fielddef, or property
     //*****************************************************************************
-    __checkReturn 
-    STDMETHODIMP GetDefaultValue(    
+    __checkReturn
+    STDMETHODIMP GetDefaultValue(
         mdToken     tk,                     // [IN] given FieldDef, ParamDef, or Property
         MDDefaultValue *pDefaultValue);     // [OUT] default value to fill
 
-    
+
     //*****************************************
     // get dispid of a MethodDef or a FieldDef
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetDispIdOfMemberDef(      // return hresult
         mdToken     tk,                     // [IN] given methoddef or fielddef
         ULONG       *pDispid);              // [OUT] Put the dispid here.
-    
+
     //*****************************************
     // return TypeRef/TypeDef given an InterfaceImpl token
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetTypeOfInterfaceImpl(    // return the TypeRef/typedef token for the interfaceimpl
         mdInterfaceImpl iiImpl,             // given a interfaceimpl
         mdToken        *ptkType);
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetMethodSpecProps(
         mdMethodSpec mi,                    // [IN] The method instantiation
         mdToken *tkParent,                  // [OUT] MethodDef or MemberRef
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data   
-        ULONG       *pcbSigBlob);           // [OUT] actual size of signature blob  
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
+        ULONG       *pcbSigBlob);           // [OUT] actual size of signature blob
 
     //*****************************************
     // look up function for TypeDef
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindTypeDef(
         LPCSTR      szNamespace,            // [IN] Namespace for the TypeDef.
         LPCSTR      szName,                 // [IN] Name of the TypeDef.
         mdToken     tkEnclosingClass,       // [IN] TypeDef/TypeRef of enclosing class.
         mdTypeDef   *ptypedef);             // [OUT] return typedef
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindTypeDefByGUID(
         REFGUID     guid,                   // guid to look up
         mdTypeDef   *ptypedef);             // return typedef
@@ -438,32 +438,32 @@ public:
     //*****************************************
     // return name and sig of a memberref
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetNameAndSigOfMemberRef(  // return name here
         mdMemberRef      memberref,         // given memberref
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
-    
+
     //*****************************************************************************
     // Given memberref, return the parent. It can be TypeRef, ModuleRef, MethodDef
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetParentOfMemberRef(
         mdMemberRef memberref,      // given memberref
         mdToken    *ptkParent);     // return the parent token
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetParamDefProps(
         mdParamDef  paramdef,       // given a paramdef
         USHORT      *pusSequence,   // [OUT] slot number for this parameter
         DWORD       *pdwAttr,       // [OUT] flags
         LPCSTR    *pszName);        // [OUT] return the name of the parameter
-    
+
     //******************************************
     // property info for method.
     //******************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetPropertyInfoForMethodDef(   // Result.
         mdMethodDef md,                     // [IN] memberdef
         mdProperty  *ppd,                   // [OUT] put property token here
@@ -473,22 +473,22 @@ public:
     //*****************************************
     // class layout/sequence information
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetClassPackSize(          // [OUT] return error if a class doesn't have packsize info
         mdTypeDef   td,                     // [IN] give typedef
         ULONG       *pdwPackSize);          // [OUT] return the pack size of the class. 1, 2, 4, 8 or 16
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetClassTotalSize(         // [OUT] return error if a class doesn't have total size info
         mdTypeDef   td,                     // [IN] give typedef
         ULONG       *pdwClassSize);         // [OUT] return the total size of the class
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetClassLayoutInit(
         mdTypeDef   td,                     // [IN] give typedef
         MD_CLASS_LAYOUT *pLayout);          // [OUT] set up the status of query here
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetClassLayoutNext(
         MD_CLASS_LAYOUT *pLayout,           // [IN|OUT] set up the status of query here
         mdFieldDef  *pfd,                   // [OUT] return the fielddef
@@ -497,7 +497,7 @@ public:
     //*****************************************
     // marshal information of a field
     //*****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetFieldMarshal(           // return error if no native type associate with the token
         mdFieldDef  fd,                     // [IN] given fielddef
         PCCOR_SIGNATURE *pSigNativeType,    // [OUT] the native type signature
@@ -508,13 +508,13 @@ public:
     // property APIs
     //*****************************************
     // find a property by name
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindProperty(
         mdTypeDef   td,                     // [IN] given a typdef
         LPCSTR      szPropName,             // [IN] property name
         mdProperty  *pProp);                // [OUT] return property token
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetPropertyProps(
         mdProperty  prop,                   // [IN] property token
         LPCSTR      *szProperty,            // [OUT] property name
@@ -525,13 +525,13 @@ public:
     //**********************************
     // Event APIs
     //**********************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindEvent(
         mdTypeDef   td,                     // [IN] given a typdef
         LPCSTR      szEventName,            // [IN] event name
         mdEvent     *pEvent);               // [OUT] return event token
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetEventProps(           // S_OK, S_FALSE, or error.
         mdEvent     ev,                     // [IN] event token
         LPCSTR      *pszEvent,              // [OUT] Event name
@@ -542,16 +542,16 @@ public:
     //**********************************
     // Generics APIs
     //**********************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetGenericParamProps(        // S_OK or error.
         mdGenericParam rd,                  // [IN] The type parameter
         ULONG* pulSequence,                 // [OUT] Parameter sequence number
-        DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)       
-        mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef) 
+        DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)
+        mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef)
         DWORD *reserved,                    // [OUT] The kind (TypeDef/Ref/Spec, for future use)
         LPCSTR *szName);                    // [OUT] The name
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetGenericParamConstraintProps(      // S_OK or error.
         mdGenericParamConstraint rd,        // [IN] The constraint token
         mdGenericParam *ptGenericParam,     // [OUT] GenericParam that is constrained
@@ -560,18 +560,18 @@ public:
     //**********************************
     // find a particular associate of a property or an event
     //**********************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindAssociate(
         mdToken     evprop,                 // [IN] given a property or event token
         DWORD       associate,              // [IN] given a associate semantics(setter, getter, testdefault, reset, AddOn, RemoveOn, Fire)
-        mdMethodDef *pmd);                  // [OUT] return method def token 
+        mdMethodDef *pmd);                  // [OUT] return method def token
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumAssociateInit(
         mdToken     evprop,                 // [IN] given a property or an event token
         HENUMInternal *phEnum);             // [OUT] cursor to hold the query result
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetAllAssociates(
         HENUMInternal *phEnum,              // [IN] query result form GetPropertyAssociateCounts
         ASSOCIATE_RECORD *pAssociateRec,    // [OUT] struct to fill for output
@@ -581,7 +581,7 @@ public:
     //**********************************
     // Get info about a PermissionSet.
     //**********************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetPermissionSetProps(
         mdPermission pm,                    // [IN] the permission token.
         DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
@@ -592,17 +592,17 @@ public:
     // Get the String given the String token.
     // Returns a pointer to the string, or NULL in case of error.
     //****************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetUserString(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
         BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString);
-    
+
     //*****************************************************************************
     // p-invoke APIs.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetPinvokeMap(
         mdToken     tk,                     // [IN] FieldDef or MethodDef.
         DWORD       *pdwMappingFlags,       // [OUT] Flags used for mapping.
@@ -612,7 +612,7 @@ public:
     //*****************************************************************************
     // Assembly MetaData APIs.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetAssemblyProps(
         mdAssembly  mda,                    // [IN] The Assembly for which to get the properties.
         const void  **ppbPublicKey,                 // [OUT] Pointer to the public key.
@@ -622,7 +622,7 @@ public:
         AssemblyMetaDataInternal *pMetaData,// [OUT] Assembly MetaData.
         DWORD       *pdwAssemblyFlags);     // [OUT] Flags.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetAssemblyRefProps(
         mdAssemblyRef mdar,                 // [IN] The AssemblyRef for which to get the properties.
         const void  **ppbPublicKeyOrToken,          // [OUT] Pointer to the public key or token.
@@ -633,7 +633,7 @@ public:
         ULONG       *pcbHashValue,          // [OUT] Count of bytes in the hash blob.
         DWORD       *pdwAssemblyRefFlags);  // [OUT] Flags.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetFileProps(
         mdFile      mdf,                    // [IN] The File for which to get the properties.
         LPCSTR      *pszName,               // [OUT] Buffer to fill with name.
@@ -641,7 +641,7 @@ public:
         ULONG       *pcbHashValue,          // [OUT] Count of bytes in the Hash Value Blob.
         DWORD       *pdwFileFlags);         // [OUT] Flags.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetExportedTypeProps(
         mdExportedType  mdct,                   // [IN] The ExportedType for which to get the properties.
         LPCSTR      *pszNamespace,          // [OUT] Buffer to fill with namespace.
@@ -650,7 +650,7 @@ public:
         mdTypeDef   *ptkTypeDef,            // [OUT] TypeDef token within the file.
         DWORD       *pdwExportedTypeFlags);     // [OUT] Flags.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetManifestResourceProps(
         mdManifestResource  mdmr,           // [IN] The ManifestResource for which to get the properties.
         LPCSTR      *pszName,               // [OUT] Buffer to fill with name.
@@ -658,26 +658,26 @@ public:
         DWORD       *pdwOffset,             // [OUT] Offset to the beginning of the resource within the file.
         DWORD       *pdwResourceFlags);     // [OUT] Flags.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindExportedTypeByName(        // S_OK or error
-        LPCSTR      szNamespace,            // [IN] Namespace of the ExportedType.   
-        LPCSTR      szName,                 // [IN] Name of the ExportedType.   
+        LPCSTR      szNamespace,            // [IN] Namespace of the ExportedType.
+        LPCSTR      szName,                 // [IN] Name of the ExportedType.
         mdExportedType   tkEnclosingType,        // [IN] Token for the enclosing Type.
         mdExportedType  *pmct);                 // [OUT] Put ExportedType token here.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP FindManifestResourceByName(// S_OK or error
-        LPCSTR      szName,                 // [IN] Name of the resource.   
+        LPCSTR      szName,                 // [IN] Name of the resource.
         mdManifestResource *pmmr);          // [OUT] Put ManifestResource token here.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetAssemblyFromScope(      // S_OK or error
         mdAssembly  *ptkAssembly);          // [OUT] Put token here.
-    
+
     //***************************************************************************
     // return properties regarding a TypeSpec
     //***************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetTypeSpecFromToken(   // S_OK or error.
         mdTypeSpec typespec,                // [IN] Signature token.
         PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to token.
@@ -689,7 +689,7 @@ public:
     //  NOTE: if the scope has never been saved, it will not have a built-for
     //  version, and an empty string will be returned.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetVersionString(    // S_OK or error.
         LPCSTR      *pVer);               // [OUT] Put version string here.
 
@@ -697,14 +697,14 @@ public:
     //*****************************************************************************
     // helpers to convert a text signature to a com format
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP ConvertTextSigToComSig(    // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
         CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
         ULONG       *pcbCount);             // [OUT] the result size of signature
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP SetUserContextData(        // S_OK or E_NOTIMPL
         IUnknown    *pIUnk);                // The user context.
 
@@ -712,10 +712,10 @@ public:
         mdToken     tk);                    // [IN] Given token.
 
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock);       // return the cached public interface
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk);      // return hresult
     STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock();       // return the reader writer lock
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem)
     {
         _ASSERTE(m_pSemReadWrite == NULL);
@@ -725,18 +725,18 @@ public:
     }
 
     // *** IMDInternalImportENC methods ***
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP ApplyEditAndContinue(      // S_OK or error.
         MDInternalRW *pDelta);              // MD with the ENC delta.
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP EnumDeltaTokensInit(       // return hresult
         HENUMInternal   *phEnum);           // [OUT] buffer to fill for enumerator data
 
     STDMETHODIMP_(mdModule) GetModuleFromScope(void);
 
-    // finding a particular method 
-    __checkReturn 
+    // finding a particular method
+    __checkReturn
     STDMETHODIMP FindMethodDefUsingCompare(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
@@ -749,13 +749,13 @@ public:
     //*****************************************************************************
     // return the table pointer and size for a given table index
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP GetTableInfoWithIndex(
         ULONG  index,                       // [IN] pass in the index
         void **pTable,                      // [OUT] pointer to table at index
         void **pTableSize);                 // [OUT] size of table at index
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP ApplyEditAndContinue(
         void        *pData,                 // [IN] the delta metadata
         ULONG       cbData,                 // [IN] length of pData
@@ -781,11 +781,11 @@ private:
 public:
     STDMETHODIMP_(DWORD) GetMetadataStreamVersion()
     {
-        return (DWORD)m_pStgdb->m_MiniMd.m_Schema.m_minor | 
+        return (DWORD)m_pStgdb->m_MiniMd.m_Schema.m_minor |
                ((DWORD)m_pStgdb->m_MiniMd.m_Schema.m_major << 16);
     };
 
-    __checkReturn 
+    __checkReturn
     STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
         BOOL    fVerified)
     {

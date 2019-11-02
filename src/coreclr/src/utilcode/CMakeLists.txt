@@ -63,7 +63,7 @@ set(UTILCODE_COMMON_SOURCES
 # They should be moved out from here into the declaration
 # of UTILCODE_SOURCES above after fixing compiler errors.
 if(WIN32)
-  list(APPEND UTILCODE_COMMON_SOURCES 
+  list(APPEND UTILCODE_COMMON_SOURCES
     appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
@@ -71,26 +71,26 @@ if(WIN32)
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
-  )  
+  )
 endif(WIN32)
-  
-set(UTILCODE_SOURCES 
+
+set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   perflog.cpp
 )
 
-set(UTILCODE_DAC_SOURCES 
+set(UTILCODE_DAC_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
 )
 
-set(UTILCODE_CROSSGEN_SOURCES 
+set(UTILCODE_CROSSGEN_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
   perflog.cpp
 )
 
-set(UTILCODE_STATICNOHOST_SOURCES 
+set(UTILCODE_STATICNOHOST_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
 )

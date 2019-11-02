@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RCThread.cpp
-// 
+//
 
 //
 // Runtime Controller Thread
@@ -36,13 +36,13 @@ EEThreadId DebuggerRCThread::s_DbgHelperThreadId;
 // Constructor
 //
 DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
-    : m_debugger(pDebugger), 
-    m_pDCB(NULL), 
-    m_thread(NULL), 
+    : m_debugger(pDebugger),
+    m_pDCB(NULL),
+    m_thread(NULL),
     m_run(true),
     m_threadControlEvent(NULL),
     m_helperThreadCanGoEvent(NULL),
-    m_fDetachRightSide(false)      
+    m_fDetachRightSide(false)
 {
     CONTRACTL
     {
@@ -82,7 +82,7 @@ DebuggerRCThread::~DebuggerRCThread()
     LOG((LF_CORDB,LL_INFO1000, "DebuggerRCThread::~DebuggerRCThread\n"));
 
     // We explicitly leak the debugger object on shutdown. See Debugger::StopDebugger for details.
-    _ASSERTE(!"RCThread dtor should not be called.");   
+    _ASSERTE(!"RCThread dtor should not be called.");
 }
 
 
@@ -212,9 +212,9 @@ HANDLE OpenWin32EventOrThrow(
 //     We assume ownership of the handles as soon as we're called; regardless of our success.
 //     On failure, we throw.
 //     Initialization of the debugger control block occurs partly on the left side and partly on
-//     the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about 
-//     the order in which the fields will be initialized. 
-//     
+//     the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
+//     the order in which the fields will be initialized.
+//
 //
 //---------------------------------------------------------------------------------------
 HRESULT DebuggerIPCControlBlock::Init(
@@ -233,9 +233,9 @@ HRESULT DebuggerIPCControlBlock::Init(
     CONTRACTL_END;
 
     // NOTE this works since there are no virtual functions - don't add any without changing this!
-    // Although we assume the IPC block is zero-initialized by the OS upon creation, we still need to clear 
-    // the memory here to protect ourselves from DOS attack.  One scenario is when a malicious debugger 
-    // pre-creates a bogus IPC block.  This means that our synchronization scheme won't work in DOS 
+    // Although we assume the IPC block is zero-initialized by the OS upon creation, we still need to clear
+    // the memory here to protect ourselves from DOS attack.  One scenario is when a malicious debugger
+    // pre-creates a bogus IPC block.  This means that our synchronization scheme won't work in DOS
     // attack scenarios, but we will be messed up anyway.
     // WARNING!!!  m_DCBSize is used as a semaphore and is set to non-zero to signal that initialization of the
     // WARNING!!!  DCB is complete.  if you remove the below memset be sure to initialize m_DCBSize to zero in the ctor!
@@ -369,7 +369,7 @@ HRESULT DebuggerRCThread::Init(void)
         hr = m_pDCB->Init(NULL, NULL, NULL, NULL, NULL);
         _ASSERTE(SUCCEEDED(hr)); // throws on error.
     }
-#else //FEATURE_DBGIPC_TRANSPORT_VM 
+#else //FEATURE_DBGIPC_TRANSPORT_VM
 
     // Create the events that the thread will need to receive events
     // from the out of process piece on the right side.
@@ -415,8 +415,8 @@ HRESULT DebuggerRCThread::Init(void)
         leftSideUnmanagedWaitEvent.SuppressRelease();
 
         // NOTE: initialization of the debugger control block occurs partly on the left side and partly on
-        // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about 
-        // the order in which the fields will be initialized. 
+        // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
+        // the order in which the fields will be initialized.
         hr = m_pDCB->Init(rightSideEventAvailable,
                                        rightSideEventRead,
                                        NULL,
@@ -425,7 +425,7 @@ HRESULT DebuggerRCThread::Init(void)
 
         _ASSERTE(SUCCEEDED(hr)); // throws on error.
     }
-#endif //FEATURE_DBGIPC_TRANSPORT_VM 
+#endif //FEATURE_DBGIPC_TRANSPORT_VM
 
     if(m_pDCB)
     {
@@ -454,7 +454,7 @@ HRESULT DebuggerRCThread::Init(void)
              m_pDCB->m_leftSideProtocolCurrent,
              m_pDCB->m_leftSideProtocolMinSupported));
 
-        // Left-side always creates helper-thread. 
+        // Left-side always creates helper-thread.
         // @dbgtodo  inspection - by end of V3, LS will never create helper-thread :)
         m_pDCB->m_rightSideShouldCreateHelperThread = false;
 
@@ -473,7 +473,7 @@ HRESULT DebuggerRCThread::Init(void)
 //
 // Arguments:
 //    pDebuggerIPCControlBlock - Pointer to the debugger's portion of the IPC
-//       block, which this routine will write into the offsets of various parts of 
+//       block, which this routine will write into the offsets of various parts of
 //       the runtime.
 //
 // Return Value:
@@ -665,7 +665,7 @@ void DebuggerRCThread::ThreadProc(void)
 
         // Call this to force creation of the TLS slots on helper-thread.
         IsDbgHelperSpecialThread();
-    }    
+    }
 
 #ifdef _DEBUG
     // Track the helper thread.
@@ -916,7 +916,7 @@ void DebuggerRCThread::MainLoop()
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
 
-    HANDLE rghWaitSet[DRCT_COUNT_FINAL]; 
+    HANDLE rghWaitSet[DRCT_COUNT_FINAL];
 
 #ifdef _DEBUG
     DWORD dwSyncSpinCount = 0;
@@ -945,7 +945,7 @@ void DebuggerRCThread::MainLoop()
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
         // If there is a debugger attached, wait on its handle, too...
-        if ((cWaitCount == DRCT_COUNT_INITIAL) && 
+        if ((cWaitCount == DRCT_COUNT_INITIAL) &&
             m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess() != NULL)
         {
             _ASSERTE((cWaitCount + 1) == DRCT_COUNT_FINAL);
@@ -990,7 +990,7 @@ void DebuggerRCThread::MainLoop()
         {
             // execute the callback set by DoFavor()
             FAVORCALLBACK fpCallback = GetFavorFnPtr();
-            // We never expect the callback to be null unless some other component 
+            // We never expect the callback to be null unless some other component
             // wrongly signals our event (see DD 463807).
             // In case we messed up, we will not set the FavorReadEvent and will hang favor requesting thread.
             if (fpCallback)
@@ -1032,7 +1032,7 @@ void DebuggerRCThread::MainLoop()
         else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_CONTROL_EVENT)
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: straggler event set.\n"));
-            
+
             ThreadStoreLockHolder tsl;
             Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Make sure that we're still synchronizing...
@@ -1178,7 +1178,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
     rghWaitSet[DRCT_FAVORAVAIL] = GetFavorAvailableEvent();
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     rghWaitSet[DRCT_RSEA] = m_pDCB->m_rightSideEventAvailable;
-#else //FEATURE_DBGIPC_TRANSPORT_VM 
+#else //FEATURE_DBGIPC_TRANSPORT_VM
     rghWaitSet[DRCT_RSEA] = g_pDbgTransport->GetIPCEventReadyEvent();
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
 
@@ -1215,7 +1215,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         }
         else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_RSEA)
         {
-            // @todo: 
+            // @todo:
             // We are only interested in dealing with Continue event here...
             // Once we remove the HelperThread duty, this will just go away.
             //
@@ -1445,7 +1445,7 @@ HRESULT DebuggerRCThread::Start(void)
 
 //---------------------------------------------------------------------------------------
 //
-// Stop causes the RC thread to stop receiving events and exit. 
+// Stop causes the RC thread to stop receiving events and exit.
 // It does not wait for it to exit before returning (hence "AsyncStop" instead of "Stop").
 //
 // Return Value:
@@ -1463,7 +1463,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         PRECONDITION(!ThisIsHelperThreadWorker());
 #else
         PRECONDITION(!ThisIsHelperThreadWorker());
-#endif        
+#endif
     }
     CONTRACTL_END;
 
@@ -1521,7 +1521,7 @@ void DebuggerRCThread::NeedRuntimeOffsetsReInit(IpcTarget i)
 
 //---------------------------------------------------------------------------------------
 //
-// Send an debug event to the Debugger. This may be either a notification 
+// Send an debug event to the Debugger. This may be either a notification
 // or a reply to a debugger query.
 //
 // Arguments:
@@ -1658,8 +1658,8 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
     {
         if (m_pDCB->m_rightSideEventAvailable)
         {
-            if (SetKernelObjectSecurity(m_pDCB->m_rightSideEventAvailable, 
-                DACL_SECURITY_INFORMATION, 
+            if (SetKernelObjectSecurity(m_pDCB->m_rightSideEventAvailable,
+                DACL_SECURITY_INFORMATION,
                 pSecurityDescriptor) == 0)
             {
                 // failed!
@@ -1668,8 +1668,8 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
         }
         if (m_pDCB->m_rightSideEventRead)
         {
-            if (SetKernelObjectSecurity(m_pDCB->m_rightSideEventRead, 
-                DACL_SECURITY_INFORMATION, 
+            if (SetKernelObjectSecurity(m_pDCB->m_rightSideEventRead,
+                DACL_SECURITY_INFORMATION,
                 pSecurityDescriptor) == 0)
             {
                 // failed!

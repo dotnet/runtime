@@ -8,7 +8,7 @@
 #if (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
 
 // This is the entry type for the IPC event queue owned by the transport.
-// Each entry contains the multiplexing type of the IPC event plus the 
+// Each entry contains the multiplexing type of the IPC event plus the
 // IPC event itself.
 struct DbgEventBufferEntry
 {
@@ -104,14 +104,14 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
 
 
 #ifdef RIGHT_SIDE_COMPILE
-    m_pd = pd;    
+    m_pd = pd;
 
-    if (!DuplicateHandle(GetCurrentProcess(), 
+    if (!DuplicateHandle(GetCurrentProcess(),
                          hProcessExited,
-                         GetCurrentProcess(), 
+                         GetCurrentProcess(),
                          &m_hProcessExited,
                          0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE, 
+                         FALSE,
                          DUPLICATE_SAME_ACCESS))
     {
         return HRESULT_FROM_GetLastError();
@@ -242,7 +242,7 @@ void DbgTransportSession::Neuter()
 
 #else // RIGHT_SIDE_COMPILE
 
-// Used by debugger side (RS) to cleanup the target (LS) named pipes 
+// Used by debugger side (RS) to cleanup the target (LS) named pipes
 // and semaphores when the debugger detects the debuggee process  exited.
 void DbgTransportSession::CleanupTargetProcess()
 {
@@ -359,7 +359,7 @@ HANDLE DbgTransportSession::GetIPCEventReadyEvent()
     return m_rghEventReadyEvent[IPCET_OldStyle];
 }
 
-// Retrieves the auto-reset handle which is signalled by the session each time a new event (disguised as a 
+// Retrieves the auto-reset handle which is signalled by the session each time a new event (disguised as a
 // debug event) is received from the other side.
 HANDLE DbgTransportSession::GetDebugEventReadyEvent()
 {
@@ -423,14 +423,14 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
 #endif // DBG_TARGET_64BIT
 
 
-    // 
+    //
     //pOut->m_rightSideEventAvailable
     //pOut->m_rightSideEventRead
     //pOut->m_paddingObsoleteLSEA
     //pOut->m_paddingObsoleteLSER
     //pOut->m_rightSideProcessHandle
     //pOut->m_leftSideUnmanagedWaitEvent
-    
+
     pOut->m_realHelperThreadId =             pIn->m_realHelperThreadId;
     pOut->m_helperThreadId =                 pIn->m_helperThreadId;
     pOut->m_temporaryHelperThreadId =        pIn->m_temporaryHelperThreadId;
@@ -475,7 +475,7 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
 #if defined(DBG_TARGET_64BIT)
     pOut->padding4 =                          pIn->padding4;
 #endif // DBG_TARGET_64BIT
-    
+
     pOut->m_realHelperThreadId =             pIn->m_realHelperThreadId;
     pOut->m_helperThreadId =                 pIn->m_helperThreadId;
     pOut->m_temporaryHelperThreadId =        pIn->m_temporaryHelperThreadId;
@@ -651,7 +651,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
                     return E_OUTOFMEMORY;
                 }
             }
- 
+
             // Copy the message descriptor over.
             memcpy(pMessageCopy, pMessage, sizeof(Message));
 
@@ -730,18 +730,18 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
     if (pMessage->m_hReplyEvent == NULL)
         return E_OUTOFMEMORY;
 
-    // Duplicate the handle to the event.  It's necessary to have two handles to the same event because 
+    // Duplicate the handle to the event.  It's necessary to have two handles to the same event because
     // both this thread and the message pumping thread may be trying to access the handle at the same
     // time (e.g. closing the handle).  So we make a duplicate handle.  This thread is responsible for
     // closing hReplyEvent (the local variable) whereas the message pumping thread is responsible for
     // closing the handle on the message.
     HANDLE hReplyEvent = NULL;
-    if (!DuplicateHandle(GetCurrentProcess(), 
-                         pMessage->m_hReplyEvent, 
-                         GetCurrentProcess(), 
-                         &hReplyEvent, 
+    if (!DuplicateHandle(GetCurrentProcess(),
+                         pMessage->m_hReplyEvent,
+                         GetCurrentProcess(),
+                         &hReplyEvent,
                          0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE, 
+                         FALSE,
                          DUPLICATE_SAME_ACCESS))
     {
         return HRESULT_FROM_GetLastError();
@@ -758,7 +758,7 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
         return hr;
     }
 
-    // At this point, the message pumping thread may receive the reply any time.  It may even receive the 
+    // At this point, the message pumping thread may receive the reply any time.  It may even receive the
     // reply message even before we wait on the event.  Keep this in mind.
 
     // Wait for a reply (by the time this event is signalled the message header will have been overwritten by
@@ -770,10 +770,10 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 #endif // RIGHT_SIDE_COMPILE
 
     DWORD dwResult = WaitForMultipleObjectsEx(sizeof(rgEvents)/sizeof(rgEvents[0]), rgEvents, FALSE, INFINITE, FALSE);
-    
+
     if (dwResult == WAIT_OBJECT_0)
     {
-        // This is the normal case.  The message pumping thread receives a reply from the debuggee process.  
+        // This is the normal case.  The message pumping thread receives a reply from the debuggee process.
         // It signals the event to wake up this thread.
         CloseHandle(hReplyEvent);
 
@@ -789,7 +789,7 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
         // We need to be careful here because there is a race condition.
 
         // Remove the original message from the send queue.  This is because in the case of a blocking message,
-        // the message can be allocated on the stack.  Thus, the message becomes invalid when we return from 
+        // the message can be allocated on the stack.  Thus, the message becomes invalid when we return from
         // this function.  The message pumping thread may have beaten this thread to it.  That's ok since
         // RemoveMessageFromSendQueue() takes the state lock.
         Message * pOriginalMessage = RemoveMessageFromSendQueue(pMessage->m_sHeader.m_dwId);
@@ -935,7 +935,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
     default:
         _ASSERTE(!"Unknown session state");
     }
-    
+
     if (!fCallerHoldsStateLock)
         m_sStateLock.Leave();
 }
@@ -1068,7 +1068,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
 
 //---------------------------------------------------------------------------------------
 //
-// Upon receiving a reply message, signal the event on the message to wake up the thread waiting for 
+// Upon receiving a reply message, signal the event on the message to wake up the thread waiting for
 // the reply message and close the handle to the event.
 //
 // Arguments:
@@ -1077,8 +1077,8 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
 
 void DbgTransportSession::SignalReplyEvent(Message * pMessage)
 {
-    // Make a local copy of the event handle.  As soon as we signal the event, the thread blocked waiting on 
-    // the reply may wake up and trash the message.  See code:DbgTransportSession::SendRequestMessageAndWait() 
+    // Make a local copy of the event handle.  As soon as we signal the event, the thread blocked waiting on
+    // the reply may wake up and trash the message.  See code:DbgTransportSession::SendRequestMessageAndWait()
     // for more info.
     HANDLE hReplyEvent = pMessage->m_hReplyEvent;
     _ASSERTE(hReplyEvent != NULL);
@@ -1122,7 +1122,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
                     m_pSendQueueFirst = pMsg->m_pNext;
                 else
                     pLastMsg->m_pNext = pMsg->m_pNext;
-                
+
                 if (m_pSendQueueLast == pMsg)
                     m_pSendQueueLast = pLastMsg;
                 break;
@@ -1150,10 +1150,10 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
 
-    // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc 
-    // that's why on Unix we can't rely on in to detect invalid memory reads  
+    // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc
+    // that's why on Unix we can't rely on in to detect invalid memory reads
 #ifndef FEATURE_PAL
-    do 
+    do
     {
         // Find the attributes of the largest set of pages with common attributes starting from our base address.
         MEMORY_BASIC_INFORMATION sMemInfo;
@@ -1177,7 +1177,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
             ((dwProtect & (PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY | PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY)) == 0))
             return HRESULT_FROM_WIN32(ERROR_NOACCESS);
 
-        // If the requested range is bigger than the region we have queried, 
+        // If the requested range is bigger than the region we have queried,
         // we need to continue on to check the next region.
         if ((pbBuffer + cbBuffer) > ((PBYTE)sMemInfo.BaseAddress + sMemInfo.RegionSize))
         {
@@ -1297,7 +1297,7 @@ void DbgTransportSession::TransportWorker()
             {
                 //not really sure that this is the real failure
                 //TODO: we probably need to analyse GetErrorCode() here
-                eStatus = SCS_NoListener; 
+                eStatus = SCS_NoListener;
             }
         }
 
@@ -1316,7 +1316,7 @@ void DbgTransportSession::TransportWorker()
         else
         {
             ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-            if ((m_pipe.GetState() == TwoWayPipe::Created || m_pipe.CreateServer(pd)) && 
+            if ((m_pipe.GetState() == TwoWayPipe::Created || m_pipe.CreateServer(pd)) &&
                  m_pipe.WaitForConnection())
             {
                 eStatus = SCS_Success;
@@ -1325,7 +1325,7 @@ void DbgTransportSession::TransportWorker()
             {
                 //not really sure that this is the real failure
                 //TODO: we probably need to analyse GetErrorCode() here
-                eStatus = SCS_NoListener; 
+                eStatus = SCS_NoListener;
             }
         }
 
@@ -1498,7 +1498,7 @@ void DbgTransportSession::TransportWorker()
                         SendBlock(pMsg->m_pbDataBlock, pMsg->m_cbDataBlock);
                     pMsg = pMsg->m_pNext;
                 }
-            
+
                 // Check none of the sends failed.
                 if (m_eState != SS_Opening)
                 {
@@ -1726,7 +1726,7 @@ void DbgTransportSession::TransportWorker()
             // First we must read the message in its entirety (i.e. receive the data block if there is one)
             // without causing any side-effects. This ensures that any failure at this point will be handled
             // correctly (by the other side re-sending us the same message).
-            // 
+            //
             // Then we process the message. At this point we are committed. The processing must always
             // succeed, or have no side-effect (that we care about) or we must have an additional scheme to
             // handle resynchronization in the event of failure. This ensures that we don't have the tricky
@@ -1783,7 +1783,7 @@ void DbgTransportSession::TransportWorker()
                     }
 
                     m_pipe.Disconnect();
-                
+
                     // We could add code to drain the send queue here (like we have for SS_Closed at the end of
                     // this method) but I'm pretty sure we can only get a graceful session close with no
                     // outstanding sends. So just assert the queue is empty instead. If the assert fires and it's
@@ -1893,7 +1893,7 @@ void DbgTransportSession::TransportWorker()
             break;
 
             case MT_ReadMemory:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -1915,7 +1915,7 @@ void DbgTransportSession::TransportWorker()
                 break;
 
             case MT_WriteMemory:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -1961,7 +1961,7 @@ void DbgTransportSession::TransportWorker()
                 break;
 
             case MT_VirtualUnwind:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -1988,7 +1988,7 @@ void DbgTransportSession::TransportWorker()
                 break;
 
             case MT_GetDCB:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -2000,7 +2000,7 @@ void DbgTransportSession::TransportWorker()
                 break;
 
             case MT_SetDCB:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -2020,7 +2020,7 @@ void DbgTransportSession::TransportWorker()
                 break;
 
             case MT_GetAppDomainCB:
-#ifdef RIGHT_SIDE_COMPILE                
+#ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
                     HANDLE_TRANSIENT_ERROR();
 #else // RIGHT_SIDE_COMPILE
@@ -2493,11 +2493,11 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_GET_GCHANDLE_INFO:
         cbAdditionalSize = sizeof(pEvent->GetGCHandleInfo);
         break;
-    
+
     case DB_IPCE_CUSTOM_NOTIFICATION:
         cbAdditionalSize = sizeof(pEvent->CustomNotification);
         break;
-            
+
     default:
         printf("Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
         _ASSERTE(!"Unknown debugger event type");

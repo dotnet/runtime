@@ -6,7 +6,7 @@
 //
 
 //
-// This file contains wrapper functions for Win32 API's that take SStrings 
+// This file contains wrapper functions for Win32 API's that take SStrings
 // and use CLR-safe holders.
 //
 // See guidelines in SafeWrap.h for writing these APIs.
@@ -21,7 +21,7 @@
 #include "ex.h"
 
 //-----------------------------------------------------------------------------
-// Get the current directory. 
+// Get the current directory.
 // On success, returns true and sets 'Value' to unicode version of cur dir.
 // Throws on all failures. This should mainly be oom.
 //-----------------------------------------------------------------------------
@@ -29,8 +29,8 @@ void ClrGetCurrentDirectory(SString & value)
 {
     CONTRACTL
     {
-        THROWS; 
-        GC_NOTRIGGER; 
+        THROWS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -54,9 +54,9 @@ bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
 {
     CONTRACTL
     {
-        THROWS; 
+        THROWS;
         GC_NOTRIGGER;
-        
+
         PRECONDITION(szEnvVarName != NULL);
     }
     CONTRACTL_END;
@@ -69,7 +69,7 @@ bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
     }
 
     // Now read it for content.
-    char * pCharBuf = value.OpenANSIBuffer(lenWithNull);                   
+    char * pCharBuf = value.OpenANSIBuffer(lenWithNull);
     DWORD lenWithoutNull = GetEnvironmentVariableA(szEnvVarName, pCharBuf, lenWithNull);
     value.CloseBuffer(lenWithoutNull);
 
@@ -85,12 +85,12 @@ void ClrGetModuleFileName(HMODULE hModule, SString & value)
 {
     CONTRACTL
     {
-        THROWS; 
+        THROWS;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    WCHAR * pCharBuf = value.OpenUnicodeBuffer(_MAX_PATH);                   
+    WCHAR * pCharBuf = value.OpenUnicodeBuffer(_MAX_PATH);
     DWORD numChars = GetModuleFileNameW(hModule, pCharBuf, _MAX_PATH);
     value.CloseBuffer(numChars);
 }
@@ -99,7 +99,7 @@ ClrDirectoryEnumerator::ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR p
 {
     CONTRACTL
     {
-        THROWS; 
+        THROWS;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -116,8 +116,8 @@ ClrDirectoryEnumerator::ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR p
     if (dirHandle == INVALID_HANDLE_VALUE)
     {
         DWORD dwLastError = GetLastError();
-        
-        // We either ran out of files, or didnt encounter even a single file matching the 
+
+        // We either ran out of files, or didnt encounter even a single file matching the
         // search mask. If it is neither of these conditions, then convert the error to an exception
         // and raise it.
         if ((dwLastError != ERROR_FILE_NOT_FOUND) && (dwLastError != ERROR_NO_MORE_FILES))
@@ -131,7 +131,7 @@ bool ClrDirectoryEnumerator::Next()
 {
     CONTRACTL
     {
-        THROWS; 
+        THROWS;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -159,7 +159,7 @@ bool ClrDirectoryEnumerator::Next()
         // Skip junk
         if (wcscmp(data.cFileName, W(".")) != 0 && wcscmp(data.cFileName, W("..")) != 0)
             return TRUE;
-    }        
+    }
 }
 
 DWORD ClrReportEvent(
@@ -175,14 +175,14 @@ DWORD ClrReportEvent(
 {
     CONTRACTL
     {
-        NOTHROW; 
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
 #ifndef FEATURE_PAL
     HANDLE h = ::RegisterEventSourceW(
-        NULL, // uses local computer 
+        NULL, // uses local computer
         pEventSource);
     if (h == NULL)
     {
@@ -197,7 +197,7 @@ DWORD ClrReportEvent(
     _ASSERTE (dwEventID != 0);
 
     // Attempt to report the event to the event log. Note that if the operation fails
-    // (for example because of low memory conditions) it isn't fatal so we can safely ignore 
+    // (for example because of low memory conditions) it isn't fatal so we can safely ignore
     // the return code from ReportEventW.
     BOOL ret = ::ReportEventW(
         h,                 // event log handle
@@ -221,7 +221,7 @@ DWORD ClrReportEvent(
 #endif // FEATURE_PAL
 }
 
-// Returns ERROR_SUCCESS if succeessful in reporting to event log, or 
+// Returns ERROR_SUCCESS if succeessful in reporting to event log, or
 // Windows error code to indicate the specific error.
 DWORD ClrReportEvent(
     LPCWSTR     pEventSource,
@@ -236,17 +236,17 @@ DWORD ClrReportEvent(
 
 #ifndef FEATURE_PAL
 // Read a REG_SZ (null-terminated string) value from the registry.  Throws.
-// 
+//
 // Arguments:
 //     hKey - key to registry hive.
-//     szValueName - null-terminated string for value name to lookup. 
+//     szValueName - null-terminated string for value name to lookup.
 //        If this is empty, this gets the (default) value in the registry hive.
-//     value - out parameter to hold registry value string contents. 
-//     
+//     value - out parameter to hold registry value string contents.
+//
 // Returns:
-//    value is set on success. Throws on any failure, including if the value doesn't exist 
+//    value is set on success. Throws on any failure, including if the value doesn't exist
 //    or if the value exists but is not a REG_SZ.
-//    
+//
 // Notes:
 //    REG_SZ is a single null-terminated string in the registry.
 //    This is only support on Windows because the registry is windows specific.
@@ -254,12 +254,12 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value)
 {
     CONTRACTL
     {
-        THROWS; 
-        GC_NOTRIGGER; 
+        THROWS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    DWORD type;    
+    DWORD type;
     DWORD numBytesData;
 
     // Preemptively clear the string such that it's empty in any failure case.
@@ -267,7 +267,7 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value)
 
     //
     // Step 1:  First call to find size of buffer and ensure data type is correct
-    // 
+    //
     LONG ret = WszRegQueryValueEx(
       hKey,
       szValueName.GetUnicode(), // NULL or "\0" represents the (default) key.
@@ -288,25 +288,25 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value)
         ThrowHR(E_INVALIDARG);
     }
 
-    // REG_SZ includes the null terminator. 
+    // REG_SZ includes the null terminator.
     DWORD numCharsIncludingNull = numBytesData / sizeof(WCHAR);
 
-    // 
+    //
     //  Step 2: Allocate buffer to hold final result
-    // 
+    //
     WCHAR * pData = value.OpenUnicodeBuffer(numCharsIncludingNull);
     DWORD numBytesData2 = numBytesData;
 
 
     //
     // Step 3: Requery to get actual contents
-    // 
+    //
     ret = WszRegQueryValueEx(
       hKey,
       szValueName.GetUnicode(),
       NULL, // reserved
       &type, // should still be REG_SZ
-      (LPBYTE) pData, 
+      (LPBYTE) pData,
       &numBytesData2
     );
 
@@ -327,10 +327,10 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value)
         ThrowWin32(ret);
     }
 
-    
+
     //
     // Step 4:  Close the string buffer
-    // 
+    //
     COUNT_T numCharsNoNull = numCharsIncludingNull - 1;
     value.CloseBuffer(numCharsNoNull);
 }

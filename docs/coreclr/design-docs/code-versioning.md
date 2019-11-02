@@ -140,7 +140,7 @@ Figure 2 shows an example versioning tree with edges to the active child in thic
 
 In this example the active code version for the List<int\>.Add(int item) is the 3rd version from left to right, the one with high JIT optimization. At the root the runtime would follow the active child to the right, then traverse to the T=int generic instantiation, and finally follow the active child to the right once more. The active version for the List<string\>(string item) entrypoint is on the far right.
 
-Each build pipeline stage controls which of their nodes are the active child nodes and in aggregate this allows all the stages to determine which code version is the active one for any given entrypoint. Any stage is allowed to create new nodes on its level or update its choice of active child at any time. The CodeVersionManager must do its best to recalculate the active version and then publish it. 
+Each build pipeline stage controls which of their nodes are the active child nodes and in aggregate this allows all the stages to determine which code version is the active one for any given entrypoint. Any stage is allowed to create new nodes on its level or update its choice of active child at any time. The CodeVersionManager must do its best to recalculate the active version and then publish it.
 
 Hypothetically in the example tree above what would happen if the profiler used the ReJIT API to revert the change to the IL? In this case the ReJIT stage would designate the left child of the root as the new active child and the leftmost code version would become active for the List<int\>(int item) entrypoint. For List<string\>(string item) entrypoint a new branch of the tree would be constructed with a single child at every level down to the leaves.
 
@@ -232,7 +232,7 @@ This facade technique was chosen to conserve memory, as most methods will only e
 
 ### Code Version Manager ###
 
-The CodeVersionManager is the primary entrypoint to code versioning information and gives access to the logical code versioning tree discussed above. The tree isn't named as such in the API and is slightly modified from its idealized presentation in the design. 
+The CodeVersionManager is the primary entrypoint to code versioning information and gives access to the logical code versioning tree discussed above. The tree isn't named as such in the API and is slightly modified from its idealized presentation in the design.
 
 - There is no direct object model representation of the root node of the tree. Instead ILCodeVersion nodes represent the child nodes of the root level. They are accessible by calling
 
@@ -361,7 +361,7 @@ The runtime's current classification is:
 
 - **Explicit** - ReJIT IL, IL mapping, jit flags, generic instantiation, optimization tier, versioning ids
 - **Ambient** - Profiler IL from SetILFunctionBody, Profiler metadata updates, runtime inlining policy, profiler NGEN search policy
-- **Unrecorded** - Profiler inlining policy, Profiler ELT configuration 
+- **Unrecorded** - Profiler inlining policy, Profiler ELT configuration
 
 
 Future roadmap possibilities

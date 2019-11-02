@@ -30,7 +30,7 @@ using namespace CorUnix;
 
 // The vast majority of Mach calls we make in this module are critical: we cannot recover from failures of
 // these methods (principally because we're handling hardware exceptions in the context of a single dedicated
-// handler thread). The following macro encapsulates checking the return code from Mach methods and emitting 
+// handler thread). The following macro encapsulates checking the return code from Mach methods and emitting
 // some useful data and aborting the process on failure.
 #define CHECK_MACH(_msg, machret) do {                                      \
         if (machret != KERN_SUCCESS)                                        \
@@ -73,7 +73,7 @@ using namespace CorUnix;
 
 #else // _DEBUG
 
-#define NONPAL_TRACE_ENABLED false 
+#define NONPAL_TRACE_ENABLED false
 #define NONPAL_ASSERT(_msg, ...)
 #define NONPAL_ASSERTE(_expr)
 #define NONPAL_TRACE(_format, ...)
@@ -390,7 +390,7 @@ private:
     //  * fCalculate -- calculate the thread port if the message did not contain it.
     //  * fValidate  -- failfast if the message was not one expected to have a (calculable) thread port.
     void GetPorts(bool fCalculate, bool fValidThread);
-    
+
     // Given a thread's register context, locate and return the Mach port representing that thread. Only the
     // x86_THREAD_STATE and x86_THREAD_STATE32 state flavors are supported.
     thread_act_t GetThreadFromState(thread_state_flavor_t eFlavor, thread_state_t pState);
@@ -429,10 +429,10 @@ private:
 
     // Cached value of GetThread() or MACH_PORT_NULL if that has not been computed yet.
     thread_act_t    m_hThread;
-    
+
     // Cached value of the task port or MACH_PORT_NULL if the message doesn't have one.
     mach_port_t     m_hTask;
-    
+
     // Considered whether we are responsible for the deallocation of the ports in
     // this message. It is true for messages we receive, and false for messages we send.
     bool m_fPortsOwned;

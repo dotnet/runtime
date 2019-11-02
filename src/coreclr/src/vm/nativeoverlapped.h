@@ -10,7 +10,7 @@
 ** Purpose: Native methods for allocating and freeing NativeOverlapped
 **
 
-** 
+**
 ===========================================================*/
 
 #ifndef _OVERLAPPED_H

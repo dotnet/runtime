@@ -324,7 +324,7 @@ WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
     ldr  x15, [x13], 8
     b C_FUNC(JIT_CheckedWriteBarrier)
 
-WRITE_BARRIER_END JIT_ByRefWriteBarrier 
+WRITE_BARRIER_END JIT_ByRefWriteBarrier
 
 //-----------------------------------------------------------------------------
 // Simple WriteBarriers
@@ -453,7 +453,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     beq  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(UpdateCardTable):
-    mov  x12, 0xFF 
+    mov  x12, 0xFF
     strb w12, [x15]
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -471,7 +471,7 @@ LOCAL_LABEL(UpdateCardBundle):
 
 LOCAL_LABEL(Exit):
     add  x14, x14, 8
-    ret  lr  
+    ret  lr
 WRITE_BARRIER_END JIT_WriteBarrier
 
 #ifdef FEATURE_PREJIT
@@ -537,7 +537,7 @@ NESTED_END VirtualMethodFixupStub, _TEXT
 //
 // On entry:
 //
-// x12 = Address of thunk 
+// x12 = Address of thunk
 
 NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
 
@@ -794,7 +794,7 @@ LOCAL_LABEL(UMThunkStub_InCooperativeMode):
     add x0, fp, #UMThunkStub_StackArgs
 
     // move source pointer to end of Stack Args
-    add x0, x0, x2 
+    add x0, x0, x2
 
     // Count of stack slot pairs to copy (divide by 16)
     lsr x1, x2, #4
@@ -803,10 +803,10 @@ LOCAL_LABEL(UMThunkStub_InCooperativeMode):
     and x2, x2, #8
 
     // If yes then start source pointer from 16 byte aligned stack slot
-    add x0, x0, x2  
+    add x0, x0, x2
 
     // increment stack slot pair count by 1 if x2 is not zero
-    add x1, x1, x2, LSR #3 
+    add x1, x1, x2, LSR #3
 
 LOCAL_LABEL(UMThunkStub_StackLoop):
     ldp x4, x5, [x0, #-16]! // pre-Index
@@ -959,7 +959,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the 
+// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
@@ -987,7 +987,7 @@ NESTED_END CallEHFilterFunclet, _TEXT
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
-    // 
+    //
     // This is the primary function to which execution will be redirected to.
     //
     NESTED_ENTRY \stub, _TEXT, NoHandler
@@ -1003,7 +1003,7 @@ NESTED_END CallEHFilterFunclet, _TEXT
         // triggered in the prolog or epilog of the managed method. For such a case, we must
         // align the stack before calling into the VM.
         //
-        // Runtime check for 16-byte alignment. 
+        // Runtime check for 16-byte alignment.
         mov x0, sp
         and x0, x0, #15
         sub sp, sp, x0
@@ -1226,7 +1226,7 @@ LEAF_END setFPReturn, _TEXT
 #endif
 
 //
-// JIT Static access helpers when coreclr host specifies single appdomain flag 
+// JIT Static access helpers when coreclr host specifies single appdomain flag
 //
 
 // ------------------------------------------------------------------

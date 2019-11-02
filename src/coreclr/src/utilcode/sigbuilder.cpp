@@ -78,26 +78,26 @@ void SigBuilder::AppendToken(mdToken tk)
     _ASSERTE(rid <= 0x3FFFFFF);
     rid = (rid << 2);
 
-    // TypeDef is encoded with low bits 00  
-    // TypeRef is encoded with low bits 01  
-    // TypeSpec is encoded with low bits 10    
+    // TypeDef is encoded with low bits 00
+    // TypeRef is encoded with low bits 01
+    // TypeSpec is encoded with low bits 10
     // BaseType is encoded with low bit 11
     //
     if (ulTyp == g_tkCorEncodeToken[0])
     {
-        // make the last two bits 00    
+        // make the last two bits 00
         // nothing to do
     }
-    else if (ulTyp == g_tkCorEncodeToken[1]) 
-    {   
-        // make the last two bits 01    
-        rid |= 0x1; 
-    }   
-    else if (ulTyp == g_tkCorEncodeToken[2])    
-    {   
-        // make last two bits 0 
-        rid |= 0x2; 
-    }   
+    else if (ulTyp == g_tkCorEncodeToken[1])
+    {
+        // make the last two bits 01
+        rid |= 0x1;
+    }
+    else if (ulTyp == g_tkCorEncodeToken[2])
+    {
+        // make last two bits 0
+        rid |= 0x2;
+    }
     else if (ulTyp == g_tkCorEncodeToken[3])
     {
         rid |= 0x3;
@@ -150,7 +150,7 @@ SigBuilder::~SigBuilder()
 SigBuilder::SigBuilder(DWORD cbPreallocationSize)
 {
     STANDARD_VM_CONTRACT;
-    
+
     m_dwLength = 0;
     if (cbPreallocationSize <= sizeof(m_prealloc))
     {

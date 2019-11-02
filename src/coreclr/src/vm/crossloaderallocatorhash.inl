@@ -97,7 +97,7 @@ template <class TKey_, class TValue_>
 
         if (usedEntries == entriesInArrayTotal)
         {
-            // There isn't free space. Build a new, bigger array with the existing data 
+            // There isn't free space. Build a new, bigger array with the existing data
             DWORD newSize;
             if (usedEntries < 8)
                 newSize = usedEntries + 1; // Grow very slowly initially. The cost of allocation/copy is cheap, and this holds very tight on memory usage
@@ -178,7 +178,7 @@ template <class TKey_, class TValue_>
     }
     CONTRACTL_END;
 
-    // TODO: Consider optimizing this by changing the add to ensure that the 
+    // TODO: Consider optimizing this by changing the add to ensure that the
     // values list is sorted, and then doing a binary search for the value instead
     // of the linear search
 
@@ -557,7 +557,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitValuesOfKey(TKey key, Visitor &visit
         Visitor *m_pVisitor;
         GCHeapHashDependentHashTrackerHash *m_pDependentTrackerHash;
 
-        VisitIndividualEntryKeyValueHash(TKey key, Visitor *pVisitor,  GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) : 
+        VisitIndividualEntryKeyValueHash(TKey key, Visitor *pVisitor,  GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) :
             m_key(key),
             m_pVisitor(pVisitor),
             m_pDependentTrackerHash(pDependentTrackerHash)
@@ -582,7 +582,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitValuesOfKey(TKey key, Visitor &visit
         return true;
 
     bool result = true;
-    struct 
+    struct
     {
         KeyToValuesGCHeapHash keyToTrackersHash;
         GCHeapHashDependentHashTrackerHash dependentTrackerHash;
@@ -658,7 +658,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitAllKeyValuePairs(Visitor &visitor)
         Visitor *m_pVisitor;
         KeyToValuesGCHeapHash *m_pKeyToTrackerHash;
 
-        VisitAllEntryKeyToDependentTrackerHash(Visitor *pVisitor,  KeyToValuesGCHeapHash *pKeyToTrackerHash) : 
+        VisitAllEntryKeyToDependentTrackerHash(Visitor *pVisitor,  KeyToValuesGCHeapHash *pKeyToTrackerHash) :
             m_pVisitor(pVisitor),
             m_pKeyToTrackerHash(pKeyToTrackerHash)
             {}
@@ -679,7 +679,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitAllKeyValuePairs(Visitor &visitor)
         Visitor *m_pVisitor;
         GCHeapHashDependentHashTrackerHash *m_pDependentTrackerHash;
 
-        VisitAllEntryDependentTrackerHash(Visitor *pVisitor,  GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) : 
+        VisitAllEntryDependentTrackerHash(Visitor *pVisitor,  GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) :
             m_pVisitor(pVisitor),
             m_pDependentTrackerHash(pDependentTrackerHash)
             {}
@@ -694,7 +694,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitAllKeyValuePairs(Visitor &visitor)
         }
     };
 
-    struct 
+    struct
     {
         KeyToValuesGCHeapHash keyToTrackersHash;
         GCHeapHashDependentHashTrackerHash dependentTrackerHash;
@@ -742,7 +742,7 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
         TKey m_key;
         GCHeapHashDependentHashTrackerHash *m_pDependentTrackerHash;
 
-        DeleteIndividualEntryKeyValueHash(TKey key, GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) : 
+        DeleteIndividualEntryKeyValueHash(TKey key, GCHeapHashDependentHashTrackerHash *pDependentTrackerHash) :
             m_key(key),
             m_pDependentTrackerHash(pDependentTrackerHash)
             {}
@@ -767,7 +767,7 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
         return; // Nothing was ever added, so removing all is easy
     }
 
-    struct 
+    struct
     {
         KeyToValuesGCHeapHash keyToTrackersHash;
         GCHeapHashDependentHashTrackerHash dependentTrackerHash;
@@ -796,7 +796,7 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
                 gc.keyValueStore = gc.hashKeyEntry;
             }
 
-            // Now gc.hashKeyToTrackers is filled in 
+            // Now gc.hashKeyToTrackers is filled in
 
             if (gc.hashKeyToTrackers != NULL)
             {
@@ -850,7 +850,7 @@ template <class Visitor>
     }
     CONTRACTL_END;
 
-    struct 
+    struct
     {
         LAHASHDEPENDENTHASHTRACKERREF tracker;
         OBJECTREF loaderAllocatorRef;
@@ -912,7 +912,7 @@ template <class Visitor>
         OBJECTREF *m_pKeyValueStore;
         OBJECTREF *m_pLoaderAllocatorRef;
 
-        VisitAllEntryKeyValueHash(Visitor *pVisitor,  KeyToValuesGCHeapHash *pKeysToValueHash, OBJECTREF *pKeyValueStore, OBJECTREF *pLoaderAllocatorRef) : 
+        VisitAllEntryKeyValueHash(Visitor *pVisitor,  KeyToValuesGCHeapHash *pKeysToValueHash, OBJECTREF *pKeyValueStore, OBJECTREF *pLoaderAllocatorRef) :
             m_pVisitor(pVisitor),
             m_pKeysToValueHash(pKeysToValueHash),
             m_pKeyValueStore(pKeyValueStore),
@@ -1001,7 +1001,7 @@ template <class TRAITS>
     }
     CONTRACTL_END;
 
-    struct 
+    struct
     {
         LAHASHDEPENDENTHASHTRACKERREF tracker;
         OBJECTREF loaderAllocatorRef;
@@ -1079,7 +1079,7 @@ LAHASHDEPENDENTHASHTRACKERREF CrossLoaderAllocatorHash<TRAITS>::GetDependentTrac
     }
     CONTRACTL_END;
 
-    struct 
+    struct
     {
         GCHeapHashDependentHashTrackerHash dependentTrackerHash;
         LAHASHDEPENDENTHASHTRACKERREF dependentTracker;
@@ -1142,7 +1142,7 @@ GCHEAPHASHOBJECTREF CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashFo
     }
     CONTRACTL_END;
 
-    struct 
+    struct
     {
         GCHeapHashDependentHashTrackerHash dependentTrackerHash;
         LAHASHDEPENDENTHASHTRACKERREF dependentTrackerMaybe;
@@ -1205,7 +1205,7 @@ GCHEAPHASHOBJECTREF CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashFo
             if (indexOfTracker == -1)
             {
                 // Dependent tracker not yet attached to this key
-                
+
                 // Get dependent tracker
                 gc.dependentTracker = GetDependentTrackerForLoaderAllocator(pValueLoaderAllocator);
                 gc.dependentTrackerHash.Add(&pValueLoaderAllocator, [&gc](PTRARRAYREF arr, INT32 index)

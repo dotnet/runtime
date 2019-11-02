@@ -43,7 +43,7 @@ CPalString::CopyString(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-        
+
     _ASSERTE(NULL != psSource);
     _ASSERTE(NULL == m_pwsz);
     _ASSERTE(0 == m_dwStringLength);
@@ -52,7 +52,7 @@ CPalString::CopyString(
     if (0 != psSource->GetStringLength())
     {
         _ASSERTE(psSource->GetMaxLength() > psSource->GetStringLength());
-        
+
         WCHAR *pwsz = reinterpret_cast<WCHAR*>(
             InternalMalloc(psSource->GetMaxLength() * sizeof(WCHAR))
             );

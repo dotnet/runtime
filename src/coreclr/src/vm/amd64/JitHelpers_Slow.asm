@@ -10,7 +10,7 @@
 ; ***********************************************************************
 ; File: JitHelpers_Slow.asm, see history in jithelp.asm
 ;
-; Notes: These are ASM routinues which we believe to be cold in normal 
+; Notes: These are ASM routinues which we believe to be cold in normal
 ;        AMD64 scenarios, mainly because they have other versions which
 ;        have some more performant nature which will be used in the best
 ;        cases.
@@ -335,7 +335,7 @@ LEAF_ENTRY JIT_NewArr1VC_UP, _TEXT
         ; have to worry about "large" objects, since the allocation quantum is never big enough for
         ; LARGE_OBJECT_SIZE.
 
-        ; For Value Classes, this needs to be 2^16 - slack (2^32 / max component size), 
+        ; For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
         ; The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
         ; slack value out of laziness.
 
@@ -343,7 +343,7 @@ LEAF_ENTRY JIT_NewArr1VC_UP, _TEXT
 
         cmp     rdx, (65535 - 256)
         jae     JIT_NewArr1
-  
+
         movzx   r8d, word ptr [rcx + OFFSETOF__MethodTable__m_dwFlags]  ; component size is low 16 bits
         imul    r8d, edx  ; signed mul, but won't overflow due to length restriction above
         add     r8d, dword ptr [rcx + OFFSET__MethodTable__m_BaseSize]

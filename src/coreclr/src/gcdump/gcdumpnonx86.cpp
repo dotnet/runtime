@@ -38,8 +38,8 @@ PCSTR GetRegName (UINT32 regnum)
     case 14: return "r14";
     case 15: return "r15";
     }
-    
-    
+
+
     return "???";
 #elif defined(_TARGET_ARM64_)
 
@@ -61,7 +61,7 @@ PCSTR GetRegName (UINT32 regnum)
     {
         return "Sp";
     }
-    
+
     return "???";
 #elif defined(_TARGET_ARM_)
     if (regnum > 128)
@@ -79,9 +79,9 @@ PCSTR GetRegName (UINT32 regnum)
 
 
 GCDump::GCDump(UINT32 gcInfoVer, bool encBytes, unsigned maxEncBytes, bool dumpCodeOffs)
-  : gcInfoVersion(gcInfoVer), 
+  : gcInfoVersion(gcInfoVer),
     fDumpEncBytes   (encBytes    ),
-    cMaxEncBytes    (maxEncBytes ), 
+    cMaxEncBytes    (maxEncBytes ),
     fDumpCodeOffsets(dumpCodeOffs)
 {
 }
@@ -113,7 +113,7 @@ BOOL InterruptibleStateChangeCallback (
         pState->fAnythingPrinted = FALSE;
         pState->fSafePoint = FALSE;
     }
-    
+
     pState->pfnPrintf("%08x%s interruptible\n", CodeOffset, fInterruptible ? "" : " not");
 
     pState->LastCodeOffset = -1;
@@ -131,7 +131,7 @@ BOOL SafePointCallback (
     {
         pState->pfnPrintf("\n");
     }
-    
+
     pState->pfnPrintf("%08x is a safepoint: ", CodeOffset);
 
     pState->LastCodeOffset = CodeOffset;
@@ -191,7 +191,7 @@ BOOL RegisterStateChangeCallback (
     return FALSE;
 }
 
-    
+
 BOOL StackSlotStateChangeCallback (
             UINT32 CodeOffset,
             GcSlotFlags flags,
@@ -249,7 +249,7 @@ BOOL StackSlotStateChangeCallback (
     }
 #endif // !GCINFODUMPER_IS_FIXED
 
-    
+
 
     PCSTR pszBaseReg;
 
@@ -260,7 +260,7 @@ BOOL StackSlotStateChangeCallback (
     case GC_FRAMEREG_REL:  pszBaseReg = GetRegName(pState->FrameRegister); break;
     default:               pszBaseReg = "???";                             break;
     }
-    
+
     pState->pfnPrintf(" %c%s%c%x", delta, pszBaseReg, sign, StackOffset);
 
     PrintFlags(pState->pfnPrintf, flags);
@@ -270,7 +270,7 @@ BOOL StackSlotStateChangeCallback (
     return FALSE;
 }
 
-    
+
 size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                 unsigned       methodSize,
                                 bool           verifyGCTables)
@@ -300,7 +300,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
         UINT32 prologSize = hdrdecoder.GetPrologSize();
         gcPrintf("%d\n", prologSize);
     }
-    
+
     gcPrintf("Security object: ");
     if (NO_SECURITY_OBJECT == hdrdecoder.GetSecurityObjectStackSlot())
     {
@@ -405,7 +405,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
         gcPrintf("caller.sp%c%x\n", sign, ofs);
 
     }
-    
+
     gcPrintf("GenericInst slot: ");
     if (NO_GENERICS_INST_CONTEXT == hdrdecoder.GetGenericsInstContextStackSlot())
     {
@@ -431,7 +431,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
         else
              gcPrintf("(GENERIC_PARAM_CONTEXT_THIS)\n");
     }
-    
+
     gcPrintf("Varargs: %u\n", hdrdecoder.GetIsVarArg());
     gcPrintf("Frame pointer: %s\n", NO_STACK_BASE_REGISTER == hdrdecoder.GetStackBaseRegister()
                                     ? "<none>"

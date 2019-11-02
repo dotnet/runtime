@@ -63,18 +63,18 @@ namespace CLRPrivBinderUtil
             if (FAILED(StringCchCopy(wzBuffer, cchBuffer, m_wzPath)))
                 IfFailRet(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
         }
-            
+
         return hr;
     }
 
     //=====================================================================================================================
     // Destroys list of strings (code:WStringList).
-    void 
+    void
     WStringList_Delete(
         WStringList * pList)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         if (pList != nullptr)
         {
             for (WStringListElem * pElem = pList->RemoveHead(); pElem != nullptr; pElem = pList->RemoveHead())
@@ -83,7 +83,7 @@ namespace CLRPrivBinderUtil
                 delete [] pElem->GetValue();
                 delete pElem;
             }
-            
+
             delete pList;
         }
     }

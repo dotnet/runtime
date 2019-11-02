@@ -6,11 +6,11 @@
 //
 // ===========================================================================
 // File: variant.cpp
-// 
+//
 // PALRT variant conversion functions
 // ===========================================================================
 
-#include "common.h" 
+#include "common.h"
 
 /***
 *PUBLIC void VariantInit(VARIANT*)

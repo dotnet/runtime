@@ -22,12 +22,12 @@
 // ------------------------------------------------------------------
 // GC write barrier support.
 //
-// GC Write barriers are defined in asmhelpers.asm. The following functions are used to define 
+// GC Write barriers are defined in asmhelpers.asm. The following functions are used to define
 // patchable location where the write-barriers are copied over at runtime
- 
+
     LEAF_ENTRY JIT_PatchedWriteBarrierStart, _TEXT
     LEAF_END JIT_PatchedWriteBarrierStart, _TEXT
- 
+
     // These write barriers are overwritten on the fly
     // See ValidateWriteBarriers on how the sizes of these should be calculated
         .align 4

@@ -28,7 +28,7 @@ namespace R2RDump.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> callPatternTable
         /// </summary>
-        private static uint[] callPatternTable = 
+        private static uint[] callPatternTable =
         {
             0x0a000200, //   30109
             0x0c000200, //   22970

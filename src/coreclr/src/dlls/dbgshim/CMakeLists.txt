@@ -9,7 +9,7 @@ set(DBGSHIM_SOURCES
 
 if(WIN32)
     # Use static crt
-    add_definitions(-MT) 
+    add_definitions(-MT)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
 
     list(APPEND DBGSHIM_SOURCES
@@ -27,7 +27,7 @@ endif(WIN32)
 if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")    
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})

@@ -6,7 +6,7 @@ EXPORTS
     OutOfProcessFunctionTableCallback
     OutOfProcessFunctionTableCallbackEx
     DacDbiInterfaceInstance
-    
+
 #ifndef FEATURE_PAL
     OutOfProcessExceptionEventCallback
     OutOfProcessExceptionEventSignatureCallback

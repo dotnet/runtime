@@ -476,7 +476,7 @@ bool InfoHdrSmall::isHeaderMatch(const InfoHdr& target) const
     _ASSERTE(target.untrackedCnt != HAS_UNTRACKED &&
                 target.varPtrTableSize != HAS_VARPTR &&
                 target.gsCookieOffset != HAS_GS_COOKIE_OFFSET &&
-                target.syncStartOffset != HAS_SYNC_OFFSET && 
+                target.syncStartOffset != HAS_SYNC_OFFSET &&
                 target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET);
 #endif
 
@@ -490,7 +490,7 @@ bool InfoHdrSmall::isHeaderMatch(const InfoHdr& target) const
         else if (untrackedCnt != HAS_UNTRACKED)
             return false;
     }
-        
+
     if (varPtrTableSize != target.varPtrTableSize) {
         if ((varPtrTableSize != 0) != (target.varPtrTableSize != 0))
             return false;

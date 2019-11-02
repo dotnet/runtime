@@ -6,7 +6,7 @@ The .NET Core project started with the codebase from the desktop CoreCLR/Silverl
 
 - Windows on x86/x64/arm32
 - Linux on x86/x64/arm32
-- OSX 
+- OSX
 
 ## Known issues
 
@@ -16,11 +16,11 @@ The implementation of this API was making some questionable assumptions about Wi
 
 ### ReJIT on ARM
 
-ReJIT feature is only available on x86/x64 for now. 
+ReJIT feature is only available on x86/x64 for now.
 
 ### Profiler Attach/Detach
 
-We only support launch at the moment, see https://github.com/dotnet/coreclr/issues/16796 
+We only support launch at the moment, see https://github.com/dotnet/coreclr/issues/16796
 
 ### Any issues we missed?
 

@@ -77,7 +77,7 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
     # Write the event attribute.
     writeOutput(outputFile, "[Event("+ eventNode.getAttribute("value") + ", Version = " + eventNode.getAttribute("version") + ", Level = EventLevel." + eventNode.getAttribute("level")[4:])
-    
+
     # Not all events have keywords specified, and some have multiple keywords specified.
     keywords = eventNode.getAttribute("keywords")
     if keywords:

@@ -24,7 +24,7 @@
 #include "perfmap.h"
 #endif
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //@TODO: make these conditional on whether logs are being produced
 //instrumentation counters
@@ -98,9 +98,9 @@ extern size_t g_dispatch_cache_chain_success_counter;
 
 SPTR_IMPL_INIT(VirtualCallStubManagerManager, VirtualCallStubManagerManager, g_pManager, NULL);
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
 UINT32 STUB_MISS_COUNT_VALUE = 100;
 UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
@@ -112,7 +112,7 @@ DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line l
 
 size_t g_dispatch_cache_chain_success_counter = CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT;
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
 UINT32 g_resetCacheCounter;
 UINT32 g_resetCacheIncr;
 UINT32 g_dumpLogCounter;
@@ -188,7 +188,7 @@ void VirtualCallStubManager::LoggingDump()
 
     if(g_hStubLogFile)
     {
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nstub tuning parameters\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
@@ -245,7 +245,7 @@ void VirtualCallStubManager::LoggingDump()
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", g_stub_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
 
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nlookup stub data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
@@ -283,11 +283,11 @@ void VirtualCallStubManager::LoggingDump()
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nchain lookup data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_call_counter", g_chained_lookup_call_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_miss_counter", g_chained_lookup_miss_counter);
@@ -308,7 +308,7 @@ void VirtualCallStubManager::LoggingDump()
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // CHAIN_LOOKUP
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "worker (slow resolver) data",
                 100.0 * double(g_worker_call)/double(total_calls));
 #else // !STUB_LOGGING
@@ -385,7 +385,7 @@ void VirtualCallStubManager::LoggingDump()
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache entry write counts\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         DispatchCache::CacheEntryData *rgCacheData = g_resolveCache->cacheData;
@@ -403,7 +403,7 @@ void VirtualCallStubManager::LoggingDump()
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
 
-#if 0 
+#if 0
         for (unsigned i = 0; i < ContractImplMap::max_delta_count; i++)
         {
             if (ContractImplMap::deltasDescs[i] != 0)
@@ -549,7 +549,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     else if (parentDomain->IsSharedDomain())
     {
         indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      =  100;
-#ifdef BIT64 
+#ifdef BIT64
                                                   indcell_heap_reserve_size      = 2000;
 #endif
         cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  500;
@@ -662,7 +662,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                                lookup_heap_reserve_size      +
                                dispatch_heap_reserve_size    +
                                resolve_heap_reserve_size     +
-                               vtable_heap_reserve_size)    == 
+                               vtable_heap_reserve_size)    ==
                               dwTotalReserveMemSize);
         }
 
@@ -690,7 +690,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         resolve_heap_reserve_size        = GetOsPageSize();
         resolve_heap_commit_size         = GetOsPageSize();
 
-        // Heap for the collectible case is carefully tuned to sum up to 16 pages. Today, we only use the 
+        // Heap for the collectible case is carefully tuned to sum up to 16 pages. Today, we only use the
         // vtable jump stubs in the R2R scenario, which is unlikely to be loaded in the collectible context,
         // so we'll keep the heap numbers at zero for now. If we ever use vtable stubs in the collectible
         // scenario, we'll just allocate the memory on demand.
@@ -878,7 +878,7 @@ void VirtualCallStubManager::InitStatic()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
     // Note if you change these values using environment variables then you must use hex values :-(
     STUB_MISS_COUNT_VALUE  = (INT32) CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VirtualCallStubMissCount);
     STUB_COLLIDE_WRITE_PCT = (INT32) CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VirtualCallStubCollideWritePct);
@@ -999,7 +999,7 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
         FORBID_FAULT;
     } CONTRACTL_END
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     VirtualCallStubManager *pCur;
     StubKind kind;
 
@@ -1098,9 +1098,9 @@ BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinatio
 }
 
 //----------------------------------------------------------------------------
-BOOL VirtualCallStubManager::TraceManager(Thread *thread, 
+BOOL VirtualCallStubManager::TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              T_CONTEXT *pContext, 
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr)
 {
     CONTRACTL
@@ -1138,7 +1138,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     return (TraceResolver(pObj, token, trace));
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
 {
@@ -1259,9 +1259,9 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 }
 
 #ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock, 
+extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
                                                  TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex, 
+                                                 DWORD sectionIndex,
                                                  Module * pModule)
 {
     CONTRACTL {
@@ -1277,7 +1277,7 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
 
 #ifdef _DEBUG
     Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif    
+#endif
 
     FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
     StubDispatchFrame * pSDFrame = &frame;
@@ -1380,14 +1380,14 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
 //  Method:     VirtualCallStubManager::GenerateStubIndirection
 //
 //  Synopsis:   This method allocates an indirection cell for use by the virtual stub dispatch (currently
-//              only implemented for interface calls). 
+//              only implemented for interface calls).
 //              For normal methods: the indirection cell allocated will never be freed until app domain unload
 //              For dynamic methods: we recycle the indirection cells when a dynamic method is collected. To
-//              do that we keep all the recycled indirection cells in a linked list: m_RecycledIndCellList. When 
+//              do that we keep all the recycled indirection cells in a linked list: m_RecycledIndCellList. When
 //              the dynamic method needs an indirection cell it allocates one from m_RecycledIndCellList. Each
 //              dynamic method keeps track of all the indirection cells it uses and add them back to
-//              m_RecycledIndCellList when it is finalized. 
-//              
+//              m_RecycledIndCellList when it is finalized.
+//
 //+----------------------------------------------------------------------------
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRecycledCell /* = FALSE*/ )
 {
@@ -1405,7 +1405,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRec
 
     // The indirection cell to hold the pointer to the stub
     BYTE * ret              = NULL;
-    UINT32 cellsPerBlock    = INDCELLS_PER_BLOCK;         
+    UINT32 cellsPerBlock    = INDCELLS_PER_BLOCK;
 
     // First try the recycled indirection cell list for Dynamic methods
     if (fUseRecycledCell)
@@ -1509,7 +1509,7 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     _ASSERTE(stub != NULL);
     _ASSERTE(kind != SK_UNKNOWN);
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
     if (kind == SK_DISPATCH)
     {
@@ -1549,9 +1549,9 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     return 0;
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
 ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCacheElem *pElem)
 {
     CONTRACTL {
@@ -1583,7 +1583,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                         size_t token
 #ifndef _TARGET_X86_
                         , UINT_PTR flags
-#endif                            
+#endif
                         )
 {
     CONTRACTL {
@@ -1672,7 +1672,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
     PREFIX_ASSUME(pMgr != NULL);
 
-#ifndef _TARGET_X86_ 
+#ifndef _TARGET_X86_
     // Have we failed the dispatch stub too many times?
     if (flags & SDF_ResolveBackPatch)
     {
@@ -1702,7 +1702,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     } CONTRACTL_END
 
     BEGIN_ENTRYPOINT_VOIDRET;
-    
+
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
@@ -1741,7 +1741,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
     if (g_dumpLogCounter != 0)
     {
         UINT32 total_calls = g_mono_call_counter + g_poly_call_counter;
@@ -1873,7 +1873,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         CONSISTENCY_CHECK(stub == CALL_STUB_EMPTY_ENTRY);
         patch = Resolver(objectType, token, protectedObj, &target, TRUE /* throwOnConflict */);
 
-#if defined(_DEBUG) 
+#if defined(_DEBUG)
         if ( !objectType->IsComObjectType() &&
              !objectType->IsICastable())
         {
@@ -1929,14 +1929,14 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     PCODE pBackPatchFcn;
                     PCODE pResolverFcn;
 
-#ifdef _TARGET_X86_ 
+#ifdef _TARGET_X86_
                     // Only X86 implementation needs a BackPatch function
                     pBackPatchFcn = (PCODE) GetEEFuncEntryPoint(BackPatchWorkerAsmStub);
 #else // !_TARGET_X86_
                     pBackPatchFcn = NULL;
 #endif // !_TARGET_X86_
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
 #else // CHAIN_LOOKUP
                     // Use the the slow resolver
@@ -2078,12 +2078,12 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                 // Try to insert this entry into the resolver cache table
                 // When we get a collision we may decide not to insert this element
                 // and Insert will return FALSE if we decided not to add the entry
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
                 BOOL didInsert =
 #endif
                     g_resolveCache->Insert(e, insertKind);
 
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
                 if ((STUB_COLLIDE_MONO_PCT > 0) && !didInsert && (stubKind == SK_RESOLVE))
                 {
                     // If we decided not to perform the insert and we came in with a resolve stub
@@ -2165,9 +2165,9 @@ whether or not this is a permenent choice or a temporary choice.  For example, i
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.
 */
-BOOL 
+BOOL
 VirtualCallStubManager::Resolver(
-    MethodTable * pMT, 
+    MethodTable * pMT,
     DispatchToken token,
     OBJECTREF   * protectedObj, // this one can actually be NULL, consider using pMT is you don't need the object itself
     PCODE *       ppTarget,
@@ -2180,7 +2180,7 @@ VirtualCallStubManager::Resolver(
         PRECONDITION(TypeHandle(pMT).CheckFullyLoaded());
     } CONTRACTL_END;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     MethodTable * dbg_pTokenMT = pMT;
     MethodDesc *  dbg_pTokenMD = NULL;
     if (token.IsTypedToken())
@@ -2208,14 +2208,14 @@ VirtualCallStubManager::Resolver(
     if (!implSlot.IsNull())
     {
         g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
-#if defined(LOGGING) || defined(_DEBUG) 
+#if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
             if (pMD != NULL)
             {
                 // Make sure we aren't crossing app domain boundaries
                 CONSISTENCY_CHECK(GetAppDomain()->CheckValidModule(pMD->GetModule()));
-#ifdef LOGGING 
+#ifdef LOGGING
                 WORD slot = pMD->GetSlot();
                 BOOL fIsOverriddenMethod =
                     (pMT->GetNumParentVirtuals() <= slot && slot < pMT->GetNumVirtuals());
@@ -2296,8 +2296,8 @@ VirtualCallStubManager::Resolver(
                 _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
 
                 MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                    pTargetMD, 
-                    pItfMT, 
+                    pTargetMD,
+                    pItfMT,
                     FALSE,              // forceBoxedEntryPoint
                     Instantiation(),    // methodInst
                     FALSE,              // allowInstParam
@@ -2320,14 +2320,14 @@ VirtualCallStubManager::Resolver(
 
         // In case of ICastable, instead of trying to find method implementation in the real object type
         // we call pObj.GetValueInternal() and call Resolver() again with whatever type it returns.
-        // It allows objects that implement ICastable to mimic behavior of other types. 
+        // It allows objects that implement ICastable to mimic behavior of other types.
         MethodTable * pTokenMT = GetTypeFromToken(token);
 
         // Make call to ICastableHelpers.GetImplType(this, interfaceTypeObj)
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GETIMPLTYPE);
 
         OBJECTREF tokenManagedType = pTokenMT->GetManagedClassObject(); //GC triggers
-        
+
         DECLARE_ARGHOLDER_ARRAY(args, 2);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*protectedObj);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(tokenManagedType);
@@ -2338,7 +2338,7 @@ VirtualCallStubManager::Resolver(
         INDEBUG(tokenManagedType = NULL); //tokenManagedType wasn't protected during the call
         if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
         {
-            COMPlusThrow(kEntryPointNotFoundException);    
+            COMPlusThrow(kEntryPointNotFoundException);
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
@@ -2365,7 +2365,7 @@ VirtualCallStubManager::Resolver(
             SString methodName;
             DefineFullyQualifiedNameForClassW();
             pTokenMD->GetFullMethodInfo(methodName);
-            
+
             COMPlusThrowHR(COR_E_MISSINGMETHOD, COR_E_MISSINGMETHOD, GetFullyQualifiedNameForClassNestedAwareW(pMT), methodName.GetUnicode());
         }
         else
@@ -2417,12 +2417,12 @@ BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
     RETURN (ret);
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
-MethodDesc * 
+MethodDesc *
 VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
-    DispatchToken token, 
+    DispatchToken token,
     MethodTable * pMT)
 {
     CONTRACT (MethodDesc *) {
@@ -2471,7 +2471,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
         PRECONDITION(IsInterfaceToken(token));
     } CONTRACTL_END;
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
     MethodTable * pMT = GetTypeFromToken(token);
     PREFIX_ASSUME(pMT != NULL);
@@ -2486,7 +2486,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
 #endif // DACCESS_COMPILE
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
 // This will check to see if a match is in the cache.
@@ -2511,7 +2511,7 @@ PCODE VirtualCallStubManager::CacheLookup(size_t token, UINT16 tokenHash, Method
 /* static */
 PCODE
 VirtualCallStubManager::GetTarget(
-    DispatchToken token, 
+    DispatchToken token,
     MethodTable * pMT,
     BOOL throwOnConflict)
 {
@@ -2543,7 +2543,7 @@ VirtualCallStubManager::GetTarget(
     BOOL fPatch;
 
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
-    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported    
+    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
     fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
     _ASSERTE(!throwOnConflict || target != NULL);
 
@@ -2580,10 +2580,10 @@ whether or not this is a permenent choice or a temporary choice.  For example, i
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.
 */
-BOOL 
+BOOL
 VirtualCallStubManager::TraceResolver(
-    Object *           pObj, 
-    DispatchToken      token, 
+    Object *           pObj,
+    DispatchToken      token,
     TraceDestination * trace)
 {
     CONTRACTL {
@@ -2625,7 +2625,7 @@ VirtualCallStubManager::TraceResolver(
     return slot.IsNull() ? FALSE : (StubManager::TraceStub(slot.GetTarget(), trace));
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
 /* Change the call site.  It is failing the expected MT test in the dispatcher stub
@@ -2721,7 +2721,7 @@ void VirtualCallStubManager::BackPatchSite(StubCallSite* pCallSite, PCODE stub)
 
 //----------------------------------------------------------------------------
 void StubCallSite::SetSiteTarget(PCODE newTarget)
-{ 
+{
     WRAPPER_NO_CONTRACT;
     PTR_PCODE pCell = GetIndirectCell();
     *pCell = newTarget;
@@ -2893,7 +2893,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
-#if defined(_TARGET_X86_) 
+#if defined(_TARGET_X86_)
         PRECONDITION(addrOfPatcher != NULL);
 #endif
         POSTCONDITION(CheckPointer(RETVAL));
@@ -3428,7 +3428,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
         oldBucket->contents[CALL_STUB_DEAD_LINK] = (size_t) list;
     } while (FastInterlockCompareExchangePointer(&dead, oldBucket, list) != list);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     {
         // Validate correctness of the list
         FastTable *curr = oldBucket;
@@ -3487,7 +3487,7 @@ void BucketTable::Reclaim()
     if (FastInterlockCompareExchangePointer(&dead, NULL, list) != list)
         return;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     // Validate correctness of the list
     FastTable *curr = list;
     while (curr)
@@ -3615,7 +3615,7 @@ void BucketTable::LogStats()
 }
 
 DispatchCache::DispatchCache()
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     : m_writeLock(CrstStubDispatchCache, CRST_UNSAFE_ANYMODE)
 #endif
 {
@@ -3637,7 +3637,7 @@ DispatchCache::DispatchCache()
 
     // Initialize statistics
     memset(&stats, 0, sizeof(stats));
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
     memset(&cacheData, 0, sizeof(cacheData));
 #endif
 }
@@ -3650,7 +3650,7 @@ ResolveCacheElem* DispatchCache::Lookup(size_t token, UINT16 tokenHash, void* mt
     UINT16 idx = HashMT(tokenHash, mt);
     ResolveCacheElem *pCurElem = GetCacheEntry(idx);
 
-#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP) 
+#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP)
     BOOL chainedLookup = FALSE;
 #endif
     // No need to conditionlize on CHAIN_LOOKUP, since this loop
@@ -3660,7 +3660,7 @@ ResolveCacheElem* DispatchCache::Lookup(size_t token, UINT16 tokenHash, void* mt
         if (pCurElem->Equals(token, mt)) {
             return pCurElem;
         }
-#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP) 
+#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP)
         // Only want to inc the counter once per chain search.
         if (pCurElem == GetCacheEntry(idx)) {
             chainedLookup = TRUE;
@@ -3669,7 +3669,7 @@ ResolveCacheElem* DispatchCache::Lookup(size_t token, UINT16 tokenHash, void* mt
 #endif // defined(STUB_LOGGING) && defined(CHAIN_LOOKUP)
         pCurElem = pCurElem->Next();
     }
-#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP) 
+#if defined(STUB_LOGGING) && defined(CHAIN_LOOKUP)
     if (chainedLookup) {
         g_chained_lookup_external_miss_counter++;
     }
@@ -3689,7 +3689,7 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
         PRECONDITION(insertKind != IK_NONE);
     } CONTRACTL_END;
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     CrstHolder lh(&m_writeLock);
 #endif
 
@@ -3702,14 +3702,14 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
     BOOL   hit     = FALSE;
     BOOL   collide = FALSE;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     elem->debug_hash = tokHash;
     elem->debug_index = idx;
 #endif // _DEBUG
 
         ResolveCacheElem* cell = GetCacheEntry(idx);
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     // There is the possibility of a race where two threads will
     // try to generate a ResolveCacheElem for the same tuple, and
     // the first thread will get the lock and insert the element
@@ -3741,7 +3741,7 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
     {
         collide = TRUE;
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
         // Always insert the entry into the chain
         write = TRUE;
 #else // !CHAIN_LOOKUP
@@ -3762,7 +3762,7 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
 
     if (write)
     {
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
         // We create a list with the last pNext pointing at empty
         elem->pNext = cell;
 #else // !CHAIN_LOOKUP
@@ -3796,7 +3796,7 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
     return write || miss;
 }
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
 void DispatchCache::PromoteChainEntry(ResolveCacheElem* elem)
 {
     CONTRACTL {
@@ -3871,7 +3871,7 @@ void DispatchCache::LogStats()
    2. For every bit we try to have half one bits and half zero bits
    3. Adjacent entries when xor-ed should have 5,6 or 7 bits that are different
 */
-#ifdef BIT64 
+#ifdef BIT64
 static const UINT16 tokenHashBits[64] =
 #else // !BIT64
 static const UINT16 tokenHashBits[32] =
@@ -3886,7 +3886,7 @@ static const UINT16 tokenHashBits[32] =
     0xf05, 0x994, 0x472, 0x626,
     0x15c, 0x3a8, 0x56e, 0xe2d,
 
-#ifdef BIT64 
+#ifdef BIT64
     0xe3c, 0xbe2, 0x58e, 0x0f3,
     0x54d, 0x70f, 0xf88, 0xe2b,
     0x353, 0x153, 0x4a5, 0x943,

@@ -576,7 +576,7 @@ extern HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames);
 #endif // !defined(DACCESS_COMPILE)
 
 //*****************************************************************************
-// Use this class by privately deriving from noncopyable to disallow copying of 
+// Use this class by privately deriving from noncopyable to disallow copying of
 // your class.
 //*****************************************************************************
 class noncopyable
@@ -604,7 +604,7 @@ class CCulturedHInstance
     LocaleIDValue   m_LangId;
     HRESOURCEDLL    m_hInst;
     BOOL            m_fMissing;
-    
+
 public:
     CCulturedHInstance()
     {
@@ -612,7 +612,7 @@ public:
         m_hInst = NULL;
         m_fMissing = FALSE;
     }
-    
+
     BOOL HasID(LocaleID id)
     {
         _ASSERTE(m_hInst != NULL || m_fMissing);
@@ -621,12 +621,12 @@ public:
 
         return wcscmp(id, m_LangId) == 0;
     }
-    
+
     HRESOURCEDLL GetLibraryHandle()
     {
         return m_hInst;
     }
-    
+
     BOOL IsSet()
     {
         return m_hInst != NULL;
@@ -643,7 +643,7 @@ public:
         SetId(id);
         m_fMissing = TRUE;
     }
-    
+
     void Set(LocaleID id, HRESOURCEDLL hInst)
     {
         _ASSERTE(m_hInst == NULL);
@@ -681,18 +681,18 @@ public:
     enum ResourceCategory
     {
         // must be present
-        Required,                   
-        
+        Required,
+
         // present in Desktop CLR and Core CLR + debug pack, an error
         // If missing, get a generic error message instead
-        Error,           
-        
+        Error,
+
         // present in Desktop CLR and Core CLR + debug pack, normal operation (e.g tracing)
         // if missing, get a generic "resource not found" message instead
-        Debugging,           
+        Debugging,
 
         // present in Desktop CLR, optional for CoreCLR
-        DesktopCLR,       
+        DesktopCLR,
 
         // might not be present, non essential
         Optional
@@ -706,7 +706,7 @@ public:
 
         m_fpGetThreadUICultureId = NULL;
         m_fpGetThreadUICultureNames = NULL;
-        
+
 
         m_pHash = NULL;
         m_nHashSize = 0;
@@ -729,7 +729,7 @@ public:
 
     static void SetIsMscoree() {s_bIsMscoree = TRUE;}
 
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);    
+    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
     HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
 
     void SetResourceCultureCallbacks(
@@ -782,7 +782,7 @@ public:
 
 DWORD
 PALAPI
-static 
+static
 FormatMessage(
            IN DWORD dwFlags,
            IN LPCVOID lpSource,
@@ -850,7 +850,7 @@ int UtilMessageBox(
                   UINT uText,       // Resource Identifier for Text message
                   UINT uCaption,    // Resource Identifier for Caption
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   ...);             // Additional Arguments
 
@@ -859,7 +859,7 @@ int UtilMessageBoxNonLocalized(
                   LPCWSTR lpText,    // Resource Identifier for Text message
                   LPCWSTR lpTitle,   // Resource Identifier for Caption
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   ...);             // Additional Arguments
 
@@ -868,7 +868,7 @@ int UtilMessageBoxVA(
                   UINT uText,       // Resource Identifier for Text message
                   UINT uCaption,    // Resource Identifier for Caption
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   va_list args);    // Additional Arguments
 
@@ -877,7 +877,7 @@ int UtilMessageBoxNonLocalizedVA(
                   LPCWSTR lpText,    // Text message
                   LPCWSTR lpCaption, // Caption
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
                   va_list args);    // Additional Arguments
@@ -888,7 +888,7 @@ int UtilMessageBoxNonLocalizedVA(
                   LPCWSTR lpCaption, // Caption
                   LPCWSTR lpDetails, // Details that may be shown in a collapsed extended area of the dialog (Vista or higher).
                   UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive 
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
                   va_list args);    // Additional Arguments
@@ -1096,9 +1096,9 @@ public:
     };
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static DWORD GetConfigDWORD_DontUse_(
         LPCWSTR        name,
         DWORD          defValue,
@@ -1106,16 +1106,16 @@ public:
         BOOL           fPrependCOMPLUS = TRUE);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static HRESULT GetConfigDWORD_DontUse_(
         LPCWSTR name,
         DWORD defValue,
         __out DWORD * result,
         CORConfigLevel level = COR_CONFIG_ALL,
         BOOL fPrependCOMPLUS = TRUE);
-    
+
     static ULONGLONG GetConfigULONGLONG_DontUse_(
         LPCWSTR        name,
         ULONGLONG      defValue,
@@ -1123,18 +1123,18 @@ public:
         BOOL           fPrependCOMPLUS = TRUE);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static DWORD GetConfigFlag_DontUse_(
         LPCWSTR        name,
         DWORD          bitToSet,
         BOOL           defValue = FALSE);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static LPWSTR GetConfigString_DontUse_(
         LPCWSTR name,
         BOOL fPrependCOMPLUS = TRUE,
@@ -1153,7 +1153,7 @@ private:
 //*****************************************************************************
 // Get either a DWORD or ULONGLONG. Always puts the result in a ULONGLONG that
 // you can safely cast to a DWORD if fGetDWORD is TRUE.
-//*****************************************************************************    
+//*****************************************************************************
     static HRESULT GetConfigInteger(
         LPCWSTR name,
         ULONGLONG defValue,
@@ -1201,7 +1201,7 @@ private:
 };
 
 // need this here because CLRConfig depends on REGUTIL, and ConfigStringHolder depends on CLRConfig
-#include "clrconfig.h" 
+#include "clrconfig.h"
 
 //-----------------------------------------------------------------------------
 // Wrapper for configuration strings.
@@ -1216,9 +1216,9 @@ public:
     }
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     void Init_DontUse_(LPCWSTR wszName)
     {
         Clear();
@@ -1276,7 +1276,7 @@ BOOL IsPreferredExecutableRange(void * p);
 // Handles the special requirements that we have on 64-bit platforms
 // where we want the executable memory to be located near mscorwks
 //
-BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize, 
+BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
                                  DWORD flAllocationType,
                                  DWORD flProtect);
 
@@ -1286,16 +1286,16 @@ BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
 //
 BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    const BYTE *pMaxAddr,
-                                   SIZE_T dwSize, 
+                                   SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
 
 //
-// Allocate free memory with specific alignment                                   
+// Allocate free memory with specific alignment
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
 
-class NumaNodeInfo 
+class NumaNodeInfo
 {
 private:
     static BOOL m_enableGCNumaAware;
@@ -1322,7 +1322,7 @@ public: 	// functions
 
 #ifndef FEATURE_PAL
 
-struct CPU_Group_Info 
+struct CPU_Group_Info
 {
     WORD	nr_active;	// at most 64
     WORD	reserved[1];
@@ -1355,7 +1355,7 @@ public:
     static BOOL CanEnableGCCPUGroups();
     static BOOL CanEnableThreadUseAllCpuGroups();
     static WORD GetNumActiveProcessors();
-    static void GetGroupForProcessor(WORD processor_number, 
+    static void GetGroupForProcessor(WORD processor_number,
 		    WORD *group_number, WORD *group_processor_number);
     static DWORD CalculateCurrentProcessorNumber();
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
@@ -1364,7 +1364,7 @@ public:
 #if !defined(FEATURE_REDHAWK)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
-		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count); 
+		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
     static BOOL SetThreadGroupAffinity(HANDLE h,
 		    const GROUP_AFFINITY *groupAffinity, GROUP_AFFINITY *previousGroupAffinity);
     static BOOL GetThreadGroupAffinity(HANDLE h, GROUP_AFFINITY *groupAffinity);
@@ -2153,24 +2153,24 @@ private:
         WRAPPER_NO_CONTRACT;
         SSIZE_T     iLast;
         SSIZE_T     i;                      // loop variable.
-        
+
         for (;;)
         {
             // if less than two elements you're done.
             if (iLeft >= iRight)
                 return;
-            
+
             // ASSERT that we now have valid indicies.  This is statically provable
             // since this private function is only called with valid indicies,
             // and iLeft and iRight only converge towards eachother.  However,
             // PreFast can't detect this because it doesn't know about our callers.
             COMPILER_ASSUME(iLeft >= 0 && iLeft < m_iCount);
             COMPILER_ASSUME(iRight >= 0 && iRight < m_iCount);
-            
+
             // The mid-element is the pivot, move it to the left.
             Swap(iLeft, (iLeft + iRight) / 2);
             iLast = iLeft;
-            
+
             // move everything that is smaller than the pivot to the left.
             for (i = iLeft + 1; i <= iRight; i++)
             {
@@ -2179,10 +2179,10 @@ private:
                     Swap(i, ++iLast);
                 }
             }
-            
+
             // Put the pivot to the point where it is in between smaller and larger elements.
             Swap(iLeft, iLast);
-            
+
             // Sort each partition.
             SSIZE_T iLeftLast = iLast - 1;
             SSIZE_T iRightFirst = iLast + 1;
@@ -2221,7 +2221,7 @@ const T * BinarySearch(const T * pBase, int iCount, const T & find)
     while (iLast - iFirst > 10)
     {
         int iMid = (iLast + iFirst) / 2;
-        
+
         if (find < pBase[iMid])
             iLast = iMid - 1;
         else
@@ -2853,7 +2853,7 @@ int CHashTableAndData<MemMgr>::Grow()   // 1 if successful, 0 if not.
     {
         _ASSERTE( !"CHashTableAndData overflow!" );
         return (0);
-    }    
+    }
     iCurSize = MemMgr::RoundSize( iTotEntrySize.Value() );
     iEntries = (iCurSize + MemMgr::GrowSize(iCurSize)) / m_iEntrySize;
 
@@ -2900,8 +2900,8 @@ inline DWORD HashThreeToOne(DWORD a, DWORD b, DWORD c)
     lookup3.c, by Bob Jenkins, May 2006, Public Domain.
 
     These are functions for producing 32-bit hashes for hash table lookup.
-    hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final() 
-    are externally useful functions.  Routines to test the hash are included 
+    hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final()
+    are externally useful functions.  Routines to test the hash are included
     if SELF_TEST is defined.  You can use this free for any purpose.  It's in
     the public domain.  It has no warranty.
     */
@@ -2911,7 +2911,7 @@ inline DWORD HashThreeToOne(DWORD a, DWORD b, DWORD c)
     a ^= c; a -= rot32(c,11);
     b ^= a; b -= rot32(a,25);
     c ^= b; c -= rot32(b,16);
-    a ^= c; a -= rot32(c,4); 
+    a ^= c; a -= rot32(c,4);
     b ^= a; b -= rot32(a,14);
     c ^= b; c -= rot32(b,24);
 
@@ -2968,7 +2968,7 @@ inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
 
     // hash the string two characters at a time
     ULONG *ptr = (ULONG *)szStr;
-    
+
     // we assume that szStr is null-terminated
     _ASSERTE(cchStr <= wcslen(szStr));
     SIZE_T cDwordCount = (cchStr + 1) / 2;
@@ -3868,9 +3868,9 @@ class ConfigDWORD
 {
 public:
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     inline DWORD val_DontUse_(__in __in_z LPCWSTR keyName, DWORD defaultVal=0)
     {
         WRAPPER_NO_CONTRACT;
@@ -4010,16 +4010,16 @@ class RangeList
     {
         return this->AddRangeWorker(start, end, id);
     }
-    
+
     void RemoveRanges(void *id, const BYTE *start = NULL, const BYTE *end = NULL)
     {
         return this->RemoveRangesWorker(id, start, end);
     }
-    
+
     BOOL IsInRange(TADDR address, TADDR *pID = NULL)
     {
         SUPPORTS_DAC;
-    
+
         return this->IsInRangeWorker(address, pID);
     }
 
@@ -4050,7 +4050,7 @@ class RangeList
         RANGE_COUNT = 10
     };
 
-   
+
   private:
     struct Range
     {
@@ -4236,7 +4236,7 @@ INT32 GetThumb2BlRel24(UINT16 * p);
 void PutThumb2BlRel24(UINT16 * p, INT32 imm24);
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from a b or bl instruction 
+//  Extract the PC-Relative offset from a b or bl instruction
 //*****************************************************************************
 INT32 GetArm64Rel28(UINT32 * pCode);
 
@@ -4251,7 +4251,7 @@ INT32 GetArm64Rel21(UINT32 * pCode);
 INT32 GetArm64Rel12(UINT32 * pCode);
 
 //*****************************************************************************
-//  Deposit the PC-Relative offset 'imm28' into a b or bl instruction 
+//  Deposit the PC-Relative offset 'imm28' into a b or bl instruction
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28);
 
@@ -4617,7 +4617,7 @@ public:
         // In debug builds, remember the full group of flags that were set at the time
         // the constructor was called.  This will be used in ASSERTs in the destructor
         INDEBUG(m_nPreviousFlagGroup = (size_t)ClrFlsGetValue (TlsIdx_ThreadType));
-        
+
         if (!m_fPreviouslySet)
         {
             ClrFlsSetThreadType(flag);
@@ -4637,7 +4637,7 @@ public:
         // instantiated, then this holder still restores only the flag it knows about. To
         // prevent confusion, assert if some other flag was modified, so the user doesn't
         // expect the holder to restore the entire original set of flags.
-        // 
+        //
         // The expression below says that the only difference between the previous flag
         // group and the current flag group should be m_flag (or no difference at all, if
         // m_flag's state didn't actually change).
@@ -4742,8 +4742,8 @@ FORCEINLINE BOOL CanThisThreadCallIntoHost()
 namespace util
 {
     //  compare adapters
-    //  
-    
+    //
+
     template < typename T >
     struct less
     {
@@ -4761,7 +4761,7 @@ namespace util
             return first > second;
         }
     };
-    
+
 
     //  sort adapters
     //
@@ -4778,7 +4778,7 @@ namespace util
                 : CQuickSort< T >( begin, end - begin )
                 , m_pred( pred )
             {}
-            
+
             virtual int Compare( T * first, T * second )
             {
                 return m_pred( *first, *second ) ? -1
@@ -4791,7 +4791,7 @@ namespace util
         sort_helper sort_obj( begin, end, pred );
         sort_obj.Sort();
     }
-    
+
 
     template < typename Iter >
     void sort( Iter begin, Iter end );
@@ -4802,7 +4802,7 @@ namespace util
         util::sort( begin, end, util::less< T >() );
     }
 
-    
+
     // binary search adapters
     //
 
@@ -4882,7 +4882,7 @@ typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
 // HMODULE_TGT represents a handle to a module in the target process.  In non-DAC builds this is identical
 // to HMODULE (HINSTANCE), which is the base address of the module.  In DAC builds this must be a target address,
-// and so is represented by TADDR. 
+// and so is represented by TADDR.
 
 #ifdef DACCESS_COMPILE
 typedef TADDR HMODULE_TGT;
@@ -4949,7 +4949,7 @@ namespace UtilCode
     // These are type-safe versions of Interlocked[Compare]Exchange
     // They avoid invoking struct cast operations via reinterpreting
     // the struct's address as a LONG* or LONGLONG* and dereferencing it.
-    // 
+    //
     // If we had a global ::operator & (unary), we would love to use that
     // to ensure we were not also accidentally getting a structs's provided
     // operator &. TODO: probe with a static_assert?
@@ -4984,7 +4984,7 @@ namespace UtilCode
             return *reinterpret_cast<T*>(&res);
         }
     };
- 
+
     template <typename T>
     struct InterlockedCompareExchangeHelper<T, sizeof(LONGLONG)>
     {
@@ -5013,7 +5013,7 @@ namespace UtilCode
         }
     };
 }
- 
+
 template <typename T>
 inline T InterlockedExchangeT(
     T volatile * target,
@@ -5058,7 +5058,7 @@ inline T* InterlockedCompareExchangeT(
     typedef typename std::remove_const<T>::type * non_const_ptr_t;
     return reinterpret_cast<T*>(InterlockedCompareExchangePointer(
         reinterpret_cast<PVOID volatile *>(const_cast<non_const_ptr_t volatile *>(destination)),
-        reinterpret_cast<PVOID>(const_cast<non_const_ptr_t>(exchange)), 
+        reinterpret_cast<PVOID>(const_cast<non_const_ptr_t>(exchange)),
         reinterpret_cast<PVOID>(const_cast<non_const_ptr_t>(comparand))));
 }
 
@@ -5187,7 +5187,7 @@ namespace clr
 {
     //=================================================================================================================
     template <typename ItfT>
-    static inline 
+    static inline
     typename std::enable_if< std::is_pointer<ItfT>::value, ItfT >::type
     SafeAddRef(ItfT pItf)
     {
@@ -5234,7 +5234,7 @@ namespace clr
 {
     //=================================================================================================================
     template <typename PtrT>
-    static inline 
+    static inline
     typename std::enable_if< std::is_pointer<PtrT>::value, PtrT >::type
     SafeDelete(PtrT & ptr)
     {

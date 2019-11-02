@@ -42,7 +42,7 @@ int
 PAL_atexit(void (__cdecl *function)(void))
 {
     int ret;
-    
+
     PERF_ENTRY(atexit);
     ENTRY ("atexit(function=%p)\n", function);
     ret = atexit(function);

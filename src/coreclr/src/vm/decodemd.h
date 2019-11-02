@@ -19,7 +19,7 @@ public:
     unsigned Next();
     signed NextSigned();
     PTR_BYTE End();
-    
+
     // --------------------------------------------------------
     // This structures contains the state of the FSM
 

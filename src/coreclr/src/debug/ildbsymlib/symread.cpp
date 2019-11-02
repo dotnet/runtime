@@ -11,9 +11,9 @@
 #include "corimage.h"
 
 #define CODE_WITH_NO_SOURCE 0xfeefee
-// ------------------------------------------------------------------------- 
+// -------------------------------------------------------------------------
 // SymReader class
-// ------------------------------------------------------------------------- 
+// -------------------------------------------------------------------------
 
 //-----------------------------------------------------------
 // NewSymReader
@@ -27,7 +27,7 @@ SymReader::NewSymReader(
 {
     HRESULT hr = S_OK;
     SymReader* pSymReader = NULL;
-    
+
     _ASSERTE(IsValidCLSID(clsid));
     _ASSERTE(IsValidWritePtr(ppObj, IUnknown*));
 
@@ -35,7 +35,7 @@ SymReader::NewSymReader(
         return (E_UNEXPECTED);
 
     IfFalseGo(ppObj, E_INVALIDARG);
-    
+
     *ppObj = NULL;
     IfNullGo( pSymReader = NEW(SymReader()));
 
@@ -61,9 +61,9 @@ SymReader::~SymReader()
 
 //-----------------------------------------------------------
 // Cleanup
-// Release all memory and clear initialized data structures 
+// Release all memory and clear initialized data structures
 // (eg. as a result of a failed Initialization attempt)
-//----------------------------------------------------------- 
+//-----------------------------------------------------------
 void SymReader::Cleanup()
 {
     if (m_pDocs)
@@ -77,7 +77,7 @@ void SymReader::Cleanup()
 
     DELETE(m_pPDBInfo);
     m_pPDBInfo = NULL;
-    
+
     // If we loaded from stream, then free the memory we allocated
     if (m_fInitializeFromStream)
     {
@@ -121,7 +121,7 @@ SymReader::QueryInterface(
     {
         *ppvObject = (ISymUnmanagedReader*) this;
     }
-    else 
+    else
     if (riid == IID_IUnknown)
     {
         *ppvObject = (IUnknown*)this;
@@ -199,7 +199,7 @@ HRESULT SymReader::Initialize(
     }
 
     // Note that up to this point, the data we've read in has not been validated.  Since we don't trust
-    // our input, it's important that we don't proceed with using this data until validation has been 
+    // our input, it's important that we don't proceed with using this data until validation has been
     // successful.
     IfFailGo(ValidateData());
 
@@ -207,7 +207,7 @@ HRESULT SymReader::Initialize(
 ErrExit:
     // If we have not succeeded, then we need to clean up our data structures.  This would allow a client to call
     // Initialize again, but also ensures we can't possibly use partial or otherwise invalid (possibly
-    // malicious) data. 
+    // malicious) data.
     if (FAILED(hr))
     {
         Cleanup();
@@ -243,7 +243,7 @@ HRESULT SymReader::InitializeFromStream(
 
     IfNullGo(pSignature = (BYTE *)_alloca(ILDB_SIGNATURE_SIZE));
     IfFailGo(ReadFromStream(pIStream, pSignature, ILDB_SIGNATURE_SIZE));
-    
+
     // Verify that we're looking at an ILDB File
     if (memcmp(pSignature, ILDB_SIGNATURE, ILDB_SIGNATURE_SIZE))
     {
@@ -315,7 +315,7 @@ HRESULT SymReader::InitializeFromStream(
         IfFailGo(ReadFromStream(pIStream, m_DataPointers.m_pBytes, m_pPDBInfo->m_CountOfBytes*sizeof(BYTE)));
     }
 
-    
+
     if (m_pPDBInfo->m_CountOfStringBytes)
     {
         IfNullGo(m_DataPointers.m_pStringsBytes = NEW(BYTE[m_pPDBInfo->m_CountOfStringBytes]));
@@ -329,13 +329,13 @@ ErrExit:
 //-----------------------------------------------------------
 // ValidateData
 // Checks the contents of everything in m_DataPointers (i.e. all the structures read from the file)
-// to make sure it is valid.  Specifically, validates that all indexes are within bounds for the 
+// to make sure it is valid.  Specifically, validates that all indexes are within bounds for the
 // sizes allocated.
 //-----------------------------------------------------------
 HRESULT SymReader::ValidateData()
 {
     HRESULT hr = S_OK;
-    
+
     for (UINT32 i = 0; i < m_pPDBInfo->m_CountOfConstants; i++)
     {
         SymConstant & c = m_DataPointers.m_pConstants[i];
@@ -400,13 +400,13 @@ HRESULT SymReader::ValidateData()
     {
         DocumentInfo & d = m_DataPointers.m_pDocuments[i];
         IfFailGo(ValidateBytes(d.CheckSumEntry(), d.CheckSumSize()));
-        IfFailGo(ValidateBytes(d.SourceEntry(), d.SourceSize()));        
+        IfFailGo(ValidateBytes(d.SourceEntry(), d.SourceSize()));
         IfFalseGo(d.UrlEntry() < m_pPDBInfo->m_CountOfStringBytes, HrFromWin32(ERROR_BAD_FORMAT));
     }
 
     // Nothing to validate for the m_pBytes array - each reference must validate above that it's
     // length doesn't exceed the array
-     
+
     // We expect all strings to be null terminated.  To ensure no string operation overruns the buffer
     // it sufficies to check that the buffer ends in a null character
     if (m_pPDBInfo->m_CountOfStringBytes > 0)
@@ -424,12 +424,12 @@ ErrExit:
 HRESULT SymReader::ValidateBytes(UINT32 bytesIndex, UINT32 bytesLen)
 {
     S_UINT32 extent = S_UINT32(bytesIndex) + S_UINT32(bytesLen);
-    if (!extent.IsOverflow() && 
+    if (!extent.IsOverflow() &&
         (extent.Value() <= m_pPDBInfo->m_CountOfBytes))
     {
         return S_OK;
     }
-    
+
     return HrFromWin32(ERROR_BAD_FORMAT);
 }
 
@@ -495,7 +495,7 @@ HRESULT SymReader::VerifyPEDebugInfo(const WCHAR* szFileName)
     // NOTE: This code is not secure against malformed PE files - any of the pointer additions below
     // may be outside the range of memory mapped for the file.  If we ever want to use this code
     // on untrusted PE files, we should properly validate everything (probably by using PEDecoder).
-    
+
     DWORD offset;
     offset = Cor_RtlImageRvaToOffset(pNT, VAL32(pNT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress), dwFileSize);
     if (offset == NULL)
@@ -508,7 +508,7 @@ HRESULT SymReader::VerifyPEDebugInfo(const WCHAR* szFileName)
         IfFailGo(HrFromWin32(ERROR_BAD_FORMAT));
     }
 
-    
+
     // Try the returned Stored Name since it might be a fully qualified path
     dwUtf8Length = VAL32(pDebugDir->SizeOfData) - sizeof(RSDSI);
     dwUnicodeLength = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR) pDebugInfo->szPDB, dwUtf8Length, fullpath, COUNTOF(fullpath) - 1);
@@ -558,7 +558,7 @@ SymReader::InitializeFromFile(
     DWORD dwFileSize;
     S_UINT32 dwDataSize;
     GUID VersionInfo;
-   
+
     _ASSERTE(szFileName);
     IfFalseGo(szFileName, E_INVALIDARG );
 
@@ -571,7 +571,7 @@ SymReader::InitializeFromFile(
         IfFailGo(HrFromWin32(ERROR_BAD_FORMAT));
     if (wcsncpy_s( m_szPath, COUNTOF(m_szPath), fullpath, _TRUNCATE) == STRUNCATE)
         IfFailGo(HrFromWin32(ERROR_INSUFFICIENT_BUFFER));
-    
+
     hFile = WszCreateFile(m_szPath,
                           GENERIC_READ,
                           FILE_SHARE_READ,
@@ -723,7 +723,7 @@ SymReader::InitializeFromFile(
     }
 
 ErrExit:
-    
+
     return hr;
 }
 
@@ -786,7 +786,7 @@ SymReader::GetDocument(
         DELETEARRAY(wcsDocumentUrlAlloc);
         wcsDocumentUrlAlloc = NULL;
     }
-  
+
     if (pDoc)
     {
         IfFailGo( pDoc->QueryInterface( IID_ISymUnmanagedDocument,
@@ -875,7 +875,7 @@ SymReader::GetUserEntryPoint(
     {
         *pRetVal = m_pPDBInfo->m_userEntryPoint;
     }
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -920,7 +920,7 @@ SymReader::GetMethod(
     *ppRetVal = pMethod;
     pMethod->AddRef();
     hr = S_OK;
-     
+
 ErrExit:
     return hr;
 }
@@ -1006,7 +1006,7 @@ SymReader::GetMethodFromDocumentPosition(
                 }
 
                 // If the sequence is before the point then just remember the point
-                if (m_DataPointers.m_pSequencePoints[point].IsUserLine() && 
+                if (m_DataPointers.m_pSequencePoints[point].IsUserLine() &&
                     m_DataPointers.m_pSequencePoints[point].IsGreaterThan(line, column))
                 {
                     pSequencePointAfter = &m_DataPointers.m_pSequencePoints[point];
@@ -1023,8 +1023,8 @@ SymReader::GetMethodFromDocumentPosition(
         // If we found sequence points within the method before and after
         // the line/column then we may have found the method. Record the return value, but keep looking
         // to see if we find an exact match. This may not actually be the right method. Iron Python, for instance,
-        // issues a "method" containing sequence points for all the method headers in a class. Sequence points 
-        // in this "method" would then span the sequence points in the bodies of all but the last method. 
+        // issues a "method" containing sequence points for all the method headers in a class. Sequence points
+        // in this "method" would then span the sequence points in the bodies of all but the last method.
         if (pSequencePointBefore && pSequencePointAfter)
         {
             IfFailGo(GetMethod(m_DataPointers.m_pMethods[Method].MethodToken(), ppRetVal));
@@ -1043,15 +1043,15 @@ ErrExit:
 }
 
 //---------------------------------------------------------------------------------------
-//  
-// Return all methods with sequence points covering the specified source location.  This 
-// is actually not as straighforward as it sounds, since we need to mimic the behaviour of 
-// diasymreader and PDBs here.  For PDBs, diasymreader actually does two passes over the 
-// sequence points.  It tries to find an exact match in the first pass, and if that fails, 
-// it'll do a second pass looking for an approximate match.  An approximate match is a sequence 
-// point which doesn't start on the specified line but covers it.  If there's an exact match, 
-// then it ignores all the approximate matches.  In both cases, diasymreader only checks the 
-// start line number of the sequence point and it ignores the column number.  
+//
+// Return all methods with sequence points covering the specified source location.  This
+// is actually not as straighforward as it sounds, since we need to mimic the behaviour of
+// diasymreader and PDBs here.  For PDBs, diasymreader actually does two passes over the
+// sequence points.  It tries to find an exact match in the first pass, and if that fails,
+// it'll do a second pass looking for an approximate match.  An approximate match is a sequence
+// point which doesn't start on the specified line but covers it.  If there's an exact match,
+// then it ignores all the approximate matches.  In both cases, diasymreader only checks the
+// start line number of the sequence point and it ignores the column number.
 //
 // For backward compatibility, I'm leaving GetMethodFromDocumentPosition() unchanged.
 //
@@ -1095,7 +1095,7 @@ SymReader::GetMethodsFromDocumentPosition(
     DocumentEntry = ((SymDocument *)document)->GetDocumentEntry();
 
     // Enumerate the sequence points in two passes.
-    while (true) 
+    while (true)
     {
         // Walk all Methods, check their Document and SequencePoints to see if it's in this doc
         // and the line/column
@@ -1112,9 +1112,9 @@ SymReader::GetMethodsFromDocumentPosition(
                 // Check to see if this sequence point is in this doc
                 if (m_DataPointers.m_pSequencePoints[point].Document() == DocumentEntry)
                 {
-                    // PDBs (more specifically the DIA APIs) only check the start line number and not the end line number when 
-                    // trying to determine whether a sequence point covers the specified line number.  We need to match this 
-                    // behaviour here.  For backward compatibility reasons, GetMethodFromDocumentPosition() is still checking 
+                    // PDBs (more specifically the DIA APIs) only check the start line number and not the end line number when
+                    // trying to determine whether a sequence point covers the specified line number.  We need to match this
+                    // behaviour here.  For backward compatibility reasons, GetMethodFromDocumentPosition() is still checking
                     // against the entire range of a sequence point, but we should revisit that in the next release.
                     ULONG32 curLine = m_DataPointers.m_pSequencePoints[point].StartLine();
 
@@ -1126,7 +1126,7 @@ SymReader::GetMethodsFromDocumentPosition(
                         }
                         else if ((maxPreLine < curLine) && (curLine < line))
                         {
-                            // This is not an exact match, but let's keep track of the sequence point closest to the specified 
+                            // This is not an exact match, but let's keep track of the sequence point closest to the specified
                             // line.  We'll use this info if we have to do a second pass.
                             maxPreLine = curLine;
                         }
@@ -1144,7 +1144,7 @@ SymReader::GetMethodsFromDocumentPosition(
                         }
                     }
 
-                    // If we have found a match (whether it's exact or approximate), then save this method unless the caller is 
+                    // If we have found a match (whether it's exact or approximate), then save this method unless the caller is
                     // only interested in the number of matching methods or the array provided by the caller isn't big enough.
                     if (found)
                     {
@@ -1242,7 +1242,7 @@ SymReader::GetMethodVersion(
     IfFalseGo(m_fInitialized, E_UNEXPECTED);
 
     _ASSERTE(pMethod && pVersion);
-    IfFalseGo( pMethod && pVersion, E_INVALIDARG);    
+    IfFalseGo( pMethod && pVersion, E_INVALIDARG);
     // This symbol store only supports one version of a method
     *pVersion = 0;
 ErrExit:
@@ -1274,7 +1274,7 @@ SymReader::GetDocumentVersion(
     {
         *pbCurrent = TRUE;
     }
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -1283,7 +1283,7 @@ ErrExit:
 // Return the document for the given entry
 //-----------------------------------------------------------
 HRESULT SymReader::GetDocument(
-    UINT32 DocumentEntry,   
+    UINT32 DocumentEntry,
     SymDocument **ppDocument)
 {
     HRESULT hr = NOERROR;
@@ -1390,7 +1390,7 @@ SymReader::GetSymAttribute(
     )
 {
     // This symbol store doesn't support attributes
-    // VS may query for certain attributes, but will survive without them, 
+    // VS may query for certain attributes, but will survive without them,
     // so don't ASSERT here.
     return E_NOTIMPL;
 }
@@ -1503,7 +1503,7 @@ SymDocument::GetLanguage(
 
     *pRetVal = m_pData->m_pDocuments[m_DocumentEntry].Language();
     SwapGuid(pRetVal);
-ErrExit:        
+ErrExit:
     return hr;
 }
 
@@ -1579,7 +1579,7 @@ SymDocument::FindClosestLine(
     UINT32 point;
     ULONG32 closestLine = 0;  // GCC can't tell this isn't used before initialization
     bool found = false;
-    
+
     _ASSERTE(pRetVal);
     IfFalseGo(pRetVal, E_INVALIDARG);
 
@@ -1712,7 +1712,7 @@ SymMethod::GetToken(
 )
 {
     HRESULT hr = S_OK;
-    
+
     _ASSERTE(pRetVal);
     IfFalseGo(pRetVal, E_INVALIDARG);
     *pRetVal = m_pData->m_pMethods[m_MethodEntry].MethodToken();
@@ -1734,9 +1734,9 @@ SymMethod::GetSequencePointCount(
     _ASSERTE(pRetVal);
     IfFalseGo(pRetVal, E_INVALIDARG);
 
-    *pRetVal = (ULONG32)(m_pData->m_pMethods[m_MethodEntry].EndSequencePoints() - 
+    *pRetVal = (ULONG32)(m_pData->m_pMethods[m_MethodEntry].EndSequencePoints() -
                          m_pData->m_pMethods[m_MethodEntry].StartSequencePoints());
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -1745,7 +1745,7 @@ ErrExit:
 //-----------------------------------------------------------
 HRESULT
 SymMethod::GetSequencePoints(
-    ULONG32 cPoints,    // The size of the allocated arrays. 
+    ULONG32 cPoints,    // The size of the allocated arrays.
     ULONG32* pcPoints,  // [optional] The number of sequence points available for return.
     ULONG32 offsets[],  // [optional]
     ISymUnmanagedDocument *documents[], // [Optional]
@@ -1758,7 +1758,7 @@ SymMethod::GetSequencePoints(
     HRESULT hr = NOERROR;
     UINT32 i = 0;
     ULONG32 Points = 0;
-    
+
     for (i = m_pData->m_pMethods[m_MethodEntry].StartSequencePoints();
          (i < m_pData->m_pMethods[m_MethodEntry].EndSequencePoints());
          i++, Points++)
@@ -1843,7 +1843,7 @@ ErrExit:
 
 //-----------------------------------------------------------
 // GetOffset
-// Given a position in a document, gets the offset within the 
+// Given a position in a document, gets the offset within the
 // method that corresponds to the position.
 //-----------------------------------------------------------
 HRESULT
@@ -1875,7 +1875,7 @@ SymMethod::GetOffset(
             // Check to see if it's within the sequence point
             if (m_pData->m_pSequencePoints[point].IsWithin(line, column))
             {
-                *pRetVal = m_pData->m_pSequencePoints[point].Offset();               
+                *pRetVal = m_pData->m_pSequencePoints[point].Offset();
                 fFound = true;
                 break;
             }
@@ -1885,7 +1885,7 @@ SymMethod::GetOffset(
     {
         hr = E_FAIL;
     }
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -1991,7 +1991,7 @@ SymMethod::GetRanges(
         return E_FAIL;
     }
 
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -2104,7 +2104,7 @@ SymScope::GetMethod(
 
     _ASSERTE(ppRetVal);
     IfFalseGo(ppRetVal, E_INVALIDARG);
-    
+
     *ppRetVal = m_pSymMethod;
     m_pSymMethod->AddRef();
 
@@ -2125,7 +2125,7 @@ SymScope::GetParent(
     IfFalseGo(ppRetVal, E_INVALIDARG);
     if (m_pData->m_pScopes[m_ScopeEntry].ParentScope() != (UINT32)-1)
     {
-        IfNullGo(*ppRetVal = static_cast<ISymUnmanagedScope *>(NEW(SymScope(m_pSymMethod, m_pData, m_MethodEntry, 
+        IfNullGo(*ppRetVal = static_cast<ISymUnmanagedScope *>(NEW(SymScope(m_pSymMethod, m_pData, m_MethodEntry,
             m_pData->m_pScopes[m_ScopeEntry].ParentScope()))));
         (*ppRetVal)->AddRef();
     }
@@ -2133,7 +2133,7 @@ SymScope::GetParent(
     {
         *ppRetVal = NULL;
     }
-ErrExit:    
+ErrExit:
     return hr;
 }
 
@@ -2179,7 +2179,7 @@ SymScope::GetChildren(
         *pcChildren = ChildrenCount;
     }
 
-ErrExit:    
+ErrExit:
     if (FAILED(hr) && ChildrenCount)
     {
         unsigned i;
@@ -2251,18 +2251,18 @@ SymScope::GetLocalCount(
             {
                 LocalCount++;
             }
-        }       
+        }
     }
 
     *pRetVal = LocalCount;
-ErrExit:    
+ErrExit:
     return hr;
 }
 
 //-----------------------------------------------------------
 // GetLocals
 // Input: either pcLocals or
-//        cLocals and pLocals 
+//        cLocals and pLocals
 //-----------------------------------------------------------
 HRESULT
 SymScope::GetLocals(
@@ -2297,7 +2297,7 @@ SymScope::GetLocals(
                 }
                 LocalCount++;
             }
-        }       
+        }
     }
     if (pcLocals)
     {
@@ -2318,7 +2318,7 @@ ErrExit:
 //-----------------------------------------------------------
 // GetNamespaces
 // Input: either pcNameSpaces or
-//        cNameSpaces and pNameSpaces 
+//        cNameSpaces and pNameSpaces
 //-----------------------------------------------------------
 HRESULT
 SymScope::GetNamespaces(
@@ -2507,11 +2507,11 @@ SymReaderVar::GetAddressField1(
 
     _ASSERTE(pRetVal);
     IfFalseGo( pRetVal, E_INVALIDARG );
-    
+
     *pRetVal = m_pData->m_pVars[m_VarEntry].Addr1();
 
 ErrExit:
-    
+
     return hr;
 }
 
@@ -2527,11 +2527,11 @@ SymReaderVar::GetAddressField2(
 
     _ASSERTE(pRetVal);
     IfFalseGo( pRetVal, E_INVALIDARG );
-    
+
     *pRetVal = m_pData->m_pVars[m_VarEntry].Addr2();
 
 ErrExit:
-    
+
     return hr;
 }
 
@@ -2547,11 +2547,11 @@ SymReaderVar::GetAddressField3(
 
     _ASSERTE(pRetVal);
     IfFalseGo( pRetVal, E_INVALIDARG );
-    
+
     *pRetVal = m_pData->m_pVars[m_VarEntry].Addr3();
 
 ErrExit:
-    
+
     return hr;
 }
 
@@ -2739,7 +2739,7 @@ bool SequencePoint::IsGreaterThan(
     ULONG32 line,
     ULONG32 column)
 {
-    return (StartLine() > line) || 
+    return (StartLine() > line) ||
            (StartLine() == line && StartColumn() > column);
 }
 
@@ -2747,12 +2747,12 @@ bool SequencePoint::IsGreaterThan(
 // IsLessThan - Is the sequence point less than the position
 //-----------------------------------------------------------
 bool SequencePoint::IsLessThan
-(   
+(
     ULONG32 line,
     ULONG32 column
 )
 {
-    return (StartLine() < line) || 
+    return (StartLine() < line) ||
            (StartLine() == line && StartColumn() < column);
 }
 

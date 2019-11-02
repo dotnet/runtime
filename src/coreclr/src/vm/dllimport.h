@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: DllImport.h
 //
 
@@ -39,7 +39,7 @@ public:
     void InitDebugNames()
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         if (m_pMD != NULL)
         {
             m_pDebugName = m_pMD->m_pszDebugMethodName;
@@ -73,8 +73,8 @@ public:
 
     static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod);
     static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly, 
-                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags, 
+    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
+                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
                                                    BOOL throwOnError);
     static NATIVE_LIBRARY_HANDLE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
     static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
@@ -92,7 +92,7 @@ public:
                     CorNativeLinkFlags nlFlags,
                     CorPinvokeMap      unmgdCallConv,
                     DWORD              dwStubFlags); // NDirectStubFlags
-                    
+
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
                     PCCOR_SIGNATURE    szMetaSig,
@@ -168,7 +168,7 @@ enum NDirectStubFlags
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
     NDIRECTSTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
 
-#ifdef FEATURE_COMINTEROP    
+#ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
     NDIRECTSTUB_FL_COMEVENTCALL             = 0x40000000,   // we use a generic stub for event calls
 #endif // FEATURE_COMINTEROP
@@ -217,7 +217,7 @@ inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
-inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) || 
+inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_SET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
 #endif
@@ -299,9 +299,9 @@ inline void SF_ConsistencyCheck(DWORD dwStubFlags)
 enum ETW_IL_STUB_FLAGS
 {
     ETW_IL_STUB_FLAGS_REVERSE_INTEROP       = 0x00000001,
-    ETW_IL_STUB_FLAGS_COM_INTEROP           = 0x00000002,    
+    ETW_IL_STUB_FLAGS_COM_INTEROP           = 0x00000002,
     ETW_IL_STUB_FLAGS_NGENED_STUB           = 0x00000004,
-    ETW_IL_STUB_FLAGS_DELEGATE              = 0x00000008,    
+    ETW_IL_STUB_FLAGS_DELEGATE              = 0x00000008,
     ETW_IL_STUB_FLAGS_VARARG                = 0x00000010,
     ETW_IL_STUB_FLAGS_UNMANAGED_CALLI       = 0x00000020,
     ETW_IL_STUB_FLAGS_STRUCT_MARSHAL        = 0x00000040
@@ -310,29 +310,29 @@ enum ETW_IL_STUB_FLAGS
 //---------------------------------------------------------
 // PInvoke has three flavors: DllImport M->U, Delegate M->U and Delegate U->M
 // Each flavor uses rougly the same mechanism to marshal and place the call and so
-// each flavor supports roughly the same switches. Those switches which can be 
-// statically determined via CAs (DllImport, UnmanagedFunctionPointer, 
-// BestFitMappingAttribute, etc) or via MetaSig are parsed and unified by this 
+// each flavor supports roughly the same switches. Those switches which can be
+// statically determined via CAs (DllImport, UnmanagedFunctionPointer,
+// BestFitMappingAttribute, etc) or via MetaSig are parsed and unified by this
 // class. There are two flavors of constructor, one for NDirectMethodDescs and one
-// for Delegates. 
+// for Delegates.
 //---------------------------------------------------------
 struct PInvokeStaticSigInfo
 {
 public:
     enum ThrowOnError { THROW_ON_ERROR = TRUE, NO_THROW_ON_ERROR = FALSE };
 
-public:     
+public:
     PInvokeStaticSigInfo() { LIMITED_METHOD_CONTRACT; }
 
     PInvokeStaticSigInfo(Signature sig, Module* pModule, ThrowOnError throwOnError = THROW_ON_ERROR);
-    
+
     PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
-    
+
     PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName, ThrowOnError throwOnError = THROW_ON_ERROR);
 
-public:     
+public:
     void ReportErrors();
-    
+
 private:
     void InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg);
     void DllImportInit(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
@@ -341,72 +341,72 @@ private:
     void SetError(WORD error) { if (!m_error) m_error = error; }
     void BestGuessNDirectDefaults(MethodDesc* pMD);
 
-public:     
-    DWORD GetStubFlags() 
-    { 
+public:
+    DWORD GetStubFlags()
+    {
         WRAPPER_NO_CONTRACT;
-        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) | 
-               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) | 
+        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
+               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
                (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
     }
     Module* GetModule() { LIMITED_METHOD_CONTRACT; return m_pModule; }
     BOOL IsStatic() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
-    void SetIsStatic (BOOL isStatic) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        if (isStatic) 
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC; 
-        else 
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC; 
+    void SetIsStatic (BOOL isStatic)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (isStatic)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
     }
     BOOL GetThrowOnUnmappableChar() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
-    void SetThrowOnUnmappableChar (BOOL throwOnUnmappableChar) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        if (throwOnUnmappableChar) 
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; 
-        else 
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; 
+    void SetThrowOnUnmappableChar (BOOL throwOnUnmappableChar)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (throwOnUnmappableChar)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
     }
     BOOL GetBestFitMapping() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
-    void SetBestFitMapping (BOOL bestFit) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        if (bestFit) 
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT; 
-        else 
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT; 
+    void SetBestFitMapping (BOOL bestFit)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (bestFit)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
     }
-    BOOL IsDelegateInterop() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; } 
-    void SetIsDelegateInterop (BOOL delegateInterop) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        if (delegateInterop) 
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; 
-        else 
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; 
+    BOOL IsDelegateInterop() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
+    void SetIsDelegateInterop (BOOL delegateInterop)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (delegateInterop)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
     }
     CorPinvokeMap GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
     Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
-    
+
 private:
     Module* m_pModule;
     Signature m_sig;
     CorPinvokeMap m_callConv;
     WORD m_error;
 
-    enum 
+    enum
     {
         PINVOKE_STATIC_SIGINFO_IS_STATIC = 0x0001,
         PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR = 0x0002,
         PINVOKE_STATIC_SIGINFO_BEST_FIT = 0x0004,
 
         COR_NATIVE_LINK_TYPE_MASK = 0x0038,  // 0000 0000 0011 1000  <--- These 3 1's make the link type mask
-        
+
         COR_NATIVE_LINK_FLAGS_MASK = 0x00C0, //0000 0000 1100 0000  <---- These 2 bits make up the link flags
 
         PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP = 0x0100,
-        
+
     };
     #define COR_NATIVE_LINK_TYPE_SHIFT 3 // Keep in synch with above mask
     #define COR_NATIVE_LINK_FLAGS_SHIFT 6  // Keep in synch with above mask
@@ -415,18 +415,18 @@ private:
   public:
     CorNativeLinkType GetCharSet() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
     CorNativeLinkFlags GetLinkFlags() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
-    void SetCharSet(CorNativeLinkType linktype) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        _ASSERTE( linktype == (linktype & (COR_NATIVE_LINK_TYPE_MASK >> COR_NATIVE_LINK_TYPE_SHIFT))); 
+    void SetCharSet(CorNativeLinkType linktype)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE( linktype == (linktype & (COR_NATIVE_LINK_TYPE_MASK >> COR_NATIVE_LINK_TYPE_SHIFT)));
         // Clear out the old value first
         m_wFlags &= (~COR_NATIVE_LINK_TYPE_MASK);
         // Then set the given value
-        m_wFlags |= (linktype << COR_NATIVE_LINK_TYPE_SHIFT); 
+        m_wFlags |= (linktype << COR_NATIVE_LINK_TYPE_SHIFT);
     }
-    void SetLinkFlags(CorNativeLinkFlags linkflags) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    void SetLinkFlags(CorNativeLinkFlags linkflags)
+    {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE( linkflags == (linkflags & (COR_NATIVE_LINK_FLAGS_MASK >> COR_NATIVE_LINK_FLAGS_SHIFT)));
         // Clear out the old value first
         m_wFlags &= (~COR_NATIVE_LINK_FLAGS_MASK);
@@ -442,7 +442,7 @@ class NDirectStubLinker : public ILStubLinker
 {
 public:
     NDirectStubLinker(
-                DWORD dwStubFlags, 
+                DWORD dwStubFlags,
                 Module* pModule,
                 const Signature &signature,
                 SigTypeContext *pTypeContext,
@@ -556,7 +556,7 @@ protected:
     DWORD               m_dwArgMarshalIndexLocalNum;
     DWORD               m_dwCleanupWorkListLocalNum;
     DWORD               m_dwRetValLocalNum;
-    
+
 
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
@@ -632,7 +632,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 
-// 
+//
 // Limit length of string field in IL stub ETW events so that the whole
 // IL stub ETW events won't exceed 64KB
 //
@@ -642,7 +642,7 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 class SString;
 
 //
-// Truncates a SString by first converting it to unicode and truncate it 
+// Truncates a SString by first converting it to unicode and truncate it
 // if it is larger than size. "..." will be appened if it is truncated.
 //
 void TruncateUnicodeString(SString &string, COUNT_T bufSize);
@@ -691,7 +691,7 @@ public:
     inline void RemoveILStubCacheEntry()
     {
         WRAPPER_NO_CONTRACT;
-        
+
         if (m_bILStubCreator)
         {
             NDirect::RemoveILStubCacheEntry(m_pParams, m_pHashParams);

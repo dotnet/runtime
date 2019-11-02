@@ -34,7 +34,7 @@ static bool s_fNGenNoMetaData;
 
 
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
-{    
+{
     HRESULT hr = S_OK;
 
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -45,9 +45,9 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
     {
         NGenOptions ngo = {0};
         ngo.dwSize = sizeof(NGenOptions);
-        
+
         // V1
-        
+
         ngo.fDebug = false;
         ngo.fDebugOpt = false;
         ngo.fProf = false;
@@ -131,7 +131,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 }
 
 STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath)
-{    
+{
     HRESULT hr = S_OK;
 
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -181,14 +181,14 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
         // Zapper::CreatePdb is shared code for both desktop NGEN PDBs and coreclr
         // crossgen PDBs.
         zap->CreatePdb(
-            strAssemblyPath, 
+            strAssemblyPath,
 
             // On desktop with fusion AND on the phone, the various binders always expect
             // the native image to be specified here.
-            strAssemblyPath, 
-            
-            strPdbPath, 
-            fGeneratePDBLinesInfo, 
+            strAssemblyPath,
+
+            strPdbPath,
+            fGeneratePDBLinesInfo,
             strManagedPdbSearchPath);
     }
     EX_CATCH_HRESULT(hr);
@@ -360,7 +360,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
 
         //
         // Things that we turn off when this is the last retry for ngen
-        // 
+        //
         zo->m_ignoreProfileData = true;   // ignore any IBC profile data
 
 #ifdef _TARGET_ARM_
@@ -483,7 +483,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         CoreClrFolder.Set(m_CLRJITPath);
         hr = S_OK;
     }
-    else 
+    else
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
@@ -608,7 +608,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
 
     LPCWSTR pwzJitName = CorCompileGetRuntimeDllName(ngenDllId);
     LoadAndInitializeJITForNgen(pwzJitName, &m_hJitLib, &m_pJitCompiler);
-    
+
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT_NGEN
@@ -628,7 +628,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     if (altJit != NULL)
     {
         // Allow a second jit to be loaded into the system.
-        // 
+        //
         LPCWSTR altName;
         hr = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitName, (LPWSTR*)&altName);
         if (FAILED(hr))
@@ -829,7 +829,7 @@ BOOL Zapper::IsAssembly(LPCWSTR path)
 
 void Zapper::SetContextInfo(LPCWSTR assemblyName)
 {
-    // A special case:  If we're compiling mscorlib, ignore m_exeName and don't set any context. 
+    // A special case:  If we're compiling mscorlib, ignore m_exeName and don't set any context.
     // There can only be one mscorlib in the runtime, independent of any context.  If we don't
     // check for mscorlib, and isExe == true, then CompilationDomain::SetContextInfo will call
     // into mscorlib and cause the resulting mscorlib.ni.dll to be slightly different (checked
@@ -936,13 +936,13 @@ void Zapper::CreatePdb(BSTR pAssemblyPathOrName, BSTR pNativeImagePath, BSTR pPd
         CORINFO_ASSEMBLY_HANDLE hAssembly = NULL;
 
         IfFailThrow(m_pEECompileInfo->LoadAssemblyByPath(
-            pAssemblyPathOrName, 
+            pAssemblyPathOrName,
 
             // fExplicitBindToNativeImage: On the phone, a path to the NI is specified
             // explicitly (even with .ni. in the name). All other callers specify a path to
             // the IL, and the NI is inferred, so this is normally FALSE in those other
             // cases.
-            TRUE, 
+            TRUE,
 
             &hAssembly));
 
@@ -1063,7 +1063,7 @@ bool Zapper::HasProfileData()
 void Zapper::CompileInCurrentDomain(__in LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 {
     STATIC_CONTRACT_ENTRY_POINT;
-    
+
     BEGIN_ENTRYPOINT_VOIDRET;
 
 
@@ -1413,7 +1413,7 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 
         if (strNativeImagePath.IsEmpty())
         {
-            strNativeImagePath.Set(m_outputPath, SL(DIRECTORY_SEPARATOR_STR_W), strAssemblyName, 
+            strNativeImagePath.Set(m_outputPath, SL(DIRECTORY_SEPARATOR_STR_W), strAssemblyName,
                 pAssemblyModule->m_ModuleDecoder.IsDll() ? SL(W(".ni.dll")) : SL(W(".ni.exe")));
         }
 
@@ -1462,7 +1462,7 @@ ZapImage * Zapper::CompileModule(CORINFO_MODULE_HANDLE hModule,
 
     // Finish initializing the ZapImage object
     // any calls that could throw an exception are done in ZapImage::Initialize()
-    // 
+    //
     module->ZapWriter::Initialize();
 
     //

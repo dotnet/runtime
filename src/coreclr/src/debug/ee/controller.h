@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: controller.h
-// 
+//
 
 //
 // Debugger control flow object
@@ -76,7 +76,7 @@ class StackTraceTicket
 public:
     // Each ctor is a rule for why it's safety to run a stacktrace.
 
-    // Safe if we're at certain types of patches. 
+    // Safe if we're at certain types of patches.
     StackTraceTicket(DebuggerControllerPatch * patch);
 
     // Safe if there was already another stack trace at this spot. (Grandfather clause)
@@ -94,18 +94,18 @@ public:
     // This is like a contract violation.
     // Unsafe tickets. Use as:
     //      StackTraceTicket ticket(StackTraceTicket::UNSAFE_TICKET);
-    enum EUNSAFE { 
+    enum EUNSAFE {
         // Ticket is unsafe. Potential issue.
-        UNSAFE_TICKET = 0,   
+        UNSAFE_TICKET = 0,
 
         // For some wacky reason, it's safe to take a stacktrace here, but
         // there's not an easily verifiable rule. Use this ticket very sparingly
         // because it's much more difficult to verify.
-        SPECIAL_CASE_TICKET = 1 
+        SPECIAL_CASE_TICKET = 1
     };
     StackTraceTicket(EUNSAFE e) { };
 
-private:    
+private:
     // Tickets can't be copied around. Hide these definitions so to enforce that.
     // We still need the Copy ctor so that it can be passed in as a parameter.
     void operator=(StackTraceTicket & other);
@@ -116,20 +116,20 @@ private:
  * ------------------------------------------------------------------------- *
  * class ControllerStackInfo is a class designed
  *  to simply obtain a two-frame stack trace: it will obtain the bottommost
- *  framepointer (m_bottomFP), a given target frame (m_activeFrame), and the 
+ *  framepointer (m_bottomFP), a given target frame (m_activeFrame), and the
  *  frame above the target frame (m_returnFrame).  Note that the target frame
  *  may be the bottommost, 'active' frame, or it may be a frame higher up in
- *  the stack.  ControllerStackInfo accomplishes this by starting at the 
+ *  the stack.  ControllerStackInfo accomplishes this by starting at the
  *  bottommost frame and walking upwards until it reaches the target frame,
  *  whereupon it records the m_activeFrame info, gets called once more to
  *  fill in the m_returnFrame info, and thereafter stops the stack walk.
  *
  *  public:
- *  void * m_bottomFP:   Frame pointer for the 
+ *  void * m_bottomFP:   Frame pointer for the
  *      bottommost (most active)
  *      frame.  We can add more later, if we need it.  Currently just used in
  *      TrapStep.  NULL indicates an uninitialized value.
- * 
+ *
  *  void * m_targetFP:  The frame pointer to the frame
  *      that we actually want the info of.
  *
@@ -144,7 +144,7 @@ private:
  *  private:
  *  bool m_activeFound:  Set to true if we found the target frame.
  *  bool m_returnFound:  Set to true if we found the target's return frame.
- * 
+ *
  *  FrameInfo m_returnFrame:   A FrameInfo
  *      describing the frame above the target frame, if  target's
  *      return frame were found (call HasReturnFrame() to see if this is
@@ -154,14 +154,14 @@ class ControllerStackInfo
 {
 public:
     friend class StackTraceTicket;
-    
+
     ControllerStackInfo()
     {
-        INDEBUG(m_dbgExecuted = false);    
+        INDEBUG(m_dbgExecuted = false);
     }
 
-    FramePointer            m_bottomFP;  
-    FramePointer            m_targetFP; 
+    FramePointer            m_bottomFP;
+    FramePointer            m_targetFP;
     bool                    m_targetFrameFound;
 
     FrameInfo               m_activeFrame;
@@ -173,7 +173,7 @@ public:
     //      Note that the data argument is the "this" pointer to the
     //      ControllerStackInfo.
     static StackWalkAction WalkStack(FrameInfo *pInfo, void *data);
-    
+
 
     //void ControllerStackInfo::GetStackInfo():   GetStackInfo
     //      is invoked by the user to trigger the stack walk.  This will
@@ -182,14 +182,14 @@ public:
     // void* targetFP:  Can be either NULL (meaning that the bottommost
     //      frame is the target), or an frame pointer, meaning that the
     //      caller wants information about a specific frame.
-    // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null, 
+    // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
     // bool suppressUMChainFromComPlusMethodFrameGeneric - A ridiculous flag that is trying to narrowly
     //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
         StackTraceTicket ticket,
-        Thread *thread, 
+        Thread *thread,
         FramePointer targetFP,
         CONTEXT *pContext,
         bool suppressUMChainFromComPlusMethodFrameGeneric = false
@@ -255,7 +255,7 @@ public:
         RipTargetFixupSize = 0;
 #elif _TARGET_ARM64_
         RipTargetFixup = 0;
-        
+
 #endif
     }
 
@@ -310,7 +310,7 @@ private:
 // mdMethodDef md:  meta data token for the method.
 struct DebuggerFunctionKey1
 {
-    PTR_Module              module; 
+    PTR_Module              module;
     mdMethodDef             md;
 };
 
@@ -321,7 +321,7 @@ typedef DebuggerFunctionKey1 UNALIGNED DebuggerFunctionKey;
 // multiple times but more recently the CodeVersionManager and tiered compilation
 // provide more open-ended mechanisms to have multiple native code bodies derived
 // from a single IL method body.
-// The "master" is a patch we keep to record the IL offset or native offset, and 
+// The "master" is a patch we keep to record the IL offset or native offset, and
 // is used to create new "slave"patches. For native offsets only offset 0 is allowed
 // because that is the only one that we think would have a consistent semantic
 // meaning across different code bodies.
@@ -330,7 +330,7 @@ typedef DebuggerFunctionKey1 UNALIGNED DebuggerFunctionKey;
 // by encVersion. ReJIT + breakpoints isn't currently supported.
 //
 //
-// IL Slave: The slaves created from Master patches. If the master used an IL offset 
+// IL Slave: The slaves created from Master patches. If the master used an IL offset
 // then the slave also initially has an IL offset that will later become a native offset.
 // If the master uses a native offset (0) then the slave will also have a native offset (0).
 // These patches always resolve to addresses in jitted code.
@@ -359,23 +359,23 @@ enum DebuggerPatchKind { PATCH_KIND_IL_MASTER, PATCH_KIND_IL_SLAVE, PATCH_KIND_N
 //      actually tracking a valid break opcode.  See DebuggerPatchTable
 //      for more details.
 // DebuggerController *controller:  The controller that put this
-//      patch here.  
+//      patch here.
 // BOOL fSaveOpcode:  If true, then unapply patch will save
 //      a copy of the opcode in opcodeSaved, and apply patch will
-//      copy opcodeSaved to opcode rather than grabbing the opcode 
+//      copy opcodeSaved to opcode rather than grabbing the opcode
 //      from the instruction.  This is useful mainly when the JIT
 //      has moved code, and we don't want to erroneously pick up the
 //      user break instruction.
-//      Full story: 
+//      Full story:
 //      FJIT moves the code.  Once that's done, it calls Debugger->MoveCode(MethodDesc
-//      *) to let us know the code moved.  At that point, unbind all the breakpoints 
-//      in the method.  Then we whip over all the patches, and re-bind all the 
-//      patches in the method.  However, we can't guarantee that the code will exist 
-//      in both the old & new locations exclusively of each other (the method could 
-//      be 0xFF bytes big, and get moved 0x10 bytes in one direction), so instead of 
-//      simply re-using the unbind/rebind logic as it is, we need a special case 
-//      wherein the old method isn't valid.  Instead, we'll copy opcode into 
-//      opcodeSaved, and then zero out opcode (we need to zero out opcode since that 
+//      *) to let us know the code moved.  At that point, unbind all the breakpoints
+//      in the method.  Then we whip over all the patches, and re-bind all the
+//      patches in the method.  However, we can't guarantee that the code will exist
+//      in both the old & new locations exclusively of each other (the method could
+//      be 0xFF bytes big, and get moved 0x10 bytes in one direction), so instead of
+//      simply re-using the unbind/rebind logic as it is, we need a special case
+//      wherein the old method isn't valid.  Instead, we'll copy opcode into
+//      opcodeSaved, and then zero out opcode (we need to zero out opcode since that
 //      tells us that the patch is invalid, if the right side sees it).  Thus the run-
 //      around.
 // DebuggerPatchKind: see above
@@ -406,7 +406,7 @@ struct DebuggerControllerPatch
     friend class DebuggerPatchTable;
     friend class DebuggerController;
 
-    FREEHASHENTRY           entry; 
+    FREEHASHENTRY           entry;
     DebuggerController      *controller;
     DebuggerFunctionKey     key;
     SIZE_T                  offset;
@@ -423,7 +423,7 @@ private:
     int                     refCount;
     union
     {
-        SIZE_T     encVersion; // used for Master patches, to record which EnC version this Master applies to 
+        SIZE_T     encVersion; // used for Master patches, to record which EnC version this Master applies to
         DebuggerJitInfo        *dji; // used for Slave and native patches, though only when tracking JIT Info
     };
 
@@ -439,7 +439,7 @@ public:
 
     BOOL IsNativePatch();
     BOOL IsManagedPatch();
-    BOOL IsILMasterPatch();    
+    BOOL IsILMasterPatch();
     BOOL IsILSlavePatch();
     DebuggerPatchKind  GetKind();
 
@@ -449,7 +449,7 @@ public:
     // Patches will never have DJIs if we are not tracking JIT information.
     //
     // Patches can also be unbound, e.g. in UnbindFunctionPatches.  Any DJI gets cleared
-    // when the patch is unbound.  This appears to be used as an indicator 
+    // when the patch is unbound.  This appears to be used as an indicator
     // to Debugger::MapAndBindFunctionPatches to make sure that
     // we don't skip the patch when we get new code.
     BOOL HasDJI()
@@ -488,7 +488,7 @@ public:
     }
 
     // A patch is bound if we've mapped it to a real honest-to-goodness
-    // native address. 
+    // native address.
     // Note that we currently activate all patches immediately after binding them, and
     // delete all patches after unactivating them.  This means that the window where
     // a patch is bound but not active is very small (and should always be protected by
@@ -503,16 +503,16 @@ public:
 
         // IL Master patches are never bound.
         _ASSERTE( !IsILMasterPatch() );
-        
-        return TRUE;            
+
+        return TRUE;
     }
 
     // It would be nice if we never needed IsBreakpointPatch or IsStepperPatch,
     // but a few bits of the existing code look at which controller type is involved.
-    BOOL IsBreakpointPatch();    
+    BOOL IsBreakpointPatch();
     BOOL IsStepperPatch();
 
-    bool IsActivated()  
+    bool IsActivated()
     {
         // Patch is activate if we've stored a non-zero opcode
         // Note: this might be a problem as opcode 0 may be a valid opcode (see issue 366221).
@@ -524,7 +524,7 @@ public:
         _ASSERTE( address != NULL );
         return TRUE;
     }
-    
+
     bool IsFree()       {return (refCount == 0);}
     bool IsTriggering() {return (refCount > 1);}
 
@@ -571,7 +571,7 @@ typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
  *  won't see our patches.  So we have to be able to read our patch table
  *  from the left side, which is problematic since we know that the left
  *  side will be arbitrarily frozen, but we don't know where.
- *   
+ *
  *  So our scheme is this:
  *  we'll send a pointer to the g_patches table over in startup,
  *  and when we want to inspect it at runtime, we'll freeze the left side,
@@ -583,7 +583,7 @@ typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
  *  Unapply operation
  *
  * NOTE: Don't mess with the memory protections on this while the
- * left side is frozen (ie, no threads are executing). 
+ * left side is frozen (ie, no threads are executing).
  * WriteMemory depends on being able to write the patchtable back
  * if it was read successfully.
  */
@@ -591,10 +591,10 @@ typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
 #define DPT_DEFAULT_TRACE_TYPE TRACE_OTHER
 
 /* Although CHashTableAndData can grow, we always use a fixed number of buckets.
- * This is problematic for tables like the patch table which are usually small, but 
+ * This is problematic for tables like the patch table which are usually small, but
  * can become huge.  When the number of entries far exceeds the number of buckets,
- * lookup and addition basically degrade into linear searches.  There is a trade-off 
- * here between wasting memory for unused buckets, and performance of large tables. 
+ * lookup and addition basically degrade into linear searches.  There is a trade-off
+ * here between wasting memory for unused buckets, and performance of large tables.
  * Also note that the number of buckets should be a prime number.
 */
 #define DPT_HASH_BUCKETS 1103
@@ -612,12 +612,12 @@ private:
     // pid = Patch ID.
     SIZE_T m_pid;
     // Given a patch, retrieves the correct key.  The return value of this function is passed to Cmp(), Find(), etc.
-    SIZE_T Key(DebuggerControllerPatch *patch) 
+    SIZE_T Key(DebuggerControllerPatch *patch)
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // Most clients of CHashTable pass a host pointer as the key.   However, the key really could be 
-        // anything.  In our case, the key can either be a host pointer of type DebuggerFunctionKey or 
+        // Most clients of CHashTable pass a host pointer as the key.   However, the key really could be
+        // anything.  In our case, the key can either be a host pointer of type DebuggerFunctionKey or
         // the address of the patch.
         if (patch->address == NULL)
         {
@@ -674,7 +674,7 @@ private:
     // if the patch is hashed by address, using the DebuggerFunctionKey
     // otherwise
     ULONG Hash(DebuggerControllerPatch * pPatch)
-    { 
+    {
         SUPPORTS_DAC;
 
         if (pPatch->address == NULL)
@@ -693,14 +693,14 @@ public:
 
     DebuggerPatchTable() : CHashTableAndData<CNewZeroData>(DPT_HASH_BUCKETS) { }
 
-    HRESULT Init() 
-    { 
+    HRESULT Init()
+    {
         WRAPPER_NO_CONTRACT;
-        
+
         m_pid = DCP_PID_FIRST_VALID;
-        
+
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        return NewInit(17, sizeof(DebuggerControllerPatch), 101); 
+        return NewInit(17, sizeof(DebuggerControllerPatch), 101);
     }
 
     // Assuming that the chain of patches (as defined by all the
@@ -711,16 +711,16 @@ public:
     void SortPatchIntoPatchList(DebuggerControllerPatch **ppPatch);
 
     void SpliceOutOfList(DebuggerControllerPatch *patch);
-    
+
     void SpliceInBackOf(DebuggerControllerPatch *patchAppend,
                         DebuggerControllerPatch *patchEnd);
 
-    // 
+    //
     // Note that patches may be reallocated - do not keep a pointer to a patch.
-    // 
-    DebuggerControllerPatch *AddPatchForMethodDef(DebuggerController *controller, 
-                                      Module *module, 
-                                      mdMethodDef md, 
+    //
+    DebuggerControllerPatch *AddPatchForMethodDef(DebuggerController *controller,
+                                      Module *module,
+                                      mdMethodDef md,
                                       MethodDesc *pMethodDescFilter,
                                       size_t offset,
                                       BOOL offsetIsIL,
@@ -729,26 +729,26 @@ public:
                                       AppDomain *pAppDomain,
                                       SIZE_T masterEnCVersion,
                                       DebuggerJitInfo *dji);
-        
-    DebuggerControllerPatch *AddPatchForAddress(DebuggerController *controller, 
-                                      MethodDesc *fd, 
-                                      size_t offset, 
+
+    DebuggerControllerPatch *AddPatchForAddress(DebuggerController *controller,
+                                      MethodDesc *fd,
+                                      size_t offset,
                                       DebuggerPatchKind kind,
-                                      CORDB_ADDRESS_TYPE *address, 
+                                      CORDB_ADDRESS_TYPE *address,
                                       FramePointer fp,
                                       AppDomain *pAppDomain,
-                                      DebuggerJitInfo *dji = NULL, 
+                                      DebuggerJitInfo *dji = NULL,
                                       SIZE_T pid = DCP_PID_INVALID,
                                       TraceType traceType = DPT_DEFAULT_TRACE_TYPE);
-            
+
     // Set the native address for this patch.
     void BindPatch(DebuggerControllerPatch *patch, CORDB_ADDRESS_TYPE *address);
     void UnbindPatch(DebuggerControllerPatch *patch);
     void RemovePatch(DebuggerControllerPatch *patch);
-    
-    // This is a sad legacy workaround. The patch table (implemented as this 
+
+    // This is a sad legacy workaround. The patch table (implemented as this
     // class) is shared across process. We publish the runtime offsets of
-    // some key fields. Since those fields are private, we have to provide 
+    // some key fields. Since those fields are private, we have to provide
     // accessors here. So if you're not using these functions, don't start.
     // We can hopefully remove them.
     static SIZE_T GetOffsetOfEntries()
@@ -765,15 +765,15 @@ public:
         return helper_GetOffsetOfCount();
     }
 
-    // GetPatch  find the first  patch in the hash table 
+    // GetPatch  find the first  patch in the hash table
     //      that is hashed by matching the {Module,mdMethodDef} to the
     //      patch's DebuggerFunctionKey.  This will NOT find anything
-    //      hashed by address, even if that address is within the 
+    //      hashed by address, even if that address is within the
     //      method specified.
     // You can use GetNextPatch to iterate through all the patches keyed by
     // this Module,mdMethodDef pair
     DebuggerControllerPatch *GetPatch(Module *module, mdToken md)
-    { 
+    {
         DebuggerFunctionKey key;
 
         key.module = module;
@@ -783,15 +783,15 @@ public:
     }
 #endif // #ifndef DACCESS_COMPILE
 
-    // GetPatch will translate find the first  patch in the hash 
+    // GetPatch will translate find the first  patch in the hash
     //      table that is hashed by address.  It will NOT find anything hashed
     //      by {Module,mdMethodDef}, or by MethodDesc.
     DebuggerControllerPatch * GetPatch(PTR_CORDB_ADDRESS_TYPE address)
-    { 
+    {
         SUPPORTS_DAC;
         ARM_ONLY(_ASSERTE(dac_cast<DWORD>(address) & THUMB_CODE));
 
-        DebuggerControllerPatch * pPatch = 
+        DebuggerControllerPatch * pPatch =
             dac_cast<PTR_DebuggerControllerPatch>(Find(HashAddress(address), (SIZE_T)(dac_cast<TADDR>(address))));
 
         return pPatch;
@@ -800,33 +800,33 @@ public:
     DebuggerControllerPatch *GetNextPatch(DebuggerControllerPatch *prev);
 
     // Find the first patch in the patch table, and store
-    //      index info in info.  Along with GetNextPatch, this can 
+    //      index info in info.  Along with GetNextPatch, this can
     //      iterate through the whole patch table.  Note that since the
     //      hashtable operates via iterating through all the contents
     //      of all the buckets, if you add an entry while iterating
-    //      through the table, you  may or may not iterate across 
+    //      through the table, you  may or may not iterate across
     //      the new entries.  You will iterate through all the entries
     //      that were present at the beginning of the run.  You
     //      safely delete anything you've already iterated by, anything
     //      else is kinda risky.
     DebuggerControllerPatch * GetFirstPatch(HASHFIND * pInfo)
-    { 
+    {
         SUPPORTS_DAC;
 
         return dac_cast<PTR_DebuggerControllerPatch>(FindFirstEntry(pInfo));
     }
 
-    // Along with GetFirstPatch, this can iterate through 
+    // Along with GetFirstPatch, this can iterate through
     //      the whole patch table.  See GetFirstPatch for more info
     //      on the rules of iterating through the table.
     DebuggerControllerPatch * GetNextPatch(HASHFIND * pInfo)
-    { 
+    {
         SUPPORTS_DAC;
 
         return dac_cast<PTR_DebuggerControllerPatch>(FindNextEntry(pInfo));
     }
 
-    // Used by DebuggerController to translate an index 
+    // Used by DebuggerController to translate an index
     //      of a patch into a direct pointer.
     inline HASHENTRY * GetEntryPtr(ULONG iEntry)
     {
@@ -834,7 +834,7 @@ public:
 
         return EntryPtr(iEntry);
     }
-    
+
     // Used by DebuggerController to grab indeces of patches
     //      rather than holding direct pointers to them.
     inline ULONG GetItemIndex(HASHENTRY * p)
@@ -850,7 +850,7 @@ public:
     //      through the hashtable, stopping at every
     //      single entry, no matter what it's state.  For this to
     //      compile, you're going to have to add friend status
-    //      of this class to CHashTableAndData in 
+    //      of this class to CHashTableAndData in
     //      to $\Com99\Src\inc\UtilCode.h
     void CheckPatchTable();
 #endif // _DEBUG_PATCH_TABLE
@@ -866,7 +866,7 @@ typedef VPTR(class DebuggerPatchTable) PTR_DebuggerPatchTable;
 
 #if !defined(DACCESS_COMPILE)
 
-// DebuggerControllerPage|Will eventually be used for 
+// DebuggerControllerPage|Will eventually be used for
 //      'break when modified' behaviour'
 typedef struct DebuggerControllerPage
 {
@@ -894,13 +894,13 @@ enum DEBUGGER_CONTROLLER_TYPE
 {
     DEBUGGER_CONTROLLER_THREAD_STARTER,
     DEBUGGER_CONTROLLER_ENC,
-    DEBUGGER_CONTROLLER_ENC_PATCH_TO_SKIP, // At any one address, 
+    DEBUGGER_CONTROLLER_ENC_PATCH_TO_SKIP, // At any one address,
                                            // There can be only one!
     DEBUGGER_CONTROLLER_PATCH_SKIP,
-    DEBUGGER_CONTROLLER_BREAKPOINT,         
+    DEBUGGER_CONTROLLER_BREAKPOINT,
     DEBUGGER_CONTROLLER_STEPPER,
     DEBUGGER_CONTROLLER_FUNC_EVAL_COMPLETE,
-    DEBUGGER_CONTROLLER_USER_BREAKPOINT,  // UserBreakpoints are used  by Runtime threads to 
+    DEBUGGER_CONTROLLER_USER_BREAKPOINT,  // UserBreakpoints are used  by Runtime threads to
                                           // send that they've hit a user breakpoint to the Right Side.
     DEBUGGER_CONTROLLER_JMC_STEPPER,      // Stepper that only stops in JMC-functions.
     DEBUGGER_CONTROLLER_CONTINUABLE_EXCEPTION,
@@ -949,11 +949,11 @@ enum DPOSS_ACTION
     DPOSS_INVALID   = 0x0,          // invalid action value
     DPOSS_DONT_CARE = 0x1,          // don't care about this exception
     DPOSS_USED_WITH_NO_EVENT = 0x2, // Care about this exception but won't send event to RS
-    DPOSS_USED_WITH_EVENT = 0x3,    // Care about this exception and will send event to RS 
+    DPOSS_USED_WITH_EVENT = 0x3,    // Care about this exception and will send event to RS
 };
 
 // helper function
-inline bool IsInUsedAction(DPOSS_ACTION action) 
+inline bool IsInUsedAction(DPOSS_ACTION action)
 {
     _ASSERTE(action != DPOSS_INVALID);
     return (action >= DPOSS_USED_WITH_NO_EVENT);
@@ -962,11 +962,11 @@ inline bool IsInUsedAction(DPOSS_ACTION action)
 inline void VerifyExecutableAddress(const BYTE* address)
 {
 // TODO: : when can we apply this to x86?
-#if defined(BIT64)   
-#if defined(_DEBUG) 
-#ifndef FEATURE_PAL    
+#if defined(BIT64)
+#if defined(_DEBUG)
+#ifndef FEATURE_PAL
     MEMORY_BASIC_INFORMATION mbi;
-    
+
     if (sizeof(mbi) == ClrVirtualQuery(address, &mbi, sizeof(mbi)))
     {
         if (!(mbi.State & MEM_COMMIT))
@@ -974,16 +974,16 @@ inline void VerifyExecutableAddress(const BYTE* address)
             STRESS_LOG1(LF_GCROOTS, LL_ERROR, "VerifyExecutableAddress: address is uncommited memory, address=0x%p", address);
             CONSISTENCY_CHECK_MSGF((mbi.State & MEM_COMMIT), ("VEA: address (0x%p) is uncommited memory.", address));
         }
-    
+
         if (!(mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)))
         {
             STRESS_LOG1(LF_GCROOTS, LL_ERROR, "VerifyExecutableAddress: address is not executable, address=0x%p", address);
-            CONSISTENCY_CHECK_MSGF((mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)), 
+            CONSISTENCY_CHECK_MSGF((mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)),
                 ("VEA: address (0x%p) is not on an executable page.", address));
         }
     }
-#endif // !FEATURE_PAL    
-#endif // _DEBUG   
+#endif // !FEATURE_PAL
+#endif // _DEBUG
 #endif // BIT64
 }
 
@@ -994,7 +994,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 // both as a static class that dispatches exceptions coming from the
 // EE, and as an abstract base class for the five classes that derrive
 // from it.
-class DebuggerController 
+class DebuggerController
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerController);
 
@@ -1002,12 +1002,12 @@ class DebuggerController
 
     // Needs friendship for lock because of EnC locking workarounds.
     friend class DebuggerEnCBreakpoint;
-    
+
     friend class DebuggerPatchSkip;
     friend class DebuggerRCThread; //so we can get offsets of fields the
     //right side needs to read
     friend class Debugger; // So Debugger can lock, use, unlock the patch
-    // table in MapAndBindFunctionBreakpoints   
+    // table in MapAndBindFunctionBreakpoints
     friend void Debugger::UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain);
 
     //
@@ -1044,11 +1044,11 @@ class DebuggerController
                                         Thread *thread);
 
     static bool DispatchUnwind(Thread *thread,
-                               MethodDesc *fd, DebuggerJitInfo * pDJI, SIZE_T offset, 
+                               MethodDesc *fd, DebuggerJitInfo * pDJI, SIZE_T offset,
                                FramePointer handlerFP,
                                CorDebugStepReason unwindReason);
 
-    static bool DispatchTraceCall(Thread *thread, 
+    static bool DispatchTraceCall(Thread *thread,
                                   const BYTE *address);
 
     static PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *address);
@@ -1058,7 +1058,7 @@ class DebuggerController
     // pIP is the ip right after the prolog of the method we've entered.
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
-    
+
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
     // If pAppDomain is specified, then only patches tied to the specified AppDomain are
@@ -1074,7 +1074,7 @@ class DebuggerController
 
     static DebuggerControllerPatch *GetEnCPatch(const BYTE *address);
 #endif //EnC_SUPPORTED
-    
+
     static DPOSS_ACTION ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                 Thread *thread,
                                 CONTEXT *context,
@@ -1083,22 +1083,22 @@ class DebuggerController
                                 TP_RESULT *pTpr);
 
 
-    static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread, 
+    static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread,
                                                 const BYTE *eip,
                                                 BOOL fForEnC);
 
 
-    static DPOSS_ACTION DispatchPatchOrSingleStep(Thread *thread, 
-                                          CONTEXT *context, 
+    static DPOSS_ACTION DispatchPatchOrSingleStep(Thread *thread,
+                                          CONTEXT *context,
                                           CORDB_ADDRESS_TYPE *ip,
                                           SCAN_TRIGGER which);
 
 
-    static int GetNumberOfPatches() 
+    static int GetNumberOfPatches()
     {
-        if (g_patches == NULL) 
+        if (g_patches == NULL)
             return 0;
-        
+
         return g_patches->GetNumberOfPatches();
     }
 
@@ -1110,7 +1110,7 @@ class DebuggerController
     static void EnsureUniqueThreadStarter(DebuggerThreadStarter * pNew);
 #endif
     // If we have a thread-starter on the given EE thread, make sure it's cancel.
-    // Thread-Starters normally delete themselves when they fire. But if the EE 
+    // Thread-Starters normally delete themselves when they fire. But if the EE
     // destroys the thread before it fires, then we'd still have an active DTS.
     static void CancelOutstandingThreadStarter(Thread * pThread);
 
@@ -1119,7 +1119,7 @@ class DebuggerController
 
   private:
 
-    static bool MatchPatch(Thread *thread, CONTEXT *context, 
+    static bool MatchPatch(Thread *thread, CONTEXT *context,
                            DebuggerControllerPatch *patch);
 
     // Returns TRUE if we should continue to dispatch after this exception
@@ -1133,7 +1133,7 @@ protected:
     {
        return g_criticalSection.OwnedByCurrentThread() != 0;
     }
-#endif    
+#endif
 
 #endif // !DACCESS_COMPILE
 
@@ -1147,17 +1147,17 @@ private:
     static DebuggerControllerPage *g_protections;
     static DebuggerController *g_controllers;
 
-    // This is the "Controller" lock. It synchronizes the controller infrastructure. 
+    // This is the "Controller" lock. It synchronizes the controller infrastructure.
     // It is smaller than the debugger lock, but larger than the debugger-data lock.
     // It needs to be taken in execution-control related callbacks; and will also call
     // back into the EE when held (most notably for the stub-managers; but also for various
-    // query operations). 
+    // query operations).
     static CrstStatic g_criticalSection;
 
     // Write is protected by both Debugger + Controller Lock
     static int g_cTotalMethodEnter;
 
-    static bool BindPatch(DebuggerControllerPatch *patch, 
+    static bool BindPatch(DebuggerControllerPatch *patch,
                           MethodDesc *fd,
                           CORDB_ADDRESS_TYPE *startAddr);
     static bool ApplyPatch(DebuggerControllerPatch *patch);
@@ -1167,7 +1167,7 @@ private:
 
     static void ActivatePatch(DebuggerControllerPatch *patch);
     static void DeactivatePatch(DebuggerControllerPatch *patch);
-    
+
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
@@ -1191,8 +1191,8 @@ private:
     bool IsDeleted() { return m_deleted; }
 
 #endif // !DACCESS_COMPILE
-    
- 
+
+
     // Return the pointer g_patches.
     // Access to patch table for the RC threads (EE,DI)
     // Why: The right side needs to know the address of the patch
@@ -1207,8 +1207,8 @@ public:
 #if !defined(DACCESS_COMPILE)
     static BOOL *GetPatchTableValidAddr() {LIMITED_METHOD_CONTRACT;  return &g_patchTableValid; }
 
-    // Is there a patch at addr?  
-    // We sometimes want to use this version of the method 
+    // Is there a patch at addr?
+    // We sometimes want to use this version of the method
     // (as opposed to IsPatched) because there is
     // a race condition wherein a patch can be added to the table, we can
     // ask about it, and then we can actually apply the patch.
@@ -1218,7 +1218,7 @@ public:
     {
         return (g_patches->GetPatch(address) != NULL);
     }
-    
+
     //
     // Event setup
     //
@@ -1228,21 +1228,21 @@ public:
     // This one should be made private
     BOOL AddBindAndActivateILSlavePatch(DebuggerControllerPatch *master,
                                         DebuggerJitInfo *dji);
-                
-    BOOL AddILPatch(AppDomain * pAppDomain, Module *module, 
+
+    BOOL AddILPatch(AppDomain * pAppDomain, Module *module,
                     mdMethodDef md,
                     MethodDesc* pMethodFilter,
                     SIZE_T encVersion,  // what encVersion does this apply to?
                     SIZE_T offset,
                     BOOL offsetIsIL);
-        
+
     // The next two are very similar.  Both work on offsets,
     // but one takes a "patch id".  I don't think these are really needed: the
     // controller itself can act as the id of the patch.
     BOOL AddBindAndActivateNativeManagedPatch(
                   MethodDesc * fd,
                   DebuggerJitInfo *dji,
-                  SIZE_T offset, 
+                  SIZE_T offset,
                   FramePointer fp,
                   AppDomain *pAppDomain);
 
@@ -1252,8 +1252,8 @@ public:
 
     // This version is particularly useful b/c it doesn't assume that the
     // patch is inside a managed method.
-    DebuggerControllerPatch *AddAndActivateNativePatchForAddress(CORDB_ADDRESS_TYPE *address, 
-                                      FramePointer fp, 
+    DebuggerControllerPatch *AddAndActivateNativePatchForAddress(CORDB_ADDRESS_TYPE *address,
+                                      FramePointer fp,
                                       bool managed,
                                       TraceType traceType);
 
@@ -1284,12 +1284,12 @@ public:
     bool IsMethodEnterEnabled();
     void EnableMethodEnter();
     void DisableMethodEnter();
-    
+
     void DisableAll();
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_STATIC; }
-    
+
     // Return true iff this is one of the stepper types.
     // if true, we can safely cast this controller to a DebuggerStepper*.
     inline bool IsStepperDCType()
@@ -1297,7 +1297,7 @@ public:
         DEBUGGER_CONTROLLER_TYPE e = this->GetDCType();
         return (e == DEBUGGER_CONTROLLER_STEPPER) || (e == DEBUGGER_CONTROLLER_JMC_STEPPER);
     }
-    
+
     void Enqueue();
     void Dequeue();
 
@@ -1305,20 +1305,20 @@ public:
     // Helper function that is called on each virtual trace call target to set a trace patch
     static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
 
-    DebuggerControllerPatch *AddILMasterPatch(Module *module, 
+    DebuggerControllerPatch *AddILMasterPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,
                   SIZE_T offset,
                   BOOL offsetIsIL,
                   SIZE_T encVersion);
-                  
+
     BOOL AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                   DebuggerJitInfo *dji,
                   SIZE_T nativeOffset,
                   DebuggerPatchKind kind,
                   FramePointer fp,
                   AppDomain *pAppDomain);
-                  
+
 
   protected:
 
@@ -1328,7 +1328,7 @@ public:
 
 
     // Notify a controller that a func-eval is starting/ending on the given thread.
-    // If a controller's m_thread!=NULL, then it is only notified of func-evals on 
+    // If a controller's m_thread!=NULL, then it is only notified of func-evals on
     // its thread.
     // Controllers don't need to Enable anything to get this, and most controllers
     // can ignore it.
@@ -1336,14 +1336,14 @@ public:
     virtual void TriggerFuncEvalExit(Thread * thread);
 
     virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                              Thread *thread, 
+                              Thread *thread,
                               TRIGGER_WHY tyWhy);
 
-    // Dispatched when we get a SingleStep exception on this thread. 
+    // Dispatched when we get a SingleStep exception on this thread.
     // Return true if we want SendEvent to get called.
 
     virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
-    
+
 
     // Dispatched to notify the controller when we are going to a filter/handler
     // that's in the stepper's current frame or above (a caller frame).
@@ -1356,22 +1356,22 @@ public:
     virtual void TriggerUnwind(Thread *thread, MethodDesc *fd, DebuggerJitInfo * pDJI,
                                SIZE_T offset, FramePointer fp,
                                CorDebugStepReason unwindReason);
-    
+
     virtual void TriggerTraceCall(Thread *thread, const BYTE *ip);
-    virtual TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext, 
+    virtual TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext,
                                       EXCEPTION_RECORD *exception);
 
     // Trigger when we've entered a method
     // thread - current thread
     // desc - the method that we've entered
-    // ip - the address after the prolog. A controller can patch this address. 
+    // ip - the address after the prolog. A controller can patch this address.
     //      To stop in this method.
     // Returns true if the trigger will disable itself from further method entry
     //      triggers else returns false (passing through a cctor can cause this).
     // A controller can't block in this trigger! It can only update state / set patches
-    // and then return. 
-    virtual void TriggerMethodEnter(Thread * thread, 
-                                    DebuggerJitInfo *dji, 
+    // and then return.
+    virtual void TriggerMethodEnter(Thread * thread,
+                                    DebuggerJitInfo *dji,
                                     const BYTE * ip,
                                     FramePointer fp);
 
@@ -1382,21 +1382,21 @@ public:
     // 1) may call TriggerXYZ which queues the controller for send event.
     // 2) blocks on a the debugger lock (in which case SetIp may get invoked on it)
     // 3) then sends the event
-    // If SetIp gets invoked at step 2, the thread's IP may have changed such that it should no 
+    // If SetIp gets invoked at step 2, the thread's IP may have changed such that it should no
     // longer trigger. Eg, perhaps we were about to send a breakpoint, and then SetIp moved us off
     // the bp. So we pass in an extra flag, fInteruptedBySetIp,  to let the controller decide how to handle this.
     // Since SetIP only works within a single function, this can only be an issue if a thread's current stopping
     // location and the patch it set are in the same function. (So this could happen for step-over, but never
-    // step-out). 
+    // step-out).
     // This flag will almost always be false.
-    // 
+    //
     // Once we actually send the event, we're under the debugger lock, and so the world is stable underneath us.
     // But the world may change underneath a thread between when SendEvent gets queued and by the time it's actually called.
     // So SendIPCEvent may need to do some last-minute sanity checking (like the SetIP case) to ensure it should
-    // still send. 
+    // still send.
     //
     // Returns true if send an event, false elsewise.
-    virtual bool SendEvent(Thread *thread, bool fInteruptedBySetIp);   
+    virtual bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 
     AppDomain           *m_pAppDomain;
 
@@ -1429,7 +1429,7 @@ class DebuggerPatchSkip : public DebuggerController
 {
     friend class DebuggerController;
 
-    DebuggerPatchSkip(Thread *thread, 
+    DebuggerPatchSkip(Thread *thread,
                       DebuggerControllerPatch *patch,
                       AppDomain *pAppDomain);
 
@@ -1437,15 +1437,15 @@ class DebuggerPatchSkip : public DebuggerController
 
     bool TriggerSingleStep(Thread *thread,
                            const BYTE *ip);
-    
-    TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext, 
+
+    TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext,
                               EXCEPTION_RECORD *exception);
 
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                              Thread *thread, 
+                              Thread *thread,
                               TRIGGER_WHY tyWhy);
-                              
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void) 
+
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
         { return DEBUGGER_CONTROLLER_PATCH_SKIP; }
 
     void CopyInstructionBlock(BYTE *to, const BYTE* from);
@@ -1483,10 +1483,10 @@ public:
 class DebuggerBreakpoint : public DebuggerController
 {
 public:
-    DebuggerBreakpoint(Module *module, 
-                       mdMethodDef md, 
-                       AppDomain *pAppDomain, 
-                       SIZE_T m_offset, 
+    DebuggerBreakpoint(Module *module,
+                       mdMethodDef md,
+                       AppDomain *pAppDomain,
+                       SIZE_T m_offset,
                        bool m_native,
                        SIZE_T ilEnCVersion,  // must give the EnC version for non-native bps
                        MethodDesc *nativeMethodDesc,  // must be non-null when m_native, null otherwise
@@ -1495,13 +1495,13 @@ public:
                        BOOL *pSucceed
                        );
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_BREAKPOINT; }
 
 private:
 
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 };
@@ -1509,7 +1509,7 @@ private:
 // * ------------------------------------------------------------------------ *
 // * DebuggerStepper routines
 // * ------------------------------------------------------------------------ *
-// 
+//
 
 //  DebuggerStepper:  This subclass of DebuggerController will
 //  be instantiated to create a "Step" operation, meaning that execution
@@ -1527,11 +1527,11 @@ public:
               COR_DEBUG_STEP_RANGE *range, SIZE_T cRange, bool rangeIL);
     void StepOut(FramePointer fp, StackTraceTicket ticket);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_STEPPER; }
 
     //MoveToCurrentVersion makes sure that the stepper is prepared to
-    //  operate within the version of the code specified by djiNew.  
+    //  operate within the version of the code specified by djiNew.
     //  Currently, this means to map the ranges into the ranges of the djiNew.
     //  Idempotent.
     void MoveToCurrentVersion( DebuggerJitInfo *djiNew);
@@ -1539,19 +1539,19 @@ public:
     // Public & Polymorphic on flavor (traditional vs. JMC).
 
     // Regular steppers want to EnableTraceCall; and JMC-steppers want to EnableMethodEnter.
-    // (They're very related - they both stop at the next "interesting" managed code run). 
+    // (They're very related - they both stop at the next "interesting" managed code run).
     // So we just gloss over the difference w/ some polymorphism.
     virtual void EnablePolyTraceCall();
-    
+
 protected:
     // Steppers override these so that they can skip func-evals.
     void TriggerFuncEvalEnter(Thread * thread);
     void TriggerFuncEvalExit(Thread * thread);
-    
-    bool TrapStepInto(ControllerStackInfo *info, 
+
+    bool TrapStepInto(ControllerStackInfo *info,
                       const BYTE *ip,
                       TraceDestination *pTD);
-                      
+
     bool TrapStep(ControllerStackInfo *info, bool in);
 
     // @todo - must remove that fForceTraditional flag. Need a way for a JMC stepper
@@ -1567,30 +1567,30 @@ protected:
                                   bool fIsJump);
     virtual bool IsInterestingFrame(FrameInfo * pFrame);
     virtual bool DetectHandleNonUserCode(ControllerStackInfo *info, DebuggerMethodInfo * pInfo);
-    
+
 
     //DetectHandleInterceptors will figure out if the current
     // frame is inside an interceptor, and if we're not interested in that
     // interceptor, it will set a breakpoint outside it so that we can
     // run to after the interceptor.
     virtual bool DetectHandleInterceptors(ControllerStackInfo *info);
-    
-    // This function checks whether the given IP is in an LCG method.  If so, it enables 
+
+    // This function checks whether the given IP is in an LCG method.  If so, it enables
     // JMC and does a step out.  This effectively makes sure that we never stop in an LCG method.
     BOOL DetectHandleLCGMethods(const PCODE ip, MethodDesc * pMD, ControllerStackInfo * pInfo);
 
-    bool IsAddrWithinFrame(DebuggerJitInfo *dji, 
-                           MethodDesc* pMD, 
-                           const BYTE* currentAddr, 
+    bool IsAddrWithinFrame(DebuggerJitInfo *dji,
+                           MethodDesc* pMD,
+                           const BYTE* currentAddr,
                            const BYTE* targetAddr);
 
-    // x86 shouldn't need to call this method directly.  
+    // x86 shouldn't need to call this method directly.
     // We should call IsAddrWithinFrame() on x86 instead.
     // That's why I use a name with the word "funclet" in it to scare people off.
-    bool IsAddrWithinMethodIncludingFunclet(DebuggerJitInfo *dji, 
-                                            MethodDesc* pMD, 
+    bool IsAddrWithinMethodIncludingFunclet(DebuggerJitInfo *dji,
+                                            MethodDesc* pMD,
                                             const BYTE* targetAddr);
-    
+
     //ShouldContinue returns false if the DebuggerStepper should stop
     // execution and inform the right side.  Returns true if the next
     // breakpointexecution should be set, and execution allowed to continue
@@ -1598,27 +1598,27 @@ protected:
 
     //IsInRange returns true if the given IL offset is inside of
     // any of the COR_DEBUG_STEP_RANGE structures given by range.
-    bool IsInRange(SIZE_T offset, COR_DEBUG_STEP_RANGE *range, SIZE_T rangeCount, 
+    bool IsInRange(SIZE_T offset, COR_DEBUG_STEP_RANGE *range, SIZE_T rangeCount,
                    ControllerStackInfo *pInfo = NULL);
     bool IsRangeAppropriate(ControllerStackInfo *info);
 
-    
+
 
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
     bool TriggerSingleStep(Thread *thread, const BYTE *ip);
     void TriggerUnwind(Thread *thread, MethodDesc *fd, DebuggerJitInfo * pDJI,
                       SIZE_T offset, FramePointer fp,
                       CorDebugStepReason unwindReason);
     void TriggerTraceCall(Thread *thread, const BYTE *ip);
-    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);    
+    bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
-    
 
-    void ResetRange();    
+
+    void ResetRange();
 
     //  Given a set of IL ranges, convert them to native and cache them.
     bool SetRangesFromIL(DebuggerJitInfo * dji, COR_DEBUG_STEP_RANGE *ranges, SIZE_T rangeCount);
@@ -1633,7 +1633,7 @@ protected:
 
     // Prepare for sending an event.
     void PrepareForSendEvent(StackTraceTicket ticket);
-    
+
 protected:
     bool                    m_stepIn;
     CorDebugStepReason      m_reason; // Why did we stop?
@@ -1642,14 +1642,14 @@ protected:
                                 // a step into.  If fp is less than th is
                                 // when we stop,
                                 // then we're actually in a STEP_CALL
-    
+
     CorDebugIntercept       m_rgfInterceptStop; // If we hit a
     // frame that's an interceptor (internal or otherwise), should we stop?
-    
+
     CorDebugUnmappedStop    m_rgfMappingStop; // If we hit a frame
-    // that's at an interesting mapping point (prolog, epilog,etc), should 
+    // that's at an interesting mapping point (prolog, epilog,etc), should
     // we stop?
-    
+
     COR_DEBUG_STEP_RANGE *  m_range; // Ranges for active steppers are always in native offsets.
 
     SIZE_T                  m_rangeCount;
@@ -1659,20 +1659,20 @@ protected:
     // As the stepper moves through code, it may change its other members.
     // ranges may get deleted, m_stepIn may get toggled, etc.
     // So we can't recover the original step direction from our other fields.
-    // We need to know the original direction (as well as m_fp) so we know 
+    // We need to know the original direction (as well as m_fp) so we know
     // if the frame we want to stop in is valid.
     //
     // Note that we can't really tell this by looking at our other state variables.
     // For example, a single-instruction step looks like a step-over.
     enum EStepMode
     {
-        cStepOver,  // Stop in level above or at m_fp. 
+        cStepOver,  // Stop in level above or at m_fp.
         cStepIn,    // Stop in level  above, below, or at m_fp.
         cStepOut    // Only stop in level above m_fp
     } m_eMode;
 
     // The frame that the stepper was originally created in.
-    // This is the only frame that the ranges are valid in.    
+    // This is the only frame that the ranges are valid in.
     FramePointer            m_fp;
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1680,8 +1680,8 @@ protected:
     // See IsRangeAppropriate() for more information.
     FramePointer            m_fpParentMethod;
 #endif // FEATURE_EH_FUNCLETS
-    
-    //m_fpException is 0 if we haven't stepped into an exception, 
+
+    //m_fpException is 0 if we haven't stepped into an exception,
     //  and is ignored.  If we get a TriggerUnwind while mid-step, we note
     //  the value of frame here, and use that to figure out if we should stop.
     FramePointer            m_fpException;
@@ -1689,13 +1689,13 @@ protected:
 
     // Counter of FuncEvalEnter/Exits - used to determine if we're entering / exiting
     // a func-eval.
-    int                     m_cFuncEvalNesting;                                         
+    int                     m_cFuncEvalNesting;
 
     // To freeze a stepper, we disable all triggers. We have to remember that so that
     // we can reenable them on Thaw.
     DWORD                   m_bvFrozenTriggers;
 
-    // Values to use in m_bvFrozenTriggers. 
+    // Values to use in m_bvFrozenTriggers.
     enum ETriggers
     {
         kSingleStep  = 0x1,
@@ -1709,10 +1709,10 @@ protected:
     // MethodDesc that the Stepin started in.
     // This is used for the JMC-backstop.
     MethodDesc * m_StepInStartMethod;
-    
+
     // This flag is to ensure that PrepareForSendEvent is called before SendEvent.
     bool                    m_fReadyToSend;
-#endif    
+#endif
 };
 
 
@@ -1729,12 +1729,12 @@ public:
                     AppDomain *appDomain);
     ~DebuggerJMCStepper();
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_JMC_STEPPER; }
 
     virtual void EnablePolyTraceCall();
 protected:
-    virtual void TrapStepNext(ControllerStackInfo *info);    
+    virtual void TrapStepNext(ControllerStackInfo *info);
     virtual bool TrapStepInHelper(ControllerStackInfo * pInfo,
                                   const BYTE * ipCallTarget,
                                   const BYTE * ipNext,
@@ -1763,12 +1763,12 @@ class DebuggerThreadStarter : public DebuggerController
 public:
     DebuggerThreadStarter(Thread *thread);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_THREAD_STARTER; }
 
 private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
     void TriggerTraceCall(Thread *thread, const BYTE *ip);
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
@@ -1786,7 +1786,7 @@ public:
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Data Breakpoint event created\n"));
         memcpy(&m_context, g_pEEInterface->GetThreadFilterContext(pThread), sizeof(CONTEXT));
     }
-    
+
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
     {
         return DEBUGGER_CONTROLLER_DATA_BREAKPOINT;
@@ -1821,8 +1821,8 @@ public:
 
 
 /* ------------------------------------------------------------------------- *
- * DebuggerUserBreakpoint routines.  UserBreakpoints are used 
- * by Runtime threads to send that they've hit a user breakpoint to the 
+ * DebuggerUserBreakpoint routines.  UserBreakpoints are used
+ * by Runtime threads to send that they've hit a user breakpoint to the
  * Right Side.
  * ------------------------------------------------------------------------- */
 class DebuggerUserBreakpoint : public DebuggerStepper
@@ -1832,9 +1832,9 @@ public:
 
     static bool IsFrameInDebuggerNamespace(FrameInfo * pFrame);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
-        { return DEBUGGER_CONTROLLER_USER_BREAKPOINT; }    
-private:    
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
+        { return DEBUGGER_CONTROLLER_USER_BREAKPOINT; }
+private:
     // Don't construct these directly. Use HandleDebugBreak().
     DebuggerUserBreakpoint(Thread *thread);
 
@@ -1850,15 +1850,15 @@ private:
 class DebuggerFuncEvalComplete : public DebuggerController
 {
 public:
-    DebuggerFuncEvalComplete(Thread *thread, 
+    DebuggerFuncEvalComplete(Thread *thread,
                              void *dest);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_FUNC_EVAL_COMPLETE; }
 
 private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
     DebuggerEval* m_pDE;
@@ -1875,16 +1875,16 @@ class DebuggerContinuableExceptionBreakpoint : public DebuggerController
 {
 public:
     DebuggerContinuableExceptionBreakpoint(Thread *pThread,
-                                           SIZE_T m_offset, 
+                                           SIZE_T m_offset,
                                            DebuggerJitInfo *jitInfo,
                                            AppDomain *pAppDomain);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_CONTINUABLE_EXCEPTION; }
 
 private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
 
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
@@ -1897,13 +1897,13 @@ private:
 // DebuggerEnCBreakpoint - used by edit and continue to support remapping
 //
 // When a method is updated, we make no immediate attempt to remap any existing execution
-// of the old method.  Instead we mine the old method with EnC breakpoints, and prompt the 
-// debugger whenever one is hit, giving it the opportunity to request a remap to the 
+// of the old method.  Instead we mine the old method with EnC breakpoints, and prompt the
+// debugger whenever one is hit, giving it the opportunity to request a remap to the
 // latest version of the method.
 //
 // Over long debugging sessions which make many edits to large methods, we can create
-// a large number of these breakpoints.  We currently make no attempt to reclaim the 
-// code or patch overhead for old methods.  Ideally we'd be able to detect when there are 
+// a large number of these breakpoints.  We currently make no attempt to reclaim the
+// code or patch overhead for old methods.  Ideally we'd be able to detect when there are
 // no outstanding references to the old method version and clean up after it.  At the
 // very least, we could remove all but the first patch when there are no outstanding
 // frames for a specific version of an edited method.
@@ -1913,27 +1913,27 @@ class DebuggerEnCBreakpoint : public DebuggerController
 public:
     // We have two types of EnC breakpoints. The first is the one we
     // sprinkle through old code to let us know when execution is occuring
-    // in a function that now has a new version. The second is when we've 
+    // in a function that now has a new version. The second is when we've
     // actually resumed excecution into a remapped function and we need
     // to then notify the debugger.
     enum TriggerType {REMAP_PENDING, REMAP_COMPLETE};
 
     // Create and activate an EnC breakpoint at the specified native offset
-    DebuggerEnCBreakpoint(SIZE_T m_offset, 
+    DebuggerEnCBreakpoint(SIZE_T m_offset,
                           DebuggerJitInfo *jitInfo,
                           TriggerType fTriggerType,
                           AppDomain *pAppDomain);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) 
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_ENC; }
 
 private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                      Thread *thread, 
+                      Thread *thread,
                       TRIGGER_WHY tyWhy);
 
     TP_RESULT HandleRemapComplete(DebuggerControllerPatch *patch,
-                                   Thread *thread, 
+                                   Thread *thread,
                                    TRIGGER_WHY tyWhy);
 
     DebuggerJitInfo *m_jitInfo;
@@ -1957,11 +1957,11 @@ class DebuggerControllerQueue
 
 public:
     DebuggerControllerQueue()
-        : m_events(NULL), 
-          m_dwEventsCount(0), 
-          m_dwEventsAlloc(0), 
+        : m_events(NULL),
+          m_dwEventsCount(0),
+          m_dwEventsAlloc(0),
           m_dwNewEventsAlloc(0)
-    {  
+    {
     }
 
 
@@ -1970,7 +1970,7 @@ public:
         if (m_events != NULL)
             delete [] m_events;
     }
-    
+
     BOOL dcqEnqueue(DebuggerController *dc, BOOL fSort)
     {
         LOG((LF_CORDB, LL_INFO100000,"DCQ::dcqE\n"));
@@ -2006,12 +2006,12 @@ public:
         // example, that thread starts fire before
         // breakpoints.
         if (fSort && (m_dwEventsCount > 0))
-        {   
+        {
             DWORD i;
             for (i = 0; i < m_dwEventsCount; i++)
             {
                 _ASSERTE(m_events[i] != NULL);
-                
+
                 if (m_events[i]->GetDCType() > dc->GetDCType())
                 {
                     // The final argument to CopyMemory cannot over/underflow.
@@ -2064,12 +2064,12 @@ public:
         {
             dw = (m_dwEventsCount - 1);
         }
-        
+
         LOG((LF_CORDB, LL_INFO100000,"DCQ::dcqD element index "
             "0x%x of 0x%x\n", dw, m_dwEventsCount));
-        
+
         _ASSERTE(dw < m_dwEventsCount);
-        
+
         m_events[dw]->Dequeue();
 
         // Note that if we're taking the element off the end (m_dwEventsCount-1),
@@ -2082,7 +2082,7 @@ public:
                    (SIZE_T)sizeof(DebuggerController *) * (SIZE_T)(m_dwEventsCount - dw - 1));
         m_dwEventsCount--;
     }
-}; 
+};
 
 // Include all of the inline stuff now.
 #include "controller.inl"

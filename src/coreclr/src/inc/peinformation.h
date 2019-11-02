@@ -13,7 +13,7 @@
 #ifndef PEKIND_ENUM_DEFINED
 #define PEKIND_ENUM_DEFINED
 // This must match the definition of pekind in fusion.idl
-typedef enum _tagPEKIND 
+typedef enum _tagPEKIND
 {
     peNone      = 0x00000000,
     peMSIL      = 0x00000001,

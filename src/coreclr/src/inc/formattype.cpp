@@ -17,13 +17,13 @@ char* asString(CQuickBytes *out) {
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     SIZE_T oldSize = out->Size();
     out->ReSizeThrows(oldSize + 1);
-    char* cur = &((char*) out->Ptr())[oldSize]; 
-    *cur = 0;   
+    char* cur = &((char*) out->Ptr())[oldSize];
+    *cur = 0;
     out->ReSizeThrows(oldSize);     // Don't count the null character
-    return((char*) out->Ptr()); 
+    return((char*) out->Ptr());
 }
 
 void appendStr(CQuickBytes *out, const char* str, unsigned len) {
@@ -33,13 +33,13 @@ void appendStr(CQuickBytes *out, const char* str, unsigned len) {
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    if(len == (unsigned)(-1)) len = (unsigned)strlen(str); 
+
+    if(len == (unsigned)(-1)) len = (unsigned)strlen(str);
     SIZE_T oldSize = out->Size();
     out->ReSizeThrows(oldSize + len);
-    char* cur = &((char*) out->Ptr())[oldSize]; 
-    memcpy(cur, str, len);  
-        // Note no trailing null!   
+    char* cur = &((char*) out->Ptr())[oldSize];
+    memcpy(cur, str, len);
+        // Note no trailing null!
 }
 
 void appendChar(CQuickBytes *out, char chr) {
@@ -49,11 +49,11 @@ void appendChar(CQuickBytes *out, char chr) {
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     SIZE_T oldSize = out->Size();
-    out->ReSizeThrows(oldSize + 1); 
-    ((char*) out->Ptr())[oldSize] = chr; 
-        // Note no trailing null!   
+    out->ReSizeThrows(oldSize + 1);
+    ((char*) out->Ptr())[oldSize] = chr;
+        // Note no trailing null!
 }
 
 void insertStr(CQuickBytes *out, const char* str) {
@@ -63,14 +63,14 @@ void insertStr(CQuickBytes *out, const char* str) {
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    unsigned len = (unsigned)strlen(str); 
+
+    unsigned len = (unsigned)strlen(str);
     SIZE_T oldSize = out->Size();
-    out->ReSizeThrows(oldSize + len); 
+    out->ReSizeThrows(oldSize + len);
     char* cur = &((char*) out->Ptr())[len];
     memmove(cur,out->Ptr(),oldSize);
-    memcpy(out->Ptr(), str, len);  
-        // Note no trailing null!   
+    memcpy(out->Ptr(), str, len);
+        // Note no trailing null!
 }
 
 static void appendStrNum(CQuickBytes *out, int num) {
@@ -80,25 +80,25 @@ static void appendStrNum(CQuickBytes *out, int num) {
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    char buff[16];  
-    sprintf_s(buff, COUNTOF(buff), "%d", num);   
-    appendStr(out, buff);   
+
+    char buff[16];
+    sprintf_s(buff, COUNTOF(buff), "%d", num);
+    appendStr(out, buff);
 }
 
 PCCOR_SIGNATURE PrettyPrintSignature(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    unsigned typeLen,                   // the lenght of 'typePtr' 
-    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig 
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    unsigned typeLen,                   // the lenght of 'typePtr'
+    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
 	_In_opt_z_ const char* inlabel,       // prefix for names (NULL if no names required)
     BOOL printTyArity=FALSE);
 
 
 PCCOR_SIGNATURE PrettyPrintTypeOrDef(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI);          // ptr to IMDInternal class with ComSig
 
 //*****************************************************************************
@@ -139,18 +139,18 @@ ULONG GetLength(            // Length or -1 on error.
 
 /******************************************************************************/
 const char* PrettyPrintSig(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    unsigned typeLen,                   // the length of 'typePtr' 
-    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig 
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    unsigned typeLen,                   // the length of 'typePtr'
+    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
     const char* inlabel,                // prefix for names (NULL if no names required)
     BOOL printTyArity)
 {
     STATIC_CONTRACT_THROWS;
-    
+
     // This had a _try/__except handler earlier that would swallow exceptions like
-    // SO and breakpoint. Obviously, swallowing any of them is not the right thing to do. 
+    // SO and breakpoint. Obviously, swallowing any of them is not the right thing to do.
     //
     // Thus, we replace it with EX_TRY/EX_CATCH that automatically kicks in with SO
     // handling if it sees any SO going past it. Also, C++ catch will not swallow
@@ -164,7 +164,7 @@ const char* PrettyPrintSig(
                              pIMDI,
                              inlabel,
                              printTyArity);
-    } 
+    }
     EX_CATCH
     {
         out->Shrink(0);
@@ -177,18 +177,18 @@ const char* PrettyPrintSig(
     EX_END_CATCH(SwallowAllExceptions);
 #endif // __ILDASM__
 
-    return(asString(out));  
+    return(asString(out));
 }
 
 /********************************************************************************/
 // Converts a com signature to a printable signature.
-// Note that return value is pointing at the CQuickBytes buffer, 
+// Note that return value is pointing at the CQuickBytes buffer,
 
 PCCOR_SIGNATURE PrettyPrintSignature(
-    PCCOR_SIGNATURE typePtr,    // type to convert,     
-    unsigned typeLen,           // the lenght of 'typePtr' 
-    const char* name,           // can be "", the name of the method for this sig 0 means local var sig 
-    CQuickBytes *out,           // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,    // type to convert,
+    unsigned typeLen,           // the lenght of 'typePtr'
+    const char* name,           // can be "", the name of the method for this sig 0 means local var sig
+    CQuickBytes *out,           // where to put the pretty printed string
     IMDInternalImport *pIMDI,   // ptr to IMDInternalImport class with ComSig
     const char* inlabel,        // prefix for names (NULL if no names required)
     BOOL printTyArity)
@@ -199,7 +199,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     unsigned numArgs;
     unsigned numTyArgs = 0;
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
@@ -225,30 +225,30 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         }
     }
 
-    // 0 means a local var sig  
+    // 0 means a local var sig
     if (name != 0)
     {
-        // get the calling convention out   
-        unsigned callConv = CorSigUncompressData(typePtr);  
+        // get the calling convention out
+        unsigned callConv = CorSigUncompressData(typePtr);
 
         // should not be a local var sig
         _ASSERTE(!isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_LOCAL_SIG));
 
         if (isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_FIELD))
         {
-            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);   
-            if (*name)    
-            {   
+            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
+            if (*name)
+            {
                 appendChar(out, ' ');
-                appendStr(out, name);   
-            }   
-            return(typePtr);  
+                appendStr(out, name);
+            }
+            return(typePtr);
         }
 
-        if (callConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)   
-            appendStr(out, KEYWORD("explicit "));    
+        if (callConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
+            appendStr(out, KEYWORD("explicit "));
 
-        if (callConv & IMAGE_CEE_CS_CALLCONV_HASTHIS)   
+        if (callConv & IMAGE_CEE_CS_CALLCONV_HASTHIS)
             appendStr(out, KEYWORD("instance "));
 
         if (isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_GENERICINST))
@@ -258,17 +258,17 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         }
         else
         {
-            static const char* const callConvNames[8] = {   
-                "", 
-                "unmanaged cdecl ", 
-                "unmanaged stdcall ",   
-                "unmanaged thiscall ",  
-                "unmanaged fastcall ",  
-                "vararg ",   
-                "<error> ",   
-                "<error> "   
-                };  
-            appendStr(out, KEYWORD(callConvNames[callConv & 7]));    
+            static const char* const callConvNames[8] = {
+                "",
+                "unmanaged cdecl ",
+                "unmanaged stdcall ",
+                "unmanaged thiscall ",
+                "unmanaged fastcall ",
+                "vararg ",
+                "<error> ",
+                "<error> "
+                };
+            appendStr(out, KEYWORD(callConvNames[callConv & 7]));
         }
 
         if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -278,14 +278,14 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         numArgs = CorSigUncompressData(typePtr);
         if (!isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_GENERICINST))
         {
-                // do return type   
+                // do return type
             if(pszArgName)
             {
                 argname[0] = 0;
                 DumpParamAttr(argname,COUNTOF(argname),pszArgName[ixArg+numArgs].attr);
                 appendStr(out,argname);
             }
-            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI); 
+            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
             if(pszArgName)
             {
                 argname[0] = ' '; argname[1] = 0;
@@ -294,8 +294,8 @@ PCCOR_SIGNATURE PrettyPrintSignature(
             }
             if(*name != 0)
             {
-                appendChar(out, ' ');    
-                appendStr(out, name);   
+                appendChar(out, ' ');
+                appendStr(out, name);
             }
             if((numTyArgs != 0)&&printTyArity)
             {
@@ -307,50 +307,50 @@ PCCOR_SIGNATURE PrettyPrintSignature(
             }
         }
     }
-    else    
+    else
     {
-        // get the calling convention out   
+        // get the calling convention out
 #ifdef _DEBUG
-        unsigned callConv = 
-#endif            
-            CorSigUncompressData(typePtr);  
+        unsigned callConv =
+#endif
+            CorSigUncompressData(typePtr);
 #ifdef _DEBUG
         (void)callConv; //prevent "unused variable" warning from GCC
         // should be a local var sig
         _ASSERTE(callConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
 #endif
 
-        numArgs = CorSigUncompressData(typePtr);    
+        numArgs = CorSigUncompressData(typePtr);
     }
 
-    appendStr(out, openpar);    
+    appendStr(out, openpar);
 
     bool needComma = false;
-    while(typePtr < typeEnd) 
+    while(typePtr < typeEnd)
     {
         if(name) // printing the arguments
         {
             PREFIX_ASSUME(typePtr != NULL);
-            if (*typePtr == ELEMENT_TYPE_SENTINEL) 
+            if (*typePtr == ELEMENT_TYPE_SENTINEL)
             {
                 if (needComma)
-                    appendChar(out, ',');    
-                appendStr(out, "...");    
+                    appendChar(out, ',');
+                appendStr(out, "...");
                 typePtr++;
             }
-            else 
+            else
             {
                 if (numArgs <= 0)
                     break;
                 if (needComma)
-                    appendChar(out, ',');    
+                    appendChar(out, ',');
                 if(pszArgName)
                 {
                     argname[0] = 0;
                     DumpParamAttr(argname,COUNTOF(argname),pszArgName[ixArg].attr);
                     appendStr(out,argname);
                 }
-                typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI); 
+                typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
                 if(inlabel)
                 {
                     if(pszArgName)
@@ -362,7 +362,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                     else sprintf_s(argname,COUNTOF(argname)," %s_%d",label,ixArg++);
                     appendStr(out,argname);
                 }
-                --numArgs;  
+                --numArgs;
             }
         }
         else // printing local vars
@@ -374,20 +374,20 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 if(pszArgName[ixArg].attr == 0xFFFFFFFF)
                 {
                     CQuickBytes fake_out;
-                    typePtr = PrettyPrintTypeOrDef(typePtr, &fake_out, pIMDI); 
+                    typePtr = PrettyPrintTypeOrDef(typePtr, &fake_out, pIMDI);
                     ixArg++;
                     numArgs--;
                     continue;
                 }
             }
             if (needComma)
-                appendChar(out, ',');    
+                appendChar(out, ',');
             if(pszArgName)
             {
                 sprintf_s(argname,COUNTOF(argname),"[%d] ",pszArgName[ixArg].attr);
                 appendStr(out,argname);
             }
-            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI); 
+            typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
             if(inlabel)
             {
                 if(pszArgName)
@@ -397,27 +397,27 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 else sprintf_s(argname,COUNTOF(argname)," %s_%d",label,ixArg++);
                 appendStr(out,argname);
             }
-            --numArgs;  
+            --numArgs;
         }
         needComma = true;
     }
         // Have we finished printing all the arguments?
     if (numArgs > 0) {
-        appendStr(out, ERRORMSG(" [SIGNATURE ENDED PREMATURELY]"));    
+        appendStr(out, ERRORMSG(" [SIGNATURE ENDED PREMATURELY]"));
     }
-        
-    appendStr(out, closepar);    
+
+    appendStr(out, closepar);
     return(typePtr);
 }
 
 
 /******************************************************************************/
-// pretty prints 'type' or its 'typedef' to the buffer 'out' returns a pointer to the next type, 
-// or 0 on a format failure; outside ILDASM -- simple wrapper for PrettyPrintType 
+// pretty prints 'type' or its 'typedef' to the buffer 'out' returns a pointer to the next type,
+// or 0 on a format failure; outside ILDASM -- simple wrapper for PrettyPrintType
 
 PCCOR_SIGNATURE PrettyPrintTypeOrDef(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI)           // ptr to IMDInternal class with ComSig
 {
     CONTRACTL
@@ -455,12 +455,12 @@ PCCOR_SIGNATURE PrettyPrintTypeOrDef(
 }
 
 /******************************************************************************/
-// pretty prints 'type' to the buffer 'out' returns a pointer to the next type, 
-// or 0 on a format failure 
+// pretty prints 'type' to the buffer 'out' returns a pointer to the next type,
+// or 0 on a format failure
 
 PCCOR_SIGNATURE PrettyPrintType(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI)           // ptr to IMDInternal class with ComSig
 {
     CONTRACTL
@@ -469,9 +469,9 @@ PCCOR_SIGNATURE PrettyPrintType(
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    mdToken  tk;    
-    const char* str;    
+
+    mdToken  tk;
+    const char* str;
     int typ;
     CQuickBytes tmp;
     CQuickBytes Appendix;
@@ -480,76 +480,76 @@ PCCOR_SIGNATURE PrettyPrintType(
 
     do {
         Reiterate = FALSE;
-        switch(typ = *typePtr++) {    
-            case ELEMENT_TYPE_VOID          :   
-                str = "void"; goto APPEND;  
-            case ELEMENT_TYPE_BOOLEAN       :   
-                str = "bool"; goto APPEND;  
-            case ELEMENT_TYPE_CHAR          :   
-                str = "char"; goto APPEND; 
-            case ELEMENT_TYPE_I1            :   
-                str = "int8"; goto APPEND;  
-            case ELEMENT_TYPE_U1            :   
-                str = "uint8"; goto APPEND; 
-            case ELEMENT_TYPE_I2            :   
-                str = "int16"; goto APPEND; 
-            case ELEMENT_TYPE_U2            :   
-                str = "uint16"; goto APPEND;    
-            case ELEMENT_TYPE_I4            :   
-                str = "int32"; goto APPEND; 
-            case ELEMENT_TYPE_U4            :   
-                str = "uint32"; goto APPEND;    
-            case ELEMENT_TYPE_I8            :   
-                str = "int64"; goto APPEND; 
-            case ELEMENT_TYPE_U8            :   
-                str = "uint64"; goto APPEND;    
-            case ELEMENT_TYPE_R4            :   
-                str = "float32"; goto APPEND;   
-            case ELEMENT_TYPE_R8            :   
-                str = "float64"; goto APPEND;   
-            case ELEMENT_TYPE_U             :   
-                str = "native uint"; goto APPEND;   
-            case ELEMENT_TYPE_I             :   
-                str = "native int"; goto APPEND;    
-            case ELEMENT_TYPE_OBJECT        :   
-                str = "object"; goto APPEND;    
-            case ELEMENT_TYPE_STRING        :   
-                str = "string"; goto APPEND;    
-            case ELEMENT_TYPE_TYPEDBYREF        :   
-                str = "typedref"; goto APPEND;    
-            APPEND: 
-                appendStr(out, KEYWORD((char*)str));    
-                break;  
+        switch(typ = *typePtr++) {
+            case ELEMENT_TYPE_VOID          :
+                str = "void"; goto APPEND;
+            case ELEMENT_TYPE_BOOLEAN       :
+                str = "bool"; goto APPEND;
+            case ELEMENT_TYPE_CHAR          :
+                str = "char"; goto APPEND;
+            case ELEMENT_TYPE_I1            :
+                str = "int8"; goto APPEND;
+            case ELEMENT_TYPE_U1            :
+                str = "uint8"; goto APPEND;
+            case ELEMENT_TYPE_I2            :
+                str = "int16"; goto APPEND;
+            case ELEMENT_TYPE_U2            :
+                str = "uint16"; goto APPEND;
+            case ELEMENT_TYPE_I4            :
+                str = "int32"; goto APPEND;
+            case ELEMENT_TYPE_U4            :
+                str = "uint32"; goto APPEND;
+            case ELEMENT_TYPE_I8            :
+                str = "int64"; goto APPEND;
+            case ELEMENT_TYPE_U8            :
+                str = "uint64"; goto APPEND;
+            case ELEMENT_TYPE_R4            :
+                str = "float32"; goto APPEND;
+            case ELEMENT_TYPE_R8            :
+                str = "float64"; goto APPEND;
+            case ELEMENT_TYPE_U             :
+                str = "native uint"; goto APPEND;
+            case ELEMENT_TYPE_I             :
+                str = "native int"; goto APPEND;
+            case ELEMENT_TYPE_OBJECT        :
+                str = "object"; goto APPEND;
+            case ELEMENT_TYPE_STRING        :
+                str = "string"; goto APPEND;
+            case ELEMENT_TYPE_TYPEDBYREF        :
+                str = "typedref"; goto APPEND;
+            APPEND:
+                appendStr(out, KEYWORD((char*)str));
+                break;
 
-            case ELEMENT_TYPE_VALUETYPE    :   
-                str = "valuetype ";   
-                goto DO_CLASS;  
-            case ELEMENT_TYPE_CLASS         :   
-                str = "class "; 
-                goto DO_CLASS;  
+            case ELEMENT_TYPE_VALUETYPE    :
+                str = "valuetype ";
+                goto DO_CLASS;
+            case ELEMENT_TYPE_CLASS         :
+                str = "class ";
+                goto DO_CLASS;
 
             DO_CLASS:
                 appendStr(out, KEYWORD((char*)str));
-                typePtr += CorSigUncompressToken(typePtr, &tk); 
+                typePtr += CorSigUncompressToken(typePtr, &tk);
                 if(IsNilToken(tk))
                 {
                     appendStr(out, "[ERROR! NIL TOKEN]");
                 }
                 else PrettyPrintClass(out, tk, pIMDI);
                 REGISTER_REF(g_tkRefUser,tk)
-                break;  
+                break;
 
-            case ELEMENT_TYPE_SZARRAY    :   
+            case ELEMENT_TYPE_SZARRAY    :
                 insertStr(&Appendix,"[]");
                 Reiterate = TRUE;
                 break;
-            
-            case ELEMENT_TYPE_ARRAY       :   
-                {   
+
+            case ELEMENT_TYPE_ARRAY       :
+                {
                 typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
                 PREFIX_ASSUME(typePtr != NULL);
-                unsigned rank = CorSigUncompressData(typePtr);  
-                    // <TODO> what is the syntax for the rank 0 case? </TODO> 
+                unsigned rank = CorSigUncompressData(typePtr);
+                    // <TODO> what is the syntax for the rank 0 case? </TODO>
                 if (rank == 0) {
                     appendStr(out, ERRORMSG("[BAD: RANK == 0!]"));
                 }
@@ -561,53 +561,53 @@ PCCOR_SIGNATURE PrettyPrintType(
 #pragma prefast(disable:22009 "Suppress PREFAST warnings about integer overflow")
 #endif
                     int* lowerBounds = (int*) _alloca(sizeof(int)*2*rank);
-                    int* sizes       = &lowerBounds[rank];  
-                    memset(lowerBounds, 0, sizeof(int)*2*rank); 
-                    
-                    unsigned numSizes = CorSigUncompressData(typePtr);  
+                    int* sizes       = &lowerBounds[rank];
+                    memset(lowerBounds, 0, sizeof(int)*2*rank);
+
+                    unsigned numSizes = CorSigUncompressData(typePtr);
                     _ASSERTE(numSizes <= rank);
                     unsigned i;
                     for(i =0; i < numSizes; i++)
-                        sizes[i] = CorSigUncompressData(typePtr);   
-                    
-                    unsigned numLowBounds = CorSigUncompressData(typePtr);  
-                    _ASSERTE(numLowBounds <= rank); 
-                    for(i = 0; i < numLowBounds; i++)   
-                        typePtr+=CorSigUncompressSignedInt(typePtr,&lowerBounds[i]); 
-                    
-                    appendChar(out, '[');    
+                        sizes[i] = CorSigUncompressData(typePtr);
+
+                    unsigned numLowBounds = CorSigUncompressData(typePtr);
+                    _ASSERTE(numLowBounds <= rank);
+                    for(i = 0; i < numLowBounds; i++)
+                        typePtr+=CorSigUncompressSignedInt(typePtr,&lowerBounds[i]);
+
+                    appendChar(out, '[');
                     if (rank == 1 && numSizes == 0 && numLowBounds == 0)
-                        appendStr(out, "...");  
+                        appendStr(out, "...");
                     else {
-                        for(i = 0; i < rank; i++)   
-                        {   
-                            //if (sizes[i] != 0 || lowerBounds[i] != 0)   
-                            {   
-                                if (lowerBounds[i] == 0 && i < numSizes)    
-                                    appendStrNum(out, sizes[i]);    
-                                else    
-                                {   
+                        for(i = 0; i < rank; i++)
+                        {
+                            //if (sizes[i] != 0 || lowerBounds[i] != 0)
+                            {
+                                if (lowerBounds[i] == 0 && i < numSizes)
+                                    appendStrNum(out, sizes[i]);
+                                else
+                                {
                                     if(i < numLowBounds)
                                     {
-                                        appendStrNum(out, lowerBounds[i]);  
-                                        appendStr(out, "...");  
-                                        if (/*sizes[i] != 0 && */i < numSizes)  
-                                            appendStrNum(out, lowerBounds[i] + sizes[i] - 1);   
+                                        appendStrNum(out, lowerBounds[i]);
+                                        appendStr(out, "...");
+                                        if (/*sizes[i] != 0 && */i < numSizes)
+                                            appendStrNum(out, lowerBounds[i] + sizes[i] - 1);
                                     }
-                                }   
-                            }   
-                            if (i < rank-1) 
-                                appendChar(out, ',');    
-                        }   
+                                }
+                            }
+                            if (i < rank-1)
+                                appendChar(out, ',');
+                        }
                     }
-                    appendChar(out, ']'); 
+                    appendChar(out, ']');
 #ifdef _PREFAST_
 #pragma prefast(pop)
 #endif
                 }
-                } break;    
+                } break;
 
-            case ELEMENT_TYPE_VAR        :   
+            case ELEMENT_TYPE_VAR        :
                 appendChar(out, '!');
                 n  = CorSigUncompressData(typePtr);
 #ifdef __ILDASM__
@@ -616,9 +616,9 @@ PCCOR_SIGNATURE PrettyPrintType(
                     appendStrNum(out, n);
                 break;
 
-            case ELEMENT_TYPE_MVAR        :   
-                appendChar(out, '!');    
-                appendChar(out, '!');    
+            case ELEMENT_TYPE_MVAR        :
+                appendChar(out, '!');
+                appendChar(out, '!');
                 n  = CorSigUncompressData(typePtr);
 #ifdef __ILDASM__
                 if(!PrettyPrintGP(g_tkMVarOwner,out,n))
@@ -626,31 +626,31 @@ PCCOR_SIGNATURE PrettyPrintType(
                     appendStrNum(out, n);
                 break;
 
-            case ELEMENT_TYPE_FNPTR :   
-                appendStr(out, KEYWORD("method "));  
+            case ELEMENT_TYPE_FNPTR :
+                appendStr(out, KEYWORD("method "));
                 typePtr = PrettyPrintSignature(typePtr, 0x7FFF, "*", out, pIMDI, NULL);
                 break;
 
             case ELEMENT_TYPE_GENERICINST :
             {
               typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
-              appendStr(out, LTN());    
-              unsigned numArgs = CorSigUncompressData(typePtr);    
+              appendStr(out, LTN());
+              unsigned numArgs = CorSigUncompressData(typePtr);
               bool needComma = false;
               while(numArgs--)
               {
                   if (needComma)
-                      appendChar(out, ',');    
-                  typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI); 
+                      appendChar(out, ',');
+                  typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
                   needComma = true;
               }
-              appendStr(out, GTN());    
+              appendStr(out, GTN());
               break;
             }
 
 #ifndef __ILDASM__
             case ELEMENT_TYPE_INTERNAL :
-            {    
+            {
                 // ELEMENT_TYPE_INTERNAL <TypeHandle>
                 _ASSERTE(sizeof(TypeHandle) == sizeof(void *));
                 TypeHandle typeHandle;
@@ -674,12 +674,12 @@ PCCOR_SIGNATURE PrettyPrintType(
                 else
                 {
                     pMT = typeHandle.AsMethodTable();
-                    if (pMT)                    
-                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());                
+                    if (pMT)
+                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());
                     else
                         appendStr(out, "(null)");
                 }
-                
+
                 char sz[32];
                 if(IsCompilationProcess())
                 {
@@ -692,16 +692,16 @@ PCCOR_SIGNATURE PrettyPrintType(
                 appendStr(out, sz);
                 break;
             }
-#endif                
-        
-        
-                // Modifiers or depedent types  
+#endif
+
+
+                // Modifiers or depedent types
             case ELEMENT_TYPE_CMOD_OPT	:
-                str = " modopt("; goto ADDCLASSTOCMOD;	
+                str = " modopt("; goto ADDCLASSTOCMOD;
             case ELEMENT_TYPE_CMOD_REQD	:
                 str = " modreq(";
             ADDCLASSTOCMOD:
-                typePtr += CorSigUncompressToken(typePtr, &tk); 
+                typePtr += CorSigUncompressToken(typePtr, &tk);
                 if (IsNilToken(tk))
                 {
                     Debug_ReportError("Nil token in custom modifier");
@@ -714,18 +714,18 @@ PCCOR_SIGNATURE PrettyPrintType(
                 goto MODIFIER;
             case ELEMENT_TYPE_PINNED :
                 str = " pinned"; goto MODIFIER;
-            case ELEMENT_TYPE_PTR           :   
-                str = "*"; goto MODIFIER;   
-            case ELEMENT_TYPE_BYREF         :   
-                str = AMP(); goto MODIFIER;   
+            case ELEMENT_TYPE_PTR           :
+                str = "*"; goto MODIFIER;
+            case ELEMENT_TYPE_BYREF         :
+                str = AMP(); goto MODIFIER;
             MODIFIER:
                 insertStr(&Appendix, str);
                 Reiterate = TRUE;
-                break;  
+                break;
 
-            default:    
-            case ELEMENT_TYPE_SENTINEL      :   
-            case ELEMENT_TYPE_END           :   
+            default:
+            case ELEMENT_TYPE_SENTINEL      :
+            case ELEMENT_TYPE_END           :
                 //_ASSERTE(!"Unknown Type");
                 if(typ)
                 {
@@ -733,17 +733,17 @@ PCCOR_SIGNATURE PrettyPrintType(
                     sprintf_s(sz,COUNTOF(sz),"/* UNKNOWN TYPE (0x%X)*/",typ);
                     appendStr(out, ERRORMSG(sz));
                 }
-                break;  
+                break;
         } // end switch
     } while(Reiterate);
     appendStr(out,asString(&Appendix));
-    return(typePtr);    
+    return(typePtr);
 }
 
 /******************************************************************/
 const char* PrettyPrintClass(
-    CQuickBytes *out,           // where to put the pretty printed string   
-    mdToken tk,                 // The class token to look up 
+    CQuickBytes *out,           // where to put the pretty printed string
+    mdToken tk,                 // The class token to look up
     IMDInternalImport *pIMDI)   // ptr to IMDInternalImport class with ComSig
 {
     CONTRACTL
@@ -752,7 +752,7 @@ const char* PrettyPrintClass(
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     if(tk == mdTokenNil)  // Zero resolution scope for "somewhere here" TypeRefs
     {
         appendStr(out,"[*]");
@@ -782,10 +782,10 @@ const char* PrettyPrintClass(
             else
 #endif
             {
-                const char *nameSpace = 0;  
+                const char *nameSpace = 0;
                 const char *name = 0;
                 mdToken tkEncloser;
-                
+
                 if (TypeFromToken(tk) == mdtTypeRef)
                 {
                     if (FAILED(pIMDI->GetResolutionScopeOfTypeRef(tk, &tkEncloser)))
@@ -797,7 +797,7 @@ const char* PrettyPrintClass(
                         nameSpace = name = "Invalid TypeRef record";
                     }
                 }
-                else 
+                else
                 {
                     if (FAILED(pIMDI->GetNestedClassProps(tk,&tkEncloser)))
                     {
@@ -814,7 +814,7 @@ const char* PrettyPrintClass(
                     PrettyPrintClass(out,tkEncloser,pIMDI);
                     if (TypeFromToken(tkEncloser) == mdtTypeRef || TypeFromToken(tkEncloser) == mdtTypeDef)
                     {
-                        appendChar(out, '/');    
+                        appendChar(out, '/');
                         //nameSpace = ""; //don't print namespaces for nested classes!
                     }
                 }
@@ -841,8 +841,8 @@ const char* PrettyPrintClass(
                 else
                 {
                     if (nameSpace && *nameSpace) {
-                        appendStr(out, ProperName(nameSpace));  
-                        appendChar(out, '.');    
+                        appendStr(out, ProperName(nameSpace));
+                        appendChar(out, '.');
                     }
 
                     appendStr(out, ProperName(name));
@@ -864,7 +864,7 @@ const char* PrettyPrintClass(
                 {
                     szName = rAsmRefName[RidFromToken(tk)-1];
                 }
-                else 
+                else
 #endif
                 {
                     if (FAILED(pIMDI->GetAssemblyRefProps(tk,NULL,NULL,&szName,NULL,NULL,NULL,NULL)))
@@ -882,7 +882,7 @@ const char* PrettyPrintClass(
                         sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
                         appendStr(out,COMMENT(tmp));
                     }
-                    appendChar(out, ']');    
+                    appendChar(out, ']');
                 }
             }
             break;
@@ -895,7 +895,7 @@ const char* PrettyPrintClass(
                 }
                 if ((szName != NULL) && ((*szName) != 0))
                 {
-                    appendChar(out, '[');    
+                    appendChar(out, '[');
                     appendStr(out,JUMPPT(ProperName(szName),tk));
                     if(g_fDumpTokens)
                     {
@@ -903,7 +903,7 @@ const char* PrettyPrintClass(
                         sprintf_s(tmp,COUNTOF(tmp),"/* %08X */",tk);
                         appendStr(out,COMMENT(tmp));
                     }
-                    appendChar(out, ']');    
+                    appendChar(out, ']');
                 }
             }
             break;
@@ -916,7 +916,7 @@ const char* PrettyPrintClass(
                 }
                 if ((szName != NULL) && ((*szName) != 0))
                 {
-                    appendChar(out, '[');    
+                    appendChar(out, '[');
                     appendStr(out,KEYWORD(".module "));
                     appendStr(out,JUMPPT(ProperName(szName),tk));
                     if(g_fDumpTokens)
@@ -925,7 +925,7 @@ const char* PrettyPrintClass(
                         sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
                         appendStr(out,COMMENT(tmp));
                     }
-                    appendChar(out, ']');    
+                    appendChar(out, ']');
                 }
             }
             break;
@@ -969,7 +969,7 @@ const char* PrettyPrintClass(
 
         case mdtModule:
             break;
-        
+
         default:
             {
                 char str[128];
@@ -981,7 +981,7 @@ const char* PrettyPrintClass(
 }
 
 const char* TrySigUncompressAndDumpSimpleNativeType(
-        PCCOR_SIGNATURE pData,              // [IN] compressed data 
+        PCCOR_SIGNATURE pData,              // [IN] compressed data
         ULONG       *pDataOut,              // [OUT] the expanded *pData
         ULONG       &cbCur,
         SString     &buf)
@@ -1027,7 +1027,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
             case NATIVE_TYPE_ASANY:     sz = " as any"; break;
             case NATIVE_TYPE_LPSTRUCT:  sz = " lpstruct"; break;
             case NATIVE_TYPE_PTR:
-            case NATIVE_TYPE_SAFEARRAY: 
+            case NATIVE_TYPE_SAFEARRAY:
             case NATIVE_TYPE_ARRAY:
             case NATIVE_TYPE_FIXEDSYSSTRING:
             case NATIVE_TYPE_FIXEDARRAY:
@@ -1049,7 +1049,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
     return sz;
 }
 
-bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed data 
+bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed data
                       ULONG       *pDataOut,              // [OUT] the expanded *pData
                       ULONG       &cbCur,
                       SString     &buf)
@@ -1071,9 +1071,9 @@ bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed dat
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
-char* DumpMarshaling(IMDInternalImport* pImport, 
-                     __inout_ecount(cchszString) char* szString, 
-                     DWORD cchszString, 
+char* DumpMarshaling(IMDInternalImport* pImport,
+                     __inout_ecount(cchszString) char* szString,
+                     DWORD cchszString,
                      mdToken tok)
 {
     CONTRACTL
@@ -1086,7 +1086,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
     PCCOR_SIGNATURE pSigNativeType = NULL;
     ULONG           cbNativeType = 0;
     SString         buf;
-    if (RidFromToken(tok) && 
+    if (RidFromToken(tok) &&
         SUCCEEDED(pImport->GetFieldMarshal( // return error if no native type associate with the token
             tok,                // [IN] given fielddef
             &pSigNativeType,    // [OUT] the native type signature
@@ -1111,7 +1111,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                     sz = "";
                     fAddAsterisk = TRUE;
                     break;
-                case NATIVE_TYPE_SAFEARRAY: 
+                case NATIVE_TYPE_SAFEARRAY:
                     sz = "";
                     buf.AppendASCII(KEYWORD(" safearray"));
                     ulData = VT_EMPTY;
@@ -1166,7 +1166,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         default:            sz=NULL; break;
                     }
                     if(sz) buf.AppendASCII(KEYWORD(sz));
-                    else 
+                    else
                     {
                         // buf.AppendPrintf(ERRORMSG(" [ILLEGAL VARIANT TYPE 0x%X]"),ulData & VT_TYPEMASK);
                         buf.Clear();
@@ -1177,11 +1177,11 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                     {
                         case VT_ARRAY: sz = "[]"; break;
                         case VT_VECTOR: sz = " vector"; break;
-                        case VT_BYREF: sz = "&"; break; 
-                        case VT_BYREF|VT_ARRAY: sz = "&[]"; break; 
-                        case VT_BYREF|VT_VECTOR: sz = "& vector"; break; 
-                        case VT_ARRAY|VT_VECTOR: sz = "[] vector"; break; 
-                        case VT_BYREF|VT_ARRAY|VT_VECTOR: sz = "&[] vector"; break; 
+                        case VT_BYREF: sz = "&"; break;
+                        case VT_BYREF|VT_ARRAY: sz = "&[]"; break;
+                        case VT_BYREF|VT_VECTOR: sz = "& vector"; break;
+                        case VT_ARRAY|VT_VECTOR: sz = "[] vector"; break;
+                        case VT_BYREF|VT_ARRAY|VT_VECTOR: sz = "&[] vector"; break;
                     }
                     buf.AppendASCII(KEYWORD(sz));
                     sz="";

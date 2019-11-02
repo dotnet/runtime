@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // FilterManager.cpp
-// 
+//
 
 //
 // contains utility code to MD directory
@@ -851,7 +851,7 @@ HRESULT FilterManager::MarkParamsWithParentToken(mdMethodDef md)
         RID rid;
         IfFailGo(m_pMiniMd->GetParamRid(index, &rid));
         IfFailGo(MarkParam(TokenFromRid(
-            rid, 
+            rid,
             mdtParamDef)));
     }
 ErrExit:
@@ -877,7 +877,7 @@ HRESULT FilterManager::MarkMethodsWithParentToken(mdTypeDef td)
         RID rid;
         IfFailGo(m_pMiniMd->GetMethodRid(index, &rid));
         IfFailGo(MarkMethod(TokenFromRid(
-            rid, 
+            rid,
             mdtMethodDef)));
     }
 ErrExit:
@@ -938,7 +938,7 @@ HRESULT FilterManager::MarkFieldsWithParentToken(mdTypeDef td)
         RID rid;
         IfFailGo(m_pMiniMd->GetFieldRid(index, &rid));
         IfFailGo(MarkField(TokenFromRid(
-            rid, 
+            rid,
             mdtFieldDef)));
     }
 ErrExit:
@@ -970,7 +970,7 @@ HRESULT FilterManager::MarkEventsWithParentToken(
             RID rid;
             IfFailGo(m_pMiniMd->GetEventRid(index, &rid));
             IfFailGo(MarkEvent(TokenFromRid(
-                rid, 
+                rid,
                 mdtEvent)));
         }
     }
@@ -1004,7 +1004,7 @@ HRESULT FilterManager::MarkPropertiesWithParentToken(
             RID rid;
             IfFailGo(m_pMiniMd->GetPropertyRid(index, &rid));
             IfFailGo(MarkProperty(TokenFromRid(
-                rid, 
+                rid,
                 mdtProperty)));
         }
     }
@@ -1067,7 +1067,7 @@ HRESULT FilterManager::MarkInterfaceImpls(
     ULONG           ridStart, ridEnd;
     ULONG           i;
     InterfaceImplRec *pRec;
-    
+
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
     PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
 
@@ -1212,7 +1212,7 @@ HRESULT FilterManager::MarkSignature(
 
         // Count of arguments passed in call.
         VALIDATE_SIGNATURE_LEN( CorSigUncompressData(pbSig, &cArg) );
-        
+
         // Mark the return type, if there is one (LocalVarSig and GenericInst don't have return types).
         if ( !( isCallConv(callingconv, IMAGE_CEE_CS_CALLCONV_LOCAL_SIG) || isCallConv(callingconv, IMAGE_CEE_CS_CALLCONV_GENERICINST)) )
         {   // process the return type
@@ -1349,9 +1349,9 @@ HRESULT FilterManager::MarkFieldSignature(
 
         default:
             // If valid element (I4, etc), great.  Otherwise, return error.
-            if ((ulElementType >= ELEMENT_TYPE_MAX) || 
-                (ulElementType == ELEMENT_TYPE_PTR) || 
-                (ulElementType == ELEMENT_TYPE_BYREF) || 
+            if ((ulElementType >= ELEMENT_TYPE_MAX) ||
+                (ulElementType == ELEMENT_TYPE_PTR) ||
+                (ulElementType == ELEMENT_TYPE_BYREF) ||
                 (ulElementType == ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED))
             {
                 IfFailGo(META_E_BAD_SIGNATURE);
@@ -1404,7 +1404,7 @@ HRESULT FilterManager::UnmarkTypeDef(
         RID rid;
         IfFailGo(m_pMiniMd->GetMethodRid(index, &rid));
         IfFailGo(m_pMiniMd->GetFilterTable()->UnmarkMethod(TokenFromRid(
-            rid, 
+            rid,
             mdtMethodDef)));
     }
 
@@ -1416,7 +1416,7 @@ HRESULT FilterManager::UnmarkTypeDef(
         RID rid;
         IfFailGo(m_pMiniMd->GetFieldRid(index, &rid));
         IfFailGo(m_pMiniMd->GetFilterTable()->UnmarkField(TokenFromRid(
-            rid, 
+            rid,
             mdtFieldDef)));
     }
 

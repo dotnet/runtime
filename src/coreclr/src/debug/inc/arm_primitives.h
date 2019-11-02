@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: arm_primitives.h
-// 
+//
 
 //
 // ARM/ARM64-specific debugger primitives
@@ -25,7 +25,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
     return g_JITToCorDbgReg[reg];
 }
 
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context) 
+inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -36,7 +36,7 @@ inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,
                                  PRD_TYPE instruction)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     *(PRD_TYPE *)address = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,
@@ -46,21 +46,21 @@ inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,
 inline PRD_TYPE CORDbgGetInstructionExImpl(UNALIGNED CORDB_ADDRESS_TYPE* address)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     return *(PRD_TYPE *)address;
 }
 
 inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     CORDbgSetInstruction(address, CORDbg_BREAK_INSTRUCTION);
 }
 
 inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     CORDbgSetInstruction(address, CORDbg_BREAK_INSTRUCTION);
 }
 
@@ -83,7 +83,7 @@ inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     return CORDbgGetInstruction(address) == CORDbg_BREAK_INSTRUCTION;
 }
 
@@ -102,12 +102,12 @@ inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)
     return p1 == p2;
 }
 
-inline void InitializePRD(PRD_TYPE *p1) 
+inline void InitializePRD(PRD_TYPE *p1)
 {
     *p1 = 0;
 }
 
-inline bool PRDIsEmpty(PRD_TYPE p1) 
+inline bool PRDIsEmpty(PRD_TYPE p1)
 {
     LIMITED_METHOD_CONTRACT;
 

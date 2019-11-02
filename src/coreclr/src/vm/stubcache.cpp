@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: stubcache.cpp
 //
 
 //
 // Base class for caching stubs.
-// 
+//
 
 
 #include "common.h"
@@ -25,7 +25,7 @@ StubCacheBase::StubCacheBase(LoaderHeap *pHeap) :
                       3,
 #else
                       17,    // CClosedHashTable will grow as necessary
-#endif                      
+#endif
 
                       sizeof(STUBHASHENTRY),
                       FALSE
@@ -55,7 +55,7 @@ StubCacheBase::~StubCacheBase()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     STUBHASHENTRY *phe = (STUBHASHENTRY*)GetFirst();
     while (phe)
     {
@@ -98,7 +98,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
 
             // IncRef as we're returning a reference to our caller.
             pstub->IncRef();
-            
+
             pstub.SuppressRelease();
             RETURN pstub;
         }
@@ -129,7 +129,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
         {
             if (bNew)
             {
-                phe->m_pStub = pstub;                
+                phe->m_pStub = pstub;
                 phe->m_offsetOfRawStub = (UINT16)offset;
 
                 AddStub(pRawStub, pstub);
@@ -147,7 +147,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
 
                 //Use the previously created stub
                 // This will DecRef the new stub for us.
-                pstub = phe->m_pStub; 
+                pstub = phe->m_pStub;
             }
             // IncRef so that caller has firm ownership of stub.
             pstub->IncRef();
@@ -188,7 +188,7 @@ unsigned int StubCacheBase::Hash(             // The key value.
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     const BYTE *pRawStub = (const BYTE *)pData;
 
     UINT cb = Length(pRawStub);
@@ -246,9 +246,9 @@ CClosedHashBase::ELEMENTSTATUS StubCacheBase::Status(           // The status of
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     Stub *pStub = ((STUBHASHENTRY*)pElement)->m_pStub;
-    
+
     if (pStub == NULL)
         return FREE;
     else if (pStub == (Stub*)(-1))
@@ -273,7 +273,7 @@ void StubCacheBase::SetStatus(
     CONTRACTL_END;
 
     STUBHASHENTRY *phe = (STUBHASHENTRY*)pElement;
-    
+
     switch (eStatus)
     {
         case FREE:    phe->m_pStub = NULL;   break;

@@ -479,7 +479,7 @@ MethodTableBuilder::bmtRTMethod::GetImplAttrs() const
 inline MethodTableBuilder::SLOT_INDEX
 MethodTableBuilder::bmtRTMethod::GetSlotIndex() const
 {
-    LIMITED_METHOD_CONTRACT; 
+    LIMITED_METHOD_CONTRACT;
     return GetMethodDesc()->GetSlot();
 }
 

@@ -101,7 +101,7 @@ PerfMap::PerfMap(int pid)
     {
         return;
     }
-    
+
     SString path;
     path.Printf("%Sperf-%d.map", &tempPath, pid);
 

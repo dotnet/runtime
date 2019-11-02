@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // debugshim.h
-// 
+//
 
 //
 //*****************************************************************************
@@ -33,7 +33,7 @@ public:
     }
 
     virtual ~CLRDebuggingImpl() {}
-    
+
 public:
     // ICLRDebugging methods:
     STDMETHOD(OpenVirtualProcess(
@@ -45,7 +45,7 @@ public:
         IUnknown ** ppProcess,
         CLR_DEBUGGING_VERSION * pVersion,
         CLR_DEBUGGING_PROCESS_FLAGS * pFlags));
-    
+
     STDMETHOD(CanUnloadNow(HMODULE hModule));
 
 	//IUnknown methods:

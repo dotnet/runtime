@@ -7,7 +7,7 @@
 
 //
 // Import is soft bound references to elements outside the current module
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPIMPORT_H__
@@ -21,7 +21,7 @@ class NibbleWriter;
 //
 // ZapImport is the import cell itself
 //
-// Every import cell is uniquely identified by its ZapNodeType and two handles 
+// Every import cell is uniquely identified by its ZapNodeType and two handles
 // (the second handle is optional and is often NULL)
 //
 // Actual implementations inherits from this abstract base class.
@@ -97,7 +97,7 @@ public:
     }
 
     virtual void Save(ZapWriter * pZapWriter);
-    
+
     //
     // Offset of the fixup cell within its section
     //
@@ -175,16 +175,16 @@ class ZapImportTable
         typedef ImportKey key_t;
 
         static FORCEINLINE key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return ImportKey(e->GetHandle(), e->GetHandle2(), e->GetType());
         }
         static FORCEINLINE BOOL Equals(key_t k1, key_t k2)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1.m_handle == k2.m_handle) && (k1.m_handle2 == k2.m_handle2) && (k1.m_type == k2.m_type);
         }
-        static FORCEINLINE count_t Hash(key_t k) 
+        static FORCEINLINE count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k.m_handle ^ ((count_t)(size_t)k.m_handle2 << 1) ^ k.m_type;
@@ -211,16 +211,16 @@ class ZapImportTable
         typedef CORINFO_MODULE_HANDLE key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return e->m_module;
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1 == k2);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k;
@@ -336,7 +336,7 @@ public:
     void EncodeClassInContext(CORINFO_MODULE_HANDLE context, CORINFO_CLASS_HANDLE handle, SigBuilder * pSigBuilder);
     void EncodeField(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_FIELD_HANDLE handle, SigBuilder * pSigBuilder,
             CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL, BOOL fEncodeUsingResolvedTokenSpecStreams = FALSE);
-    void EncodeMethod(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle, SigBuilder * pSigBuilder, 
+    void EncodeMethod(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle, SigBuilder * pSigBuilder,
             CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL, CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken = NULL,
             BOOL fEncodeUsingResolvedTokenSpecStreams = FALSE);
 
@@ -379,7 +379,7 @@ public:
     // This also encoded and places all the import blobs if they are not placed yet.
     void PlaceImport(ZapImport * pImport);
 
-    // Encodes list of fixups and places it into the image. 
+    // Encodes list of fixups and places it into the image.
     // This also places all the import cells if they are not placed yet.
     ZapFixupInfo * PlaceFixups(ZapImport ** pImports);
     void PlaceFixups(ZapImport ** pImports, NibbleWriter& writer);

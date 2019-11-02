@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // Helper.cpp
-// 
+//
 
 //
 // Implementation of some internal APIs from code:IMetaDataHelper and code:IMetaDataEmitHelper.
@@ -18,7 +18,7 @@
 
 //*****************************************************************************
 // translating signature from one scope to another scope
-// 
+//
 // Implements public API code:IMetaDataEmit::TranslateSigWithScope.
 // Implements internal API code:IMetaDataHelper::TranslateSigWithScope.
 //*****************************************************************************
@@ -54,9 +54,9 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     {
         // This function can cause new TypeRef being introduced.
         LOCKWRITE();
-        
+
         IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-        
+
         _ASSERTE(pvTranslatedSig && pcbTranslatedSig);
 
         if (pAssemImport)
@@ -107,7 +107,7 @@ ErrExit:
 
 //*****************************************************************************
 // Helper : Set ResolutionScope of a TypeRef
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::SetResolutionScopeHelper.
 //*****************************************************************************
 HRESULT RegMeta::SetResolutionScopeHelper(  // Return hresult.
@@ -116,12 +116,12 @@ HRESULT RegMeta::SetResolutionScopeHelper(  // Return hresult.
 {
     HRESULT      hr = NOERROR;
     TypeRefRec * pTypeRef;
-    
+
     LOCKWRITE();
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.GetTypeRefRecord(RidFromToken(tr), &pTypeRef));
     IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_TypeRef, TypeRefRec::COL_ResolutionScope, pTypeRef, rs));
-    
+
 ErrExit:
     return hr;
 } // RegMeta::SetResolutionScopeHelper
@@ -129,22 +129,22 @@ ErrExit:
 
 //*****************************************************************************
 // Helper : Set offset of a ManifestResource
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::SetManifestResourceOffsetHelper.
 //*****************************************************************************
-HRESULT 
+HRESULT
 RegMeta::SetManifestResourceOffsetHelper(
     mdManifestResource mr,          // [IN] The manifest token
     ULONG              ulOffset)    // [IN] new offset
 {
     HRESULT hr = NOERROR;
     ManifestResourceRec * pRec;
-    
+
     LOCKWRITE();
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.GetManifestResourceRecord(RidFromToken(mr), &pRec));
     pRec->SetOffset(ulOffset);
-    
+
 ErrExit:
     return hr;
 } // RegMeta::SetManifestResourceOffsetHelper
@@ -157,7 +157,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to define method semantics
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::DefineMethodSemanticsHelper.
 //*******************************************************************************
 HRESULT RegMeta::DefineMethodSemanticsHelper(
@@ -175,7 +175,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to set field layout
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::SetFieldLayoutHelper.
 //*******************************************************************************
 HRESULT RegMeta::SetFieldLayoutHelper(  // Return hresult.
@@ -213,7 +213,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to define event
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::DefineEventHelper.
 //*******************************************************************************
 STDMETHODIMP RegMeta::DefineEventHelper(    // Return hresult.
@@ -228,11 +228,11 @@ STDMETHODIMP RegMeta::DefineEventHelper(    // Return hresult.
         td, szEvent, dwEventFlags, tkEventType, pmdEvent));
 
     LOCKWRITE();
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-    
+
     hr = _DefineEvent(td, szEvent, dwEventFlags, tkEventType, pmdEvent);
-    
+
 ErrExit:
     return hr;
 } // RegMeta::DefineEvent
@@ -240,7 +240,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to add a declarative security blob to a class or method
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::AddDeclarativeSecurityHelper.
 //*******************************************************************************
 STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
@@ -258,10 +258,10 @@ STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
 
     LOG((LOGMD, "MD RegMeta::AddDeclarativeSecurityHelper(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         tk, dwAction, pValue, cbValue, pmdPermission));
-    
+
     LOCKWRITE();
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-    
+
     _ASSERTE(TypeFromToken(tk) == mdtTypeDef || TypeFromToken(tk) == mdtMethodDef || TypeFromToken(tk) == mdtAssembly);
 
     // Check for valid Action.
@@ -325,7 +325,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to set type's extends column
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::SetTypeParent.
 //*******************************************************************************
 HRESULT RegMeta::SetTypeParent(         // Return hresult.
@@ -347,7 +347,7 @@ ErrExit:
 
 //*******************************************************************************
 // helper to set type's extends column
-// 
+//
 // Implements internal API code:IMetaDataEmitHelper::AddInterfaceImpl.
 //*******************************************************************************
 HRESULT RegMeta::AddInterfaceImpl(      // Return hresult.
@@ -376,10 +376,10 @@ ErrExit:
 
 //*****************************************************************************
 // Helper : get metadata information
-// 
+//
 // Implements internal API code:IMetaDataHelper::GetMetadata.
 //*****************************************************************************
-STDMETHODIMP 
+STDMETHODIMP
 RegMeta::GetMetadata(
     ULONG   ulSelect,   // [IN] Selector.
     void ** ppData)     // [OUT] Put pointer to data here.
@@ -402,13 +402,13 @@ RegMeta::GetMetadata(
         *ppData = 0;
         break;
     }
-    
+
     return S_OK;
 } // RegMeta::GetMetadata
 
 //*******************************************************************************
 // helper to change MVID
-// 
+//
 // Implements internal API code:IMDInternalEmit::ChangeMvid.
 //*******************************************************************************
 HRESULT RegMeta::ChangeMvid(            // S_OK or error.
@@ -419,16 +419,16 @@ HRESULT RegMeta::ChangeMvid(            // S_OK or error.
 
 //*******************************************************************************
 // Helper to change MDUpdateMode value to updateMode.
-// 
+//
 // Implements internal API code:IMDInternalEmit::SetMDUpdateMode.
 //*******************************************************************************
-HRESULT 
+HRESULT
 RegMeta::SetMDUpdateMode(
-    ULONG   updateMode, 
+    ULONG   updateMode,
     ULONG * pPreviousUpdateMode)
 {
     HRESULT hr;
-    
+
     OptionValue optionValue;
     IfFailGo(m_pStgdb->m_MiniMd.GetOption(&optionValue));
     if (pPreviousUpdateMode != NULL)
@@ -437,7 +437,7 @@ RegMeta::SetMDUpdateMode(
     }
     optionValue.m_UpdateMode = updateMode;
     IfFailGo(m_pStgdb->m_MiniMd.SetOption(&optionValue));
-    
+
 ErrExit:
     return hr;
 } // RegMeta::SetMDUpdateMode

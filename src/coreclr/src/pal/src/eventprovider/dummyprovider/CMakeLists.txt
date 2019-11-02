@@ -43,4 +43,3 @@ set_target_properties(eventprovider PROPERTIES LINKER_LANGUAGE CXX)
 
 # Install the static eventprovider library
 install(TARGETS eventprovider DESTINATION lib)
-  

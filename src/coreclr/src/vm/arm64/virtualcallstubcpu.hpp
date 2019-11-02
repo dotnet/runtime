@@ -16,10 +16,10 @@ struct ARM64EncodeHelpers
      inline static DWORD ADR_PATCH(DWORD offset)
      {
         DWORD immLO = (offset & 0x03)<<29 ;
-  
+
         if (immLO ==0 )
             return  (offset<<3);
-        else 
+        else
             return immLO<<29 | (offset -immLO)<<3;
      }
 
@@ -47,7 +47,7 @@ private:
 public:
     static void InitializeStatic() { }
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken) 
+    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
     {
         // adr x9, _resolveWorkerTarget
         // ldp x10, x12, [x9]
@@ -64,12 +64,12 @@ public:
 
     LookupStub*    stub()        { LIMITED_METHOD_CONTRACT; return &_stub; }
     static LookupHolder*  FromLookupEntry(PCODE lookupEntry)
-    { 
+    {
         return (LookupHolder*) ( lookupEntry - offsetof(LookupHolder, _stub) - offsetof(LookupStub, _entryPoint)  );
     }
 };
 
-struct DispatchStub 
+struct DispatchStub
 {
     inline PCODE entryPoint()         { LIMITED_METHOD_CONTRACT; return (PCODE)&_entryPoint[0]; }
 
@@ -149,7 +149,7 @@ private:
     DispatchStub _stub;
 };
 
-struct ResolveStub 
+struct ResolveStub
 {
     inline PCODE failEntryPoint()            { LIMITED_METHOD_CONTRACT; return (PCODE)&_failEntryPoint[0]; }
     inline PCODE resolveEntryPoint()         { LIMITED_METHOD_CONTRACT; return (PCODE)&_resolveEntryPoint[0]; }
@@ -166,7 +166,7 @@ private:
     const static int resolveEntryPointLen = 17;
     const static int slowEntryPointLen = 4;
     const static int failEntryPointLen = 8;
-    
+
     DWORD _resolveEntryPoint[resolveEntryPointLen];
     DWORD _slowEntryPoint[slowEntryPointLen];
     DWORD _failEntryPoint[failEntryPointLen];
@@ -181,7 +181,7 @@ struct ResolveHolder
 {
     static void  InitializeStatic() { }
 
-    void Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget, 
+    void Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                     size_t dispatchToken, UINT32 hashedToken,
                     void * cacheAddr, INT32 * counterAddr)
     {
@@ -189,14 +189,14 @@ struct ResolveHolder
          DWORD offset;
          int br_nextEntry[2];
 /******** Rough Convention of used in this routine
-         ;;x9  hash scratch / current ResolveCacheElem 
+         ;;x9  hash scratch / current ResolveCacheElem
          ;;x10 base address of the data region
          ;;x11 indirection cell
-         ;;x12 MethodTable (from object ref in x0), out: this._token 
+         ;;x12 MethodTable (from object ref in x0), out: this._token
          ;;X13 temp
          ;;X15 temp, this._token
          ;;cachemask => [CALL_STUB_CACHE_MASK * sizeof(void*)]
-*********/         
+*********/
          // Called directly by JITTED code
          // ResolveStub._resolveEntryPoint(x0:Object*, x1 ...,r7, x11:IndirectionCellAndFlags)
          // {
@@ -216,19 +216,19 @@ struct ResolveHolder
          // }
          //
 
-#define Dataregionbase  _pCounter      
+#define Dataregionbase  _pCounter
 #define DATA_OFFSET(_fieldHigh) (DWORD)((offsetof(ResolveStub, _fieldHigh ) - offsetof(ResolveStub, Dataregionbase)) & 0xffffffff)
 #define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint[n]))) & 0xffffffff)
 
          //ldr x12, [x0,#Object.m_pMethTab ] ; methodTable from object in x0
          _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_DWORD; //0xF940000C
-         
+
          //  ;; Compute i = ((mt + mt >> 12) ^ this._hashedToken) & _cacheMask
-        
+
          //add x9, x12, x12 lsr #12
          _stub._resolveEntryPoint[n++] = 0x8B4C3189;
 
-         //;;adr x10, #Dataregionbase of ResolveStub 
+         //;;adr x10, #Dataregionbase of ResolveStub
          _stub._resolveEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
 
          //w13- this._hashedToken
@@ -251,7 +251,7 @@ struct ResolveHolder
          offset=DATA_OFFSET(_cacheAddress);
          _ASSERTE(offset >=0 && offset%8 == 0);
          _stub._resolveEntryPoint[n++] = 0xF940014D | offset<<7;
-         
+
          //ldr x9, [x13, x9] ;; x9 = e = this._cacheAddress + i
          _stub._resolveEntryPoint[n++] = 0xF86969A9  ;
 
@@ -267,14 +267,14 @@ struct ResolveHolder
          offset = offsetof(ResolveCacheElem, pMT) & 0x000001ff;
          _ASSERTE(offset >=0 && offset%8 == 0);
          _stub._resolveEntryPoint[n++] = 0xF940012D | offset<<7;
-         
+
          //cmp x12, x13
          _stub._resolveEntryPoint[n++] = 0xEB0D019F;
 
-         //;; bne nextEntry 
+         //;; bne nextEntry
          //place holder for the above instruction
          br_nextEntry[0]=n++;
-         
+
          //;; Check this._token == e.token
          //x15: this._token
          //
@@ -294,7 +294,7 @@ struct ResolveHolder
          offset = offsetof(ResolveCacheElem, target) & 0xffffffff;
          _ASSERTE(offset >=0 && offset%8 == 0);
          _stub._resolveEntryPoint[n++] = 0xF940012C | offset<<7;
-         
+
          // ;; Branch to e.target
          // br x12
          _stub._resolveEntryPoint[n++] = 0xD61F0180;
@@ -304,12 +304,12 @@ struct ResolveHolder
          //bne #offset
          for(auto i: br_nextEntry)
          {
-            _stub._resolveEntryPoint[i] = 0x54000001 | ((((n-i)*sizeof(DWORD))<<3) & 0x3FFFFFF);  
+            _stub._resolveEntryPoint[i] = 0x54000001 | ((((n-i)*sizeof(DWORD))<<3) & 0x3FFFFFF);
          }
 
          _ASSERTE(n == ResolveStub::resolveEntryPointLen);
          _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
-         
+
          // ResolveStub._slowEntryPoint(x0:MethodToken, [x1..x7 and x8], x11:IndirectionCellAndFlags)
          // {
          //     x12 = this._token;
@@ -322,21 +322,21 @@ struct ResolveHolder
          // ;;slowEntryPoint:
          // ;;fall through to the slow case
 
-         //;;adr x10, #Dataregionbase 
+         //;;adr x10, #Dataregionbase
          _stub._slowEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
 
          //ldr x12, [x10 , DATA_OFFSET(_token)]
          offset=DATA_OFFSET(_token);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<7); 
-         
+         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<7);
+
          //
          //ldr x13, [x10 , DATA_OFFSET(_resolveWorkerTarget)]
          offset=DATA_OFFSET(_resolveWorkerTarget);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF940014d | (offset<<7); 
-         
-         //  br x13 
+         _stub._slowEntryPoint[n++] = 0xF940014d | (offset<<7);
+
+         //  br x13
          _stub._slowEntryPoint[n++] = 0xD61F01A0;
 
          _ASSERTE(n == ResolveStub::slowEntryPointLen);
@@ -351,14 +351,14 @@ struct ResolveHolder
          n = 0;
 
          //;;failEntryPoint
-         //;;adr x10, #Dataregionbase 
+         //;;adr x10, #Dataregionbase
          _stub._failEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
-         
+
          //
          //ldr x13, [x10]
          offset=DATA_OFFSET(_pCounter);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._failEntryPoint[n++] = 0xF940014D | offset<<7; 
+         _stub._failEntryPoint[n++] = 0xF940014D | offset<<7;
 
          //ldr w9, [x13]
          _stub._failEntryPoint[n++] = 0xB94001A9;
@@ -370,7 +370,7 @@ struct ResolveHolder
          //;;bge resolveEntryPoint
          offset = PC_REL_OFFSET(_resolveEntryPoint);
          _stub._failEntryPoint[n++] = 0x5400000A | ((offset <<3)& 0x00FFFFF0) ;
-         
+
          // ;; orr x11, x11, SDF_ResolveBackPatch
          // orr x11, x11, #1
          _ASSERTE(SDF_ResolveBackPatch == 0x1);
@@ -379,22 +379,22 @@ struct ResolveHolder
          //;;b resolveEntryPoint:
          offset = PC_REL_OFFSET(_resolveEntryPoint);
          _stub._failEntryPoint[n++] = 0x14000000 | ((offset>>2) & 0x3FFFFFF);
-         
+
          _ASSERTE(n == ResolveStub::failEntryPointLen);
           _stub._pCounter = counterAddr;
          _stub._hashedToken         = hashedToken << LOG2_PTRSIZE;
          _stub._cacheAddress        = (size_t) cacheAddr;
          _stub._token               = dispatchToken;
          _stub._resolveWorkerTarget = resolveWorkerTarget;
- 
+
          _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
          _ASSERTE(patcherTarget == NULL);
 
 #undef DATA_OFFSET
-#undef PC_REL_OFFSET 
+#undef PC_REL_OFFSET
 #undef Dataregionbase
     }
- 
+
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT; return &_stub; }
 
     static ResolveHolder*  FromFailEntry(PCODE failEntry);
@@ -479,7 +479,7 @@ struct VTableCallHolder
     static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
 
 private:
-    // VTableCallStub follows here. It is dynamically sized on allocation because it could 
+    // VTableCallStub follows here. It is dynamically sized on allocation because it could
     // use short/long instruction sizes for LDR, depending on the slot value.
 };
 
@@ -488,14 +488,14 @@ private:
 
 #ifndef DACCESS_COMPILE
 ResolveHolder* ResolveHolder::FromFailEntry(PCODE failEntry)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     ResolveHolder* resolveHolder = (ResolveHolder*) ( failEntry - offsetof(ResolveHolder, _stub) - offsetof(ResolveStub, _failEntryPoint) );
     return resolveHolder;
 }
 
 ResolveHolder* ResolveHolder::FromResolveEntry(PCODE resolveEntry)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     ResolveHolder* resolveHolder = (ResolveHolder*) ( resolveEntry - offsetof(ResolveHolder, _stub) - offsetof(ResolveStub, _resolveEntryPoint) );
     return resolveHolder;
@@ -517,7 +517,7 @@ void VTableCallHolder::Initialize(unsigned slot)
     // ldr x9,[x0] : x9 = MethodTable pointer
     *(UINT32*)p = 0xF9400009; p += 4;
 
-    // moving offset value wrt PC. Currently points to first indirection offset data. 
+    // moving offset value wrt PC. Currently points to first indirection offset data.
     uint dataOffset = codeSize - indirectionsDataSize - 4;
 
     if (offsetOfIndirection >= 0x8000)
@@ -562,7 +562,7 @@ void VTableCallHolder::Initialize(unsigned slot)
     }
     if (offsetAfterIndirection >= 0x8000)
     {
-        *(UINT32*)p = (UINT32)offsetAfterIndirection; 
+        *(UINT32*)p = (UINT32)offsetAfterIndirection;
         p += 4;
     }
 
@@ -618,7 +618,7 @@ VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE s
     {
         stubKind = SK_UNKNOWN;
     }
-    EX_END_CATCH(SwallowAllExceptions);        
+    EX_END_CATCH(SwallowAllExceptions);
 
     return stubKind;
 

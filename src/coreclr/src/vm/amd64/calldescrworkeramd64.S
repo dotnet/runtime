@@ -18,7 +18,7 @@ NESTED_ENTRY FastCallFinalizeWorker, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov     rbp, rsp
         END_PROLOGUE
-        
+
         //
         // RDI: already contains obj*
         // RSI: address of finalizer method to call
@@ -30,7 +30,7 @@ NESTED_ENTRY FastCallFinalizeWorker, _TEXT, NoHandler
         // !!!!!!!!!
         call    rsi
         xor     rax, rax
-        
+
         // epilog
         pop_nonvol_reg rbp
         ret
@@ -44,7 +44,7 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov     rbp, rsp
         push_nonvol_reg rbx
-        alloc_stack 8                   // ensure proper alignment of the rsp 
+        alloc_stack 8                   // ensure proper alignment of the rsp
         set_cfa_register rbp, (2*8)
         END_PROLOGUE
 
@@ -72,8 +72,8 @@ LOCAL_LABEL(NoStackArguments):
         // All argument registers are loaded regardless of the actual number
         // of arguments.
 
-        mov     rax, [rbx + CallDescrData__pArgumentRegisters] 
-        mov     rdi, [rax + 0] 
+        mov     rax, [rbx + CallDescrData__pArgumentRegisters]
+        mov     rdi, [rax + 0]
         mov     rsi, [rax + 8]
         mov     rdx, [rax + 16]
         mov     rcx, [rax + 24]
@@ -83,7 +83,7 @@ LOCAL_LABEL(NoStackArguments):
         // All float argument registers are loaded regardless of the actual number
         // of arguments.
 
-        mov     rax, [rbx + CallDescrData__pFloatArgumentRegisters] 
+        mov     rax, [rbx + CallDescrData__pFloatArgumentRegisters]
         and     rax, rax
         jz      LOCAL_LABEL(NoFloatArguments)
         movsd   xmm0, [rax + 0]
@@ -102,7 +102,7 @@ LOCAL_LABEL(NoFloatArguments):
         mov     ecx, dword ptr [rbx + CallDescrData__fpReturnSize]
         test    ecx, ecx
         jz      LOCAL_LABEL(ReturnsInt)
-        
+
         cmp     ecx, 4
         je      LOCAL_LABEL(ReturnsFloat)
         cmp     ecx, 8
@@ -162,4 +162,4 @@ LOCAL_LABEL(ReturnsDouble):
 
 NESTED_END CallDescrWorkerInternal, _TEXT
 
-        
+

@@ -4,7 +4,7 @@
 
 // ===========================================================================
 // File: StrongName.cpp
-// 
+//
 // Wrappers for signing and hashing functions needed to implement strong names
 // ===========================================================================
 
@@ -218,7 +218,7 @@ VOID SetStrongNameErrorInfo(DWORD dwStatus)
 SNAPI_(DWORD) StrongNameErrorInfo(VOID)
 {
     HRESULT hr = E_FAIL;
-    
+
     BEGIN_ENTRYPOINT_NOTHROW;
 
 #ifndef DACCESS_COMPILE
@@ -239,7 +239,7 @@ SNAPI_(DWORD) StrongNameErrorInfo(VOID)
 // Create a strong name token from a public key blob.
 SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
-                                   BYTE   **ppbStrongNameToken,     // [out] strong name token 
+                                   BYTE   **ppbStrongNameToken,     // [out] strong name token
                                    ULONG   *pcbStrongNameToken)
 {
     BOOLEAN         retVal = FALSE;

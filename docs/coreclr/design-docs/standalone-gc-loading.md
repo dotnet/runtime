@@ -118,18 +118,18 @@ extern "C" void GC_VersionInfo(
 The EE will call `GetProcAddress` on the library, looking for `GC_VersionInfo`. It is a fatal error if this symbol
 is not found.
 
-Next, the EE will call this function and receive back a `VersionInfo` structure. Each EE capable of loading 
-standalone GCs has a major version number and minor version number that is obtained from the version of 
-`gcinterface.h` that the EE built against. It will compare these numbers against the numbers it receives from 
+Next, the EE will call this function and receive back a `VersionInfo` structure. Each EE capable of loading
+standalone GCs has a major version number and minor version number that is obtained from the version of
+`gcinterface.h` that the EE built against. It will compare these numbers against the numbers it receives from
 `GC_VersionInfo` in this way:
 
-* If the EE's MajorVersion is not equal to the MajorVersion obtained from the candidate GC, reject. Major version    changes occur when there are breaking changes in the EE/GC interface and it is not possible to interoperate with 
-  incompatible interfaces. A change is considered breaking if it alters the semantics of an existing method or if 
+* If the EE's MajorVersion is not equal to the MajorVersion obtained from the candidate GC, reject. Major version    changes occur when there are breaking changes in the EE/GC interface and it is not possible to interoperate with
+  incompatible interfaces. A change is considered breaking if it alters the semantics of an existing method or if
   it deletes or renames existing methods so that VTable layouts are not compatible.
 * If the EE's MinorVersion is greater than the MinorVersion obtained from the candidate GC, accept
   (Forward compatability). The EE must take care not to call any new APIs that are not present in the version of
   the candidate GC.
-* Otherwise, accept (Backward compatibility). It is perfectly safe to use a GC whose MinorVersion exceeds the EE's 
+* Otherwise, accept (Backward compatibility). It is perfectly safe to use a GC whose MinorVersion exceeds the EE's
   MinorVersion.
 
 The build version and name are not considered and are provided only for display/debug purposes.

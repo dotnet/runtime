@@ -1,7 +1,7 @@
 ﻿# `AssemblyLoadContext` unloadability
 ## Goals
 * Provide a building block for unloadable plug-ins
-* Users can load an assembly and its dependencies into an unloadable `AssemblyLoadContext`. 
+* Users can load an assembly and its dependencies into an unloadable `AssemblyLoadContext`.
 * There can be multiple unloadable `AssemblyLoadContext` instances coexisting
 * Users can unload the `AssemblyLoadContext` when there are no outside hard references to the types and instance of types from the assemblies loaded into the context and the assemblies themselves.
 * The unload can be initiated eagerly using explicit `Unload` method or it can happen after all references to the `AssemblyLoadContext` and all the assemblies in it are gone.
@@ -21,7 +21,7 @@ Based on various discussions and feedback on github, the following general scena
 A couple of real-world scenarios were analyzed to assess feasibility of the `AssemblyLoadContext` unloading as a replacement of `AppDomain` unloading and also for possible new usages of the `AssemblyLoadContext` unloading.
 ### Roslyn
 Roslyn has historically used AppDomains for executing different tests that can have assemblies with the same names but different identity or even the same identity, but different contents. `AppDomain` per test was very slow. So, to speed it up, they made them reusable based on the assemblies loaded into them.
-* In .NET Core, they use `AssemblyLoadContext` without unloading, one context per test works fine. 
+* In .NET Core, they use `AssemblyLoadContext` without unloading, one context per test works fine.
 
 In future, the ability to use unloadable plugins in the compiler server would be great. Analyzers execute user code in the server, which is not good without the isolation. Ideally, whenever the compilation is executed with analyzers, it would run inside `AssemblyLoadContext`. The context would get unloaded after the build.
 ### ASP.NET Core
@@ -33,8 +33,8 @@ However, they use two tool that could potentially benefit from the unloadability
 * Compilation server for Razor pages (on demand .cshtml files compilation to .dll). (https://github.com/aspnet/Razor/blob/master/src/Microsoft.AspNetCore.Razor.Tools/CompilerHost.cs)
 ### LINQPad
 LINQPad (https://www.linqpad.net) is a very popular third-party tool for designing LINQ queries against various data sources. It uses AppDomains and their unloading mechanism heavily for the following purposes:
-* Isolating drivers (components to access data sources). Drivers can be loaded and unloaded dynamically. There is no graceful shutdown before unloading, but the LINQPad author said it would not be a problem to add a shutdown method to enable it. 
-* Optional lightweight isolation of query server (executes a query in isolation). The default query servers are isolated using separate processes, but it can be optionally switched to use AppDomains. The LINQPad author believes that only a few users would use that, likely on resource constrained VMs. 
+* Isolating drivers (components to access data sources). Drivers can be loaded and unloaded dynamically. There is no graceful shutdown before unloading, but the LINQPad author said it would not be a problem to add a shutdown method to enable it.
+* Optional lightweight isolation of query server (executes a query in isolation). The default query servers are isolated using separate processes, but it can be optionally switched to use AppDomains. The LINQPad author believes that only a few users would use that, likely on resource constrained VMs.
 * Isolated loading of assemblies and their dependencies for introspection.
 * Isolation of building a data context schema (one `AppDomain` per-driver-per-schema).
 ### Prism
@@ -52,7 +52,7 @@ From the API surface perspective, there are only couple of new functions added:
 
 The design of the feature builds on top of the existing collectible types. The isolation containter for this feature is provided by `AssemblyLoadContext`.  All assemblies loaded into an unloadable `AssemblyLoadContext` are marked as collectible.
 
-For each unloadable `AssemblyLoadContext`, an `AssemblyLoaderAllocator` is created. It is used to allocate all context specific memory related to the assemblies loaded into the context. The existing collectible types support ensures this behavior. 
+For each unloadable `AssemblyLoadContext`, an `AssemblyLoaderAllocator` is created. It is used to allocate all context specific memory related to the assemblies loaded into the context. The existing collectible types support ensures this behavior.
 
 The `AssemblyLoaderAllocator` also keeps a list of `DomainAssembly` instances for assemblies loaded into the related `AssemblyLoadContext` so that they can be found and destroyed during the unload.
 
@@ -68,7 +68,7 @@ Enabling support for assemblies with classes containing interop functions is as 
 #### Support for types with thread static members
 The thread statics that are of reference types or contain references are stored in managed `object[]` arrays. These arrays are being held alive by strong handles stored in the respective non-managed thread objects. That makes them alive for the whole lifetime of the thread. This is not suitable for thread statics on collectible classes since the thread static instances would be held alive for the whole life of the thread and the `AssemblyLoadContext` would not be able to unload.
 
-To support thread statics on collectible types, their lifetimes need to be bound to both the thread and the `LoaderAllocator` lifetimes. The solution is to use a similar way to what regular statics do. The managed `object[]` arrays that store the references to thread locals of collectible classes are held alive by handles allocated from the respective `LoaderAllocator` instead of global strong handles. That enables them to be collected during the unload. 
+To support thread statics on collectible types, their lifetimes need to be bound to both the thread and the `LoaderAllocator` lifetimes. The solution is to use a similar way to what regular statics do. The managed `object[]` arrays that store the references to thread locals of collectible classes are held alive by handles allocated from the respective `LoaderAllocator` instead of global strong handles. That enables them to be collected during the unload.
 
 When a thread terminates, all these handles are freed. This requires a modification of handle allocator in the `LoaderAllocator`, since the existing implementation cannot free individual handles. We need to be able to do that, otherwise the handle table would explode e.g. in case when threads are created and destroyed continuously.
 
@@ -90,7 +90,7 @@ If we decided to add support for it, we could do it as follows. The fields with 
 
 For collectible types, a new handle table can be added to `LoaderAllocator`. This handle table would be scanned during GC in a special way and all the objects the handles point to will be reported as pinned. The special scanning would be done in `Module::EnumRegularStaticGCRefs`. To pin the objects, the `promote_func` needs to be passed `GC_CALL_PINNED` in the third argument.
 ## AssemblyLoadContext unloading process
-For better understanding of the unloading process, it is important to understand relations between several components that play role in the lifetime management. The picture below shows these components and the ways they reference each other. 
+For better understanding of the unloading process, it is important to understand relations between several components that play role in the lifetime management. The picture below shows these components and the ways they reference each other.
 The green marked relations and blocks are the new ones that were added to enable unloadable `AssemblyLoadContext`. The black ones were already present before.
 The dashed lines represent indirect links from MethodTables of the objects to the `LoaderAllocator`.
 
@@ -108,6 +108,6 @@ This phase is initiated after all instances of types from assemblies loaded into
 * Now GC can collect the `LoaderAllocatorScout` too, as the `LoaderAllocator` was holding the only reference to it. The `LoaderAllocatorScout` has a finalizer and when it is executed, it calls the native `LoaderAllocator::Destroy` method.
 * This method decrements reference count of all the `LoaderAllocators` that reference this `LoaderAllocator` and then the reference count of this `LoaderAllocator` itself.
 * If it was not the last reference, the native `AssemblyLoaderAllocator` must stay alive until there are no references to it, so there is nothing else to be done now. It will be destroyed later in `LoaderAllocator::GCLoaderAllocators` after the last reference goes away.
-* If we have released the last reference, the `LoaderAllocator::GCLoaderAllocators` is executed. This function finds all collectible LoaderAllocators that are not alive anymore and cleans up all domain assemblies in them. The cleanup removes each `DomainAssembly` from the `AppDomain` and also from the binding cache, it notifies debugger and finally destroys the `DomainAssembly`. 
+* If we have released the last reference, the `LoaderAllocator::GCLoaderAllocators` is executed. This function finds all collectible LoaderAllocators that are not alive anymore and cleans up all domain assemblies in them. The cleanup removes each `DomainAssembly` from the `AppDomain` and also from the binding cache, it notifies debugger and finally destroys the `DomainAssembly`.
 * Strong handle to the managed `AssemblyLoadContext` in each of these LoaderAllocators is now destroyed. That enables these related AssemblyLoadContexts to be collected by GC.
 * Finally, these LoaderAllocators are registered for cleanup in the `AppDomain`. Their actual destruction happens on the finalizer thread in `Thread::DoExtraWorkForFinalizer`. When a `LoaderAllocator` is destroyed, the related `CLRPrivBinderAssemblyLoadContext` is destroyed too.

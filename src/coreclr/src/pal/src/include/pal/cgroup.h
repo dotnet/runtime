@@ -11,9 +11,9 @@ Module Name:
     include/pal/cgroup.h
 
 Abstract:
-    
+
     Header file for the CGroup related functions.
-    
+
 
 
 --*/

@@ -5,7 +5,7 @@
 /*============================================================
 **
 ** Header:  LoaderAllocator.hpp
-** 
+**
 
 **
 ** Purpose: Implements collection of loader heaps
@@ -144,8 +144,8 @@ class LoaderAllocator
 {
     VPTR_BASE_VTABLE_CLASS(LoaderAllocator)
     VPTR_UNIQUE(VPTRU_LoaderAllocator)
-protected:    
-   
+protected:
+
     //****************************************************************************************
     // #LoaderAllocator Heaps
     // Heaps for allocating data that persists for the life of the AppDomain
@@ -177,7 +177,7 @@ protected:
     int                 m_nGCCount;
     bool                m_IsCollectible;
 
-    // Pre-allocated blocks of heap for collectible assemblies. Will be set to NULL as soon as it is 
+    // Pre-allocated blocks of heap for collectible assemblies. Will be set to NULL as soon as it is
     // used. See code in GetVSDHeapInitialBlock and GetCodeHeapInitialBlock
     BYTE *              m_pVSDHeapInitialAlloc;
     BYTE *              m_pCodeHeapInitialAlloc;
@@ -234,15 +234,15 @@ protected:
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
     Volatile<UINT32>   m_cReferences;
-    // This will be set by code:LoaderAllocator::Destroy (from managed scout finalizer) and signalizes that 
+    // This will be set by code:LoaderAllocator::Destroy (from managed scout finalizer) and signalizes that
     // the assembly was collected
     DomainAssembly * m_pFirstDomainAssemblyFromSameALCToDelete;
-    
+
     BOOL CheckAddReference_Unlocked(LoaderAllocator *pOtherLA);
-    
+
     static UINT64 cLoaderAllocatorsCreated;
     UINT64 m_nLoaderAllocator;
-    
+
     struct FailedTypeInitCleanupListItem
     {
         SLink m_Link;
@@ -260,7 +260,7 @@ private:
 #ifdef FEATURE_COMINTEROP
     // The wrapper cache for this loader allocator - it has its own CCacheLineAllocator on a per loader allocator basis
     // to allow the loader allocator to go away and eventually kill the memory when all refs are gone
-    
+
     VolatilePtr<ComCallWrapperCache> m_pComCallWrapperCache;
     // Used for synchronizing creation of the m_pComCallWrapperCache
     CrstExplicitInit m_ComCallWrapperCrst;
@@ -289,14 +289,14 @@ public:
     // It expects to be called only from Terminate.
     void CleanupFailedTypeInit();
 #endif //!DACCESS_COMPILE
-    
-    // Collect unreferenced assemblies, remove them from the assembly list and return their loader allocator 
+
+    // Collect unreferenced assemblies, remove them from the assembly list and return their loader allocator
     // list.
     static LoaderAllocator * GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain);
-    
+
 public:
 
-    // 
+    //
     // The scheme for ensuring that LoaderAllocators are destructed correctly is substantially
     // complicated by the requirement that LoaderAllocators that are eligible for destruction
     // must be destroyed as a group due to issues where there may be ordering issues in destruction
@@ -310,61 +310,61 @@ public:
     // alive. LCG methods cannot be referenced by LoaderAllocators, so they do not need to participate
     // in the garbage collection scheme except by using AddRef/Release to adjust the root set of this
     // garbage collector.
-    // 
-    
+    //
+
     //#AssemblyPhases
     // The phases of unloadable assembly are:
-    // 
+    //
     // 1. Managed LoaderAllocator is alive.
     //    - Assembly is visible to managed world, the managed scout is alive and was not finalized yet.
-    //      Note that the fact that the managed scout is in the finalizer queue is not important as it can 
+    //      Note that the fact that the managed scout is in the finalizer queue is not important as it can
     //      (and in certain cases has to) ressurect itself.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... TRUE
     //        code:DomainAssembly::GetExposedAssemblyObject ... non-NULL (may need to allocate GC object)
-    //        
+    //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
-    // 
+    //
     // 2. Managed scout is alive, managed LoaderAllocator is collected.
-    //    - All managed object related to this assembly (types, their instances, Assembly/AssemblyBuilder) 
-    //      are dead and/or about to disappear and cannot be recreated anymore. We are just waiting for the 
+    //    - All managed object related to this assembly (types, their instances, Assembly/AssemblyBuilder)
+    //      are dead and/or about to disappear and cannot be recreated anymore. We are just waiting for the
     //      managed scout to run its finalizer.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... TRUE
     //        code:DomainAssembly::GetExposedAssemblyObject ... NULL (change from phase #1)
-    //        
+    //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
-    // 
+    //
     // 3. Native LoaderAllocator is alive, managed scout is collected.
     //    - The native LoaderAllocator can be kept alive via native reference with code:AddRef call, e.g.:
-    //        * Reference from LCG method, 
-    //        * Reference recieved from assembly iterator code:AppDomain::AssemblyIterator::Next and/or 
+    //        * Reference from LCG method,
+    //        * Reference recieved from assembly iterator code:AppDomain::AssemblyIterator::Next and/or
     //          held by code:CollectibleAssemblyHolder.
-    //    - Other LoaderAllocator can have this LoaderAllocator in its reference list 
+    //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
-    //    - LoaderAllocator cannot ever go back to phase #1 or #2, but it can skip this phase if there are 
+    //    - LoaderAllocator cannot ever go back to phase #1 or #2, but it can skip this phase if there are
     //      not any LCG method references keeping it alive at the time of manged scout finalization.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... FALSE (change from phase #2)
     //        code:DomainAssembly::GetExposedAssemblyObject ... NULL
-    //        
+    //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
-    // 
+    //
     // 4. LoaderAllocator is dead.
-    //    - The managed scout was collected. No one holds a native reference with code:AddRef to this 
+    //    - The managed scout was collected. No one holds a native reference with code:AddRef to this
     //      LoaderAllocator.
-    //    - Other LoaderAllocator can have this LoaderAllocator in its reference list 
+    //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
     //    - LoaderAllocator cannot ever become alive again (i.e. go back to phase #3, #2 or #1).
     //    Detection:
     //        code:IsAlive ... FALSE (change from phase #3, #2 and #1)
-    //        
+    //
     //        code:AddReferenceIfAlive ... FALSE (change from phase #3, #2 and #1)
-    // 
-    
+    //
+
     void AddReference();
     // Adds reference if the native object is alive  - code:#AssemblyPhases.
     // Returns TRUE if the reference was added.
@@ -377,10 +377,10 @@ public:
     {
         return (m_pFirstDomainAssemblyFromSameALCToDelete == NULL);
     }
-    
+
     // Collect unreferenced assemblies, delete all their remaining resources.
     static void GCLoaderAllocators(LoaderAllocator* firstLoaderAllocator);
-    
+
     UINT64 GetCreationNumber() { LIMITED_METHOD_DAC_CONTRACT; return m_nLoaderAllocator; }
 
     // Ensure this LoaderAllocator has a reference to another LoaderAllocator
@@ -621,7 +621,7 @@ class GlobalLoaderAllocator : public LoaderAllocator
 
 protected:
     LoaderAllocatorID m_Id;
-    
+
 public:
     void Init(BaseDomain *pDomain);
     GlobalLoaderAllocator() : m_Id(LAT_Global, (void*)1) { LIMITED_METHOD_CONTRACT;};
@@ -641,7 +641,7 @@ class AssemblyLoaderAllocator : public LoaderAllocator
 protected:
     LoaderAllocatorID  m_Id;
     ShuffleThunkCache* m_pShuffleThunkCache;
-public:    
+public:
     virtual LoaderAllocatorID* Id();
     AssemblyLoaderAllocator() : m_Id(LAT_Assembly), m_pShuffleThunkCache(NULL)
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -655,8 +655,8 @@ public:
 
     void AddDomainAssembly(DomainAssembly *pDomainAssembly)
     {
-        WRAPPER_NO_CONTRACT; 
-        m_Id.AddDomainAssembly(pDomainAssembly); 
+        WRAPPER_NO_CONTRACT;
+        m_Id.AddDomainAssembly(pDomainAssembly);
     }
 
     ShuffleThunkCache* GetShuffleThunkCache()
@@ -678,7 +678,7 @@ public:
 
 private:
     struct HandleCleanupListItem
-    {    
+    {
         SLink m_Link;
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)
@@ -687,7 +687,7 @@ private:
         {
         }
     };
-    
+
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     CLRPrivBinderAssemblyLoadContext* m_binderToRelease;

@@ -21,7 +21,7 @@ inline PTR_Assembly ClassLoader::GetAssembly()
     return m_pAssembly;
 }
 
-inline PTR_Module ClassLoader::ComputeLoaderModuleForFunctionPointer(TypeHandle* pRetAndArgTypes, DWORD NumArgsPlusRetType) 
+inline PTR_Module ClassLoader::ComputeLoaderModuleForFunctionPointer(TypeHandle* pRetAndArgTypes, DWORD NumArgsPlusRetType)
 {
     CONTRACTL
     {
@@ -51,7 +51,7 @@ inline PTR_Module ClassLoader::ComputeLoaderModuleForParamType(TypeHandle paramT
     //
     // Call GetLoaderModule directly instead of ComputeLoaderModuleWorker to avoid exponential recursion for collectible types
     //
-    // It is safe to do it even during NGen because of we do not create duplicate copies of arrays and other param types 
+    // It is safe to do it even during NGen because of we do not create duplicate copies of arrays and other param types
     // (see code:CEEPreloader::TriageTypeForZap).
     //
     return paramType.GetLoaderModule();
@@ -63,10 +63,10 @@ inline void AccessCheckOptions::Initialize(
     AccessCheckType      accessCheckType,
     BOOL                 throwIfTargetIsInaccessible,
     MethodTable *        pTargetMT,
-    MethodDesc *         pTargetMethod, 
+    MethodDesc *         pTargetMethod,
     FieldDesc *          pTargetField)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -74,11 +74,11 @@ inline void AccessCheckOptions::Initialize(
         // At most one of these can be non-NULL. They can all be NULL if:
         //   1. we are doing a normal accessibility check, or
         //   2. we are not going to throw an exception if the accessibility check fails
-        PRECONDITION(accessCheckType == kNormalAccessibilityChecks || 
+        PRECONDITION(accessCheckType == kNormalAccessibilityChecks ||
                      !throwIfTargetIsInaccessible ||
                      ((pTargetMT ? 1 : 0) + (pTargetMethod ? 1 : 0) + (pTargetField ? 1 : 0)) == 1);
         // m_pAccessContext can only be set for kRestrictedMemberAccess
-        PRECONDITION(m_pAccessContext == NULL || 
+        PRECONDITION(m_pAccessContext == NULL ||
                      accessCheckType == AccessCheckOptions::kRestrictedMemberAccess);
     }
     CONTRACTL_END;
@@ -86,7 +86,7 @@ inline void AccessCheckOptions::Initialize(
     m_accessCheckType = accessCheckType;
     m_fThrowIfTargetIsInaccessible = throwIfTargetIsInaccessible;
     m_pTargetMT = pTargetMT;
-    m_pTargetMethod = pTargetMethod; 
+    m_pTargetMethod = pTargetMethod;
     m_pTargetField = pTargetField;
 }
 
@@ -96,7 +96,7 @@ inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
     DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodTable *        pTargetMT) : 
+    MethodTable *        pTargetMT) :
     m_pAccessContext(pAccessContext)
 {
     WRAPPER_NO_CONTRACT;
@@ -105,7 +105,7 @@ inline AccessCheckOptions::AccessCheckOptions(
         accessCheckType,
         throwIfTargetIsInaccessible,
         pTargetMT,
-        NULL, 
+        NULL,
         NULL);
 }
 
@@ -122,7 +122,7 @@ inline AccessCheckOptions::AccessCheckOptions(
         accessCheckType,
         throwIfTargetIsInaccessible,
         NULL,
-        pTargetMethod, 
+        pTargetMethod,
         NULL);
 }
 
@@ -139,7 +139,7 @@ inline AccessCheckOptions::AccessCheckOptions(
         accessCheckType,
         throwIfTargetIsInaccessible,
         NULL,
-        NULL, 
+        NULL,
         pTargetField);
 }
 

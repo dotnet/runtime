@@ -44,7 +44,7 @@ SHash<TRAITS>::~SHash()
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::count_t SHash<TRAITS>::GetCount() const 
+typename SHash<TRAITS>::count_t SHash<TRAITS>::GetCount() const
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -94,11 +94,11 @@ void SHash<TRAITS>::Add(const element_t & element)
         POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
     }
     CONTRACT_END;
-    
+
     CheckGrowth();
-    
+
     Add_GrowthChecked(element);
-    
+
     RETURN;
 }
 
@@ -113,11 +113,11 @@ void SHash<TRAITS>::Add_GrowthChecked(const element_t & element)
         POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
     }
     CONTRACT_END;
-    
+
     if (Add(m_table, m_tableSize, element))
         m_tableOccupied++;
     m_tableCount++;
-    
+
     RETURN;
 }
 
@@ -298,12 +298,12 @@ BOOL SHash<TRAITS>::CheckGrowth()
         Grow();
         RETURN TRUE;
     }
-        
+
     RETURN FALSE;
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::element_t * 
+typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::CheckGrowth_OnlyAllocateNewTable(count_t * pcNewSize)
 {
     CONTRACT(element_t *)
@@ -313,12 +313,12 @@ SHash<TRAITS>::CheckGrowth_OnlyAllocateNewTable(count_t * pcNewSize)
         INSTANCE_CHECK;
     }
     CONTRACT_END;
-    
+
     if (m_tableOccupied == m_tableMax)
     {
         RETURN Grow_OnlyAllocateNewTable(pcNewSize);
     }
-    
+
     RETURN NULL;
 }
 
@@ -332,17 +332,17 @@ void SHash<TRAITS>::Grow()
         INSTANCE_CHECK;
     }
     CONTRACT_END;
-    
+
     count_t     newSize;
     element_t * newTable = Grow_OnlyAllocateNewTable(&newSize);
     element_t * oldTable = ReplaceTable(newTable, newSize);
     DeleteOldTable(oldTable);
-    
+
     RETURN;
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::element_t * 
+typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::Grow_OnlyAllocateNewTable(count_t * pcNewSize)
 {
     CONTRACT(element_t *)
@@ -352,17 +352,17 @@ SHash<TRAITS>::Grow_OnlyAllocateNewTable(count_t * pcNewSize)
         INSTANCE_CHECK;
     }
     CONTRACT_END;
-    
-    count_t newSize = (count_t) (m_tableCount 
+
+    count_t newSize = (count_t) (m_tableCount
                                  * TRAITS::s_growth_factor_numerator / TRAITS::s_growth_factor_denominator
                                  * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator);
     if (newSize < TRAITS::s_minimum_allocation)
         newSize = TRAITS::s_minimum_allocation;
-    
+
     // handle potential overflow
     if (newSize < m_tableCount)
         ThrowOutOfMemory();
-    
+
     RETURN AllocateNewTable(newSize, pcNewSize);
 }
 
@@ -376,12 +376,12 @@ void SHash<TRAITS>::Reallocate(count_t requestedSize)
         INSTANCE_CHECK;
     }
     CONTRACT_END;
-    
+
     count_t newTableSize;
     element_t * newTable = AllocateNewTable(requestedSize, &newTableSize);
     element_t * oldTable = ReplaceTable(newTable, newTableSize);
     DeleteOldTable(oldTable);
-    
+
     RETURN;
 }
 
@@ -402,7 +402,7 @@ void SHash<TRAITS>::ForEach(Functor &functor)
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::element_t * 
+typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize)
 {
     CONTRACT(element_t *)
@@ -410,7 +410,7 @@ SHash<TRAITS>::AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize)
         THROWS;
         GC_NOTRIGGER;
         INSTANCE_CHECK;
-        PRECONDITION(requestedSize >= 
+        PRECONDITION(requestedSize >=
                      (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
     }
     CONTRACT_END;
@@ -428,12 +428,12 @@ SHash<TRAITS>::AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize)
         *p = TRAITS::Null();
         p++;
     }
-    
+
     RETURN newTable;
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::element_t * 
+typename SHash<TRAITS>::element_t *
 SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
 {
     CONTRACT(element_t *)
@@ -441,13 +441,13 @@ SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
         NOTHROW_UNLESS_TRAITS_THROWS;
         GC_NOTRIGGER;
         INSTANCE_CHECK;
-        PRECONDITION(newTableSize >= 
+        PRECONDITION(newTableSize >=
                      (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
     }
     CONTRACT_END;
-    
+
     element_t * oldTable = m_table;
-    
+
     // Move all entries over to new table.
     for (Iterator i = Begin(), end = End(); i != end; i++)
     {
@@ -455,7 +455,7 @@ SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
         if (!TRAITS::IsNull(cur) && !TRAITS::IsDeleted(cur))
             Add(newTable, newTableSize, cur);
     }
-    
+
     m_table = PTR_element_t(newTable);
     m_tableSize = newTableSize;
     m_tableMax = (count_t) (newTableSize * TRAITS::s_density_factor_numerator / TRAITS::s_density_factor_denominator);
@@ -465,7 +465,7 @@ SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
 }
 
 template <typename TRAITS>
-void 
+void
 SHash<TRAITS>::DeleteOldTable(element_t * oldTable)
 {
     CONTRACT_VOID
@@ -474,12 +474,12 @@ SHash<TRAITS>::DeleteOldTable(element_t * oldTable)
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-    
+
     // @todo:
     // We might want to try to delay this cleanup to allow asynchronous readers
     if (oldTable != NULL)
         delete [] oldTable;
-    
+
     RETURN;
 }
 
@@ -499,13 +499,13 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
         RETURN NULL;
 
     count_t hash = TRAITS::Hash(key);
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     while (TRUE)
     {
         element_t& current = table[index];
-            
+
         if (TRAITS::IsNull(current))
             RETURN NULL;
 
@@ -516,7 +516,7 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
         }
 
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
+            increment = (hash % (tableSize-1)) + 1;
 
         index += increment;
         if (index >= tableSize)
@@ -538,28 +538,28 @@ BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & 
     key_t key = TRAITS::GetKey(element);
 
     count_t hash = TRAITS::Hash(key);
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     while (TRUE)
     {
         element_t & current = table[index];
-        
+
         if (TRAITS::IsNull(current))
         {
             table[index] = element;
             RETURN TRUE;
         }
-        
+
         if (TRAITS::IsDeleted(current))
         {
             table[index] = element;
             RETURN FALSE;
         }
-        
+
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
-        
+            increment = (hash % (tableSize-1)) + 1;
+
         index += increment;
         if (index >= tableSize)
             index -= tableSize;
@@ -581,14 +581,14 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
     key_t key = TRAITS::GetKey(element);
 
     count_t hash = TRAITS::Hash(key);
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     while (TRUE)
     {
         element_t& current = table[index];
-        _ASSERTE(!TRAITS::IsDeleted(current));    
- 
+        _ASSERTE(!TRAITS::IsDeleted(current));
+
         if (TRAITS::IsNull(current))
         {
             table[index] = element;
@@ -603,7 +603,7 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
         }
 
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
+            increment = (hash % (tableSize-1)) + 1;
 
         index += increment;
         if (index >= tableSize)
@@ -624,13 +624,13 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
     CONTRACT_END;
 
     count_t hash = TRAITS::Hash(key);
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     while (TRUE)
     {
         element_t& current = table[index];
-            
+
         if (TRAITS::IsNull(current))
             RETURN;
 
@@ -643,7 +643,7 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
         }
 
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
+            increment = (hash % (tableSize-1)) + 1;
 
         index += increment;
         if (index >= tableSize)
@@ -679,7 +679,7 @@ BOOL SHash<TRAITS>::IsPrime(COUNT_T number)
     }
     CONTRACT_END;
 
-    // This is a very low-tech check for primality, which doesn't scale very well.  
+    // This is a very low-tech check for primality, which doesn't scale very well.
     // There are more efficient tests if this proves to be burdensome for larger
     // tables.
 
@@ -706,9 +706,9 @@ namespace
     const COUNT_T g_shash_primes[] = {
         11,17,23,29,37,47,59,71,89,107,131,163,197,239,293,353,431,521,631,761,919,
         1103,1327,1597,1931,2333,2801,3371,4049,4861,5839,7013,8419,10103,12143,14591,
-        17519,21023,25229,30293,36353,43627,52361,62851,75431,90523, 108631, 130363, 
+        17519,21023,25229,30293,36353,43627,52361,62851,75431,90523, 108631, 130363,
         156437, 187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403,
-        968897, 1162687, 1395263, 1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 
+        968897, 1162687, 1395263, 1674319, 2009191, 2411033, 2893249, 3471899, 4166287,
         4999559, 5999471, 7199369 };
 }
 
@@ -747,12 +747,12 @@ template <typename TRAITS>
 SHash<TRAITS>::AddPhases::AddPhases()
 {
     LIMITED_METHOD_CONTRACT;
-            
+
     m_pHash = NULL;
     m_newTable = NULL;
     m_newTableSize = 0;
     m_oldTable = NULL;
-    
+
     INDEBUG(dbg_m_fAddCalled = FALSE;)
 }
 
@@ -760,11 +760,11 @@ template <typename TRAITS>
 SHash<TRAITS>::AddPhases::~AddPhases()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     if (m_newTable != NULL)
     {   // The new table was not applied to the hash yet
         _ASSERTE((m_pHash != NULL) && (m_newTableSize != 0) && (m_oldTable == NULL));
-                
+
         delete [] m_newTable;
     }
     DeleteOldTable();
@@ -779,13 +779,13 @@ void SHash<TRAITS>::AddPhases::PreallocateForAdd(SHash * pHash)
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-    
+
     _ASSERTE((m_pHash == NULL) && (m_newTable == NULL) && (m_newTableSize == 0) && (m_oldTable == NULL));
-    
+
     m_pHash = pHash;
     // May return NULL if the allocation was not needed
     m_newTable = m_pHash->CheckGrowth_OnlyAllocateNewTable(&m_newTableSize);
-    
+
 #ifdef _DEBUG
     dbg_m_table = pHash->m_table;
     dbg_m_tableSize = pHash->m_tableSize;
@@ -793,7 +793,7 @@ void SHash<TRAITS>::AddPhases::PreallocateForAdd(SHash * pHash)
     dbg_m_tableOccupied = pHash->m_tableOccupied;
     dbg_m_tableMax = pHash->m_tableMax;
 #endif //_DEBUG
-    
+
     RETURN;
 }
 
@@ -806,33 +806,33 @@ void SHash<TRAITS>::AddPhases::Add(const element_t & element)
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-    
+
     _ASSERTE((m_pHash != NULL) && (m_oldTable == NULL));
     // Add can be called only once on this object
     _ASSERTE(!dbg_m_fAddCalled);
-    
+
     // Check that the hash table didn't change since call to code:PreallocateForAdd
     _ASSERTE(dbg_m_table == m_pHash->m_table);
     _ASSERTE(dbg_m_tableSize == m_pHash->m_tableSize);
     _ASSERTE(dbg_m_tableCount >= m_pHash->m_tableCount); // Remove operation might have removed elements
     _ASSERTE(dbg_m_tableOccupied == m_pHash->m_tableOccupied);
     _ASSERTE(dbg_m_tableMax == m_pHash->m_tableMax);
-    
+
     if (m_newTable != NULL)
     {   // We have pre-allocated table from code:PreallocateForAdd, use it.
         _ASSERTE(m_newTableSize != 0);
-        
+
         // May return NULL if there was not table allocated yet
         m_oldTable = m_pHash->ReplaceTable(m_newTable, m_newTableSize);
-        
+
         m_newTable = NULL;
         m_newTableSize = 0;
     }
     // We know that we have enough space, direcly add the element
     m_pHash->Add_GrowthChecked(element);
-    
+
     INDEBUG(dbg_m_fAddCalled = TRUE;)
-    
+
     RETURN;
 }
 
@@ -845,31 +845,31 @@ void SHash<TRAITS>::AddPhases::AddNothing_PublishPreallocatedTable()
         GC_NOTRIGGER;
     }
     CONTRACT_END;
-    
+
     _ASSERTE((m_pHash != NULL) && (m_oldTable == NULL));
     // Add can be called only once on this object
     _ASSERTE(!dbg_m_fAddCalled);
-    
+
     // Check that the hash table didn't change since call to code:PreallocateForAdd
     _ASSERTE(dbg_m_table == m_pHash->m_table);
     _ASSERTE(dbg_m_tableSize == m_pHash->m_tableSize);
     _ASSERTE(dbg_m_tableCount >= m_pHash->m_tableCount); // Remove operation might have removed elements
     _ASSERTE(dbg_m_tableOccupied == m_pHash->m_tableOccupied);
     _ASSERTE(dbg_m_tableMax == m_pHash->m_tableMax);
-    
+
     if (m_newTable != NULL)
     {   // We have pre-allocated table from code:PreallocateForAdd, use it.
         _ASSERTE(m_newTableSize != 0);
-        
+
         // May return NULL if there was not table allocated yet
         m_oldTable = m_pHash->ReplaceTable(m_newTable, m_newTableSize);
-        
+
         m_newTable = NULL;
         m_newTableSize = 0;
     }
-    
+
     INDEBUG(dbg_m_fAddCalled = TRUE;)
-    
+
     RETURN;
 }
 
@@ -877,11 +877,11 @@ template <typename TRAITS>
 void SHash<TRAITS>::AddPhases::DeleteOldTable()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     if (m_oldTable != NULL)
     {
         _ASSERTE((m_pHash != NULL) && (m_newTable == NULL) && (m_newTableSize == 0));
-        
+
         delete [] m_oldTable;
         m_oldTable = NULL;
     }
@@ -931,7 +931,7 @@ bool SHash<TRAITS>::CheckAddInPhases(
             {
                 clr::SafeAddRef(addRefObject);
             }
-            
+
             return true;
         }
     }

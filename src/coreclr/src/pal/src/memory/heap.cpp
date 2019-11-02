@@ -75,7 +75,7 @@ HeapCreate(
     {
         ret = (HANDLE)malloc_create_zone(dwInitialSize, 0 /* flags */);
     }
-    
+
 #else // __APPLE__
     ret = (HANDLE)DUMMY_HEAP;
 #endif // __APPLE__
@@ -112,7 +112,7 @@ GetProcessHeap(
 #else
     ret = (HANDLE) DUMMY_HEAP;
 #endif
-  
+
     LOGEXIT("GetProcessHeap returning HANDLE %p\n", ret);
     PERF_EXIT(GetProcessHeap);
     return ret;
@@ -211,7 +211,7 @@ HeapFree(
     BOOL bRetVal = FALSE;
 
     PERF_ENTRY(HeapFree);
-    ENTRY("HeapFree (hHeap=%p, dwFlags = %#x, lpMem=%p)\n", 
+    ENTRY("HeapFree (hHeap=%p, dwFlags = %#x, lpMem=%p)\n",
           hHeap, dwFlags, lpMem);
 
 #ifdef __APPLE__

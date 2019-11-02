@@ -48,16 +48,16 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
 #ifdef _TARGET_X86_
-    LOG((LF_EH, LL_INFO100, "In ExInfo::CopyAndClearSource: m_dEsp=%08x, %08x <- [%08x], stackAddress = 0x%p <- 0x%p\n", 
+    LOG((LF_EH, LL_INFO100, "In ExInfo::CopyAndClearSource: m_dEsp=%08x, %08x <- [%08x], stackAddress = 0x%p <- 0x%p\n",
          from->m_dEsp, &(this->m_dEsp), &from->m_dEsp, this->m_StackAddress, from->m_StackAddress));
 #endif // _TARGET_X86_
 
     // If we have a handle to an exception object in this ExInfo already, then go ahead and destroy it before we
     // loose it.
     DestroyExceptionHandle();
-    
+
     // The stack address is handled differently. Save the original value.
     void* stackAddress = this->m_StackAddress;
 
@@ -96,9 +96,9 @@ void ExInfo::Init()
     m_ExceptionFlags.Init();
     m_StackTraceInfo.Init();
     m_DebuggerExState.Init();
-    
+
     m_pSearchBoundary = NULL;
-	STRESS_LOG3(LF_EH, LL_INFO10000, "ExInfo::Init: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n", 
+	STRESS_LOG3(LF_EH, LL_INFO10000, "ExInfo::Init: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n",
 		this, m_pBottomMostHandler, NULL);
     m_pBottomMostHandler = NULL;
     m_pPrevNestedInfo = NULL;
@@ -141,28 +141,28 @@ ExInfo::ExInfo()
 }
 
 //*******************************************************************************
-// When we hit an endcatch or an unwind and have nested handler info, either 
-//   1) we have contained a nested exception and will continue handling the original 
+// When we hit an endcatch or an unwind and have nested handler info, either
+//   1) we have contained a nested exception and will continue handling the original
 //      exception
 //  - or -
-//   2) the nested exception was not contained, and was thrown beyond the original 
-//      bounds where the first exception occurred. 
+//   2) the nested exception was not contained, and was thrown beyond the original
+//      bounds where the first exception occurred.
 //
-// The way we can tell this is from the stack pointer. The topmost nested handler is 
-//  installed at the point where the exception occurred.  For a nested exception to be 
-//  contained, it must be caught within the scope of any code that is called after 
+// The way we can tell this is from the stack pointer. The topmost nested handler is
+//  installed at the point where the exception occurred.  For a nested exception to be
+//  contained, it must be caught within the scope of any code that is called after
 //  the nested handler is installed.  (remember: after is a lower stack address.)
 //
-// If it is caught by anything earlier on the stack, it was not contained, and we 
-//  unwind the nested handlers until we get to one that is higher on the stack 
-//  than the esp we will unwind to. 
+// If it is caught by anything earlier on the stack, it was not contained, and we
+//  unwind the nested handlers until we get to one that is higher on the stack
+//  than the esp we will unwind to.
 //
-// If we still have a nested handler, then we have successfully handled a nested 
-//  exception and should restore the exception settings that we saved so that 
-//  processing of the original exception can continue. 
-// Otherwise the nested exception has gone beyond where the original exception was 
-//  thrown and therefore replaces the original exception. 
-// 
+// If we still have a nested handler, then we have successfully handled a nested
+//  exception and should restore the exception settings that we saved so that
+//  processing of the original exception can continue.
+// Otherwise the nested exception has gone beyond where the original exception was
+//  thrown and therefore replaces the original exception.
+//
 // We will always remove the current exception info from the chain.
 //
 void ExInfo::UnwindExInfo(VOID* limit)
@@ -179,12 +179,12 @@ void ExInfo::UnwindExInfo(VOID* limit)
 #ifdef DEBUGGING_SUPPORTED
     // The debugger thread will be using this, even though it has no
     // Thread object associated with it.
-    _ASSERTE((GetThread() != NULL && GetThread()->PreemptiveGCDisabled()) || 
+    _ASSERTE((GetThread() != NULL && GetThread()->PreemptiveGCDisabled()) ||
              ((g_pDebugInterface != NULL) && (g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId())));
 #endif // DEBUGGING_SUPPORTED
 
     LOG((LF_EH, LL_INFO100, "UnwindExInfo: unwind limit is 0x%p, prevNested is 0x%p\n", limit, m_pPrevNestedInfo));
-            
+
     ExInfo *pPrevNestedInfo = m_pPrevNestedInfo;
 
     // At first glance, you would think that each nested exception has
@@ -196,11 +196,11 @@ void ExInfo::UnwindExInfo(VOID* limit)
     //
     // Make sure we've unwound any nested exceptions that we're going to skip over.
     //
-    while (pPrevNestedInfo && pPrevNestedInfo->m_StackAddress < limit) 
+    while (pPrevNestedInfo && pPrevNestedInfo->m_StackAddress < limit)
     {
         STRESS_LOG1(LF_EH, LL_INFO100, "UnwindExInfo: PopExInfo(): popping nested ExInfo at 0x%p\n", pPrevNestedInfo->m_StackAddress);
 
-        if (pPrevNestedInfo->m_hThrowable != NULL)  
+        if (pPrevNestedInfo->m_hThrowable != NULL)
         {
             pPrevNestedInfo->DestroyExceptionHandle();
         }
@@ -227,21 +227,21 @@ void ExInfo::UnwindExInfo(VOID* limit)
         {
             delete pPrevNestedInfo;
         }
-        
+
         pPrevNestedInfo = pPrev;
     }
 
     // either clear the one we're about to copy over or the topmost one
     m_StackTraceInfo.FreeStackTrace();
 
-    if (pPrevNestedInfo) 
+    if (pPrevNestedInfo)
     {
         // found nested handler info that is above the esp restore point so succesfully caught nested
         STRESS_LOG2(LF_EH, LL_INFO100, "UnwindExInfo: resetting nested ExInfo to 0x%p stackaddress:0x%p\n", pPrevNestedInfo, pPrevNestedInfo->m_StackAddress);
 
         // Remember if this ExInfo is heap allocated or not.
         BOOL isHeapAllocated = pPrevNestedInfo->IsHeapAllocated();
-        
+
         // Copy pPrevNestedInfo to 'this', clearing pPrevNestedInfo in the process.
         CopyAndClearSource(pPrevNestedInfo);
 
@@ -249,8 +249,8 @@ void ExInfo::UnwindExInfo(VOID* limit)
         {
             delete pPrevNestedInfo;         // Now delete the old record if we needed to.
         }
-    } 
-    else 
+    }
+    else
     {
         STRESS_LOG0(LF_EH, LL_INFO100, "UnwindExInfo: clearing topmost ExInfo\n");
 

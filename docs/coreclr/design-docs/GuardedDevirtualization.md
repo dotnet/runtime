@@ -27,7 +27,7 @@ retrofitted and there are places where types just get lost. The JIT analysis
 happens quite early (during importation) and there is only minimal ability to do
 data flow analysis at this stage. So for current devirtualization the source of
 the type information and the consumption must be fairly close in the code. A
-more detailed accounting of some of the shortcomings can be found in 
+more detailed accounting of some of the shortcomings can be found in
 [CoreCLR#9908](https://github.com/dotnet/coreclr/issues/9908).
 
 Resolution of these issues will improve the ability of the JIT to devirtualize,
@@ -72,7 +72,7 @@ class D : B
 ```
 Suppose we have an array `B[]` that is randomly filled with instances of `B` and
 `D` and each element is class `B` with probability `p`.  We time how long
-it takes to invoke `F` on each member of the array (note the JIT will not ever 
+it takes to invoke `F` on each member of the array (note the JIT will not ever
 be able to devirtualize these calls), and plot the times as a function of `p`.
 The result is something like the following:
 
@@ -88,7 +88,7 @@ From this we can see that a correctly predicted virtual call requires about
 some timing overhead here too so the real costs are a bit lower.
 
 Now imagine we update the JIT to do guarded devirtualization and check if the
-element is indeed type `B`. If so the JIT can call `B.F` directly and in our 
+element is indeed type `B`. If so the JIT can call `B.F` directly and in our
 prototype the JIT will also inline the call. So we would expect that if the
 element types are mostly `B`s (that is if `p` is near 1.0) we'd see very good
 performance, and if the element type is mostly `D` (that is `p` near 0.0)
@@ -111,7 +111,7 @@ the small `p` case is similar to the well-predicted indirect case without guarde
 devirtualization. As `p` increases the branch predictor starts to mispredict and
 that costs some cycles. But when it mispredicts control reaches the `then` block
 which executes the inlined call. So the cost of misprediction is offset by the
-faster execution and the cost stays relatively flat. 
+faster execution and the cost stays relatively flat.
 
 As `p` passes 0.5 the branch predictor flips its prediction to prefer the `then`
 case. As before mispredicts are costly and send us down the `else` path but there
@@ -235,7 +235,7 @@ certainly encouraging.
 One might deduce from the above that if there are two likely candidates the JIT
 should test for each. This is certainly a possibility and in C++ compilers that
 do indirect call profiling there are cases where multiple tests are considered
-a good idea. But there's also additional code size and another branch. 
+a good idea. But there's also additional code size and another branch.
 
 This is something we'll look into further.
 
@@ -270,7 +270,7 @@ jne DISPATCH-FAIL    ; bail to resolve stub if check fails (uses R11 info)
 jmp targetCode       ; else "tail call" the right method
 ```
 
-At first glance it might appear that adding guarded devirtualization on top of 
+At first glance it might appear that adding guarded devirtualization on top of
 VSD may not provide much benefit for monomorphic sites. However the guarded
 devirtualization test doesn't use an indirection cell and doesn't require R11
 setup, may be able to optimize away the null check, and opens the door for
@@ -309,7 +309,7 @@ calls is special. And you'd be right.
 If we mix a third class in as we did above, we see similar changes in the
 performance mix for interface calls, as seen below. But also as with virtual calls
 the JIT's guess doesn't have to be all that good to see payoffs. At around 10%
-correct, guessing wins on average, and around 30% correct guessing is always a 
+correct, guessing wins on average, and around 30% correct guessing is always a
 perf win.
 
 ![three classes interface devirt](ThreeClassesInterface.JPG)
@@ -347,7 +347,7 @@ So the average relative size increase in a method with virtual calls is probably
 more like 33%.
 
 There may be some inefficiencies in the current prototype that can be fixed to
-reduce the code size impact. Aside from the extra method table fetch noted above 
+reduce the code size impact. Aside from the extra method table fetch noted above
 the duplicated calls have the same sets of arguments and so we might be able to
 amortize argument evaluation costs better. And there are some complexities around
 handling return values (especially for implicit by-reference structures) that
@@ -400,7 +400,7 @@ expression and introduces a return value placeholder.
 
 We currently already have a similar transformation in the JIT, the "fat calli"
 transformation needed on CoreRT. This transformation runs at the right time --
-after the importer and before the inliner -- and introduces the right kind of 
+after the importer and before the inliner -- and introduces the right kind of
 `if-then-else` control flow structure. So the thought is to generalize this to
 handle guarded devirtualization as well.
 
@@ -413,8 +413,8 @@ of exactness, then the call is marked as a guarded devirtualization candidate.
 ### Devirtualization
 
 To produce the direct call the prototype updates the `this` passed in the `then`
-version of the call so it has the exact predicted type. It then re-invokes 
-`impDevirtualizeCall` which should now succeed as the type is now exactly 
+version of the call so it has the exact predicted type. It then re-invokes
+`impDevirtualizeCall` which should now succeed as the type is now exactly
 known. The benefit of reuse here is that certain special cases of devirtualization
 are now more likely to be handled.
 
@@ -422,7 +422,7 @@ are now more likely to be handled.
 
 The prototype currently sets up all virtual and interface calls as potential
 inline candidates. One open question is whether it is worth doing guarded
-devirtualization simply to introduce a direct call. As an alternative we could 
+devirtualization simply to introduce a direct call. As an alternative we could
 insist that the directly called method also be something that is potentially
 inlineable. One can argue that call overhead matters much more for small methods
 that are also likely good inline candidates.
@@ -488,7 +488,7 @@ because of the chunked method table arrangement, also tricky as a method can
 have multiple addresses over time. Since many types can share a chunk this
 might allow devirtualization over a wider set of classes (good) but we'd lose
 knowledge of exact types (bad). Not clear how these tradeoffs play out.
-- interaction of guarded devirt with VSD? For interface calls we are sort of 
+- interaction of guarded devirt with VSD? For interface calls we are sort of
 inlining the first level of the VSD into the JITted code.
 - revocation or reworking of the guard if the JIT's prediction turns out to bad?
 - improve regular devirtualization to reduce need for guarded
@@ -525,7 +525,7 @@ information from importer to the indirect transform phase
 
 - can we cover multiple calls with one test? This can happen already if the
 subsequent call is introduced via inlining of the directly called method, as we
-know the exact type along that path. But for back to back calls to virtual 
+know the exact type along that path. But for back to back calls to virtual
 methods off of the same object it would be nice to do just one test.
 - should we test for multiple types? Once we've peeled off the "most likely" case
 if the conditional probability of the next most likely case is high it is probably

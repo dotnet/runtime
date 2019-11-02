@@ -363,7 +363,7 @@ namespace std
 
 // In PAL, we define long as int and so this becomes int double,
 // which is a nonsense
-#ifndef FEATURE_PAL  
+#ifndef FEATURE_PAL
     template<>
     struct _Is_floating_point<long double>
         : true_type
@@ -452,7 +452,7 @@ namespace std
         };
 
         template <class T>
-        struct conversion<T, T>    
+        struct conversion<T, T>
         {
             static const bool exists = true;
             static const bool exists2Way = true;
@@ -460,7 +460,7 @@ namespace std
         };
 
         template <class T>
-        struct conversion<void, T>    
+        struct conversion<void, T>
         {
             static const bool exists = false;
             static const bool exists2Way = false;
@@ -468,7 +468,7 @@ namespace std
         };
 
         template <class T>
-        struct conversion<T, void>    
+        struct conversion<T, void>
         {
             static const bool exists = false;
             static const bool exists2Way = false;
@@ -476,7 +476,7 @@ namespace std
         };
 
         template <>
-        struct conversion<void, void>    
+        struct conversion<void, void>
         {
             static const bool exists = true;
             static const bool exists2Way = true;

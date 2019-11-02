@@ -63,27 +63,27 @@ typedef enum {
   STARTUP_SINGLE_VERSION_HOSTING_INTERFACE = 0x4000,                    // Disallow mixing hosting interface
   STARTUP_LEGACY_IMPERSONATION             = 0x10000,                        // Do not flow impersonation across async points by default
   STARTUP_DISABLE_COMMITTHREADSTACK        = 0x20000,           // Don't eagerly commit thread stack
-  STARTUP_ALWAYSFLOW_IMPERSONATION             = 0x40000,                        // Force flow impersonation across async points 
-  																// (impersonations achieved thru p/invoke and managed will flow. 
+  STARTUP_ALWAYSFLOW_IMPERSONATION             = 0x40000,                        // Force flow impersonation across async points
+  																// (impersonations achieved thru p/invoke and managed will flow.
   																// default is to flow only managed impersonation)
   STARTUP_TRIM_GC_COMMIT        = 0x80000,                      // GC uses less committed space when system memory low
   STARTUP_ETW                   = 0x100000,
   STARTUP_ARM                   = 0x400000,                     // Enable the ARM feature.
-  STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created 
+  STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created
   STARTUP_APPX_APP_MODEL        = 0x1000000,                     // jupiter app
   STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing (not supported)
 } STARTUP_FLAGS;
 
 typedef enum
 {
-    APPDOMAIN_SECURITY_DEFAULT =0x0, 
+    APPDOMAIN_SECURITY_DEFAULT =0x0,
     APPDOMAIN_SECURITY_SANDBOXED = 0x1,       // appdomain is sandboxed
     APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE = 0x2,         // no cross ad reverse pinvokes
     APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS = 0x4, //
     APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS = 0x08, // do not pump messages during wait operations, do not call sync context
     // When passed by the host, this flag will allow any assembly to perform PInvoke or COMInterop operations.
     // Otherwise, by default, only platform assemblies can perform those operations.
-    APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP = 0x10, 
+    APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP = 0x10,
 
     APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS = 0x40,
     APPDOMAIN_ENABLE_ASSEMBLY_LOADFILE = 0x80,
@@ -116,16 +116,16 @@ typedef enum ETaskType
 typedef enum {
     // Default to minidump
         DUMP_FLAVOR_Mini = 0,
-        
+
         // Include critical CLR state
         DUMP_FLAVOR_CriticalCLRState = 1,
-        
+
         // Include critical CLR state and ngen images without including hosted heap
         // It is host's responsibility to report hosted heap.
         DUMP_FLAVOR_NonHeapCLRState = 2,
 
     DUMP_FLAVOR_Default = DUMP_FLAVOR_Mini
-        
+
 } ECustomDumpFlavor;
 
 const DWORD BucketParamsCount = 10;
@@ -273,16 +273,16 @@ interface ICLRRuntimeHost2 : ICLRRuntimeHost
     // set of properties.
     HRESULT CreateAppDomainWithManager([in] LPCWSTR wszFriendlyName,
                                 [in] DWORD dwFlags,
-                                [in] LPCWSTR wszAppDomainManagerAssemblyName, 
-                                [in] LPCWSTR wszAppDomainManagerTypeName, 
-                                [in] int nProperties, 
-                                [in] LPCWSTR* pPropertyNames, 
-                                [in] LPCWSTR* pPropertyValues, 
+                                [in] LPCWSTR wszAppDomainManagerAssemblyName,
+                                [in] LPCWSTR wszAppDomainManagerTypeName,
+                                [in] int nProperties,
+                                [in] LPCWSTR* pPropertyNames,
+                                [in] LPCWSTR* pPropertyValues,
                                 [out] DWORD* pAppDomainID);
 
     HRESULT CreateDelegate([in] DWORD appDomainID,
-                                 [in] LPCWSTR wszAssemblyName,     
-                                 [in] LPCWSTR wszClassName,     
+                                 [in] LPCWSTR wszAssemblyName,
+                                 [in] LPCWSTR wszClassName,
                                  [in] LPCWSTR wszMethodName,
                                  [out] INT_PTR* fnPtr);
 

@@ -5,7 +5,7 @@
 // runtimeselector.inl
 //
 // implementation that select the best runtime
-// 
+//
 // Note: must be platform independent
 //
 // ======================================================================================
@@ -33,9 +33,9 @@ inline void RuntimeSelector::SetRequestedVersion(const VersionInfo& version)
 // Input:
 // runtimeInfo - the runtime info
 //
-// Output: 
+// Output:
 // return value - true: can be used, false: cannot be used
-inline bool RuntimeSelector::IsAcceptable(const  RuntimeInfo& runtimeInfo)  const 
+inline bool RuntimeSelector::IsAcceptable(const  RuntimeInfo& runtimeInfo)  const
 {
     return ( m_RequestedVersion.Major() ==  runtimeInfo.Version().Major() &&
                   m_RequestedVersion.Minor() ==  runtimeInfo.Version().Minor());
@@ -47,7 +47,7 @@ inline bool RuntimeSelector::IsAcceptable(const  RuntimeInfo& runtimeInfo)  cons
 // Input:
 // runtimeInfo - the runtime info
 //
-// Output: 
+// Output:
 // return value - S_OK added, S_FALSE not added (not a failure) or a failure code
 inline HRESULT RuntimeSelector::Add(const RuntimeInfo& runtimeInfo)
 {
@@ -58,7 +58,7 @@ inline HRESULT RuntimeSelector::Add(const RuntimeInfo& runtimeInfo)
     if(!m_bHasSomething || IsBetter(runtimeInfo,m_Best))
     {
         m_Best=runtimeInfo;
-        hr=S_OK;        
+        hr=S_OK;
     }
 
     m_bHasSomething=true;
@@ -67,7 +67,7 @@ inline HRESULT RuntimeSelector::Add(const RuntimeInfo& runtimeInfo)
 
 // Returns add the best runtime of the options given (see Add)
 //
-// Output: 
+// Output:
 // return value - the best option
 inline RuntimeInfo RuntimeSelector::GetBest()
 {
@@ -76,8 +76,8 @@ inline RuntimeInfo RuntimeSelector::GetBest()
 
 // Returns whether we have any usable choices
 //
-// Output: 
-// return value - true if the has something usable 
+// Output:
+// return value - true if the has something usable
 inline bool RuntimeSelector::HasUsefulRuntimeInfo()
 {
     return m_bHasSomething;
@@ -85,12 +85,12 @@ inline bool RuntimeSelector::HasUsefulRuntimeInfo()
 
 // Compares two given options
 //
-// Input: 
+// Input:
 // ri1, ri2 - runtimes to compare
 //
-// Output: 
+// Output:
 // return value - true if ri1 is better than ri2
-inline bool RuntimeSelector::IsBetter(const RuntimeInfo& ri1, const RuntimeInfo& ri2) 
+inline bool RuntimeSelector::IsBetter(const RuntimeInfo& ri1, const RuntimeInfo& ri2)
 {
     switch(ri1.Version().Compare(ri2.Version()))
     {

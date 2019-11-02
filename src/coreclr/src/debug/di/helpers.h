@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // helpers.h
-// 
+//
 
 //
 // public helpers for debugger.
@@ -121,7 +121,7 @@ public:
 
     FORCEINLINE TYPE** operator & ()
     {
-        // We allow getting the address so we can pass it in as an outparam. 
+        // We allow getting the address so we can pass it in as an outparam.
         // BTW/@TODO: this is a subtle and dangerous thing to do, since it easily leads to situations
         // when pointer gets assigned without the ref counter being incremented.
         // This can cause premature freeing of the object after the pointer dtor was called.
@@ -138,7 +138,7 @@ public:
     FORCEINLINE TYPE** UnsafeGetAddr()
     {
         return &m_ptr;
-    }    
+    }
 
     FORCEINLINE TYPE* operator->()
     {
@@ -195,14 +195,14 @@ public: \
 // Declare the various smart ptrs.
 //-----------------------------------------------------------------------------
 DECLARE_MY_NEW_HOLDER(RSSmartPtr, HolderRSAddRef, HolderRSRelease);
-DECLARE_MY_NEW_HOLDER(RSExtSmartPtr, HolderRSAddRefExternal, HolderRSReleaseExternal); 
+DECLARE_MY_NEW_HOLDER(RSExtSmartPtr, HolderRSAddRefExternal, HolderRSReleaseExternal);
 
 // The CordbBase::m_pProcess backpointer needs to adjust the external reference count, but manipulate it from
 // within the RS. This means we need to skip debugging checks that ensure
 // that the external count is only manipulated from outside the RS. Since we're
 // skipping these checks, we call this an "Unsafe" pointer.
-// This is purely used by CordbBase::m_pProcess. 
-DECLARE_MY_NEW_HOLDER(RSUnsafeExternalSmartPtr, HolderRSUnsafeExtAddRef, HolderRSUnsafeExtRelease); 
+// This is purely used by CordbBase::m_pProcess.
+DECLARE_MY_NEW_HOLDER(RSUnsafeExternalSmartPtr, HolderRSUnsafeExtAddRef, HolderRSUnsafeExtRelease);
 
 
 

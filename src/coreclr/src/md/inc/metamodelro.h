@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModelRO.h -- header file for Read-Only compressed COM+ metadata.
-// 
+//
 
 //
 // Used by the EE.
@@ -37,11 +37,11 @@ public:
     friend class CMiniMdRW;
     friend class MDInternalRO;
 
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(void *pBuf, ULONG ulBufLen);
-    __checkReturn 
+    __checkReturn
     HRESULT PostInit(int iLevel);  // higher number : more checking
-    
+
     // Returns TRUE if token (tk) is valid.
     // For user strings, consideres 0 as valid token.
     BOOL _IsValidToken(
@@ -54,8 +54,8 @@ public:
         // Base type doesn't know about user string blob (yet)
         return _IsValidTokenBase(tk);
     } // CMiniMdRO::_IsValidToken
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT GetUserString(ULONG nIndex, MetaData::DataBlob *pData)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
@@ -82,75 +82,75 @@ protected:
 #ifdef FEATURE_PREJIT
     struct MetaData::HotTablesDirectory * m_pHotTablesDirectory;
 #endif //FEATURE_PREJIT
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT InitializeTables(MetaData::DataBlob tablesData);
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTable(ULONG ixTbl, CMiniColDef sColumn, ULONG ulTarget, RID *pRid);
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTableNotGreater(ULONG ixTbl, CMiniColDef sColumn, ULONG ulTarget, RID *pRid);
-    
+
     // Heaps
     MetaData::StringHeapRO m_StringHeap;
     MetaData::BlobHeapRO   m_BlobHeap;
     MetaData::BlobHeapRO   m_UserStringHeap;
     MetaData::GuidHeapRO   m_GuidHeap;
-    
+
 protected:
-    
+
     //*************************************************************************
     // Overridables -- must be provided in derived classes.
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, __out LPCSTR *pszString)
     { return m_StringHeap.GetString(nIndex, pszString); }
-    __checkReturn 
+    __checkReturn
     HRESULT Impl_GetStringW(ULONG ix, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer);
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetGuid(UINT32 nIndex, GUID *pTargetGuid)
     {
         HRESULT         hr;
         GUID UNALIGNED *pSourceGuid;
         IfFailRet(m_GuidHeap.GetGuid(
-            nIndex, 
+            nIndex,
             &pSourceGuid));
         // Add void* casts so that the compiler can't make assumptions about alignment.
         CopyMemory((void *)pTargetGuid, (void *)pSourceGuid, sizeof(GUID));
         SwapGuid(pTargetGuid);
         return S_OK;
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetBlob(UINT32 nIndex, __out MetaData::DataBlob *pData)
     { return m_BlobHeap.GetBlob(nIndex, pData); }
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetRow(
-                        UINT32 nTableIndex, 
-                        UINT32 nRowIndex, 
+                        UINT32 nTableIndex,
+                        UINT32 nRowIndex,
         __deref_out_opt BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
         return m_Tables[nTableIndex].GetRecord(
-            nRowIndex, 
-            ppRecord, 
-            m_TableDefs[nTableIndex].m_cbRec, 
-            m_Schema.m_cRecs[nTableIndex], 
+            nRowIndex,
+            ppRecord,
+            m_TableDefs[nTableIndex].m_cbRec,
+            m_Schema.m_cRecs[nTableIndex],
 #ifdef FEATURE_PREJIT
-            m_pHotTablesDirectory, 
+            m_pHotTablesDirectory,
 #endif //FEATURE_PREJIT
             nTableIndex);
     }
-    
+
     // Count of rows in tbl2, pointed to by the column in tbl.
-    __checkReturn 
+    __checkReturn
     HRESULT Impl_GetEndRidForColumn(
-        UINT32       nTableIndex, 
-        RID          nRowIndex, 
+        UINT32       nTableIndex,
+        RID          nRowIndex,
         CMiniColDef &def,                   // Column containing the RID into other table.
         UINT32       nTargetTableIndex,     // The other table.
         RID         *pEndRid);
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT Impl_SearchTable(ULONG ixTbl, CMiniColDef sColumn, ULONG ixCol, ULONG ulTarget, RID *pFoundRid)
     {
         return vSearchTable(ixTbl, sColumn, ulTarget, pFoundRid);
@@ -158,13 +158,13 @@ protected:
 
     // given a rid to the Property table, find an entry in PropertyMap table that contains the back pointer
     // to its typedef parent
-    __checkReturn 
+    __checkReturn
     HRESULT FindPropertyMapParentOfProperty(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_PropertyMap, _COLDEF(PropertyMap,PropertyList), rid, pFoundRid);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT FindParentOfPropertyHelper(
         mdProperty  pr,
         mdTypeDef   *ptd)
@@ -182,16 +182,16 @@ protected:
 
         return hr;
     } // HRESULT CMiniMdRW::FindParentOfPropertyHelper()
-    
+
     // given a rid to the Event table, find an entry in EventMap table that contains the back pointer
     // to its typedef parent
-    __checkReturn 
+    __checkReturn
     HRESULT FindEventMapParentOfEvent(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_EventMap, _COLDEF(EventMap, EventList), rid, pFoundRid);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT FindParentOfEventHelper(
         mdEvent  pr,
         mdTypeDef   *ptd)
@@ -209,19 +209,19 @@ protected:
 
         return hr;
     } // HRESULT CMiniMdRW::FindParentOfEventHelper()
-    
-    FORCEINLINE int Impl_IsRo() 
+
+    FORCEINLINE int Impl_IsRo()
     { return 1; }
     //*************************************************************************
 
-    __checkReturn 
+    __checkReturn
     HRESULT CommonEnumCustomAttributeByName( // S_OK or error.
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         bool        fStopAtFirstFind,       // [IN] just find the first one
         HENUMInternal* phEnum);             // enumerator to fill up
 
-    __checkReturn 
+    __checkReturn
     HRESULT CommonGetCustomAttributeByNameEx( // S_OK or error.
         mdToken            tkObj,             // [IN] Object with Custom Attribute.
         LPCUTF8            szName,            // [IN] Name of desired Custom Attribute.

@@ -38,9 +38,9 @@ ConnectionPoint::ConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
         PRECONDITION(CheckPointer(pEventMT));
     }
     CONTRACTL_END;
-    
+
     // Retrieve the connection IID.
-    pEventMT->GetGuid(&m_rConnectionIID, TRUE);   
+    pEventMT->GetGuid(&m_rConnectionIID, TRUE);
 
     // Set up the event methods.
     SetupEventMethods();
@@ -49,7 +49,7 @@ ConnectionPoint::ConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 ConnectionPoint::~ConnectionPoint()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (m_apEventMethods)
         delete []m_apEventMethods;
 }
@@ -82,14 +82,14 @@ HRESULT __stdcall ConnectionPoint::QueryInterface(REFIID riid, void** ppv)
     {
         *ppv = static_cast<IUnknown*>(this);
     }
-    else 
+    else
     {
         return E_NOINTERFACE;
     }
 
     ULONG cbRef = SafeAddRefPreemp((IUnknown*)*ppv);
     //@TODO(CLE) AddRef logging that doesn't use QI
-    
+
     return S_OK;
 }
 
@@ -221,7 +221,7 @@ HRESULT __stdcall ConnectionPoint::Advise(IUnknown *pUnk, DWORD *pdwCookie)
         AdviseWorker(pUnk, pdwCookie);
     }
     END_EXTERNAL_ENTRYPOINT;
-    
+
     return hr;
 }
 
@@ -236,7 +236,7 @@ HRESULT __stdcall ConnectionPoint::Unadvise(DWORD dwCookie)
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    
+
     // Verify the arguments.
     if (dwCookie == 0)
         return CONNECT_E_NOCONNECTION;
@@ -272,15 +272,15 @@ HRESULT __stdcall ConnectionPoint::EnumConnections(IEnumConnections **ppEnum)
     // Initialize the out parameters.
     *ppEnum = NULL;
 
-    SetupForComCallHR();   
-   
+    SetupForComCallHR();
+
     ConnectionEnum *pConEnum = new(nothrow) ConnectionEnum(this);
     if (!pConEnum)
         return E_OUTOFMEMORY;
-    
-    // Retrieve the IEnumConnections interface. This cannot fail.    
+
+    // Retrieve the IEnumConnections interface. This cannot fail.
     HRESULT hr = SafeQueryInterfacePreemp((IUnknown*)pConEnum, IID_IEnumConnections, (IUnknown**)ppEnum);
-    LogInteropQI((IUnknown*)pConEnum, IID_IEnumConnections, hr, "ConnectionPoint::EnumConnections: QIing for IID_IEnumConnections");    
+    LogInteropQI((IUnknown*)pConEnum, IID_IEnumConnections, hr, "ConnectionPoint::EnumConnections: QIing for IID_IEnumConnections");
     _ASSERTE(hr == S_OK);
 
     return hr;
@@ -298,7 +298,7 @@ IConnectionPointContainer *ConnectionPoint::GetConnectionPointContainerWorker()
     CONTRACT_END;
 
     // Retrieve the IConnectionPointContainer from the owner wrapper.
-    RETURN (IConnectionPointContainer*) 
+    RETURN (IConnectionPointContainer*)
         ComCallWrapper::GetComIPFromCCW(m_pOwnerWrap, IID_IConnectionPointContainer, NULL);
 }
 
@@ -316,12 +316,12 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
 
     SafeComHolder<IUnknown> pEventItf = NULL;
     HRESULT hr;
-    
+
     // Make sure we have a pointer to the interface and not to another IUnknown.
     hr = SafeQueryInterface(pUnk, m_rConnectionIID, &pEventItf );
     LogInteropQI(pUnk, m_rConnectionIID, hr, "ConnectionPoint::AdviseWorker: QIing for correct interface");
 
-    if (FAILED(hr) || !pEventItf) 
+    if (FAILED(hr) || !pEventItf)
         COMPlusThrowHR(CONNECT_E_CANNOTCONNECT);
 
     COMOBJECTREF pEventItfObj = NULL;
@@ -330,7 +330,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
     GCPROTECT_BEGIN(pEventItfObj)
     GCPROTECT_BEGIN(pTCEProviderObj)
     {
-        // Create a COM+ object ref to wrap the event interface.               
+        // Create a COM+ object ref to wrap the event interface.
         GetObjectRefFromComIP((OBJECTREF*)&pEventItfObj, pUnk, NULL);
         IfNullThrow(pEventItfObj);
 
@@ -356,7 +356,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
 
         // Everything went ok so hand back the cookie id.
         *pdwCookie = pConCookie->m_id;
-        
+
         pConCookie.SuppressRelease();
     }
     GCPROTECT_END();
@@ -372,7 +372,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-       
+
     COMOBJECTREF pEventItfObj = NULL;
     OBJECTREF pTCEProviderObj = NULL;
 
@@ -383,7 +383,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
         ConnectionCookieHolder pConCookie = FindWithLock(dwCookie);
 
         // Retrieve the COM+ object from the cookie which in fact is the object handle.
-        pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj); 
+        pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj);
         if (!pEventItfObj)
             COMPlusThrowHR(E_INVALIDARG);
 
@@ -457,7 +457,7 @@ void ConnectionPoint::SetupEventMethods()
         NumEventMethods++;
     }
 
-    // If the interface has methods and the object does not support any then we 
+    // If the interface has methods and the object does not support any then we
     // fail the connection.
     if ((NumEventMethods == 0) && (cNonSupportedEvents > 0))
         COMPlusThrowHR(CONNECT_E_NOCONNECTION);
@@ -482,7 +482,7 @@ MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDes
     CONTRACT_END
 
     // Retrieve the event method.
-    MethodDesc *pProvMethodDesc = 
+    MethodDesc *pProvMethodDesc =
         MemberLoader::FindEventMethod(m_pTCEProviderMT, pEventMethodDesc->GetName(), Method, MemberLoader::FM_IgnoreCase);
     if (!pProvMethodDesc)
         RETURN NULL;
@@ -501,11 +501,11 @@ MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDes
     DWORD cEventMethSig;
     pEventMethodDesc->GetSig(&pEventMethSig, &cEventMethSig);
     MethodDesc *pInvokeMD = MemberLoader::FindMethod(DelegateType.GetMethodTable(),
-        "Invoke", 
-        pEventMethSig, 
-        cEventMethSig, 
+        "Invoke",
+        pEventMethSig,
+        cEventMethSig,
         pEventMethodDesc->GetModule());
-    
+
     if (!pInvokeMD)
         RETURN NULL;
 
@@ -545,7 +545,7 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
 
         // Allocate an object based on the method table of the delegate class.
         OBJECTREF pDelegate = pDelegateCls->Allocate();
-            
+
         GCPROTECT_BEGIN( pDelegate );
         {
             // Initialize the delegate using the arguments structure.
@@ -554,10 +554,10 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
             MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
             if (pDlgCtorMD == NULL)
                 pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
-                
+
             // The loader is responsible for only accepting well-formed delegate classes.
             _ASSERTE(pDlgCtorMD);
-                
+
             MethodDescCallSite dlgCtor(pDlgCtorMD);
 
             ARG_SLOT CtorArgs[3] = { ObjToArgSlot(pDelegate),
@@ -587,16 +587,16 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
     bool fDone = false;
 
     //
-    // handle special cases 
+    // handle special cases
     //
-    
+
     if (NULL == m_pLastInserted)
     {
         //
         // Special case 1:  List is empty.
         //
         CONSISTENCY_CHECK(NULL == m_ConnectionList.GetHead());
-        
+
         pConCookie->m_id = 1;
         m_ConnectionList.InsertHead(pConCookie);
         fDone = true;
@@ -605,15 +605,15 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
     if (!fDone && ((NULL != m_pLastInserted->m_Link.m_pNext) || (idUpperLimit == m_pLastInserted->m_id)))
     {
         //
-        // Special case 2:  Last inserted is somewhere in the middle of the list or we last 
-        //                  inserted the max token id (we've wrapped around) and ID 1 is not 
+        // Special case 2:  Last inserted is somewhere in the middle of the list or we last
+        //                  inserted the max token id (we've wrapped around) and ID 1 is not
         //                  taken.
         //
         CONSISTENCY_CHECK(NULL != m_ConnectionList.GetHead());
-        
+
         if (1 != m_ConnectionList.GetHead()->m_id)
         {
-            // if ID 1 is not taken, we can just insert there. 
+            // if ID 1 is not taken, we can just insert there.
             pConCookie->m_id = 1;
             m_ConnectionList.InsertHead(pConCookie);
             fDone = true;
@@ -627,13 +627,13 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
     {
         ConnectionCookie* pLocationToStartSearchForInsertPoint = NULL;
         ConnectionCookie* pInsertionPoint = NULL;
-        
+
         if (NULL == m_pLastInserted->m_Link.m_pNext)
         {
             if (idUpperLimit == m_pLastInserted->m_id)
             {
                 CONSISTENCY_CHECK(1 == m_ConnectionList.GetHead()->m_id);   // should be handled by special case #2
-                
+
                 // we need to wrap around
                 // scan from head for first hole, insert there
                 pLocationToStartSearchForInsertPoint = m_ConnectionList.GetHead();
@@ -653,7 +653,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
 
         if (NULL != pLocationToStartSearchForInsertPoint)
         {
-            // Starting from pLocationToStartSearchForInsertPoint, scan list to find a 
+            // Starting from pLocationToStartSearchForInsertPoint, scan list to find a
             // discontinuity in the IDs.  Insert there.
 
             ConnectionCookie* pCurrentNode = pLocationToStartSearchForInsertPoint;
@@ -689,26 +689,26 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
                     EX_THROW(HRException, (CONNECT_E_ADVISELIMIT));
                 }
             }
-            
+
             pInsertionPoint = pCurrentNode;
         }
 
-        
+
         CONSISTENCY_CHECK(NULL != pInsertionPoint);
         CONSISTENCY_CHECK(idUpperLimit != pInsertionPoint->m_id);
 
 #ifdef _DEBUG
         ConnectionCookie* pNextCookieNode = CONTAINING_RECORD(pInsertionPoint->m_Link.m_pNext, ConnectionCookie, m_Link);
         DWORD idNew = pInsertionPoint->m_id + 1;
-        CONSISTENCY_CHECK(NULL == pNextCookieNode || 
-            ((pInsertionPoint->m_id < idNew) && 
+        CONSISTENCY_CHECK(NULL == pNextCookieNode ||
+            ((pInsertionPoint->m_id < idNew) &&
                                      (idNew < pNextCookieNode->m_id)));
 #endif // _DEBUG
 
         pConCookie->m_id = pInsertionPoint->m_id + 1;
         pInsertionPoint->m_Link.InsertAfter(&pConCookie->m_Link);
     }
-    
+
     m_pLastInserted = pConCookie;
 }
 
@@ -760,14 +760,14 @@ ConnectionPointEnum::ConnectionPointEnum(ComCallWrapper *pOwnerWrap, CQuickArray
 , m_Lock(CrstInterop)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     m_pOwnerWrap->AddRef();
 }
 
 ConnectionPointEnum::~ConnectionPointEnum()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (m_pOwnerWrap)
         m_pOwnerWrap->Release();
 }
@@ -791,7 +791,7 @@ HRESULT __stdcall ConnectionPointEnum::QueryInterface(REFIID riid, void** ppv)
     *ppv = NULL;
 
     SetupForComCallHR();
-    
+
     if (riid == IID_IEnumConnectionPoints)
     {
         *ppv = static_cast<IEnumConnectionPoints*>(this);
@@ -800,14 +800,14 @@ HRESULT __stdcall ConnectionPointEnum::QueryInterface(REFIID riid, void** ppv)
     {
         *ppv = static_cast<IUnknown*>(this);
     }
-    else 
+    else
     {
         return E_NOINTERFACE;
     }
-    
+
     ULONG cbRef = SafeAddRefPreemp((IUnknown*)*ppv);
     //@TODO(CLE) AddRef logging that doesn't use QI
-    
+
     return S_OK;
 }
 
@@ -820,7 +820,7 @@ ULONG __stdcall ConnectionPointEnum::AddRef()
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-    
+
     SetupForComCallHR();
 
     LONG i = FastInterlockIncrement((LONG*)&m_cbRefCount );
@@ -875,7 +875,7 @@ HRESULT __stdcall ConnectionPointEnum::Next(ULONG cConnections, IConnectionPoint
         *pcFetched = 0;
 
     SetupForComCallHR();
-    
+
     UINT cFetched;
 
     // Acquire the lock before we start traversing the connection point list.
@@ -1041,14 +1041,14 @@ HRESULT __stdcall ConnectionEnum::QueryInterface(REFIID riid, void** ppv)
     {
         *ppv = static_cast<IUnknown*>(this);
     }
-    else 
+    else
     {
         return E_NOINTERFACE;
     }
-    
+
     ULONG cbRef = SafeAddRefPreemp((IUnknown*)*ppv);
     //@TODO(CLE) AddRef logging that doesn't use QI
-    
+
     return S_OK;
 }
 
@@ -1154,7 +1154,7 @@ HRESULT __stdcall ConnectionEnum::Skip(ULONG cConnections)
     CONTRACTL_END;
 
     SetupForComCallHR();
-    
+
     HRESULT hr = S_FALSE;
     CONNECTIONCOOKIELIST *pConnectionList = m_pConnectionPoint->GetCookieList();
 
@@ -1185,7 +1185,7 @@ HRESULT __stdcall ConnectionEnum::Reset()
     CONTRACTL_END;
 
     SetupForComCallHR();
-    
+
     // Set the current cookie back to the head of the list. We must acquire the
     // connection point lock before we touch the list.
     ConnectionPoint::LockHolder lh(m_pConnectionPoint);
@@ -1214,7 +1214,7 @@ HRESULT __stdcall ConnectionEnum::Clone(IEnumConnections **ppEnum)
     *ppEnum = NULL;
 
     SetupForComCallHR();
-    
+
     ConnectionEnum *pConEnum = new(nothrow) ConnectionEnum(m_pConnectionPoint);
     if (!pConEnum)
         return E_OUTOFMEMORY;

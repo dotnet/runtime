@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgTiggerStorage.h
-// 
+//
 
 //
 // TiggerStorage is a stripped down version of compound doc files.  Doc files
@@ -60,7 +60,7 @@ class StgIO;
 
 
 
-class TiggerStorage : 
+class TiggerStorage :
     public IStorage
 {
 friend class TiggerStream;
@@ -105,7 +105,7 @@ public:
 // Flushes the header to disk.
 //*****************************************************************************
     HRESULT WriteHeader(                    // Return code.
-        STORAGESTREAMLST *pList,            // List of streams.     
+        STORAGESTREAMLST *pList,            // List of streams.
         ULONG       cbExtraData,            // Size of extra data, may be 0.
         BYTE        *pbExtraData);          // Pointer to extra data for header.
 
@@ -114,7 +114,7 @@ public:
 // and stream lists to be validated.
 //*****************************************************************************
     HRESULT WriteFinished(                  // Return code.
-        STORAGESTREAMLST *pList,            // List of streams.     
+        STORAGESTREAMLST *pList,            // List of streams.
         ULONG       *pcbSaveSize,               // Return size of total data.
         BOOL           fDeltaSave);                // Was this a delta
 
@@ -165,7 +165,7 @@ public:
     static HRESULT CalcOffsets(             // Return code.
         STORAGESTREAMLST *pStreamList,      // List of streams for header.
         ULONG       cbExtra,                // Size of variable extra data in header.
-        LPCSTR      pRuntimeVersion);       // The version string as it's length is part of the total size.        
+        LPCSTR      pRuntimeVersion);       // The version string as it's length is part of the total size.
 
 
 
@@ -173,97 +173,97 @@ public:
 // Returns the size of the signature plus the verion information
 //*****************************************************************************
     static HRESULT SizeOfStorageSignature(
-        LPCSTR      pRuntimeVersion,        // The version string as it's length is part of the total size.        
+        LPCSTR      pRuntimeVersion,        // The version string as it's length is part of the total size.
         ULONG       *pcbSignatureSize);
 
 // IStorage
-    virtual HRESULT STDMETHODCALLTYPE CreateStream( 
+    virtual HRESULT STDMETHODCALLTYPE CreateStream(
         const OLECHAR *pwcsName,
         DWORD       grfMode,
         DWORD       reserved1,
         DWORD       reserved2,
         IStream     **ppstm);
 
-    virtual HRESULT STDMETHODCALLTYPE CreateStream( 
+    virtual HRESULT STDMETHODCALLTYPE CreateStream(
         LPCSTR      szName,
         DWORD       grfMode,
         DWORD       reserved1,
         DWORD       reserved2,
         IStream     **ppstm)
         DAC_UNEXPECTED();
-    
-    virtual HRESULT STDMETHODCALLTYPE OpenStream( 
+
+    virtual HRESULT STDMETHODCALLTYPE OpenStream(
         const OLECHAR *pwcsName,
         void        *reserved1,
         DWORD       grfMode,
         DWORD       reserved2,
         IStream     **ppstm);
-    
-    virtual HRESULT STDMETHODCALLTYPE CreateStorage( 
+
+    virtual HRESULT STDMETHODCALLTYPE CreateStorage(
         const OLECHAR *pwcsName,
         DWORD       grfMode,
         DWORD       dwStgFmt,
         DWORD       reserved2,
         IStorage    **ppstg);
-    
-    virtual HRESULT STDMETHODCALLTYPE OpenStorage( 
-        const OLECHAR * wcsName, 
-        IStorage *      pStgPriority, 
-        DWORD           dwMode, 
-      __in 
-        SNB             snbExclude, 
-        DWORD           reserved, 
+
+    virtual HRESULT STDMETHODCALLTYPE OpenStorage(
+        const OLECHAR * wcsName,
+        IStorage *      pStgPriority,
+        DWORD           dwMode,
+      __in
+        SNB             snbExclude,
+        DWORD           reserved,
         IStorage **     ppStg);
-    
-    virtual HRESULT STDMETHODCALLTYPE CopyTo( 
-        DWORD       cIidExclude, 
-        const IID * rgIidExclude, 
-      __in 
-        SNB         snbExclude, 
+
+    virtual HRESULT STDMETHODCALLTYPE CopyTo(
+        DWORD       cIidExclude,
+        const IID * rgIidExclude,
+      __in
+        SNB         snbExclude,
         IStorage *  pStgDest);
-    
-    virtual HRESULT STDMETHODCALLTYPE MoveElementTo( 
+
+    virtual HRESULT STDMETHODCALLTYPE MoveElementTo(
         const OLECHAR *pwcsName,
         IStorage    *pstgDest,
         const OLECHAR *pwcsNewName,
         DWORD       grfFlags);
-    
-    virtual HRESULT STDMETHODCALLTYPE Commit( 
+
+    virtual HRESULT STDMETHODCALLTYPE Commit(
         DWORD       grfCommitFlags);
-    
+
     virtual HRESULT STDMETHODCALLTYPE Revert();
-    
-    virtual HRESULT STDMETHODCALLTYPE EnumElements( 
+
+    virtual HRESULT STDMETHODCALLTYPE EnumElements(
         DWORD       reserved1,
         void        *reserved2,
         DWORD       reserved3,
         IEnumSTATSTG **ppenum);
-    
-    virtual HRESULT STDMETHODCALLTYPE DestroyElement( 
+
+    virtual HRESULT STDMETHODCALLTYPE DestroyElement(
         const OLECHAR *pwcsName);
-    
-    virtual HRESULT STDMETHODCALLTYPE RenameElement( 
+
+    virtual HRESULT STDMETHODCALLTYPE RenameElement(
         const OLECHAR *pwcsOldName,
         const OLECHAR *pwcsNewName);
-    
-    virtual HRESULT STDMETHODCALLTYPE SetElementTimes( 
+
+    virtual HRESULT STDMETHODCALLTYPE SetElementTimes(
         const OLECHAR *pwcsName,
         const FILETIME *pctime,
         const FILETIME *patime,
         const FILETIME *pmtime);
-    
-    virtual HRESULT STDMETHODCALLTYPE SetClass( 
+
+    virtual HRESULT STDMETHODCALLTYPE SetClass(
         REFCLSID    clsid);
-    
-    virtual HRESULT STDMETHODCALLTYPE SetStateBits( 
+
+    virtual HRESULT STDMETHODCALLTYPE SetStateBits(
         DWORD       grfStateBits,
         DWORD       grfMask);
-    
-    virtual HRESULT STDMETHODCALLTYPE Stat( 
+
+    virtual HRESULT STDMETHODCALLTYPE Stat(
         STATSTG     *pstatstg,
         DWORD       grfStatFlag);
 
-    virtual HRESULT STDMETHODCALLTYPE OpenStream( 
+    virtual HRESULT STDMETHODCALLTYPE OpenStream(
         LPCWSTR     szStream,
         ULONG       *pcbData,
         void        **ppAddress);

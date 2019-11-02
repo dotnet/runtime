@@ -28,17 +28,17 @@ class ComCallUnmarshal : public IMarshal
 public:
 
     // *** IUnknown methods ***
-    STDMETHODIMP QueryInterface(REFIID iid, void **ppv); 
-    STDMETHODIMP_(ULONG) AddRef(void); 
-    STDMETHODIMP_(ULONG) Release(void); 
+    STDMETHODIMP QueryInterface(REFIID iid, void **ppv);
+    STDMETHODIMP_(ULONG) AddRef(void);
+    STDMETHODIMP_(ULONG) Release(void);
 
     // *** IMarshal methods ***
-    STDMETHODIMP GetUnmarshalClass (REFIID riid, void * pv, ULONG dwDestContext, 
-                                    void * pvDestContext, ULONG mshlflags, 
+    STDMETHODIMP GetUnmarshalClass (REFIID riid, void * pv, ULONG dwDestContext,
+                                    void * pvDestContext, ULONG mshlflags,
                                     LPCLSID pclsid);
 
-    STDMETHODIMP GetMarshalSizeMax (REFIID riid, void * pv, ULONG dwDestContext, 
-                                    void * pvDestContext, ULONG mshlflags, 
+    STDMETHODIMP GetMarshalSizeMax (REFIID riid, void * pv, ULONG dwDestContext,
+                                    void * pvDestContext, ULONG mshlflags,
                                     ULONG * pSize);
 
     STDMETHODIMP MarshalInterface (LPSTREAM pStm, REFIID riid, void * pv,
@@ -62,7 +62,7 @@ class CComCallUnmarshalFactory : public IClassFactory
     // *** IUnknown methods ***
 	STDMETHODIMP QueryInterface(REFIID iid, void **ppv);
 	STDMETHODIMP_(ULONG) AddRef(void);
-	STDMETHODIMP_(ULONG) Release(void); 
+	STDMETHODIMP_(ULONG) Release(void);
 
     // *** IClassFactory methods ***
     STDMETHODIMP CreateInstance(LPUNKNOWN punkOuter, REFIID iid, LPVOID FAR *ppv);

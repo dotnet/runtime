@@ -101,7 +101,7 @@ namespace R2RDump.Arm64
             }
 
             bool[] epilogStartAt = new bool[1024]; // One byte per possible epilog start index; initialized to false
-            
+
             if (EBit == 0)
             {
                 Epilogs = new Epilog[EpilogCount];
@@ -121,7 +121,7 @@ namespace R2RDump.Arm64
                 epilogStartAt[EpilogCount] = true; // the one and only epilog starts its unwind codes at this offset
             }
 
-            
+
 
             Size = offset - (int)startOffset + (int)CodeWords * 4;
             int alignmentPad = ((Size + sizeof(int) - 1) & ~(sizeof(int) - 1)) - Size;

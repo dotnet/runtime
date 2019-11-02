@@ -52,7 +52,7 @@ enum EnumEventMethods
     EventRaise = 2,
 };
 
-// The MemberLoader logic is analogous to the ClassLoader logic, i.e. it turn 
+// The MemberLoader logic is analogous to the ClassLoader logic, i.e. it turn
 // tokens into internal EE descriptors.
 //
 // The implementations of these functions currently lies in class.cpp.
@@ -73,7 +73,7 @@ public:
 
     static  MethodDesc* GetMethodDescFromMemberDefOrRefOrSpec(Module *pModule,
                                                               mdToken MemberRefOrDefOrSpec,
-                                                              const SigTypeContext *pTypeContext, // Context for type parameters in any parent TypeSpec and in the instantiation in a MethodSpec 
+                                                              const SigTypeContext *pTypeContext, // Context for type parameters in any parent TypeSpec and in the instantiation in a MethodSpec
                                                               BOOL strictMetadataChecks,  // Normally true - the zapper is one exception.  Throw an exception if no generic method args given for a generic method, otherwise return the 'generic' instantiation
                                                               BOOL allowInstParam);
 
@@ -106,8 +106,8 @@ public:
                                      const SigTypeContext *pTypeContext,
                                      BOOL strictMetadataChecks,
                                      TypeHandle *ppTH,
-                                     // Because of inheritance, the actual type stored in metadata may be sub-class of the 
-                                     // class that defines the member. The semantics (verification, security checks, etc.) is based on 
+                                     // Because of inheritance, the actual type stored in metadata may be sub-class of the
+                                     // class that defines the member. The semantics (verification, security checks, etc.) is based on
                                      // the actual type in metadata. This JIT-EE interface passes in TRUE here to get the actual type.
                                      // If actualTypeRequired is false, returned *ppTH will be the MethodDesc::GetMethodTable/FieldDesc::GetEnclosingMethodTable
                                      // except when generics are involved. The actual type will be still returned for generics since it is required
@@ -117,18 +117,18 @@ public:
                                      PCCOR_SIGNATURE * ppTypeSig = NULL,    // Optionally, return generic signatures fetched from metadata during loading.
                                      ULONG * pcbTypeSig = NULL);
 
-    static MethodDesc * GetMethodDescFromMemberRefAndType(Module * pModule, 
-                                                          mdToken MemberRef, 
+    static MethodDesc * GetMethodDescFromMemberRefAndType(Module * pModule,
+                                                          mdToken MemberRef,
                                                           MethodTable * pMT);
 
-    static FieldDesc * GetFieldDescFromMemberRefAndType(Module * pModule, 
-                                                        mdToken MemberRef, 
+    static FieldDesc * GetFieldDescFromMemberRefAndType(Module * pModule,
+                                                        mdToken MemberRef,
                                                         MethodTable * pMT);
 
-    static MethodDesc * GetMethodDescFromMethodSpec(Module * pModule, 
+    static MethodDesc * GetMethodDescFromMethodSpec(Module * pModule,
                                                     mdToken MethodSpec,
                                                     const SigTypeContext *pTypeContext,
-                                                    BOOL strictMetadataChecks,                                                    
+                                                    BOOL strictMetadataChecks,
                                                     BOOL allowInstParam,
                                                     TypeHandle *ppTH,
                                                     BOOL actualTypeRequired = FALSE,    // See comment for GetDescFromMemberRef
@@ -161,7 +161,7 @@ public:
         FM_ExcludeNonVirtual   = (FM_IgnoreName          << 1), // has mdVirtual set
         FM_ExcludeVirtual      = (FM_ExcludeNonVirtual   << 1), // does not have mdVirtual set.
 
-        // Accessibility. 
+        // Accessibility.
         // NOTE: These appear in the exact same order as mdPrivateScope ... mdPublic in corhdr.h. This enables some
         //       bit masking to quickly determine if a method qualifies in FM_ShouldSkipMethod.
         FM_ExcludePrivateScope = (FM_ExcludeVirtual      << 1), // Member not referenceable.
@@ -217,10 +217,10 @@ public:
     // It has additional information in the case of a domain neutral class (Arrays)
     static MethodDesc *FindMethod(
        MethodTable * pMT,
-       LPCUTF8 pszName, 
-       PCCOR_SIGNATURE pSignature, 
-       DWORD cSignature, 
-       Module* pModule, 
+       LPCUTF8 pszName,
+       PCCOR_SIGNATURE pSignature,
+       DWORD cSignature,
+       Module* pModule,
        FM_Flags flags = FM_Default,
        const Substitution *pDefSubst = NULL);
 

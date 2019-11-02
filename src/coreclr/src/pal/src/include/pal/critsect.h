@@ -11,9 +11,9 @@ Module Name:
     include/pal/critsect.h
 
 Abstract:
-    
+
     Header file for the critical sections functions.
-    
+
 
 
 --*/

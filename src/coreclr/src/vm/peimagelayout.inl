@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifndef PEIMAGEVIEW_INL_
 #define PEIMAGEVIEW_INL_
@@ -114,7 +114,7 @@ inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
     if (base==NULL) //we were searching for 'Any'
         return TRUE;
     return ((PEImageLayout*)mapping)->GetBase()==((PEImageLayout*)(base<<1))->GetBase();
-  
+
 }
 
 #endif //PEIMAGEVIEW_INL_

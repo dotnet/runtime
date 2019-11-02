@@ -120,7 +120,7 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Dumps one R2RMethod. 
+        /// Dumps one R2RMethod.
         /// </summary>
         internal override void DumpMethod(R2RMethod method, XmlNode parentNode = null)
         {
@@ -146,7 +146,7 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Dumps one runtime function. 
+        /// Dumps one runtime function.
         /// </summary>
         internal override void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null)
         {

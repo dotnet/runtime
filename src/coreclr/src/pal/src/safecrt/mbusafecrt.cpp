@@ -133,14 +133,14 @@ int _ungetc_nolock( char inChar, miniFILE* inStream )
 int _ungetwc_nolock( char16_t inChar, miniFILE* inStream )
 {
     int returnValue = WEOF;
-    
+
     if ( ( size_t )( ( inStream->_ptr ) - ( inStream->_base ) ) >= ( sizeof( char16_t ) ) )
     {
         inStream->_cnt += sizeof( char16_t );
         inStream->_ptr -= sizeof( char16_t );
         returnValue = ( unsigned short )inChar;
     }
-    
+
     return returnValue;
 }
 
@@ -219,10 +219,10 @@ void _safecrt_wfassign(int flag, void* argument, char16_t* number )
     // without using any system functions. To do this,
     // we'll assume that the numbers are in the 0-9 range and
     // do a simple conversion.
-    
+
     char* numberAsChars = ( char* )number;
     int position = 0;
-    
+
     // do the convert
     while ( number[ position ] != 0 )
     {
@@ -230,7 +230,7 @@ void _safecrt_wfassign(int flag, void* argument, char16_t* number )
         position++;
     }
     numberAsChars[ position ] = ( char )( number[ position ] & 0x00FF );
-    
+
     // call the normal char version
     _safecrt_fassign( flag, argument, numberAsChars );
 }

@@ -41,7 +41,7 @@ namespace BINDER_SPACE
 {
     class StringLexer
     {
-    public:        
+    public:
         typedef enum
         {
             LEXEME_TYPE_INVALID,

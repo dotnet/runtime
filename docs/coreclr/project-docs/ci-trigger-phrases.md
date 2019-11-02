@@ -1,7 +1,7 @@
 CI Trigger Phrases
 ===
 
-When submitting a pull request (PR) to the CoreCLR repo, you may want to run more test suites than are included in the default set of checks run with each PR. In this document you will find a list of all possible jobs to trigger, as well as the phrase that will trigger that job. 
+When submitting a pull request (PR) to the CoreCLR repo, you may want to run more test suites than are included in the default set of checks run with each PR. In this document you will find a list of all possible jobs to trigger, as well as the phrase that will trigger that job.
 
 Note that this document can quickly become out-of-date. You can ask the CI system to show you all the available trigger phrases by using `@dotnet-bot help`.
 

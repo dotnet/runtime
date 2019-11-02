@@ -90,13 +90,13 @@ Function :
     Call DllMain for all modules (that have one) with the given "fwReason"
 
 Parameters :
-    DWORD dwReason : parameter to pass down to DllMain, one of DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, 
+    DWORD dwReason : parameter to pass down to DllMain, one of DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH,
         DLL_THREAD_ATTACH, DLL_THREAD_DETACH
 
     LPVOID lpReserved : parameter to pass down to DllMain
         If dwReason is DLL_PROCESS_ATTACH, lpvReserved is NULL for dynamic loads and non-NULL for static loads.
-        If dwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if DllMain has been called by using FreeLibrary 
-            and non-NULL if DllMain has been called during process termination. 
+        If dwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if DllMain has been called by using FreeLibrary
+            and non-NULL if DllMain has been called during process termination.
 
 (no return value)
 

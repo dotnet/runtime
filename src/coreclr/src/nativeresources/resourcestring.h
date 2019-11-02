@@ -5,7 +5,7 @@
 #ifndef __RESOURCE_STRING_H_
 #define __RESOURCE_STRING_H_
 
-// Struct to contain a resource ID and its corresponding 
+// Struct to contain a resource ID and its corresponding
 // English language string.
 struct NativeStringResource
 {

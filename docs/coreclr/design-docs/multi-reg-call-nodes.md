@@ -7,11 +7,11 @@ x64 Unix:
 Structs of size betwee 9-16 bytes will be returned in RAX/RDX and/or XMM0/XMM1.
 
 Arm64:
-HFA structs will be returned in 1-4 successive VFP registers s0-s3 or d0-d3. 
+HFA structs will be returned in 1-4 successive VFP registers s0-s3 or d0-d3.
 Structs of size 16-bytes will be returned in two return registers.
 
 Arm32:
-Long type value is returned in two return registers r0 and r1. 
+Long type value is returned in two return registers r0 and r1.
 HFA structs will be returned in 1-4 successive VFP registers s0-s3 or d0-d3
 
 x86:
@@ -42,7 +42,7 @@ GT_RETURN(tmp)
 Post struct promotion IR forms
 ------------------------------
 Before global morph of basic blocks, struct promotion takes place. It will give rise to the following
-three cases:  
+three cases:
 
 Case 1:
 tmp is not struct promoted or Type Dependently Promoted (P-DEP).
@@ -69,22 +69,22 @@ Case 3 is morphed into
    GT_STORE_MULTI_VAR is a new GenTree node to represent the store operation to 2-4 locals
    using multi-reg/mem value of a call/lclvar respectively.  It also will have additional fields
    to store the registers into which FieldLcl[1..4] need to be stored and also a spill mask
-   to indicate which of the locals needs to be spilled. 
+   to indicate which of the locals needs to be spilled.
 
-   During codegen, return value of call in multiple return registers need to be stored to the 
+   During codegen, return value of call in multiple return registers need to be stored to the
    corresponding registers of the locals by properly handling any circular dependencies.
 
-Case 1 is morphed as    
+Case 1 is morphed as
    `GT_OBJ(&tmp) = GT_CALL`
 
-   Post rationalization this will get converted to GT_STORE_OBJ/BLK(&tmp, GT_CALL) and 
-   block op codegen will special case for multi-reg call case.  This case simpler because, although it is 
-   consuming multiple registers from the call, it doesn't have the complication of multiple 
+   Post rationalization this will get converted to GT_STORE_OBJ/BLK(&tmp, GT_CALL) and
+   block op codegen will special case for multi-reg call case.  This case simpler because, although it is
+   consuming multiple registers from the call, it doesn't have the complication of multiple
    destination registers.
 
 Case 2 can be handled one of the following two ways
    a) Force tmp to memory and morph it as in case 1 above
-   b) Create 2-4 temp locals matching the type of respective return registers of GT_CALL and 
+   b) Create 2-4 temp locals matching the type of respective return registers of GT_CALL and
       use them to create following IR
 
 ```
@@ -106,11 +106,11 @@ Every GT_CALL node will have a light-weight ReturnTypeDesc that provides a platf
 ReturnTypeDesc is initialized during importation while creating GenTreeCall node.
 
 GT_CALL node is augmented with the following additional state:
-  gtOtherRegs - an array of MAX_RET_REG_COUNT-1 reg numbers of multi-reg return. gtRegNum field 
+  gtOtherRegs - an array of MAX_RET_REG_COUNT-1 reg numbers of multi-reg return. gtRegNum field
   will always be the first return reg.
   gtSpillFlags - an array to hold GTF_SPILL/GTF_SPILLED state of each reg.  This allows us to
   spill/reload individual return registers of a multi-reg call node work.
-   
+
 Post Global Morph, IR forms of GT_RETURN(tmp) where tmp is of TYP_STRUCT
 ------------------------------------------------------------------------
 Case 3 is morphed into
@@ -118,20 +118,20 @@ Case 3 is morphed into
 ```
     GT_RETURN (TYP_STRUCT, op1 = GT_MULTI_VAR(TYP_STRUCT, <Fieldlcl1, FieldLcl2, FieldLcl3, FieldLcl4>))
 ```
-    
+
     Where FieldLcl[1..4] are lcl numbers of independently promoted fields of tmp and
     GT_MULTI_VAR is a new node that represents 2-4 independent local vars.
 
 Case 1 remains unchanged
-    
-    `GT_RETURN(TYP_STRUCT, op1 = tmp)`   
+
+    `GT_RETURN(TYP_STRUCT, op1 = tmp)`
 
 Case 2 is handled as follows:
     a) Force tmp to memory and morph it as in case 1 above
     b) Create 2-4 temp locals matching the type of respective return registers of GT_RETURN and
        use them to extract individual fields from tmp and morph it as in case 3 above.
 
-          tmpLcl1 = GenTree Nodes to extract first 8-bytes from tmp 
+          tmpLcl1 = GenTree Nodes to extract first 8-bytes from tmp
           tmpLcl2 = GenTree Nodes to extract next 8-bytes from tmp and so on
 
 ```
@@ -156,7 +156,7 @@ Post IR lowering, GT_CALL will be transformed into
      GT_STORE_MULTI_VAR(TYP_LONG, <tmpHi, tmpLo>, op1=GT_CALL)
 ```
 
-      where tmpHi and tmpLo are promoted lcl fields of tmp.        
+      where tmpHi and tmpLo are promoted lcl fields of tmp.
 
 Post Lowering, IR forms of GT_RETURN(tmp) where tmp is of TYP_LONG
 ------------------------------------------------------------------
@@ -203,9 +203,9 @@ Note that on x64 Unix, we still query structDesc from VM and use it to initializ
   - Importer changes to force IR to be of the form GT_RETURN(tmp) always for multi-reg return
   - tmp will always be an in memory lcl var.
   - Till First class struct support for GT_OBJ/GT_STORE_OBJ comes on-line IR will be of the form
-   
+
     `GT_STORE_LCL_VAR(tmpLcl, op1 = GT_CALL)`
-   
+
     where tmpLcl will always be an in memory lcl var of TYP_STRUCT
   - Lowering/LSRA/Codegen support to allocate multiple regs to GT_CALL nodes.
   - GT_CALL nodes will be governed by a single spill flag i.e. all return registers are spilled together.
@@ -215,7 +215,7 @@ Note that on x64 Unix, we still query structDesc from VM and use it to initializ
   - Add new gentree nodes GT_MULTI_VAR and GT_STORE_MULTI_VAR and plumb through rest of JIT phases.
   - Global morph code changes to support Case 3 (i.e P-DEP promoted structs)
   - Lowering/LSRA/Codegen changes to support GT_MULTI_VAR and GT_STORE_MULTI_VAR
-  
+
 5. When First class structs support comes on-line, leverage GT_OBJ/GT_STORE_OBJ to store multi-reg
 return value of a GT_CALL node to memory cleaning up the code in GT_STORE_LCL_VAR.
 
@@ -223,7 +223,7 @@ return value of a GT_CALL node to memory cleaning up the code in GT_STORE_LCL_VA
 
 7. (Done) x86 long return support
 
-8. (Optimization) Phase 3 implementation of multi-reg GT_CALL/GT_RETURN node support for x64 unix 
+8. (Optimization) Phase 3 implementation of multi-reg GT_CALL/GT_RETURN node support for x64 unix
   - Global morph code changes to support some of the important Case 2 efficiently
 
 9. HFA struct and long return support for Arm32 RyuJIT - we should be able to leverage x86 long return and Arm64 HFA struct return work here.

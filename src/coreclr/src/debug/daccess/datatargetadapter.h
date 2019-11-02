@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // DataTargetAdapter.h
-// 
+//
 
-// 
+//
 // header for compatibility adapter for ICLRDataTarget
 //*****************************************************************************
 
@@ -21,7 +21,7 @@ interface ICLRDataTarget;
  * DataTargetAdapter - implements the new ICorDebugDataTarget interfaces
  * by wrapping legacy ICLRDataTarget implementations.  New code should use
  * ICorDebugDataTarget, but we must continue to support ICLRDataTarget
- * for dbgeng (watson, windbg, etc.) and for any other 3rd parties since 
+ * for dbgeng (watson, windbg, etc.) and for any other 3rd parties since
  * it is a documented API for dump generation.
  */
 class DataTargetAdapter : public ICorDebugMutableDataTarget
@@ -33,7 +33,7 @@ public:
 
     //
     // IUnknown.
-    //        
+    //
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID riid,
         void** ppInterface);
@@ -45,17 +45,17 @@ public:
     //
     // ICorDebugMutableDataTarget.
     //
-    
-    virtual HRESULT STDMETHODCALLTYPE GetPlatform( 
+
+    virtual HRESULT STDMETHODCALLTYPE GetPlatform(
         CorDebugPlatform *pPlatform);
 
-    virtual HRESULT STDMETHODCALLTYPE ReadVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE ReadVirtual(
         CORDB_ADDRESS address,
         PBYTE pBuffer,
         ULONG32 request,
         ULONG32 *pcbRead);
 
-    virtual HRESULT STDMETHODCALLTYPE WriteVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE WriteVirtual(
         CORDB_ADDRESS address,
         const BYTE * pBuffer,
         ULONG32 request);

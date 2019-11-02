@@ -19,7 +19,7 @@
 // Keep the struct definitions in sync with bcl\system\reflection\mdimport.cs
 //
 
-typedef struct 
+typedef struct
 {
     INT32 m_count;
     void* m_array;
@@ -60,26 +60,26 @@ typedef struct
 #define MDImpl10(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) FCIMPL11(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 
 class MetaDataImport
-{    
+{
 public:
     //
     // GetXXXProps
     //
-    MDDecl1(void, GetScopeProps, GUID* pmvid);  
-    MDDecl4(void, GetTypeDefProps, mdTypeDef td, STRINGREF* pszTypeDef, DWORD* pdwTypeDefFlags, mdToken* ptkExtends); 
-    MDDecl2(void, GetMemberRefProps, mdMemberRef mr, ConstArray* ppvSigBlob); 
+    MDDecl1(void, GetScopeProps, GUID* pmvid);
+    MDDecl4(void, GetTypeDefProps, mdTypeDef td, STRINGREF* pszTypeDef, DWORD* pdwTypeDefFlags, mdToken* ptkExtends);
+    MDDecl2(void, GetMemberRefProps, mdMemberRef mr, ConstArray* ppvSigBlob);
 
 
     ////
     //// EnumXXX
     ////
     MDDecl3(void, Enum, mdToken type, mdToken tkParent, MetadataEnumResult * pResult);
-    MDDecl3(void, GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob); 
+    MDDecl3(void, GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
 
     ////
     //// Misc
     ////
-    
+
     MDDecl4(Object *, GetDefaultValue, mdToken tk, INT64* pDefaultValue, INT32* pLength, INT32* pCorElementType);
     MDDecl2(void, GetName, mdToken tk, LPCSTR* pszName);
     MDDecl3(void, GetUserString, mdToken tk, LPCSTR* pszName, ULONG* pCount);
@@ -90,20 +90,20 @@ public:
 
     MDDecl3(void, GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
     MDDecl3(FC_BOOL_RET, GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset);
-    
+
     MDDecl3(void, GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
     MDDecl2(void, GetGenericParamProps, mdToken tk, DWORD* pAttributes);
     MDDecl2(void, GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags);
     MDDecl4(void, GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
 
     MDDecl2(void, GetSignatureFromToken, mdToken tk, ConstArray* pSig);
-    MDDecl2(void, GetSigOfFieldDef, mdToken tk, ConstArray* pMarshalInfo); 
-    MDDecl2(void, GetSigOfMethodDef, mdToken tk, ConstArray* pMarshalInfo); 
-    MDDecl2(void, GetFieldMarshal, mdToken tk, ConstArray* pMarshalInfo); 
+    MDDecl2(void, GetSigOfFieldDef, mdToken tk, ConstArray* pMarshalInfo);
+    MDDecl2(void, GetSigOfMethodDef, mdToken tk, ConstArray* pMarshalInfo);
+    MDDecl2(void, GetFieldMarshal, mdToken tk, ConstArray* pMarshalInfo);
     MDDecl2(mdParamDef, GetParamForMethodIndex, mdMethodDef md, ULONG ulParamSeq);
-    MDDecl1(FC_BOOL_RET, IsValidToken, mdToken tk); 
-    MDDecl1(mdTypeDef, GetNestedClassProps, mdTypeDef tdNestedClass); 
-    MDDecl1(ULONG, GetNativeCallConvFromSig, ConstArray sig);                                                                            
+    MDDecl1(FC_BOOL_RET, IsValidToken, mdToken tk);
+    MDDecl1(mdTypeDef, GetNestedClassProps, mdTypeDef tdNestedClass);
+    MDDecl1(ULONG, GetNativeCallConvFromSig, ConstArray sig);
 
     static FCDECL11(void, GetMarshalAs,
         BYTE*           pvNativeType,
@@ -111,7 +111,7 @@ public:
         INT32*          unmanagedType,
         INT32*          safeArraySubType,
         STRINGREF*      safeArrayUserDefinedSubType,
-        INT32*          arraySubType,   
+        INT32*          arraySubType,
         INT32*          sizeParamIndex,
         INT32*          sizeConst,
         STRINGREF*      marshalType,

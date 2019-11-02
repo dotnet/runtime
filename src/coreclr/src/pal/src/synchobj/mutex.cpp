@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Implementation of mutex synchroniztion object as described in 
+    Implementation of mutex synchroniztion object as described in
     the WIN32 API
 
 Revision History:
@@ -116,13 +116,13 @@ CreateMutexA(
     HANDLE hMutex = NULL;
     CPalThread *pthr = NULL;
     PAL_ERROR palError;
-    
+
     PERF_ENTRY(CreateMutexA);
     ENTRY("CreateMutexA(lpMutexAttr=%p, bInitialOwner=%d, lpName=%p (%s)\n",
           lpMutexAttributes, bInitialOwner, lpName, lpName?lpName:"NULL");
 
     pthr = InternalGetCurrentThread();
-    
+
     palError = InternalCreateMutex(
         pthr,
         lpMutexAttributes,
@@ -139,7 +139,7 @@ CreateMutexA(
     //
 
     pthr->SetLastError(palError);
-    
+
     LOGEXIT("CreateMutexA returns HANDLE %p\n", hMutex);
     PERF_EXIT(CreateMutexA);
     return hMutex;
@@ -420,12 +420,12 @@ ReleaseMutex( IN HANDLE hMutex )
 {
     PAL_ERROR palError = NO_ERROR;
     CPalThread *pthr = NULL;
-    
+
     PERF_ENTRY(ReleaseMutex);
     ENTRY("ReleaseMutex(hMutex=%p)\n", hMutex);
 
     pthr = InternalGetCurrentThread();
-    
+
     palError = InternalReleaseMutex(pthr, hMutex);
 
     if (NO_ERROR != palError)
@@ -557,9 +557,9 @@ OpenMutexA (
     HANDLE hMutex = NULL;
     CPalThread *pthr = NULL;
     PAL_ERROR palError;
-    
+
     PERF_ENTRY(OpenMutexA);
-    ENTRY("OpenMutexA(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%s))\n", 
+    ENTRY("OpenMutexA(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%s))\n",
           dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:"NULL");
 
     pthr = InternalGetCurrentThread();
@@ -579,7 +579,7 @@ OpenMutexAExit:
     {
         pthr->SetLastError(palError);
     }
-        
+
     LOGEXIT("OpenMutexA returns HANDLE %p\n", hMutex);
     PERF_EXIT(OpenMutexA);
     return hMutex;
@@ -609,7 +609,7 @@ OpenMutexW(
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
     PERF_ENTRY(OpenMutexW);
-    ENTRY("OpenMutexW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n", 
+    ENTRY("OpenMutexW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n",
           dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:W16_NULLSTRING);
 
     pthr = InternalGetCurrentThread();
@@ -661,7 +661,7 @@ Function:
 Parameters:
   pthr -- thread data for calling thread
   phEvent -- on success, receives the allocated mutex handle
-  
+
   See MSDN docs on OpenMutex for all other parameters.
 --*/
 
@@ -785,10 +785,10 @@ void SPINLOCKAcquire (LONG * lock, unsigned int flags)
             nanosleep(&tsSleepTime, NULL);
 #else
             sched_yield();
-#endif 
+#endif
         }
     }
-    
+
 }
 
 void SPINLOCKRelease (LONG * lock)

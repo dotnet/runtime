@@ -10,7 +10,7 @@
 // to inspect the handle table in detail. The semantics of these functions MUST be
 // versioned along with the rest of this interface - any changes in semantics
 // must be accompanied with a major versino bump.
-// 
+//
 // Please do not add any additional functions to this list; we'd like to keep it
 // to an absolute minimum.
 #ifdef DACCESS_COMPILE

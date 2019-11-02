@@ -6,7 +6,7 @@ These are tail calls that are handled directly by the jitter and no runtime coop
 
 ## Tail calls using a helper
 Tail calls in cases where we cannot perform the call in a simple way are implemented using a tail call helper. Here is a rough description of how it works:
-* For each tail call target, the jitter asks runtime to generate an assembler argument copying routine. This routine reads vararg list of arguments and places the arguments in their proper slots in the CONTEXT or on the stack. Together with the argument copying routine, the runtime also builds a list of offsets of references and byrefs for return value of reference type or structs returned in a hidden return buffer and for structs passed by ref. The gc layout data block is stored at the end of the argument copying thunk. 
+* For each tail call target, the jitter asks runtime to generate an assembler argument copying routine. This routine reads vararg list of arguments and places the arguments in their proper slots in the CONTEXT or on the stack. Together with the argument copying routine, the runtime also builds a list of offsets of references and byrefs for return value of reference type or structs returned in a hidden return buffer and for structs passed by ref. The gc layout data block is stored at the end of the argument copying thunk.
 * At the time of the tail call, the caller generates a vararg list of all arguments of the tail called function and then calls JIT_TailCall runtime function. It passes it the copying routine address, the target address and the vararg list of the arguments.
 * The JIT_TailCall then performs the following:
   * It calls RtlVirtualUnwind twice to get the context of the caller of the caller of the tail call to simulate the effect of running epilog of the caller of the tail call and also its return.
@@ -23,7 +23,7 @@ There are several issues with this approach:
   * The parameters are copied possibly twice - once from the vararg list to the stack and then one more time if there was not enough space in the caller's stack frame.
   * RtlRestoreContext restores all registers from the CONTEXT structure, not just a subset of them that is really necessary for the functionality, so it results in another unnecessary memory accesses.
 * Stack walking over the stack frames of the tail calls requires runtime assistance.
- 
+
 # The new approach to tail calls using helpers
 ## Objectives
 The new way of handling tail calls using helpers was designed with the following objectives:
@@ -34,21 +34,21 @@ The new way of handling tail calls using helpers was designed with the following
 * The tail calls should not be slower than existing mechanism on Windows
 * No runtime assistance should be necessary for unwinding stack with tail call frames on it
 * The stack should be unwindable at any spot during the tail calls to properly support sampling profilers and similar tools.
-* Stack walk during GC must be able to always correctly report GC references. 
+* Stack walk during GC must be able to always correctly report GC references.
 * It should work in all cases except those where a tail call is not allowed as described in the ECMA 335 standard section III.2.4
 
 ## Requirements
 * The code generator needs to be able to compile a tail call to a target as a call to a thunk with the same parameters as the target, but void return, followed by a jump to an assembler helper.
 
 ## Implementation
-This section describes the helper functions and data structures that the tail calls use and also describes the tail call sequence step by step. 
+This section describes the helper functions and data structures that the tail calls use and also describes the tail call sequence step by step.
 ### Helper functions
 The tail calls use the following thunks and helpers:
 * StoreArguments - this thunk stores the arguments into a thread local storage together with the address of the corresponding CallTarget thunk and a descriptor of locations and types of managed references in the stored arguments data. This thunk is generated as IL and compiled by the jitter or AOT compiler. There is one such thunk per tail call target.
 It has a signature that is compatible with the tailcall target function except for the return type which is void. But it is not the same. It gets the same arguments as the tail call target function, but it would also get "this" pointer and the generic context as explicit arguments if the tail call target requires them. Arguments of generic reference types are passed as "object" so that the StoreArguments doesn't have to be generic.
-* CallTarget - this thunk gets the arguments buffer that was filled by the StoreArguments thunk, loads the arguments from the buffer, releases the buffer and calls the target function using calli. The signature used for the calli would ensure that all arguments including the optional hidden return buffer and the generic context are passed in the right registers / stack slots. Generic reference arguments will be specified as "object" in the signature so that the CallTarget doesn't have to be generic. 
+* CallTarget - this thunk gets the arguments buffer that was filled by the StoreArguments thunk, loads the arguments from the buffer, releases the buffer and calls the target function using calli. The signature used for the calli would ensure that all arguments including the optional hidden return buffer and the generic context are passed in the right registers / stack slots. Generic reference arguments will be specified as "object" in the signature so that the CallTarget doesn't have to be generic.
 The CallTarget is also generated as IL and compiled by the jitter or AOT compiler. There is one such thunk per tail call target. This thunk has the same return type as the tailcall target or return "object" if the return type of the tail call target is a generic reference type.
-* TailCallHelper - this is an assembler helper that is responsible for restoring stack pointer to the location where it was when the first function in a tail call chain was entered and then jumping to the CallTarget thunk. This helper is common for all tail call targets. 
+* TailCallHelper - this is an assembler helper that is responsible for restoring stack pointer to the location where it was when the first function in a tail call chain was entered and then jumping to the CallTarget thunk. This helper is common for all tail call targets.
 In a context of each tailcall invocation, the TailCallHelper will be handled by the jitter as if it had the same return type as the tail call target. That means that if the tail call target needs a hidden return buffer for returning structs, the pointer to this buffer will be passed to the TailCallHelper the same way as it would be passed to the tail call target. The TailCallHelper would then pass this hidden argument to the CallTarget helper.
 There will be two flavors of this helper, based on whether the tail call target needs a hidden return buffer or not:
   * TailCallHelper
@@ -60,7 +60,7 @@ The tail calls use the following data structures:
 * Arguments GC descriptor - descriptor of locations and types of managed references in the arguments.
 * TailCallHelperStack - a per thread stack of helper entries that is used to determine whether a tail call is chained or not. Its entries are allocated as local variables in CallTarget thunks. Each entry contains:
   * Stack pointer captured right before a call to a tail call target
-  * ChainCall flag indicating whether the CallTarget thunk should return after the call to the tail call target or whether it should execute its epilog and jump to TailCallHelper instead. The latter is used by the TailCallHelper to remove the stack frame of the CallTarget before making a tail call from a tail called function. 
+  * ChainCall flag indicating whether the CallTarget thunk should return after the call to the tail call target or whether it should execute its epilog and jump to TailCallHelper instead. The latter is used by the TailCallHelper to remove the stack frame of the CallTarget before making a tail call from a tail called function.
   * Pointer to the next entry on the stack.
 
 ### Tail call sequence
@@ -78,10 +78,10 @@ The tail calls use the following data structures:
   * Pop the TailCallHelperStack entry from the TailCallHelperStack of the current thread.
   * Check the ChainCall flag in the TailCallHelperStack entry. If it is set, run epilog and jump to the TailCallHelper.
   * If the ChainCall flag is clear, it means that the last function in the tail call chain has returned. So return the return value of the target function.
- 
+
 ## Work that needs to be done to implement the new tail calls mechanism
 ### JIT (compiler in the AOT scenario)
-* Modify compilation of tail calls with helper so that a tail call is compiled as a call to the StoreArguments thunk followed by the jump to the assembler TailCallHelper. In other words, the 
+* Modify compilation of tail calls with helper so that a tail call is compiled as a call to the StoreArguments thunk followed by the jump to the assembler TailCallHelper. In other words, the
 ```
 tail. call/callvirt <method>
 ret
@@ -113,10 +113,10 @@ struct S
     {
         s1 = p1; s2 = p2; s3 = p3;
     }
- 
+
     public long s1, s2, s3;
 }
- 
+
 struct T
 {
     public T(S s)
@@ -125,7 +125,7 @@ struct T
     }
     public long t1, t2, t3, t4;
 }
- 
+
 struct U
 {
     public U(T t)
@@ -141,7 +141,7 @@ int D(U u)
     Console.WriteLine("In C, U = [{0}, {1}, {2}, {3}, {4}", u.u1, u.u2, u.u3, u.u4, u.u5);
     return 1;
 }
- 
+
 int C(T t)
 {
     int local;
@@ -149,7 +149,7 @@ int C(T t)
     U args = new U(t);
     return tailcall D(args);
 }
- 
+
 int B(S s)
 {
     int local;
@@ -157,7 +157,7 @@ int B(S s)
     T args = new T(S);
     return tailcall C(args);
 }
- 
+
 int A()
 {
     S args = new S(1, 2, 3);
@@ -177,7 +177,7 @@ This section shows how stack evolves during the execution of the example code ab
 * Callee saved registers and locals of B
 ```
 ### Arguments of C are stored in the thread local buffer, now we are in the TailCallHelper
-The callee saved registers and locals of B are not on the stack anymore 
+The callee saved registers and locals of B are not on the stack anymore
 ```
 * Return address of A
 * Callee saved registers and locals of A
@@ -206,10 +206,10 @@ The thunk will now extract parameters for C from the thread local storage and ca
 * Callee saved registers and locals of C
 ```
 ### Arguments of D are stored in the thread local buffer, now we are in the TailCallHelper
-The callee saved registers and locals of C are not on the stack anymore. 
+The callee saved registers and locals of C are not on the stack anymore.
 But we still have the return address of C, stack arguments of C and callee saved registers and locals of CallTarget thunk for C on the stack.
 We need to remove them as well to prevent stack growing.
-The TailCallHelper detects that the previous stack frame was the frame of the CallTarget thunk for C and so it sets the ChainCall flag in the topmost TailCallHelperStackEntry and returns to CallTarget thunk for C in order to let it cleanup its stack frame.    
+The TailCallHelper detects that the previous stack frame was the frame of the CallTarget thunk for C and so it sets the ChainCall flag in the topmost TailCallHelperStackEntry and returns to CallTarget thunk for C in order to let it cleanup its stack frame.
 ```
 * Return address of A
 * Callee saved registers and locals of A
@@ -220,7 +220,7 @@ The TailCallHelper detects that the previous stack frame was the frame of the Ca
 * Return address of C
 ```
 ### Returned to CallTarget thunk for C with ChainCall flag in the TailCallHelperStackEntry **set**
-The thunk checks the ChainCall flag and since it is set, it runs its epilog and then jumps to the TailCallHelper. 
+The thunk checks the ChainCall flag and since it is set, it runs its epilog and then jumps to the TailCallHelper.
 ```
 * Return address of A
 * Callee saved registers and locals of A
@@ -229,7 +229,7 @@ The thunk checks the ChainCall flag and since it is set, it runs its epilog and 
 * Callee saved registers and locals of CallTarget thunk for C
 ```
 ### Back in TailCallHelper
-Now the stack is back in the state where we have made the previous tail call. Since the previous stack frame was not a CallTarget thunk frame, we just jump to the CallTarget thunk for D.  
+Now the stack is back in the state where we have made the previous tail call. Since the previous stack frame was not a CallTarget thunk frame, we just jump to the CallTarget thunk for D.
 ```
 * Return address of A
 * Callee saved registers and locals of A
@@ -246,7 +246,7 @@ The thunk will now extract parameters for D from the thread local storage and ca
 * Callee saved registers and locals of CallTarget thunk for D
 ```
 ### In D
-We are in the last function of the chain, so after it does its work, it returns to its CallTarget thunk. 
+We are in the last function of the chain, so after it does its work, it returns to its CallTarget thunk.
 ```
 * Return address of A
 * Callee saved registers and locals of A
@@ -258,7 +258,7 @@ We are in the last function of the chain, so after it does its work, it returns 
 * Callee saved registers and locals of D
 ```
 ### Returned to CallTarget thunk for D with ChainCall flag in the TailCallHelperStackEntry **clear**
-The thunk checks the ChainCall flag and since it is clear, it recognizes we are now returning from the call chain and so it returns the result of the D. 
+The thunk checks the ChainCall flag and since it is clear, it recognizes we are now returning from the call chain and so it returns the result of the D.
 ```
 * Return address of A
 * Callee saved registers and locals of A

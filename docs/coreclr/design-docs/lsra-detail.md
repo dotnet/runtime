@@ -548,10 +548,10 @@ LinearScanAllocation(List<RefPosition> refPositions)
             `Interval` to which it is preferenced, if any
 
         -   Whether it is in the register preference set for the
-            `Interval` 
+            `Interval`
 
         -   Whether it is not only available but currently unassigned
-            (i.e. this register is NOT currently assigned to an `Interval` 
+            (i.e. this register is NOT currently assigned to an `Interval`
             which is not currently live)
 
     -   It always uses the same order for iterating over the registers.

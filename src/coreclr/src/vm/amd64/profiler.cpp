@@ -5,9 +5,9 @@
 // FILE: profiler.cpp
 //
 
-// 
+//
 
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -83,7 +83,7 @@ UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void *handle)
 /*
  * ProfileSetFunctionIDInPlatformSpecificHandle
  *
- * This routine takes the platformSpecificHandle and functionID, and assign 
+ * This routine takes the platformSpecificHandle and functionID, and assign
  * functionID to functionID field of platformSpecificHandle.
  *
  * Parameters:
@@ -100,7 +100,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void * pPlatformSpecificHandle
     _ASSERTE(functionID != NULL);
 
     PROFILE_PLATFORM_SPECIFIC_DATA * pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA *>(pPlatformSpecificHandle);
-    pData->functionId = functionID;   
+    pData->functionId = functionID;
 }
 
 /*
@@ -147,7 +147,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
         _ASSERTE(pData->profiledRsp == (void*)ctx.Rsp);
     }
 #endif // _DEBUG
-    
+
     // Get the hidden arg if there is one
     MethodDesc * pMD = FunctionIdToMethodDesc(pData->functionId);
 
@@ -222,7 +222,7 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
- 
+
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = (PROFILE_PLATFORM_SPECIFIC_DATA*)m_handle;
     ArgLocDesc *argLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
 
@@ -364,7 +364,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     unsigned int regStructOfs = (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
     _ASSERTE(regStructOfs < ARGUMENTREGISTERS_SIZE);
 
-    _ASSERTE(IS_ALIGNED(regStructOfs, sizeof(SLOT)));    
+    _ASSERTE(IS_ALIGNED(regStructOfs, sizeof(SLOT)));
     if (argType == ELEMENT_TYPE_R4 || argType == ELEMENT_TYPE_R8)
     {
         return (LPBYTE)&pData->flt0 + regStructOfs;
@@ -485,7 +485,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         return (LPVOID)pData->rax;
     }
 
-    CorElementType t = m_argIterator.GetSig()->GetReturnType();    
+    CorElementType t = m_argIterator.GetSig()->GetReturnType();
     if (ELEMENT_TYPE_VOID != t)
     {
         if (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t)

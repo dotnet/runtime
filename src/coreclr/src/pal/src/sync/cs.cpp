@@ -26,7 +26,7 @@
 using namespace CorUnix;
 
 //
-// Uncomment the following line to turn CS behavior from 
+// Uncomment the following line to turn CS behavior from
 // unfair to fair lock
 //
 // #define PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
@@ -41,56 +41,56 @@ using namespace CorUnix;
 //
 // Important notes on critical sections layout/semantics on Unix
 //
-// 1) The PAL_CRITICAL_SECTION structure below must match the size of the 
+// 1) The PAL_CRITICAL_SECTION structure below must match the size of the
 //    CRITICAL_SECTION defined in pal.h. Besides the "windows part"
 //    of both the structures must be identical.
-// 2) Both PAL_CRITICAL_SECTION and CRITICAL_SECTION currently do not match 
+// 2) Both PAL_CRITICAL_SECTION and CRITICAL_SECTION currently do not match
 //    the size of the Windows' CRITICAL_SECTION.
-//    - From unmanaged code point of view, one should never make assumptions 
-//      on the size and layout of the CRITICAL_SECTION structure, and anyway 
-//      on Unix PAL's CRITICAL_SECTION extends the  Windows one, so that some 
+//    - From unmanaged code point of view, one should never make assumptions
+//      on the size and layout of the CRITICAL_SECTION structure, and anyway
+//      on Unix PAL's CRITICAL_SECTION extends the  Windows one, so that some
 //      assumptions may still work.
-//    - From managed code point of view, one could try to interop directly 
-//      to unmanaged critical sections APIs (though that would be quite 
-//      meaningless). In order to do that, she would need to define a copy 
-//      of the CRITICAL_SECTION structure in his/her code, and that may lead 
-//      to access random data beyond the structure limit, if that managed 
+//    - From managed code point of view, one could try to interop directly
+//      to unmanaged critical sections APIs (though that would be quite
+//      meaningless). In order to do that, she would need to define a copy
+//      of the CRITICAL_SECTION structure in his/her code, and that may lead
+//      to access random data beyond the structure limit, if that managed
 //      code is compiled on Unix.
-//      In case such scenario should be supported, the  current implementation 
-//      will have to be modified in a way to go back to the original Windows 
-//      CRITICAL_SECTION layout. That would require to dynamically allocate 
-//      the native data and use LockSemaphore as a pointer to it. The current 
-//      solution intentionally avoids that since an effort has been made to 
-//      make CSs objects completely independent from any other PAL subsystem, 
+//      In case such scenario should be supported, the  current implementation
+//      will have to be modified in a way to go back to the original Windows
+//      CRITICAL_SECTION layout. That would require to dynamically allocate
+//      the native data and use LockSemaphore as a pointer to it. The current
+//      solution intentionally avoids that since an effort has been made to
+//      make CSs objects completely independent from any other PAL subsystem,
 //      so that they can be used during initialization and shutdown.
-//      In case the "dynamically allocate native data" solution should be 
-//      implemented, CSs would acquire a dependency on memory allocation and 
-//      thread suspension subsystems, since the first contention on a specific 
+//      In case the "dynamically allocate native data" solution should be
+//      implemented, CSs would acquire a dependency on memory allocation and
+//      thread suspension subsystems, since the first contention on a specific
 //      CS would trigger the native data allocation.
-// 3) The semantics of the LockCount field has not been kept compatible with 
-//    the Windows implementation. 
-//    Both on Windows and Unix the lower bit of LockCount indicates 
-//    whether or not the CS is locked (for both fair and unfair lock 
-//    solution), the second bit indicates whether or not currently there is a 
-//    waiter that has been awakened and that is trying to acquire the CS 
-//    (only unfair lock solution, unused in the fair one); starting from the 
-//    third bit, LockCount represents the number of waiter threads currently 
-//    waiting on the CS. 
-//    Windows, anyway, implements this semantics in negative logic, so that 
-//    an unlocked CS is represented by a LockCount == -1 (i.e. 0xFFFFFFFF, 
+// 3) The semantics of the LockCount field has not been kept compatible with
+//    the Windows implementation.
+//    Both on Windows and Unix the lower bit of LockCount indicates
+//    whether or not the CS is locked (for both fair and unfair lock
+//    solution), the second bit indicates whether or not currently there is a
+//    waiter that has been awakened and that is trying to acquire the CS
+//    (only unfair lock solution, unused in the fair one); starting from the
+//    third bit, LockCount represents the number of waiter threads currently
+//    waiting on the CS.
+//    Windows, anyway, implements this semantics in negative logic, so that
+//    an unlocked CS is represented by a LockCount == -1 (i.e. 0xFFFFFFFF,
 //    all the bits set), while on Unix an unlocked CS has LockCount == 0.
-//    Windows needs to use negative logic to support legacy code bad enough 
-//    to directly access CS's fields making the assumption that 
-//    LockCount == -1 means CS unlocked. Unix will not support that, and 
+//    Windows needs to use negative logic to support legacy code bad enough
+//    to directly access CS's fields making the assumption that
+//    LockCount == -1 means CS unlocked. Unix will not support that, and
 //    it uses positive logic.
-// 4) The CRITICAL_SECTION_DEBUG_INFO layout on Unix is intentionally not 
+// 4) The CRITICAL_SECTION_DEBUG_INFO layout on Unix is intentionally not
 //    compatible with the Windows layout.
-// 5) For legacy code dependencies issues similar to those just described for 
-//    the LockCount field, Windows CS code maintains a per-process list of 
-//    debug info for all the CSs, both on debug and free/retail builds. On 
-//    Unix such a list is maintained only on debug builds, and no debug 
+// 5) For legacy code dependencies issues similar to those just described for
+//    the LockCount field, Windows CS code maintains a per-process list of
+//    debug info for all the CSs, both on debug and free/retail builds. On
+//    Unix such a list is maintained only on debug builds, and no debug
 //    info structure is allocated on free/retail builds
-//   
+//
 
 SET_DEFAULT_DEBUG_CHANNEL(CRITSEC);
 
@@ -116,36 +116,36 @@ SET_DEFAULT_DEBUG_CHANNEL(CRITSEC);
 #define PALCS_GETAWBIT(val)     ((int)(0!=(PALCS_LOCK_AWAKENED_WAITER&val)))
 #define PALCS_GETWCOUNT(val)    (val/PALCS_LOCK_WAITER_INC)
 
-enum PalCsInitState 
-{ 
+enum PalCsInitState
+{
     PalCsNotInitialized,    // Critical section not initialized (InitializedCriticalSection
-                            // has not yet been called, or DeleteCriticalsection has been 
+                            // has not yet been called, or DeleteCriticalsection has been
                             // called).
-    PalCsUserInitialized,   // Critical section initialized from the user point of view, 
+    PalCsUserInitialized,   // Critical section initialized from the user point of view,
                             // i.e. InitializedCriticalSection has been called.
     PalCsFullyInitializing, // A thread found the CS locked, this is the first contention on
                             // this CS, and the thread is initializing the CS's native data.
     PalCsFullyInitialized   // Internal CS's native data has been fully initialized.
 };
 
-enum PalCsWaiterReturnState 
-{ 
-    PalCsReturnWaiterAwakened, 
-    PalCsWaiterDidntWait 
+enum PalCsWaiterReturnState
+{
+    PalCsReturnWaiterAwakened,
+    PalCsWaiterDidntWait
 };
 
 struct _PAL_CRITICAL_SECTION; // fwd declaration
 
-typedef struct _CRITICAL_SECTION_DEBUG_INFO 
+typedef struct _CRITICAL_SECTION_DEBUG_INFO
 {
     LIST_ENTRY Link;
     struct _PAL_CRITICAL_SECTION * pOwnerCS;
     Volatile<ULONG> lAcquireCount;
     Volatile<ULONG> lEnterCount;
-    Volatile<LONG> lContentionCount;    
+    Volatile<LONG> lContentionCount;
 } CRITICAL_SECTION_DEBUG_INFO, *PCRITICAL_SECTION_DEBUG_INFO;
 
-typedef struct _PAL_CRITICAL_SECTION_NATIVE_DATA 
+typedef struct _PAL_CRITICAL_SECTION_NATIVE_DATA
 {
     pthread_mutex_t mutex;
     pthread_cond_t condition;
@@ -163,14 +163,14 @@ typedef struct _PAL_CRITICAL_SECTION {
     // Private Unix part
     BOOL fInternal;
     Volatile<PalCsInitState> cisInitState;
-    PAL_CRITICAL_SECTION_NATIVE_DATA csndNativeData;    
+    PAL_CRITICAL_SECTION_NATIVE_DATA csndNativeData;
 } PAL_CRITICAL_SECTION, *PPAL_CRITICAL_SECTION, *LPPAL_CRITICAL_SECTION;
 
 #ifdef _DEBUG
-namespace CorUnix 
+namespace CorUnix
 {
     PAL_CRITICAL_SECTION g_csPALCSsListLock;
-    LIST_ENTRY g_PALCSList = { &g_PALCSList, &g_PALCSList};    
+    LIST_ENTRY g_PALCSList = { &g_PALCSList, &g_PALCSList};
 }
 #endif // _DEBUG
 
@@ -181,9 +181,9 @@ static SIZE_T ObtainCurrentThreadIdImpl(CPalThread *pCurrentThread, const char *
     if(pCurrentThread)
     {
         threadId = pCurrentThread->GetThreadId();
-        _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
+        _ASSERTE(threadId == THREADSilentGetCurrentThreadId());
     }
-    else 
+    else
     {
         threadId = THREADSilentGetCurrentThreadId();
         CS_TRACE("Early %s, no pthread data, getting TID internally\n", callingFuncName);
@@ -203,10 +203,10 @@ See MSDN doc.
 void InitializeCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 {
     PERF_ENTRY(InitializeCriticalSection);
-    ENTRY("InitializeCriticalSection(lpCriticalSection=%p)\n", 
+    ENTRY("InitializeCriticalSection(lpCriticalSection=%p)\n",
           lpCriticalSection);
-    
-    InternalInitializeCriticalSectionAndSpinCount(lpCriticalSection, 
+
+    InternalInitializeCriticalSectionAndSpinCount(lpCriticalSection,
                                                   0, false);
 
     LOGEXIT("InitializeCriticalSection returns void\n");
@@ -245,13 +245,13 @@ BOOL InitializeCriticalSectionAndSpinCount(LPCRITICAL_SECTION lpCriticalSection,
     PERF_ENTRY(InitializeCriticalSectionAndSpinCount);
     ENTRY("InitializeCriticalSectionAndSpinCount(lpCriticalSection=%p, "
           "dwSpinCount=%u)\n", lpCriticalSection, dwSpinCount);
-        
-    InternalInitializeCriticalSectionAndSpinCount(lpCriticalSection, 
+
+    InternalInitializeCriticalSectionAndSpinCount(lpCriticalSection,
                                                   dwSpinCount, false);
-    
+
     LOGEXIT("InitializeCriticalSectionAndSpinCount returns BOOL %d\n",
             bRet);
-    PERF_EXIT(InitializeCriticalSectionAndSpinCount);    
+    PERF_EXIT(InitializeCriticalSectionAndSpinCount);
     return bRet;
 }
 
@@ -284,7 +284,7 @@ void EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
     ENTRY("EnterCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
 
     CPalThread * pThread = InternalGetCurrentThread();
-   
+
     InternalEnterCriticalSection(pThread, lpCriticalSection);
 
     LOGEXIT("EnterCriticalSection returns void\n");
@@ -301,10 +301,10 @@ BOOL TryEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 {
     PERF_ENTRY(TryEnterCriticalSection);
     ENTRY("TryEnterCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
-    
+
     CPalThread * pThread = InternalGetCurrentThread();
-   
-    bool fRet = InternalTryEnterCriticalSection(pThread, 
+
+    bool fRet = InternalTryEnterCriticalSection(pThread,
         lpCriticalSection);
 
     LOGEXIT("TryEnterCriticalSection returns bool %d\n", (int)fRet);
@@ -323,9 +323,9 @@ VOID LeaveCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 {
     PERF_ENTRY(LeaveCriticalSection);
     ENTRY("LeaveCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
-    
+
     CPalThread * pThread = InternalGetCurrentThread();
-  
+
     InternalLeaveCriticalSection(pThread, lpCriticalSection);
 
     LOGEXIT("LeaveCriticalSection returns void\n");
@@ -353,15 +353,15 @@ Deletes a critical section
 VOID InternalDeleteCriticalSection(
     PCRITICAL_SECTION pCriticalSection)
 {
-    PAL_CRITICAL_SECTION * pPalCriticalSection = 
+    PAL_CRITICAL_SECTION * pPalCriticalSection =
         reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
-    
+
     _ASSERT_MSG(PalCsUserInitialized == pPalCriticalSection->cisInitState ||
                 PalCsFullyInitialized == pPalCriticalSection->cisInitState,
                 "CS %p is not initialized", pPalCriticalSection);
 
 #ifdef _DEBUG
-    CPalThread * pThread = 
+    CPalThread * pThread =
         (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
 
     if (0 != pPalCriticalSection->LockCount)
@@ -402,7 +402,7 @@ VOID InternalDeleteCriticalSection(
                 ERROR("Deleting a CS with %d threads waiting on it\n",
                       iWaiterCount);
             }
-            else 
+            else
             {
                 ERROR("Thread tid=%u is deleting a critical section currently not "
                       "owned, but with one waiter awakened\n", tid);
@@ -412,29 +412,29 @@ VOID InternalDeleteCriticalSection(
 
     if (NULL != pPalCriticalSection->DebugInfo)
     {
-        if (pPalCriticalSection != &CorUnix::g_csPALCSsListLock) 
+        if (pPalCriticalSection != &CorUnix::g_csPALCSsListLock)
         {
-            InternalEnterCriticalSection(pThread, 
+            InternalEnterCriticalSection(pThread,
                 reinterpret_cast<CRITICAL_SECTION*>(&g_csPALCSsListLock));
             RemoveEntryList(&pPalCriticalSection->DebugInfo->Link);
-            InternalLeaveCriticalSection(pThread, 
+            InternalLeaveCriticalSection(pThread,
                 reinterpret_cast<CRITICAL_SECTION*>(&g_csPALCSsListLock));
-        } 
-        else 
+        }
+        else
         {
             RemoveEntryList(&pPalCriticalSection->DebugInfo->Link);
         }
-        
+
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
         LONG lVal, lNewVal;
         Volatile<LONG> * plDest;
 
         // Update delete count
-        InterlockedIncrement(pPalCriticalSection->fInternal ? 
+        InterlockedIncrement(pPalCriticalSection->fInternal ?
             &g_lPALCSInternalDeleteCount : &g_lPALCSDeleteCount);
 
         // Update acquire count
-        plDest = pPalCriticalSection->fInternal ? 
+        plDest = pPalCriticalSection->fInternal ?
             &g_lPALCSInternalAcquireCount : &g_lPALCSAcquireCount;
         do {
             lVal = *plDest;
@@ -443,7 +443,7 @@ VOID InternalDeleteCriticalSection(
         } while (lVal != lNewVal);
 
         // Update enter count
-        plDest = pPalCriticalSection->fInternal ? 
+        plDest = pPalCriticalSection->fInternal ?
             &g_lPALCSInternalEnterCount : &g_lPALCSEnterCount;
         do {
             lVal = *plDest;
@@ -452,7 +452,7 @@ VOID InternalDeleteCriticalSection(
         } while (lVal != lNewVal);
 
         // Update contention count
-        plDest = pPalCriticalSection->fInternal ? 
+        plDest = pPalCriticalSection->fInternal ?
             &g_lPALCSInternalContentionCount : &g_lPALCSContentionCount;
         do {
             lVal = *plDest;
@@ -466,7 +466,7 @@ VOID InternalDeleteCriticalSection(
         pPalCriticalSection->DebugInfo = NULL;
     }
 #endif // _DEBUG
-    
+
     if (PalCsFullyInitialized == pPalCriticalSection->cisInitState)
     {
         int iRet;
@@ -483,7 +483,7 @@ VOID InternalDeleteCriticalSection(
     }
 
     // Reset critical section state
-    pPalCriticalSection->cisInitState = PalCsNotInitialized;        
+    pPalCriticalSection->cisInitState = PalCsNotInitialized;
 }
 
 // The following PALCEnterCriticalSection and PALCLeaveCriticalSection
@@ -500,7 +500,7 @@ which has no knowledge of CPalThread, classes and namespaces.
 --*/
 VOID PALCEnterCriticalSection(CRITICAL_SECTION * pcs)
 {
-    CPalThread * pThread = 
+    CPalThread * pThread =
         (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
     CorUnix::InternalEnterCriticalSection(pThread, pcs);
 }
@@ -514,15 +514,15 @@ which has no knowledge of CPalThread, classes and namespaces.
 --*/
 VOID PALCLeaveCriticalSection(CRITICAL_SECTION * pcs)
 {
-    CPalThread * pThread = 
+    CPalThread * pThread =
         (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
-    CorUnix::InternalLeaveCriticalSection(pThread, pcs);    
+    CorUnix::InternalLeaveCriticalSection(pThread, pcs);
 }
 
 namespace CorUnix
 {
     static PalCsWaiterReturnState PALCS_WaitOnCS(
-        PAL_CRITICAL_SECTION * pPalCriticalSection, 
+        PAL_CRITICAL_SECTION * pPalCriticalSection,
         LONG lInc);
     static PAL_ERROR PALCS_DoActualWait(PAL_CRITICAL_SECTION * pPalCriticalSection);
     static PAL_ERROR PALCS_WakeUpWaiter(PAL_CRITICAL_SECTION * pPalCriticalSection);
@@ -530,11 +530,11 @@ namespace CorUnix
 
 #ifdef _DEBUG
     enum CSSubSysInitState
-    { 
+    {
         CSSubSysNotInitialzed,
-        CSSubSysInitializing, 
-        CSSubSysInitialized 
-    }; 
+        CSSubSysInitializing,
+        CSSubSysInitialized
+    };
     static Volatile<CSSubSysInitState> csssInitState = CSSubSysNotInitialzed;
 
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
@@ -549,7 +549,7 @@ namespace CorUnix
     static Volatile<LONG> g_lPALCSInternalEnterCount      = 0;
     static Volatile<LONG> g_lPALCSInternalContentionCount = 0;
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
-#endif // _DEBUG 
+#endif // _DEBUG
 
 
     /*++
@@ -558,13 +558,13 @@ namespace CorUnix
 
     Initializes CS subsystem
     --*/
-    void CriticalSectionSubSysInitialize()    
-    {            
+    void CriticalSectionSubSysInitialize()
+    {
         static_assert(sizeof(CRITICAL_SECTION) >= sizeof(PAL_CRITICAL_SECTION),
             "PAL fatal internal error: sizeof(CRITICAL_SECTION) is "
             "smaller than sizeof(PAL_CRITICAL_SECTION)");
 
-#ifdef _DEBUG        
+#ifdef _DEBUG
         LONG lRet = InterlockedCompareExchange((LONG *)&csssInitState,
                                                (LONG)CSSubSysInitializing,
                                                (LONG)CSSubSysNotInitialzed);
@@ -585,7 +585,7 @@ namespace CorUnix
                 sched_yield();
             }
         }
-#endif // _DEBUG        
+#endif // _DEBUG
     }
 
     /*++
@@ -602,7 +602,7 @@ namespace CorUnix
         DWORD dwSpinCount,
         bool fInternal)
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
 
 #ifndef PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
@@ -632,40 +632,40 @@ namespace CorUnix
         pPalCriticalSection->fInternal         = fInternal;
 
 #ifdef _DEBUG
-        CPalThread * pThread = 
+        CPalThread * pThread =
             (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
 
         pPalCriticalSection->DebugInfo = InternalNew<CRITICAL_SECTION_DEBUG_INFO>();
-        _ASSERT_MSG(NULL != pPalCriticalSection->DebugInfo, 
+        _ASSERT_MSG(NULL != pPalCriticalSection->DebugInfo,
                     "Failed to allocate debug info for new CS\n");
 
-        // Init debug info data 
+        // Init debug info data
         pPalCriticalSection->DebugInfo->lAcquireCount    = 0;
         pPalCriticalSection->DebugInfo->lEnterCount      = 0;
         pPalCriticalSection->DebugInfo->lContentionCount = 0;
         pPalCriticalSection->DebugInfo->pOwnerCS         = pPalCriticalSection;
 
         // Insert debug info struct in global list
-        if (pPalCriticalSection != &g_csPALCSsListLock) 
+        if (pPalCriticalSection != &g_csPALCSsListLock)
         {
-            InternalEnterCriticalSection(pThread, 
+            InternalEnterCriticalSection(pThread,
                 reinterpret_cast<CRITICAL_SECTION*>(&g_csPALCSsListLock));
             InsertTailList(&g_PALCSList, &pPalCriticalSection->DebugInfo->Link);
-            InternalLeaveCriticalSection(pThread, 
+            InternalLeaveCriticalSection(pThread,
                 reinterpret_cast<CRITICAL_SECTION*>(&g_csPALCSsListLock));
-        } 
-        else 
+        }
+        else
         {
             InsertTailList(&g_PALCSList, &pPalCriticalSection->DebugInfo->Link);
         }
-        
+
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
-        InterlockedIncrement(fInternal ? 
+        InterlockedIncrement(fInternal ?
             &g_lPALCSInternalInitializeCount : &g_lPALCSInitializeCount);
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
 #endif // _DEBUG
 
-        // Set initializazion state 
+        // Set initializazion state
         pPalCriticalSection->cisInitState = PalCsUserInitialized;
 
 #ifdef MUTEX_BASED_CSS
@@ -678,9 +678,9 @@ namespace CorUnix
 
         if (fInit)
         {
-            // Set initializazion state 
+            // Set initializazion state
             pPalCriticalSection->cisInitState = PalCsFullyInitialized;
-        }            
+        }
 #endif // MUTEX_BASED_CSS
     }
 
@@ -696,19 +696,19 @@ namespace CorUnix
         CPalThread * pThread,
         PCRITICAL_SECTION pCriticalSection)
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
 
         LONG lSpinCount;
         LONG lVal, lNewVal;
         LONG lBitsToChange, lWaitInc;
-        PalCsWaiterReturnState cwrs;    
+        PalCsWaiterReturnState cwrs;
         SIZE_T threadId;
 
         _ASSERTE(PalCsNotInitialized != pPalCriticalSection->cisInitState);
 
         threadId = ObtainCurrentThreadId(pThread);
-        
+
 
         // Check if the current thread already owns the CS
         //
@@ -720,7 +720,7 @@ namespace CorUnix
         // and the second also succeeds, LockCount cannot have changed in the
         // meanwhile, since this is the owning thread and only the owning
         // thread can change the lock bit when the CS is owned.
-        if ((pPalCriticalSection->LockCount & PALCS_LOCK_BIT) && 
+        if ((pPalCriticalSection->LockCount & PALCS_LOCK_BIT) &&
             (pPalCriticalSection->OwningThread == threadId))
         {
             pPalCriticalSection->RecursionCount += 1;
@@ -729,7 +729,7 @@ namespace CorUnix
             {
                 pPalCriticalSection->DebugInfo->lEnterCount += 1;
             }
-#endif // _DEBUG 
+#endif // _DEBUG
             goto IECS_exit;
         }
 
@@ -737,28 +737,28 @@ namespace CorUnix
         lBitsToChange = PALCS_LOCK_BIT;
         lWaitInc = PALCS_LOCK_WAITER_INC;
         lSpinCount = pPalCriticalSection->SpinCount;
-        
+
         while (TRUE)
         {
-            // Either this is an incoming thread, and therefore lBitsToChange 
+            // Either this is an incoming thread, and therefore lBitsToChange
             // is just PALCS_LOCK_BIT, or this is an awakened waiter
-            _ASSERTE(PALCS_LOCK_BIT == lBitsToChange || 
+            _ASSERTE(PALCS_LOCK_BIT == lBitsToChange ||
                      (PALCS_LOCK_BIT | PALCS_LOCK_AWAKENED_WAITER) == lBitsToChange);
 
             // Make sure the waiter increment is in a valid range
-            _ASSERTE(PALCS_LOCK_WAITER_INC == lWaitInc || 
+            _ASSERTE(PALCS_LOCK_WAITER_INC == lWaitInc ||
                      PALCS_LOCK_AWAKENED_WAITER == lWaitInc);
 
             do {
                 lVal = pPalCriticalSection->LockCount;
-                
+
                 while (0 == (lVal & PALCS_LOCK_BIT))
                 {
                     // CS is not locked: try lo lock it
 
-                    // Make sure that whether we are an incoming thread 
+                    // Make sure that whether we are an incoming thread
                     // or the PALCS_LOCK_AWAKENED_WAITER bit is set
-                    _ASSERTE((PALCS_LOCK_BIT == lBitsToChange) || 
+                    _ASSERTE((PALCS_LOCK_BIT == lBitsToChange) ||
                              (PALCS_LOCK_AWAKENED_WAITER & lVal));
 
                     lNewVal = lVal ^ lBitsToChange;
@@ -768,13 +768,13 @@ namespace CorUnix
 
                     CS_TRACE("[ECS %p] Switching from {%d, %d, %d} to "
                         "{%d, %d, %d} ==>\n", pPalCriticalSection,
-                        PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal), 
+                        PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal),
                         PALCS_GETWCOUNT(lNewVal), PALCS_GETAWBIT(lNewVal), PALCS_GETLBIT(lNewVal));
 
                     // Try to switch the value
-                    lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount, 
+                    lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount,
                                                          lNewVal, lVal);
-                    
+
                     CS_TRACE("[ECS %p] ==> %s LockCount={%d, %d, %d} "
                         "lVal={%d, %d, %d}\n", pPalCriticalSection,
                         (lNewVal == lVal) ? "OK" : "NO",
@@ -782,10 +782,10 @@ namespace CorUnix
                         PALCS_GETAWBIT(pPalCriticalSection->LockCount),
                         PALCS_GETLBIT(pPalCriticalSection->LockCount),
                         PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal));
-                    
+
                     if (lNewVal == lVal)
                     {
-                        // CS successfully acquired                        
+                        // CS successfully acquired
                         goto IECS_set_ownership;
                     }
 
@@ -794,29 +794,29 @@ namespace CorUnix
                     lVal = lNewVal;
                 }
 
-                if (0 < lSpinCount) 
+                if (0 < lSpinCount)
                 {
                     sched_yield();
                 }
             } while (0 <= --lSpinCount);
 
             cwrs = PALCS_WaitOnCS(pPalCriticalSection, lWaitInc);
-            
-            if (PalCsReturnWaiterAwakened == cwrs) 
+
+            if (PalCsReturnWaiterAwakened == cwrs)
             {
 #ifdef PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                // 
+                //
                 // Fair Critical Sections
                 //
-                // In the fair lock case, when a waiter wakes up the CS 
+                // In the fair lock case, when a waiter wakes up the CS
                 // must be locked (i.e. ownership passed on to the waiter)
                 _ASSERTE(0 != (PALCS_LOCK_BIT & pPalCriticalSection->LockCount));
 
                 // CS successfully acquired
                 goto IECS_set_ownership;
-                
+
 #else // PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                // 
+                //
                 // Unfair Critical Sections
                 //
                 _ASSERTE(PALCS_LOCK_AWAKENED_WAITER & pPalCriticalSection->LockCount);
@@ -831,14 +831,14 @@ namespace CorUnix
         // Critical section acquired: set ownership data
         pPalCriticalSection->OwningThread = threadId;
         pPalCriticalSection->RecursionCount = 1;
-#ifdef _DEBUG 
+#ifdef _DEBUG
         if (NULL != pPalCriticalSection->DebugInfo)
         {
             pPalCriticalSection->DebugInfo->lAcquireCount += 1;
             pPalCriticalSection->DebugInfo->lEnterCount += 1;
         }
-#endif // _DEBUG 
-    
+#endif // _DEBUG
+
     IECS_exit:
         return;
     }
@@ -852,7 +852,7 @@ namespace CorUnix
     void InternalLeaveCriticalSection(CPalThread * pThread,
                                       PCRITICAL_SECTION pCriticalSection)
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
         LONG lVal, lNewVal;
 
@@ -865,10 +865,10 @@ namespace CorUnix
         _ASSERTE(threadId == pPalCriticalSection->OwningThread);
 #endif // _DEBUG
 
-        _ASSERT_MSG(PALCS_LOCK_BIT & pPalCriticalSection->LockCount, 
+        _ASSERT_MSG(PALCS_LOCK_BIT & pPalCriticalSection->LockCount,
                     "Trying to release an unlocked CS\n");
-        _ASSERT_MSG(0 < pPalCriticalSection->RecursionCount, 
-                    "Trying to release an unlocked CS\n");      
+        _ASSERT_MSG(0 < pPalCriticalSection->RecursionCount,
+                    "Trying to release an unlocked CS\n");
 
         if (--pPalCriticalSection->RecursionCount > 0)
         {
@@ -884,38 +884,38 @@ namespace CorUnix
 
         while (true)
         {
-            _ASSERT_MSG(0 != (PALCS_LOCK_BIT & lVal), 
+            _ASSERT_MSG(0 != (PALCS_LOCK_BIT & lVal),
                       "Trying to release an unlocked CS\n");
 
-            // NB: In the fair lock case (PALCS_TRANSFER_OWNERSHIP_ON_RELEASE) the 
+            // NB: In the fair lock case (PALCS_TRANSFER_OWNERSHIP_ON_RELEASE) the
             // PALCS_LOCK_AWAKENED_WAITER bit is not used
             if ( (PALCS_LOCK_BIT == lVal)
 #ifndef PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
                  || (PALCS_LOCK_AWAKENED_WAITER & lVal)
 #endif // !PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                ) 
+                )
             {
                 // Whether there are no waiters (PALCS_LOCK_BIT == lVal)
-                // or a waiter has already been awakened, therefore we 
-                // just need to reset the lock bit and return 
+                // or a waiter has already been awakened, therefore we
+                // just need to reset the lock bit and return
                 lNewVal = lVal & ~PALCS_LOCK_BIT;
                 CS_TRACE("[LCS-UN %p] Switching from {%d, %d, %d} to "
                     "{%d, %d, %d} ==>\n", pPalCriticalSection,
                     PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal),
                     PALCS_GETWCOUNT(lNewVal), PALCS_GETAWBIT(lNewVal), PALCS_GETLBIT(lNewVal));
 
-                lNewVal = InterlockedCompareExchange(&pPalCriticalSection->LockCount, 
+                lNewVal = InterlockedCompareExchange(&pPalCriticalSection->LockCount,
                                                      lNewVal, lVal);
 
-                CS_TRACE("[LCS-UN %p] ==> %s\n", pPalCriticalSection, 
+                CS_TRACE("[LCS-UN %p] ==> %s\n", pPalCriticalSection,
                                (lNewVal == lVal) ? "OK" : "NO");
 
-                if (lNewVal == lVal) 
+                if (lNewVal == lVal)
                 {
                     goto ILCS_cs_exit;
                 }
-            } 
-            else 
+            }
+            else
             {
                 // There is at least one waiter, we need to wake it up
 
@@ -923,12 +923,12 @@ namespace CorUnix
                 // Fair lock case: passing ownership on to the first waiter.
                 // Here we need only to decrement the waiters count. CS will
                 // remain locked and ownership will be passed to the waiter,
-                // which will take care of setting ownership data as soon as 
+                // which will take care of setting ownership data as soon as
                 // it wakes up
                 lNewVal = lVal - PALCS_LOCK_WAITER_INC;
 #else // PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                // Unfair lock case: we need to atomically decrement the waiters 
-                // count (we are about ot wake up one of them), set the 
+                // Unfair lock case: we need to atomically decrement the waiters
+                // count (we are about ot wake up one of them), set the
                 // "waiter awakened" bit and to reset the "CS locked" bit.
                 // Note that, since we know that at this time PALCS_LOCK_BIT
                 // is set and PALCS_LOCK_AWAKENED_WAITER is not set, none of
@@ -937,27 +937,27 @@ namespace CorUnix
                 // PALCS_LOCK_AWAKENED_WAITER will not affect the actual
                 // count of waiters, and the latter will not change the two
                 // former ones
-                lNewVal = lVal - PALCS_LOCK_WAITER_INC + 
+                lNewVal = lVal - PALCS_LOCK_WAITER_INC +
                     PALCS_LOCK_AWAKENED_WAITER - PALCS_LOCK_BIT;
 #endif // PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                CS_TRACE("[LCS-CN %p] Switching from {%d, %d, %d} to {%d, %d, %d} ==>\n", 
+                CS_TRACE("[LCS-CN %p] Switching from {%d, %d, %d} to {%d, %d, %d} ==>\n",
                     pPalCriticalSection,
-                    PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal), 
+                    PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal),
                     PALCS_GETWCOUNT(lNewVal), PALCS_GETAWBIT(lNewVal), PALCS_GETLBIT(lNewVal));
 
                 lNewVal = InterlockedCompareExchange(&pPalCriticalSection->LockCount,
                                                      lNewVal, lVal);
 
-                CS_TRACE("[LCS-CN %p] ==> %s\n", pPalCriticalSection, 
+                CS_TRACE("[LCS-CN %p] ==> %s\n", pPalCriticalSection,
                             (lNewVal == lVal) ? "OK" : "NO");
 
-                if (lNewVal == lVal) 
+                if (lNewVal == lVal)
                 {
                     // Wake up the waiter
                     PALCS_WakeUpWaiter (pPalCriticalSection);
-                    
+
 #ifdef PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
-                    // In the fair lock case, we need to yield here to defeat 
+                    // In the fair lock case, we need to yield here to defeat
                     // the inherently unfair nature of the condition/predicate
                     // construct
                     sched_yield();
@@ -967,14 +967,14 @@ namespace CorUnix
                 }
             }
 
-            // CS unlock failed due to race with another thread trying to 
-            // register as waiter on it. We need to keep on looping. We 
-            // intentionally do not yield here in order to reserve higher 
+            // CS unlock failed due to race with another thread trying to
+            // register as waiter on it. We need to keep on looping. We
+            // intentionally do not yield here in order to reserve higher
             // priority for the releasing thread.
             //
-            // At this point lNewVal contains the latest LockCount value 
-            // retrieved by one of the two InterlockedCompareExchange above; 
-            // we can use this value as expected LockCount for the next loop, 
+            // At this point lNewVal contains the latest LockCount value
+            // retrieved by one of the two InterlockedCompareExchange above;
+            // we can use this value as expected LockCount for the next loop,
             // without the need to fetch it again.
             lVal = lNewVal;
         }
@@ -987,14 +987,14 @@ namespace CorUnix
     Function:
       CorUnix::InternalTryEnterCriticalSection
 
-    Tries to acquire a CS. It returns true on success, false if the CS is 
+    Tries to acquire a CS. It returns true on success, false if the CS is
     locked by another thread
     --*/
     bool InternalTryEnterCriticalSection(
         CPalThread * pThread,
         PCRITICAL_SECTION pCriticalSection)
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
 
         LONG lNewVal;
@@ -1005,8 +1005,8 @@ namespace CorUnix
 
         threadId = ObtainCurrentThreadId(pThread);
 
-        lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount, 
-                                             (LONG)PALCS_LOCK_BIT, 
+        lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount,
+                                             (LONG)PALCS_LOCK_BIT,
                                              (LONG)PALCS_LOCK_INIT);
         if (lNewVal == PALCS_LOCK_INIT)
         {
@@ -1019,13 +1019,13 @@ namespace CorUnix
                 pPalCriticalSection->DebugInfo->lAcquireCount += 1;
                 pPalCriticalSection->DebugInfo->lEnterCount += 1;
             }
-#endif // _DEBUG 
+#endif // _DEBUG
 
             goto ITECS_exit;
         }
 
         // check if the current thread already owns the criticalSection
-        if ((lNewVal & PALCS_LOCK_BIT) && 
+        if ((lNewVal & PALCS_LOCK_BIT) &&
             (pPalCriticalSection->OwningThread == threadId))
         {
             pPalCriticalSection->RecursionCount += 1;
@@ -1034,14 +1034,14 @@ namespace CorUnix
             {
                 pPalCriticalSection->DebugInfo->lEnterCount += 1;
             }
-#endif // _DEBUG 
+#endif // _DEBUG
 
             goto ITECS_exit;
         }
 
         // Failed to acquire the CS
         fRet = false;
-        
+
     ITECS_exit:
         return fRet;
     }
@@ -1065,7 +1065,7 @@ namespace CorUnix
             goto PCDI_exit;
         }
         if (PalCsUserInitialized == lVal)
-        {            
+        {
             int iRet;
             lNewVal = (LONG)PalCsFullyInitializing;
             lNewVal = InterlockedCompareExchange(
@@ -1074,12 +1074,12 @@ namespace CorUnix
             {
                 if (PalCsFullyInitialized == lNewVal)
                 {
-                    // Another thread did initialize this CS: we can 
+                    // Another thread did initialize this CS: we can
                     // safely return 'true'
                     goto PCDI_exit;
                 }
 
-                // Another thread is still initializing this CS: yield and 
+                // Another thread is still initializing this CS: yield and
                 // spin by returning 'false'
                 sched_yield();
                 fRet = false;
@@ -1093,7 +1093,7 @@ namespace CorUnix
             iRet = pthread_mutex_init(&pPalCriticalSection->csndNativeData.mutex, NULL);
             if (0 != iRet)
             {
-                ASSERT("Failed initializing mutex in CS @ %p [err=%d]\n", 
+                ASSERT("Failed initializing mutex in CS @ %p [err=%d]\n",
                         pPalCriticalSection, iRet);
                 pPalCriticalSection->cisInitState = PalCsUserInitialized;
                 fRet = false;
@@ -1119,7 +1119,7 @@ namespace CorUnix
         }
         else if (PalCsFullyInitializing == lVal)
         {
-            // Another thread is still initializing this CS: yield and 
+            // Another thread is still initializing this CS: yield and
             // spin by returning 'false'
             sched_yield();
             fRet = false;
@@ -1131,7 +1131,7 @@ namespace CorUnix
             fRet = false;
             goto PCDI_exit;
         }
-        
+
     PCDI_exit:
         return fRet;
     }
@@ -1141,9 +1141,9 @@ namespace CorUnix
     Function:
       CorUnix::PALCS_WaitOnCS
 
-    Waits on a CS owned by another thread. It returns PalCsReturnWaiterAwakened 
-    if the thread actually waited on the CS and it has been awakened on CS 
-    release. It returns PalCsWaiterDidntWait if another thread is currently 
+    Waits on a CS owned by another thread. It returns PalCsReturnWaiterAwakened
+    if the thread actually waited on the CS and it has been awakened on CS
+    release. It returns PalCsWaiterDidntWait if another thread is currently
     fully-initializing the CS and therefore the current thread couldn't wait
     on it
     --*/
@@ -1161,46 +1161,46 @@ namespace CorUnix
             {
                 // The current thread failed the full initialization of the CS,
                 // whether because another thread is race-initializing it, or
-                // there are no enough memory/resources at this time, or 
-                // InitializeCriticalSection has never been called. By 
-                // returning we will cause the thread to spin on CS trying 
+                // there are no enough memory/resources at this time, or
+                // InitializeCriticalSection has never been called. By
+                // returning we will cause the thread to spin on CS trying
                 // again until the CS is initialized
                 return PalCsWaiterDidntWait;
             }
         }
 
         // Make sure we have a valid waiter increment
-        _ASSERTE(PALCS_LOCK_WAITER_INC == lInc || 
+        _ASSERTE(PALCS_LOCK_WAITER_INC == lInc ||
                  PALCS_LOCK_AWAKENED_WAITER == lInc);
-        
+
         do {
             lVal = pPalCriticalSection->LockCount;
 
             // Make sure the waiter increment is compatible with the
             // awakened waiter bit value
-            _ASSERTE(PALCS_LOCK_WAITER_INC == lInc || 
+            _ASSERTE(PALCS_LOCK_WAITER_INC == lInc ||
                      PALCS_LOCK_AWAKENED_WAITER & lVal);
-            
+
             if (0 == (lVal & PALCS_LOCK_BIT))
             {
                 // the CS is no longer locked, let's bail out
                 return PalCsWaiterDidntWait;
             }
-            
-            lNewVal = lVal + lInc; 
 
-            // Make sure that this thread was whether an incoming one or it 
+            lNewVal = lVal + lInc;
+
+            // Make sure that this thread was whether an incoming one or it
             // was an awakened waiter and, in this case, we are now going to
-            // turn off the awakened waiter bit 
-            _ASSERT_MSG(PALCS_LOCK_WAITER_INC == lInc || 
+            // turn off the awakened waiter bit
+            _ASSERT_MSG(PALCS_LOCK_WAITER_INC == lInc ||
                         0 == (PALCS_LOCK_AWAKENED_WAITER & lNewVal));
 
             CS_TRACE("[WCS %p] Switching from {%d, %d, %d} to "
                 "{%d, %d, %d} ==> ", pPalCriticalSection,
                 PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal),
                 PALCS_GETWCOUNT(lNewVal), PALCS_GETAWBIT(lNewVal), PALCS_GETLBIT(lNewVal));
-                        
-            lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount, 
+
+            lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount,
                                                   lNewVal, lVal);
 
             CS_TRACE("[WCS %p] ==> %s\n", pPalCriticalSection,
@@ -1213,12 +1213,12 @@ namespace CorUnix
         {
             pPalCriticalSection->DebugInfo->lContentionCount += 1;
         }
-#endif // _DEBUG 
+#endif // _DEBUG
 
         // Do the actual native wait
         palErr = PALCS_DoActualWait(pPalCriticalSection);
         _ASSERT_MSG(NO_ERROR == palErr, "Native CS wait failed\n");
-        
+
         return PalCsReturnWaiterAwakened;
     }
 
@@ -1242,28 +1242,28 @@ namespace CorUnix
             palErr = ERROR_INTERNAL_ERROR;
             goto PCDAW_exit;
         }
-        
+
         CS_TRACE("Actually Going to sleep [CS=%p]\n", pPalCriticalSection);
-        
+
         while (0 == pPalCriticalSection->csndNativeData.iPredicate)
         {
             // Wait on the condition
-            iRet = pthread_cond_wait(&pPalCriticalSection->csndNativeData.condition, 
+            iRet = pthread_cond_wait(&pPalCriticalSection->csndNativeData.condition,
                                      &pPalCriticalSection->csndNativeData.mutex);
-            
+
             CS_TRACE("Got a signal on condition [pred=%d]!\n",
                            pPalCriticalSection->csndNativeData.iPredicate);
             if (0 != iRet)
             {
                 // Failed: unlock the mutex and bail out
-                ASSERT("Failed waiting on condition in CS %p [err=%d]\n", 
+                ASSERT("Failed waiting on condition in CS %p [err=%d]\n",
                        pPalCriticalSection, iRet);
                 pthread_mutex_unlock(&pPalCriticalSection->csndNativeData.mutex);
                 palErr = ERROR_INTERNAL_ERROR;
                 goto PCDAW_exit;
-            }        
+            }
         }
-        
+
         // Reset the predicate
         pPalCriticalSection->csndNativeData.iPredicate = 0;
 
@@ -1274,9 +1274,9 @@ namespace CorUnix
             palErr = ERROR_INTERNAL_ERROR;
             goto PCDAW_exit;
         }
-        
+
     PCDAW_exit:
-        
+
         CS_TRACE("Just woken up [CS=%p]\n", pPalCriticalSection);
 
         return palErr;
@@ -1306,7 +1306,7 @@ namespace CorUnix
 
         // Set the predicate
         pPalCriticalSection->csndNativeData.iPredicate = 1;
-        
+
         CS_TRACE("Signaling condition/predicate [pred=%d]!\n",
                  pPalCriticalSection->csndNativeData.iPredicate);
 
@@ -1314,9 +1314,9 @@ namespace CorUnix
         iRet = pthread_cond_signal(&pPalCriticalSection->csndNativeData.condition);
         if (0 != iRet)
         {
-            // Failed: set palErr, but continue in order to unlock 
+            // Failed: set palErr, but continue in order to unlock
             // the mutex anyway
-            ASSERT("Failed setting condition in CS %p [ret=%d]\n",  
+            ASSERT("Failed setting condition in CS %p [ret=%d]\n",
                    pPalCriticalSection, iRet);
             palErr = ERROR_INTERNAL_ERROR;
         }
@@ -1332,13 +1332,13 @@ namespace CorUnix
     PCWUW_exit:
         return palErr;
     }
-    
+
 #ifdef _DEBUG
     /*++
     Function:
       CorUnix::PALCS_ReportStatisticalData
 
-    Report creation/acquisition/contention statistical data for the all the 
+    Report creation/acquisition/contention statistical data for the all the
     CSs so far existed and no longer existing in the current process
     --*/
     void PALCS_ReportStatisticalData()
@@ -1350,7 +1350,7 @@ namespace CorUnix
 
         // Take the lock for the global list of CS debug infos
         InternalEnterCriticalSection(pThread, (CRITICAL_SECTION*)&g_csPALCSsListLock);
-        
+
         LONG lPALCSInitializeCount         = g_lPALCSInitializeCount;
         LONG lPALCSDeleteCount             = g_lPALCSDeleteCount;
         LONG lPALCSAcquireCount            = g_lPALCSAcquireCount;
@@ -1365,7 +1365,7 @@ namespace CorUnix
         PLIST_ENTRY pItem = g_PALCSList.Flink;
         while (&g_PALCSList != pItem)
         {
-            PCRITICAL_SECTION_DEBUG_INFO pDebugInfo = 
+            PCRITICAL_SECTION_DEBUG_INFO pDebugInfo =
                 (PCRITICAL_SECTION_DEBUG_INFO)pItem;
 
             if (pDebugInfo->pOwnerCS->fInternal)
@@ -1413,7 +1413,7 @@ namespace CorUnix
     Function:
       CorUnix::PALCS_DumpCSList
 
-    Dumps the list of all the CS currently existing in this process. 
+    Dumps the list of all the CS currently existing in this process.
     --*/
     void PALCS_DumpCSList()
     {
@@ -1425,7 +1425,7 @@ namespace CorUnix
         PLIST_ENTRY pItem = g_PALCSList.Flink;
         while (&g_PALCSList != pItem)
         {
-            PCRITICAL_SECTION_DEBUG_INFO pDebugInfo = 
+            PCRITICAL_SECTION_DEBUG_INFO pDebugInfo =
                 (PCRITICAL_SECTION_DEBUG_INFO)pItem;
             PPAL_CRITICAL_SECTION pCS = pDebugInfo->pOwnerCS;
 
@@ -1437,10 +1437,10 @@ namespace CorUnix
                    "\t\tAcquireCount \t= %d\n"
                    "\t\tEnterCount \t= %d\n"
                    "\t\tContentionCount = %d\n",
-                   pDebugInfo->pOwnerCS, pDebugInfo->lAcquireCount.Load(), 
+                   pDebugInfo->pOwnerCS, pDebugInfo->lAcquireCount.Load(),
                    pDebugInfo->lEnterCount.Load(), pDebugInfo->lContentionCount.Load());
             printf("\t}\n");
-              
+
             printf("\tLockCount \t= %#x\n"
                    "\tRecursionCount \t= %d\n"
                    "\tOwningThread \t= %p\n"
@@ -1449,16 +1449,16 @@ namespace CorUnix
                    "\tfInternal \t= %d\n"
                    "\teInitState \t= %u\n"
                    "\tpNativeData \t= %p ->\n",
-                   pCS->LockCount.Load(), pCS->RecursionCount, (void *)pCS->OwningThread, 
-                   pCS->LockSemaphore, (unsigned)pCS->SpinCount, (int)pCS->fInternal, 
+                   pCS->LockCount.Load(), pCS->RecursionCount, (void *)pCS->OwningThread,
+                   pCS->LockSemaphore, (unsigned)pCS->SpinCount, (int)pCS->fInternal,
                    pCS->cisInitState.Load(), &pCS->csndNativeData);
 
             printf("\t{\n\t\t[mutex]\n\t\t[condition]\n"
                    "\t\tPredicate \t= %d\n"
                    "\t}\n}\n",pCS->csndNativeData.iPredicate);
-            
+
             printf("}\n");
-                   
+
             pItem = pItem->Flink;
         }
 
@@ -1487,7 +1487,7 @@ namespace CorUnix
 #endif // MUTEX_BASED_CSS
 
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
         int iRet;
         SIZE_T threadId;
@@ -1504,7 +1504,7 @@ namespace CorUnix
             return;
         }
 
-        iRet = pthread_mutex_lock(&pPalCriticalSection->csndNativeData.mutex);        
+        iRet = pthread_mutex_lock(&pPalCriticalSection->csndNativeData.mutex);
         _ASSERTE(0 == iRet);
 
         pPalCriticalSection->OwningThread = threadId;
@@ -1526,9 +1526,9 @@ namespace CorUnix
     void MTX_InternalLeaveCriticalSection(
         CPalThread * pThread,
         PCRITICAL_SECTION pCriticalSection)
-#endif // MUTEX_BASED_CSS    
+#endif // MUTEX_BASED_CSS
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
         int iRet;
 #ifdef _DEBUG
@@ -1541,8 +1541,8 @@ namespace CorUnix
 
         if (0 >= pPalCriticalSection->RecursionCount)
             DebugBreak();
-        
-        _ASSERTE(0 < pPalCriticalSection->RecursionCount);        
+
+        _ASSERTE(0 < pPalCriticalSection->RecursionCount);
 #endif // _DEBUG
 
         if (0 < --pPalCriticalSection->RecursionCount)
@@ -1558,7 +1558,7 @@ namespace CorUnix
     Function:
       CorUnix::InternalTryEnterCriticalSection
 
-    Tries to acquire a CS. It returns true on success, false if the CS is 
+    Tries to acquire a CS. It returns true on success, false if the CS is
     locked by another thread
     --*/
 #ifdef MUTEX_BASED_CSS
@@ -1571,7 +1571,7 @@ namespace CorUnix
         PCRITICAL_SECTION pCriticalSection)
 #endif // MUTEX_BASED_CSS
     {
-        PAL_CRITICAL_SECTION * pPalCriticalSection = 
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
         bool fRet;
         SIZE_T threadId;

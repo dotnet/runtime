@@ -8,7 +8,7 @@
 //
 // StackSampler is intended to identify methods where the process is spending most of its time
 // and to re-JIT such methods in the background. Call these methods hot.
-// 
+//
 // Identifying hot methods:
 // ========================
 //
@@ -25,7 +25,7 @@
 //
 // We track this information on a per method basis, the count of its occurrences in each sample
 // using a hash map.
-// 
+//
 // Note:
 // =====
 // o Using the above technique we have only identified top methods at a given point in the execution.
@@ -143,7 +143,7 @@ StackSampler::StackSampler()
     }
 }
 
-// Is "pMD" a good method, that is suitable for tracking as HOT and 
+// Is "pMD" a good method, that is suitable for tracking as HOT and
 // JITting in the background.
 bool IsGoodMethodDesc(MethodDesc* pMD)
 {
@@ -316,7 +316,7 @@ void StackSampler::JitFrequentMethodsInSamples()
     // We want to keep a max-heap of the top frequent methods in the samples.
     NewHolder<Count> freq(new (nothrow) Count[m_nNumMethods]);
 
-    // 
+    //
     // For each element in the samples, call it incoming, add to the "frequent" list
     // if the list has space to hold the incoming element.
     //
@@ -411,7 +411,7 @@ void StackSampler::JitAndCollectTrace(MethodDesc* pMD)
 
 #ifdef _DEBUG
             LOG((LF_JIT, LL_INFO100000, "Jitting the hot method desc using SuperPMI in the background thread -> "));
-            LOG((LF_JIT, LL_INFO100000, "%s:%s\n", pMD->GetMethodTable()->GetClass()->GetDebugClassName(), pMD->GetName())); 
+            LOG((LF_JIT, LL_INFO100000, "%s:%s\n", pMD->GetMethodTable()->GetClass()->GetDebugClassName(), pMD->GetName()));
 #endif
 
             PCODE pCode = UnsafeJitFunction(NativeCodeVersion(pMD), pDecoder, flags);

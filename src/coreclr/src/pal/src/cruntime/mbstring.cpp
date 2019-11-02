@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Implementation of the multi-byte string functions in the C runtime library that 
+    Implementation of the multi-byte string functions in the C runtime library that
     are Windows specific.
 
 Implementation Notes:
@@ -164,10 +164,10 @@ current  Pointer to first byte of any multibyte character in the source
          string; current must follow start in the source string
 
 --*/
-unsigned char * 
+unsigned char *
 __cdecl
 _mbsdec(
-        const unsigned char *start, 
+        const unsigned char *start,
         const unsigned char *current)
 {
     unsigned char *ret;

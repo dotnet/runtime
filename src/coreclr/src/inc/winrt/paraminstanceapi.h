@@ -7,14 +7,14 @@
 *
 *  Portions of this header fall under the following
 *  copyrights and/or licenses:
-* 
+*
 *     rfc4122 and supporting functions
 *     * Algorithm from RFC 4122 - A Universally Unique IDentifier (UUID) URN Namespace
 *     * By Paul J. Leach, Michael Mealling and Rich Sals, July 2005.
-*     * 
+*     *
 *     * This function is adapted from the routines in the document
 *     * uuid_create_sha1_from_name and format_uuid_v3or5
-*     *  
+*     *
 *     *
 *     * Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
 *     * Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
@@ -46,8 +46,8 @@
 
 #ifdef _MSC_VER
 #pragma warning( push )
-#pragma warning( disable : 4180 ) // qualifier applied to function type has no meaning; ignored 
-#endif 
+#pragma warning( disable : 4180 ) // qualifier applied to function type has no meaning; ignored
+#endif
 
 #include <wtypes.h>
 #include <ntassert.h>
@@ -74,10 +74,10 @@
 
 namespace Ro { namespace detail {
 
-    // 
-    // Debugging aide.  Set breakpoint on _FailedHR 
+    //
+    // Debugging aide.  Set breakpoint on _FailedHR
     //  to see HRESULT propagation.
-    // 
+    //
     #ifdef DEBUG
     inline HRESULT NOINLINE _FailedHR(HRESULT hr) { static HRESULT _hr = hr; return hr; }
     #else
@@ -86,32 +86,32 @@ namespace Ro { namespace detail {
 }}
 
 #undef CHKHR
-// 
+//
 // Call HRESULT returning code and propagate any errors.
 // Note: only use in code that is exception-safe / uses RAII.
-// 
+//
 #define CHKHR(expr) \
     { HRESULT _zzhr;  \
       _zzhr = expr;   \
       if (FAILED(_zzhr)) return Ro::detail::_FailedHR(_zzhr); }
 
 #undef CHKNT
-// 
+//
 // Call NTSTATUS returning code and propagate any errors, as HRESULTs.
-// Note: 
+// Note:
 //   - only use in code that is exception-safe / uses RAII / RRID.
-//   - HRESULT_FROM_NT does safely convert STATUS_SUCCESS into 
+//   - HRESULT_FROM_NT does safely convert STATUS_SUCCESS into
 //     a SUCCEEDED hr.
-//  
+//
 #define CHKNT(expr) \
     CHKHR( HRESULT_FROM_NT( expr ) )
 
 namespace Ro { namespace detail {
-    
-    // 
+
+    //
     // Runtime check for an invariant.  This check executes in release builds.
-    // 
-    
+    //
+
     inline HRESULT Verify(bool invariant, HRESULT defaultHr = E_UNEXPECTED)
     {
         if (!invariant)
@@ -130,7 +130,7 @@ extern "C" {
 // create hash instance
 
 HRESULT _RoSha1Create(
-    __out void** handle); 
+    __out void** handle);
 
 
 // sha1 adaptor
@@ -163,18 +163,18 @@ struct IRoMetaDataLocator;
 // The 'detail' namespace includes implementation details that
 //   are subject to change without notice.
 namespace Ro { namespace detail
-{ 
+{
     struct SimpleMetaDataBuffer;
 }}
 
 
 //
-// Purpose: 
-//   Given a parameterized type instance name and metadata, 
+// Purpose:
+//   Given a parameterized type instance name and metadata,
 //   computes the IID for that instance.
-// 
+//
 // Parameters:
-// 
+//
 //   nameElementCount
 //     number of elements in nameElements
 //   nameElements
@@ -182,38 +182,38 @@ namespace Ro { namespace detail
 //     Eg: ["W.F.C.IVector`1", "N1.N2.IFoo"]
 //   metaDataLocator
 //     A callback to use for resolving metadata.
-//     
+//
 //     An implementation could, for example, forward all calls
-//     to RoGetMetaData, then passing the results to 
+//     to RoGetMetaData, then passing the results to
 //     RoWriteImporterToPushSimpleMetaData.  As RoGetMetadata does
 //     not cache results, such an implementation would be inefficient.
 //     A better implementation will cache the results to RoGetMetaData,
 //     as appropriate.
 //
-//     The Locator helper function can be used to wrap a lambda 
+//     The Locator helper function can be used to wrap a lambda
 //     expression, or function pointer.  eg:
 //         RoGetParameterizedTypeInstanceIID(
-//             ..., 
+//             ...,
 //             Locate([&](PCWSTR* name, IRoSimpleMetaDataBuilder& push){...}),
 //             ...);
 //   iid
-//     out param.  Returns the iid for the parameterized type specified 
+//     out param.  Returns the iid for the parameterized type specified
 //     by nameElements
-//   extra 
+//   extra
 //     out param. returns a handle that holds extra information about the
 //     IID result, for diagnostic purposes. If this handle is not desired,
 //     provide nullptr instead.
-// 
+//
 // Notes:
 //   -  This function is stateless.  IRoMetaDataLocator will not be preserved
 //      between calls.
-//   -  This function does not perform deep semantic analysis.  For instance, 
+//   -  This function does not perform deep semantic analysis.  For instance,
 //      if IRoSimpleMetaDataBuilder specifies that a struct contains an interface pointer,
 //      this API will return success, even though such metadata is semantically
-//      invalid.  The value of the IID returned is unspecified in such cases.      
+//      invalid.  The value of the IID returned is unspecified in such cases.
 //   -  This function does introduce reentrancy.  Its implementation
 //      of IRoSimpleMetaDataBuilder may make reentrant calls to IRoMetaDataLocator.
-//   -  If a call to IRoSimpleMetaDataBuilder fails, this function will return that 
+//   -  If a call to IRoSimpleMetaDataBuilder fails, this function will return that
 //      failure code.
 //
 
@@ -221,13 +221,13 @@ namespace Ro { namespace detail
 DECLARE_HANDLE(ROPARAMIIDHANDLE);
 
 inline HRESULT RoGetParameterizedTypeInstanceIID(
-    UINT32                                  nameElementCount,  
-    __in_ecount(nameElementCount) PCWSTR*   nameElements, 
-    __in const IRoMetaDataLocator&          metaDataLocator, 
+    UINT32                                  nameElementCount,
+    __in_ecount(nameElementCount) PCWSTR*   nameElements,
+    __in const IRoMetaDataLocator&          metaDataLocator,
     __out GUID*                             iid,
     __deref_opt_out ROPARAMIIDHANDLE*       pExtra = nullptr);
 
-// Frees the 'extra' handle allocated 
+// Frees the 'extra' handle allocated
 //   by RoGetParameterizedTypeInstanceIID
 inline void RoFreeParameterizedTypeExtra(__in ROPARAMIIDHANDLE extra);
 
@@ -237,71 +237,71 @@ inline void RoFreeParameterizedTypeExtra(__in ROPARAMIIDHANDLE extra);
 //   until RoFreeParameterizedTypeExtra is called on the extra pointer.
 inline PCSTR RoParameterizedTypeExtraGetTypeSignature(__in ROPARAMIIDHANDLE extra);
 
-namespace Ro { namespace detail 
+namespace Ro { namespace detail
 {
-    
-    // private type used in helper function 
-    
+
+    // private type used in helper function
+
     template <typename Fn>
     struct _Locator;
 }} // namespace Ro::detail
 
-namespace Ro 
+namespace Ro
 {
-    
+
     // helper function to create IRoMetaDataLocator from lambda expression
-    
+
     template <typename Fn>
     Ro::detail::_Locator<Fn> Locator(const Fn& fn);
 } // namespace Ro
 
 
-// 
+//
 // Purpose:
 //   Destination for IRoMetaDataLocator::Locate to write parsed metadata to.
 //   'Locate' should set the appropriate Windows Runtime metadata information gleaned
 //   from Windows Runtime metadata file, or other appropriate source.
-//  
+//
 // Notes:
 //   -  Methods for base types and COM interfaces (eg, Int32 and IInspectable
-//      respectively) are not needed -- RoGetParameterizedTypeInstanceIID already 
-//      knows the WinRT base type names, so will not invoke IMetDataLocator 
-//      to discover them. 
+//      respectively) are not needed -- RoGetParameterizedTypeInstanceIID already
+//      knows the WinRT base type names, so will not invoke IMetDataLocator
+//      to discover them.
 //   -  This is not a COM interface.  It does not derive from IUnknown.
 //
 
 struct IRoSimpleMetaDataBuilder
 {
-    
-    // Notes: 
+
+    // Notes:
     //  IInspectable and other non-WinRT interfaces are not permissible.
     //  Not for use with parameterized type instances.  See SetParameterizedInterface
-    
+
     STDMETHOD(SetWinRtInterface)(
         GUID iid) = 0;
 
-    
-    // Notes: 
+
+    // Notes:
     //  Not for use with parameterized type instances.  See SetParameterizedDelegate
-    
+
     STDMETHOD(SetDelegate)(
         GUID iid) = 0;
 
-    
+
     // Notes:
-    //  Call this method when an interface group has a default interface 
+    //  Call this method when an interface group has a default interface
     //  that is a non-parametric type.
-    
+
     STDMETHOD(SetInterfaceGroupSimpleDefault)(
         PCWSTR                  name,
         PCWSTR                  defaultInterfaceName,
         __in_opt const GUID*    defaultInterfaceIID) = 0;
 
-    
+
     // Notes:
-    //  Call this method when an interface group has a parameterized 
+    //  Call this method when an interface group has a parameterized
     //  interface as its default interface.
-    
+
     STDMETHOD(SetInterfaceGroupParameterizedDefault)(
         PCWSTR                              name,
         UINT32                              elementCount,
@@ -319,19 +319,19 @@ struct IRoSimpleMetaDataBuilder
 
     STDMETHOD(SetStruct)(
         PCWSTR                          name,
-        UINT32                          numFields, 
+        UINT32                          numFields,
         __in_ecount(numFields) PCWSTR*  fieldTypeNames) = 0;
 
     STDMETHOD(SetEnum)(
         PCWSTR name,
         PCWSTR baseType) = 0;
-    
-    
-    // Notes: 
-    //   This is only for the 'non-instantiated' parameterized interface itself - 
-    //   instances are handled by RoGetParameterizedTypeInstanceIID, and the 
+
+
+    // Notes:
+    //   This is only for the 'non-instantiated' parameterized interface itself -
+    //   instances are handled by RoGetParameterizedTypeInstanceIID, and the
     //   caller need not parse them.
-    
+
     STDMETHOD(SetParameterizedInterface)(
         GUID   piid,
         UINT32 numArgs) = 0;
@@ -343,23 +343,23 @@ struct IRoSimpleMetaDataBuilder
 
 
 //
-// Purpose: 
+// Purpose:
 //   Callback for resolving metadata.
-// 
+//
 
 struct IRoMetaDataLocator
 {
-    
-    // 
+
+    //
     // Parameters:
     //   nameElement
-    //     a metadata typeref name to resolve.  
+    //     a metadata typeref name to resolve.
     //     Eg: "N1.N2.IFoo", or "W.F.C.IVector`1".
     //   pushMetaData
-    //     data sink for providing information about the 
+    //     data sink for providing information about the
     //     type information for nameElement
-    // 
-    
+    //
+
     STDMETHOD(Locate)(
         PCWSTR                      nameElement,
         __in IRoSimpleMetaDataBuilder&   metaDataDestination
@@ -368,30 +368,30 @@ struct IRoMetaDataLocator
 
 namespace Ro { namespace detail {
 
-    
-    // 
+
+    //
     // helper function, moves range of elements
-    // 
-    
+    //
+
     template <typename T>
     void _VecMoveRange(
         __in_ecount(size) T* dst,
-        __in_ecount(size) T* src, 
+        __in_ecount(size) T* src,
         size_t               size)
     {
-        for (size_t i = 0; i != size; ++i) 
+        for (size_t i = 0; i != size; ++i)
         {
             dst[i] = static_cast<T&&>(src[i]);
         }
     }
-    
-    // 
+
+    //
     // specializations to move strings more efficiently
-    // 
-    
+    //
+
     inline void _VecMoveRange(
         __in_ecount(size) char* dst,
-        __in_ecount(size) char* src, 
+        __in_ecount(size) char* src,
         size_t                  size)
     {
         errno_t err = memcpy_s(dst, size*sizeof(*dst), src, size*sizeof(*dst));
@@ -400,7 +400,7 @@ namespace Ro { namespace detail {
     }
     inline void _VecMoveRange(
         __in_ecount(size) wchar_t* dst,
-        __in_ecount(size) wchar_t* src, 
+        __in_ecount(size) wchar_t* src,
         size_t                  size)
     {
         errno_t err = memcpy_s(dst, size*sizeof(*dst), src, size*sizeof(*dst));
@@ -408,30 +408,30 @@ namespace Ro { namespace detail {
         (void)err;
     }
 
-        
-    // 
+
+    //
     // helper function, moves range of elements
-    // 
-    
+    //
+
     template <typename T>
     void _VecCopyRange(
         __in_ecount(size) T* dst,
-        __in_ecount(size) const T* src, 
+        __in_ecount(size) const T* src,
         size_t               size)
     {
-        for (size_t i = 0; i != size; ++i) 
+        for (size_t i = 0; i != size; ++i)
         {
             dst[i] = src[i];
         }
     }
-    
-    // 
+
+    //
     // specializations to move strings more efficiently
-    // 
-    
+    //
+
     inline void _VecCopyRange(
         __in_ecount(size) char* dst,
-        __in_ecount(size) const char* src, 
+        __in_ecount(size) const char* src,
         size_t                  size)
     {
         errno_t err = memcpy_s(dst, size*sizeof(*dst), const_cast<char*>(src), size*sizeof(*dst));
@@ -440,18 +440,18 @@ namespace Ro { namespace detail {
     }
     inline void _VecCopyRange(
         __in_ecount(size) wchar_t* dst,
-        __in_ecount(size) const wchar_t* src, 
+        __in_ecount(size) const wchar_t* src,
         size_t                  size)
     {
         errno_t err = memcpy_s(dst, size*sizeof(*dst), const_cast<wchar_t*>(src), size*sizeof(*dst));
         NT_ASSERT(!err);
         (void)err;
     }
-    
-    // 
+
+    //
     // Single-owner smart pointer for arrays
-    // 
-    
+    //
+
     template <class T>
     struct ArrayHolder
     {
@@ -459,11 +459,11 @@ namespace Ro { namespace detail {
         {
         }
         T* Value() const
-        { 
+        {
             return _value;
         }
         T*& Value()
-        { 
+        {
             return _value;
         }
         T* Detach()
@@ -480,11 +480,11 @@ namespace Ro { namespace detail {
     private:
         T* _value;
     };
-    
-    // 
+
+    //
     // Single-owner smart pointer for object pointer
-    // 
-    
+    //
+
     template <class T>
     struct ElementHolder
     {
@@ -496,11 +496,11 @@ namespace Ro { namespace detail {
             return _value;
         }
         T* Value() const
-        { 
+        {
             return _value;
         }
         T*& Value()
-        { 
+        {
             return _value;
         }
         T* Detach()
@@ -519,43 +519,43 @@ namespace Ro { namespace detail {
     };
 
 
-    
-    // 
+
+    //
     // simple vector, with small vector optimization
     //   T - must be default constructable and movable.
     //       const input overload of AppendN requires copyable.
-    //   FixedBufSize - number of bytes to use for small array 
-    //       optimization, to avoid heap allocation in case of 
-    //       small vectors.  Defaults to at least one element, 
-    //       otherwise the largest value such that <= 64 bytes 
+    //   FixedBufSize - number of bytes to use for small array
+    //       optimization, to avoid heap allocation in case of
+    //       small vectors.  Defaults to at least one element,
+    //       otherwise the largest value such that <= 64 bytes
     //       are used.
-    // 
-    
+    //
+
     template <
-        typename T, 
+        typename T,
         size_t FixedBufSize = 0
         >
     class Vec
     {
     private:
-        static const size_t _fixedBufSize = 
-            FixedBufSize/sizeof(T) 
+        static const size_t _fixedBufSize =
+            FixedBufSize/sizeof(T)
                          ? FixedBufSize/sizeof(T)
-                         : (((64/sizeof(T)) > 0) ? (64/sizeof(T)) 
+                         : (((64/sizeof(T)) > 0) ? (64/sizeof(T))
                                                  : 1);
     public:
-        Vec() : 
-            _size(0), 
-            _cap(_countof(_fixedBuf)), 
+        Vec() :
+            _size(0),
+            _cap(_countof(_fixedBuf)),
             _buf(_fixedBuf)
         {
         }
 
-        
-        // Appends an element, or a default value if one 
-        // it not specified. If called with an rvalue, 
+
+        // Appends an element, or a default value if one
+        // it not specified. If called with an rvalue,
         // it uses move assignment instead of copy.
-        
+
         HRESULT Append(T value = T())
         {
             if (_cap - _size < 1)
@@ -567,9 +567,9 @@ namespace Ro { namespace detail {
 
             return S_OK;
         }
-        
+
         // Moves elements (move assignment) into array.
-        
+
         HRESULT MoveN(__in_ecount(n) T* values, size_t n)
         {
             if (_cap - _size < n)
@@ -581,10 +581,10 @@ namespace Ro { namespace detail {
 
             return S_OK;
         }
-        
-        
+
+
         // Appends elements. Does not invoke move assignment.
-        
+
         HRESULT AppendN(__in_ecount(n) const T* values, size_t n)
         {
             if (_cap - _size < n)
@@ -632,18 +632,18 @@ namespace Ro { namespace detail {
 
         ~Vec()
         {
-            if (_buf != _fixedBuf) 
+            if (_buf != _fixedBuf)
             {
                 delete[] _buf;
             }
         }
 
     private:
-        
-        // 
+
+        //
         // growth factor (does not check for overflow) -- returns amount to grow by
-        // 
-        
+        //
+
         static size_t _GrowthIncrement(size_t n)
         {
             return n / 2;
@@ -657,21 +657,21 @@ namespace Ro { namespace detail {
                 increase = byAtLeast;
             }
             size_t newCap = _cap + increase;
-            if (newCap <= _cap) 
+            if (newCap <= _cap)
             {
                 CHKHR(E_OUTOFMEMORY);
             }
             ArrayHolder<T> newBuf;
 
             void* p = (newBuf.Value() = new (std::nothrow) T[newCap]);
-            if (!p) 
+            if (!p)
             {
                 CHKHR(E_OUTOFMEMORY);
             }
 
             _VecMoveRange( newBuf.Value(), _buf, _size );
 
-            if (_buf != _fixedBuf) 
+            if (_buf != _fixedBuf)
             {
                 delete _buf;
             }
@@ -690,7 +690,7 @@ namespace Ro { namespace detail {
     struct SimpleMetaDataBuilder : IRoSimpleMetaDataBuilder
     {
     public:
-        SimpleMetaDataBuilder(SimpleMetaDataBuffer& buffer, const IRoMetaDataLocator& locator) 
+        SimpleMetaDataBuilder(SimpleMetaDataBuffer& buffer, const IRoMetaDataLocator& locator)
         : _buffer(&buffer), _locator(&locator), _invoked(false)
         {
         }
@@ -705,42 +705,42 @@ namespace Ro { namespace detail {
         IFACEMETHOD(SetParameterizedInterface)(GUID piid, UINT32 numArgs);
         IFACEMETHOD(SetParameterizedDelegate)(GUID piid, UINT32 numArgs);
 
-        
-        // Runs the locating process for a parameterized type. 
+
+        // Runs the locating process for a parameterized type.
         // Notes:
-        //   _buffer->_nestingLevel is used to determine the number of 
-        //   arguments left to consume for nested parameterized types. 
-        
+        //   _buffer->_nestingLevel is used to determine the number of
+        //   arguments left to consume for nested parameterized types.
+
         HRESULT SendArguments(UINT32 nameElementCount, __in_ecount(nameElementCount) PCWSTR *nameElements);
 
     private:
 
-        
+
         // Writes the type signature for the type 'name'
         //   Notes:
         //     - If a builtin type, writes the type directly.
-        //     - Otherwise, uses the IRoMetaDataLocator to 
+        //     - Otherwise, uses the IRoMetaDataLocator to
         //       write the type signature into _buffer
-        //     - As the sole function to call 
+        //     - As the sole function to call
         //       IRoMetaDataLocator, it also performs the check
         //       on recursion depth bounds.
-        
+
         HRESULT _WriteType(PCWSTR name);
 
-        
-        // The tail portion of IG and RC formats is the same.  This 
+
+        // The tail portion of IG and RC formats is the same.  This
         //   function implements the shared portion of that format.
-        
+
         HRESULT _CommonInterfaceGroupSimple(PCWSTR name, PCWSTR defaultInterfaceName, __in_opt const GUID *defaultInterfaceIID);
 
-         
-        // Called at the beginning of every 'Set' method.  Set must only be called once. 
-        
+
+        // Called at the beginning of every 'Set' method.  Set must only be called once.
+
         HRESULT _OnSet();
 
-        
-        // Called at the end of every 'Set' method, only if successful. 
-        
+
+        // Called at the end of every 'Set' method, only if successful.
+
         void _Completed();
 
         static char _AsciiLower(char ch)
@@ -755,9 +755,9 @@ namespace Ro { namespace detail {
             }
         }
 
-        
+
         // Writes a guid into the type signature being built, in lower case.
-        
+
         HRESULT _WriteGuid(const GUID& iid);
         HRESULT _WriteString(PCSTR str);
         HRESULT _WriteChar(char c);
@@ -772,17 +772,17 @@ namespace Ro { namespace detail {
         bool                        _invoked;
     };
 
-    
-    // If the type string describes a built-in type, modifies 
+
+    // If the type string describes a built-in type, modifies
     // this instance to use builtin type table entry instead of name.
-    
+
     inline bool _IsBuiltin(__in PCWSTR name, __out PCSTR * typeSignature)
     {
         *typeSignature = nullptr;
 
         struct BuiltinEntry { PCWSTR name; PCSTR typeSignature; };
         static const BuiltinEntry entries[] = {
-            
+
             { L"UInt8",     "u1" },
             { L"Int16",     "i2" },
             { L"UInt16",    "u2" },
@@ -808,24 +808,24 @@ namespace Ro { namespace detail {
                 return true;
             }
         }
-        
+
         // if not found, assume is a normal type name
-        
+
         return false;
     }
 
-    
+
     // Linked list (stack allocated) of type resolution calls,
     // used to detect if an InterfaceGroup/RuntimeClass type
     // signature depends on itself. In that case, we use "*"
     // in the type signature instead of recurring further.
-    
+
     struct ResolutionPathEntry
     {
         ResolutionPathEntry*    _next;
         PCWSTR                  _typeName;
 
-        ResolutionPathEntry(PCWSTR typeName) 
+        ResolutionPathEntry(PCWSTR typeName)
         : _next(nullptr)
         , _typeName(typeName)
         {
@@ -847,11 +847,11 @@ namespace Ro { namespace detail {
         return S_OK;
     }
 
-    
+
     // Holds metadata state that is shared between RoGetParamInstanceIID and SimpleMetaDataBuilder
-    
-    struct SimpleMetaDataBuffer 
-    {   
+
+    struct SimpleMetaDataBuffer
+    {
         SimpleMetaDataBuffer()
         {
             Clear();
@@ -868,18 +868,18 @@ namespace Ro { namespace detail {
 
         static const size_t             _maxTypeName = 256;
 
-        
-        // Estimate of 'reasonable' level of Interface Group / Runtime 
+
+        // Estimate of 'reasonable' level of Interface Group / Runtime
         // Class / Parameterized Type nesting.
-        
+
         static const size_t             _maxRecursionDepth = 64;
 
         Vec<char, _maxTypeName>         _outputStream;
         ResolutionPathEntry*            _resolutionPath;
 
-        
+
         // RAII object, places an item on the resolution path, and pops it on destruction
-        
+
         class ResolutionPathGuard
         {
         private:
@@ -901,9 +901,9 @@ namespace Ro { namespace detail {
             }
         };
 
-        
+
         // Searches the resolution path for 'name' returning true if exists
-        
+
         bool ExistsCycle(PCWSTR typeName)
         {
             for (auto pTip = _resolutionPath; pTip; pTip = pTip->_next)
@@ -916,12 +916,12 @@ namespace Ro { namespace detail {
             return false;
         }
 
-        
+
         // Indicates the nesting level of compound types, used
         //   to properly balance parenthesis on parameterized types,
         //   and used to bound recursion depth.
-        // 
-        // - Pinterfaces 
+        //
+        // - Pinterfaces
         //     : push 'numArgs' on to _nestingLevel
         // - A compound type that doesn't know number of arguments
         //     eg, RoGetParameterizedInstanceIID arguments, or
@@ -929,37 +929,37 @@ namespace Ro { namespace detail {
         //     : will 0) note nesting level
         //            1) iterate calling Locate on the compound arguments.
         //            2) the above should cause exactly one push of _nestingLevel
-        //            3) reduce nesting level back to original nesting level, 
+        //            3) reduce nesting level back to original nesting level,
         //               inserting the difference in closing parens
         //  - Compound types that do know number of arguments (eg SetStruct)
         //     : will 1) increase nesting level by 1
         //            2) iterate calling Locate on arguments
         //            3) decrease nesting level again
-        // 
-        // 
-        
+        //
+        //
+
         Vec<size_t>                     _nestedArgs;
-        
+
         // topLevelTypes should be incremented once, by the initial
         // parameterized type, then never again.
-        
+
         size_t                          _topLevelTypes;
         size_t                          _recursionDepth;
     };
 }} // namespace Ro::detail
 
-namespace Ro { namespace detail 
+namespace Ro { namespace detail
 {
     template <typename Fn>
     struct _Locator : IRoMetaDataLocator
     {
         Fn _fn;
 
-        _Locator(const Fn& fn) 
+        _Locator(const Fn& fn)
         : _fn(fn)
         {
         }
-        
+
         IFACEMETHOD(Locate)(
             PCWSTR name,
             IRoSimpleMetaDataBuilder& pushMetaData) const
@@ -980,9 +980,9 @@ namespace Ro
 
 namespace Ro { namespace detail
 {
-    
+
     // Figure out if we're compiling for a big- or little-endian machine.
-    
+
     inline bool BigEndian()
     {
         unsigned long n = 0xff000000L;
@@ -990,9 +990,9 @@ namespace Ro { namespace detail
         return 0 != *reinterpret_cast<unsigned char *>(&n);
     }
 
-    
+
     // HostToNetworkLong converts a 32-bit long to network byte order
-    
+
     inline ULONG HostToNetworkLong(ULONG hostlong)
     {
         if (BigEndian())
@@ -1004,9 +1004,9 @@ namespace Ro { namespace detail
                     ( (hostlong << 24) & 0xFF000000L);
     }
 
-    
+
     // HostToNetworkLong converts a 16-bit short to network byte order
-    
+
     inline USHORT HostToNetworkShort(USHORT hostshort)
     {
         if (BigEndian())
@@ -1015,9 +1015,9 @@ namespace Ro { namespace detail
             return ((hostshort >> 8) & 0x00FF) | ((hostshort << 8) & 0xFF00);
     }
 
-    
+
     // NetworkToHostLong converts a 32-bit long to local host byte order
-    
+
     inline ULONG NetworkToHostLong(ULONG netlong)
     {
         if (BigEndian())
@@ -1029,9 +1029,9 @@ namespace Ro { namespace detail
                     ( (netlong << 24) & 0xFF000000L);
     }
 
-    
+
     // NetworkToHostShort converts a 16-bit short to local host byte order
-    
+
     inline USHORT NetworkToHostShort(USHORT netshort)
     {
         if (BigEndian())
@@ -1040,9 +1040,9 @@ namespace Ro { namespace detail
             return ((netshort >> 8) & 0x00FF) | ((netshort << 8) & 0xFF00);
     }
 
-    
+
     // smart pointer for Sha1 handle
-    
+
     struct Sha1Holder
     {
         Sha1Holder() : _handle(nullptr)
@@ -1063,17 +1063,17 @@ namespace Ro { namespace detail
         void* _handle;
     };
 
-    
-    
-    // 
+
+
+    //
     // Computes the rfc4122 v5 UUID from GUID,name pair.
-    // 
+    //
     // Notes:
     //   - see copyright at beginning of file.
-    // 
-    
+    //
+
     inline HRESULT
-    GuidFromName(   
+    GuidFromName(
         __in const GUID& guidNamespace,
         __in_bcount(dwcbSize) const void* pbName,
         __in DWORD  dwcbSize,
@@ -1084,10 +1084,10 @@ namespace Ro { namespace detail
         CHKHR( _RoSha1Create(&sha1.Value()) );
         {
             GUID networkOrderGuidNamespace = guidNamespace;
-            
+
             // Put name space ID in network byte order so it hashes the same
             // no matter what endian machine we're on
-            
+
             if (!BigEndian())
             {
                 networkOrderGuidNamespace.Data1 = HostToNetworkLong (networkOrderGuidNamespace.Data1);
@@ -1101,13 +1101,13 @@ namespace Ro { namespace detail
         {
             BYTE sha1Result[20];
             CHKHR( _RoSha1Finish(sha1.Value(), &sha1Result) );
-            
+
             errno_t err = memcpy_s(pGuid, sizeof(GUID), &sha1Result[0], sizeof(GUID));
             CHKHR(Verify( 0 == err ));
 
-            
+
             // Restore the byte order
-            
+
             if (!BigEndian())
             {
                 pGuid->Data1 = NetworkToHostLong (pGuid->Data1);
@@ -1115,28 +1115,28 @@ namespace Ro { namespace detail
                 pGuid->Data3 = NetworkToHostShort(pGuid->Data3);
             }
 
-            
-            // set version number 
+
+            // set version number
             // 1: clear version number nibble
             // 2: set version 5 = name-based SHA1
-            
+
             pGuid->Data3 &= 0x0FFF;
-            pGuid->Data3 |= (5 << 12); 
-    
-            
+            pGuid->Data3 |= (5 << 12);
+
+
             // set variant field by clearing variant bits.
-            
-            pGuid->Data4[0] &= 0x3F;    
-            pGuid->Data4[0] |= 0x80;    
+
+            pGuid->Data4[0] &= 0x3F;
+            pGuid->Data4[0] |= 0x80;
         }
         return S_OK;
     }
 }} // namespace Ro::detail
 
 inline HRESULT RoGetParameterizedTypeInstanceIID(
-    UINT32                                  nameElementCount,  
-    __in_ecount(nameElementCount) PCWSTR*   nameElements, 
-    __in const IRoMetaDataLocator&          metaDataLocator, 
+    UINT32                                  nameElementCount,
+    __in_ecount(nameElementCount) PCWSTR*   nameElements,
+    __in const IRoMetaDataLocator&          metaDataLocator,
     __out GUID*                             iid,
     __deref_opt_out ROPARAMIIDHANDLE*       pExtra)
 {
@@ -1146,7 +1146,7 @@ inline HRESULT RoGetParameterizedTypeInstanceIID(
     SimpleMetaDataBuffer reserveBuffer;
     SimpleMetaDataBuffer *pBuffer = &reserveBuffer;
 
-    // if user wishes to hold on to the result value, 
+    // if user wishes to hold on to the result value,
     //   dynamically allocate this buffer.
     if (pExtra)
     {
@@ -1155,17 +1155,17 @@ inline HRESULT RoGetParameterizedTypeInstanceIID(
     }
     SimpleMetaDataBuffer& buffer = *pBuffer;
     SimpleMetaDataBuilder builder(*pBuffer, metaDataLocator);
-    
+
     // send initial arguments
     CHKHR(builder.SendArguments(nameElementCount, nameElements));
 
     // verify that precisely one type was resolved, to completion.
-    CHKHR(Verify(buffer._topLevelTypes == 1 
+    CHKHR(Verify(buffer._topLevelTypes == 1
                    && buffer._nestedArgs.Size() == 0,
                  E_INVALIDARG));
 
     // compute type signature hash
-    static const GUID guidPinterfaceNamespace 
+    static const GUID guidPinterfaceNamespace
         = { 0x11f47ad5, 0x7b73, 0x42c0, { 0xab, 0xae, 0x87, 0x8b, 0x1e, 0x16, 0xad, 0xee }};
 
     CHKHR(Ro::detail::Verify( buffer._outputStream.Size() <= DWORD(-1) ));
@@ -1173,19 +1173,19 @@ inline HRESULT RoGetParameterizedTypeInstanceIID(
     // null terminate
     CHKHR( buffer._outputStream.Append('\0') );
 
-    
-    // 
+
+    //
     // Unit test logging, to verify proper signatures
-    // 
+    //
     #ifdef UNITTEST_TRACE
     {
         CHKHR( UNITTEST_TRACE("type signature", &buffer._outputStream[0]) );
     }
     #endif
-    
 
-    CHKHR( GuidFromName(guidPinterfaceNamespace, 
-                        &buffer._outputStream[0], 
+
+    CHKHR( GuidFromName(guidPinterfaceNamespace,
+                        &buffer._outputStream[0],
                         DWORD(buffer._outputStream.Size() - 1), // does not include terminator
                         iid) );
     return S_OK;
@@ -1203,8 +1203,8 @@ inline PCSTR RoParameterizedTypeExtraGetTypeSignature(__in ROPARAMIIDHANDLE extr
 
     return &pBuffer->_outputStream[0];
 }
-    
-namespace Ro { namespace detail 
+
+namespace Ro { namespace detail
 {
 
     inline HRESULT SimpleMetaDataBuilder::_WriteType(PCWSTR name)
@@ -1218,25 +1218,25 @@ namespace Ro { namespace detail
             CHKHR(builder._WriteString(builtInName));
             builder._Completed();
         }
-        else 
+        else
         {
             size_t newDepth = ++_buffer->_recursionDepth;
             size_t pinterfaceNesting = _buffer->_nestedArgs.Size();
             if (newDepth + pinterfaceNesting > _buffer->_maxRecursionDepth)
             {
-                
+
                 // Terminate recursion; bounds call stack consumption
-                
+
                 CHKHR(E_UNEXPECTED);
             }
             CHKHR(_locator->Locate(name, builder));
-            
+
             // Note, buffers aren't reusable, so it's fine that we don't
             // unwind this value on return.  Also note, we do not unwind
-            // this value if the user provides inconsistent data either 
+            // this value if the user provides inconsistent data either
             // (eg, if they provide only 1 argument to a 2 parameter
             // parameterized type).
-            
+
             --_buffer->_recursionDepth;
         }
         return S_OK;
@@ -1250,22 +1250,22 @@ namespace Ro { namespace detail
         }
         _invoked = true;
 
-        
+
         // Reduce the number of arguments left for this compound type.
-        
+
         if(_buffer->_nestedArgs.Size() > 0)
         {
             --(_buffer->_nestedArgs.Last());
         }
         else
         {
-            
+
             // Increase number of top level types in signature
             // string.  (should never exceed one)
-            
+
             ++_buffer->_topLevelTypes;
         }
-    
+
         return S_OK;
     }
 
@@ -1283,28 +1283,28 @@ namespace Ro { namespace detail
         {
             CHKHR(_WriteType(nameElements[i]));
 
-            
+
             // Close any nested parameterized types that are complete
-            
+
             while (_buffer->_nestedArgs.Size() > previousLevel
                    && _buffer->_nestedArgs.Last() == 0)
             {
                 CHKHR(_buffer->_nestedArgs.Pop());
                 CHKHR(_WriteChar(')'));
             }
-            
+
             // insert separator between parameterized type arguments
-            
+
             CHKHR(_WriteChar(';'));
         }
-        
+
         // remove final separator
-        
+
         CHKHR(_buffer->_outputStream.Pop());
 
-        
+
         // Verify that all the arguments were consumed.
-        
+
         CHKHR(Verify(_buffer->_nestedArgs.Size() == previousLevel,
                      E_INVALIDARG));
         return S_OK;
@@ -1320,13 +1320,13 @@ namespace Ro { namespace detail
         NT_ASSERT( numWritten == guidStringLength + 1 );
 
         size_t offset = _buffer->_outputStream.Size();
-        CHKHR(Verify( offset + guidStringLength > offset )) 
+        CHKHR(Verify( offset + guidStringLength > offset ))
         CHKHR( _buffer->_outputStream.Resize(offset + guidStringLength) );
         char* writePtr = &_buffer->_outputStream[offset];
 
-        
+
         // All characters are ascii.  Just truncate.
-        
+
         for(size_t i = 0; i < guidStringLength; ++i)
         {
             writePtr[i] = _AsciiLower(char(tmpString[i]));
@@ -1349,9 +1349,9 @@ namespace Ro { namespace detail
         size_t offset = _buffer->_outputStream.Size();
         int written;
 
-        
+
         // provision enough space for conversion to take place
-        
+
         size_t provision = len + 1;
         for(;;)
         {
@@ -1378,7 +1378,7 @@ namespace Ro { namespace detail
             }
             else if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
             {
-                CHKHR(HRESULT_FROM_WIN32(GetLastError())); 
+                CHKHR(HRESULT_FROM_WIN32(GetLastError()));
             }
             else
             {
@@ -1386,13 +1386,13 @@ namespace Ro { namespace detail
                 CHKHR(Verify( offset + provision > offset ));
             }
         }
-        
-        // reduce size to reflect number of characters actually written. 
-        // Note that since we specified string length, no null terminator 
+
+        // reduce size to reflect number of characters actually written.
+        // Note that since we specified string length, no null terminator
         // was injected, so we don't have to remove it.
-        
+
         CHKHR( _buffer->_outputStream.Resize(offset+written) );
-        
+
         return S_OK;
     }
 
@@ -1415,22 +1415,22 @@ namespace Ro { namespace detail
         CHKHR(_WriteString("delegate("));
         CHKHR(_WriteGuid(iid));
         CHKHR(_WriteChar(')'));
-            
+
         _Completed();
         return S_OK;
     }
-        
+
     inline HRESULT SimpleMetaDataBuilder::_CommonInterfaceGroupSimple(
-        PCWSTR                  name, 
-        PCWSTR                  defaultInterfaceName, 
+        PCWSTR                  name,
+        PCWSTR                  defaultInterfaceName,
         __in_opt const GUID *   defaultInterfaceIID)
     {
         CHKHR(_WriteWideString(name));
         CHKHR(_WriteChar(';'));
 
-        
+
         // InterfaceGroups and RuntimeClasses take one nested argument
-        
+
         CHKHR(_buffer->_nestedArgs.Append(1));
         if (!defaultInterfaceIID)
         {
@@ -1438,10 +1438,10 @@ namespace Ro { namespace detail
         }
         else
         {
-            
-            // complete the type signature immediately; no nested 
+
+            // complete the type signature immediately; no nested
             //   call needed to resolve the interface.
-            
+
             SimpleMetaDataBuilder builder(*_buffer, *_locator);
             CHKHR(builder.SetWinRtInterface(*defaultInterfaceIID))
         }
@@ -1449,7 +1449,7 @@ namespace Ro { namespace detail
         CHKHR(_buffer->_nestedArgs.Pop());
         return S_OK;
     }
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetInterfaceGroupSimpleDefault(
         PCWSTR                  name,
         PCWSTR                  defaultInterfaceName,
@@ -1459,12 +1459,12 @@ namespace Ro { namespace detail
 
         CHKHR(_WriteString("ig("));
         CHKHR(_CommonInterfaceGroupSimple(name, defaultInterfaceName, defaultInterfaceIID));
-        
+
         _Completed();
         return S_OK;
     }
 
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetInterfaceGroupParameterizedDefault(
         PCWSTR                              name,
         UINT32                              elementCount,
@@ -1472,12 +1472,12 @@ namespace Ro { namespace detail
     {
         CHKHR(_OnSet());
 
-        
-        // If an interface group or runtime class has a compound type as its default, and that 
+
+        // If an interface group or runtime class has a compound type as its default, and that
         // type directly or indirectly refers to itself, the second occurrence instead used '*'
         // to signal that the default interface has already been specified earlier up the call
         // stack.  This prevents unbounded recursion.
-        
+
         if (_buffer->ExistsCycle(name))
         {
             CHKHR( _WriteString("ig(") );
@@ -1492,9 +1492,9 @@ namespace Ro { namespace detail
             CHKHR( _WriteWideString(name) );
             CHKHR( _WriteChar(';') );
 
-            
+
             // InterfaceGroups and RuntimeClasses take one nested argument
-            
+
             CHKHR( _buffer->_nestedArgs.Append(1) );
             CHKHR( SendArguments(elementCount, defaultInterfaceNameElements) );
             CHKHR( _buffer->_nestedArgs.Pop() );
@@ -1504,7 +1504,7 @@ namespace Ro { namespace detail
         _Completed();
         return S_OK;
     }
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetRuntimeClassSimpleDefault(
         PCWSTR                  name,
         PCWSTR                  defaultInterfaceName,
@@ -1519,7 +1519,7 @@ namespace Ro { namespace detail
         return S_OK;
     }
 
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetRuntimeClassParameterizedDefault(
         PCWSTR                              name,
         UINT32                              elementCount,
@@ -1541,22 +1541,22 @@ namespace Ro { namespace detail
             CHKHR(_WriteWideString(name));
             CHKHR(_WriteChar(';'));
 
-            
+
             // InterfaceGroups and RuntimeClasses take one nested argument
-            
+
             CHKHR(_buffer->_nestedArgs.Append(1));
             CHKHR(SendArguments(elementCount, defaultInterfaceNameElements));
             CHKHR(_buffer->_nestedArgs.Pop());
 
             CHKHR(_WriteChar(')'));
-        }        
+        }
         _Completed();
         return S_OK;
     }
-        
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetStruct(
         PCWSTR                          name,
-        UINT32                          numFields, 
+        UINT32                          numFields,
         __in_ecount(numFields) PCWSTR*  fieldTypeNames)
     {
         CHKHR(_OnSet());
@@ -1573,7 +1573,7 @@ namespace Ro { namespace detail
         _Completed();
         return S_OK;
     }
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetEnum(
         PCWSTR name,
         PCWSTR baseType)
@@ -1587,11 +1587,11 @@ namespace Ro { namespace detail
         CHKHR(_WriteType(baseType));
         CHKHR(_buffer->_nestedArgs.Pop());
         CHKHR(_WriteChar(')'));
-        
+
         _Completed();
         return S_OK;
     }
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetParameterizedInterface(
         GUID   piid,
         UINT32 numArgs)
@@ -1601,24 +1601,24 @@ namespace Ro { namespace detail
         CHKHR(_WriteString("pinterface("));
         CHKHR(_WriteGuid(piid));
 
-        
+
         // Note the number of arguments. The SendArguments
-        //   function will append the ')' after that number of 
+        //   function will append the ')' after that number of
         //   arguments are consumed.
-        
+
         CHKHR(_buffer->_nestedArgs.Append(numArgs));
 
         _Completed();
         return S_OK;
     }
-    
+
     inline __override HRESULT STDMETHODCALLTYPE SimpleMetaDataBuilder::SetParameterizedDelegate(
         GUID   piid,
         UINT32 numArgs)
     {
-        
+
         // Parameterized interfaces and parameterized delegates use the same signature scheme.
-        
+
         return SetParameterizedInterface(piid, numArgs);
     }
 
@@ -1670,9 +1670,9 @@ namespace Ro { namespace detail {
         }
         HRESULT GetResult(__out BYTE (*hashValue)[20])
         {
-            
+
             // Sha1 hash result is fixed size, at 20 bytes.
-            
+
             CHKNT(BCryptFinishHash(_hHash, reinterpret_cast<PUCHAR>(&hashValue[0]), _countof(*hashValue), 0));
             return S_OK;
         }
@@ -1695,7 +1695,7 @@ namespace Ro { namespace detail {
     };
 }} // namespace Ro::detail
 
-extern "C" 
+extern "C"
 {
 
 inline HRESULT _RoSha1Create(

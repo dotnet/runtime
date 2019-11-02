@@ -15,7 +15,7 @@ class ProfilerMetadataEmitValidator : public IMetaDataEmit2, public IMetaDataAss
 public:
     ProfilerMetadataEmitValidator(IMetaDataEmit* pInnerEmit);
     virtual ~ProfilerMetadataEmitValidator();
-    
+
     //IUnknown
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppInterface);
     virtual ULONG   STDMETHODCALLTYPE AddRef();
@@ -237,7 +237,7 @@ public:
         ULONG       cchValue,
         mdFieldDef  *pmd);
 
-    virtual HRESULT STDMETHODCALLTYPE DefineProperty( 
+    virtual HRESULT STDMETHODCALLTYPE DefineProperty(
         mdTypeDef   td,
         LPCWSTR     szProperty,
         DWORD       dwPropFlags,
@@ -361,7 +361,7 @@ public:
         LPCWSTR      szName,
         DWORD        reserved,
         mdToken      rtkConstraints[]);
-    
+
     virtual HRESULT STDMETHODCALLTYPE ResetENCLog();
 
     //IMetaDataAssemblyEmit
@@ -493,7 +493,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd);
 
-    virtual HRESULT STDMETHODCALLTYPE EnumMembers(                 // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumMembers(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdToken     rMembers[],             // [OUT] Put MemberDefs here.
@@ -508,7 +508,7 @@ public:
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
         ULONG       *pcTokens);        // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE EnumMethods(                 // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumMethods(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdMethodDef rMethods[],             // [OUT] Put MethodDefs here.
@@ -539,14 +539,14 @@ public:
         ULONG       *pcTokens);        // [OUT] Put # put here.
 
 
-    virtual HRESULT STDMETHODCALLTYPE EnumParams(                  // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumParams(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdParamDef  rParams[],              // [OUT] Put ParamDefs here.
         ULONG       cMax,                   // [IN] Max ParamDefs to put.
         ULONG       *pcTokens);        // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE EnumMemberRefs(              // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumMemberRefs(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tkParent,               // [IN] Parent token to scope the enumeration.
         mdMemberRef rMemberRefs[],          // [OUT] Put MemberRefs here.
@@ -561,49 +561,49 @@ public:
         ULONG       cMax,                   // [IN] Max tokens to put.
         ULONG       *pcTokens);        // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE EnumPermissionSets(          // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumPermissionSets(          // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tk,                     // [IN] if !NIL, token to scope the enumeration.
         DWORD       dwActions,              // [IN] if !0, return only these actions.
         mdPermission rPermission[],         // [OUT] Put Permissions here.
-        ULONG       cMax,                   // [IN] Max Permissions to put. 
+        ULONG       cMax,                   // [IN] Max Permissions to put.
         ULONG       *pcTokens);        // [OUT] Put # put here.
 
     virtual HRESULT STDMETHODCALLTYPE FindMember(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdToken     *pmb);             // [OUT] matching memberdef 
+        mdToken     *pmb);             // [OUT] matching memberdef
 
     virtual HRESULT STDMETHODCALLTYPE FindMethod(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdMethodDef *pmb);             // [OUT] matching memberdef 
+        mdMethodDef *pmb);             // [OUT] matching memberdef
 
     virtual HRESULT STDMETHODCALLTYPE FindField(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdFieldDef  *pmb);             // [OUT] matching memberdef 
+        mdFieldDef  *pmb);             // [OUT] matching memberdef
 
     virtual HRESULT STDMETHODCALLTYPE FindMemberRef(
         mdTypeRef   td,                     // [IN] given typeRef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdMemberRef *pmr);             // [OUT] matching memberref 
+        mdMemberRef *pmr);             // [OUT] matching memberref
 
     virtual HRESULT STDMETHODCALLTYPE GetMethodProps(
         mdMethodDef mb,                     // The method for which to get props.
-        mdTypeDef   *pClass,                // Put method's class here. 
+        mdTypeDef   *pClass,                // Put method's class here.
         __out_ecount(cchMethod)
         LPWSTR      szMethod,               // Put method's name here.
         ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
-        ULONG       *pchMethod,             // Put actual size here 
+        ULONG       *pchMethod,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
@@ -611,8 +611,8 @@ public:
         DWORD       *pdwImplFlags);    // [OUT] Impl. Flags
 
     virtual HRESULT STDMETHODCALLTYPE GetMemberRefProps(           // S_OK or error.
-        mdMemberRef mr,                     // [IN] given memberref 
-        mdToken     *ptk,                   // [OUT] Put classref or classdef here. 
+        mdMemberRef mr,                     // [IN] given memberref
+        mdToken     *ptk,                   // [OUT] Put classref or classdef here.
         __out_ecount(cchMember)
         LPWSTR      szMember,               // [OUT] buffer to fill for member's name
         ULONG       cchMember,              // [IN] the count of char of szMember
@@ -620,26 +620,26 @@ public:
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value
         ULONG       *pbSig);           // [OUT] actual size of signature blob
 
-    virtual HRESULT STDMETHODCALLTYPE EnumProperties(              // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumProperties(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdProperty  rProperties[],          // [OUT] Put Properties here.
         ULONG       cMax,                   // [IN] Max properties to put.
         ULONG       *pcProperties);    // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE EnumEvents(                  // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumEvents(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdEvent     rEvents[],              // [OUT] Put events here.
         ULONG       cMax,                   // [IN] Max events to put.
         ULONG       *pcEvents);        // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE GetEventProps(               // S_OK, S_FALSE, or error. 
-        mdEvent     ev,                     // [IN] event token 
+    virtual HRESULT STDMETHODCALLTYPE GetEventProps(               // S_OK, S_FALSE, or error.
+        mdEvent     ev,                     // [IN] event token
         mdTypeDef   *pClass,                // [OUT] typedef containing the event declarion.
-        LPCWSTR     szEvent,                // [OUT] Event name 
+        LPCWSTR     szEvent,                // [OUT] Event name
         ULONG       cchEvent,               // [IN] the count of wchar of szEvent
-        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name 
+        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name
         DWORD       *pdwEventFlags,         // [OUT] Event flags.
         mdToken     *ptkEventType,          // [OUT] EventType class
         mdMethodDef *pmdAddOn,              // [OUT] AddOn method of the event
@@ -647,24 +647,24 @@ public:
         mdMethodDef *pmdFire,               // [OUT] Fire method of the event
         mdMethodDef rmdOtherMethod[],       // [OUT] other method of the event
         ULONG       cMax,                   // [IN] size of rmdOtherMethod
-        ULONG       *pcOtherMethod);   // [OUT] total number of other method of this event 
+        ULONG       *pcOtherMethod);   // [OUT] total number of other method of this event
 
-    virtual HRESULT STDMETHODCALLTYPE EnumMethodSemantics(         // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumMethodSemantics(         // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdToken     rEventProp[],           // [OUT] Put Event/Property here.
         ULONG       cMax,                   // [IN] Max properties to put.
         ULONG       *pcEventProp);     // [OUT] Put # put here.
 
-    virtual HRESULT STDMETHODCALLTYPE GetMethodSemantics(          // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE GetMethodSemantics(          // S_OK, S_FALSE, or error.
         mdMethodDef mb,                     // [IN] method token
         mdToken     tkEventProp,            // [IN] event/property token.
-        DWORD       *pdwSemanticsFlags); // [OUT] the role flags for the method/propevent pair 
+        DWORD       *pdwSemanticsFlags); // [OUT] the role flags for the method/propevent pair
 
     virtual HRESULT STDMETHODCALLTYPE GetClassLayout(
         mdTypeDef   td,                     // [IN] give typedef
         DWORD       *pdwPackSize,           // [OUT] 1, 2, 4, 8, or 16
-        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array 
+        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array
         ULONG       cMax,                   // [IN] size of the array
         ULONG       *pcFieldOffset,         // [OUT] needed array size
         ULONG       *pulClassSize);        // [OUT] the size of the class
@@ -677,7 +677,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetRVA(                      // S_OK or error.
         mdToken     tk,                     // Member for which to set offset
         ULONG       *pulCodeRVA,            // The offset
-        DWORD       *pdwImplFlags);    // the implementation flags 
+        DWORD       *pdwImplFlags);    // the implementation flags
 
     virtual HRESULT STDMETHODCALLTYPE GetPermissionSetProps(
         mdPermission pm,                    // [IN] the permission token.
@@ -712,7 +712,7 @@ public:
         mdToken     tk,                     // [IN] Token to get name from.  Must have a name.
         MDUTF8CSTR  *pszUtf8NamePtr);  // [OUT] Return pointer to UTF8 name in heap.
 
-    virtual HRESULT STDMETHODCALLTYPE EnumUnresolvedMethods(       // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE EnumUnresolvedMethods(       // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     rMethods[],             // [OUT] Put MemberDefs here.
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
@@ -779,18 +779,18 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetMemberProps(
         mdToken     mb,                     // The member for which to get props.
-        mdTypeDef   *pClass,                // Put member's class here. 
+        mdTypeDef   *pClass,                // Put member's class here.
         __out_ecount(cchMember)
         LPWSTR      szMember,               // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
-        ULONG       *pchMember,             // Put actual size here 
+        ULONG       *pchMember,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         ULONG       *pulCodeRVA,            // [OUT] codeRVA
         DWORD       *pdwImplFlags,          // [OUT] Impl. Flags
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue);       // [OUT] size of constant string in chars, 0 for non-strings.
 
     virtual HRESULT STDMETHODCALLTYPE GetFieldProps(
@@ -799,25 +799,25 @@ public:
         __out_ecount(cchField)
         LPWSTR      szField,                // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
-        ULONG       *pchField,              // Put actual size here 
+        ULONG       *pchField,              // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue);       // [OUT] size of constant string in chars, 0 for non-strings.
 
-    virtual HRESULT STDMETHODCALLTYPE GetPropertyProps(            // S_OK, S_FALSE, or error. 
+    virtual HRESULT STDMETHODCALLTYPE GetPropertyProps(            // S_OK, S_FALSE, or error.
         mdProperty  prop,                   // [IN] property token
-        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion. 
+        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion.
         LPCWSTR     szProperty,             // [OUT] Property name
         ULONG       cchProperty,            // [IN] the count of wchar of szProperty
         ULONG       *pchProperty,           // [OUT] actual count of wchar for property name
         DWORD       *pdwPropFlags,          // [OUT] property flags.
-        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob 
+        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
         ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value 
+        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value
         ULONG       *pcchDefaultValue,      // [OUT] size of constant string in chars, 0 for non-strings.
         mdMethodDef *pmdSetter,             // [OUT] setter method of the property
         mdMethodDef *pmdGetter,             // [OUT] getter method of the property
@@ -932,7 +932,7 @@ public:
         mdAssemblyRef mdar,                 // [IN] The AssemblyRef for which to get the properties.
         const void  **ppbPublicKeyOrToken,  // [OUT] Pointer to the public key or token.
         ULONG       *pcbPublicKeyOrToken,   // [OUT] Count of bytes in the public key or token.
-        __out_ecount(cchName) 
+        __out_ecount(cchName)
         LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
@@ -953,7 +953,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetExportedTypeProps(        // S_OK or error.
         mdExportedType   mdct,              // [IN] The ExportedType for which to get the properties.
-        __out_ecount(cchName) 
+        __out_ecount(cchName)
         LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.

@@ -68,7 +68,7 @@ public:
         /*     out */  LPVOID   pvProperty,
         /* in  out */  LPDWORD  pcbProperty);
 
-    STDMETHOD(GetName)( 
+    STDMETHOD(GetName)(
         __inout  LPDWORD lpcwBuffer,
         __out_ecount_opt(*lpcwBuffer) LPOLESTR pwzBuffer);
 

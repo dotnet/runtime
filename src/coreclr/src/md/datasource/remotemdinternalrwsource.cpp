@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RemoteMDInternalRWSource.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -65,7 +65,7 @@ HRESULT _MarshalDataFromTargetStgPool(DataTargetReader & reader, const Target_St
     ULONG32 segmentCount = 0;
     Target_StgPoolSeg curSeg = (Target_StgPoolSeg)pool;
 
-    // The storage pool grows exponentially, and should reach 2GB in at most 64 segments. Allowing for 1000 
+    // The storage pool grows exponentially, and should reach 2GB in at most 64 segments. Allowing for 1000
     // adds a sizable risk mitigation factor in case my analysis was inaccurate or the algorithm changes in the future
     // without corresponding changes here.
     CORDB_ADDRESS segmentData[1000];

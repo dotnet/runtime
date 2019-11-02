@@ -11,7 +11,7 @@
 // The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
-// 
+//
 // THIS FILE IS PART OF THE JIT-EE INTERFACE.
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
@@ -145,7 +145,7 @@
     JITHELPER(CORINFO_HELP_GETCLASSFROMMETHODPARAM, JIT_GetClassFromMethodParam, CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  JIT_GetSyncFromClassHandle, CORINFO_HELP_SIG_REG_ONLY)
 
-    // Security callout support 
+    // Security callout support
     JITHELPER(CORINFO_HELP_SECURITY_PROLOG,         NULL,CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_SECURITY_PROLOG_FRAMED,  NULL,CORINFO_HELP_SIG_REG_ONLY)
 
@@ -288,7 +288,7 @@
 
     JITHELPER(CORINFO_HELP_EE_PRESTUB,          ThePreStub,                 CORINFO_HELP_SIG_NO_ALIGN_STUB)
 
-#if defined(HAS_FIXUP_PRECODE) 
+#if defined(HAS_FIXUP_PRECODE)
     JITHELPER(CORINFO_HELP_EE_PRECODE_FIXUP,    PrecodeFixupThunk,          CORINFO_HELP_SIG_NO_ALIGN_STUB)
 #else
     JITHELPER(CORINFO_HELP_EE_PRECODE_FIXUP,    NULL,                       CORINFO_HELP_SIG_NO_ALIGN_STUB)

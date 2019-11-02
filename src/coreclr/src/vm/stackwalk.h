@@ -42,7 +42,7 @@ class AppDomain;
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
- #endif 
+ #endif
 #endif // _TARGET_X86_ && !FEATURE_PAL
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -92,7 +92,7 @@ public:
         return pFunc;
     }
 #endif
- 
+
 
     Assembly *GetAssembly();
 
@@ -134,22 +134,22 @@ public:
     OBJECTREF GetThisPointer();
 
     /*
-        Returns ambient Stack pointer for this crawlframe. 
+        Returns ambient Stack pointer for this crawlframe.
         Must be a frameless method.
         Returns NULL if not available (includes prolog + epilog).
-        This is safe to call on all methods, but it may return 
-        garbage if the method does not have an ambient SP (eg, ebp-based methods). 
-        x86 is the only platform using ambient SP.        
+        This is safe to call on all methods, but it may return
+        garbage if the method does not have an ambient SP (eg, ebp-based methods).
+        x86 is the only platform using ambient SP.
     */
     TADDR GetAmbientSPFromCrawlFrame();
 
-    void GetExactGenericInstantiations(Instantiation *pClassInst, 
+    void GetExactGenericInstantiations(Instantiation *pClassInst,
                                        Instantiation *pMethodInst);
 
     /* Returns extra information required to reconstruct exact generic parameters,
-       if any. 
+       if any.
        Returns NULL if
-            - no extra information is required (i.e. the code is non-shared, which 
+            - no extra information is required (i.e. the code is non-shared, which
               you can tell from the MethodDesc)
             - the extra information is not available (i.e. optimized away or codegen problem)
        Returns a MethodTable if the pMD returned by GetFunction satisfies RequiresInstMethodTableArg,
@@ -178,7 +178,7 @@ public:
     }
 
 
-    /* Is it the current active (top-most) frame 
+    /* Is it the current active (top-most) frame
      */
     inline bool IsActiveFrame()
     {
@@ -228,12 +228,12 @@ public:
         return isNativeMarker;
     }
 
-    /* x86 does not always push a FaultingExceptionFrame on the stack when there is a native exception 
+    /* x86 does not always push a FaultingExceptionFrame on the stack when there is a native exception
        (e.g. a breakpoint).  In this case, it relies on the CONTEXT stored on the ExInfo to resume
-       the stackwalk at the managed stack frame which has faulted.  
-       
-       This flag is set when the stackwalker is stopped at such a no-explicit-frame transition.  Conceptually 
-       this is just like stopping at a transition frame.  Note that the stackwalker only stops at no-frame 
+       the stackwalk at the managed stack frame which has faulted.
+
+       This flag is set when the stackwalker is stopped at such a no-explicit-frame transition.  Conceptually
+       this is just like stopping at a transition frame.  Note that the stackwalker only stops at no-frame
        transition if NOTIFY_ON_NO_FRAME_TRANSITIONS is set.
      */
     bool IsNoFrameTransition()
@@ -242,9 +242,9 @@ public:
         return isNoFrameTransition;
     }
 
-    // A no-frame transition is one protected by an ExInfo.  It's an optimization on x86 to avoid pushing a 
-    // FaultingExceptionFrame (FEF).  Thus, for all intents and purposes, we should treat a no-frame 
-    // transition as a FEF.  This function returns a stack address for the no-frame transition to substitute 
+    // A no-frame transition is one protected by an ExInfo.  It's an optimization on x86 to avoid pushing a
+    // FaultingExceptionFrame (FEF).  Thus, for all intents and purposes, we should treat a no-frame
+    // transition as a FEF.  This function returns a stack address for the no-frame transition to substitute
     // as the frame address of a FEF.  It's currently only used by the debugger stackwalker.
     TADDR GetNoFrameTransitionMarker()
     {
@@ -413,14 +413,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         return fShouldParentToFuncletSkipReportingGCReferences;
     }
-    
+
     bool ShouldCrawlframeReportGCReferences()
     {
         LIMITED_METHOD_CONTRACT;
 
         return fShouldCrawlframeReportGCReferences;
     }
-    
+
     bool ShouldParentToFuncletUseUnwindTargetLocationForGCReporting()
     {
         LIMITED_METHOD_CONTRACT;
@@ -455,7 +455,7 @@ private:
     bool              isFrameless;
     bool              isFirst;
 
-    // The next three fields are only valid for managed stack frames.  They are set using attributes 
+    // The next three fields are only valid for managed stack frames.  They are set using attributes
     // on explicit frames, and they are reset after processing each managed stack frame.
     bool              isInterrupted;
     bool              hasFaulted;
@@ -500,15 +500,15 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData);
 
 #if defined(ELIMINATE_FEF)
 //******************************************************************************
-// This class is used to help use exception context records to resync a 
+// This class is used to help use exception context records to resync a
 //  stackwalk, when managed code has generated an exception (eg, AV, zerodiv.,,)
 // Such an exception causes a transition from the managed code into unmanaged
 //  OS and runtime code, but without the benefit of any Frame.  This code helps
 //  the stackwalker simulate the effect that such a frame would have.
 // In particular, this class has methods to walk the chain of ExInfos, looking
-//  for records with pContext pointers with certain characteristics.  The 
+//  for records with pContext pointers with certain characteristics.  The
 //  characteristics that are important are the location in the stack (ie, is a
-//  given pContext relevant at a particular point in the stack walk), and 
+//  given pContext relevant at a particular point in the stack walk), and
 //  whether the pContext was generated in managed code.
 //******************************************************************************
 class ExInfoWalker
@@ -529,18 +529,18 @@ public:
     ExInfo* GetExInfo() { SUPPORTS_DAC; return m_pExInfo; }
 
     // helper functions for retrieving information from the exception CONTEXT
-    TADDR GetSPFromContext() 
+    TADDR GetSPFromContext()
     {
         LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;  
-        return dac_cast<TADDR>((m_pExInfo && m_pExInfo->m_pContext) ? GetSP(m_pExInfo->m_pContext) : PTR_NULL); 
+        SUPPORTS_DAC;
+        return dac_cast<TADDR>((m_pExInfo && m_pExInfo->m_pContext) ? GetSP(m_pExInfo->m_pContext) : PTR_NULL);
     }
 
-    TADDR GetEBPFromContext() 
+    TADDR GetEBPFromContext()
     {
         LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;  
-        return dac_cast<TADDR>((m_pExInfo && m_pExInfo->m_pContext) ? GetFP(m_pExInfo->m_pContext) : PTR_NULL); 
+        SUPPORTS_DAC;
+        return dac_cast<TADDR>((m_pExInfo && m_pExInfo->m_pContext) ? GetFP(m_pExInfo->m_pContext) : PTR_NULL);
     }
 
     DWORD GetFault() { SUPPORTS_DAC; return m_pExInfo ? m_pExInfo->m_pExceptionRecord->ExceptionCode : 0; }
@@ -553,8 +553,8 @@ private:
 
 //---------------------------------------------------------------------------------------
 //
-// This iterator class walks the stack of a managed thread.  Where the iterator stops depends on the 
-// stackwalk flags. 
+// This iterator class walks the stack of a managed thread.  Where the iterator stops depends on the
+// stackwalk flags.
 //
 // Notes:
 //    This class works both in-process and out-of-process (e.g. DAC).
@@ -573,9 +573,9 @@ public:
 
     //
     // We should consider merging Init() and ResetRegDisp().
-    // 
+    //
 
-    // Initialize the iterator.  Note that the iterator has thread-affinity, 
+    // Initialize the iterator.  Note that the iterator has thread-affinity,
     // and the stackwalk flags cannot be changed once the iterator is created.
     BOOL Init(Thread *      pThread,
               PTR_Frame     pFrame,
@@ -583,7 +583,7 @@ public:
               ULONG32       flags);
 
     // Reset the iterator to the specified REGDISPLAY.  The caller must ensure that the REGDISPLAY is valid.
-    BOOL ResetRegDisp(PREGDISPLAY pRegDisp, 
+    BOOL ResetRegDisp(PREGDISPLAY pRegDisp,
                       bool        fIsFirst);
 
     // @dbgtodo  inspection - This function should be removed once the Windows debuggers stop using the old DAC API.
@@ -608,7 +608,7 @@ public:
         SFITER_NO_FRAME_TRANSITION,         // no-frame transition (currently used for ExInfo only)
         SFITER_NATIVE_MARKER_FRAME,         // the native stack frame immediately below (stack grows up)
                                             // a managed stack region
-        SFITER_INITIAL_NATIVE_CONTEXT,      // initial native seed CONTEXT 
+        SFITER_INITIAL_NATIVE_CONTEXT,      // initial native seed CONTEXT
         SFITER_DONE,                        // the iterator has reached the end of the stack
     };
     FrameState GetFrameState() {LIMITED_METHOD_DAC_CONTRACT; return m_frameState;}
@@ -619,7 +619,7 @@ public:
     // used in logging
     UINT32 m_uFramesProcessed;
 #endif // _DEBUG
-    
+
 private:
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
@@ -627,7 +627,7 @@ private:
     // Reset the CrawlFrame owned by the iterator.  Used by both Init() and ResetRegDisp().
     void ResetCrawlFrame(void);
 
-    // Check whether we should stop at the current frame given the stackwalk flags.  
+    // Check whether we should stop at the current frame given the stackwalk flags.
     // If not, continue advancing to the next frame.
     StackWalkAction Filter(void);
 
@@ -641,7 +641,7 @@ private:
     // JitManagerInstance and isFrameless.
     void ProcessIp(PCODE Ip);
 
-    // Update the CrawlFrame to represent where we have stopped.  
+    // Update the CrawlFrame to represent where we have stopped.
     // This is called after advancing to a new frame.
     void ProcessCurrentFrame(void);
 
@@ -656,25 +656,25 @@ private:
     // This includes advancing the ExInfo and checking whether the new IP is managed.
     void PostProcessingForManagedFrames(void);
 
-    // Perform the necessary tasks after stopping at a no-frame transition.  This includes loading 
+    // Perform the necessary tasks after stopping at a no-frame transition.  This includes loading
     // the CONTEXT stored in the ExInfo and updating the REGDISPLAY to the faulting managed stack frame.
     void PostProcessingForNoFrameTransition(void);
 
-#if defined(FEATURE_EH_FUNCLETS)    
+#if defined(FEATURE_EH_FUNCLETS)
     void ResetGCRefReportingState(bool ResetOnlyIntermediaryState = false)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         if (!ResetOnlyIntermediaryState)
         {
             m_sfFuncletParent = StackFrame();
             m_fProcessNonFilterFunclet = false;
         }
-        
+
         m_sfIntermediaryFuncletParent = StackFrame();
         m_fProcessIntermediaryNonFilterFunclet = false;
     }
-#endif // defined(FEATURE_EH_FUNCLETS)    
+#endif // defined(FEATURE_EH_FUNCLETS)
 
     // Iteration state.
     FrameState m_frameState;
@@ -684,15 +684,15 @@ private:
 
     PTR_Frame m_pStartFrame;                  // Frame* passed to Init
 
-    // This is the real starting explicit frame.  If m_pStartFrame is NULL, 
+    // This is the real starting explicit frame.  If m_pStartFrame is NULL,
     // then this is equal to m_pThread->GetFrame().  Otherwise this is equal to m_pStartFrame.
-    INDEBUG(PTR_Frame m_pRealStartFrame);     
+    INDEBUG(PTR_Frame m_pRealStartFrame);
 
     ULONG32               m_flags;          // StackWalkFrames flags.
     ICodeManagerFlags     m_codeManFlags;
     ExecutionManager::ScanFlag m_scanFlag;
 
-    // the following fields are used to cache information about a managed stack frame 
+    // the following fields are used to cache information about a managed stack frame
     // when we need to stop for skipped explicit frames
     EECodeInfo     m_cachedCodeInfo;
 
@@ -705,7 +705,7 @@ private:
 #if defined(FEATURE_EH_FUNCLETS)
     // used in funclet-skipping
     StackFrame    m_sfParent;
-    
+
     // Used in GC reference enumeration mode
     StackFrame    m_sfFuncletParent;
     bool          m_fProcessNonFilterFunclet;

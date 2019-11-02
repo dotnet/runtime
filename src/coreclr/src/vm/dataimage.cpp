@@ -93,19 +93,19 @@ class InternedStructureTraits : public NoRemoveSHashTraits< DefaultSHashTraits<Z
 public:
     typedef InternedStructureKey key_t;
 
-    static key_t GetKey(element_t e) 
-    { 
+    static key_t GetKey(element_t e)
+    {
         LIMITED_METHOD_CONTRACT;
         return InternedStructureKey(e->GetData(), e->GetSize(), e->GetKind());
     }
-    static BOOL Equals(key_t k1, key_t k2) 
-    { 
+    static BOOL Equals(key_t k1, key_t k2)
+    {
         LIMITED_METHOD_CONTRACT;
         return (k1.m_dwSize == k2.m_dwSize) &&
                (k1.m_kind == k2.m_kind) &&
                memcmp(k1.m_data, k2.m_data, k1.m_dwSize) == 0;
     }
-    static count_t Hash(key_t k) 
+    static count_t Hash(key_t k)
     {
         LIMITED_METHOD_CONTRACT;
         return (count_t)k.m_dwSize ^ (count_t)k.m_kind ^ HashBytes((BYTE *)k.m_data, k.m_dwSize);
@@ -117,9 +117,9 @@ public:
 
 DataImage::DataImage(Module *module, CEEPreloader *preloader)
     : m_module(module),
-      m_preloader(preloader), 
+      m_preloader(preloader),
       m_iCurrentFixup(0),       // Dev11 bug 181494 instrumentation
-      m_pInternedStructures(NULL), 
+      m_pInternedStructures(NULL),
       m_pCurrentAssociatedMethodTable(NULL)
 {
     m_pZapImage = m_preloader->GetDataStore()->GetZapImage();
@@ -200,8 +200,8 @@ void DataImage::Preallocate()
 }
 
 ZapHeap * DataImage::GetHeap()
-{ 
-    LIMITED_METHOD_CONTRACT; 
+{
+    LIMITED_METHOD_CONTRACT;
     return m_pZapImage->GetHeap();
 }
 
@@ -423,7 +423,7 @@ void DataImage::FixupField(PVOID p, SSIZE_T offset, PVOID pTarget, SSIZE_T targe
     if (pEntry == NULL || pEntry->ptr != p)
     {
         pEntry = m_structures.LookupPtr(p);
-        _ASSERTE(pEntry != NULL && 
+        _ASSERTE(pEntry != NULL &&
             "StoreStructure or BindPointer have to be called on all save data.");
         m_pLastLookup = pEntry;
     }
@@ -461,7 +461,7 @@ void DataImage::FixupFieldToNode(PVOID p, SSIZE_T offset, ZapNode * pTarget, SSI
     if (pEntry == NULL || pEntry->ptr != p)
     {
         pEntry = m_structures.LookupPtr(p);
-        _ASSERTE(pEntry != NULL && 
+        _ASSERTE(pEntry != NULL &&
             "StoreStructure or BindPointer have to be called on all save data.");
         m_pLastLookup = pEntry;
     }
@@ -510,7 +510,7 @@ void * DataImage::GetImagePointer(PVOID p, SSIZE_T offset)
     if (pEntry == NULL || pEntry->ptr != p)
     {
         pEntry = m_structures.LookupPtr(p);
-        _ASSERTE(pEntry != NULL && 
+        _ASSERTE(pEntry != NULL &&
             "StoreStructure or BindPointer have to be called on all save data.");
         m_pLastLookup = pEntry;
     }
@@ -526,7 +526,7 @@ ZapNode * DataImage::GetNodeForStructure(PVOID p, SSIZE_T * pOffset)
     if (pEntry == NULL || pEntry->ptr != p)
     {
         pEntry = m_structures.LookupPtr(p);
-        _ASSERTE(pEntry != NULL && 
+        _ASSERTE(pEntry != NULL &&
             "StoreStructure or BindPointer have to be called on all save data.");
     }
     *pOffset = pEntry->offset;
@@ -556,7 +556,7 @@ ZapStoredStructure * DataImage::StoreInternedStructure(const void *data, ULONG s
         m_pInternedStructures->Add(pStructure);
     }
 
-    return pStructure;  
+    return pStructure;
 }
 
 void DataImage::NoteReusedStructure(const void *data)
@@ -612,7 +612,7 @@ void DataImage::SaveRvaStructure()
     if (m_rvaInfoVector.IsEmpty())
         return;  // No RVA static to save
 
-    // Use qsort to sort the m_rvaInfoVector 
+    // Use qsort to sort the m_rvaInfoVector
     qsort (&m_rvaInfoVector[0],               // start of array
            m_rvaInfoVector.GetCount(),        // array size in elements
            sizeof(RvaInfoStructure),        // element size in bytes
@@ -772,7 +772,7 @@ FORCEINLINE static CorCompileSection GetSectionForNodeType(ZapNodeType type)
     case NodeTypeForItemKind(DataImage::ITEM_NGEN_HASH_BUCKETLIST_COLD):
     case NodeTypeForItemKind(DataImage::ITEM_NGEN_HASH_ENTRIES_RO_COLD):
     case NodeTypeForItemKind(DataImage::ITEM_STORED_METHOD_SIG_READONLY):
-#ifdef FEATURE_COMINTEROP 
+#ifdef FEATURE_COMINTEROP
     case NodeTypeForItemKind(DataImage::ITEM_SPARSE_VTABLE_MAP_ENTRIES):
 #endif // FEATURE_COMINTEROP
     case NodeTypeForItemKind(DataImage::ITEM_CLASS_VARIANCE_INFO):
@@ -833,7 +833,7 @@ static int __cdecl LayoutOrderCmp(const void* a_, const void* b_)
     DWORD a = ((DataImage::SavedNodeEntry*)a_)->dwAssociatedOrder;
     DWORD b = ((DataImage::SavedNodeEntry*)b_)->dwAssociatedOrder;
 
-    if (a > b) 
+    if (a > b)
     {
         return 1;
     }
@@ -860,7 +860,7 @@ void DataImage::PlaceRemainingStructures()
                     ZapVirtualSection * pSection = m_pZapImage->GetSection(GetSectionForNodeType(pStructure->GetType()));
                     pSection->Place(pStructure);
                 }
-            }            
+            }
         }
 
         qsort(&m_structuresInOrder[0], m_structuresInOrder.GetCount(), sizeof(SavedNodeEntry), LayoutOrderCmp);
@@ -963,7 +963,7 @@ void ZapStoredStructure::Save(ZapWriter * pWriter)
 
             ZapImage::GetImage(pWriter)->WriteReloc(
                 GetData(),
-                pFixupEntry->m_offset, 
+                pFixupEntry->m_offset,
                 pFixupEntry->m_pTargetNode,
                 (int)targetOffset,
                 pFixupEntry->m_type);
@@ -977,7 +977,7 @@ void ZapStoredStructure::Save(ZapWriter * pWriter)
             _ASSERTE(pPrevFixupEntry->m_type == pFixupEntry->m_type);
             _ASSERTE(pPrevFixupEntry->m_pTargetNode== pFixupEntry->m_pTargetNode);
         }
-        
+
         pPrevFixupEntry = pFixupEntry;
         image->m_iCurrentFixup++;
     }
@@ -1064,7 +1064,7 @@ void DataImage::FixupModuleRVAs()
     FixupSectionRange(offsetof(NGenLayoutInfo, m_Precodes[1]), m_pZapImage->GetSection(CORCOMPILE_SECTION_METHOD_PRECODE_COLD));
     FixupSectionRange(offsetof(NGenLayoutInfo, m_Precodes[2]), m_pZapImage->GetSection(CORCOMPILE_SECTION_METHOD_PRECODE_WRITE));
     FixupSectionRange(offsetof(NGenLayoutInfo, m_Precodes[3]), m_pZapImage->GetSection(CORCOMPILE_SECTION_METHOD_PRECODE_COLD_WRITEABLE));
-    
+
     FixupSectionRange(offsetof(NGenLayoutInfo, m_JumpStubs), m_pZapImage->m_pHelperTableSection);
     FixupSectionRange(offsetof(NGenLayoutInfo, m_StubLinkStubs), m_pZapImage->m_pStubsSection);
     FixupSectionRange(offsetof(NGenLayoutInfo, m_VirtualMethodThunks), m_pZapImage->m_pVirtualImportThunkSection);
@@ -1096,7 +1096,7 @@ void DataImage::FixupRvaStructure()
         void * pRVAData = rvaInfo->pFD->GetStaticAddressHandle(NULL);
 
         DWORD dwOffset = GetRVA(pRVAData);
-     
+
         FieldDesc * pNewFD = (FieldDesc *)GetImagePointer(rvaInfo->pFD);
         pNewFD->SetOffset(dwOffset);
     }
@@ -1497,10 +1497,10 @@ BOOL DataImage::CanEagerBindToTypeHandle(TypeHandle th, BOOL fRequirePrerestore,
             return FALSE;
         }
 
-        // For correctness in the face of targeted patching, do not eager bind to any instantiation 
+        // For correctness in the face of targeted patching, do not eager bind to any instantiation
         // in the target module that might go away.
         if (!th.IsTypicalTypeDefinition() &&
-            !Module::IsAlwaysSavedInPreferredZapModule(th.GetInstantiation(), 
+            !Module::IsAlwaysSavedInPreferredZapModule(th.GetInstantiation(),
                                                        Instantiation()))
         {
             return FALSE;
@@ -1564,10 +1564,10 @@ BOOL DataImage::CanEagerBindToMethodDesc(MethodDesc *pMD, BOOL fRequirePrerestor
     // Performance optimization -- see comment in CanEagerBindToTypeHandle
     if (GetModule() != pMD->GetLoaderModule())
     {
-        // For correctness in the face of targeted patching, do not eager bind to any instantiation 
+        // For correctness in the face of targeted patching, do not eager bind to any instantiation
         // in the target module that might go away.
-        if (!pMD->IsTypicalMethodDefinition() && 
-            !Module::IsAlwaysSavedInPreferredZapModule(pMD->GetClassInstantiation(), 
+        if (!pMD->IsTypicalMethodDefinition() &&
+            !Module::IsAlwaysSavedInPreferredZapModule(pMD->GetClassInstantiation(),
                                                        pMD->GetMethodInstantiation()))
         {
             return FALSE;
@@ -1590,9 +1590,9 @@ BOOL DataImage::CanEagerBindToFieldDesc(FieldDesc *pFD, BOOL fRequirePrerestore,
 
     if (!CanEagerBindTo(pFD->GetLoaderModule(), Module::GetPreferredZapModuleForFieldDesc(pFD), pFD))
         return FALSE;
-        
+
     MethodTable * pMT = pFD->GetApproxEnclosingMethodTable();
-    
+
     return CanEagerBindToMethodTable(pMT, fRequirePrerestore, pVisited);
 }
 
@@ -1747,7 +1747,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // Buffer must be DWORD-aligned. 
+        // Buffer must be DWORD-aligned.
         _ASSERTE(((TADDR)pStart & 0x3) == 0);
 
         m_pNext = pStart;   // Point at the start of the buffer
@@ -2007,7 +2007,7 @@ public:
         SetRVA(dwPos);                          // Set the RVA of the node (both table and index)
         dwPos += GetSize();                     // Advance the RVA past our node
 
-        return dwPos;                       
+        return dwPos;
     }
 
     virtual void Save(ZapWriter *pZapWriter)
@@ -2024,7 +2024,7 @@ public:
 
 private:
 
-    // It's possible that our node has been created and only later the decision is made to store the full 
+    // It's possible that our node has been created and only later the decision is made to store the full
     // uncompressed table.  In this case, we want to early out of our work and make saving our node a no-op.
     BOOL ShouldCompressedMapBeSaved()
     {
@@ -2236,7 +2236,7 @@ private:
                     // Write an index entry:
                     //  * The current (map-relative) RVA.
                     //  * The position in the table bit stream of the next entry.
-                    sIndexStream.Write(dwCurrentValue, kBitsPerRVA);    
+                    sIndexStream.Write(dwCurrentValue, kBitsPerRVA);
                     sIndexStream.Write(sTableStream.GetBitsWritten(), m_cBitsPerIndexEntry - kBitsPerRVA);
                 }
 
@@ -2375,7 +2375,7 @@ private:
         // Check the table really is sorted.
         for (DWORD i = 1; i < kLookupMapLengthEntries; i++)
             _ASSERTE(rgBuckets[i] >= rgBuckets[i - 1]);
-#endif // _DEBUG        
+#endif // _DEBUG
     }
 
     // Given the histogram of the delta lengths and a prospective table of the subset of those lengths that

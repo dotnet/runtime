@@ -22,7 +22,7 @@ Abstract:
 #include "pal/context.h"
 #include "pal.h"
 #include <dlfcn.h>
- 
+
 #define UNW_LOCAL_ONLY
 // Sub-headers included from the libunwind.h contain an empty struct
 // and clang issues a warning. Until the libunwind is fixed, disable
@@ -89,7 +89,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 #else
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
-#if defined(_ARM_)    
+#if defined(_ARM_)
     // Assuming that unw_set_reg() on cursor will point the cursor to the
     // supposed stack frame is dangerous for libunwind-arm in Linux.
     // It is because libunwind's unw_cursor_t has other data structure
@@ -111,8 +111,8 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->regs[13] = winContext->Sp;
     unwContext->regs[14] = winContext->Lr;
     unwContext->regs[15] = winContext->Pc;
-#endif    
-} 
+#endif
+}
 
 static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
 {
@@ -194,7 +194,7 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     if (saveLoc.type == UNW_SLT_MEMORY)
     {
         SIZE_T *pLoc = (SIZE_T *)saveLoc.u.addr;
-        // Filter out fake save locations that point to unwContext 
+        // Filter out fake save locations that point to unwContext
         if (unwContext == NULL || (pLoc < (SIZE_T *)unwContext) || ((SIZE_T *)(unwContext + 1) <= pLoc))
             *contextPointer = (SIZE_T *)saveLoc.u.addr;
     }
@@ -255,9 +255,9 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     DWORD64 curPc = CONTEXTGetPC(context);
 
 #ifndef __APPLE__
-    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler. 
-    // If that's the case, extract its local variable containing the windows style context of the hardware 
-    // exception and return that. This skips the hardware signal handler trampoline that the libunwind 
+    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler.
+    // If that's the case, extract its local variable containing the windows style context of the hardware
+    // exception and return that. This skips the hardware signal handler trampoline that the libunwind
     // cannot cross on some systems.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
@@ -266,7 +266,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
         return TRUE;
     }
-#endif 
+#endif
 
     if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
     {
@@ -334,7 +334,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // >= 0 is returned from the step, but $pc will stay the same.
     // So we detect that here and set the $pc to NULL in that case.
     // This is the default behavior of the libunwind on x64 Linux.
-    // 
+    //
     if (st >= 0 && CONTEXTGetPC(context) == curPc)
     {
         CONTEXTSetPC(context, 0);
@@ -434,18 +434,18 @@ Parameters:
     ExceptionRecord - the Windows exception record to throw
 
 Note:
-    The name of this function and the name of the ExceptionRecord 
+    The name of this function and the name of the ExceptionRecord
     parameter is used in the sos lldb plugin code to read the exception
     record. See coreclr\src\ToolBox\SOS\lldbplugin\services.cpp.
 
     This function must not be inlined or optimized so the below PAL_VirtualUnwind
-    calls end up with RaiseException caller's context and so the above debugger 
+    calls end up with RaiseException caller's context and so the above debugger
     code finds the function and ExceptionRecord parameter.
 --*/
 PAL_NORETURN
 __attribute__((noinline))
 __attribute__((NOOPT_ATTRIBUTE))
-static void 
+static void
 RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord, CONTEXT *ContextRecord)
 {
     throw PAL_SEHException(ExceptionRecord, ContextRecord);

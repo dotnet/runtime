@@ -13,7 +13,7 @@
 #define __CORHLPR_H__
 
 #if defined(_MSC_VER) && defined(_X86_) && !defined(FPO_ON)
-#pragma optimize("y", on)		// Small critical routines, don't put in EBP frame 
+#pragma optimize("y", on)		// Small critical routines, don't put in EBP frame
 #define FPO_ON 1
 #define CORHLPR_TURNED_FPO_ON 1
 #endif
@@ -135,13 +135,13 @@ inline bool isCallConv(unsigned sigByte, CorCallingConvention conv)
 //*****************************************************************************
 typedef struct tagCOR_ILMETHOD_SECT_SMALL : IMAGE_COR_ILMETHOD_SECT_SMALL {
         //Data follows
-    const BYTE* Data() const 
-    { 
-        return(((const BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_SECT_SMALL)); 
+    const BYTE* Data() const
+    {
+        return(((const BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_SECT_SMALL));
     }
 
     bool IsSmall() const
-    { 
+    {
         return (Kind & CorILMethod_Sect_FatFormat) == 0;
     }
 
@@ -156,9 +156,9 @@ typedef struct tagCOR_ILMETHOD_SECT_SMALL : IMAGE_COR_ILMETHOD_SECT_SMALL {
 /* NOTE this structure must be DWORD aligned!! */
 typedef struct tagCOR_ILMETHOD_SECT_FAT : IMAGE_COR_ILMETHOD_SECT_FAT {
         //Data follows
-    const BYTE* Data() const 
-    { 
-        return(((const BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_SECT_FAT)); 
+    const BYTE* Data() const
+    {
+        return(((const BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_SECT_FAT));
     }
 
         //Endian-safe wrappers
@@ -322,23 +322,23 @@ struct COR_ILMETHOD_SECT_EH_SMALL : public COR_ILMETHOD_SECT_SMALL {
 /* NOTE this structure must be DWORD aligned!! */
 struct COR_ILMETHOD_SECT
 {
-    bool More() const           
-    { 
-        return((AsSmall()->Kind & CorILMethod_Sect_MoreSects) != 0); 
+    bool More() const
+    {
+        return((AsSmall()->Kind & CorILMethod_Sect_MoreSects) != 0);
     }
 
     CorILMethodSect Kind() const
-    { 
-        return((CorILMethodSect) (AsSmall()->Kind & CorILMethod_Sect_KindMask)); 
+    {
+        return((CorILMethodSect) (AsSmall()->Kind & CorILMethod_Sect_KindMask));
     }
 
-    const COR_ILMETHOD_SECT* Next() const   
+    const COR_ILMETHOD_SECT* Next() const
     {
         if (!More()) return(0);
         return ((COR_ILMETHOD_SECT*)(((BYTE *)this) + DataSize()))->Align();
     }
 
-    const BYTE* Data() const 
+    const BYTE* Data() const
     {
         if (IsFat()) return(AsFat()->Data());
         return(AsSmall()->Data());
@@ -346,11 +346,11 @@ struct COR_ILMETHOD_SECT
 
     unsigned DataSize() const
     {
-        if (Kind() == CorILMethod_Sect_EHTable) 
+        if (Kind() == CorILMethod_Sect_EHTable)
         {
             // VB and MC++ shipped with bug where they have not accounted for size of COR_ILMETHOD_SECT_EH_XXX
             // in DataSize. To avoid breaking these images, we will align the size of EH sections up. This works
-            // because IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_XXX is bigger than COR_ILMETHOD_SECT_EH_XXX 
+            // because IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_XXX is bigger than COR_ILMETHOD_SECT_EH_XXX
             // (see VSWhidbey #99031 and related bugs for details).
 
             if (IsFat())
@@ -368,25 +368,25 @@ struct COR_ILMETHOD_SECT
     friend struct COR_ILMETHOD;
     friend struct tagCOR_ILMETHOD_FAT;
     friend struct tagCOR_ILMETHOD_TINY;
-    bool IsFat() const                            
-    { 
-        return((AsSmall()->Kind & CorILMethod_Sect_FatFormat) != 0); 
+    bool IsFat() const
+    {
+        return((AsSmall()->Kind & CorILMethod_Sect_FatFormat) != 0);
     }
 
-    const COR_ILMETHOD_SECT* Align() const        
-    { 
-        return((COR_ILMETHOD_SECT*) ((((UINT_PTR) this) + 3) & ~3));  
+    const COR_ILMETHOD_SECT* Align() const
+    {
+        return((COR_ILMETHOD_SECT*) ((((UINT_PTR) this) + 3) & ~3));
     }
 
 protected:
-    const COR_ILMETHOD_SECT_FAT*   AsFat() const  
-    { 
-        return((COR_ILMETHOD_SECT_FAT*) this); 
+    const COR_ILMETHOD_SECT_FAT*   AsFat() const
+    {
+        return((COR_ILMETHOD_SECT_FAT*) this);
     }
 
     const COR_ILMETHOD_SECT_SMALL* AsSmall() const
-    { 
-        return((COR_ILMETHOD_SECT_SMALL*) this); 
+    {
+        return((COR_ILMETHOD_SECT_SMALL*) this);
     }
 
 public:
@@ -424,7 +424,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
 
 struct COR_ILMETHOD_SECT_EH : public COR_ILMETHOD_SECT
 {
-    unsigned EHCount() const 
+    unsigned EHCount() const
     {
         return (unsigned)(IsFat() ? (Fat.GetDataSize() / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT)) :
                         (Small.DataSize / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL)));
@@ -432,27 +432,27 @@ struct COR_ILMETHOD_SECT_EH : public COR_ILMETHOD_SECT
 
         // return one clause in its fat form.  Use 'buff' if needed
     const IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* EHClause(unsigned idx, IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* buff) const
-    { 
-        return SectEH_EHClause((void *)this, idx, buff); 
+    {
+        return SectEH_EHClause((void *)this, idx, buff);
     };
         // compute the size of the section (best format)
         // codeSize is the size of the method
     // deprecated
     unsigned static Size(unsigned ehCount, unsigned codeSize)
-    { 
-        return SectEH_SizeWithCode(ehCount, codeSize); 
+    {
+        return SectEH_SizeWithCode(ehCount, codeSize);
     };
 
     // will return worse-case size and then Emit will return actual size
     unsigned static Size(unsigned ehCount)
-    { 
-        return SectEH_SizeWorst(ehCount); 
+    {
+        return SectEH_SizeWorst(ehCount);
     };
 
     // will return exact size which will match the size returned by Emit
     unsigned static Size(unsigned ehCount, const IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* clauses)
-    { 
-        return SectEH_SizeExact(ehCount, (IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)clauses);  
+    {
+        return SectEH_SizeExact(ehCount, (IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)clauses);
     };
 
         // emit the section (best format);
@@ -460,10 +460,10 @@ struct COR_ILMETHOD_SECT_EH : public COR_ILMETHOD_SECT
                   const IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* clauses,
                   bool moreSections, BYTE* outBuff,
                   ULONG* ehTypeOffsets = 0)
-    { 
+    {
         return SectEH_Emit(size, ehCount,
                            (IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)clauses,
-                           moreSections, outBuff, ehTypeOffsets); 
+                           moreSections, outBuff, ehTypeOffsets);
     };
 };
 
@@ -472,34 +472,34 @@ struct COR_ILMETHOD_SECT_EH : public COR_ILMETHOD_SECT
 /* Used when the method is tiny (< 64 bytes), and there are no local vars */
 typedef struct tagCOR_ILMETHOD_TINY : IMAGE_COR_ILMETHOD_TINY
 {
-    bool     IsTiny() const         
-    { 
-        return((Flags_CodeSize & (CorILMethod_FormatMask >> 1)) == CorILMethod_TinyFormat); 
+    bool     IsTiny() const
+    {
+        return((Flags_CodeSize & (CorILMethod_FormatMask >> 1)) == CorILMethod_TinyFormat);
     }
 
-    unsigned GetCodeSize() const    
-    { 
-        return(((unsigned) Flags_CodeSize) >> (CorILMethod_FormatShift-1)); 
+    unsigned GetCodeSize() const
+    {
+        return(((unsigned) Flags_CodeSize) >> (CorILMethod_FormatShift-1));
     }
 
-    unsigned GetMaxStack() const    
-    { 
-        return(8); 
+    unsigned GetMaxStack() const
+    {
+        return(8);
     }
 
-    BYTE*    GetCode() const        
-    { 
-        return(((BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_TINY)); 
+    BYTE*    GetCode() const
+    {
+        return(((BYTE*) this) + sizeof(struct tagCOR_ILMETHOD_TINY));
     }
 
-    DWORD    GetLocalVarSigTok() const  
-    { 
-        return(0); 
+    DWORD    GetLocalVarSigTok() const
+    {
+        return(0);
     }
 
-    COR_ILMETHOD_SECT* GetSect() const 
-    { 
-        return(0); 
+    COR_ILMETHOD_SECT* GetSect() const
+    {
+        return(0);
     }
 } COR_ILMETHOD_TINY;
 
@@ -547,24 +547,24 @@ typedef struct tagCOR_ILMETHOD_FAT : IMAGE_COR_ILMETHOD_FAT
         *(USHORT*)((BYTE*)this+2) = VAL16((USHORT)maxStack);
     }
 
-    unsigned GetCodeSize() const        
-    { 
-        return VAL32(CodeSize); 
+    unsigned GetCodeSize() const
+    {
+        return VAL32(CodeSize);
     }
 
-    void SetCodeSize(DWORD Size)        
-    { 
-        CodeSize = VAL32(Size); 
+    void SetCodeSize(DWORD Size)
+    {
+        CodeSize = VAL32(Size);
     }
 
-    mdToken  GetLocalVarSigTok() const      
-    { 
-        return VAL32(LocalVarSigTok); 
+    mdToken  GetLocalVarSigTok() const
+    {
+        return VAL32(LocalVarSigTok);
     }
 
-    void SetLocalVarSigTok(mdSignature tok) 
-    { 
-        LocalVarSigTok = VAL32(tok); 
+    void SetLocalVarSigTok(mdSignature tok)
+    {
+        LocalVarSigTok = VAL32(tok);
     }
 
     BYTE* GetCode() const {
@@ -600,14 +600,14 @@ struct COR_ILMETHOD
 
         // compute the size of the header (best format)
     unsigned static Size(const COR_ILMETHOD_FAT* header, bool MoreSections)
-    { 
-        return IlmethodSize((COR_ILMETHOD_FAT*)header,MoreSections); 
+    {
+        return IlmethodSize((COR_ILMETHOD_FAT*)header,MoreSections);
     };
         // emit the header (bestFormat) return amount emitted
     unsigned static Emit(unsigned size, const COR_ILMETHOD_FAT* header,
                   bool moreSections, BYTE* outBuff)
-    { 
-        return IlmethodEmit(size, (COR_ILMETHOD_FAT*)header, moreSections, outBuff); 
+    {
+        return IlmethodEmit(size, (COR_ILMETHOD_FAT*)header, moreSections, outBuff);
     };
 
 //private:
@@ -639,9 +639,9 @@ public:
 
     // Typically the ONLY way you should access COR_ILMETHOD is through
     // this constructor so format changes are easier.
-    COR_ILMETHOD_DECODER(const COR_ILMETHOD* header) 
-    { 
-        DecoderInit(this,(COR_ILMETHOD*)header); 
+    COR_ILMETHOD_DECODER(const COR_ILMETHOD* header)
+    {
+        DecoderInit(this,(COR_ILMETHOD*)header);
     };
 
     // The above variant of the constructor can not do a 'complete' job, because
@@ -659,11 +659,11 @@ public:
     // Because we may be able to demand SkipVerification and thus it was OK
     // to have had a verification error.
 
-    COR_ILMETHOD_DECODER(COR_ILMETHOD* header, 
+    COR_ILMETHOD_DECODER(COR_ILMETHOD* header,
                          void *pInternalImport,
                          DecoderStatus* wbStatus);
 
-    unsigned EHCount() const 
+    unsigned EHCount() const
     {
         return (EH != 0) ? EH->EHCount() : 0;
     }
@@ -674,9 +674,9 @@ public:
     }
 
     // returns total size of method for use in copying
-    int GetOnDiskSize(const COR_ILMETHOD* header) 
-    { 
-        return DecoderGetOnDiskSize(this,(COR_ILMETHOD*)header); 
+    int GetOnDiskSize(const COR_ILMETHOD* header)
+    {
+        return DecoderGetOnDiskSize(this,(COR_ILMETHOD*)header);
     }
 
     // Flags        these are available because we inherit COR_ILMETHOD_FAT

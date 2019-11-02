@@ -145,7 +145,7 @@ Routine Description:
 
     This routine is not a replacement for strncpy.  That function will pad the
     destination string with extra null termination characters if the count is
-    greater than the length of the source string, and it will fail to null 
+    greater than the length of the source string, and it will fail to null
     terminate the destination string if the source string length is greater
     than or equal to the count. You can not blindly use this instead of strncpy:
     it is common for code to use it to "patch" strings and you would introduce
@@ -166,9 +166,9 @@ Arguments:
 
     pszSrc      -   source string which must be null terminated
 
-Notes: 
+Notes:
     Behavior is undefined if source and destination strings overlap.
-   
+
     pszDest and pszSrc should not be NULL. See StringCchCopyEx if you require
     the handling of NULL values.
 
@@ -180,7 +180,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all hresult falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the copy operation
                     failed due to insufficient space. When this error occurs,
@@ -287,7 +287,7 @@ Arguments:
         STRSAFE_FILL_ON_FAILURE
                     if the function fails, the low byte of dwFlags will be
                     used to fill all of the destination buffer, and it will
-                    be null terminated. This will overwrite any truncated 
+                    be null terminated. This will overwrite any truncated
                     string returned when the failure is
                     STRSAFE_E_INSUFFICIENT_BUFFER
 
@@ -313,7 +313,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the copy operation
                     failed due to insufficient space. When this error occurs,
@@ -359,7 +359,7 @@ STRSAFEAPI StringCchCopyExA(char* pszDest, size_t cchDest, const char* pszSrc, c
 STRSAFEAPI StringCchCopyExW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, WCHAR** ppszDestEnd, size_t* pcchRemaining, unsigned long dwFlags)
 {
     HRESULT hr;
-    
+
     if (cchDest > STRSAFE_MAX_CCH)
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -416,9 +416,9 @@ Arguments:
 
     cchSrc      -   maximum number of characters to copy from source string
 
-Notes: 
+Notes:
     Behavior is undefined if source and destination strings overlap.
-   
+
     pszDest and pszSrc should not be NULL. See StringCchCopyNEx if you require
     the handling of NULL values.
 
@@ -430,7 +430,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all hresult falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the copy operation
                     failed due to insufficient space. When this error occurs,
@@ -473,7 +473,7 @@ STRSAFEAPI StringCchCopyNW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, 
 {
     HRESULT hr;
 
-    if ((cchDest > STRSAFE_MAX_CCH) || 
+    if ((cchDest > STRSAFE_MAX_CCH) ||
         (cchSrc > STRSAFE_MAX_CCH))
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -548,7 +548,7 @@ Arguments:
         STRSAFE_FILL_ON_FAILURE
                     if the function fails, the low byte of dwFlags will be
                     used to fill all of the destination buffer, and it will
-                    be null terminated. This will overwrite any truncated 
+                    be null terminated. This will overwrite any truncated
                     string returned when the failure is
                     STRSAFE_E_INSUFFICIENT_BUFFER
 
@@ -574,7 +574,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the copy operation
                     failed due to insufficient space. When this error occurs,
@@ -621,7 +621,7 @@ STRSAFEAPI StringCchCopyNExA(char* pszDest, size_t cchDest, const char* pszSrc, 
 STRSAFEAPI StringCchCopyNExW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, size_t cchSrc, WCHAR** ppszDestEnd, size_t* pcchRemaining, unsigned long dwFlags)
 {
     HRESULT hr;
-    
+
     if ((cchDest > STRSAFE_MAX_CCH) ||
         (cchSrc > STRSAFE_MAX_CCH))
     {
@@ -668,14 +668,14 @@ Arguments:
 
     cchDest     -  size of destination buffer in characters.
                    length must be = (_tcslen(pszDest) + _tcslen(pszSrc) + 1)
-                   to hold all of the combine string plus the null 
+                   to hold all of the combine string plus the null
                    terminator
 
     pszSrc      -  source string which must be null terminated
 
-Notes: 
+Notes:
     Behavior is undefined if source and destination strings overlap.
-   
+
     pszDest and pszSrc should not be NULL.  See StringCchCatEx if you require
     the handling of NULL values.
 
@@ -687,7 +687,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -769,14 +769,14 @@ Arguments:
 
     cbDest      -  size of destination buffer in bytes.
                    length must be = ((_tcslen(pszDest) + _tcslen(pszSrc) + 1) * sizeof(TCHAR)
-                   to hold all of the combine string plus the null 
+                   to hold all of the combine string plus the null
                    terminator
 
     pszSrc      -  source string which must be null terminated
 
-Notes: 
+Notes:
     Behavior is undefined if source and destination strings overlap.
-   
+
     pszDest and pszSrc should not be NULL.  See StringCbCatEx if you require
     the handling of NULL values.
 
@@ -788,7 +788,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -814,7 +814,7 @@ STRSAFEAPI StringCbCatA(char* pszDest, size_t cbDest, const char* pszSrc)
 {
     HRESULT hr;
     size_t cchDest;
-    
+
     cchDest = cbDest / sizeof(char);
 
     if (cchDest > STRSAFE_MAX_CCH)
@@ -833,7 +833,7 @@ STRSAFEAPI StringCbCatW(WCHAR* pszDest, size_t cbDest, const WCHAR* pszSrc)
 {
     HRESULT hr;
     size_t cchDest;
-    
+
     cchDest = cbDest / sizeof(WCHAR);
 
     if (cchDest > STRSAFE_MAX_CCH)
@@ -862,10 +862,10 @@ STDAPI StringCchCatEx(LPTSTR pszDest,
                       DWORD dwFlags);
 
 Routine Description:
-    
+
     This routine is a safer version of the C built-in function 'strcat' with
     some additional parameters.  In addition to functionality provided by
-    StringCchCat, this routine also returns a pointer to the end of the 
+    StringCchCat, this routine also returns a pointer to the end of the
     destination string and the number of characters left in the destination string
     including the null terminator. The flags parameter allows additional controls.
 
@@ -931,7 +931,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -977,7 +977,7 @@ STRSAFEAPI StringCchCatExA(char* pszDest, size_t cchDest, const char* pszSrc, ch
 STRSAFEAPI StringCchCatExW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, WCHAR** ppszDestEnd, size_t* pcchRemaining, unsigned long dwFlags)
 {
     HRESULT hr;
-    
+
     if (cchDest > STRSAFE_MAX_CCH)
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -1012,7 +1012,7 @@ Routine Description:
 
     This routine is a safer version of the C built-in function 'strcat' with
     some additional parameters.  In addition to functionality provided by
-    StringCbCat, this routine also returns a pointer to the end of the 
+    StringCbCat, this routine also returns a pointer to the end of the
     destination string and the number of bytes left in the destination string
     including the null terminator. The flags parameter allows additional controls.
 
@@ -1021,7 +1021,7 @@ Arguments:
     pszDest         -   destination string which must be null terminated
 
     cbDest          -   size of destination buffer in bytes.
-                        length must be ((_tcslen(pszDest) + _tcslen(pszSrc) + 1) * sizeof(TCHAR) 
+                        length must be ((_tcslen(pszDest) + _tcslen(pszSrc) + 1) * sizeof(TCHAR)
                         to hold all of the combine string plus the null
                         terminator.
 
@@ -1032,7 +1032,7 @@ Arguments:
                         function appended any data, the result will point to the
                         null termination character
 
-    pcbRemaining    -   if pcbRemaining is non-null, the function will return 
+    pcbRemaining    -   if pcbRemaining is non-null, the function will return
                         the number of bytes left in the destination string,
                         including the null terminator
 
@@ -1078,7 +1078,7 @@ Return Value:
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -1204,14 +1204,14 @@ Notes:
 
 Return Value:
 
-    S_OK        -   if all of pszSrc or the first cchMaxAppend characters were 
+    S_OK        -   if all of pszSrc or the first cchMaxAppend characters were
                     concatenated to pszDest and the resultant dest string was
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -1252,7 +1252,7 @@ STRSAFEAPI StringCchCatNA(char* pszDest, size_t cchDest, const char* pszSrc, siz
 STRSAFEAPI StringCchCatNW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, size_t cchMaxAppend)
 {
     HRESULT hr;
-    
+
     if (cchDest > STRSAFE_MAX_CCH)
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -1295,7 +1295,7 @@ Arguments:
     pszDest         -   destination string which must be null terminated
 
     cbDest          -   size of destination buffer in bytes.
-                        length must be ((_tcslen(pszDest) + min(cbMaxAppend / sizeof(TCHAR), _tcslen(pszSrc)) + 1) * sizeof(TCHAR) 
+                        length must be ((_tcslen(pszDest) + min(cbMaxAppend / sizeof(TCHAR), _tcslen(pszSrc)) + 1) * sizeof(TCHAR)
                         to hold all of the combine string plus the null
                         terminator.
 
@@ -1311,14 +1311,14 @@ Notes:
 
 Return Value:
 
-    S_OK        -   if all of pszSrc or the first cbMaxAppend bytes were 
+    S_OK        -   if all of pszSrc or the first cbMaxAppend bytes were
                     concatenated to pszDest and the resultant dest string was
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -1354,7 +1354,7 @@ STRSAFEAPI StringCbCatNA(char* pszDest, size_t cbDest, const char* pszSrc, size_
     else
     {
         size_t cchMaxAppend;
-        
+
         cchMaxAppend = cbMaxAppend / sizeof(char);
 
         hr = StringCatNWorkerA(pszDest, cchDest, pszSrc, cchMaxAppend);
@@ -1401,10 +1401,10 @@ STDAPI StringCchCatNEx(LPTSTR pszDest,
                        DWORD dwFlags);
 
 Routine Description:
- 
-    This routine is a safer version of the C built-in function 'strncat', with 
+
+    This routine is a safer version of the C built-in function 'strncat', with
     some additional parameters.  In addition to functionality provided by
-    StringCchCatN, this routine also returns a pointer to the end of the 
+    StringCchCatN, this routine also returns a pointer to the end of the
     destination string and the number of characters left in the destination string
     including the null terminator. The flags parameter allows additional controls.
 
@@ -1465,14 +1465,14 @@ Notes:
 
 Return Value:
 
-    S_OK        -   if all of pszSrc or the first cchMaxAppend characters were 
+    S_OK        -   if all of pszSrc or the first cchMaxAppend characters were
                     concatenated to pszDest and the resultant dest string was
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -1518,7 +1518,7 @@ STRSAFEAPI StringCchCatNExA(char* pszDest, size_t cchDest, const char* pszSrc, s
 STRSAFEAPI StringCchCatNExW(WCHAR* pszDest, size_t cchDest, const WCHAR* pszSrc, size_t cchMaxAppend, WCHAR** ppszDestEnd, size_t* pcchRemaining, unsigned long dwFlags)
 {
     HRESULT hr;
-    
+
     if (cchDest > STRSAFE_MAX_CCH)
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -1551,10 +1551,10 @@ STDAPI StringCbCatNEx(LPTSTR pszDest,
                       DWORD dwFlags);
 
 Routine Description:
-    
-    This routine is a safer version of the C built-in function 'strncat', with 
+
+    This routine is a safer version of the C built-in function 'strncat', with
     some additional parameters.  In addition to functionality provided by
-    StringCbCatN, this routine also returns a pointer to the end of the 
+    StringCbCatN, this routine also returns a pointer to the end of the
     destination string and the number of bytes left in the destination string
     including the null terminator. The flags parameter allows additional controls.
 
@@ -1563,7 +1563,7 @@ Arguments:
     pszDest         -   destination string which must be null terminated
 
     cbDest          -   size of destination buffer in bytes.
-                        length must be ((_tcslen(pszDest) + min(cbMaxAppend / sizeof(TCHAR), _tcslen(pszSrc)) + 1) * sizeof(TCHAR) 
+                        length must be ((_tcslen(pszDest) + min(cbMaxAppend / sizeof(TCHAR), _tcslen(pszSrc)) + 1) * sizeof(TCHAR)
                         to hold all of the combine string plus the null
                         terminator.
 
@@ -1615,14 +1615,14 @@ Notes:
 
 Return Value:
 
-    S_OK        -   if all of pszSrc or the first cbMaxAppend bytes were 
+    S_OK        -   if all of pszSrc or the first cbMaxAppend bytes were
                     concatenated to pszDest and the resultant dest string was
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
                     code for all falure cases
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that the operation
                     failed due to insufficient space. When this error occurs,
@@ -1659,7 +1659,7 @@ STRSAFEAPI StringCbCatNExA(char* pszDest, size_t cbDest, const char* pszSrc, siz
     else
     {
         size_t cchMaxAppend;
-        
+
         cchMaxAppend = cbMaxAppend / sizeof(char);
 
         hr = StringCatNExWorkerA(pszDest, cchDest, cbDest, pszSrc, cchMaxAppend, ppszDestEnd, &cchRemaining, dwFlags);
@@ -1692,7 +1692,7 @@ STRSAFEAPI StringCbCatNExW(WCHAR* pszDest, size_t cbDest, const WCHAR* pszSrc, s
     else
     {
         size_t cchMaxAppend;
-        
+
         cchMaxAppend = cbMaxAppend / sizeof(WCHAR);
 
         hr = StringCatNExWorkerW(pszDest, cchDest, cbDest, pszSrc, cchMaxAppend, ppszDestEnd, &cchRemaining, dwFlags);
@@ -1739,8 +1739,8 @@ Arguments:
 
     cchDest     -   size of destination buffer in characters.
 
-Notes: 
-    pszDest should not be NULL. See StringCchGetsEx if you require the handling 
+Notes:
+    pszDest should not be NULL. See StringCchGetsEx if you require the handling
     of NULL values.
 
     cchDest must be > 1 for this function to succeed.
@@ -1757,7 +1757,7 @@ Return Value:
                 -   this return value indicates an error or end-of-file condition,
                     use feof or ferror to determine which one has occurred.
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that there was insufficient
                     space in the destination buffer to copy any data
@@ -1795,8 +1795,8 @@ Arguments:
 
     cbDest      -   size of destination buffer in bytes.
 
-Notes: 
-    pszDest should not be NULL. See StringCbGetsEx if you require the handling 
+Notes:
+    pszDest should not be NULL. See StringCbGetsEx if you require the handling
     of NULL values.
 
     cbDest must be > sizeof(TCHAR) for this function to succeed.
@@ -1813,7 +1813,7 @@ Return Value:
                 -   this return value indicates an error or end-of-file condition,
                     use feof or ferror to determine which one has occurred.
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that there was insufficient
                     space in the destination buffer to copy any data
@@ -1847,7 +1847,7 @@ Arguments:
     pszDest         -   destination string
 
     cchDest         -   size of destination buffer in characters.
-                     
+
     ppszDestEnd     -   if ppszDestEnd is non-null, the function will return a
                         pointer to the end of the destination string.  If the
                         function copied any data, the result will point to the
@@ -1875,11 +1875,11 @@ Arguments:
         STRSAFE_NO_TRUNCATION /
         STRSAFE_NULL_ON_FAILURE
                     if the function fails, the destination buffer will be set
-                    to the empty string. 
-                    
+                    to the empty string.
+
 Notes:
     pszDest should not be NULL unless the STRSAFE_IGNORE_NULLS flag is specified.
-    If STRSAFE_IGNORE_NULLS is passed and pszDest is NULL, an error may still be 
+    If STRSAFE_IGNORE_NULLS is passed and pszDest is NULL, an error may still be
     returned even though NULLS are ignored
 
     cchDest must be > 1 for this function to succeed.
@@ -1896,7 +1896,7 @@ Return Value:
                 -   this return value indicates an error or end-of-file condition,
                     use feof or ferror to determine which one has occurred.
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that there was insufficient
                     space in the destination buffer to copy any data
@@ -1930,7 +1930,7 @@ Arguments:
     pszDest         -   destination string
 
     cbDest          -   size of destination buffer in bytes.
-                     
+
     ppszDestEnd     -   if ppszDestEnd is non-null, the function will return a
                         pointer to the end of the destination string.  If the
                         function copied any data, the result will point to the
@@ -1958,11 +1958,11 @@ Arguments:
         STRSAFE_NO_TRUNCATION /
         STRSAFE_NULL_ON_FAILURE
                     if the function fails, the destination buffer will be set
-                    to the empty string. 
-                    
+                    to the empty string.
+
 Notes:
     pszDest should not be NULL unless the STRSAFE_IGNORE_NULLS flag is specified.
-    If STRSAFE_IGNORE_NULLS is passed and pszDest is NULL, an error may still be 
+    If STRSAFE_IGNORE_NULLS is passed and pszDest is NULL, an error may still be
     returned even though NULLS are ignored
 
     cbDest must be > sizeof(TCHAR) for this function to succeed
@@ -1979,7 +1979,7 @@ Return Value:
                 -   this return value indicates an error or end-of-file condition,
                     use feof or ferror to determine which one has occurred.
 
-    STRSAFE_E_INSUFFICIENT_BUFFER / 
+    STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
                 -   this return value is an indication that there was insufficient
                     space in the destination buffer to copy any data
@@ -2020,7 +2020,7 @@ Arguments:
                     in characters of psz excluding the null terminator will be returned.
                     This out parameter is equivalent to the return value of strlen(psz)
 
-Notes: 
+Notes:
     psz can be null but the function will fail
 
     cchMax should be greater than zero or the function will fail
@@ -2050,7 +2050,7 @@ STRSAFEAPI StringCchLengthW(const WCHAR* psz, size_t cchMax, size_t* pcch);
 STRSAFEAPI StringCchLengthA(const char* psz, size_t cchMax, size_t* pcch)
 {
     HRESULT hr;
-    
+
     if ((psz == NULL) || (cchMax > STRSAFE_MAX_CCH))
     {
         hr = STRSAFE_E_INVALID_PARAMETER;
@@ -2093,7 +2093,7 @@ Routine Description:
 
     This routine is a safer version of the C built-in function 'strlen'.
     It is used to make sure a string is not larger than a given length, and
-    it optionally returns the current length in bytes not including 
+    it optionally returns the current length in bytes not including
     the null terminator.
 
     This function returns a hresult, and not a pointer.  It returns a S_OK
@@ -2111,7 +2111,7 @@ Arguments:
                     in bytes of psz excluding the null terminator will be returned.
                     This out parameter is equivalent to the return value of strlen(psz) * sizeof(TCHAR)
 
-Notes: 
+Notes:
     psz can be null but the function will fail
 
     cbMax should be greater than or equal to sizeof(TCHAR) or the function will fail
@@ -2263,7 +2263,7 @@ STRSAFEAPI StringCopyExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, con
 
     // ASSERT(cbDest == (cchDest * sizeof(char))    ||
     //        cbDest == (cchDest * sizeof(char)) + (cbDest % sizeof(char)));
- 
+
     // only accept valid flags
     if (dwFlags & (~STRSAFE_VALID_FLAGS))
     {
@@ -2318,7 +2318,7 @@ STRSAFEAPI StringCopyExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, con
                     *pszDestEnd++= *pszSrc++;
                     cchRemaining--;
                 }
-    
+
                 if (cchRemaining > 0)
                 {
                     if (dwFlags & STRSAFE_FILL_BEHIND_NULL)
@@ -2347,7 +2347,7 @@ STRSAFEAPI StringCopyExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, con
             if (dwFlags & STRSAFE_FILL_ON_FAILURE)
             {
                 memset(pszDest, STRSAFE_GET_FILL_PATTERN(dwFlags), cbDest);
-            
+
                 if (STRSAFE_GET_FILL_PATTERN(dwFlags) == 0)
                 {
                     pszDestEnd = pszDest;
@@ -2379,7 +2379,7 @@ STRSAFEAPI StringCopyExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, con
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -2401,7 +2401,7 @@ STRSAFEAPI StringCopyExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, co
 
     // ASSERT(cbDest == (cchDest * sizeof(WCHAR)) ||
     //        cbDest == (cchDest * sizeof(WCHAR)) + (cbDest % sizeof(WCHAR)));
- 
+
     // only accept valid flags
     if (dwFlags & (~STRSAFE_VALID_FLAGS))
     {
@@ -2456,7 +2456,7 @@ STRSAFEAPI StringCopyExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, co
                     *pszDestEnd++= *pszSrc++;
                     cchRemaining--;
                 }
-    
+
                 if (cchRemaining > 0)
                 {
                     if (dwFlags & STRSAFE_FILL_BEHIND_NULL)
@@ -2485,7 +2485,7 @@ STRSAFEAPI StringCopyExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, co
             if (dwFlags & STRSAFE_FILL_ON_FAILURE)
             {
                 memset(pszDest, STRSAFE_GET_FILL_PATTERN(dwFlags), cbDest);
-                           
+
                 if (STRSAFE_GET_FILL_PATTERN(dwFlags) == 0)
                 {
                     pszDestEnd = pszDest;
@@ -2517,7 +2517,7 @@ STRSAFEAPI StringCopyExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, co
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -2601,7 +2601,7 @@ STRSAFEAPI StringCopyNExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, co
 
     // ASSERT(cbDest == (cchDest * sizeof(char))    ||
     //        cbDest == (cchDest * sizeof(char)) + (cbDest % sizeof(char)));
- 
+
     // only accept valid flags
     if (dwFlags & (~STRSAFE_VALID_FLAGS))
     {
@@ -2657,7 +2657,7 @@ STRSAFEAPI StringCopyNExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, co
                     cchRemaining--;
                     cchSrc--;
                 }
-    
+
                 if (cchRemaining > 0)
                 {
                     if (dwFlags & STRSAFE_FILL_BEHIND_NULL)
@@ -2686,7 +2686,7 @@ STRSAFEAPI StringCopyNExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, co
             if (dwFlags & STRSAFE_FILL_ON_FAILURE)
             {
                 memset(pszDest, STRSAFE_GET_FILL_PATTERN(dwFlags), cbDest);
-            
+
                 if (STRSAFE_GET_FILL_PATTERN(dwFlags) == 0)
                 {
                     pszDestEnd = pszDest;
@@ -2718,7 +2718,7 @@ STRSAFEAPI StringCopyNExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, co
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -2740,7 +2740,7 @@ STRSAFEAPI StringCopyNExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, c
 
     // ASSERT(cbDest == (cchDest * sizeof(WCHAR)) ||
     //        cbDest == (cchDest * sizeof(WCHAR)) + (cbDest % sizeof(WCHAR)));
- 
+
     // only accept valid flags
     if (dwFlags & (~STRSAFE_VALID_FLAGS))
     {
@@ -2796,7 +2796,7 @@ STRSAFEAPI StringCopyNExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, c
                     cchRemaining--;
                     cchSrc--;
                 }
-    
+
                 if (cchRemaining > 0)
                 {
                     if (dwFlags & STRSAFE_FILL_BEHIND_NULL)
@@ -2825,7 +2825,7 @@ STRSAFEAPI StringCopyNExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, c
             if (dwFlags & STRSAFE_FILL_ON_FAILURE)
             {
                 memset(pszDest, STRSAFE_GET_FILL_PATTERN(dwFlags), cbDest);
-            
+
                 if (STRSAFE_GET_FILL_PATTERN(dwFlags) == 0)
                 {
                     pszDestEnd = pszDest;
@@ -2857,7 +2857,7 @@ STRSAFEAPI StringCopyNExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, c
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -2995,7 +2995,7 @@ STRSAFEAPI StringCatExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, cons
             }
         }
     }
-    
+
     if (FAILED(hr))
     {
         if (pszDest)
@@ -3038,7 +3038,7 @@ STRSAFEAPI StringCatExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, cons
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -3138,7 +3138,7 @@ STRSAFEAPI StringCatExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, con
                                          pszSrc,
                                          &pszDestEnd,
                                          &cchRemaining,
-                                         dwFlags & (~(STRSAFE_FILL_ON_FAILURE | STRSAFE_NULL_ON_FAILURE)));            
+                                         dwFlags & (~(STRSAFE_FILL_ON_FAILURE | STRSAFE_NULL_ON_FAILURE)));
             }
         }
     }
@@ -3152,7 +3152,7 @@ STRSAFEAPI StringCatExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, con
             if (dwFlags & STRSAFE_FILL_ON_FAILURE)
             {
                 memset(pszDest, STRSAFE_GET_FILL_PATTERN(dwFlags), cbDest);
-            
+
                 if (STRSAFE_GET_FILL_PATTERN(dwFlags) == 0)
                 {
                     pszDestEnd = pszDest;
@@ -3184,7 +3184,7 @@ STRSAFEAPI StringCatExWorkerW(WCHAR* pszDest, size_t cchDest, size_t cbDest, con
 
     if (SUCCEEDED(hr) || (hr == STRSAFE_E_INSUFFICIENT_BUFFER))
     {
-        if (ppszDestEnd) 
+        if (ppszDestEnd)
         {
             *ppszDestEnd = pszDestEnd;
         }
@@ -3211,7 +3211,7 @@ STRSAFEAPI StringCatNWorkerA(char* pszDest, size_t cchDest, const char* pszSrc, 
                                 cchDest - cchDestCurrent,
                                 pszSrc,
                                 cchMaxAppend);
-    }    
+    }
 
     return hr;
 }

@@ -20,23 +20,23 @@ static Keywords keywords[] = {
 // Attention! Because of aliases, the instructions MUST go first!
 // Redefine all the instructions (defined in assembler.h <- asmenum.h <- opcode.def)
 #undef InlineNone
-#undef InlineVar        
+#undef InlineVar
 #undef ShortInlineVar
-#undef InlineI          
-#undef ShortInlineI     
-#undef InlineI8         
-#undef InlineR          
-#undef ShortInlineR     
+#undef InlineI
+#undef ShortInlineI
+#undef InlineI8
+#undef InlineR
+#undef ShortInlineR
 #undef InlineBrTarget
 #undef ShortInlineBrTarget
 #undef InlineMethod
-#undef InlineField 
-#undef InlineType 
+#undef InlineField
+#undef InlineType
 #undef InlineString
-#undef InlineSig        
-#undef InlineTok        
+#undef InlineSig
+#undef InlineTok
 #undef InlineSwitch
-#undef InlineVarTok     
+#undef InlineVarTok
 
 
 #define InlineNone              INSTR_NONE
@@ -59,8 +59,8 @@ static Keywords keywords[] = {
 
 #define InlineVarTok            0
 #define NEW_INLINE_NAMES
-                // The volatile instruction collides with the volatile keyword, so 
-                // we treat it as a keyword everywhere and modify the grammar accordingly (Yuck!) 
+                // The volatile instruction collides with the volatile keyword, so
+                // we treat it as a keyword everywhere and modify the grammar accordingly (Yuck!)
 #define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, lengthof(s)-1 },
 #define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, lengthof(s)-1 },
 #include "opcode.def"
@@ -200,7 +200,7 @@ char* yygetline(int Line)
             memcpy(buff,pLine,uCount);
             buff[uCount]=0;
         }
-    }    
+    }
     return buff;
 }
 
@@ -208,7 +208,7 @@ void yyerror(__in __nullterminated const char* str) {
     char tokBuff[64];
     WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
     int iline = PENV->curLine;
-    
+
     size_t len = PENV->curPos - PENV->curTok;
     if (len > 62) len = 62;
     memcpy(tokBuff, PENV->curTok, len);
@@ -220,16 +220,16 @@ void yyerror(__in __nullterminated const char* str) {
         iline = PENV->nExtLine;
     }
     if(Sym == SymW) // Unicode file
-        fprintf(stderr, "%S(%d) : error : %s at token '%S' in: %S\n", 
+        fprintf(stderr, "%S(%d) : error : %s at token '%S' in: %S\n",
                 wzfile, iline, str, (WCHAR*)tokBuff, (WCHAR*)yygetline(PENV->curLine));
     else
-        fprintf(stderr, "%S(%d) : error : %s at token '%s' in: %s\n", 
+        fprintf(stderr, "%S(%d) : error : %s at token '%s' in: %s\n",
                 wzfile, iline, str, tokBuff, yygetline(PENV->curLine));
     parser->success = false;
 }
 
 /********************************************************************************/
-/* looks up the typedef 'name' of length 'nameLen' (name does not need to be 
+/* looks up the typedef 'name' of length 'nameLen' (name does not need to be
    null terminated)   Returns 0 on failure */
 TypeDefDescr* findTypedef(__in_ecount(NameLen) char* name, size_t NameLen)
 {
@@ -264,7 +264,7 @@ int TYPEDEF(TypeDefDescr* pTDD)
             return TYPEDEF_CA;
     }
     return ERROR_;
-            
+
 }
 
 /********************************************************************************/
@@ -307,9 +307,9 @@ Instr* SetupInstr(unsigned short opcode)
     }
     return pVal;
 }
-/* looks up the keyword 'name' of length 'nameLen' (name does not need to be 
+/* looks up the keyword 'name' of length 'nameLen' (name does not need to be
    null terminated)   Returns 0 on failure */
-int findKeyword(const char* name, size_t nameLen, unsigned short* pOpcode) 
+int findKeyword(const char* name, size_t nameLen, unsigned short* pOpcode)
 {
     static char Name[128];
     Keywords* mid;
@@ -333,12 +333,12 @@ void Init_str2uint64()
     for(i='A'; i <= 'Z'; i++) digits[i] = i + 10 - 'A';
     for(i='a'; i <= 'z'; i++) digits[i] = i + 10 - 'a';
 }
-static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigned radix) 
+static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigned radix)
 {
     unsigned __int64 ret = 0;
     unsigned digit,ix;
     _ASSERTE(radix <= 36);
-    for(;;str = nextchar((char*)str)) 
+    for(;;str = nextchar((char*)str))
     {
         ix = Sym((char*)str);
         if(ix <= 0x7F)
@@ -371,7 +371,7 @@ static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
 /********************************************************************************/
 /* fetch the next token, and return it   Also set the yylval.union if the
    lexical token also has a value */
-   
+
 
 BOOL _Alpha[128];
 BOOL _Digit[128];
@@ -381,10 +381,10 @@ BOOL _ValidCS[128];
 void SetSymbolTables()
 {
     unsigned i;
-    memset(_Alpha,0,sizeof(_Alpha)); 
-    memset(_Digit,0,sizeof(_Digit)); 
-    memset(_AlNum,0,sizeof(_AlNum)); 
-    memset(_ValidSS,0,sizeof(_ValidSS)); 
+    memset(_Alpha,0,sizeof(_Alpha));
+    memset(_Digit,0,sizeof(_Digit));
+    memset(_AlNum,0,sizeof(_AlNum));
+    memset(_ValidSS,0,sizeof(_ValidSS));
     memset(_ValidCS,0,sizeof(_ValidCS));
     for(i = 'A'; i <= 'Z'; i++)
     {
@@ -392,7 +392,7 @@ void SetSymbolTables()
         _AlNum[i] = TRUE;
         _ValidSS[i] = TRUE;
         _ValidCS[i] = TRUE;
-    } 
+    }
     for(i = 'a'; i <= 'z'; i++)
     {
         _Alpha[i] = TRUE;
@@ -410,7 +410,7 @@ void SetSymbolTables()
     _ValidSS[(unsigned char)'#'] = TRUE;
     _ValidSS[(unsigned char)'$'] = TRUE;
     _ValidSS[(unsigned char)'@'] = TRUE;
-     
+
     _ValidCS[(unsigned char)'_'] = TRUE;
     _ValidCS[(unsigned char)'?'] = TRUE;
     _ValidCS[(unsigned char)'$'] = TRUE;
@@ -418,17 +418,17 @@ void SetSymbolTables()
     _ValidCS[(unsigned char)'`'] = TRUE;
 }
 BOOL IsAlpha(unsigned x) { return (x < 128)&&_Alpha[x]; }
-BOOL IsDigit(unsigned x) { return (x < 128)&&_Digit[x]; }     
-BOOL IsAlNum(unsigned x) { return (x < 128)&&_AlNum[x]; }     
-BOOL IsValidStartingSymbol(unsigned x) { return (x < 128)&&_ValidSS[x]; }     
-BOOL IsValidContinuingSymbol(unsigned x) { return (x < 128)&&_ValidCS[x]; } 
+BOOL IsDigit(unsigned x) { return (x < 128)&&_Digit[x]; }
+BOOL IsAlNum(unsigned x) { return (x < 128)&&_AlNum[x]; }
+BOOL IsValidStartingSymbol(unsigned x) { return (x < 128)&&_ValidSS[x]; }
+BOOL IsValidContinuingSymbol(unsigned x) { return (x < 128)&&_ValidCS[x]; }
 
 
 char* nextBlank(__in __nullterminated char* curPos)
 {
-    for(;;) 
-    {   
-        switch(Sym(curPos)) 
+    for(;;)
+    {
+        switch(Sym(curPos))
         {
             case '/' :
                 if ((Sym(nextchar(curPos)) == '/')|| (Sym(nextchar(curPos)) == '*'))
@@ -438,7 +438,7 @@ char* nextBlank(__in __nullterminated char* curPos)
                     curPos = nextchar(curPos);
                     break;
                 }
-            case 0: 
+            case 0:
             case '\n':
             case '\r':
             case ' ' :
@@ -458,16 +458,16 @@ char* skipBlanks(__in __nullterminated char* curPos, unsigned* pstate)
     const unsigned multiComment = 2;
     unsigned nextSym, state = *pstate;
     char* nextPos;
-    for(;;) 
+    for(;;)
     {   // skip whitespace and comments
-        if (curPos >= PENV->endPos) 
+        if (curPos >= PENV->endPos)
         {
-            *pstate = state;    
+            *pstate = state;
             return NULL;
         }
-        switch(Sym(curPos)) 
+        switch(Sym(curPos))
         {
-            case 0: 
+            case 0:
                 return NULL;       // EOF
             case '\n':
                 state &= ~eolComment;
@@ -495,7 +495,7 @@ char* skipBlanks(__in __nullterminated char* curPos, unsigned* pstate)
                 if(state & multiComment)
                 {
                     nextPos = nextchar(curPos);
-                    if (Sym(nextPos) == '/') 
+                    if (Sym(nextPos) == '/')
                     {
                         curPos = nextPos;
                         state &= ~multiComment;
@@ -513,7 +513,7 @@ char* skipBlanks(__in __nullterminated char* curPos, unsigned* pstate)
                         curPos = nextPos;
                         state |= eolComment;
                     }
-                    else if (nextSym == '*') 
+                    else if (nextSym == '*')
                     {
                         curPos = nextPos;
                         state |= multiComment;
@@ -562,12 +562,12 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
     char* fromPtr = curPos;
     bool escape = false;
 
-    for(;;) 
+    for(;;)
     {     // Find matching quote
         curSym = (curPos >= PENV->endPos) ? 0 : Sym(curPos);
         if(curSym == 0)
         {
-            PENV->curPos = curPos; 
+            PENV->curPos = curPos;
             return(BAD_LITERAL_);
         }
         else if(curSym == '\\')
@@ -592,7 +592,7 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
             }
             else if ((curSym == quote) && (!escape)) break;
             escape = false;
-        }        
+        }
         curPos = nextchar(curPos);
     }
     // translate escaped characters
@@ -609,12 +609,12 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
         if(toPtr==NULL) return BAD_LITERAL_;
         yylval.string = toPtr;
         char* endPtr = fromPtr+tokLen;
-        while(fromPtr < endPtr) 
+        while(fromPtr < endPtr)
         {
-            if (*fromPtr == '\\') 
+            if (*fromPtr == '\\')
             {
                 fromPtr++;
-                switch(*fromPtr) 
+                switch(*fromPtr)
                 {
                     case 't':
                             *toPtr++ = '\t';
@@ -643,16 +643,16 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
                     case '\n':
                             do      fromPtr++;
                             while(isspace(*fromPtr));
-                            --fromPtr;              // undo the increment below   
+                            --fromPtr;              // undo the increment below
                             break;
                     case '0':
                     case '1':
                     case '2':
                     case '3':
-                            if (IsDigit(fromPtr[1]) && IsDigit(fromPtr[2])) 
+                            if (IsDigit(fromPtr[1]) && IsDigit(fromPtr[2]))
                             {
                                 *toPtr++ = ((fromPtr[0] - '0') * 8 + (fromPtr[1] - '0')) * 8 + (fromPtr[2] - '0');
-                                fromPtr+= 2;                                                            
+                                fromPtr+= 2;
                             }
                             else if(*fromPtr == '0') *toPtr++ = 0;
                             else *toPtr++ = *fromPtr;
@@ -669,7 +669,7 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
                 fromPtr = (nextchar == nextcharW) ? nextcharU(fromPtr) : nextchar(fromPtr);
                 while(tmpPtr < fromPtr) *toPtr++ = *tmpPtr++;
             }
-    
+
         } //end while(fromPtr < endPtr)
         *toPtr = 0;                     // terminate string
         delete [] newstr;
@@ -679,7 +679,7 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
         yylval.string = newstr;
         toPtr = newstr + strlen(newstr);
     }
-            
+
     PENV->curPos = curPos;
     if(quote == '"')
     {
@@ -710,16 +710,16 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
-int yylex() 
+int yylex()
 {
     char* curPos = PENV->curPos;
     unsigned state = 0;
     const unsigned multiComment = 2;
     unsigned curSym;
-    
+
     char* newstr;
-    
-NextToken:    
+
+NextToken:
     // Skip any leading whitespace and comments
     curPos = skipBlanks(curPos, &state);
     if(curPos == NULL)
@@ -752,7 +752,7 @@ NextToken:
         }
         else
         {
-            if(curSym == ')' || curSym == '}') 
+            if(curSym == ')' || curSym == '}')
             {
                 bParsingByteArray = FALSE;
                 goto Just_A_Character;
@@ -767,27 +767,27 @@ NextToken:
         goto Just_A_Character;
     }
 
-    if (IsValidStartingSymbol(curSym)) 
+    if (IsValidStartingSymbol(curSym))
     { // is it an ID
 Its_An_Id:
         size_t offsetDot = (size_t)-1; // first appearance of '.'
                 size_t offsetDotDigit = (size_t)-1; // first appearance of '.<digit>' (not DOTTEDNAME!)
-        do 
+        do
         {
             curPos = nextchar(curPos);
-            if (Sym(curPos) == '.') 
+            if (Sym(curPos) == '.')
             {
                 if (offsetDot == (size_t)-1) offsetDot = curPos - curTok;
                 curPos = nextchar(curPos);
-                if((offsetDotDigit==(size_t)-1)&&(Sym(curPos) >= '0')&&(Sym(curPos) <= '9')) 
+                if((offsetDotDigit==(size_t)-1)&&(Sym(curPos) >= '0')&&(Sym(curPos) <= '9'))
                         offsetDotDigit = curPos - curTok - 1;
             }
         } while(IsValidContinuingSymbol(Sym(curPos)));
-        
+
         size_t tokLen = curPos - curTok;
         // check to see if it is a keyword
         int token = findKeyword(curTok, tokLen, &yylval.opcode);
-        if (token != 0) 
+        if (token != 0)
         {
             //printf("yylex: TOK = %d, curPos=0x%8.8X\n",token,curPos);
             PENV->curPos = curPos;
@@ -858,7 +858,7 @@ Its_An_Id:
 
                                         wzFile = wzFullName.GetCopyOfUnicodeString();
                                     }
-                                    
+
                                 }
                                 if(PASM->m_fReportProgress)
                                     parser->msg("\nIncluding '%S'\n",wzFile);
@@ -901,12 +901,12 @@ Its_An_Id:
                         PENV->curTok = curPos;
                         PENV->curPos = curPos;
                         if (!IsValidStartingSymbol(Sym(curPos))) return ERROR_;
-                        do 
+                        do
                         {
                             curPos = nextchar(curPos);
                         } while(IsValidContinuingSymbol(Sym(curPos)));
                         tokLen = curPos - curTok;
-                            
+
                         newstr = NewStrFromToken(curTok, tokLen);
                         if((token==P_DEFINE)||(token==P_UNDEF))
                         {
@@ -992,7 +992,7 @@ Its_An_Id:
             return(token);
         } // end if token != 0
         if(SkipToken) { curPos = nextBlank(curPos); goto NextToken; }
-        
+
         VarName* pVarName = FindVarDef(NewStrFromToken(curTok, tokLen));
         if(pVarName != NULL)
         {
@@ -1008,9 +1008,9 @@ Its_An_Id:
                 }
             }
         }
-        
+
         TypeDefDescr* pTDD = findTypedef(curTok,tokLen);
-        
+
         if(pTDD != NULL)
         {
             yylval.tdd = pTDD;
@@ -1018,14 +1018,14 @@ Its_An_Id:
             PENV->curTok = curTok;
             return(TYPEDEF(pTDD));
         }
-        if(Sym(curTok) == '#') 
+        if(Sym(curTok) == '#')
         {
             PENV->curPos = curPos;
             PENV->curTok = curTok;
             return(ERROR_);
         }
         // Not a keyword, normal identifiers don't have '.' in them
-        if (offsetDot < (size_t)-1) 
+        if (offsetDot < (size_t)-1)
         {
             if(offsetDotDigit < (size_t)-1)
             {
@@ -1048,21 +1048,21 @@ Its_An_Id:
         else return BAD_LITERAL_;
     }
     else if(SkipToken) { curPos = nextBlank(curPos); goto NextToken; }
-    else if (IsDigit(curSym) 
+    else if (IsDigit(curSym)
         || (curSym == '.' && IsDigit(Sym(nextchar(curPos))))
-        || (curSym == '-' && IsDigit(Sym(nextchar(curPos))))) 
+        || (curSym == '-' && IsDigit(Sym(nextchar(curPos)))))
     {
         const char* begNum = curPos;
         unsigned radix = 10;
 
-        neg = (curSym == '-');    // always make it unsigned 
+        neg = (curSym == '-');    // always make it unsigned
         if (neg) curPos = nextchar(curPos);
 
-        if (Sym(curPos) == '0' && Sym(nextchar(curPos)) != '.') 
+        if (Sym(curPos) == '0' && Sym(nextchar(curPos)) != '.')
         {
             curPos = nextchar(curPos);
             radix = 8;
-            if (Sym(curPos) == 'x' || Sym(curPos) == 'X') 
+            if (Sym(curPos) == 'x' || Sym(curPos) == 'X')
             {
                 curPos = nextchar(curPos);
                 radix = 16;
@@ -1076,7 +1076,7 @@ Its_An_Id:
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
                 yylval.int64 = new __int64(i64);
-                tok = INT64;                    
+                tok = INT64;
                 if (neg) *yylval.int64 = -*yylval.int64;
             }
             else
@@ -1086,7 +1086,7 @@ Its_An_Id:
                 if(neg) yylval.int32 = -yylval.int32;
             }
         }
-        if (radix == 10 && ((Sym(curPos) == '.' && Sym(nextchar(curPos)) != '.') || Sym(curPos) == 'E' || Sym(curPos) == 'e')) 
+        if (radix == 10 && ((Sym(curPos) == '.' && Sym(nextchar(curPos)) != '.') || Sym(curPos) == 'E' || Sym(curPos) == 'e'))
         {
             unsigned L = (unsigned)(PENV->endPos - begNum);
             curPos = (char*)begNum + GetDouble((char*)begNum,L,&yylval.float64);
@@ -1094,20 +1094,20 @@ Its_An_Id:
             tok = FLOAT64;
         }
     }
-    else 
+    else
     {   //      punctuation
-        if (curSym == '"' || curSym == '\'') 
+        if (curSym == '"' || curSym == '\'')
         {
             return parse_literal(curSym, curPos, TRUE);
         } // end if (*curPos == '"' || *curPos == '\'')
-        else if (curSym==':' && Sym(nextchar(curPos))==':') 
+        else if (curSym==':' && Sym(nextchar(curPos))==':')
         {
             curPos = nextchar(nextchar(curPos));
             tok = DCOLON;
-        }       
-        else if(curSym == '.') 
+        }
+        else if(curSym == '.')
         {
-            if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.') 
+            if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.')
             {
                 curPos = nextchar(nextchar(nextchar(curPos)));
                 tok = ELIPSIS;
@@ -1117,27 +1117,27 @@ Its_An_Id:
                 do
                 {
                     curPos = nextchar(curPos);
-                    if (curPos >= PENV->endPos) 
+                    if (curPos >= PENV->endPos)
                     return ERROR_;
                     curSym = Sym(curPos);
                 }
                 while(IsAlNum(curSym) || curSym == '_' || curSym == '$'|| curSym == '@'|| curSym == '?');
                 size_t tokLen = curPos - curTok;
-    
+
                 // check to see if it is a keyword
                 int token = findKeyword(curTok, tokLen, &yylval.opcode);
                 if(token)
                         {
                     //printf("yylex: TOK = %d, curPos=0x%8.8X\n",token,curPos);
                     PENV->curPos = curPos;
-                    PENV->curTok = curTok; 
+                    PENV->curTok = curTok;
                     return(token);
                 }
                 tok = '.';
                 curPos = nextchar(curTok);
             }
         }
-        else 
+        else
         {
 Just_A_Character:
             tok = curSym;
@@ -1145,12 +1145,12 @@ Just_A_Character:
         }
         //printf("yylex: PUNCT curPos=0x%8.8X\n",curPos);
     }
-    dbprintf(("    Line %d token %d (%c) val = %s\n", PENV->curLine, tok, 
-            (tok < 128 && isprint(tok)) ? tok : ' ', 
+    dbprintf(("    Line %d token %d (%c) val = %s\n", PENV->curLine, tok,
+            (tok < 128 && isprint(tok)) ? tok : ' ',
             (tok > 255 && tok != INT32 && tok != INT64 && tok!= FLOAT64) ? yylval.string : ""));
 
     PENV->curPos = curPos;
-    PENV->curTok = curTok; 
+    PENV->curTok = curTok;
     return(tok);
 }
 #ifdef _PREFAST_
@@ -1168,7 +1168,7 @@ static char* newString(__in __nullterminated const char* str1)
 /**************************************************************************/
 /* concatenate strings and release them */
 
-static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3) 
+static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3)
 {
     size_t len1 = strlen(str1);
     size_t len = len1+2;
@@ -1190,7 +1190,7 @@ static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __i
 }
 
 /**************************************************************************/
-static void corEmitInt(BinStr* buff, unsigned data) 
+static void corEmitInt(BinStr* buff, unsigned data)
 {
     unsigned cnt = CorSigCompressData(data, buff->getBuff(5));
     buff->remove(5 - cnt);
@@ -1200,7 +1200,7 @@ static void corEmitInt(BinStr* buff, unsigned data)
 /**************************************************************************/
 /* move 'ptr past the exactly one type description */
 
-unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType) 
+unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType)
 {
     mdToken  tk;
 AGAIN:
@@ -1236,7 +1236,7 @@ AGAIN:
         case ELEMENT_TYPE_CMOD_OPT     :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 goto AGAIN;
-        
+
         case ELEMENT_TYPE_ARRAY         :
                 {
                     ptr = skipType(ptr, fFixupType);                    // element Type
@@ -1273,7 +1273,7 @@ AGAIN:
         case ELEMENT_TYPE_MVAR:
                 CorSigUncompressData((PCCOR_SIGNATURE&) ptr);  // bound
                 break;
-        
+
         case ELEMENT_TYPE_VARFIXUP:
         case ELEMENT_TYPE_MVARFIXUP:
                 if(fFixupType)
@@ -1374,7 +1374,7 @@ AGAIN:
                     CorSigUncompressData((PCCOR_SIGNATURE&) ptr);  // bound
                 break;
 
-        case ELEMENT_TYPE_FNPTR: 
+        case ELEMENT_TYPE_FNPTR:
                 {
                     CorSigUncompressData((PCCOR_SIGNATURE&) ptr);    // calling convention
                     unsigned argCnt = CorSigUncompressData((PCCOR_SIGNATURE&) ptr);    // arg count
@@ -1387,7 +1387,7 @@ AGAIN:
                 }
                 break;
 
-        case ELEMENT_TYPE_GENERICINST: 
+        case ELEMENT_TYPE_GENERICINST:
                {
                    ptr = skipType(ptr, fFixupType);                 // type constructor
                    unsigned argCnt = CorSigUncompressData((PCCOR_SIGNATURE&)ptr);               // arg count
@@ -1396,7 +1396,7 @@ AGAIN:
                        --argCnt;
                    }
                }
-               break;                        
+               break;
 
         default:
         case ELEMENT_TYPE_END                   :
@@ -1419,19 +1419,19 @@ void FixupTyPars(PCOR_SIGNATURE pSig, ULONG cSig)
         } // end while
     } // end if(COUNT>0)
 }
-void FixupTyPars(BinStr* pbstype) 
+void FixupTyPars(BinStr* pbstype)
 {
     FixupTyPars((PCOR_SIGNATURE)(pbstype->ptr()),(ULONG)(pbstype->length()));
 }
 /**************************************************************************/
-static unsigned corCountArgs(BinStr* args) 
+static unsigned corCountArgs(BinStr* args)
 {
     unsigned __int8* ptr = args->ptr();
     unsigned __int8* end = &args->ptr()[args->length()];
     unsigned ret = 0;
-    while(ptr < end) 
+    while(ptr < end)
     {
-        if (*ptr != ELEMENT_TYPE_SENTINEL) 
+        if (*ptr != ELEMENT_TYPE_SENTINEL)
         {
             ptr = skipType(ptr, FALSE);
             ret++;
@@ -1442,7 +1442,7 @@ static unsigned corCountArgs(BinStr* args)
 }
 
 /********************************************************************************/
-AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem) 
+AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
 {
 #ifdef DEBUG_PARSING
     extern int yydebug;
@@ -1454,14 +1454,14 @@ AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
 
     assem->m_ulCurLine = 1;
     assem->m_ulCurColumn = 1;
-    
+
     wzIncludePath = NULL;
     penv = NULL;
 
     hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
     hstderr = GetStdHandle(STD_ERROR_HANDLE);
 
-    success = true; 
+    success = true;
     _ASSERTE(parser == 0);          // Should only be one parser instance at a time
 
    // Resolve aliases
@@ -1477,7 +1477,7 @@ AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
 }
 
 /********************************************************************************/
-AsmParse::~AsmParse() 
+AsmParse::~AsmParse()
 {
     parser = 0;
     delete penv;
@@ -1491,36 +1491,36 @@ DWORD AsmParse::IsItUnicode(CONST LPVOID pBuff, int cb, LPINT lpi)
 }
 
 /**************************************************************************/
-void AsmParse::CreateEnvironment(ReadStream* stream) 
-{ 
+void AsmParse::CreateEnvironment(ReadStream* stream)
+{
     penv = new PARSING_ENVIRONMENT;
     memset(penv,0,sizeof(PARSING_ENVIRONMENT));
-    penv->in = stream; 
+    penv->in = stream;
     penv->curLine = 1;
-    strcpy_s(penv->szFileName, MAX_FILENAME_LENGTH*3+1,assem->m_szSourceFileName); 
-    
+    strcpy_s(penv->szFileName, MAX_FILENAME_LENGTH*3+1,assem->m_szSourceFileName);
+
     penv->curPos = fillBuff(NULL);
     penv->uCodePage = g_uCodePage;
-    
+
     SetFunctionPtrs();
 };
 
 /**************************************************************************/
-void AsmParse::ParseFile(ReadStream* stream) 
-{ 
+void AsmParse::ParseFile(ReadStream* stream)
+{
     CreateEnvironment(stream);
-    yyparse(); 
-    penv->in = NULL; 
+    yyparse();
+    penv->in = NULL;
 };
 
 /**************************************************************************/
-char* AsmParse::fillBuff(__in_opt __nullterminated char* pos) 
+char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
 {
     int iPutToBuffer;
     int iOptions = IS_TEXT_UNICODE_UNICODE_MASK;
     g_uCodePage = CP_ACP;
     iPutToBuffer = (int)penv->in->getAll(&(penv->curPos));
-    
+
     penv->endPos = penv->curPos + iPutToBuffer;
     if(iPutToBuffer > 128) iPutToBuffer = 128;
     if(IsItUnicode(penv->curPos,iPutToBuffer,&iOptions))
@@ -1550,7 +1550,7 @@ char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
         {
             if(assem->m_fReportProgress) printf("Source file is ANSI\n\n");
             penv->pfn_nextchar = nextcharA;
-        }    
+        }
         penv->pfn_Sym = SymAU;
         penv->pfn_NewStrFromToken = NewStrFromTokenAU;
         penv->pfn_NewStaticStrFromToken = NewStaticStrFromTokenAU;
@@ -1560,24 +1560,24 @@ char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
 }
 
 /********************************************************************************/
-BinStr* AsmParse::MakeSig(unsigned callConv, BinStr* retType, BinStr* args, int ntyargs) 
+BinStr* AsmParse::MakeSig(unsigned callConv, BinStr* retType, BinStr* args, int ntyargs)
 {
     _ASSERTE((ntyargs != 0) == ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0));
     BinStr* ret = new BinStr();
     if(ret)
     {
-        //if (retType != 0) 
+        //if (retType != 0)
         ret->insertInt8(callConv);
         if (ntyargs != 0)
             corEmitInt(ret, ntyargs);
         corEmitInt(ret, corCountArgs(args));
 
-        if (retType != 0) 
+        if (retType != 0)
         {
-            ret->append(retType); 
+            ret->append(retType);
             delete retType;
         }
-        ret->append(args); 
+        ret->append(args);
     }
     else
         error("\nOut of memory!\n");
@@ -1587,9 +1587,9 @@ BinStr* AsmParse::MakeSig(unsigned callConv, BinStr* retType, BinStr* args, int 
 }
 
 /********************************************************************************/
-BinStr* AsmParse::MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds) 
+BinStr* AsmParse::MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds)
 {
-    // 'bounds' is a binary buffer, that contains an array of 'struct Bounds' 
+    // 'bounds' is a binary buffer, that contains an array of 'struct Bounds'
     struct Bounds {
         int lowerBound;
         unsigned numElements;
@@ -1609,7 +1609,7 @@ BinStr* AsmParse::MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* b
     unsigned lowerBoundsDefined = 0;
     unsigned numElementsDefined = 0;
     unsigned i;
-    for(i=0; i < boundsLen; i++) 
+    for(i=0; i < boundsLen; i++)
     {
         if(boundsArr[i].lowerBound < 0x7FFFFFFF) lowerBoundsDefined = i+1;
         else boundsArr[i].lowerBound = 0;
@@ -1620,7 +1620,7 @@ BinStr* AsmParse::MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* b
 
     corEmitInt(ret, numElementsDefined);                    // emit number of bounds
 
-    for(i=0; i < numElementsDefined; i++) 
+    for(i=0; i < numElementsDefined; i++)
     {
         _ASSERTE (boundsArr[i].numElements >= 0);               // enforced at rule time
         corEmitInt(ret, boundsArr[i].numElements);
@@ -1639,7 +1639,7 @@ BinStr* AsmParse::MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* b
 }
 
 /********************************************************************************/
-BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk) 
+BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
 {
 
     BinStr* ret = new BinStr();

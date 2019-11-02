@@ -156,7 +156,7 @@ namespace R2RDump
                             line[colon + 2] == ' ')
                         {
                             colon += 3;
-                        }   
+                        }
 
                         nakedInstruction.Append($"{(rtfOffset + rtf.CodeOffset),8:x4}:");
                         nakedInstruction.Append("  ");

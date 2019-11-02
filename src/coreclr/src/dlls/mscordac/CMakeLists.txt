@@ -76,16 +76,16 @@ endif(WIN32)
 if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")    
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
 
-    # The following linked options can be inserted into the linker libraries list to 
+    # The following linked options can be inserted into the linker libraries list to
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
 
     # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
@@ -115,13 +115,13 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
-# order dependent and changing the order can result in undefined symbols in the shared 
+# order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(COREDAC_LIBRARIES
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cee_dac
     cordbee_dac
-    ${START_WHOLE_ARCHIVE} # force all exports to be available  
+    ${START_WHOLE_ARCHIVE} # force all exports to be available
     corguids
     daccess
     ${END_WHOLE_ARCHIVE}
@@ -174,7 +174,7 @@ if(WIN32)
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available  
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
         ${END_WHOLE_ARCHIVE}

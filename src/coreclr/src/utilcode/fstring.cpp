@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // FString.cpp
-// 
+//
 
 // ---------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ HRESULT Unicode_Utf8(__in_z LPCWSTR pString, bool allAscii, __out_z LPSTR pBuffe
             q[5] = (char) p[5];
             q[6] = (char) p[6];
             q[7] = (char) p[7];
-            
+
             q += 8;
             p += 8;
         }
@@ -239,7 +239,7 @@ HRESULT Utf8_Unicode(__in_z LPCSTR pString, bool allAscii, __out_z LPWSTR pBuffe
             q[5] = (WCHAR) p[5];
             q[6] = (WCHAR) p[6];
             q[7] = (WCHAR) p[7];
-            
+
             q += 8;
             p += 8;
         }

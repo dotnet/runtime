@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: DispParamMarshaler.h
-// 
+//
 
 //
 // Definition of dispatch parameter marshalers.
@@ -29,7 +29,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     virtual ~DispParamMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
@@ -51,7 +51,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     virtual ~DispParamCurrencyMarshaler()
     {
         WRAPPER_NO_CONTRACT;
@@ -68,7 +68,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     virtual ~DispParamOleColorMarshaler()
     {
         WRAPPER_NO_CONTRACT;
@@ -87,7 +87,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     virtual ~DispParamErrorMarshaler()
     {
         WRAPPER_NO_CONTRACT;
@@ -120,7 +120,7 @@ public:
 
 private:
     // if return type is an interface, then the method table of the interface is cached here.
-    // we need to cache this and use it when we call GetCOMIPFromObjectRef    
+    // we need to cache this and use it when we call GetCOMIPFromObjectRef
     MethodTable*            m_pIntfMT;
     MethodTable*            m_pClassMT;
     BOOL                    m_bDispatch;
@@ -146,8 +146,8 @@ public:
     virtual void MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF *pDestObj);
     virtual void MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar);
     virtual void MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VARIANT *pDestVar);
-    
-private: 
+
+private:
     VARTYPE                 m_ElementVT;
     MethodTable*            m_pElementMT;
 };
@@ -162,7 +162,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     virtual ~DispParamRecordMarshaler()
     {
         WRAPPER_NO_CONTRACT;

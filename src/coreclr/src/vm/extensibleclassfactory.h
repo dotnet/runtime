@@ -10,7 +10,7 @@
 ** Purpose: Native methods on System.Runtime.InteropServices.ExtensibleClassFactory
 **
 
-** 
+**
 ===========================================================*/
 
 #ifndef _EXTENSIBLECLASSFACTORY_H

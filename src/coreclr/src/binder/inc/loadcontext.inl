@@ -45,7 +45,7 @@ ULONG LoadContext<dwIncludeFlags>::Release()
 {
     ULONG ulRef = InterlockedDecrement(&m_cRef);
 
-    if (ulRef == 0) 
+    if (ulRef == 0)
     {
         delete this;
     }

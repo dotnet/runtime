@@ -102,7 +102,7 @@ namespace R2RDump.Arm
             }
 
             bool[] epilogStartAt = new bool[256]; // One byte per possible epilog start index; initialized to false
-            
+
             if (EBit == 0)
             {
                 Epilogs = new Epilog[EpilogCount];

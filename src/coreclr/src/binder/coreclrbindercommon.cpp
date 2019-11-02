@@ -30,7 +30,7 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRP
         {
             ReleaseHolder<CLRPrivBinderCoreCLR> pBinder;
             SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
-            
+
             BINDER_SPACE::ApplicationContext *pApplicationContext = pBinder->GetAppContext();
             hr = pApplicationContext->Init();
             if(SUCCEEDED(hr))
@@ -96,7 +96,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystem(ICLRPrivAssembly **ppSystemAssembly, 
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(ppSystemAssembly != NULL);
-    
+
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
@@ -120,7 +120,7 @@ HRESULT CCoreCLRBinderHelper::BindToSystemSatellite(SString            &systemPa
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(ppSystemAssembly != NULL && !systemPath.IsEmpty());
-    
+
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;

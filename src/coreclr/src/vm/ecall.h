@@ -57,10 +57,10 @@ struct ECFunc {
     int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
 
     ECFunc*             NextInArray()
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        
-        return (ECFunc*)((BYTE*)this + 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (ECFunc*)((BYTE*)this +
             (HasSignature() ? sizeof(ECFunc) : offsetof(ECFunc, m_pMethodSig)));
     }
 };

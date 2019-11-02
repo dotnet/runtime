@@ -89,7 +89,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
     //  NULL entries; those entries will need to be trimmed.
     size_t nArrayElems = pApp->m_Assemblies.GetCount(pApp);
     gc.AsmArray = (PTRARRAYREF) AllocateObjectArray(
-        (DWORD)nArrayElems, 
+        (DWORD)nArrayElems,
         pAssemblyClass);
 
     size_t numAssemblies = 0;
@@ -100,7 +100,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
         AppDomain::AssemblyIterator i = pApp->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
+
         while (i.Next(pDomainAssembly.This()) && (numAssemblies < nArrayElems))
         {
             // Do not change this code.  This is done this way to
@@ -112,7 +112,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
                 continue;
             }
             gc.AsmArray->SetAt(numAssemblies++, o);
-            // If it is a collectible assembly, it is now referenced from the managed world, so we can 
+            // If it is a collectible assembly, it is now referenced from the managed world, so we can
             // release the native reference in the holder
         }
     }
@@ -123,7 +123,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
     {
         PTRARRAYREF AsmArray2;
         AsmArray2 = (PTRARRAYREF) AllocateObjectArray(
-            (DWORD)numAssemblies, 
+            (DWORD)numAssemblies,
             pAssemblyClass);
 
         for (size_t ix = 0; ix < numAssemblies; ++ix)
@@ -147,7 +147,7 @@ FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
     STRINGREF*      prefRetVal  = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refString);
-    
+
     if (refString == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 

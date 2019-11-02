@@ -15,7 +15,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured. 
+    Handles signal on the original stack where the signal occured.
     Invoked via setcontext.
 
 Parameters :

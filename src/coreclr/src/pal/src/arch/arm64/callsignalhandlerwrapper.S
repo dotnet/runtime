@@ -15,7 +15,7 @@ C_FUNC(SignalHandlerWorkerReturnOffset\Alignment):
 // address set to SignalHandlerWorkerReturn during SIGSEGV handling.
 // It enables the unwinder to unwind stack from the handling code to the actual failure site.
 NESTED_ENTRY CallSignalHandlerWrapper\Alignment, _TEXT, NoHandler
-__StackAllocationSize = (128 + 8 + 8 + \Alignment) // red zone + fp + lr + alignment 
+__StackAllocationSize = (128 + 8 + 8 + \Alignment) // red zone + fp + lr + alignment
     PROLOG_STACK_ALLOC __StackAllocationSize
     .cfi_adjust_cfa_offset __StackAllocationSize
     PROLOG_SAVE_REG_PAIR fp, lr, 0

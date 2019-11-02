@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 /*
  *    CallHelpers.CPP: helpers to call managed code
- * 
+ *
 
  */
 
@@ -25,7 +25,7 @@
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL); 
+    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
     Module * pModule = pMethod->GetModule_NoLogging();
 
@@ -73,7 +73,7 @@ void CallDescrWorkerWithHandler(
 }
 
 
-#if !defined(BIT64) && defined(_DEBUG) 
+#if !defined(BIT64) && defined(_DEBUG)
 
 //*******************************************************************************
 // assembly code, in i386/asmhelpers.asm
@@ -87,7 +87,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     // unwind the C++ handler before branching to the catch clause in managed code. That essentially causes an
     // out-of-order destruction of the contract object, resulting in very odd crashes later.
     //
-#if 0 
+#if 0
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -171,7 +171,7 @@ void DispatchCallDebuggerWrapper(
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy, 
+                    DWORD numStackSlotsToCopy,
                     PCODE pTargetAddress,
                     DWORD dwDispatchCallSimpleFlags)
 {
@@ -183,7 +183,7 @@ void * DispatchCallSimple(
     }
     CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED 
+#ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
         g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
 #endif // DEBUGGING_SUPPORTED
@@ -251,7 +251,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
     // right for each arg.
 
     if (regArgNum < NUM_ARGUMENT_REGISTERS)
-    {        
+    {
         pMap[regArgNum] = typ;
     }
 }
@@ -267,8 +267,8 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
-    // This method needs to have a GC_TRIGGERS contract because it 
-    // calls managed code.  However, IT MAY NOT TRIGGER A GC ITSELF 
+    // This method needs to have a GC_TRIGGERS contract because it
+    // calls managed code.  However, IT MAY NOT TRIGGER A GC ITSELF
     // because the argument array is not protected and may contain gc
     // refs.
     //
@@ -292,7 +292,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     //
     // @todo: In an ideal world, we would require each of those sites to do the override rather than disabling
     // the assert broadly here. However, by limiting the override to mscorlib methods, we should still be able
-    // to effectively enforce the more general rule about loader recursion. 
+    // to effectively enforce the more general rule about loader recursion.
     MAYBE_OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED, m_pMD->GetModule()->IsSystem());
 
     LPBYTE pTransitionBlock;
@@ -308,7 +308,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
     {
         //
-        // the incoming argument array is not gc-protected, so we 
+        // the incoming argument array is not gc-protected, so we
         // may not trigger a GC before we actually call managed code
         //
         GCX_FORBID();
@@ -316,9 +316,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         // Record this call if required
         g_IBCLogger.LogMethodDescAccess(m_pMD);
 
-        //  
+        //
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
-        // also required for critical calls since we cannot inject any failure points between the 
+        // also required for critical calls since we cannot inject any failure points between the
         // caller of MethodDesc::CallDescr and the actual transition to managed code.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
@@ -405,7 +405,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         }
 #ifdef FEATURE_HFA
 #ifdef FEATURE_INTERPRETER
-        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef) 
+        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef)
         // doesn't seem to do the proper test.  It fires,
         // incorrectly, for a one-word struct that *doesn't* have a ret buff.  So we'll try this, instead:
         // We're here because it doesn't have a ret buff.  If it would, except that the struct being returned
@@ -448,7 +448,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
             // have at least one such argument we point the call worker at the floating point area of the
             // frame (we leave it null otherwise since the worker can perform a useful optimization if it
             // knows no floating point registers need to be set up).
-            if (TransitionBlock::HasFloatRegister(ofs, m_argIt.GetArgLocDescForStructInRegs()) && 
+            if (TransitionBlock::HasFloatRegister(ofs, m_argIt.GetArgLocDescForStructInRegs()) &&
                 (pFloatArgumentRegisters == NULL))
             {
                 pFloatArgumentRegisters = (FloatArgumentRegisters*)(pTransitionBlock +

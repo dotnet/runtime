@@ -84,7 +84,7 @@ double COMDateTime::TicksToDoubleDate(INT64 ticks)
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    // 
+    //
 
     // Workaround to handle uninitialized DateTime objects in the CLR
     // See explanation in DateTime.cs's TicksToOADate function.
@@ -113,13 +113,13 @@ double COMDateTime::TicksToDoubleDate(INT64 ticks)
         INT64 frac = millis % MillisPerDay;
         if (frac != 0) millis -= (MillisPerDay + frac) * 2;
     }
-    
+
     double d = (double)millis / MillisPerDay;
-    
+
     // Make sure this date is a valid OleAut date.  This is the check from the internal
     // OleAut macro IsValidDate, found in oledisp.h.  Eventually at least the 64 bit
     // build of oleaut will define these gregorian max and min values as public constants.
     _ASSERTE(d < OADateMaxAsDouble && d > OADateMinAsDouble);
-    
+
     return d;
 }

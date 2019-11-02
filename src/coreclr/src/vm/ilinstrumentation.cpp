@@ -26,7 +26,7 @@ InstrumentedILOffsetMapping::InstrumentedILOffsetMapping()
 // Check whether there is any mapping information stored in this object.
 //
 // Notes:
-//    The memory should be alive throughout the process lifetime until 
+//    The memory should be alive throughout the process lifetime until
 //    the Module containing the instrumented method is destructed.
 //
 
@@ -44,7 +44,7 @@ BOOL InstrumentedILOffsetMapping::IsNull() const
 // Release the memory used by the array of COR_IL_MAPs.
 //
 // Notes:
-//    * The memory should be alive throughout the process lifetime until the Module containing 
+//    * The memory should be alive throughout the process lifetime until the Module containing
 //      the instrumented method is destructed.
 //    * This struct should be read-only in DAC builds.
 //

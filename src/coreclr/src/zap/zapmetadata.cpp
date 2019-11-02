@@ -7,7 +7,7 @@
 
 //
 // Metadata zapping
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -202,7 +202,7 @@ void ZapILMetaData::CopyIL()
 
     //
     // Build the list for each priority in first pass, and then place
-    // the IL blobs in each list. The two passes are needed because of 
+    // the IL blobs in each list. The two passes are needed because of
     // interning of IL blobs (one IL blob can be on multiple lists).
     //
 
@@ -269,13 +269,13 @@ void ZapILMetaData::CopyMetaData()
     V_VT(&versionOption) = VT_BSTR;
     V_BSTR(&versionOption) = strVersion;
     IfFailThrow(pMetaDataDispenser->SetOption(MetaDataRuntimeVersion, &versionOption));
-    
+
     // Preserve local refs. WinMD adapter depends on them at runtime.
     VARIANT preserveLocalRefsOption;
     V_VT(&preserveLocalRefsOption) = VT_UI4;
     V_UI4(&preserveLocalRefsOption) = MDPreserveLocalTypeRef | MDPreserveLocalMemberRef;
     IfFailThrow(pMetaDataDispenser->SetOption(MetaDataPreserveLocalRefs, &preserveLocalRefsOption));
-    
+
     // ofNoTransform - Get the raw metadata for WinRT, not the adapter view
     HRESULT hr = pMetaDataDispenser->OpenScopeOnMemory(pMeta, cMeta,
                                                        ofWrite | ofNoTransform,

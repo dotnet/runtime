@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: inspect.cpp
-// 
+//
 
 //
 // ClrData object inspection.
@@ -374,7 +374,7 @@ ClrDataValue::IntGetBytes(
         else
         {
             ULONG32 done;
-            
+
             _ASSERTE(FitsIn<ULONG32>(loc->size));
             status = m_dac->m_pTarget->
                 ReadVirtual(loc->addr, buffer, static_cast<ULONG32>(loc->size),
@@ -1392,28 +1392,28 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
     NativeVarLocation varLoc, *locs = &varLoc;
     ULONG64 baseAddr;
     LPCUTF8 szFieldName;
-    
+
     status = fieldDesc->GetName_NoThrow(&szFieldName);
     if (status != S_OK)
     {
         return status;
     }
-    
+
     status = ConvertUtf8(
-        szFieldName, 
-        nameBufRetLen, 
-        nameLenRet, 
+        szFieldName,
+        nameBufRetLen,
+        nameLenRet,
         nameBufRet);
     if (status != S_OK)
     {
         return status;
     }
-    
+
     if (tokenRet != NULL)
     {
         *tokenRet = fieldDesc->GetMemberDef();
     }
-    
+
     if (fieldDesc->GetEnclosingMethodTable()->ContainsGenericVariables())
     {
         // This field is for a generic type definition and
@@ -1441,7 +1441,7 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
     }
     else
     {
-        // objBase is basically a CLRDATA_ADDRESS, which is a pointer-sized target address sign-extened to 
+        // objBase is basically a CLRDATA_ADDRESS, which is a pointer-sized target address sign-extened to
         // 64-bit.  We need to get a TADDR here, which is a pointer-size unsigned value.
         baseAddr = TO_CDADDR(PTR_TO_TADDR(fieldDesc->GetAddress(PTR_VOID(CLRDATA_ADDRESS_TO_TADDR(objBase)))));
     }
@@ -2452,7 +2452,7 @@ ClrDataTypeDefinition::GetBase(
         if (m_typeHandle.IsNull())
         {
             ULONG attr;
-            
+
             status = m_module->GetMDImport()->GetTypeDefProps(m_token, &attr, &token);
             if (FAILED(status))
             {
@@ -2508,7 +2508,7 @@ ClrDataTypeDefinition::GetArrayRank(
         else
         {
             MethodTable* pMT = m_typeHandle.GetMethodTable();
-        
+
             if (!m_typeHandle.IsArray() ||
                 (pMT == NULL))
             {

@@ -15,7 +15,7 @@
 // list of pointers, stored in chunks.  Modification is by appending
 // only currently.  Access is by index (efficient if the number of
 // elements stays small) and iteration (efficient in all cases).
-// 
+//
 // An important property of an ArrayList is that the list remains
 // coherent while it is being modified. This means that readers
 // never need to lock when accessing it.
@@ -75,18 +75,18 @@ class ArrayListBase
   public:
 
     PTR_VOID *GetPtr(DWORD index) const;
-    PTR_VOID Get(DWORD index) const 
-    { 
+    PTR_VOID Get(DWORD index) const
+    {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        
-        return *GetPtr(index); 
+
+        return *GetPtr(index);
     }
-    
-    void Set(DWORD index, PTR_VOID element) 
-    { 
-        WRAPPER_NO_CONTRACT; 
-        *GetPtr(index) = element; 
+
+    void Set(DWORD index, PTR_VOID element)
+    {
+        WRAPPER_NO_CONTRACT;
+        *GetPtr(index) = element;
     }
 
     DWORD GetCount() const { LIMITED_METHOD_DAC_CONTRACT; return m_count; }
@@ -101,7 +101,7 @@ class ArrayListBase
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         m_count = 0;
         m_firstBlock.m_next = NULL;
         m_firstBlock.m_blockSize = ARRAY_BLOCK_SIZE_START;
@@ -116,10 +116,10 @@ class ArrayListBase
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    
+
     class ConstIterator;
 
-    class Iterator 
+    class Iterator
     {
         friend class ArrayListBase;
         friend class ConstIterator;
@@ -130,13 +130,13 @@ class ArrayListBase
         void SetEmpty()
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             m_block = NULL;
             m_index = (DWORD)-1;
             m_remaining = 0;
             m_total = 0;
         }
-        
+
         PTR_VOID GetElement() {LIMITED_METHOD_DAC_CONTRACT; return m_block->m_array[m_index]; }
         PTR_VOID * GetElementPtr() {LIMITED_METHOD_CONTRACT; return m_block->m_array + m_index; }
         DWORD GetIndex() {LIMITED_METHOD_CONTRACT; return m_index + m_total; }
@@ -211,7 +211,7 @@ class ArrayListBase
         }
 
       public:
-        
+
         BOOL Next()
         {
             if (m_block != NULL)
@@ -245,7 +245,7 @@ class ArrayListBase
         {
             return m_block;
         }
-        
+
         SIZE_T GetBlockSize()
         {
             return offsetof(ArrayListBlock, m_array) + (m_block->m_blockSize * sizeof(void*));
@@ -282,7 +282,7 @@ public:
 #endif
 };
 
-/* to be used as static variable - no constructor/destructor, assumes zero 
+/* to be used as static variable - no constructor/destructor, assumes zero
    initialized memory */
 class ArrayListStatic : public ArrayListBase
 {

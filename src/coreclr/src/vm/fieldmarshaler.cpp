@@ -56,7 +56,7 @@ VOID ParseNativeType(Module*                     pModule,
 #ifdef FEATURE_COMINTEROP
     BOOL                fIsWinRT            = (flags == ParseNativeTypeFlags::IsWinRT);
 #endif // FEATURE_COMINTEROP
-    
+
     EX_TRY
     {
 
@@ -157,7 +157,7 @@ VOID ParseNativeType(Module*                     pModule,
             case MarshalInfo::MARSHAL_TYPE_BSTR:
             case MarshalInfo::MARSHAL_TYPE_ANSIBSTR:
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_INTEGER_LIKE, sizeof(void*), sizeof(void*));
-                break;      
+                break;
 #ifdef FEATURE_COMINTEROP
             case MarshalInfo::MARSHAL_TYPE_HSTRING:
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_COM_STRUCT, sizeof(HSTRING), sizeof(HSTRING));
@@ -242,8 +242,8 @@ VOID ParseNativeType(Module*                     pModule,
 }
 
 //=======================================================================
-// This function returns TRUE if the type passed in is either a value class or a class and if it has layout information 
-// and is marshalable. In all other cases it will return FALSE. 
+// This function returns TRUE if the type passed in is either a value class or a class and if it has layout information
+// and is marshalable. In all other cases it will return FALSE.
 //=======================================================================
 BOOL IsStructMarshalable(TypeHandle th)
 {
@@ -255,7 +255,7 @@ BOOL IsStructMarshalable(TypeHandle th)
         PRECONDITION(!th.IsNull());
     }
     CONTRACTL_END;
-    
+
     if (th.IsBlittable())
     {
         // th.IsBlittable will return true for arrays of blittable types, however since IsStructMarshalable
@@ -273,7 +273,7 @@ BOOL IsStructMarshalable(TypeHandle th)
 
     MethodTable *pMT= th.GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
-    
+
     if (pMT->IsStructMarshalable())
         return TRUE;
 

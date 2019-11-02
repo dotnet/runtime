@@ -1,4 +1,4 @@
-# Convert string resources from Windows native resource file to the 
+# Convert string resources from Windows native resource file to the
 # input format of the gettext toolchain.
 
 # Write entry for a string resource

@@ -22,9 +22,9 @@
 extern BYTE         g_UnmarshalSecret[sizeof(GUID)];
 extern bool         g_fInitedUnmarshalSecret;
 
-STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv) 
+STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -35,11 +35,11 @@ STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv)
         return E_POINTER;
 
     *ppv = NULL;
-    if (iid == IID_IUnknown) 
+    if (iid == IID_IUnknown)
     {
         *ppv = (IUnknown *)this;
         AddRef();
-    } else if (iid == IID_IMarshal) 
+    } else if (iid == IID_IMarshal)
     {
         *ppv = (IMarshal *)this;
         AddRef();
@@ -47,21 +47,21 @@ STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv)
     return (*ppv != NULL) ? S_OK : E_NOINTERFACE;
 }
 
-STDMETHODIMP_(ULONG) ComCallUnmarshal::AddRef(void) 
+STDMETHODIMP_(ULONG) ComCallUnmarshal::AddRef(void)
 {
     LIMITED_METHOD_CONTRACT;
-    return 2; 
+    return 2;
 }
 
-STDMETHODIMP_(ULONG) ComCallUnmarshal::Release(void) 
+STDMETHODIMP_(ULONG) ComCallUnmarshal::Release(void)
 {
     LIMITED_METHOD_CONTRACT;
     return 1;
 }
 
-STDMETHODIMP ComCallUnmarshal::GetUnmarshalClass (REFIID riid, void * pv, ULONG dwDestContext, 
-                                                  void * pvDestContext, ULONG mshlflags, 
-                                                  LPCLSID pclsid) 
+STDMETHODIMP ComCallUnmarshal::GetUnmarshalClass (REFIID riid, void * pv, ULONG dwDestContext,
+                                                  void * pvDestContext, ULONG mshlflags,
+                                                  LPCLSID pclsid)
 {
     LIMITED_METHOD_CONTRACT;
     // Marshal side only.
@@ -69,9 +69,9 @@ STDMETHODIMP ComCallUnmarshal::GetUnmarshalClass (REFIID riid, void * pv, ULONG 
     return E_NOTIMPL;
 }
 
-STDMETHODIMP ComCallUnmarshal::GetMarshalSizeMax (REFIID riid, void * pv, ULONG dwDestContext, 
-                                                  void * pvDestContext, ULONG mshlflags, 
-                                                  ULONG * pSize) 
+STDMETHODIMP ComCallUnmarshal::GetMarshalSizeMax (REFIID riid, void * pv, ULONG dwDestContext,
+                                                  void * pvDestContext, ULONG mshlflags,
+                                                  ULONG * pSize)
 {
     LIMITED_METHOD_CONTRACT;
     // Marshal side only.
@@ -81,7 +81,7 @@ STDMETHODIMP ComCallUnmarshal::GetMarshalSizeMax (REFIID riid, void * pv, ULONG 
 
 STDMETHODIMP ComCallUnmarshal::MarshalInterface (LPSTREAM pStm, REFIID riid, void * pv,
                                                  ULONG dwDestContext, LPVOID pvDestContext,
-                                                 ULONG mshlflags) 
+                                                 ULONG mshlflags)
 {
     LIMITED_METHOD_CONTRACT;
     // Marshal side only.
@@ -98,7 +98,7 @@ STDMETHODIMP ComCallUnmarshal::UnmarshalInterface (LPSTREAM pStm, REFIID riid, v
         PRECONDITION(CheckPointer(pStm));
         PRECONDITION(CheckPointer(ppvObj));
     } CONTRACTL_END;
-                                    
+
     ULONG bytesRead;
     ULONG mshlflags;
     HRESULT hr = E_FAIL;
@@ -145,7 +145,7 @@ STDMETHODIMP ComCallUnmarshal::UnmarshalInterface (LPSTREAM pStm, REFIID riid, v
         // ref on the IP until ReleaseMarshalData is called).
         hr = ((IUnknown *)*ppvObj)->QueryInterface(riid, ppvObj);
     }
-    else 
+    else
     {
         // For normal access we QI for the correct interface then release
         // the old IP.
@@ -156,7 +156,7 @@ ErrExit:
     return hr;
 }
 
-STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm) 
+STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
 {
     CONTRACTL {
         NOTHROW;
@@ -164,11 +164,11 @@ STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
         STATIC_CONTRACT_MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pStm));
     } CONTRACTL_END;
-    
+
     IUnknown *pUnk;
     ULONG bytesRead;
     ULONG mshlflags;
-    HRESULT hr = S_OK;	
+    HRESULT hr = S_OK;
 
     if (!pStm)
         return E_POINTER;
@@ -186,7 +186,7 @@ STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
 
     if (!g_fInitedUnmarshalSecret)
     {
-        IfFailGo(E_UNEXPECTED);        
+        IfFailGo(E_UNEXPECTED);
     }
 
     BYTE secret[sizeof(GUID)];
@@ -204,7 +204,7 @@ ErrExit:
     return hr;
 }
 
-STDMETHODIMP ComCallUnmarshal::DisconnectObject (ULONG dwReserved) 
+STDMETHODIMP ComCallUnmarshal::DisconnectObject (ULONG dwReserved)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -215,12 +215,12 @@ STDMETHODIMP ComCallUnmarshal::DisconnectObject (ULONG dwReserved)
     return S_OK;
 }
 
-CComCallUnmarshalFactory::CComCallUnmarshalFactory() 
+CComCallUnmarshalFactory::CComCallUnmarshalFactory()
 {
     WRAPPER_NO_CONTRACT;
 }
 
-STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv) 
+STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv)
 {
     CONTRACTL
     {
@@ -228,7 +228,7 @@ STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv)
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
-    
+
     if (!ppv)
         return E_POINTER;
 
@@ -240,19 +240,19 @@ STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv)
     return (*ppv != NULL) ? S_OK : E_NOINTERFACE;
 }
 
-STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::AddRef(void) 
+STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::AddRef(void)
 {
     LIMITED_METHOD_CONTRACT;
-    return 2; 
+    return 2;
 }
 
-STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::Release(void) 
+STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::Release(void)
 {
     LIMITED_METHOD_CONTRACT;
     return 1;
 }
 
-STDMETHODIMP CComCallUnmarshalFactory::CreateInstance(LPUNKNOWN punkOuter, REFIID iid, LPVOID FAR *ppv) 
+STDMETHODIMP CComCallUnmarshalFactory::CreateInstance(LPUNKNOWN punkOuter, REFIID iid, LPVOID FAR *ppv)
 {
     CONTRACTL
     {
@@ -272,7 +272,7 @@ STDMETHODIMP CComCallUnmarshalFactory::CreateInstance(LPUNKNOWN punkOuter, REFII
     return m_Unmarshaller.QueryInterface(iid, ppv);
 }
 
-STDMETHODIMP CComCallUnmarshalFactory::LockServer(BOOL fLock) 
+STDMETHODIMP CComCallUnmarshalFactory::LockServer(BOOL fLock)
 {
     LIMITED_METHOD_CONTRACT;
     return S_OK;

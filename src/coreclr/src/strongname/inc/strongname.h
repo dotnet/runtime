@@ -6,7 +6,7 @@
 
 // ===========================================================================
 // File: StrongName.h
-// 
+//
 // Wrappers for signing and hashing functions needed to implement strong names
 // ===========================================================================
 
@@ -22,7 +22,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
+#endif
 
 
 // Public key blob binary format.
@@ -169,12 +169,12 @@ SNAPI StrongNameDigestEmbed(_In_z_ LPCWSTR                          wszFilePath,
 
 // Create a strong name token from an assembly file.
 SNAPI StrongNameTokenFromAssembly(LPCWSTR   wszFilePath,            // [in] valid path to the PE file for the assembly
-                                  BYTE    **ppbStrongNameToken,     // [out] strong name token 
+                                  BYTE    **ppbStrongNameToken,     // [out] strong name token
                                   ULONG    *pcbStrongNameToken);
 
 // Create a strong name token from an assembly file and additionally return the full public key.
 SNAPI StrongNameTokenFromAssemblyEx(LPCWSTR   wszFilePath,            // [in] valid path to the PE file for the assembly
-                                    BYTE    **ppbStrongNameToken,     // [out] strong name token 
+                                    BYTE    **ppbStrongNameToken,     // [out] strong name token
                                     ULONG    *pcbStrongNameToken,
                                     BYTE    **ppbPublicKeyBlob,       // [out] public key blob
                                     ULONG    *pcbPublicKeyBlob);
@@ -182,7 +182,7 @@ SNAPI StrongNameTokenFromAssemblyEx(LPCWSTR   wszFilePath,            // [in] va
 // Create a strong name token from a public key blob.
 SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
-                                   BYTE   **ppbStrongNameToken,     // [out] strong name token 
+                                   BYTE   **ppbStrongNameToken,     // [out] strong name token
                                    ULONG   *pcbStrongNameToken);
 
 
@@ -218,7 +218,7 @@ SNAPI StrongNameSignatureVerificationFromImage(BYTE     *pbBase,             // 
 #define SN_INFLAG_USER_ACCESS    0x00000008     // cache protects user's assembly from other users
 #define SN_INFLAG_ALL_ACCESS     0x00000010     // cache provides no access restriction guarantees
 
-#define SN_INFLAG_RUNTIME        0x80000000     // internal debugging use only 
+#define SN_INFLAG_RUNTIME        0x80000000     // internal debugging use only
 
 #define SN_OUTFLAG_WAS_VERIFIED  0x00000001     // set to false if verify succeeded due to registry settings
 #define SN_OUTFLAG_MICROSOFT_SIGNATURE 0x00000002 // set if the public key corresponds to SN_THE_KEY
@@ -249,25 +249,25 @@ SNAPI_(DWORD) GetHashFromAssemblyFile(LPCSTR szFilePath, // [IN] location of fil
                                       BYTE   *pbHash,    // [OUT] hash buffer
                                       DWORD  cchHash,    // [IN]  max size of buffer
                                       DWORD  *pchHash);  // [OUT] length of hash byte array
-    
+
 SNAPI_(DWORD) GetHashFromAssemblyFileW(LPCWSTR wszFilePath, // [IN] location of file to be hashed
                                        unsigned int *piHashAlg, // [IN/OUT] constant specifying the hash algorithm (set to 0 if you want the default)
                                        BYTE   *pbHash,    // [OUT] hash buffer
                                        DWORD  cchHash,    // [IN]  max size of buffer
                                        DWORD  *pchHash);  // [OUT] length of hash byte array
-    
+
 SNAPI_(DWORD) GetHashFromFile(LPCSTR szFilePath, // [IN] location of file to be hashed
                               unsigned int *piHashAlg,   // [IN/OUT] constant specifying the hash algorithm (set to 0 if you want the default)
                               BYTE   *pbHash,    // [OUT] hash buffer
                               DWORD  cchHash,    // [IN]  max size of buffer
                               DWORD  *pchHash);  // [OUT] length of hash byte array
-    
+
 SNAPI_(DWORD) GetHashFromFileW(LPCWSTR wszFilePath, // [IN] location of file to be hashed
                                unsigned int *piHashAlg,   // [IN/OUT] constant specifying the hash algorithm (set to 0 if you want the default)
                                BYTE   *pbHash,    // [OUT] hash buffer
                                DWORD  cchHash,    // [IN]  max size of buffer
                                DWORD  *pchHash);  // [OUT] length of hash byte array
-    
+
 SNAPI_(DWORD) GetHashFromHandle(HANDLE hFile,      // [IN] handle of file to be hashed
                                 unsigned int *piHashAlg,   // [IN/OUT] constant specifying the hash algorithm (set to 0 if you want the default)
                                 BYTE   *pbHash,    // [OUT] hash buffer

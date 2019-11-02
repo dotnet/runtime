@@ -14,7 +14,7 @@
 // States in the state machine
 //
 // clang-format off
-const SMState g_SMStates[] = 
+const SMState g_SMStates[] =
 {
  // {term, len, lng, prev, SMOpcode and SMOpcodeName           , offsets  }           //  state ID and name
     {   0,   0,   0,    0, (SM_OPCODE)  0 /* noshow          */,       0  },          //  state 0 [invalid]
@@ -278,7 +278,7 @@ const SMState* gp_SMStates = g_SMStates;
 // JumpTableCells in the state machine
 //
 // clang-format off
-const JumpTableCell g_SMJumpTableCells[] = 
+const JumpTableCell g_SMJumpTableCells[] =
 {
  // {src, dest  }
     {  1,    2  },   // cell# 0 : state 1 [start] --(0 noshow)--> state 2 [noshow]

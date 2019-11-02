@@ -10,7 +10,7 @@
 #include <ndpversion.h>
 
 // Global variables
-bool g_bSchema = false; 
+bool g_bSchema = false;
 bool g_bRaw = false;
 bool g_bDebug = false;
 bool g_bHeader = false;
@@ -66,7 +66,7 @@ extern "C" int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     ULONG DumpFilter = MDInfo::dumpDefault;
     HRESULT hr = 0;
     BOOL    fWantHelp=FALSE;
-    
+
     // Validate incoming arguments
     for (int i=1;  i<argc;  i++)
     {
@@ -133,7 +133,7 @@ extern "C" int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         Usage();
 
     hr = LegacyActivationShim::ClrCoCreateInstance(
-        CLSID_CorMetaDataDispenser, NULL, CLSCTX_INPROC_SERVER, 
+        CLSID_CorMetaDataDispenser, NULL, CLSCTX_INPROC_SERVER,
         IID_IMetaDataDispenserEx, (void **) &g_pDisp);
     if(FAILED(hr)) MDInfo::Error("Unable to CoCreate Meta-data Dispenser", hr);
 

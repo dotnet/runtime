@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // Disp.h
-// 
+//
 
 //
-// Class factories are used by the pluming in COM to activate new objects.  
+// Class factories are used by the pluming in COM to activate new objects.
 // This module contains the class factory code to instantiate the debugger
 // objects described in <cordb.h>.
 //
@@ -27,7 +27,7 @@ public:
 
     // *** IUnknown methods ***
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
-    STDMETHODIMP_(ULONG) AddRef(void); 
+    STDMETHODIMP_(ULONG) AddRef(void);
     STDMETHODIMP_(ULONG) Release(void);
 
     // *** IMetaDataDispenser methods ***
@@ -64,7 +64,7 @@ public:
         DWORD       dwOpenFlags,            // [in] Open mode flags.
         REFIID      riid,                   // [in] The interface desired.
         IUnknown    **ppIUnk);              // [out] Return interface on success.
-                                
+
     STDMETHODIMP GetCORSystemDirectory(     // Return code.
          __out_ecount (cchBuffer) LPWSTR szBuffer,  // [out] Buffer for the directory name
          DWORD       cchBuffer,             // [in] Size of the buffer
@@ -75,7 +75,7 @@ public:
         LPCWSTR  szPrivateBin,              // [IN] optional - can be NULL
         LPCWSTR  szGlobalBin,               // [IN] optional - can be NULL
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
-        LPCWSTR  szName,                    // [OUT] buffer - to hold name 
+        LPCWSTR  szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN] the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
 
@@ -85,7 +85,7 @@ public:
         LPCWSTR  szGlobalBin,               // [IN] optional - can be NULL
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szModuleName,              // [IN] required - the name of the module
-        __out_ecount (cchName)LPWSTR szName,// [OUT] buffer - to hold name 
+        __out_ecount (cchName)LPWSTR szName,// [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
 

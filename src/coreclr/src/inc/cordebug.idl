@@ -1361,10 +1361,10 @@ interface ICorDebugManagedCallback4 : IUnknown
 {
     //
     // Callback indicating a garbage collection is about to start.
-    // 
+    //
     // Parameters
     //   pProcess - the process that is going to perform garbage collection.
-    // 
+    //
     // Returns
     //   S_OK - on success
     //
@@ -1372,10 +1372,10 @@ interface ICorDebugManagedCallback4 : IUnknown
 
     //
     // Callback indicating a garbage collection is about to complete.
-    // 
+    //
     // Parameters
     //   pProcess - the process that is going to complete garbage collection.
-    // 
+    //
     // Returns
     //   S_OK - on success
     //
@@ -1383,13 +1383,13 @@ interface ICorDebugManagedCallback4 : IUnknown
 
     //
     // Callback indicating a data breakpoint is hit
-    // 
+    //
     // Parameters
     //   pProcess    - the process that hits the data breakpoint
     //   pThread     - the thread that hits the data breakpoint
     //   pContext    - a pointer to the CONTEXT structure
     //   contextSize - the size of the CONTEXT structure
-    // 
+    //
     // Returns
     //   S_OK - on success
     //
@@ -3302,13 +3302,13 @@ interface ICorDebugProcess10 : IUnknown
     //
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4
-    // 
+    //
     // Parameters
     //   fEnable - true to enable the events, false to disable
-    // 
+    //
     // Returns
-    //   S_OK - on success   
-    // 
+    //   S_OK - on success
+    //
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
@@ -6516,7 +6516,7 @@ interface ICorDebugDelegateObjectValue : IUnknown
     *  - S_OK:
      *      - The ICorDebugFunction function for the function the delegate would invoke.
      *      - There are a few cases where the ICorDebugFunction can be different from what's expected,
-     *        such as generic methods, which won't contain the instantiation. 
+     *        such as generic methods, which won't contain the instantiation.
      *  - HRESULT CORDBG_E_UNSUPPORTED_DELEGATE for curently unsupported delegates.
      *      In this case, the value of ppObject should not be used. Some of these
      *      include: Secure wrappers, Open Virual delegates.

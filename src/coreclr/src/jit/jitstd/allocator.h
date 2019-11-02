@@ -102,7 +102,7 @@ public:
     void construct(pointer ptr, const_reference val);
     void deallocate(pointer ptr, size_type size);
     void destroy(pointer ptr);
-    size_type max_size() const;  
+    size_type max_size() const;
     template <typename U>
     struct rebind
     {

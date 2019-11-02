@@ -102,7 +102,7 @@ public:
 
     bool isIA64()  // true  -> target machine is ia64
     { return (m_ntHeaders->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_IA64)); }
-    
+
     bool isAMD64()  // true  -> target machine is ia64
     { return (m_ntHeaders->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64)); }
 

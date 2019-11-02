@@ -20,7 +20,7 @@ namespace R2RDump
         /// Left R2R image for the diff.
         /// </summary>
         private readonly R2RReader _leftFile;
-       
+
         /// <summary>
         /// Right R2R image for the diff.
         /// </summary>

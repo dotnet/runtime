@@ -43,7 +43,7 @@ namespace AppX
     void SetIsAppXProcess(bool value)
     {
         _ASSERTE(!g_fIsAppXAsked);
-        g_fAppX = value;    
+        g_fAppX = value;
     }
 #endif
 };

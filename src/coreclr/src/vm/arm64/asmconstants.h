@@ -166,7 +166,7 @@ ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, 
 #define UMThunkMarshInfo__m_cbActualArgSize 0x08
 ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMarshInfo, m_cbActualArgSize))
 
-#define REDIRECTSTUB_SP_OFFSET_CONTEXT 0    
+#define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
 #define CONTEXT_Pc 0x108
 ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))

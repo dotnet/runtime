@@ -7,7 +7,7 @@
 
 //
 // Zapping of ready-to-run specific structures
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPREADYTORUN_H__

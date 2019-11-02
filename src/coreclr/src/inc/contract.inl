@@ -5,7 +5,7 @@
 // Contract.inl
 //
 
-// ! I am the owner for issues in the contract *infrastructure*, not for every 
+// ! I am the owner for issues in the contract *infrastructure*, not for every
 // ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
 // ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction,
                 }
                 m_pClrDebugState->SetMaxLoadTypeLevel(newTypeLoadLevel);
                 m_pClrDebugState->ViolationMaskReset(LoadsTypeViolation);
-                
+
             }
             break;
     }
@@ -142,7 +142,7 @@ inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction,
 
     switch (testmask & CAN_TAKE_LOCK_Mask)
     {
-        case CAN_TAKE_LOCK_Yes: 
+        case CAN_TAKE_LOCK_Yes:
             m_pClrDebugState->CheckOkayToLock(m_contractStackRecord.m_szFunction,
                                               m_contractStackRecord.m_szFile,
                                               m_contractStackRecord.m_lineNum);
@@ -223,16 +223,16 @@ inline void ClrDebugState::CheckOkayToLock(__in_z const char *szFunction, __in_z
                         szFunction,
                         szFile,
                         lineNum);
-                        
+
     }
 }
 
 
 inline void ClrDebugState::LockTaken(DbgStateLockType dbgStateLockType,
-                                     UINT cTakes, 
-                                     void * pvLock, 
-                                     __in_z const char * szFunction, 
-                                     __in_z const char * szFile, 
+                                     UINT cTakes,
+                                     void * pvLock,
+                                     __in_z const char * szFunction,
+                                     __in_z const char * szFile,
                                      int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -281,7 +281,7 @@ inline void ClrDebugState::LockReleased(DbgStateLockType dbgStateLockType, UINT 
 
     if (!IsOkToRetakeLock())
     {
-        // It is very suspicious to release any locks being hold at the time this function was 
+        // It is very suspicious to release any locks being hold at the time this function was
         // called in a CANNOT_RETAKE_LOCK scope
         _ASSERTE(m_LockState.IsSafeToRelease(cReleases));
     }
@@ -321,9 +321,9 @@ inline UINT ClrDebugState::GetCombinedLockCount()
 
 inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
                                         UINT cTakes,      // # times we're taking this lock (usually 1)
-                                        void * pvLock, 
-                                        __in_z const char * szFunction, 
-                                        __in_z const char * szFile, 
+                                        void * pvLock,
+                                        __in_z const char * szFunction,
+                                        __in_z const char * szFile,
                                         int lineNum)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -399,7 +399,7 @@ inline void DbgStateLockData::LockReleased(DbgStateLockType dbgStateLockType, UI
         // were released out of order.  However, it will eventually correct itself once all
         // the out-of-order locks have been released.  And our count
         // (i.e., m_rgcLocksTaken[dbgStateLockType]) will always be accurate
-        memset(&(m_rgTakenLockInfos[i]), 
+        memset(&(m_rgTakenLockInfos[i]),
                0,
                sizeof(m_rgTakenLockInfos[i]));
     }
@@ -415,7 +415,7 @@ inline void DbgStateLockData::SetStartingValues()
 inline UINT DbgStateLockData::GetLockCount(DbgStateLockType dbgStateLockType)
 {
     _ASSERTE(UINT(dbgStateLockType) < kDbgStateLockType_Count);
-    return m_rgcLocksTaken[dbgStateLockType]; 
+    return m_rgcLocksTaken[dbgStateLockType];
 }
 
 inline UINT DbgStateLockData::GetCombinedLockCount()
@@ -433,7 +433,7 @@ inline void DbgStateLockState::SetStartingValues()
     m_pLockData = NULL;     // Will get filled in by CLRInitDebugState()
 }
 
-// We set a marker to record the number of locks that have been taken when 
+// We set a marker to record the number of locks that have been taken when
 // CANNOT_RETAKE_LOCK contract is constructed.
 inline void DbgStateLockState::OnEnterCannotRetakeLockFunction()
 {
@@ -447,8 +447,8 @@ inline BOOL DbgStateLockState::IsLockRetaken(void * pvLock)
 
     // m_cLocksEnteringCannotRetakeLock records the number of locks that were taken
     // when CANNOT_RETAKE_LOCK contract was constructed.
-    for (UINT i = 0; 
-        i < min(_countof(m_pLockData->m_rgTakenLockInfos), m_cLocksEnteringCannotRetakeLock); 
+    for (UINT i = 0;
+        i < min(_countof(m_pLockData->m_rgTakenLockInfos), m_cLocksEnteringCannotRetakeLock);
         ++i)
     {
         if (m_pLockData->m_rgTakenLockInfos[i].m_pvLock == pvLock)
@@ -476,7 +476,7 @@ inline DbgStateLockData * DbgStateLockState::GetDbgStateLockData()
 
 inline
 void CONTRACT_ASSERT(const char *szElaboration,
-                     UINT  whichTest,        
+                     UINT  whichTest,
                      UINT  whichTestMask,
                      const char *szFunction,
                      const char *szFile,
@@ -542,7 +542,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                             pRec->m_szFile,
                             pRec->m_lineNum
                             );
-                
+
                     strcat_s(Buf, _countof(Buf), tmpbuf);
                 }
 
@@ -579,7 +579,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                    "\n"
                    );
         }
-        
+
         strcat_s(Buf,_countof(Buf), "\n\n");
 
         if (!foundconflict && count != 0)
@@ -604,7 +604,7 @@ FORCEINLINE BOOL BaseContract::EnforceContract()
 {
     if (s_alwaysEnforceContracts)
         return TRUE;
-    else 
+    else
         return CHECK::EnforceAssert();
 }
 

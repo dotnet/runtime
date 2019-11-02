@@ -46,7 +46,7 @@ class GCScan
     static void GcRuntimeStructuresValid (BOOL bValid);
 
     static bool GetGcRuntimeStructuresValid ();
-#ifdef DACCESS_COMPILE    
+#ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
 
@@ -58,7 +58,7 @@ class GCScan
     static void GcWeakPtrScanBySingleThread (int condemned, int max_gen, ScanContext*sc );
 
     // scan for dead weak pointers
-    static void GcShortWeakPtrScan (promote_func* fn, int condemned, int max_gen, 
+    static void GcShortWeakPtrScan (promote_func* fn, int condemned, int max_gen,
                                     ScanContext* sc);
 
     //
@@ -77,16 +77,16 @@ class GCScan
     static bool GcDhReScan(ScanContext* sc);
 
     // post-promotions callback
-    static void GcPromotionsGranted (int condemned, int max_gen, 
+    static void GcPromotionsGranted (int condemned, int max_gen,
                                      ScanContext* sc);
 
     // post-promotions callback some roots were demoted
     static void GcDemote (int condemned, int max_gen, ScanContext* sc);
-    
+
     static size_t AskForMoreReservedMemory (size_t old_size, size_t need_size);
 
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
-    
+
     static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
 };
 

@@ -112,7 +112,7 @@ interface ICLRDataTarget : IUnknown
      * implementation this can fail.
      */
     HRESULT GetCurrentThreadID([out] ULONG32* threadID);
-    
+
     /*
      * Thread context.
      */
@@ -137,7 +137,7 @@ interface ICLRDataTarget : IUnknown
 };
 
 /*
- * Interface used by the data access services layer to manipulate 
+ * Interface used by the data access services layer to manipulate
  * virtual memory regions in the target. The target may not support
  * modification.
  */
@@ -198,8 +198,8 @@ interface ICLRDataTarget3 : ICLRDataTarget2
 };
 
 /*
- * Interface used by the data access services layer to locate metadata 
- * of assemblies in a target. 
+ * Interface used by the data access services layer to locate metadata
+ * of assemblies in a target.
  *
  * The API client must implement this interface as appropriate for the
  * particular target (for example, a live process or a memory dump).
@@ -217,7 +217,7 @@ interface ICLRDataTarget3 : ICLRDataTarget2
 interface ICLRMetadataLocator : IUnknown
 {
     /*
-     * Ask the target to retrieve metadata for an image.  
+     * Ask the target to retrieve metadata for an image.
      */
     HRESULT GetMetadata([in] LPCWSTR imagePath,
                         [in] ULONG32 imageTimestamp,
@@ -265,8 +265,8 @@ interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
 {
     /*
      * ICLRDataEnumMemoryRegions::EnumMemoryRegions will call this function
-     * for every memory regions it needs to overwrite/poison with the specified 
-     * data buffer passed as input argument. 
+     * for every memory regions it needs to overwrite/poison with the specified
+     * data buffer passed as input argument.
      */
     HRESULT UpdateMemoryRegion(
         [in] CLRDATA_ADDRESS address,
@@ -280,10 +280,10 @@ interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
 typedef enum CLRDataEnumMemoryFlags
 {
     CLRDATA_ENUM_MEM_DEFAULT = 0x0,
-    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,       // generating skinny mini-dump    
+    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,       // generating skinny mini-dump
     CLRDATA_ENUM_MEM_HEAP = 0x1,        // generating heap dump
     CLRDATA_ENUM_MEM_TRIAGE = 0x2,      // generating triage mini-dump
-    
+
     /* More bits to be added here later */
 } CLRDataEnumMemoryFlags;
 

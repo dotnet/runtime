@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: NativeLibraryNative.h
 //
 //
@@ -15,8 +15,8 @@ class NativeLibraryNative
 {
 public:
     static INT_PTR QCALLTYPE LoadFromPath(LPCWSTR path, BOOL throwOnError);
-    static INT_PTR QCALLTYPE LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly, 
-                                               BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag, 
+    static INT_PTR QCALLTYPE LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
+                                               BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
                                                BOOL throwOnError);
     static void QCALLTYPE FreeLib(INT_PTR handle);
     static INT_PTR QCALLTYPE GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError);

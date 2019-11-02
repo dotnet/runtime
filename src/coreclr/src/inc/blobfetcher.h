@@ -90,7 +90,7 @@ public:
 // Write out the section to memory
     HRESULT WriteMem(void ** pMem);
 
-// Get the total length of all our data (sum of all the pillar's data length's) 
+// Get the total length of all our data (sum of all the pillar's data length's)
 // cached value, so light weight & no computations
     unsigned GetDataLen() const;
 
@@ -138,7 +138,7 @@ inline ULONG32 CBlobFetcher::CPillar::GetOffset(__in char *ptr)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(Contains(ptr));
-    
+
     return (ULONG32)(ptr - m_dataStart);
 }
 

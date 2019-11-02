@@ -4,7 +4,7 @@
 
 //
 // COM+ Data Field Abstraction
-// 
+//
 
 
 #ifndef _FIELD_H_
@@ -29,7 +29,7 @@
 //
 // This describes a field - one of this is allocated for every field, so don't make this structure any larger.
 //
-// @GENERICS: 
+// @GENERICS:
 // Field descriptors for fields in instantiated types may be shared between compatible instantiations
 // Hence for reflection it's necessary to pair a field desc with the exact owning type handle
 class FieldDesc
@@ -115,7 +115,7 @@ public:
         return m_debugName;
     }
 #endif // _DEBUG
-    
+
 #ifndef DACCESS_COMPILE
     // This should be called.  It was added so that Reflection
     // can create FieldDesc's for the static primitive fields that aren't
@@ -127,12 +127,12 @@ public:
     }
 #endif
 
-    VOID Init(mdFieldDef mb, 
-              CorElementType FieldType, 
-              DWORD dwMemberAttrs, 
-              BOOL fIsStatic, 
-              BOOL fIsRVA, 
-              BOOL fIsThreadLocal, 
+    VOID Init(mdFieldDef mb,
+              CorElementType FieldType,
+              DWORD dwMemberAttrs,
+              BOOL fIsStatic,
+              BOOL fIsRVA,
+              BOOL fIsThreadLocal,
               LPCSTR pszFieldName);
 
     enum {
@@ -171,7 +171,7 @@ public:
         {
             return TokenFromRid(m_mb & enum_packedMbLayout_MbMask, mdtFieldDef);
         }
-        
+
         return TokenFromRid(m_mb, mdtFieldDef);
     }
 
@@ -230,7 +230,7 @@ public:
             // heuristics!
             //
             // As of 4/11/2012 I could repro this by turning on the COMPLUS log and
-            // the LOG() at line methodtablebuilder.cpp:7845 
+            // the LOG() at line methodtablebuilder.cpp:7845
             // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset_NoLogging()
             if((DWORD)(DWORD_PTR&)m_pMTOfEnclosingClass > 16)
             {
@@ -255,7 +255,7 @@ public:
         //
         // This is a small sin, but I don't see a good alternative. --cwb.</NICE>
         HRESULT hr;
-        hr = GetMDImport()->GetFieldRVA(GetMemberDef(), &rva); 
+        hr = GetMDImport()->GetFieldRVA(GetMemberDef(), &rva);
         _ASSERTE(SUCCEEDED(hr));
         return rva;
     }
@@ -308,7 +308,7 @@ public:
     }
 
     BOOL   IsRVA() const               // Has an explicit RVA associated with it
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_isRVA;
@@ -323,7 +323,7 @@ public:
 
     // Indicate that this field was added by EnC
     // Must only be called on instances of EnCFieldDesc
-    void SetEnCNew() 
+    void SetEnCNew()
     {
         WRAPPER_NO_CONTRACT;
 
@@ -333,7 +333,7 @@ public:
 
     // Was this field added by EnC?
     // If this is true, then this object is an instance of EnCFieldDesc
-    BOOL IsEnCNew() 
+    BOOL IsEnCNew()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -387,11 +387,11 @@ public:
     OBJECTREF GetRefValue(OBJECTREF o);
     VOID    SetRefValue(OBJECTREF o, OBJECTREF orValue);
     USHORT  GetValue16(OBJECTREF o);
-    VOID    SetValue16(OBJECTREF o, DWORD dwValue);  
-    BYTE    GetValue8(OBJECTREF o);               
-    VOID    SetValue8(OBJECTREF o, DWORD dwValue);  
-    __int64 GetValue64(OBJECTREF o);               
-    VOID    SetValue64(OBJECTREF o, __int64 value);  
+    VOID    SetValue16(OBJECTREF o, DWORD dwValue);
+    BYTE    GetValue8(OBJECTREF o);
+    VOID    SetValue8(OBJECTREF o, DWORD dwValue);
+    __int64 GetValue64(OBJECTREF o);
+    VOID    SetValue64(OBJECTREF o, __int64 value);
 
     PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
     {
@@ -473,8 +473,8 @@ public:
     // types, however, it is the address of OBJECTREF that holds
     // the boxed value used to hold the value type.  This is needed
     // because the OBJECTREF moves, and the JIT needs to embed something
-    // in the code that does not move.  Thus the jit has to 
-    // dereference and unbox before the access.  
+    // in the code that does not move.  Thus the jit has to
+    // dereference and unbox before the access.
     PTR_VOID GetStaticAddressHandle(PTR_VOID base);
 
 #ifndef DACCESS_COMPILE
@@ -516,41 +516,41 @@ public:
     DWORD   GetStaticValue32()
     {
         WRAPPER_NO_CONTRACT;
-        return *(DWORD*)GetCurrentStaticAddress(); 
+        return *(DWORD*)GetCurrentStaticAddress();
     }
 
-    VOID    SetStaticValue32(DWORD dwValue)  
-    { 
+    VOID    SetStaticValue32(DWORD dwValue)
+    {
         WRAPPER_NO_CONTRACT;
-        *(DWORD*)GetCurrentStaticAddress() = dwValue; 
+        *(DWORD*)GetCurrentStaticAddress() = dwValue;
     }
 
     USHORT  GetStaticValue16()
     {
         WRAPPER_NO_CONTRACT;
-        return *(USHORT*)GetCurrentStaticAddress(); 
+        return *(USHORT*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue16(DWORD dwValue)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
-        *(USHORT*)GetCurrentStaticAddress() = (USHORT)dwValue; 
+        *(USHORT*)GetCurrentStaticAddress() = (USHORT)dwValue;
     }
 
     BYTE    GetStaticValue8()
     {
         WRAPPER_NO_CONTRACT;
-        return *(BYTE*)GetCurrentStaticAddress(); 
+        return *(BYTE*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue8(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(BYTE*)GetCurrentStaticAddress() = (BYTE)dwValue; 
+        *(BYTE*)GetCurrentStaticAddress() = (BYTE)dwValue;
     }
 
     __int64 GetStaticValue64()
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return *(__int64*)GetCurrentStaticAddress();
     }
@@ -574,7 +574,7 @@ public:
 
         _ASSERTE(IsStatic());
 
-        if (IsThreadStatic()) 
+        if (IsThreadStatic())
         {
             return Thread::GetStaticFieldAddress(this);
         }
@@ -582,7 +582,7 @@ public:
             PTR_BYTE base = 0;
             if (!IsRVA()) // for RVA the base is ignored
                 base = GetBase();
-            return GetStaticAddress((void *)dac_cast<TADDR>(base)); 
+            return GetStaticAddress((void *)dac_cast<TADDR>(base));
         }
     }
 
@@ -611,7 +611,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // Field Desc's are currently always saved into the same module as their 
+        // Field Desc's are currently always saved into the same module as their
         // corresponding method table.
         return GetApproxEnclosingMethodTable()->IsZapped();
     }
@@ -620,7 +620,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // Field Desc's are currently always saved into the same module as their 
+        // Field Desc's are currently always saved into the same module as their
         // corresponding method table.
         return GetApproxEnclosingMethodTable()->GetLoaderModule();
     }
@@ -636,7 +636,7 @@ public:
         CONTRACTL_END
 
         if (FAILED(GetMDImport()->GetSigOfFieldDef(GetMemberDef(), pcSig, ppSig)))
-        {   // Class loader already asked for signature, so this should always succeed (unless there's a 
+        {   // Class loader already asked for signature, so this should always succeed (unless there's a
             // bug or a new code path)
             _ASSERTE(!"If this ever fires, then this method should return HRESULT");
             *ppSig = NULL;
@@ -666,14 +666,14 @@ public:
           MODE_ANY;
         }
         CONTRACTL_END
-        
+
         LPCSTR szName;
         IfFailThrow(GetMDImport()->GetNameOfFieldDef(GetMemberDef(), &szName));
         _ASSERTE(szName != NULL);
         return szName;
     }
     // This is slow (uses MetaData), don't use it!
-    __checkReturn 
+    __checkReturn
     HRESULT GetName_NoThrow(LPCUTF8 *pszName)
     {
         CONTRACTL
@@ -683,10 +683,10 @@ public:
           MODE_ANY;
         }
         CONTRACTL_END
-        
+
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
-    
+
     void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
@@ -703,14 +703,14 @@ public:
 
         DWORD dwAttributes;
         if (FAILED(GetMDImport()->GetFieldDefProps(GetMemberDef(), &dwAttributes)))
-        {   // Class loader already asked for attributes, so this should always succeed (unless there's a 
+        {   // Class loader already asked for attributes, so this should always succeed (unless there's a
             // bug or a new code path)
             _ASSERTE(!"If this ever fires, then this method should return HRESULT");
             return 0;
         }
         return dwAttributes;
     }
-    
+
     // Mini-Helpers
     DWORD   IsPublic()
     {
@@ -768,15 +768,15 @@ public:
         return GetFieldTypeHandleThrowing(CLASS_LOAD_APPROXPARENTS, TRUE);
     }
 
-    // Given a type handle of an object and a method that comes from some 
-    // superclass of the class of that object, find the instantiation of 
+    // Given a type handle of an object and a method that comes from some
+    // superclass of the class of that object, find the instantiation of
     // that superclass, i.e. the class instantiation which will be relevant
     // to interpreting the signature of the method.  The type handle of
-    // the object does not need to be given in all circumstances, in 
+    // the object does not need to be given in all circumstances, in
     // particular it is only needed for FieldDescs pFD that
     // return true for pFD->GetApproxEnclosingMethodTable()->IsSharedByGenericInstantiations().
     // In other cases it is allowed to be null and will be ignored.
-    // 
+    //
     // Will return NULL if the field is not in a generic class.
     Instantiation GetExactClassInstantiation(TypeHandle possibleObjType);
 

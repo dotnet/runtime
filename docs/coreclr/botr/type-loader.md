@@ -239,8 +239,8 @@ generic parameters of the declaring type can be used to express the
 constraints, introducing interdependencies among the parameters. For
 example:
 
-	public class A<S, T, U> 
-		where S : T 
+	public class A<S, T, U>
+		where S : T
 		where T : IList<U> {
 	    void f<V>(V v) where V : S {}
 	}

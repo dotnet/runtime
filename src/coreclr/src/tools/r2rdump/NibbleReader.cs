@@ -88,7 +88,7 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public int GetNextByteOffset() => _offset;
     }

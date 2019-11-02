@@ -29,9 +29,9 @@ Function:
   CreateCurrentThreadData
 
 Abstract:
-  This function is called by the InternalGetOrCreateCurrentThread inlined 
+  This function is called by the InternalGetOrCreateCurrentThread inlined
   function to create the thread data when it is null meaning the thread has
-  never been in this PAL. 
+  never been in this PAL.
 
 Warning:
   If the allocation fails, this function asserts and exits the process.
@@ -84,9 +84,9 @@ AllocatePalThread(CPalThread **ppThread)
         pThread->ReleaseThreadReference();
         goto exit;
     }
-    
-    // Like CreateInitialProcessAndThreadObjects, we do not need this 
-    // thread handle, since we're not returning it to anyone who will 
+
+    // Like CreateInitialProcessAndThreadObjects, we do not need this
+    // thread handle, since we're not returning it to anyone who will
     // possibly release it.
     (void)g_pObjectManager->RevokeHandle(pThread, hThread);
 

@@ -162,9 +162,9 @@ ifdef FEATURE_SVR_GC
 LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
         align 8
         ;
-        ; SVR GC has multiple heaps, so it cannot provide one single 
+        ; SVR GC has multiple heaps, so it cannot provide one single
         ; ephemeral region to bounds check against, so we just skip the
-        ; bounds checking all together and do our card table update 
+        ; bounds checking all together and do our card table update
         ; unconditionally.
         ;
 
@@ -362,9 +362,9 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
         ;   non-volatile calling convention, this should be changed to use just one register.
 
         ;
-        ; SVR GC has multiple heaps, so it cannot provide one single 
+        ; SVR GC has multiple heaps, so it cannot provide one single
         ; ephemeral region to bounds check against, so we just skip the
-        ; bounds checking all together and do our card table update 
+        ; bounds checking all together and do our card table update
         ; unconditionally.
         ;
 

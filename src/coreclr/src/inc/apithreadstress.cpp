@@ -45,7 +45,7 @@ APIThreadStress::APIThreadStress()
         {
             HANDLE *p = m_hThreadArray;
             HANDLE *pEnd = p + m_threadCount;
-            
+
             while (p < pEnd)
             {
                 DWORD id;

@@ -81,7 +81,7 @@ struct ArrayOpScript
     const ArrayOpIndexSpec *GetArrayOpIndexSpecs() const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return (const ArrayOpIndexSpec *)(1+ this);
     }
 

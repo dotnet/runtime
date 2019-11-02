@@ -133,7 +133,7 @@ bool CallCounter::IncrementCount(MethodDesc* pMethodDesc)
     // overhead to acquire the lock/search the dictionary. Depending on where it
     // is we may also be able to reduce it to 1 byte counter without wasting the
     // following bytes for alignment. Further work to inline the OnMethodCalled
-    // callback directly into the jitted code would eliminate CPU overhead of 
+    // callback directly into the jitted code would eliminate CPU overhead of
     // leaving the prestub unpatched, but may not be good overall as it increases
     // the size of the jitted code.
 

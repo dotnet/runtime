@@ -9,7 +9,7 @@
 **
 ** Purpose: Contains types and method signatures for the RCW class
 **
-** 
+**
 
 ===========================================================*/
 //---------------------------------------------------------------------------------
@@ -20,35 +20,35 @@
 //  Data members of wrapper, are basically COM2 Interface pointers on the COM2 object
 //  Interfaces that belong to the same object are stored in the same wrapper, IUnknown
 //  pointer determines the identity of the object.
-//  As new COM2 interfaces are seen on the same object, they need to be added to the 
+//  As new COM2 interfaces are seen on the same object, they need to be added to the
 //  wrapper, wrapper is allocated as a fixed size object with overflow chain.
-//  
-//  struct IPMap 
+//
+//  struct IPMap
 //  {
 //      MethodTable *pMT; // identifies the managed interface class
 //      IUnknown*   m_ip; // COM IP
 //  }
-//  
+//
 //  Issues : Performance/Identity trade-offs, create new wrappers or find and reuse wrappers
 //      we use a hash table to track the wrappers and reuse them, maintains identity
 //  RCWCache class maintains the lookup table and handles the clean up
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
-//  
+//
 //  Threading : apartment model COM objects have thread affinity
 //              choices: COM+ can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
-//              Advantanges: avoid an extra marshalling 
+//              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
 //                           this includes any weird behaviour currently built into DCOM.
 //
 //  RCWs: Interface map (IMap) won't have any entries, the method table of RCWs
 //  have a special flag to indicate that these managed objects
 //  require special treatment for interface cast, call interface operations.
-//  
+//
 //  Stubs : need to find the COM2 interface ptr, and the slot within the interface to
-//          re-direct the call  
+//          re-direct the call
 //  Marshaling params and results (common case should be fast)
-//  
+//
 //-----------------------------------------------------------------------------------
 
 
@@ -111,7 +111,7 @@ struct RCWAuxiliaryData
     RCWAuxiliaryData()
     {
         WRAPPER_NO_CONTRACT;
-        
+
         m_pGetEnumeratorMethod = NULL;
         m_prVariantInterfaces = NULL;
         m_VarianceCacheCrst.Init(CrstLeafLock);
@@ -230,7 +230,7 @@ struct RCWAuxiliaryData
 
     void CacheInterfacePointer(MethodTable *pMT, IUnknown *pUnk, LPVOID pCtxCookie);
     IUnknown *FindInterfacePointer(MethodTable *pMT, LPVOID pCtxCookie);
-    
+
     inline InterfaceEntryIterator IterateInterfacePointers()
     {
         LIMITED_METHOD_CONTRACT;
@@ -277,7 +277,7 @@ typedef DPTR(RCW) PTR_RCW;
 // caches the IPs for a single com object, this wrapper is
 // not in the GC heap, this allows us to grab a pointer to this block
 // and play with-it without worrying about GC
-struct RCW 
+struct RCW
 {
     enum CreationFlags
     {
@@ -330,7 +330,7 @@ struct RCW
         inline InterfaceEntry *GetEntry()
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             _ASSERTE_MSG(m_InlineCacheIndex >= 0, "Iterator starts before the first element, you need to call Next");
             if (m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
             {
@@ -342,7 +342,7 @@ struct RCW
         inline LPVOID GetCtxCookie()
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             _ASSERTE_MSG(m_InlineCacheIndex >= 0, "Iterator starts before the first element, you need to call Next");
             if (m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
             {
@@ -376,7 +376,7 @@ struct RCW
          MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
          MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
      };
-    
+
     //-------------------------------------------------
     // Get the MarshalingType of the associated managed object.
     MarshalingType GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT);
@@ -450,7 +450,7 @@ struct RCW
             POSTCONDITION(RETVAL != NULL);
         }
         CONTRACT_END;
-        
+
         RETURN (COMOBJECTREF) ObjectToOBJECTREF(g_pSyncTable[m_SyncBlockIndex].m_Object);
     }
 
@@ -467,14 +467,14 @@ struct RCW
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         RETURN g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
     }
 
     //--------------------------------------------------------------------------
     // out of line call, takes a lock, does a QI if the interface was not found in local cache
     IUnknown* GetComIPFromRCW(MethodTable* pMT);
-       
+
     //-----------------------------------------------------------------
     // out of line call
     IUnknown* GetComIPFromRCW(REFIID iid);
@@ -509,7 +509,7 @@ struct RCW
 
     // Performs QI for interfaces that are castable to pMT using co-/contra-variance.
     HRESULT CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk);
-    
+
     // Returns the GetEnumerator method of the first IEnumerable<T> this RCW was successfully
     // cast to, or NULL if no such cast has ever succeeded.
     MethodDesc *GetGetEnumeratorMethod();
@@ -525,7 +525,7 @@ struct RCW
 
     // Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
     static MethodDesc *ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT);
-    
+
     // Notifies the RCW of an interface that is known to be supported by the COM object.
     void SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst);
 
@@ -553,27 +553,27 @@ struct RCW
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsJupiterObject());
-        
+
         // We saved IJupiterObject * on the first slot
         _ASSERTE((IUnknown *)m_aInterfaceEntries[0].m_pUnknown != NULL);
         _ASSERTE((MethodTable *)m_aInterfaceEntries[0].m_pMT == NULL);
-        
-        return (IJupiterObject *)m_aInterfaceEntries[0].m_pUnknown.Load();    
+
+        return (IJupiterObject *)m_aInterfaceEntries[0].m_pUnknown.Load();
     }
-    
+
     IJupiterObject *GetJupiterObject()
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         if (IsJupiterObject())
         {
             return GetJupiterObjectNoCheck();
         }
 
-        return NULL;            
+        return NULL;
     }
 
-    void GetCachedInterfaceTypes(BOOL bIInspectableOnly, 
+    void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
                         SArray<PTR_MethodTable> * rgItfTables)
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -582,7 +582,7 @@ struct RCW
         while (it.Next())
         {
             PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL && 
+            if (pMT != NULL &&
                 (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
             {
                 // Don't return mscorlib-internal declarations of WinRT types.
@@ -603,7 +603,7 @@ struct RCW
         while (it.Next())
         {
             PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL && 
+            if (pMT != NULL &&
                 (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
             {
                 TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
@@ -621,15 +621,15 @@ struct RCW
     {
 
         LIMITED_METHOD_CONTRACT;
-    
+
         m_Flags.m_fIsJupiterObject = 1;
-        
+
         //
         // Save pJupiterObject* on the first SLOT
         // Only AddRef if not aggregated
         //
         _ASSERTE(m_aInterfaceEntries[0].IsFree());
-        
+
         m_aInterfaceEntries[0].Init(NULL, pJupiterObject);
     }
 
@@ -641,7 +641,7 @@ struct RCW
     BOOL IsValid()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_SyncBlockIndex != 0;
     }
 
@@ -659,17 +659,17 @@ struct RCW
             PRECONDITION(m_Flags.m_fURTAggregated == 0);
         }
         CONTRACTL_END;
-        
+
         m_Flags.m_fURTContained = 1;
     }
 
 
     BOOL IsURTAggregated()
     {
-        LIMITED_METHOD_CONTRACT;    
+        LIMITED_METHOD_CONTRACT;
         return m_Flags.m_fURTAggregated == 1;
     }
-        
+
     BOOL IsURTContained()
     {
         LIMITED_METHOD_CONTRACT;
@@ -694,7 +694,7 @@ struct RCW
 
     //
     // Is this COM object a DCOM Proxy? (For WinRT the RCW must have been created with CF_DetectDCOMProxy)
-    // 
+    //
     bool IsDCOMProxy()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -713,7 +713,7 @@ struct RCW
     BOOL IsJupiterObject()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_Flags.m_fIsJupiterObject == 1;
     }
 
@@ -725,14 +725,14 @@ struct RCW
     BOOL IsDetached()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_Flags.m_Detached == 1;
     }
 
     BOOL MatchesCleanupBucket(RCW *pOtherRCW)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return (IsFreeThreaded() == pOtherRCW->IsFreeThreaded() &&
                 m_Flags.m_fAllowEagerSTACleanup == pOtherRCW->m_Flags.m_fAllowEagerSTACleanup &&
                 GetSTAThread() == pOtherRCW->GetSTAThread() &&
@@ -754,7 +754,7 @@ struct RCW
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         RETURN m_UnkEntry.m_pCtxCookie;
     }
 
@@ -768,17 +768,17 @@ struct RCW
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
         CtxEntry *pCtxEntry = GetWrapperCtxEntryNoRef();
         if (pCtxEntry)
             RETURN pCtxEntry->GetSTAThread();
-        RETURN NULL;       
+        RETURN NULL;
     }
 
     // Function to enter the context. The specified callback function will
     // be called from within the context.
-    HRESULT EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData);    
-    
+    HRESULT EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData);
+
     inline CachedInterfaceEntryIterator IterateCachedInterfacePointers()
     {
         LIMITED_METHOD_CONTRACT;
@@ -813,7 +813,7 @@ struct RCW
     bool SupportsLegacyEnumerableInterface()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         _ASSERTE(SupportsWinRTInteropInterfaceNoGC(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE)) == TypeHandle::CannotCast);
         return m_Flags.m_RedirectionBehavior_IEnumerable_LegacySupported;
     }
@@ -840,7 +840,7 @@ struct RCW
     OBJECTREF GetTargetForAmbiguousVariantCall(BOOL fIsEnumerable, WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType, BOOL *pfUseString, BOOL *pfUseT)
     {
         LIMITED_METHOD_CONTRACT;
-         
+
         if (m_pAuxiliaryData != NULL)
         {
             if (baseType == WinRTInterfaceRedirector::BaseType_Object)
@@ -917,7 +917,7 @@ struct RCW
         LIMITED_METHOD_CONTRACT;
         return m_UnkEntry.IsDisconnected();
     }
-    
+
     void IncrementUseCount()
     {
         LIMITED_METHOD_CONTRACT;
@@ -933,7 +933,7 @@ struct RCW
             MODE_ANY;
         }
         CONTRACTL_END;
-    
+
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
             // this was the final decrement, go ahead and delete/recycle the RCW
@@ -967,10 +967,10 @@ private:
     static HRESULT __stdcall ReleaseAllInterfacesCallBack(LPVOID pData);
 
     //---------------------------------------------------------------------
-    // Helper function called from ReleaseAllInterfaces_CallBack do do the 
+    // Helper function called from ReleaseAllInterfaces_CallBack do do the
     // actual releases.
     void ReleaseAllInterfaces();
-    
+
 public:
     // Points to the next RCW bucket if this RCW is part of a code:RCWCleanupList
     PTR_RCW             m_pNextCleanupBucket;
@@ -983,7 +983,7 @@ public:
 
     // Sync block index for the exposed managed object
     DWORD               m_SyncBlockIndex;
-    
+
     //ref-count
     ULONG               m_cbRefCount;
 
@@ -1051,16 +1051,16 @@ public:
     // SafeRelease because the COM object disappeared. Knowing the vtable usually helps find the culprit.
     LPVOID              m_vtablePtr;
 
-private :   
-    // cookies for tracking IUnknown on the correct thread  
-    IUnkEntry           m_UnkEntry;    
+private :
+    // cookies for tracking IUnknown on the correct thread
+    IUnkEntry           m_UnkEntry;
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
-    
+
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
-    
+
     // Returns an addref'ed context entry
     CtxEntry* GetWrapperCtxEntry()
     {
@@ -1073,7 +1073,7 @@ private :
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         pCtxEntry->AddRef();
         RETURN pCtxEntry;
@@ -1090,10 +1090,10 @@ private :
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         RETURN pCtxEntry;
-    }    
+    }
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -1114,9 +1114,9 @@ inline RCW::CreationFlags operator|=(RCW::CreationFlags & lhs, RCW::CreationFlag
 #define RCW_VTABLEPTR(pRCW) Volatile<LPVOID> __vtablePtr = (pRCW)->m_vtablePtr
 
 
-// 01 REQUIRE_IINSPECTABLE            01 ITF_MARSHAL_INSP_ITF         01 CF_SupportsIInspectable 
-// 02 SUPPRESS_ADDREF                 02 ITF_MARSHAL_SUPPRESS_ADDREF  02 CF_SuppressAddRef       
-//                                                                    04 CF_IsWeakReference      
+// 01 REQUIRE_IINSPECTABLE            01 ITF_MARSHAL_INSP_ITF         01 CF_SupportsIInspectable
+// 02 SUPPRESS_ADDREF                 02 ITF_MARSHAL_SUPPRESS_ADDREF  02 CF_SuppressAddRef
+//                                                                    04 CF_IsWeakReference
 // 04 CLASS_IS_HINT                   04 ITF_MARSHAL_CLASS_IS_HINT
 // 08 UNIQUE_OBJECT                                                   08 CF_NeedUniqueObject
 //                                    08 ITF_MARSHAL_DISP_ITF
@@ -1131,7 +1131,7 @@ inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::f
     static_assert_no_msg(CF_SupportsIInspectable == ObjFromComIP::REQUIRE_IINSPECTABLE);
     static_assert_no_msg(CF_DontResolveClass     == ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
 
-    RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags & 
+    RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
                                         (ObjFromComIP::UNIQUE_OBJECT
                                        | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING));
     if ((dwFlags & (ObjFromComIP::REQUIRE_IINSPECTABLE|ObjFromComIP::CLASS_IS_HINT))
@@ -1150,7 +1150,7 @@ struct RCWPerTypeData
 {
     // Corresponding type with variance or NULL if the type does not exhibit variant behavior.
     MethodTable *m_pVariantMT;
-    
+
     // Types that should be used for QI. m_pMTForQI1 is tried first; if it fails and m_pMTForQI2
     // is not NULL, QI for m_pMTForQI2 is performed. We need two types to supports ambiguous casts
     // to ICollection<KeyValuePair<K, V>>.
@@ -1230,7 +1230,7 @@ class ComClassFactoryCreator;
 // Calling class.CreateInstance() will create an instance of the COM object and
 // wrap it with a RCW, the wrapper can be cast to the appropriate interface
 // and used.
-// 
+//
 class ComClassFactory : public ClassFactoryBase
 {
 protected:
@@ -1241,10 +1241,10 @@ protected:
     // 2. We build for IClassFactory.  We should clean up.
     //-----------------------------------------------------------
     // constructor
-    ComClassFactory(REFCLSID rclsid) 
+    ComClassFactory(REFCLSID rclsid)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         m_pwszProgID = NULL;
         m_pwszServer = NULL;
 
@@ -1252,7 +1252,7 @@ protected:
         m_bManagedVersion = FALSE;
         m_rclsid = rclsid;
     }
-   
+
 public :
     //---------------------------------------------------------
     // Mark this instance as Managed Version, so we will not do clean up.
@@ -1261,7 +1261,7 @@ public :
         LIMITED_METHOD_CONTRACT;
         m_bManagedVersion = TRUE;
     }
-    
+
     //--------------------------------------------------------------
     // Init the ComClassFactory
     void Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT);
@@ -1277,14 +1277,14 @@ public :
 protected :
 #ifndef CROSSGEN_COMPILE
     //-------------------------------------------------------------
-    // Create instance. Overridable from child classes    
+    // Create instance. Overridable from child classes
     virtual IUnknown *CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment);
 #endif
     //-------------------------------------------------------------
     // Throw exception message
     void ThrowHRMsg(HRESULT hr, DWORD dwMsgResID);
 
-    
+
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
@@ -1298,12 +1298,12 @@ private:
     //--------------------------------------------------------------
     // Create an instance of the component from the class factory.
     IUnknown *CreateInstanceFromClassFactory(IClassFactory *pClassFact, IUnknown *punkOuter, BOOL *pfDidContainment);
-    
+
 public:;
-    WCHAR*          m_pwszProgID;   // progId 
+    WCHAR*          m_pwszProgID;   // progId
     CLSID           m_rclsid;       // CLSID
     WCHAR*          m_pwszServer;   // server name
-    
+
 private:
     BOOL            m_bManagedVersion;
 };
@@ -1315,7 +1315,7 @@ struct WinRTOverrideInfo
 {
     MethodDesc *m_pToStringMD;
     MethodDesc *m_pGetHashCodeMD;
-    MethodDesc *m_pEqualsMD;    
+    MethodDesc *m_pEqualsMD;
 
     WinRTOverrideInfo(EEClass *pClass);
     static WinRTOverrideInfo *GetOrCreateWinRTOverrideInfo(MethodTable *pMT);
@@ -1451,10 +1451,10 @@ public:
     BOOL SetWinRTOverrideInfo (WinRTOverrideInfo *pWinRTOverrideInfo)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return (InterlockedCompareExchangeT(&m_pWinRTOverrideInfo, pWinRTOverrideInfo, NULL) == NULL);
     }
-    
+
 protected:
     MethodTable *GetTypeFromAttribute(IMDInternalImport *pImport, mdCustomAttribute tkAttribute);
 
@@ -1519,7 +1519,7 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     if (p)
     {
         GCX_COOP();
-        
+
         p->DecoupleFromObject();
         p->Cleanup();
     }
@@ -1594,7 +1594,7 @@ public:
             PRECONDITION(CheckPointer(m_pThread));
         }
         CONTRACTL_END;
-        
+
         m_pSB = pSB;
         m_pRCW = m_pSB->GetInteropInfoNoCreate()->GetRCWAndIncrementUseCount();
 
@@ -1662,7 +1662,7 @@ public:
             PRECONDITION(GetThread() == m_pThread);
         }
         CONTRACTL_END;
-        
+
         m_pSB = pSB;
         m_pRCW = m_pSB->GetInteropInfoNoCreate()->GetRawRCW();
         m_fValid = TRUE;
@@ -1680,7 +1680,7 @@ public:
         }
         CONTRACTL_END;
 
-        InitNoCheck((PTR_SyncBlock)pObject->GetSyncBlock());    
+        InitNoCheck((PTR_SyncBlock)pObject->GetSyncBlock());
     }
 
     void InitNoCheck(RCW *pRCW)
@@ -1720,7 +1720,7 @@ public:
             PRECONDITION(GetThread() == m_pThread);
         }
         CONTRACTL_END;
-        
+
         // Unregister this RCW on the thread
         if (m_fValid)
         {
@@ -1752,7 +1752,7 @@ public:
             COMPlusThrow(kInvalidComObjectException, IDS_EE_COM_OBJECT_RELEASE_RACE);
         }
     }
-    
+
     PTR_RCW GetRawRCWUnsafe()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1776,7 +1776,7 @@ public:
             PRECONDITION(CheckPointer(m_pRCW));
         }
         CONTRACTL_END;
-        
+
         return m_pRCW;
     }
 
@@ -1843,7 +1843,7 @@ public:
         }
     };
 
-    
+
     RCWCache(AppDomain *pDomain);
 
     static RCWCache* GetRCWCache();
@@ -1872,7 +1872,7 @@ public:
     void RemoveWrapper(RCWHolder* pRCW)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         RemoveWrapper(pRCW->GetRawRCWUnsafe());
     }
 #endif // DACCESS_COMPILE
@@ -1888,13 +1888,13 @@ public:
             PRECONDITION(CheckPointer(pRCW));
         }
         CONTRACTL_END;
-        
+
         // Note that the GC thread doesn't have to take the lock
         // since all other threads access in cooperative mode
 
         _ASSERTE_IMPL(LOCKHELD() && GetThread()->PreemptiveGCDisabled()
                  || Debug_IsLockedViaThreadSuspension());
-       
+
         LPVOID pIdentity;
         pIdentity = pRCW->m_pIdentity;
         _ASSERTE(pIdentity != NULL);
@@ -1905,7 +1905,7 @@ public:
     //  Lookup to see if we already have a wrapper else insert this wrapper
     //  return a valid wrapper that has been inserted into the cache
     BOOL FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pWrap, BOOL fAllowReinit);
-    
+
     AppDomain* GetDomain()
     {
         CONTRACT (AppDomain*)
@@ -1916,10 +1916,10 @@ public:
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         RETURN m_pDomain;
     }
-    
+
     // Worker function called to release wrappers in the pCtxCookie context.
     // Zero indicates all wrappers.
     void ReleaseWrappersWorker(LPVOID pCtxCookie);
@@ -1929,7 +1929,7 @@ public:
     void DetachWrappersWorker();
 
 #ifndef DACCESS_COMPILE
-    
+
     // Lookup wrapper, lookup hash table for a wrapper for a given IUnk
     void LookupWrapper(LPVOID pUnk, RCWHolder* pRCW)
     {
@@ -1946,7 +1946,7 @@ public:
 
         // We don't want the GC messing with the hash table underneath us.
         GCX_FORBID();
-        
+
         RCW* pRawRCW = LookupWrapperUnsafe(pUnk);
 
         if (pRawRCW == NULL)
@@ -1968,15 +1968,15 @@ public:
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
         // We don't want the GC messing with the hash table underneath us.
         GCX_FORBID();
-        
+
         RETURN m_HashMap.Lookup(pUnk);
     }
-        
+
 #endif //DACCESS_COMPILE
-   
+
 #ifdef _DEBUG
     BOOL LOCKHELD()
     {
@@ -1987,7 +1987,7 @@ public:
 
 private :
     friend class COMInterfaceMarshaler;
-    
+
     // Look up to see if we already have an valid wrapper in cache for this IUnk
     // DOES NOT hold a lock inside the function - locking in the caller side IS REQUIRED
     void FindWrapperInCache_NoLock(IUnknown* pIdentity, RCWHolder* pRCW);
@@ -2007,7 +2007,7 @@ private:
     };
 
     SHash<RCWCacheTraits> m_HashMap;
-    
+
     // spin lock for fast synchronization
     Crst            m_lock;
     AppDomain*      m_pDomain;
@@ -2059,7 +2059,7 @@ class RCWCleanupList
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
 
-public:   
+public:
     RCWCleanupList()
         : m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
           m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE),
@@ -2067,19 +2067,19 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     ~RCWCleanupList()
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(IsEmpty());
     }
-    
+
     VOID AddWrapper(RCW* pRCW);
     VOID AddWrapper_NoLock(RCW *pRCW);
     VOID CleanupAllWrappers();
     VOID CleanupWrappersInCurrentCtxThread(BOOL fWait = TRUE, BOOL fManualCleanupRequested = FALSE, BOOL bIgnoreComObjectEagerCleanupSetting = FALSE);
-    
+
     BOOL IsEmpty();
 
 private:
@@ -2155,7 +2155,7 @@ FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     if (p != NULL)
     {
         p->Release();
@@ -2170,14 +2170,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     FORCEINLINE void operator=(CtxEntry *p)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>::operator=(p);
     }
-   
+
 };
 
 #endif // _RUNTIMECALLABLEWRAPPER_H

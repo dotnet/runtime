@@ -234,9 +234,9 @@
 #define WszFindFirstFileEx     FindFirstFileExWrapper
 #define WszFindNextFile        FindNextFileW
 #define WszMoveFileEx          MoveFileExWrapper
-#define WszCreateDirectory     CreateDirectoryWrapper 
+#define WszCreateDirectory     CreateDirectoryWrapper
 
-//Can not use extended syntax 
+//Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
 //Long Files will not work on these till redstone

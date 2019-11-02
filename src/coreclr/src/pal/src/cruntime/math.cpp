@@ -128,7 +128,7 @@ PALIMPORT double __cdecl PAL_acos(double x)
 #endif  // HAVE_COMPATIBLE_ACOS
 
     ret = acos(x);
-    
+
 #if !HAVE_COMPATIBLE_ACOS
     if (errno == EDOM)
     {
@@ -262,7 +262,7 @@ PALIMPORT double __cdecl PAL_exp(double x)
     ENTRY("exp (x=%f)\n", x);
 
 #if !HAVE_COMPATIBLE_EXP
-    if (x == 1.0) 
+    if (x == 1.0)
     {
         ret = M_E;
     }
@@ -271,7 +271,7 @@ PALIMPORT double __cdecl PAL_exp(double x)
 #endif  // HAVE_COMPATIBLE_EXP
 
     ret = exp(x);
-    
+
 #if !HAVE_COMPATIBLE_EXP
     }
 #endif // HAVE_COMPATIBLE_EXP
@@ -317,7 +317,7 @@ PALIMPORT int __cdecl PAL_ilogb(double x)
     {
         ret = -2147483648;
     }
-    else 
+    else
 #endif // !HAVE_COMPATIBLE_ILOGB0
 
 #if !HAVE_COMPATIBLE_ILOGBNAN
@@ -403,7 +403,7 @@ PALIMPORT double __cdecl PAL_log10(double x)
 #endif  // !HAVE_COMPATIBLE_LOG10
 
     ret = log10(x);
-    
+
 #if !HAVE_COMPATIBLE_LOG10
     if ((errno == EDOM) && (x < 0))
     {
@@ -495,7 +495,7 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
     * large y. Since large double numbers are always even (e.g., the representation of
     * 1E20+1 is the same as that of 1E20, the last .+1. is too insignificant to be part
     * of the representation), this test will always return the wrong result for large y.
-    * 
+    *
     * The (ceil(y/2) == floor(y/2)) test is slower, but more robust.
     */
     if ((ret == PAL_NEGINF_DBL) && (x < 0) && isfinite(x) && (ceil(y / 2) == floor(y / 2)))
@@ -613,7 +613,7 @@ PALIMPORT float __cdecl PAL_acosf(float x)
 #endif  // HAVE_COMPATIBLE_ACOS
 
     ret = acosf(x);
-    
+
 #if !HAVE_COMPATIBLE_ACOS
     if (errno == EDOM)
     {
@@ -748,7 +748,7 @@ PALIMPORT float __cdecl PAL_expf(float x)
     ENTRY("expf (x=%f)\n", x);
 
 #if !HAVE_COMPATIBLE_EXP
-    if (x == 1.0f) 
+    if (x == 1.0f)
     {
         ret = M_E;
     }
@@ -757,7 +757,7 @@ PALIMPORT float __cdecl PAL_expf(float x)
 #endif  // HAVE_COMPATIBLE_EXP
 
     ret = expf(x);
-    
+
 #if !HAVE_COMPATIBLE_EXP
     }
 #endif // HAVE_COMPATIBLE_EXP
@@ -803,7 +803,7 @@ PALIMPORT int __cdecl PAL_ilogbf(float x)
     {
         ret = -2147483648;
     }
-    else 
+    else
 #endif // !HAVE_COMPATIBLE_ILOGB0
 
 #if !HAVE_COMPATIBLE_ILOGBNAN
@@ -889,7 +889,7 @@ PALIMPORT float __cdecl PAL_log10f(float x)
 #endif  // !HAVE_COMPATIBLE_LOG10
 
     ret = log10f(x);
-    
+
 #if !HAVE_COMPATIBLE_LOG10
     if ((errno == EDOM) && (x < 0))
     {
@@ -965,7 +965,7 @@ PALIMPORT float __cdecl PAL_powf(float x, float y)
 #endif  // !HAVE_COMPATIBLE_POW
 
     ret = powf(x, y);
-		
+
 #if !HAVE_VALID_NEGATIVE_INF_POW
     if ((ret == PAL_POSINF_FLT) && (x < 0) && isfinite(x) && (ceilf(y / 2) != floorf(y / 2)))
     {

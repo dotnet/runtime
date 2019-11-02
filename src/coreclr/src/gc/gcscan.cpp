@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 /*
- * GCSCAN.CPP 
+ * GCSCAN.CPP
  *
  * GC Root Scanning
  *
@@ -138,7 +138,7 @@ void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanC
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
 
-void GCScan::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen, 
+void GCScan::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen,
                                      ScanContext* sc)
 {
     UNREFERENCED_PARAMETER(fn);
@@ -148,8 +148,8 @@ void GCScan::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen,
 /*
  * Scan all stack roots in this 'namespace'
  */
- 
-void GCScan::GcScanRoots(promote_func* fn,  int condemned, int max_gen, 
+
+void GCScan::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
                              ScanContext* sc)
 {
     GCToEEInterface::GcScanRoots(fn, condemned, max_gen, sc);
@@ -160,7 +160,7 @@ void GCScan::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
  */
 
 
-void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen, 
+void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
                                 ScanContext* sc)
 {
     STRESS_LOG1(LF_GC|LF_GCROOTS, LL_INFO10, "GcScanHandles (Promotion Phase = %d)\n", sc->promotion);
@@ -248,7 +248,7 @@ size_t GCScan::AskForMoreReservedMemory (size_t old_size, size_t need_size)
     if (pGCHostControl)
     {
         size_t new_max_limit_size = need_size;
-        pGCHostControl->RequestVirtualMemLimit (old_size, 
+        pGCHostControl->RequestVirtualMemLimit (old_size,
                                                 (SIZE_T*)&new_max_limit_size);
         return new_max_limit_size;
     }

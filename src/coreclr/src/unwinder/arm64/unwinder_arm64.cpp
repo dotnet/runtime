@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #include "stdafx.h"
 #include "utilcode.h"
@@ -150,18 +150,18 @@ do {                                                                            
 #define OPCODE_IS_END(Op) (((Op) & 0xfe) == 0xe4)
 
 //
-// This table describes the size of each unwind code, in bytes 
+// This table describes the size of each unwind code, in bytes
 //
 
 static const BYTE UnwindCodeSizeTable[256] =
 {
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 
-    2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2, 
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
     4,1,2,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1
 };
 
@@ -202,7 +202,7 @@ Return Value:
     ULONG_PTR StartingSp;
     NTSTATUS Status;
     ULONG_PTR VfpStateAddress;
-    
+
     StartingSp = ContextRecord->Sp;
     Status = STATUS_SUCCESS;
 
@@ -212,17 +212,17 @@ Return Value:
 
     switch (Opcode)
     {
-    
+
     //
     // Trap frame case
     //
-    
+
     case 0xe8:  // MSFT_OP_TRAP_FRAME:
-    
+
         //
         // Ensure there is enough valid space for the trap frame
         //
-        
+
         VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(ARM64_KTRAP_FRAME), 16, &Status);
         if (!NT_SUCCESS(Status)) {
             return Status;
@@ -231,7 +231,7 @@ Return Value:
         //
         // Restore X0-X17, and D0-D7
         //
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
@@ -242,17 +242,17 @@ Return Value:
 #endif
             SourceAddress += sizeof(ULONG_PTR);
         }
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, VfpState);
         VfpStateAddress = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
         if (VfpStateAddress != 0) {
-        
+
             SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpcr);
             Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpsr);
             Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             if (Fpcr != -1 && Fpsr != -1) {
-            
+
                 ContextRecord->Fpcr = Fpcr;
                 ContextRecord->Fpsr = Fpsr;
 
@@ -269,40 +269,40 @@ Return Value:
         //
         // Restore R11, R12, SP, LR, PC, and the status registers
         //
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Spsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         //
         // Set the trap frame and clear the unwound-to-call flag
         //
-        
+
         UNWIND_PARAMS_SET_TRAP_FRAME(UnwindParams, StartingSp, sizeof(ARM64_KTRAP_FRAME));
         ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
         break;
-    
+
     //
     // Context case
     //
-    
+
     case 0xea:  // MSFT_OP_CONTEXT:
-    
+
         //
         // Ensure there is enough valid space for the full CONTEXT structure
         //
-        
+
         VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(CONTEXT), 16, &Status);
         if (!NT_SUCCESS(Status)) {
             return Status;
@@ -311,7 +311,7 @@ Return Value:
         //
         // Restore X0-X28, and D0-D31
         //
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X0);
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
@@ -322,7 +322,7 @@ Return Value:
 #endif
             SourceAddress += sizeof(ULONG_PTR);
         }
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, V);
         for (RegIndex = 0; RegIndex < 32; RegIndex++) {
             UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
@@ -334,35 +334,35 @@ Return Value:
         //
         // Restore SP, LR, PC, and the status registers
         //
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Cpsr);
         ContextRecord->Cpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fp);
         ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Lr);
         ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Sp);
         ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Pc);
         ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpcr);
         ContextRecord->Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, Fpsr);
         ContextRecord->Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
         //
         // Inherit the unwound-to-call flag from this context
         //
-        
+
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, ContextFlags);
         ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
-        ContextRecord->ContextFlags |= 
+        ContextRecord->ContextFlags |=
                         MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
         break;
 
@@ -391,10 +391,10 @@ Arguments:
 
     UnwindCodePtr - Supplies a pointer to the start of the unwind
         code sequence.
-    
+
     UnwindCodesEndPtr - Supplies a pointer to the byte immediately
         following the unwind code table, as described by the header.
-    
+
     IsEpilog - Specifies TRUE if the scope describes an epilog,
         or FALSE if it describes a prolog.
 
@@ -414,7 +414,7 @@ Return Value:
     // Iterate through the unwind codes until we hit an end marker.
     // While iterating, accumulate the total scope size.
     //
-    
+
     ScopeSize = 0;
     Opcode = 0;
     while (UnwindCodePtr < UnwindCodesEndPtr) {
@@ -426,16 +426,16 @@ Return Value:
         UnwindCodePtr += UnwindCodeSizeTable[Opcode];
         ScopeSize++;
     }
-    
+
     //
     // Epilogs have one extra instruction at the end that needs to be
     // accounted for.
     //
-    
+
     if (IsEpilog) {
         ScopeSize++;
     }
-    
+
     return ScopeSize;
 }
 
@@ -479,11 +479,11 @@ Return Value:
     ULONG_PTR CurAddress;
     ULONG RegIndex;
     NTSTATUS Status;
-    
+
     //
     // Compute the source address and validate it.
     //
-    
+
     CurAddress = ContextRecord->Sp;
     if (SpOffset >= 0) {
         CurAddress += SpOffset;
@@ -494,7 +494,7 @@ Return Value:
     if (Status != STATUS_SUCCESS) {
         return Status;
     }
-    
+
     //
     // Restore the registers
     //
@@ -511,7 +511,7 @@ Return Value:
     if (SpOffset < 0) {
         ContextRecord->Sp -= SpOffset;
     }
-    
+
     return STATUS_SUCCESS;
 }
 
@@ -559,7 +559,7 @@ Return Value:
     //
     // Compute the source address and validate it.
     //
-    
+
     CurAddress = ContextRecord->Sp;
     if (SpOffset >= 0) {
         CurAddress += SpOffset;
@@ -570,7 +570,7 @@ Return Value:
     if (Status != STATUS_SUCCESS) {
         return Status;
     }
-    
+
     //
     // Restore the registers
     //
@@ -583,7 +583,7 @@ Return Value:
     if (SpOffset < 0) {
         ContextRecord->Sp -= SpOffset;
     }
-    
+
     return STATUS_SUCCESS;
 }
 
@@ -608,8 +608,8 @@ Routine Description:
     is, and then executing unwind codes that map to the function's prolog
     or epilog behavior.
 
-    If a context pointers record is specified (in the UnwindParams), then 
-    the address where each nonvolatile register is restored from is recorded 
+    If a context pointers record is specified (in the UnwindParams), then
+    the address where each nonvolatile register is restored from is recorded
     in the appropriate element of the context pointers record.
 
 Arguments:
@@ -677,19 +677,19 @@ Return Value:
     //
 
     ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-    
+
     //
     // By default, unwinding is done by popping to the LR, then copying
     // that LR to the PC. However, some special opcodes require different
     // behavior.
     //
-    
+
     FinalPcFromLr = TRUE;
 
     //
     // Fetch the header word from the .xdata blob
     //
-    
+
     UnwindDataPtr = ImageBase + FunctionEntry->UnwindData;
     HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
     UnwindDataPtr += 4;
@@ -697,14 +697,14 @@ Return Value:
     //
     // Verify the version before we do anything else
     //
-    
+
     if (((HeaderWord >> 18) & 3) != 0) {
         return STATUS_UNWIND_UNSUPPORTED_VERSION;
     }
 
     FunctionLength = HeaderWord & 0x3ffff;
     OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
-    
+
     //
     // Determine the number of epilog scope records and the maximum number
     // of unwind codes.
@@ -730,11 +730,11 @@ Return Value:
     ExceptionHandler = NULL;
     ExceptionHandlerData = NULL;
     if ((HeaderWord & (1 << 20)) != 0) {
-        ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase + 
+        ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase +
                         MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords)));
         ExceptionHandlerData = (PVOID)(UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords + 1));
     }
-    
+
     //
     // Unless we are in a prolog/epilog, we execute the unwind codes
     // that immediately follow the epilog scope list.
@@ -743,7 +743,7 @@ Return Value:
     UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
     UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
     SkipWords = 0;
-    
+
     //
     // If we're near the start of the function, and this function has a prolog,
     // compute the size of the prolog from the unwind codes. If we're in the
@@ -751,10 +751,10 @@ Return Value:
     // need to skip some to account for partial execution of the prolog.
     //
     // N.B. As an optimization here, note that each byte of unwind codes can
-    //      describe at most one 32-bit instruction. Thus, the largest prologue 
-    //      that could possibly be described by UnwindWords (which is 4 * the 
-    //      number of unwind code bytes) is 4 * UnwindWords words. If 
-    //      OffsetInFunction is larger than this value, it is guaranteed to be 
+    //      describe at most one 32-bit instruction. Thus, the largest prologue
+    //      that could possibly be described by UnwindWords (which is 4 * the
+    //      number of unwind code bytes) is 4 * UnwindWords words. If
+    //      OffsetInFunction is larger than this value, it is guaranteed to be
     //      in the body of the function.
     //
 
@@ -768,7 +768,7 @@ Return Value:
             goto ExecuteCodes;
         }
     }
-    
+
     //
     // We're not in the prolog, now check to see if we are in the epilog.
     // In the simple case, the 'E' bit is set indicating there is a single
@@ -784,12 +784,12 @@ Return Value:
     //      to an epilog is (UnwindWords * 4 - UnwindIndex), thus further
     //      constraining the bounds of the epilog.
     //
-    
+
     if ((HeaderWord & (1 << 21)) != 0) {
         if (OffsetInFunction + (4 * UnwindWords - UnwindIndex) >= FunctionLength) {
             ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
             ScopeStart = FunctionLength - ScopeSize;
-            
+
             if (OffsetInFunction >= ScopeStart) {
                 UnwindCodePtr += UnwindIndex;
                 SkipWords = OffsetInFunction - ScopeStart;
@@ -798,7 +798,7 @@ Return Value:
             }
         }
     }
-    
+
     //
     // In the multiple-epilog case, we scan forward to see if we are within
     // shooting distance of any of the epilogs. If we are, we compute the
@@ -820,13 +820,13 @@ Return Value:
             if (OffsetInFunction < ScopeStart) {
                 break;
             }
-            
+
             UnwindIndex = HeaderWord >> 22;
             if (OffsetInFunction < ScopeStart + (4 * UnwindWords - UnwindIndex)) {
                 ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
 
                 if (OffsetInFunction < ScopeStart + ScopeSize) {
-                    
+
                     UnwindCodePtr += UnwindIndex;
                     SkipWords = OffsetInFunction - ScopeStart;
                     ExceptionHandler = NULL;
@@ -852,7 +852,7 @@ ExecuteCodes:
         UnwindCodePtr += UnwindCodeSizeTable[CurCode];
         SkipWords--;
     }
-    
+
     //
     // Now execute codes until we hit the end.
     //
@@ -860,14 +860,14 @@ ExecuteCodes:
     Status = STATUS_SUCCESS;
     AccumulatedSaveNexts = 0;
     while (UnwindCodePtr < UnwindCodesEndPtr && Status == STATUS_SUCCESS) {
-        
+
         CurCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
         UnwindCodePtr += 1;
-        
+
         //
         // alloc_s (000xxxxx): allocate small stack with size < 1024 (2^5 * 16)
         //
-        
+
         if (CurCode <= 0x1f) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -881,10 +881,10 @@ ExecuteCodes:
 
         else if (CurCode <= 0x3f) {
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        -8 * (CurCode & 0x1f), 
-                        19, 
-                        2 + 2 * AccumulatedSaveNexts, 
+                        ContextRecord,
+                        -8 * (CurCode & 0x1f),
+                        19,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -892,39 +892,39 @@ ExecuteCodes:
         //
         // save_fplr (01zzzzzz): save <r29,lr> pair at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0x7f) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        8 * (CurCode & 0x3f), 
-                        29, 
-                        2, 
+                        ContextRecord,
+                        8 * (CurCode & 0x3f),
+                        29,
+                        2,
                         UnwindParams);
         }
 
         //
         // save_fplr_x (10zzzzzz): save <r29,lr> pair at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
         //
-        
+
         else if (CurCode <= 0xbf) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        -8 * ((CurCode & 0x3f) + 1), 
-                        29, 
-                        2, 
+                        ContextRecord,
+                        -8 * ((CurCode & 0x3f) + 1),
+                        29,
+                        2,
                         UnwindParams);
         }
 
         //
         // alloc_m (11000xxx|xxxxxxxx): allocate large stack with size < 32k (2^11 * 16).
         //
-        
+
         else if (CurCode <= 0xc7) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -937,15 +937,15 @@ ExecuteCodes:
         //
         // save_regp (110010xx|xxzzzzzz): save r(19+#X) pair at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0xcb) {
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f), 
-                        19 + ((CurCode & 3) << 2) + (NextCode >> 6), 
-                        2 + 2 * AccumulatedSaveNexts, 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f),
+                        19 + ((CurCode & 3) << 2) + (NextCode >> 6),
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -953,15 +953,15 @@ ExecuteCodes:
         //
         // save_regp_x (110011xx|xxzzzzzz): save pair r(19+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
         //
-        
+
         else if (CurCode <= 0xcf) {
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        -8 * ((NextCode & 0x3f) + 1), 
-                        19 + ((CurCode & 3) << 2) + (NextCode >> 6), 
-                        2 + 2 * AccumulatedSaveNexts, 
+                        ContextRecord,
+                        -8 * ((NextCode & 0x3f) + 1),
+                        19 + ((CurCode & 3) << 2) + (NextCode >> 6),
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -969,7 +969,7 @@ ExecuteCodes:
         //
         // save_reg (110100xx|xxzzzzzz): save reg r(19+#X) at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0xd3) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -977,17 +977,17 @@ ExecuteCodes:
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f), 
-                        19 + ((CurCode & 3) << 2) + (NextCode >> 6), 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f),
+                        19 + ((CurCode & 3) << 2) + (NextCode >> 6),
                         1,
                         UnwindParams);
         }
 
         //
-        // save_reg_x (1101010x|xxxzzzzz): save reg r(19+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -256 
+        // save_reg_x (1101010x|xxxzzzzz): save reg r(19+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -256
         //
-        
+
         else if (CurCode <= 0xd5) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -995,9 +995,9 @@ ExecuteCodes:
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        -8 * ((NextCode & 0x1f) + 1), 
-                        19 + ((CurCode & 1) << 3) + (NextCode >> 5), 
+                        ContextRecord,
+                        -8 * ((NextCode & 0x1f) + 1),
+                        19 + ((CurCode & 1) << 3) + (NextCode >> 5),
                         1,
                         UnwindParams);
         }
@@ -1005,7 +1005,7 @@ ExecuteCodes:
         //
         // save_lrpair (1101011x|xxzzzzzz): save pair <r19+2*#X,lr> at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0xd7) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1013,16 +1013,16 @@ ExecuteCodes:
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f), 
-                        19 + 2 * (((CurCode & 1) << 2) + (NextCode >> 6)), 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f),
+                        19 + 2 * (((CurCode & 1) << 2) + (NextCode >> 6)),
                         1,
                         UnwindParams);
             if (Status == STATUS_SUCCESS) {
                 RtlpUnwindRestoreRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f) + 8, 
-                        30, 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f) + 8,
+                        30,
                         1,
                         UnwindParams);
             }
@@ -1031,14 +1031,14 @@ ExecuteCodes:
         //
         // save_fregp (1101100x|xxzzzzzz): save pair d(8+#X) at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0xd9) {
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f), 
-                        8 + ((CurCode & 1) << 2) + (NextCode >> 6), 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f),
+                        8 + ((CurCode & 1) << 2) + (NextCode >> 6),
                         2 + AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
@@ -1047,14 +1047,14 @@ ExecuteCodes:
         //
         // save_fregp_x (1101101x|xxzzzzzz): save pair d(8+#X), at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
         //
-        
+
         else if (CurCode <= 0xdb) {
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord, 
-                        -8 * ((NextCode & 0x3f) + 1), 
-                        8 + ((CurCode & 1) << 2) + (NextCode >> 6), 
+                        ContextRecord,
+                        -8 * ((NextCode & 0x3f) + 1),
+                        8 + ((CurCode & 1) << 2) + (NextCode >> 6),
                         2 + AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
@@ -1063,7 +1063,7 @@ ExecuteCodes:
         //
         // save_freg (1101110x|xxzzzzzz): save reg d(9+#X) at [sp+#Z*8], offset <= 504
         //
-        
+
         else if (CurCode <= 0xdd) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1071,17 +1071,17 @@ ExecuteCodes:
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord, 
-                        8 * (NextCode & 0x3f), 
-                        8 + ((CurCode & 1) << 2) + (NextCode >> 6), 
+                        ContextRecord,
+                        8 * (NextCode & 0x3f),
+                        8 + ((CurCode & 1) << 2) + (NextCode >> 6),
                         1,
                         UnwindParams);
         }
-        
+
         //
         // save_freg_x (11011110|xxxzzzzz): save reg d(8+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -256
         //
-        
+
         else if (CurCode == 0xde) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1089,9 +1089,9 @@ ExecuteCodes:
             NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
             Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord, 
-                        -8 * ((NextCode & 0x1f) + 1), 
-                        8 + (NextCode >> 5), 
+                        ContextRecord,
+                        -8 * ((NextCode & 0x1f) + 1),
+                        8 + (NextCode >> 5),
                         1,
                         UnwindParams);
         }
@@ -1099,7 +1099,7 @@ ExecuteCodes:
         //
         // alloc_l (11100000|xxxxxxxx|xxxxxxxx|xxxxxxxx): allocate large stack with size < 256M
         //
-        
+
         else if (CurCode == 0xe0) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1115,7 +1115,7 @@ ExecuteCodes:
         //
         // set_fp (11100001): set up r29: with: mov r29,sp
         //
-        
+
         else if (CurCode == 0xe1) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1126,7 +1126,7 @@ ExecuteCodes:
         //
         // add_fp (11100010|xxxxxxxx): set up r29 with: add r29,sp,#x*8
         //
-        
+
         else if (CurCode == 0xe2) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1138,7 +1138,7 @@ ExecuteCodes:
         //
         // nop (11100011): no unwind operation is required
         //
-        
+
         else if (CurCode == 0xe3) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1148,7 +1148,7 @@ ExecuteCodes:
         //
         // end (11100100): end of unwind code
         //
-        
+
         else if (CurCode == 0xe4) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1159,7 +1159,7 @@ ExecuteCodes:
         //
         // end_c (11100101): end of unwind code in current chained scope
         //
-        
+
         else if (CurCode == 0xe5) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1170,7 +1170,7 @@ ExecuteCodes:
         //
         // save_next (11100110): save next non-volatile Int or FP register pair.
         //
-        
+
         else if (CurCode == 0xe6) {
             AccumulatedSaveNexts++;
         }
@@ -1178,7 +1178,7 @@ ExecuteCodes:
         //
         // custom_0 (111010xx): restore custom structure
         //
-        
+
         else if (CurCode >= 0xe8 && CurCode <= 0xeb) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
@@ -1186,11 +1186,11 @@ ExecuteCodes:
             Status = RtlpUnwindCustom(ContextRecord, (BYTE) CurCode, UnwindParams);
             FinalPcFromLr = FALSE;
         }
-        
+
         //
         // Anything else is invalid
         //
-        
+
         else {
             return STATUS_UNWIND_INVALID_SEQUENCE;
         }
@@ -1207,7 +1207,7 @@ finished:
         // it was overwritten due to a special case custom unwinding operation.
         // Also set the establisher frame equal to the final stack pointer.
         //
-        
+
         if (FinalPcFromLr) {
             ContextRecord->Pc = ContextRecord->Lr;
         }
@@ -1218,11 +1218,11 @@ finished:
         }
         *HandlerData = ExceptionHandlerData;
     }
-    
+
     return Status;
 }
 
-NTSTATUS 
+NTSTATUS
 RtlpUnwindFunctionCompact(
     __in DWORD64 ControlPcRva,
     __in PT_RUNTIME_FUNCTION FunctionEntry,
@@ -1238,12 +1238,12 @@ RtlpUnwindFunctionCompact(
 Routine Description:
 
     This function virtually unwinds the specified function by parsing the
-    compact .pdata record to determine where in the function the provided 
+    compact .pdata record to determine where in the function the provided
     ControlPc is, and then executing a standard, well-defined set of
     operations.
 
-    If a context pointers record is specified (in the UnwindParams), then 
-    the address where each nonvolatile register is restored from is recorded 
+    If a context pointers record is specified (in the UnwindParams), then
+    the address where each nonvolatile register is restored from is recorded
     in the appropriate element of the context pointers record.
 
 Arguments:
@@ -1307,13 +1307,13 @@ Return Value:
 
     UnwindData = FunctionEntry->UnwindData;
     Status = STATUS_SUCCESS;
-    
+
     //
     // Compact records always describe an unwind to a call.
     //
 
     ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-    
+
     //
     // Extract the basic information about how to do a full unwind.
     //
@@ -1332,9 +1332,9 @@ Return Value:
     if (Cr == 2) {
         return STATUS_UNWIND_INVALID_SEQUENCE;
     }
-    
+
     //
-    // Determine the size of the locals 
+    // Determine the size of the locals
     //
 
     IntSize = RegI * 8;
@@ -1349,21 +1349,21 @@ Return Value:
     LocalSize = 16 * FrameSize - RegSize;
 
     //
-    // If we're near the start of the function (within 17 words), 
+    // If we're near the start of the function (within 17 words),
     // see if we are within the prolog.
     //
     // N.B. If the low 2 bits of the UnwindData are 2, then we have
     // no prolog.
     //
-    
+
     OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
     OffsetInScope = 0;
     if (OffsetInFunction < 17 && Flag != 2) {
-    
+
         //
         // Compute sizes for each opcode in the prolog.
         //
-        
+
         IRegOpcodes = (IntSize + 8) / 16;
         FRegOpcodes = (FloatSize + 8) / 16;
         HOpcodes = 4 * HBit;
@@ -1388,15 +1388,15 @@ Return Value:
     }
 
     //
-    // If we're near the end of the function (within 15 words), see if 
+    // If we're near the end of the function (within 15 words), see if
     // we are within the epilog.
     //
     // N.B. If the low 2 bits of the UnwindData are 2, then we have
     // no epilog.
     //
-    
+
     if (OffsetInScope == 0 && OffsetInFunction + 15 >= FunctionLength && Flag != 2) {
-    
+
         //
         // Compute sizes for each opcode in the epilog.
         //
@@ -1424,16 +1424,16 @@ Return Value:
 
     //
     // Process operations backwards, in the order: stack/frame deallocation,
-    // VFP register popping, integer register popping, parameter home 
+    // VFP register popping, integer register popping, parameter home
     // area recovery.
     //
     // First case is simple: we process everything with no regard for
     // the current offset within the scope.
     //
-    
+
     Status = STATUS_SUCCESS;
     if (OffsetInScope == 0) {
-    
+
         if (Cr == 3) {
             Status = RtlpUnwindRestoreRegisterRange(ContextRecord, 0, 29, 2, UnwindParams);
         }
@@ -1442,7 +1442,7 @@ Return Value:
         if (RegF != 0 && Status == STATUS_SUCCESS) {
             Status = RtlpUnwindRestoreFpRegisterRange(ContextRecord, IntSize, 8, RegF + 1, UnwindParams);
         }
-        
+
         if (Cr == 1 && Status == STATUS_SUCCESS) {
             Status = RtlpUnwindRestoreRegisterRange(ContextRecord, IntSize - 8, 30, 1, UnwindParams);
         }
@@ -1456,7 +1456,7 @@ Return Value:
     // Second case is more complex: we must step along each operation
     // to ensure it should be executed.
     //
-    
+
     else {
 
         CurrentOffset = 0;
@@ -1475,11 +1475,11 @@ Return Value:
             }
             LocalSize -= Count;
         }
-        
+
         if (HBit != 0) {
             CurrentOffset += 4;
         }
-        
+
         if (RegF != 0 && Status == STATUS_SUCCESS) {
             RegF++;
             while (RegF != 0) {
@@ -1487,15 +1487,15 @@ Return Value:
                 RegF -= Count;
                 if (CurrentOffset++ >= OffsetInScope) {
                     Status = RtlpUnwindRestoreFpRegisterRange(
-                               ContextRecord, 
-                               (RegF == 0 && RegI == 0) ? (-(LONG)RegSize) : (IntSize + 8 * RegF), 
-                               8 + RegF, 
-                               Count, 
+                               ContextRecord,
+                               (RegF == 0 && RegI == 0) ? (-(LONG)RegSize) : (IntSize + 8 * RegF),
+                               8 + RegF,
+                               Count,
                                UnwindParams);
                 }
             }
         }
-        
+
         if (Cr == 1 && Status == STATUS_SUCCESS) {
             if (RegI % 2 == 0) {
                 if (CurrentOffset++ >= OffsetInScope) {
@@ -1511,16 +1511,16 @@ Return Value:
                 }
             }
         }
-        
+
         while (RegI != 0 && Status == STATUS_SUCCESS) {
             Count = 2 - (RegI & 1);
             RegI -= Count;
             if (CurrentOffset++ >= OffsetInScope) {
                 Status = RtlpUnwindRestoreRegisterRange(
-                            ContextRecord, 
-                            (RegI == 0) ? (-(LONG)RegSize) : (8 * RegI), 
-                            19 + RegI, 
-                            Count, 
+                            ContextRecord,
+                            (RegI == 0) ? (-(LONG)RegSize) : (8 * RegI),
+                            19 + RegI,
+                            Count,
                             UnwindParams);
             }
         }
@@ -1529,7 +1529,7 @@ Return Value:
     //
     // If we succeeded, post-process the results a bit
     //
-    
+
     if (Status == STATUS_SUCCESS) {
 
         ContextRecord->Pc = ContextRecord->Lr;
@@ -1557,12 +1557,12 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 
     DWORD64 startingPc = pContext->Pc;
     DWORD64 startingSp = pContext->Sp;
-    
+
     T_RUNTIME_FUNCTION Rfe;
     if (FAILED(GetFunctionEntry(pContext->Pc, &Rfe, sizeof(Rfe))))
         return FALSE;
 
-    if ((Rfe.UnwindData & 3) != 0) 
+    if ((Rfe.UnwindData & 3) != 0)
     {
         hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
                                         &Rfe,
@@ -1597,7 +1597,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 {
     OOPStackUnwinderArm64 unwinder;
     BOOL res = unwinder.Unwind(pContext);
-    
+
     if (res && pContextPointers)
     {
         for (int i = 0; i < 12; i++)
@@ -1605,7 +1605,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
             *(&pContextPointers->X19 + i) = &pContext->X19 + i;
         }
     }
-    
+
     return res;
 }
 
@@ -1627,7 +1627,7 @@ RtlVirtualUnwind(
 
     DWORD64 startingPc = ControlPc;
     DWORD64 startingSp = ContextRecord->Sp;
-    
+
     T_RUNTIME_FUNCTION rfe;
 
     rfe.BeginAddress = FunctionEntry->BeginAddress;
@@ -1636,7 +1636,7 @@ RtlVirtualUnwind(
     ARM64_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
 
-    if ((rfe.UnwindData & 3) != 0) 
+    if ((rfe.UnwindData & 3) != 0)
     {
         hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
                                         &rfe,

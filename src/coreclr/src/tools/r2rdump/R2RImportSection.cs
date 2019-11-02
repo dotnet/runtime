@@ -80,7 +80,7 @@ namespace R2RDump
         public CorCompileImportType Type { get; set; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public byte EntrySize { get; set; }
 
@@ -98,18 +98,18 @@ namespace R2RDump
         public int AuxiliaryDataSize { get; set; }
 
         public R2RImportSection(
-            int index, 
-            R2RReader reader, 
-            int rva, 
-            int size, 
-            CorCompileImportFlags flags, 
-            byte type, 
-            byte entrySize, 
-            int signatureRVA, 
-            List<ImportSectionEntry> entries, 
-            int auxDataRVA, 
-            int auxDataOffset, 
-            Machine machine, 
+            int index,
+            R2RReader reader,
+            int rva,
+            int size,
+            CorCompileImportFlags flags,
+            byte type,
+            byte entrySize,
+            int signatureRVA,
+            List<ImportSectionEntry> entries,
+            int auxDataRVA,
+            int auxDataOffset,
+            Machine machine,
             ushort majorVersion)
         {
             Index = index;

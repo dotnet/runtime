@@ -124,7 +124,7 @@ could update these locations in place, but that is not recommended since they ar
 
 ## (Optional) Confirm that the app used your new runtime
 
-Congratulations, you have successfully used your newly built runtime. 
+Congratulations, you have successfully used your newly built runtime.
 
 As a hint you could add some code like:
 ```
@@ -151,7 +151,7 @@ Make sure you are running the exe directly. If you use `dotnet run` it will over
 
 ### If you get a consistency check assertion failure
 
-Something like this happens if you copied coreclr.dll but not System.Private.Corelib.dll as well. 
+Something like this happens if you copied coreclr.dll but not System.Private.Corelib.dll as well.
 
 ```
 Assert failure(PID 13452 [0x0000348c], Thread: 10784 [0x2a20]): Consistency check failed: AV in clr at this callstack:

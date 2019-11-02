@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: DispParamMarshaler.cpp
-// 
+//
 
 //
 // Implementation of dispatch parameter marshalers.
-// 
+//
 
 
 #include "common.h"
@@ -101,9 +101,9 @@ void DispParamOleColorMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
     ConvertOleColorToSystemColor(OleColor, &MngColor);
 
     // Box the System.Drawing.Color value class and give back the boxed object.
-    TypeHandle hndColorType = 
+    TypeHandle hndColorType =
         GetThread()->GetDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
-    
+
     *pDestObj = hndColorType.GetMethodTable()->Box(&MngColor);
 }
 
@@ -117,7 +117,7 @@ void DispParamOleColorMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARI
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-    
+
     // Clear the destination VARIANT.
     SafeVariantClear(pDestVar);
 
@@ -153,7 +153,7 @@ void DispParamErrorMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-    
+
     // Convert the managed decimal to a VARIANT containing a VT_I4 or VT_UI4.
     OleVariant::MarshalOleVariantForObject(pSrcObj, pDestVar);
     _ASSERTE(V_VT(pDestVar) == VT_I4 || V_VT(pDestVar) == VT_UI4);
@@ -206,11 +206,11 @@ void DispParamInterfaceMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VAR
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-    
+
     SafeVariantClear(pDestVar);
     if (m_pIntfMT != NULL)
     {
-        V_UNKNOWN(pDestVar) = GetComIPFromObjectRef(pSrcObj, m_pIntfMT);          
+        V_UNKNOWN(pDestVar) = GetComIPFromObjectRef(pSrcObj, m_pIntfMT);
     }
     else
     {
@@ -232,13 +232,13 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
         PRECONDITION(CheckPointer(pDestObj) && *pDestObj == NULL);
     }
     CONTRACTL_END;
-    
+
     VARTYPE vt = m_ElementVT;
     MethodTable *pElemMT = m_pElementMT;
 
     // Validate the OLE variant type.
     if ((V_VT(pSrcVar) & VT_ARRAY) == 0)
-        COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);   
+        COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
 
     // Retrieve the SAFEARRAY pointer.
     SAFEARRAY *pSafeArray = V_VT(pSrcVar) & VT_BYREF ? *V_ARRAYREF(pSrcVar) : V_ARRAY(pSrcVar);
@@ -390,7 +390,7 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     if (!pRecInfo)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
 
-    // Make sure the GUID of the IRecordInfo matches the guid of the 
+    // Make sure the GUID of the IRecordInfo matches the guid of the
     // parameter type.
     {
         GCX_PREEMP();
@@ -438,7 +438,7 @@ void DispParamRecordMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-    
+
     // Clear the destination VARIANT.
     SafeVariantClear(pDestVar);
 
@@ -462,14 +462,14 @@ void DispParamDelegateMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
     CONTRACTL_END;
 
     void *pDelegate = NULL;
-    
+
     switch(V_VT(pSrcVar))
     {
 #ifdef BIT64
         case VT_I8:
             pDelegate = reinterpret_cast<void*>(static_cast<INT_PTR>(V_I8(pSrcVar)));
             break;
-            
+
         case VT_UI8:
             pDelegate = reinterpret_cast<void*>(static_cast<UINT_PTR>(V_UI8(pSrcVar)));
             break;
@@ -481,10 +481,10 @@ void DispParamDelegateMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
         case VT_UI4:
             pDelegate = reinterpret_cast<void*>(static_cast<UINT_PTR>(V_UI4(pSrcVar)));
             break;
-#endif              
+#endif
         default :
             COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
-        
+
     }
 
     if (pDelegate == NULL)
@@ -503,10 +503,10 @@ void DispParamDelegateMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARI
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-    
+
     // Clear the destination VARIANT.
     SafeVariantClear(pDestVar);
-    
+
     // Convert to VARIANT
 #ifdef BIT64
     V_VT(pDestVar) = VT_I8;
@@ -572,7 +572,7 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
         PRECONDITION(CheckPointer(pDestVar));
     }
     CONTRACTL_END;
-  
+
     SafeComHolder<IUnknown> pUnk = NULL;
     SafeComHolder<IDispatch> pDisp = NULL;
 
@@ -594,7 +594,7 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
         LogInteropQI(pUnk, IID_IDispatch, hr, "DispParamCustomMarshaler::MarshalManagedToNative");
         if (SUCCEEDED(hr))
         {
-            // Release the IUnknown pointer since we will put the IDispatch pointer in 
+            // Release the IUnknown pointer since we will put the IDispatch pointer in
             // the VARIANT.
             ULONG cbRef = SafeRelease(pUnk);
             pUnk.SuppressRelease();

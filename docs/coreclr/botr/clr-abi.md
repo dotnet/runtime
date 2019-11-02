@@ -87,7 +87,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 The convention is that any method with an InlinedCallFrame (either an IL stub or a normal method with an inlined PInvoke) saves/restores all non-volatile integer registers in its prolog/epilog respectively. This is done so that the InlinedCallFrame can just contain a return address, a stack pointer and a frame pointer. Then using just those three it can start a full stack walk using the normal RtlVirtualUnwind.
 
-When encountering a PInvoke, the JIT will query the VM if the GC transition should be suppressed. Suppression of the GC transition is indicated by the addition of an attribute on the PInvoke definition. If the VM indicates the GC transition is to be suppressed, the PInvoke frame will be omitted in either the IL stub or inlined scenario and a GC Poll will be inserted near the unmanaged call site. If an enclosing function contains more than one inlined PInvoke but not all have requested a suppression of the GC transition a PInvoke frame will still be constructed for the other inlined PInvokes. 
+When encountering a PInvoke, the JIT will query the VM if the GC transition should be suppressed. Suppression of the GC transition is indicated by the addition of an attribute on the PInvoke definition. If the VM indicates the GC transition is to be suppressed, the PInvoke frame will be omitted in either the IL stub or inlined scenario and a GC Poll will be inserted near the unmanaged call site. If an enclosing function contains more than one inlined PInvoke but not all have requested a suppression of the GC transition a PInvoke frame will still be constructed for the other inlined PInvokes.
 
 For AMD64, a method with an InlinedCallFrame must use RBP as the frame register.
 
@@ -147,7 +147,7 @@ For all platforms except Windows/x86, all managed EH handlers (finally, fault, f
 
 The only way to enter a handler funclet is via a call. In the case of an exception, the call is from the VM's EH subsystem as part of exception dispatch/unwind. In the non-exceptional case, this is called local unwind or a non-local exit. In C# this is accomplished by simply falling-through/out of a try body or an explicit goto. In IL this is always accomplished via a LEAVE opcode, within a try body, targeting an IL offset outside the try body. In such cases the call is from the JITed code of the parent function.
 
-For Windows/x86, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested. 
+For Windows/x86, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested.
 
 ## Cloned finallys
 
@@ -421,7 +421,7 @@ The ShadowSP slots are required to live in a very particular location, reported 
 4. 1 slot for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG -- assumed for any function with EH, to avoid adding a flag to the GC info about whether it exists or not.
 5. ShadowSP slots
 
-(note, these don't have to be in this order for this calculation, but they possibly do need to be in this order for other calculations.) See also `GetEndShadowSPSlotsOffset()`. 
+(note, these don't have to be in this order for this calculation, but they possibly do need to be in this order for other calculations.) See also `GetEndShadowSPSlotsOffset()`.
 
 The VM walks the ShadowSP slots in the function `GetHandlerFrameInfo()`, and sets it in various functions such as `EECodeManager::FixContext()`.
 
@@ -671,7 +671,7 @@ The general rules outlined in the System V x86_64 ABI (described at http://www.x
 1. The hidden argument for by-value passed structs is always after the "this" parameter (if there is one). This is a difference with the System V ABI and affects only the internal JIT calling conventions. For PInvoke calls the hidden argument is always the first parameter since there is no "this" parameter in this case.
 2. Managed structs that have no fields are always passed by-value on the stack.
 3. The JIT proactively generates frame register frames (with `RBP` as a frame register) in order to aid the native OS tooling for stack unwinding and the like.
-4. All the other internal VM contracts for PInvoke, EH, and generic support remains in place. Please see the relevant sections above for more details. Note, however, that the registers used are different on System V due to the different calling convention. For example, the integer argument registers are, in order, RDI, RSI, RDX, RCX, R8, and R9. Thus, where the first argument (typically, the "this" pointer) on Windows AMD64 goes in RCX, on System V it goes in RDI, and so forth.   
+4. All the other internal VM contracts for PInvoke, EH, and generic support remains in place. Please see the relevant sections above for more details. Note, however, that the registers used are different on System V due to the different calling convention. For example, the integer argument registers are, in order, RDI, RSI, RDX, RCX, R8, and R9. Thus, where the first argument (typically, the "this" pointer) on Windows AMD64 goes in RCX, on System V it goes in RDI, and so forth.
 5. Structs with explicit layout are always passed by value on the stack.
 6. The following table describes register usage according to the System V x86_64 ABI
 

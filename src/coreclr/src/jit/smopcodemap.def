@@ -8,7 +8,7 @@
  **                                                                                       **
  *******************************************************************************************/
 
-//                                                                            
+//
 //  EE opcode name                        EE opcode string    State machine opcode name
 // -------------------------------------------------------------------------------------------------------------------------------------------------------
 OPCODEMAP(CEE_NOP,                        "nop",              SM_NOSHOW)
@@ -311,10 +311,10 @@ OPCODEMAP(CEE_MACRO_END,                  "endmac",           SM_UNUSED)
 OPCODEMAP(CEE_CODE_LABEL,                 "codelabel",        SM_UNUSED)
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// 
+//
 // New opcodes added just for the state machine.
-// 
-// Do NOT uncomment or delete the following lines. 
+//
+// Do NOT uncomment or delete the following lines.
 // They are there for makeSmOpcodeDef.pl to automatically generate smopcode.def
 // that contains these new SM_ opcodes.
 //

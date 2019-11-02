@@ -31,7 +31,7 @@ namespace Generics
     {
         STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_COMINTEROP 
+#ifdef FEATURE_COMINTEROP
         WORD wNumInterfaces = static_cast<WORD>(pOldMT->GetNumInterfaces());
 
         InterfaceInfo_t * pOldIMap = (InterfaceInfo_t *)pOldMT->GetInterfaceMap();
@@ -40,7 +40,7 @@ namespace Generics
 
         // Generic WinRT delegates expose a class interface and need the CCW template
         BOOL fHasCCWTemplate = FALSE;
-    
+
         if (!fNewMTContainsGenericVariables)
         {
             if (pOldMT->IsInterface())
@@ -50,11 +50,11 @@ namespace Generics
             else if (pOldMT->IsDelegate())
             {
                 fHasGuidInfo = (pOldMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pOldMT, WinMDAdapter::WinMDTypeKind_PDelegate));
-                
+
                 // Generic WinRT delegates expose a class interface and need a CCW template
                 fHasCCWTemplate = fHasGuidInfo;
             }
-            
+
             if (!fHasCCWTemplate)
             {
                 if (pOldMT->IsInterface())
@@ -75,7 +75,7 @@ namespace Generics
                         // CCW template as the one on EEClass would be shared and hence useless.
                         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
                         MethodTable *pItfMT = pOldIMap[iItf].GetApproxMethodTable(pOldMT->GetLoaderModule());
-                        if (pItfMT->HasInstantiation() && 
+                        if (pItfMT->HasInstantiation() &&
                             (pItfMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pItfMT, WinMDAdapter::WinMDTypeKind_PInterface)))
                         {
                             fHasCCWTemplate = TRUE;

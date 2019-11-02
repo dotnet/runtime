@@ -13,7 +13,7 @@
 
 // TODO: Ideally we'd like to remove this class and don't do any process related book keeping in DBI.
 
-// This is a registry of all the processes a debugger knows about, different components call it in order to  
+// This is a registry of all the processes a debugger knows about, different components call it in order to
 // obtain right instance of DbgTransportSession for a given PID. It keeps list of processes and transports for them.
 // It also handles things like creating and killing a process.
 
@@ -22,14 +22,14 @@
 // * CreateProcess(&pid)
 // * On Mac, Optionally obtain an application group ID from a user
 // * Create a ProcessDescriptor pd
-// * GetTransportForProcess(&pd, &transport) 
+// * GetTransportForProcess(&pd, &transport)
 // * ReleaseTransport(transport)
 // * KillProcess(pid)
 
 // Attach to an existing process:
 // * Obtain pid (and optionally application group ID on Mac) from a user
 // * Create a ProcessDescriptor pd
-// * GetTransportForProcess(&pd, &transport) 
+// * GetTransportForProcess(&pd, &transport)
 // * ReleaseTransport(transport)
 
 class DbgTransportTarget
@@ -56,7 +56,7 @@ public:
                           LPVOID lpEnvironment,
                           LPCWSTR lpCurrentDirectory,
                           LPSTARTUPINFOW lpStartupInfo,
-                          LPPROCESS_INFORMATION lpProcessInformation);    
+                          LPPROCESS_INFORMATION lpProcessInformation);
 
     // Kill the process identified by PID.
     void KillProcess(DWORD dwPID);

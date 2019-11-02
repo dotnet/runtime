@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 ////////////////////////////////////////////////////////////////////////////////
 // COMDynamic.h
-//  This module defines the native methods that are used for Dynamic IL generation  
+//  This module defines the native methods that are used for Dynamic IL generation
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -37,21 +37,21 @@ struct ExceptionInstance {
 
 
 //*************************************************************
-// 
+//
 // Defining a type into metadata of this dynamic module
 //
 //*************************************************************
 INT32 QCALLTYPE COMDynamicWrite::DefineGenericParam(QCall::ModuleHandle pModule,
-                                                    LPCWSTR wszFullName, 
-                                                    INT32 tkParent, 
-                                                    INT32 attributes, 
-                                                    INT32 position, 
+                                                    LPCWSTR wszFullName,
+                                                    INT32 tkParent,
+                                                    INT32 attributes,
+                                                    INT32 position,
                                                     INT32 * pConstraintTokens)
 {
     QCALL_CONTRACT;
-    
-    mdTypeDef           classE = mdTokenNil; 
-    
+
+    mdTypeDef           classE = mdTokenNil;
+
     BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
@@ -62,19 +62,19 @@ INT32 QCALLTYPE COMDynamicWrite::DefineGenericParam(QCall::ModuleHandle pModule,
 
     END_QCALL;
 
-    return (INT32)classE;    
+    return (INT32)classE;
 }
 
 INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
-                                            LPCWSTR wszFullName, 
-                                            INT32 tkParent,                               
+                                            LPCWSTR wszFullName,
+                                            INT32 tkParent,
                                             INT32 attributes,
                                             INT32 tkEnclosingType,
                                             INT32 * pInterfaceTokens)
 {
     QCALL_CONTRACT;
 
-    mdTypeDef           classE = mdTokenNil; 
+    mdTypeDef           classE = mdTokenNil;
 
     BEGIN_QCALL;
 
@@ -86,8 +86,8 @@ INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
     if (RidFromToken(tkEnclosingType))
     {
         // defining nested type
-        hr = pRCW->GetEmitter()->DefineNestedType(wszFullName, 
-                                                  attributes, 
+        hr = pRCW->GetEmitter()->DefineNestedType(wszFullName,
+                                                  attributes,
                                                   tkParent == 0 ? mdTypeRefNil : tkParent,
                                                   (mdToken *)pInterfaceTokens,
                                                   tkEnclosingType,
@@ -103,14 +103,14 @@ INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
                                                &classE);
     }
 
-    if (hr == META_S_DUPLICATE) 
+    if (hr == META_S_DUPLICATE)
     {
         COMPlusThrow(kArgumentException, W("Argument_DuplicateTypeName"));
-    } 
+    }
 
     if (FAILED(hr)) {
         _ASSERTE(hr == E_OUTOFMEMORY || !"DefineTypeDef Failed");
-        COMPlusThrowHR(hr);    
+        COMPlusThrowHR(hr);
     }
 
     AllocMemTracker amTracker;
@@ -128,12 +128,12 @@ INT32 QCALLTYPE COMDynamicWrite::DefineType(QCall::ModuleHandle pModule,
 void QCALLTYPE COMDynamicWrite::SetParentType(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkParent)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     IfFailThrow( pRCW->GetEmitHelper()->SetTypeParent(tdType, tkParent) );
 
     END_QCALL;
@@ -143,12 +143,12 @@ void QCALLTYPE COMDynamicWrite::SetParentType(QCall::ModuleHandle pModule, INT32
 void QCALLTYPE COMDynamicWrite::AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     IfFailThrow( pRCW->GetEmitHelper()->AddInterfaceImpl(tdType, tkInterface) );
 
     END_QCALL;
@@ -158,15 +158,15 @@ void QCALLTYPE COMDynamicWrite::AddInterfaceImpl(QCall::ModuleHandle pModule, IN
 INT32 QCALLTYPE COMDynamicWrite::DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
-    
+
     mdMethodDef memberE = mdTokenNil;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
-    // Define the Method    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
+    // Define the Method
     IfFailThrow( pRCW->GetEmitter()->DefineMethodSpec(tkParent,         //ParentTypeDef
                                                       (PCCOR_SIGNATURE)pSignature, //Blob value of a COM+ signature
                                                       sigLength,            //Size of the signature blob
@@ -180,15 +180,15 @@ INT32 QCALLTYPE COMDynamicWrite::DefineMethodSpec(QCall::ModuleHandle pModule, I
 INT32 QCALLTYPE COMDynamicWrite::DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes)
 {
     QCALL_CONTRACT;
-    
+
     mdMethodDef memberE = mdTokenNil;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
-    // Define the Method    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
+    // Define the Method
     IfFailThrow( pRCW->GetEmitter()->DefineMethod(tkParent,        //ParentTypeDef
                                                   wszName,         //Name of Member
                                                   attributes,               //Member Attributes (public, etc);
@@ -212,7 +212,7 @@ INT32 QCALLTYPE COMDynamicWrite::DefineMethod(QCall::ModuleHandle pModule, INT32
 mdFieldDef QCALLTYPE COMDynamicWrite::DefineField(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attr)
 {
     QCALL_CONTRACT;
-    
+
     mdFieldDef retVal = mdTokenNil;
 
     BEGIN_QCALL;
@@ -221,7 +221,7 @@ mdFieldDef QCALLTYPE COMDynamicWrite::DefineField(QCall::ModuleHandle pModule, I
     _ASSERTE(pRCW);
 
     //Emit the field.
-    IfFailThrow( pRCW->GetEmitter()->DefineField(tkParent, 
+    IfFailThrow( pRCW->GetEmitter()->DefineField(tkParent,
                                                  wszName, attr,
                                                  (PCCOR_SIGNATURE)pSignature, sigLength,
                                                  ELEMENT_TYPE_VOID, NULL,
@@ -290,15 +290,15 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
                                             INT32 cbBody,
                                             LPCBYTE pLocalSig,
                                             INT32 sigLength,
-                                            UINT16 maxStackSize,                                        
+                                            UINT16 maxStackSize,
                                             ExceptionInstance * pExceptions,
                                             INT32 numExceptions,
                                             INT32 * pTokenFixups,
                                             INT32 numTokenFixups)
 {
     QCALL_CONTRACT;
-    
-    BEGIN_QCALL;    
+
+    BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
@@ -309,34 +309,34 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
     _ASSERTE(*pcSig == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
 
     mdSignature pmLocalSigToken;
-    if (sigLength==2 && pcSig[0]==0 && pcSig[1]==0) 
-    { 
+    if (sigLength==2 && pcSig[0]==0 && pcSig[1]==0)
+    {
         //This is an empty local variable sig
         pmLocalSigToken=0;
-    } 
-    else 
+    }
+    else
     {
         IfFailThrow(pRCW->GetEmitter()->GetTokenFromSig( pcSig, sigLength, &pmLocalSigToken));
     }
 
-    COR_ILMETHOD_FAT fatHeader; 
+    COR_ILMETHOD_FAT fatHeader;
 
     // set fatHeader.Flags to CorILMethod_InitLocals if user wants to zero init the stack frame.
     //
     fatHeader.SetFlags(fIsInitLocal ? CorILMethod_InitLocals : 0);
     fatHeader.SetMaxStack(maxStackSize);
     fatHeader.SetLocalVarSigTok(pmLocalSigToken);
-    fatHeader.SetCodeSize(cbBody);  
-    bool moreSections            = (numExceptions != 0);    
+    fatHeader.SetCodeSize(cbBody);
+    bool moreSections            = (numExceptions != 0);
 
-    unsigned codeSizeAligned     = fatHeader.GetCodeSize();  
-    if (moreSections)   
-        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to insure EH section aligned 
-    unsigned headerSize          = COR_ILMETHOD::Size(&fatHeader, numExceptions != 0);    
+    unsigned codeSizeAligned     = fatHeader.GetCodeSize();
+    if (moreSections)
+        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to insure EH section aligned
+    unsigned headerSize          = COR_ILMETHOD::Size(&fatHeader, numExceptions != 0);
 
     //Create the exception handlers.
     CQuickArray<COR_ILMETHOD_SECT_EH_CLAUSE_FAT> clauses;
-    if (numExceptions > 0) 
+    if (numExceptions > 0)
     {
         clauses.AllocThrows(numExceptions);
 
@@ -361,21 +361,21 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
             }
         }
     }
-    
+
     unsigned ehSize          = ExceptionHandlingSize(numExceptions, clauses.Ptr());
-    S_UINT32 totalSizeSafe   = S_UINT32(headerSize) + S_UINT32(codeSizeAligned) + S_UINT32(ehSize); 
+    S_UINT32 totalSizeSafe   = S_UINT32(headerSize) + S_UINT32(codeSizeAligned) + S_UINT32(ehSize);
     if (totalSizeSafe.IsOverflow())
         COMPlusThrowOM();
     UINT32 totalSize = totalSizeSafe.Value();
     ICeeGen* pGen = pRCW->GetCeeGen();
     BYTE* buf = NULL;
     ULONG methodRVA;
-    pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA);    
+    pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA);
     if (buf == NULL)
         COMPlusThrowOM();
-        
+
     _ASSERTE(buf != NULL);
-    _ASSERTE((((size_t) buf) & 3) == 0);   // header is dword aligned  
+    _ASSERTE((((size_t) buf) & 3) == 0);   // header is dword aligned
 
 #ifdef _DEBUG
     BYTE* endbuf = &buf[totalSize];
@@ -383,10 +383,10 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
 
     BYTE * startBuf = buf;
 
-    // Emit the header  
-    buf += COR_ILMETHOD::Emit(headerSize, &fatHeader, moreSections, buf);   
+    // Emit the header
+    buf += COR_ILMETHOD::Emit(headerSize, &fatHeader, moreSections, buf);
 
-    //Emit the code    
+    //Emit the code
     //The fatHeader.CodeSize is a workaround to see if we have an interface or an
     //abstract method.  Force enough verification in native to ensure that
     //this is true.
@@ -394,8 +394,8 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
         memcpy(buf, pBody, fatHeader.GetCodeSize());
     }
     buf += codeSizeAligned;
-        
-    // Emit the eh  
+
+    // Emit the eh
     CQuickArray<ULONG> ehTypeOffsets;
     if (numExceptions > 0)
     {
@@ -408,11 +408,11 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
         // beginning of eh section.
         buf += COR_ILMETHOD_SECT_EH::Emit(ehSize, numExceptions, clauses.Ptr(),
                                           false, buf, ehTypeOffsets.Ptr());
-    }   
-    _ASSERTE(buf == endbuf);    
+    }
+    _ASSERTE(buf == endbuf);
 
     //Get the IL Section.
-    HCEESECTION ilSection;    
+    HCEESECTION ilSection;
     IfFailThrow(pGen->GetIlSection(&ilSection));
 
     // Token Fixup data...
@@ -460,12 +460,12 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
 void QCALLTYPE COMDynamicWrite::TermCreateClass(QCall::ModuleHandle pModule, INT32 tk, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
-    
+
     TypeHandle typeHnd;
 
     BEGIN_QCALL;
-    
-    _ASSERTE(pModule->GetReflectionModule()->GetClassWriter()); 
+
+    _ASSERTE(pModule->GetReflectionModule()->GetClassWriter());
 
     // Use the same service, regardless of whether we are generating a normal
     // class, or the special class for the module that holds global functions
@@ -502,14 +502,14 @@ void QCALLTYPE COMDynamicWrite::SetPInvokeData(QCall::ModuleHandle pModule, LPCW
 
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
 
     mdModuleRef mrImportDll = mdTokenNil;
     IfFailThrow(pRCW->GetEmitter()->DefineModuleRef(wszDllName, &mrImportDll));
 
     IfFailThrow(pRCW->GetEmitter()->DefinePinvokeMap(
-        token,                        // the method token 
+        token,                        // the method token
         linkFlags,                      // the mapping flags
         wszFunctionName,                // function name
         mrImportDll));
@@ -528,14 +528,14 @@ void QCALLTYPE COMDynamicWrite::SetPInvokeData(QCall::ModuleHandle pModule, LPCW
 INT32 QCALLTYPE COMDynamicWrite::DefineProperty(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
-    
-    mdProperty      pr = mdTokenNil; 
-    
+
+    mdProperty      pr = mdTokenNil;
+
     BEGIN_QCALL;
-    
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Define the Property
     IfFailThrow(pRCW->GetEmitter()->DefineProperty(
             tkParent,                       // ParentTypeDef
@@ -565,14 +565,14 @@ INT32 QCALLTYPE COMDynamicWrite::DefineProperty(QCall::ModuleHandle pModule, INT
 INT32 QCALLTYPE COMDynamicWrite::DefineEvent(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, INT32 attr, INT32 tkEventType)
 {
     QCALL_CONTRACT;
-    
-    mdProperty      ev = mdTokenNil; 
+
+    mdProperty      ev = mdTokenNil;
 
     BEGIN_QCALL;
-    
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Define the Event
     IfFailThrow(pRCW->GetEmitHelper()->DefineEventHelper(
             tkParent,               // ParentTypeDef
@@ -595,12 +595,12 @@ INT32 QCALLTYPE COMDynamicWrite::DefineEvent(QCall::ModuleHandle pModule, INT32 
 void QCALLTYPE COMDynamicWrite::DefineMethodSemantics(QCall::ModuleHandle pModule, INT32 tkAssociation, INT32 attr, INT32 tkMethod)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
-    _ASSERTE(pRCW); 
-    
+    _ASSERTE(pRCW);
+
     // Define the MethodSemantics
     IfFailThrow(pRCW->GetEmitHelper()->DefineMethodSemanticsHelper(
             tkAssociation,
@@ -616,12 +616,12 @@ void QCALLTYPE COMDynamicWrite::DefineMethodSemantics(QCall::ModuleHandle pModul
 void QCALLTYPE COMDynamicWrite::SetMethodImpl(QCall::ModuleHandle pModule, INT32 tkMethod, INT32 attr)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Set the methodimpl flags
     IfFailThrow(pRCW->GetEmitter()->SetMethodImplFlags(
             tkMethod,
@@ -636,12 +636,12 @@ void QCALLTYPE COMDynamicWrite::SetMethodImpl(QCall::ModuleHandle pModule, INT32
 void QCALLTYPE COMDynamicWrite::DefineMethodImpl(QCall::ModuleHandle pModule, UINT32 tkType, UINT32 tkBody, UINT32 tkDecl)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Set the methodimpl flags
     IfFailThrow(pRCW->GetEmitter()->DefineMethodImpl(
             tkType,
@@ -660,14 +660,14 @@ void QCALLTYPE COMDynamicWrite::DefineMethodImpl(QCall::ModuleHandle pModule, UI
 INT32 QCALLTYPE COMDynamicWrite::GetTokenFromSig(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;
-    
+
     mdSignature retVal = 0;
 
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     _ASSERTE(pSignature);
 
     // Define the signature
@@ -690,19 +690,19 @@ INT32 QCALLTYPE COMDynamicWrite::GetTokenFromSig(QCall::ModuleHandle pModule, LP
 INT32 QCALLTYPE COMDynamicWrite::SetParamInfo(QCall::ModuleHandle pModule, UINT32 tkMethod, UINT32 iSequence, UINT32 iAttributes, LPCWSTR wszParamName)
 {
     QCALL_CONTRACT;
-    
+
     mdParamDef retVal = 0;
 
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Set the methodimpl flags
     IfFailThrow(pRCW->GetEmitter()->DefineParam(
             tkMethod,
             iSequence,            // sequence of the parameter
-            wszParamName, 
+            wszParamName,
             iAttributes,          // change the impl flags
             ELEMENT_TYPE_VOID,
             0,
@@ -727,14 +727,14 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
 
     BEGIN_QCALL;
 
-    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
+    RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
     HRESULT hr;
 
     if (TypeFromToken(tk) == mdtFieldDef)
     {
-        hr = pRCW->GetEmitter()->SetFieldProps( 
+        hr = pRCW->GetEmitter()->SetFieldProps(
             tk,                         // [IN] The FieldDef.
             UINT32_MAX,                 // [IN] Field attributes.
             valueCorType,               // [IN] Flag for the value type, selected ELEMENT_TYPE_*
@@ -743,7 +743,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
     }
     else if (TypeFromToken(tk) == mdtProperty)
     {
-        hr = pRCW->GetEmitter()->SetPropertyProps( 
+        hr = pRCW->GetEmitter()->SetPropertyProps(
             tk,                         // [IN] The PropertyDef.
             UINT32_MAX,                 // [IN] Property attributes.
             valueCorType,               // [IN] Flag for the value type, selected ELEMENT_TYPE_*
@@ -755,7 +755,7 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
     }
     else
     {
-        hr = pRCW->GetEmitter()->SetParamProps( 
+        hr = pRCW->GetEmitter()->SetParamProps(
             tk,                   // [IN] The ParamDef.
             NULL,
             UINT32_MAX,                 // [IN] Parameter attributes.
@@ -763,10 +763,10 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
             pValue,                     // [IN] Constant value.
             (ULONG) -1);                // [IN] Optional length.
     }
-    if (FAILED(hr)) {   
-        _ASSERTE(!"Set default value is failing"); 
-        COMPlusThrow(kArgumentException, W("Argument_BadConstantValue"));    
-    }   
+    if (FAILED(hr)) {
+        _ASSERTE(!"Set default value is failing");
+        COMPlusThrow(kArgumentException, W("Argument_BadConstantValue"));
+    }
 
     END_QCALL;
 }
@@ -780,15 +780,15 @@ void QCALLTYPE COMDynamicWrite::SetConstantValue(QCall::ModuleHandle pModule, UI
 void QCALLTYPE COMDynamicWrite::SetFieldLayoutOffset(QCall::ModuleHandle pModule, INT32 tkField, INT32 iOffset)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
-    _ASSERTE(pRCW); 
-    
+    _ASSERTE(pRCW);
+
     // Set the field layout
     IfFailThrow(pRCW->GetEmitHelper()->SetFieldLayoutHelper(
-            tkField,                  // field 
+            tkField,                  // field
             iOffset));                // layout offset
 
     END_QCALL;
@@ -804,17 +804,17 @@ void QCALLTYPE COMDynamicWrite::SetFieldLayoutOffset(QCall::ModuleHandle pModule
 void QCALLTYPE COMDynamicWrite::SetClassLayout(QCall::ModuleHandle pModule, INT32 tk, INT32 iPackSize, UINT32 iTotalSize)
 {
     QCALL_CONTRACT;
-    
+
     BEGIN_QCALL;
 
-    RefClassWriter* pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
-    _ASSERTE(pRCW); 
-    
+    RefClassWriter* pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
     // Define the packing size and total size of a class
     IfFailThrow(pRCW->GetEmitter()->SetClassLayout(
             tk,                     // Typedef
             iPackSize,                // packing size
-            NULL,                     // no field layout 
+            NULL,                     // no field layout
             iTotalSize));           // total size for the type
 
     END_QCALL;
@@ -825,7 +825,7 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    
+
     RefClassWriter* pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
@@ -839,7 +839,7 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
                 conTok,
                 pBlob,
                 cbBlob,
-                &retToken); 
+                &retToken);
     }
     else
     {
@@ -848,7 +848,7 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
                 conTok,
                 pBlob,
                 cbBlob,
-                &retToken); 
+                &retToken);
     }
 
     if (FAILED(hr))

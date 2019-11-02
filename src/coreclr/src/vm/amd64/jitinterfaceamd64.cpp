@@ -89,7 +89,7 @@ WriteBarrierManager g_WriteBarrierManager;
 // naming convention which we have established for these helpers.
 #define CALC_PATCH_LOCATION(func,label,offset)      CalculatePatchLocation((PVOID)func, (PVOID)func##_##label, offset)
 
-WriteBarrierManager::WriteBarrierManager() : 
+WriteBarrierManager::WriteBarrierManager() :
     m_currentWriteBarrier(WRITE_BARRIER_UNINITIALIZED)
 {
     LIMITED_METHOD_CONTRACT;
@@ -204,7 +204,7 @@ void WriteBarrierManager::Validate()
 PCODE WriteBarrierManager::GetCurrentWriteBarrierCode()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     switch (m_currentWriteBarrier)
     {
         case WRITE_BARRIER_PREGROW64:
@@ -261,8 +261,8 @@ size_t WriteBarrierManager::GetSpecificWriteBarrierSize(WriteBarrierType writeBa
             return MARKED_FUNCTION_SIZE(JIT_WriteBarrier);
         default:
             UNREACHABLE_MSG("unexpected m_currentWriteBarrier!");
-    };    
-#undef MARKED_FUNCTION_SIZE    
+    };
+#undef MARKED_FUNCTION_SIZE
 }
 
 size_t WriteBarrierManager::GetCurrentWriteBarrierSize()
@@ -292,10 +292,10 @@ int WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, 
     _ASSERTE(m_currentWriteBarrier != newWriteBarrier);
     m_currentWriteBarrier = newWriteBarrier;
 
-    // the memcpy must come before the switch statment because the asserts inside the switch 
+    // the memcpy must come before the switch statment because the asserts inside the switch
     // are actually looking into the JIT_WriteBarrier buffer
     memcpy(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), (LPVOID)GetCurrentWriteBarrierCode(), GetCurrentWriteBarrierSize());
-    
+
     switch (newWriteBarrier)
     {
         case WRITE_BARRIER_PREGROW64:
@@ -453,10 +453,10 @@ void WriteBarrierManager::Initialize()
 
 bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, WriteBarrierType* pNewWriteBarrierType)
 {
-    // Init code for the JIT_WriteBarrier assembly routine.  Since it will be bashed everytime the GC Heap 
+    // Init code for the JIT_WriteBarrier assembly routine.  Since it will be bashed everytime the GC Heap
     // changes size, we want to do most of the work just once.
     //
-    // The actual JIT_WriteBarrier routine will only be called in free builds, but we keep this code (that 
+    // The actual JIT_WriteBarrier routine will only be called in free builds, but we keep this code (that
     // modifies it) around in debug builds to check that it works (with assertions).
 
 
@@ -469,7 +469,7 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, W
         case WRITE_BARRIER_UNINITIALIZED:
 #ifdef _DEBUG
             // Use the default slow write barrier some of the time in debug builds because of of contains some good asserts
-            if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DbgRandomOnExe(0.5)) {                
+            if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DbgRandomOnExe(0.5)) {
                 break;
             }
 #endif
@@ -593,7 +593,7 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
     {
         return ChangeWriteBarrierTo(newType, isRuntimeSuspended);
     }
-    
+
     int stompWBCompleteActions = SWB_PASS;
 
 #ifdef _DEBUG
@@ -601,7 +601,7 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
     if (m_currentWriteBarrier == WRITE_BARRIER_UNINITIALIZED)
         return stompWBCompleteActions;
 #endif
-    
+
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     switch (m_currentWriteBarrier)
     {
@@ -702,8 +702,8 @@ int WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 // This function bashes the super fast amd64 version of the JIT_WriteBarrier
-// helper.  It should be called by the GC whenever the ephermeral region 
-// bounds get changed, but still remain on the top of the GC Heap. 
+// helper.  It should be called by the GC whenever the ephermeral region
+// bounds get changed, but still remain on the top of the GC Heap.
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;

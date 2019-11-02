@@ -36,7 +36,7 @@ namespace R2RDump.x86
         public bool ProfCallbacks { get; set; }
         public byte GenericsContext { get; set; }// function reports a generics context parameter is present
         public byte GenericsContextIsMethodDesc { get; set; }
-        public ReturnKinds ReturnKind { get; set; } // Available GcInfo v2 onwards, previously undefined 
+        public ReturnKinds ReturnKind { get; set; } // Available GcInfo v2 onwards, previously undefined
         public ushort ArgCount { get; set; }
         public uint FrameSize { get; set; }
         public uint UntrackedCnt { get; set; }

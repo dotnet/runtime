@@ -28,7 +28,7 @@
 #if !defined(DISABLE_CONTRACTS)
 #define CHECK_INVARIANTS 1
 #define VALIDATE_OBJECTS 1
-#endif 
+#endif
 
 #endif  // _DEBUG
 
@@ -39,7 +39,7 @@
 #ifdef _DEBUG
 #define DEBUG_ARG(x)  , x
 #else
-#define DEBUG_ARG(x) 
+#define DEBUG_ARG(x)
 #endif
 
 #define CHECK_STRESS 1
@@ -49,12 +49,12 @@
 // failure.  It not only contains the result of the check, but if the check fails,
 // also records information about the condition and call site.
 //
-// CHECK also serves as a holder to prevent recursive CHECKS. These can be 
+// CHECK also serves as a holder to prevent recursive CHECKS. These can be
 // particularly common when putting preconditions inside predicates, especially
 // routines called by an invariant.
 //
 // Note that using CHECK is perfectly efficient in a free build - the CHECK becomes
-// a simple string constant pointer (typically either NULL or (LPCSTR)1, although some 
+// a simple string constant pointer (typically either NULL or (LPCSTR)1, although some
 // check failures may include messages)
 //
 // NOTE: you should NEVER use the CHECK class API directly - use the macros below.
@@ -144,7 +144,7 @@ public: // !!! NOTE: Called from macros only!!!
     static void SetAssertEnforcement(BOOL value);
 
     static void ReleaseTls(void* pCountTLS);
-        
+
   private:
     static LONG* InitTls();
 #ifdef _DEBUG
@@ -157,14 +157,14 @@ public: // !!! NOTE: Called from macros only!!!
 // These CHECK macros are the correct way to propagate an assertion.  These
 // routines are designed for use inside "Check" routines.  Such routines may
 // be Invariants, Validate routines, or any other assertional predicates.
-// 
-// A Check routine should return a value of type CHECK. 
 //
-// It should consist of multiple CHECK or CHECK_MSG statements (along with appropritate 
+// A Check routine should return a value of type CHECK.
+//
+// It should consist of multiple CHECK or CHECK_MSG statements (along with appropritate
 // control flow) and should end with CHECK_OK() if all other checks pass.
 //
 // It may contain a CONTRACT_CHECK contract, but this is only appropriate if the
-// check is used for non-assertional purposes (otherwise the contract will never execute).  
+// check is used for non-assertional purposes (otherwise the contract will never execute).
 // Note that CONTRACT_CHECK contracts do not support postconditions.
 //
 // CHECK: Check the given condition, return a CHECK failure if FALSE
@@ -175,7 +175,7 @@ public: // !!! NOTE: Called from macros only!!!
 #ifdef _DEBUG
 #define DEBUG_ONLY_MESSAGE(msg)     msg
 #else
-// On retail, we don't want to add a bunch of string literals to the image, 
+// On retail, we don't want to add a bunch of string literals to the image,
 // so we just use the same one everywhere.
 #define DEBUG_ONLY_MESSAGE(msg)     ((LPCSTR)1)
 #endif
@@ -217,14 +217,14 @@ do                                                                  \
     return CHECK::OK()
 
 //--------------------------------------------------------------------------------
-// ASSERT_CHECK is the proper way to trigger a check result.  If the CHECK 
-// has failed, the diagnostic assertion routines will fire with appropriate 
+// ASSERT_CHECK is the proper way to trigger a check result.  If the CHECK
+// has failed, the diagnostic assertion routines will fire with appropriate
 // context information.
 //
 // Note that the condition may either be a raw boolean expression or a CHECK result
 // returned from a Check routine.
 //
-// Recursion note: ASSERT_CHECKs are only performed if there is no current check in 
+// Recursion note: ASSERT_CHECKs are only performed if there is no current check in
 // progress.
 //--------------------------------------------------------------------------------
 
@@ -259,24 +259,24 @@ do                                                                  \
 // ex: ASSERT_CHECKF(1+2==4, "my reason", ("Woah %d", 1+3));
 // note that the double parenthesis, the 'args' param below will include one pair of parens.
 #define ASSERT_CHECKF(_condition, _reason, _args)                   \
-    ASSERT_CHECK(_condition, CHECK::FormatMessage _args, _reason) 
+    ASSERT_CHECK(_condition, CHECK::FormatMessage _args, _reason)
 
 //--------------------------------------------------------------------------------
 // INVARIANTS are descriptions of conditions which are always true at well defined
 // points of execution.  Invariants may be checked by the caller or callee at any
-// time as paranoia requires.  
+// time as paranoia requires.
 //
 // There are really two flavors of invariant.  The "public invariant" describes
-// to the caller invariant behavior about the abstraction which is visible from 
-// the public API (and of course it should be expressible in that public API).  
-// 
-// The "internal invariant" (or representation invariant), on the other hand, is 
-// a description of the private implementation of the abstraction, which may examine 
+// to the caller invariant behavior about the abstraction which is visible from
+// the public API (and of course it should be expressible in that public API).
+//
+// The "internal invariant" (or representation invariant), on the other hand, is
+// a description of the private implementation of the abstraction, which may examine
 // internal state of the abstraction or use private entry points.
 //
-// Classes with invariants should introduce methods called 
+// Classes with invariants should introduce methods called
 // void Invariant();
-// and 
+// and
 // void InternalInvariant();
 // to allow invariant checks.
 //--------------------------------------------------------------------------------
@@ -310,18 +310,18 @@ CHECK CheckInvariant(TYPENAME &obj)
 #endif
 
 //--------------------------------------------------------------------------------
-// VALIDATE is a check to be made on an object type which identifies a pointer as 
-// a valid instance of the object, by calling CheckPointer on it.  Normally a null 
-// pointer is treated as an error; VALIDATE_NULL (or CheckPointer(o, NULL_OK)) 
-// may be used when a null pointer is acceptible.  
-// 
-// In addition to the null/non-null check, a type may provide a specific Check method 
-// for more sophisticated identification. In general, the Check method 
+// VALIDATE is a check to be made on an object type which identifies a pointer as
+// a valid instance of the object, by calling CheckPointer on it.  Normally a null
+// pointer is treated as an error; VALIDATE_NULL (or CheckPointer(o, NULL_OK))
+// may be used when a null pointer is acceptible.
+//
+// In addition to the null/non-null check, a type may provide a specific Check method
+// for more sophisticated identification. In general, the Check method
 // should answer the question
-// "Is this a valid instance of its declared compile-time type?". For instance, if 
+// "Is this a valid instance of its declared compile-time type?". For instance, if
 // runtype type identification were supported for the type, it should be invoked here.
-// 
-// Note that CheckPointer will also check the invariant(s) if appropriate, so the 
+//
+// Note that CheckPointer will also check the invariant(s) if appropriate, so the
 // invariants should NOT be explicitly invoked from the Check method.
 //--------------------------------------------------------------------------------
 
@@ -394,7 +394,7 @@ CHECK CheckValue(TYPENAME &val)
 #if VALIDATE_OBJECTS
 
 #define VALIDATE(o) \
-    ASSERT_CHECK(CheckPointer(o), "Validation failure")    
+    ASSERT_CHECK(CheckPointer(o), "Validation failure")
 #define VALIDATE_NULL(o) \
     ASSERT_CHECK(CheckPointer(o, NULL_OK), "Validation failure")
 
@@ -474,8 +474,8 @@ CHECK CheckValue(TYPENAME &val)
 #endif  // !_DEBUG_IMPL
 
 //--------------------------------------------------------------------------------
-// COMPILER_ASSUME_MSG is a statement that tells the compiler to assume the 
-// condition is true.  In a checked build these turn into asserts; 
+// COMPILER_ASSUME_MSG is a statement that tells the compiler to assume the
+// condition is true.  In a checked build these turn into asserts;
 // in a free build they are passed through to the compiler to use in optimization.
 //--------------------------------------------------------------------------------
 
@@ -509,7 +509,7 @@ CHECK CheckValue(TYPENAME &val)
 
 
 //--------------------------------------------------------------------------------
-// PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name 
+// PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
 // for COMPILER_ASSUME_MSG
 // In a checked build these turn into asserts; in a free build
 // they are passed through to the compiler to use in optimization;
@@ -535,8 +535,8 @@ CHECK CheckValue(TYPENAME &val)
     COMPILER_ASSUME_MSG(_condition, "")
 
 //--------------------------------------------------------------------------------
-// UNREACHABLE points are locations in the code which should not be able to be 
-// reached under any circumstances (e.g. a default in a switch which is supposed to 
+// UNREACHABLE points are locations in the code which should not be able to be
+// reached under any circumstances (e.g. a default in a switch which is supposed to
 // cover all cases.).  This macro tells the compiler this, and also embeds a check
 // to make sure it is always true.
 //--------------------------------------------------------------------------------
@@ -619,8 +619,8 @@ CHECK CheckValue(TYPENAME &val)
 
 //--------------------------------------------------------------------------------
 // CCHECK is used for Check functions which may fail due to out of memory
-// or other transient failures. These failures should be ignored when doing 
-// assertions, but they cannot be ignored when the Check function is used in 
+// or other transient failures. These failures should be ignored when doing
+// assertions, but they cannot be ignored when the Check function is used in
 // normal code.
 // @todo: really crufty to have 2 sets of CHECK macros
 //--------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ CHECK CheckUnderflow(const void *address, void *address2);
 
 CHECK CheckZeroedMemory(const void *memory, SIZE_T size);
 
-// These include overflow checks 
+// These include overflow checks
 CHECK CheckBounds(const void *rangeBase, UINT32 rangeSize, UINT32 offset);
 CHECK CheckBounds(const void *rangeBase, UINT32 rangeSize, UINT32 offset, UINT32 size);
 

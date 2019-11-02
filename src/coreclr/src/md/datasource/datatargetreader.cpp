@@ -7,7 +7,7 @@
 #include "datatargetreader.h"
 
 
-DataTargetReader::DataTargetReader(CORDB_ADDRESS remoteAddressCursor, ICorDebugDataTarget* pDataTarget, DWORD targetDefines, DWORD mdStructuresVersion) 
+DataTargetReader::DataTargetReader(CORDB_ADDRESS remoteAddressCursor, ICorDebugDataTarget* pDataTarget, DWORD targetDefines, DWORD mdStructuresVersion)
 : m_remotePointerSize(0),
 m_currentStructureAlign(1),
 m_targetDefines(targetDefines),

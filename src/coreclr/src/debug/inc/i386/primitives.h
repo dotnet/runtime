@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.h
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -41,7 +41,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 #define CORDbgGetInstructionEx(_buffer, _requestedAddr, _patchAddr, _dummy1, _dummy2)                          \
     CORDbgGetInstruction((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))));
-                    
+
 #define CORDbgSetInstructionEx(_buffer, _requestedAddr, _patchAddr, _opcode, _dummy2)                          \
     CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))), (_opcode));
 
@@ -142,7 +142,7 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
     LIMITED_METHOD_CONTRACT;
 
     return *address; // retrieving only one byte is important
-  
+
 }
 
 inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
@@ -182,14 +182,14 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 }
 
 // Set the hardware trace flag.
-inline void SetSSFlag(DT_CONTEXT *context) 
+inline void SetSSFlag(DT_CONTEXT *context)
 {
     _ASSERTE(context != NULL);
     context->EFlags |= 0x100;
 }
 
 // Unset the hardware trace flag.
-inline void UnsetSSFlag(DT_CONTEXT *context) 
+inline void UnsetSSFlag(DT_CONTEXT *context)
 {
     SUPPORTS_DAC;
     _ASSERTE(context != NULL);

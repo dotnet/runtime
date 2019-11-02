@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-//----------------------------------------------------------------------------- 
+//-----------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------- 
+//-----------------------------------------------------------------------------
 
 #include "stdafx.h"
 
@@ -31,7 +31,7 @@ HINSTANCE LoadImageHlp()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
-    
+
     return LoadLibraryExA("imagehlp.dll", NULL, 0);
 }
 
@@ -40,14 +40,14 @@ HINSTANCE LoadDbgHelp()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
-    
+
     return LoadLibraryExA("dbghelp.dll", NULL, 0);
 }
 
 /****************************************************************************
 * SymCallback *
 *---------------------*
-*   Description:  
+*   Description:
 *       Callback for imghelp.
 ****************************************************************************/
 BOOL __stdcall SymCallback
@@ -92,7 +92,7 @@ PVOID UserContext
         OutputDebugStringA("\n");
         break;
     }
-    
+
     return FALSE;
 }
 
@@ -152,7 +152,7 @@ typedef IMAGEHLP_MODULE PLAT_IMAGEHLP_MODULE;
 #undef IMAGEHLP_SYMBOL
 #undef IMAGEHLP_MODULE
 
-    
+
 typedef BOOL (__stdcall *pfnImgHlp_SymGetModuleInfo)(
     IN  HANDLE                  hProcess,
     IN  DWORD_PTR               dwAddr,
@@ -266,7 +266,7 @@ IMGHLPFN_LOAD ailFuncList[] =
 /****************************************************************************
 * FillSymbolSearchPath *
 *----------------------*
-*   Description:  
+*   Description:
 *       Manually pick out all the symbol path information we need for a real
 *       stack trace to work.  This includes the default NT symbol paths and
 *       places on a VBL build machine where they should live.
@@ -291,10 +291,10 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
     int         ch;
 
     // If the NT symbol server path vars are there, then use those.
-    chTotal = WszGetEnvironmentVariable(W("_NT_SYMBOL_PATH"), rcBuff); 
+    chTotal = WszGetEnvironmentVariable(W("_NT_SYMBOL_PATH"), rcBuff);
     if (chTotal + 1 < MAX_SYM_PATH)
         rcBuff.Append(W(';'));
-    
+
     // Copy the defacto NT symbol path as well.
     size_t sympathLength = chTotal + NumItems(DEFAULT_SYM_PATH) + 1;
 		// integer overflow occurred
@@ -328,11 +328,11 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 #ifndef SELF_NO_HOST
     // Fetch the path location of the engine dll and add that path as well, just
     // in case URTARGET didn't cut it either.
-    // For no-host builds of utilcode, we don't necessarily have an engine DLL in the 
+    // For no-host builds of utilcode, we don't necessarily have an engine DLL in the
     // process, so skip this part.
-    
+
     ch = WszGetModuleFileName(GetCLRModuleHack(), rcBuffTemp);
-    
+
 
 	size_t pathLocationLength = chTotal + ch + 1;
 		// integer overflow occurred
@@ -340,7 +340,7 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 	{
 		return NULL;
 	}
-	
+
     if (ch != 0 && (pathLocationLength < MAX_SYM_PATH))
     {
         chTotal = chTotal + ch - NumItems(STR_ENGINE_NAME);
@@ -385,7 +385,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
 /****************************************************************************
 * MagicInit *
 *-----------*
-*   Description:  
+*   Description:
 *       Initializes the symbol loading code. Currently called (if necessary)
 *       at the beginning of each method that might need ImageHelp to be
 *       loaded.
@@ -395,7 +395,7 @@ void MagicInit()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
     if (g_fLoadedImageHlp || g_fLoadedImageHlpFailed)
     {
         return;
@@ -436,10 +436,10 @@ void MagicInit()
     for (int i = 0; i < COUNT_OF(ailFuncList); i++)
     {
         *(ailFuncList[i].ppvfn) = GetProcAddress(
-                g_hinstImageHlp, 
+                g_hinstImageHlp,
                 ailFuncList[i].pszFnName);
         LOCAL_ASSERT(*(ailFuncList[i].ppvfn));
-        
+
         if (!*(ailFuncList[i].ppvfn))
         {
             g_fLoadedImageHlpFailed = TRUE;
@@ -461,7 +461,7 @@ void MagicInit()
     }
 
     g_fLoadedImageHlp = TRUE;
-    
+
     //
     // Initialize imagehlp.dll.  A NULL search path is supposed to resolve
     // symbols but never works.  So pull in everything and put some additional
@@ -484,7 +484,7 @@ void MagicInit()
 /****************************************************************************
 * FillSymbolInfo *
 *----------------*
-*   Description:  
+*   Description:
 *       Fills in a SYM_INFO structure
 ****************************************************************************/
 void FillSymbolInfo
@@ -496,7 +496,7 @@ DWORD_PTR dwAddr
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
     if (!g_fLoadedImageHlp)
     {
         return;
@@ -507,7 +507,7 @@ DWORD_PTR dwAddr
 
     PLAT_IMAGEHLP_MODULE  mi;
     mi.SizeOfStruct = sizeof(mi);
-    
+
     if (!_SymGetModuleInfo(g_hProcess, dwAddr, &mi))
     {
         strcpy_s(psi->achModule, _countof(psi->achModule), "<no module>");
@@ -561,7 +561,7 @@ DWORD_PTR dwAddr
 /****************************************************************************
 * FunctionTableAccess *
 *---------------------*
-*   Description:  
+*   Description:
 *       Helper for imagehlp's StackWalk API.
 ****************************************************************************/
 LPVOID __stdcall FunctionTableAccess
@@ -571,7 +571,7 @@ DWORD_PTR dwPCAddr
 )
 {
     WRAPPER_NO_CONTRACT;
-    
+
     HANDLE hFuncEntry = _SymFunctionTableAccess( hProcess, dwPCAddr );
 
 #if defined(BIT64)
@@ -595,8 +595,8 @@ DWORD_PTR dwPCAddr
 /****************************************************************************
 * GetModuleBase *
 *---------------*
-*   Description:  
-*       Helper for imagehlp's StackWalk API. Retrieves the base address of 
+*   Description:
+*       Helper for imagehlp's StackWalk API. Retrieves the base address of
 *       the module containing the giving virtual address.
 *
 *       NOTE: If the module information for the given module hasnot yet been
@@ -614,25 +614,25 @@ DWORD_PTR dwAddr
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    
+
     PLAT_IMAGEHLP_MODULE ModuleInfo;
     ModuleInfo.SizeOfStruct = sizeof(ModuleInfo);
-    
+
     if (_SymGetModuleInfo(hProcess, dwAddr, &ModuleInfo))
     {
-        return ModuleInfo.BaseOfImage;       
+        return ModuleInfo.BaseOfImage;
     }
     else
     {
         MEMORY_BASIC_INFORMATION mbi;
-        
+
         if (VirtualQueryEx(hProcess, (LPVOID)dwAddr, &mbi, sizeof(mbi)))
         {
             if (mbi.Type & MEM_IMAGE)
             {
                 char achFile[MAX_LONGPATH] = {0};
                 DWORD cch;
-                
+
                 cch = GetModuleFileNameA(
                         (HINSTANCE)mbi.AllocationBase,
                         achFile,
@@ -674,7 +674,7 @@ DWORD_PTR dwAddr
 /****************************************************************************
 * GetStackBacktrace *
 *-------------------*
-*   Description:  
+*   Description:
 *       Gets a stacktrace of the current stack, including symbols.
 *
 *   Return:
@@ -683,7 +683,7 @@ DWORD_PTR dwAddr
 
 UINT GetStackBacktrace
 (
-UINT ifrStart,          // How many stack elements to skip before starting. 
+UINT ifrStart,          // How many stack elements to skip before starting.
 UINT cfrTotal,          // How many elements to trace after starting.
 DWORD_PTR* pdwEip,      // Array to be filled with stack addresses.
 SYM_INFO* psiSymbols,   // This array is filled with symbol information.
@@ -695,7 +695,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
     UINT        nElements   = 0;
     DWORD_PTR*  pdw         = pdwEip;
     SYM_INFO*   psi         = psiSymbols;
@@ -720,7 +720,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
         ClrCaptureContext(&context);
     }
     else
-    {   
+    {
         memcpy(&context, pContext, sizeof(CONTEXT));
     }
 
@@ -748,7 +748,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
     // so we don't need to do this.
     if (pContext == NULL)
     {
-        ifrStart += 1;        
+        ifrStart += 1;
     }
 #endif // !_TARGET_X86_
 
@@ -775,7 +775,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
             if (psi)
             {
                 FillSymbolInfo(psi++, stkfrm.AddrPC.Offset);
-            }   
+            }
         }
     }
 
@@ -787,7 +787,7 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
 /****************************************************************************
 * GetStringFromSymbolInfo *
 *-------------------------*
-*   Description:  
+*   Description:
 *       Actually prints the info into the string for the symbol.
 ****************************************************************************/
 
@@ -807,7 +807,7 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
     LOCAL_ASSERT(pszString);
 
     // <module>! <symbol> + 0x<offset> 0x<addr>\n
@@ -836,7 +836,7 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
 /****************************************************************************
 * GetStringFromStackLevels *
 *--------------------------*
-*   Description:  
+*   Description:
 *       Retrieves a string from the stack frame. If more than one frame, they
 *       are separated by newlines
 ****************************************************************************/
@@ -853,7 +853,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
     LOCAL_ASSERT(pszString);
     LOCAL_ASSERT(cfrTotal < cfrMaxAssertStackLevels);
 
@@ -900,7 +900,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 /****************************************************************************
 * GetStringFromAddr *
 *-------------------*
-*   Description:  
+*   Description:
 *       Returns a string from an address.
 ****************************************************************************/
 void GetStringFromAddr
@@ -912,7 +912,7 @@ __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put str
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    
+
     LOCAL_ASSERT(szString);
 
     SYM_INFO si;
@@ -930,7 +930,7 @@ __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put str
 /****************************************************************************
 * MagicDeinit *
 *-------------*
-*   Description:  
+*   Description:
 *       Cleans up for the symbol loading code. Should be called before exit
 *       to free the dynamically loaded imagehlp.dll.
 ****************************************************************************/
@@ -938,7 +938,7 @@ void MagicDeinit(void)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    
+
     if (g_hinstImageHlp)
     {
         FreeLibrary(g_hinstImageHlp);
@@ -952,7 +952,7 @@ void MagicDeinit(void)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*
-*   Description:  
+*   Description:
 *       Exactly the contents of RtlCaptureContext for Win7 - Win2K doesn't
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/

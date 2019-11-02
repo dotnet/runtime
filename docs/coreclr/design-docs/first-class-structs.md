@@ -15,13 +15,13 @@ Primary Objectives
 Secondary Objectives
 * No “swizzling” or lying about struct types – they are always struct types
  - No confusing use of GT_LCL_FLD to refer to the entire struct as a different type
-  
+
 Normalizing Struct Types
 ------------------------
 We would like to facilitate full enregistration of structs with the following properties:
 1. Its fields are infrequently accessed, and
 1. The entire struct fits into a register, and
-2. Its value is used or defined in a register 
+2. Its value is used or defined in a register
 (i.e. as an argument to or return value from calls or intrinsics).
 
 In RyuJIT, the concept of a type is very simplistic (which helps support the high throughput
@@ -95,7 +95,7 @@ encountered by most phases of the JIT:
     * These have no struct handle, resulting in some pessimization or even incorrect
       code when the appropriate struct handle can't be determined.
     * These never represent lvalues of structs that contain GC references.
-    * Proposed: When a class handle is available, these would remain as `GT_OBJ` since after 
+    * Proposed: When a class handle is available, these would remain as `GT_OBJ` since after
       [#21705](https://github.com/dotnet/coreclr/pull/21705) they are no longer large nodes.
   * `GT_STORE_OBJ` and `GT_STORE_BLK` have the same structure as `GT_OBJ` and `GT_BLK`, respectively
     * `Data()` is op2
@@ -112,7 +112,7 @@ Structs only appear as rvalues in the following contexts:
 
 * On the RHS of an assignment
   * The lhs provides the “shape” for an assignment. Note, however, that the LHS isn't always available
-    to optimizations, which has led to pessimization, e.g. 
+    to optimizations, which has led to pessimization, e.g.
     [#23739 Block the hoisting of TYP_STRUCT rvalues in loop hoisting](https://github.com/dotnet/coreclr/pull/23739)
 
 * As a call argument
@@ -155,7 +155,7 @@ There are three phases in the JIT that make changes to the representation of str
     * Proposed: promoted structs are forced to stack ONLY if address taken.
       * This includes removing unnecessary pessimizations of block copies. See [Improve and Simplify Block Assignment Morphing](#Block-Assignments).
 
-  * Call args 
+  * Call args
     * If the struct has been promoted it is morphed to `GT_FIELD_LIST`
       * Currently this is done only if it is passed on the stack, or if it is passed
         in registers that exactly match the types of its fields.
@@ -249,7 +249,7 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
   * First, fully enregister pointer-sized-or-less structs only if there are no field accesses and they are not
     marked `lvDoNotEnregister`.
   * Next, fully enregister structs that are passed or returned in multiple registers and have no field accesses.
-  * Next, when there are field accesses, but the struct is more frequently accessed as a 
+  * Next, when there are field accesses, but the struct is more frequently accessed as a
     full struct (e.g. assignment or passing as the full struct), `Lowering` would expand the field accesses
     as needed to extract the field from the register(s).
     * An initial investigation should be undertaken to determine if this is worthwhile.
@@ -297,7 +297,7 @@ The following issues illustrate some of the motivation for improving the handlin
   * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
     instead generates many unnecessary copies. It is addressed by full enregistration of
     structs that fit into a register. See [Support Full Enregistration of Struct Types](#support-full-enregistration-of-struct-types):
- 
+
 ```C#
 struct foo { public byte b1, b2, b3, b4; }
 static foo getfoo() { return new foo(); }
@@ -312,14 +312,14 @@ static foo getfoo() { return new foo(); }
       and it may be worth considering (in future) whether we can avoiding adding them
       in the first place.
   * This case may now be handled; needs verification
- 
+
 * [\#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/coreclr/issues/1161)
   * This issue arises because we never promote a struct with a single double field, due to
     the fact that such a struct may be passed or returned in a general purpose register.
     This issue could be addressed independently, but should "fall out" of improved heuristics
     for when to promote and enregister structs.
   * Related: [\#8828](https://github.com/dotnet/coreclr/issues/8828)
-  
+
 * [\#1636 Add optimization to avoid copying a struct if passed by reference and there are no
   writes to and no reads after passed to a callee](https://github.com/dotnet/coreclr/issues/1636).
   * This issue is related to #1133, except that in this case the desire is to
@@ -336,7 +336,7 @@ static foo getfoo() { return new foo(); }
   * This issue could be addressed without First Class Structs. However, it
     should be done along with the streamlining of the handling of ABI-specific struct passing
     and return values.
-    
+
 * [\#4766 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/coreclr/issues/4766)
   * In addition to suffering from the same issue as #1133, this has a struct that is promoted even though it is
     passed (by reference) to its non-inlined constructor. This means that any copy to/from this struct will be field-by-field.
@@ -377,18 +377,18 @@ The dump of the (single) local variable is included to show the change from `str
 Here is the IR after Import:
 
 ```
-;  V00 loc0           struct ( 8) 
+;  V00 loc0           struct ( 8)
 
    ▌  stmtExpr  void  (top level) (IL 0x000...  ???)
    │  ┌──▌  const     int    4
-   └──▌  initBlk   void  
+   └──▌  initBlk   void
       │  ┌──▌  const     int    0
-      └──▌  <list>    void  
-         └──▌  addr      byref 
-            └──▌  lclVar    struct V00 loc0         
+      └──▌  <list>    void
+         └──▌  addr      byref
+            └──▌  lclVar    struct V00 loc0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  return    int   
+   └──▌  return    int
       └──▌  lclFld    int    V00 loc0         [+0]
 ```
 This is how it currently looks just before code generation:
@@ -411,24 +411,24 @@ And here is the resulting code:
   mov      dword ptr [V00 rsp], eax
   mov      eax, dword ptr [V00 rsp]
   add      rsp, 8
-  ret      
+  ret
 ```
 #### After
 Here is the IR after Import with the prototype First Class Struct changes.
 Note that the fixed-size struct variable is assigned and returned just as for a scalar type.
 
 ```
-;  V00 loc0          struct4 
+;  V00 loc0          struct4
 
    ▌  stmtExpr  void  (top level) (IL 0x000...  ???)
    │  ┌──▌  const     int    0
    └──▌  =         struct4 (init)
-      └──▌  lclVar    struct4 V00 loc0         
+      └──▌  lclVar    struct4 V00 loc0
 
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    └──▌  return    struct4
-      └──▌  lclVar    struct4    V00 loc0         
+      └──▌  lclVar    struct4    V00 loc0
 ```
 And Here is the resulting code just prior to code generation:
 ```
@@ -452,38 +452,38 @@ therefore the local variable table is not shown).
 ```
    ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
    │  ┌──▌  const     int    16
-   └──▌  initBlk   void  
+   └──▌  initBlk   void
       │  ┌──▌  const     int    0
-      └──▌  <list>    void  
-         └──▌  addr      byref 
-            └──▌  lclVar    struct V00 loc0         
+      └──▌  <list>    void
+         └──▌  addr      byref
+            └──▌  lclVar    struct V00 loc0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     int    16
-   └──▌  copyBlk   void  
-      │  ┌──▌  addr      byref 
-      │  │  └──▌  lclVar    struct V00 loc0         
-      └──▌  <list>    void  
-         └──▌  addr      byref 
-            └──▌  lclVar    struct V01 tmp0         
+   └──▌  copyBlk   void
+      │  ┌──▌  addr      byref
+      │  │  └──▌  lclVar    struct V00 loc0
+      └──▌  <list>    void
+         └──▌  addr      byref
+            └──▌  lclVar    struct V01 tmp0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     int    16
-   └──▌  copyBlk   void  
-      │  ┌──▌  addr      byref 
-      │  │  └──▌  lclVar    struct V01 tmp0         
-      └──▌  <list>    void  
-         └──▌  addr      byref 
-            └──▌  lclVar    struct V02 tmp1         
+   └──▌  copyBlk   void
+      │  ┌──▌  addr      byref
+      │  │  └──▌  lclVar    struct V01 tmp0
+      └──▌  <list>    void
+         └──▌  addr      byref
+            └──▌  lclVar    struct V02 tmp1
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     int    16
-   └──▌  copyBlk   void  
-      │  ┌──▌  addr      byref 
-      │  │  └──▌  lclVar    struct V02 tmp1         
-      └──▌  <list>    void  
-         └──▌  addr      byref 
-            └──▌  lclVar    struct V03 tmp2         
+   └──▌  copyBlk   void
+      │  ┌──▌  addr      byref
+      │  │  └──▌  lclVar    struct V02 tmp1
+      └──▌  <list>    void
+         └──▌  addr      byref
+            └──▌  lclVar    struct V03 tmp2
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
@@ -492,16 +492,16 @@ therefore the local variable table is not shown).
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     int    16
-   └──▌  copyBlk   void  
-      │  ┌──▌  addr      byref 
-      │  │  └──▌  lclVar    struct V03 tmp2         
-      └──▌  <list>    void  
+   └──▌  copyBlk   void
+      │  ┌──▌  addr      byref
+      │  │  └──▌  lclVar    struct V03 tmp2
+      └──▌  <list>    void
          │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref 
+         └──▌  +         byref
             └──▌  field     ref    s_dt
 
    ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void  
+   └──▌  return    void
 ```
 And here is the resulting code:
 ```
@@ -514,11 +514,11 @@ lea      rdx, bword ptr [V00 rsp+58H]
 vxorpd   ymm0, ymm0
 vmovdqu  qword ptr [rdx], ymm0
 vmovdqu  ymm0, qword ptr [V00 rsp+58H]
-vmovdqu  qword ptr [V01 rsp+48H]ymm0, qword ptr 
+vmovdqu  qword ptr [V01 rsp+48H]ymm0, qword ptr
 vmovdqu  ymm0, qword ptr [V01 rsp+48H]
-vmovdqu  qword ptr [V02 rsp+38H]ymm0, qword ptr 
+vmovdqu  qword ptr [V02 rsp+38H]ymm0, qword ptr
 vmovdqu  ymm0, qword ptr [V02 rsp+38H]
-vmovdqu  qword ptr [V03 rsp+28H]ymm0, qword ptr 
+vmovdqu  qword ptr [V03 rsp+28H]ymm0, qword ptr
 mov      rcx, 0x7FF918494E10
 mov      edx, 1
 call     CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
@@ -528,7 +528,7 @@ add      rax, 8
 vmovdqu  ymm0, qword ptr [V03 rsp+28H]
 vmovdqu  qword ptr [rax], ymm0
 add      rsp, 104
-ret      
+ret
 ```
 
 #### After
@@ -538,22 +538,22 @@ After fginline:
    ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
    │  ┌──▌  const     int    0
    └──▌  =         struct (init)
-      └──▌  lclVar    struct V00 loc0         
+      └──▌  lclVar    struct V00 loc0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V00 loc0         
+   │  ┌──▌  lclVar    struct V00 loc0
    └──▌  =         struct (copy)
-      └──▌  lclVar    struct V01 tmp0         
+      └──▌  lclVar    struct V01 tmp0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V01 tmp0         
+   │  ┌──▌  lclVar    struct V01 tmp0
    └──▌  =         struct (copy)
-      └──▌  lclVar    struct V02 tmp1         
+      └──▌  lclVar    struct V02 tmp1
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V02 tmp1         
+   │  ┌──▌  lclVar    struct V02 tmp1
    └──▌  =         struct (copy)
-      └──▌  lclVar    struct V03 tmp2         
+      └──▌  lclVar    struct V03 tmp2
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
@@ -561,15 +561,15 @@ After fginline:
       └──▌  const     int    1
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V03 tmp2         
+   │  ┌──▌  lclVar    struct V03 tmp2
    └──▌  =         struct (copy)
       └──▌  obj(16)   struct
          │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref 
+         └──▌  +         byref
             └──▌  field     ref    s_dt
 
    ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void  
+   └──▌  return    void
 ```
 Here is the IR after fgMorph:
 Note that copy propagation has propagated the zero initialization through to the final store.
@@ -577,22 +577,22 @@ Note that copy propagation has propagated the zero initialization through to the
    ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
    │  ┌──▌  const     int    0
    └──▌  =         struct (init)
-      └──▌  lclVar    struct V00 loc0         
+      └──▌  lclVar    struct V00 loc0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     struct 0
    └──▌  =         struct (init)
-      └──▌  lclVar    struct V01 tmp0         
+      └──▌  lclVar    struct V01 tmp0
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     struct 0
    └──▌  =         struct (init)
-      └──▌  lclVar    struct V02 tmp1         
+      └──▌  lclVar    struct V02 tmp1
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    │  ┌──▌  const     struct 0
    └──▌  =         struct (init)
-      └──▌  lclVar    struct V03 tmp2         
+      └──▌  lclVar    struct V03 tmp2
 
    ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
    └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
@@ -604,12 +604,12 @@ Note that copy propagation has propagated the zero initialization through to the
    └──▌  =         struct (init)
       └──▌  obj(16)   struct
          │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref 
-            └──▌  indir     ref   
+         └──▌  +         byref
+            └──▌  indir     ref
                └──▌  const(h)  long   0x2425b6229c8 static Fseq[s_dt]
 
    ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void  
+   └──▌  return    void
 
 ```
 After liveness analysis the dead stores have been eliminated:
@@ -624,12 +624,12 @@ After liveness analysis the dead stores have been eliminated:
    └──▌  =         struct (init)
       └──▌  obj(16)   struct
          │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref 
-            └──▌  indir     ref   
+         └──▌  +         byref
+            └──▌  indir     ref
                └──▌  const(h)  long   0x2425b6229c8 static Fseq[s_dt]
 
    ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void  
+   └──▌  return    void
 ```
 And here is the resulting code, going from a code size of 129 bytes down to 58.
 ```
@@ -644,5 +644,5 @@ add      rdx, 8
 vxorpd   ymm0, ymm0
 vmovdqu  qword ptr [rdx], ymm0
 add      rsp, 40
-ret 
+ret
 ```

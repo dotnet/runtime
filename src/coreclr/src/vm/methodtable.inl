@@ -11,7 +11,7 @@
 //
 // ============================================================================
 
-#ifndef _METHODTABLE_INL_ 
+#ifndef _METHODTABLE_INL_
 #define _METHODTABLE_INL_
 
 #include "methodtable.h"
@@ -25,7 +25,7 @@ inline PTR_EEClass MethodTable::GetClass_NoLogging()
 
     TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
@@ -169,13 +169,13 @@ inline PTR_Module MethodTable::GetZapModule()
 }
 
 //==========================================================================================
-inline PTR_Module MethodTable::GetLoaderModule() 
+inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return ReadPointer(this, &MethodTable::m_pLoaderModule);
 }
 
-inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator() 
+inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetLoaderModule()->GetLoaderAllocator();
@@ -183,15 +183,15 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 
 
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
-inline void MethodTable::SetLoaderModule(Module* pModule) 
+inline void MethodTable::SetLoaderModule(Module* pModule)
 {
     WRAPPER_NO_CONTRACT;
     m_pLoaderModule.SetValue(pModule);
 }
 
-inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator) 
+inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pAllocator == GetLoaderAllocator());
@@ -209,7 +209,7 @@ inline WORD MethodTable::GetNumNonVirtualSlots()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return HasNonVirtualSlots() ? GetClass()->GetNumNonVirtualSlots() : 0;
-}        
+}
 
 //==========================================================================================
 inline WORD MethodTable::GetNumInstanceFields()
@@ -384,7 +384,7 @@ inline BOOL MethodTable::HasGuidInfo()
     if (IsInterface())
         return GetFlag(enum_flag_IfInterfaceThenHasGuidInfo);
 
-    // HasCCWTemplate() is intentionally checked first here to avoid hitting 
+    // HasCCWTemplate() is intentionally checked first here to avoid hitting
     // g_pMulticastDelegateClass == NULL inside IsDelegate() during startup
     return HasCCWTemplate() && IsDelegate();
 }
@@ -447,7 +447,7 @@ inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
     } CONTRACTL_END;
 
     BOOL bRes = FALSE;
-    if ((IsProjectedFromWinRT() && !HasInstantiation()) || 
+    if ((IsProjectedFromWinRT() && !HasInstantiation()) ||
         (SupportsGenericInterop(TypeHandle::Interop_NativeToManaged) && IsLegalNonArrayWinRTType()))
     {
         bRes = SUCCEEDED(GetGuidNoThrow(pGuid, TRUE, FALSE));
@@ -526,7 +526,7 @@ inline void MethodTable::SetIsTruePrimitive()
 inline BOOL MethodTable::IsBlittable()
 {
     WRAPPER_NO_CONTRACT;
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     _ASSERTE(GetClass());
     return GetClass()->IsBlittable();
 #else // DACCESS_COMPILE
@@ -604,7 +604,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     PCODE pCode = GetRestoredSlot(slot);
 
-    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc 
+    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
@@ -614,7 +614,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     return MethodTable::GetMethodDescForSlotAddress(pCode);
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT)
@@ -737,7 +737,7 @@ inline MethodDesc *MethodTable::MethodIterator::GetDeclMethodDesc() const {
     return pMD;
 }
 
-#endif // DACCESS_COMPILE 
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 // Non-canonical types share the method bodies with the canonical type. So the canonical
@@ -746,7 +746,7 @@ inline MethodDesc *MethodTable::MethodIterator::GetDeclMethodDesc() const {
 // restrictToCanonicalTypes=FALSE to iterate methods through a non-canonical type.
 
 inline MethodTable::IntroducedMethodIterator::IntroducedMethodIterator(
-        MethodTable *pMT, 
+        MethodTable *pMT,
         BOOL restrictToCanonicalTypes /* = TRUE */ )
 {
     WRAPPER_NO_CONTRACT;
@@ -913,7 +913,7 @@ inline DWORD MethodTable::VtableIndirectionSlotIterator::GetOffsetFromMethodTabl
 {
     WRAPPER_NO_CONTRACT;
     PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
-    
+
     return GetVtableOffset() + sizeof(VTableIndir_t) * m_i;
 }
 
@@ -1245,7 +1245,7 @@ inline DWORD MethodTable::GetInterfaceMapSize()
     LIMITED_METHOD_DAC_CONTRACT;
 
     DWORD cbIMap = GetNumInterfaces() * sizeof(InterfaceInfo_t);
-#ifdef FEATURE_COMINTEROP 
+#ifdef FEATURE_COMINTEROP
     cbIMap += (HasDynamicInterfaceMap() ? sizeof(DWORD_PTR) : 0);
 #endif
     return cbIMap;
@@ -1426,7 +1426,7 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-    
+
     PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
@@ -1452,7 +1452,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-    
+
     PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
@@ -1471,7 +1471,7 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-    
+
     PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
@@ -1488,7 +1488,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-    
+
     PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
@@ -1538,7 +1538,7 @@ inline DWORD MethodTable::GetClassIndex()
 //==========================================================================================
 // unbox src into dest, making sure src is of the correct type.
 
-inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src) 
+inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
 {
     CONTRACTL
     {
@@ -1550,7 +1550,7 @@ inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
 
     if (Nullable::IsNullableType(TypeHandle(this)))
         return Nullable::UnBoxNoGC(dest, src, this);
-    else  
+    else
     {
         if (src == NULL || src->GetMethodTable() != this)
             return FALSE;
@@ -1575,7 +1575,7 @@ inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
 
     if (Nullable::IsNullableType(TypeHandle(this)))
         return Nullable::UnBoxIntoArgNoGC(argDest, src, this);
-    else  
+    else
     {
         if (src == NULL || src->GetMethodTable() != this)
             return FALSE;
@@ -1588,7 +1588,7 @@ inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
 //==========================================================================================
 // unbox src into dest, No checks are done
 
-inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src) 
+inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
 {
     CONTRACTL
     {
@@ -1603,7 +1603,7 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
         ret = Nullable::UnBoxNoGC(dest, src, this);
         _ASSERTE(ret);
     }
-    else  
+    else
     {
         _ASSERTE(src->GetMethodTable()->GetNumInstanceFieldBytes() == GetNumInstanceFieldBytes());
 
@@ -1652,7 +1652,7 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
-FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists() 
+FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 

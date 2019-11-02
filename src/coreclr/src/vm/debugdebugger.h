@@ -25,7 +25,7 @@ public:
     static FCDECL0(FC_BOOL_RET, IsDebuggerAttached);
     static FCDECL3(void, Log, INT32 Level, StringObject* strModule, StringObject* strMessage);
 
-    // receives a custom notification object from the target and sends it to the RS via 
+    // receives a custom notification object from the target and sends it to the RS via
     // code:Debugger::SendCustomDebuggerNotification
     static FCDECL1(void, CustomNotification, Object * dataUNSAFE);
 
@@ -134,13 +134,13 @@ public:
         BOOL	fDoWeHaveAnyFramesFromForeignStackTrace;
 
 
-        GetStackFramesData() :  skip(0), 
+        GetStackFramesData() :  skip(0),
                                 NumFramesRequested (0),
-                                cElementsAllocated(0), 
-                                cElements(0), 
+                                cElementsAllocated(0),
+                                cElements(0),
                                 pElements(NULL),
                                 TargetThread((THREADBASEREF)(TADDR)NULL)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
 
@@ -152,10 +152,10 @@ public:
         }
     };
 
-    static FCDECL4(void, 
-                   GetStackFramesInternal, 
-                   StackFrameHelper* pStackFrameHelper, 
-                   INT32 iSkip, 
+    static FCDECL4(void,
+                   GetStackFramesInternal,
+                   StackFrameHelper* pStackFrameHelper,
+                   INT32 iSkip,
                    CLR_BOOL fNeedFileInfo,
                    Object* pException
                   );
@@ -166,10 +166,10 @@ public:
 // the DAC directly calls GetStackFramesFromException
 private:
 #endif
-    
+
     static void GetStackFramesHelper(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
 
-    static void GetStackFrames(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);    
+    static void GetStackFrames(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
 
     static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data);
 

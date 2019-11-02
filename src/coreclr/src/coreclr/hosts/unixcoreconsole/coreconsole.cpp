@@ -25,7 +25,7 @@ void DisplayUsage()
         "-_h  show this help message. \n");
 }
 
-// Parse the command line arguments 
+// Parse the command line arguments
 bool ParseArguments(
         const int argc,
         const char* argv[],

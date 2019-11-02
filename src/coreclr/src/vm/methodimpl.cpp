@@ -97,7 +97,7 @@ PTR_MethodDesc MethodImpl::GetMethodDesc(DWORD slotIndex, PTR_MethodDesc default
     // from the slot number.
 
     if (result == NULL)
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
         result = RestoreSlot(slotIndex, defaultReturn->GetMethodTable());
 #else // DACCESS_COMPILE
         DacNotImpl();
@@ -106,7 +106,7 @@ PTR_MethodDesc MethodImpl::GetMethodDesc(DWORD slotIndex, PTR_MethodDesc default
     return result;
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 MethodDesc *MethodImpl::RestoreSlot(DWORD index, MethodTable *pMT)
 {
@@ -200,7 +200,7 @@ void MethodImpl::SetData(DWORD* slots, mdToken* tokens, RelativePointer<MethodDe
     DWORD *pdwSize = pdwSlots.GetValue();
     DWORD dwSize = *pdwSize;
     memcpy(&(pdwSize[1]), slots, dwSize*sizeof(DWORD));
-    
+
     // Copy tokens that correspond to the slots above
     memcpy(&(pdwSize[1 + dwSize]), tokens, dwSize*sizeof(mdToken));
 
@@ -238,7 +238,7 @@ void MethodImpl::Fixup(DataImage *image, PVOID p, SSIZE_T offset)
     for (DWORD iMD = 0; iMD < size; iMD++)
     {
         // <TODO> Why not use FixupMethodDescPointer? </TODO>
-        // <TODO> Does it matter if the MethodDesc needs a restore? </TODO>              
+        // <TODO> Does it matter if the MethodDesc needs a restore? </TODO>
 
         RelativePointer<MethodDesc *> *pRelPtr = pImplementedMD.GetValue();
         MethodDesc * pMD = pRelPtr[iMD].GetValueMaybeNull();
@@ -262,13 +262,13 @@ void MethodImpl::Fixup(DataImage *image, PVOID p, SSIZE_T offset)
 
 #endif //!DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
 
 void
 MethodImpl::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
-#ifndef STUB_DISPATCH_ALL 
+#ifndef STUB_DISPATCH_ALL
     CONSISTENCY_CHECK_MSG(FALSE, "Stub Dispatch forbidden code");
 #else // STUB_DISPATCH_ALL
     // 'this' memory should already be enumerated as
@@ -300,7 +300,7 @@ MethodImpl::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif //DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 MethodImpl::Iterator::Iterator(MethodDesc *pMD) : m_pMD(pMD), m_pImpl(NULL), m_iCur(0)
 {
     LIMITED_METHOD_CONTRACT;

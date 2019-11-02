@@ -7,7 +7,7 @@
 
 //
 // Zapping of headers (IMAGE_COR20_HEADER, CORCOMPILE_HEADER, etc.)
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPHEADERS_H__
@@ -80,7 +80,7 @@ public:
 };
 
 //
-// CORCOMPILE_VERSION_INFO 
+// CORCOMPILE_VERSION_INFO
 //
 class ZapVersionInfo : public ZapNode
 {
@@ -199,7 +199,7 @@ class ZapWin32ResourceString : public ZapNode
 
 public:
     ZapWin32ResourceString(LPCWSTR pString)
-    { 
+    {
         size_t strLen = wcslen(pString);
         _ASSERT(pString != NULL && strLen < 0xffff);
 
@@ -357,7 +357,7 @@ public:
 //
 // PE Style exports.  Currently can only save an empty list of exports
 // but this is useful because it avoids the DLL being seen as Resource Only
-// (which then causes SymServer to avoid copying its PDB to the cloud).  
+// (which then causes SymServer to avoid copying its PDB to the cloud).
 //
 
 class ZapPEExports : public ZapNode
@@ -384,7 +384,7 @@ public:
         : m_pImage(pImage)
     {
     }
-    
+
     virtual DWORD GetSize();
 
     virtual ZapNodeType GetType()

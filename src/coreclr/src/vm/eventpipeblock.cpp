@@ -14,7 +14,7 @@
 #ifndef LLONG_MIN
 #define LLONG_MIN 0x8000000000000000
 #endif
-#ifndef LLONG_MAX 
+#ifndef LLONG_MAX
 #define LLONG_MAX 0x7FFFFFFFFFFFFFFF
 #endif
 
@@ -157,7 +157,7 @@ void WriteVarUInt64(BYTE* & pWritePointer, ULONGLONG value)
     pWritePointer++;
 }
 
-bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance, 
+bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
                                          ULONGLONG captureThreadId,
                                          unsigned int sequenceNumber,
                                          DWORD stackId,
@@ -255,7 +255,7 @@ bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
         {
             flags |= (1 << 6);
         }
-        
+
         if (m_lastHeader.SequenceNumber + (instance.GetMetadataId() != 0 ? 1 : 0) != sequenceNumber ||
             m_lastHeader.CaptureThreadId != captureThreadId ||
             m_lastHeader.CaptureProcNumber != captureProcNumber)

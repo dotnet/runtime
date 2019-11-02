@@ -6,7 +6,7 @@
 **
 ** Header:  ShimLoad.hpp
 **
-** Purpose: Delay load hook used to images to bind to 
+** Purpose: Delay load hook used to images to bind to
 **          dll's shim shipped with the EE
 **
 **
@@ -17,7 +17,7 @@
 
 //*****************************************************************************
 // Sets/Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the 
+// is called at COR setup time. Set is called during EEStartup and by the
 // MetaData dispenser.
 //*****************************************************************************
 HRESULT SetInternalSystemDirectory();

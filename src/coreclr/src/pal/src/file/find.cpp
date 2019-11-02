@@ -44,7 +44,7 @@ namespace CorUnix
     int InternalGlob(
         const char *szPattern,
         int nFlags,
-#if ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS    
+#if ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS
         int (*pnErrFunc)(const char *, int),
 #else
         int (*pnErrFunc)(...),
@@ -66,7 +66,7 @@ namespace CorUnix
         0 on success, -1 on failure.
 
     Some platforms expect the error function for glob to take a variable number
-    of parameters, whereas other platforms insist that the error function take 
+    of parameters, whereas other platforms insist that the error function take
     a const char * and an int. A test in configure determines which is the case
     for each platform and sets ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS
     to 1 if the error func must have the char * and int parameters.
@@ -89,19 +89,19 @@ namespace CorUnix
     }
 }
 
-static BOOL FILEDosGlobA( 
-        CPalThread *pthrCurrent, 
-        const char *pattern, 
-        int flags, 
+static BOOL FILEDosGlobA(
+        CPalThread *pthrCurrent,
+        const char *pattern,
+        int flags,
         glob_t *pgGlob );
 
 static int FILEGlobQsortCompare(const void *in_str1, const void *in_str2);
 
-static int FILEGlobFromSplitPath( 
+static int FILEGlobFromSplitPath(
         const char *dir,
         const char *fname,
         const char *ext,
-        int flags, 
+        int flags,
         glob_t *pgGlob );
 
 /*++
@@ -137,7 +137,7 @@ FindFirstFileA(
         ASSERT("lpFindFileData is NULL!\n");
         dwLastError = ERROR_INVALID_PARAMETER;
         goto done;
-    }                                        
+    }
 
     find_data = (find_obj *)InternalMalloc(sizeof(find_obj));
     if ( find_data == NULL )
@@ -148,11 +148,11 @@ FindFirstFileA(
     }
 
     find_data->self_addr = find_data;
-    
+
     // Clear the glob_t so we can safely call globfree() on it
     // regardless of whether FILEDosGlobA ends up calling glob().
     memset(&(find_data->gGlob), 0, sizeof(find_data->gGlob));
-    
+
     if (!FILEDosGlobA(pthrCurrent, lpFileName, 0, &(find_data->gGlob)))
     {
         // FILEDosGlobA will call SetLastError() on failure.
@@ -164,7 +164,7 @@ FindFirstFileA(
         if (find_data->gGlob.gl_pathc == 0)
         {
             /* Testing has indicated that for this API the
-             * last errors are as follows 
+             * last errors are as follows
              *      c:\temp\foo.txt      - no error
              *      c:\temp\foo          - ERROR_FILE_NOT_FOUND
              *      c:\temp\foo\bar      - ERROR_PATH_NOT_FOUND
@@ -180,7 +180,7 @@ FindFirstFileA(
             }
             FILEDosToUnixPathA( lpTemp );
             FILEGetProperNotFoundError( lpTemp, &dwLastError );
-            
+
             if ( ERROR_PATH_NOT_FOUND == dwLastError )
             {
                 /* If stripping the last segment reveals a file name then
@@ -189,12 +189,12 @@ FindFirstFileA(
                 LPSTR lpLastPathSeparator = NULL;
 
                 lpLastPathSeparator = strrchr( lpTemp, '/');
-                
+
                 if ( lpLastPathSeparator != NULL )
                 {
                     *lpLastPathSeparator = '\0';
-                    
-                    if ( stat( lpTemp, &stat_data) == 0 && 
+
+                    if ( stat( lpTemp, &stat_data) == 0 &&
                          (stat_data.st_mode & S_IFMT) == S_IFREG )
                     {
                         dwLastError = ERROR_DIRECTORY;
@@ -216,7 +216,7 @@ FindFirstFileA(
 
 done:
 
-    if ( hRet == INVALID_HANDLE_VALUE ) 
+    if ( hRet == INVALID_HANDLE_VALUE )
     {
         if(NULL != find_data)
         {
@@ -256,7 +256,7 @@ FindFirstFileW(
     HANDLE retval = INVALID_HANDLE_VALUE;
     CHAR FileNameA[MAX_PATH_FNAME];
     WIN32_FIND_DATAA FindFileDataA;
-        
+
     PERF_ENTRY(FindFirstFileW);
     ENTRY("FindFirstFileW(lpFileName=%p (%S), lpFindFileData=%p)\n",
           lpFileName?lpFileName:W16_NULLSTRING,
@@ -275,7 +275,7 @@ FindFirstFileW(
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
-    if( 0 == WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, lpFileName, -1, 
+    if( 0 == WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, lpFileName, -1,
                                  FileNameA, MAX_PATH_FNAME, NULL, NULL))
     {
         DWORD dwLastError = GetLastError();
@@ -360,7 +360,7 @@ FindNextFileA(
     find_data = (find_obj*)hFindFile;
 
     if ( hFindFile == INVALID_HANDLE_VALUE ||
-         find_data == NULL || 
+         find_data == NULL ||
          find_data->self_addr != find_data )
     {
         TRACE("FindNextFileA received an invalid handle\n");
@@ -388,7 +388,7 @@ FindNextFileA(
                 goto done;
             }
             strcat_s( find_data->fname, sizeof(find_data->fname), ext );
-            
+
             /* get the attributes, but continue if it fails */
             Attr = GetFileAttributesA(path);
             if (Attr == INVALID_FILE_ATTRIBUTES)
@@ -397,7 +397,7 @@ FindNextFileA(
                   *(find_data->next));
             }
             lpFindFileData->dwFileAttributes = Attr;
-            
+
             /* Note that cFileName is NOT the relative path */
             if (strcpy_s( lpFindFileData->cFileName, sizeof(lpFindFileData->cFileName), find_data->fname ) != SAFECRT_SUCCESS)
             {
@@ -405,16 +405,16 @@ FindNextFileA(
                 dwLastError = ERROR_FILENAME_EXCED_RANGE;
                 goto done;
             }
-            
+
             /* we don't support 8.3 filenames, so just leave it empty */
             lpFindFileData->cAlternateFileName[0] = 0;
-            
+
             /* get the filetimes */
             stat_result = stat(path, &stat_data) == 0 ||
             lstat(path, &stat_data) == 0;
-    
+
             find_data->next++;
-    
+
             if ( stat_result )
             {
                     lpFindFileData->ftCreationTime =
@@ -446,12 +446,12 @@ FindNextFileA(
                     /* get file size */
                     lpFindFileData->nFileSizeLow = (DWORD)stat_data.st_size;
     #if SIZEOF_OFF_T > 4
-                    lpFindFileData->nFileSizeHigh = 
+                    lpFindFileData->nFileSizeHigh =
                            (DWORD)(stat_data.st_size >> 32);
     #else
                     lpFindFileData->nFileSizeHigh = 0;
     #endif
-            
+
                     bRet = TRUE;
             break;
                 }
@@ -464,7 +464,7 @@ FindNextFileA(
     else
     {
 
-        ASSERT("find_data->next is (mysteriously) NULL\n");   
+        ASSERT("find_data->next is (mysteriously) NULL\n");
     }
 
 done:
@@ -517,7 +517,7 @@ FindNextFileW(
     /* no 8.3 file names */
     lpFindFileData->cAlternateFileName[0] = 0;
 
-    if( 0 == MultiByteToWideChar(CP_ACP, 0, FindFileDataA.cFileName, -1, 
+    if( 0 == MultiByteToWideChar(CP_ACP, 0, FindFileDataA.cFileName, -1,
                                  lpFindFileData->cFileName, MAX_PATH_FNAME))
     {
         DWORD dwLastError = GetLastError();
@@ -597,13 +597,13 @@ done:
 Function:
   FILEMakePathA
 
-Mimics _makepath from windows, except it's a bit safer. 
+Mimics _makepath from windows, except it's a bit safer.
 Any or all of dir, fname, and ext can be NULL.
 --*/
-static int FILEMakePathA( char *buff, 
+static int FILEMakePathA( char *buff,
                           int buff_size,
-                          const char *dir, 
-                          const char *fname, 
+                          const char *dir,
+                          const char *fname,
                           const char *ext )
 {
     int dir_len = 0;
@@ -625,7 +625,7 @@ static int FILEMakePathA( char *buff,
 
     if ( len > buff_size )
     {
-        ERROR("Buffer is too small (%d bytes), needs %d bytes\n", 
+        ERROR("Buffer is too small (%d bytes), needs %d bytes\n",
               buff_size, len);
         return -1;
     }
@@ -634,23 +634,23 @@ static int FILEMakePathA( char *buff,
         buff[0] = 0;
 
         p = buff;
-        if (dir_len > 0) 
+        if (dir_len > 0)
         {
             if (strncpy_s( buff, buff_size, dir, dir_len + 1 ) != SAFECRT_SUCCESS)
             {
                 ERROR("FILEMakePathA: strncpy_s failed\n");
-                return -1;  
+                return -1;
             }
 
             p += dir_len;
             buff_size-= dir_len;
         }
-        if (fname_len > 0)  
+        if (fname_len > 0)
         {
             if (strncpy_s( p, buff_size, fname, fname_len + 1 ) != SAFECRT_SUCCESS)
             {
                 ERROR("FILEMakePathA: strncpy_s failed\n");
-                return -1;  
+                return -1;
             }
 
             p += fname_len;
@@ -661,7 +661,7 @@ static int FILEMakePathA( char *buff,
             if (strncpy_s( p, buff_size,  ext, ext_len + 1) != SAFECRT_SUCCESS)
             {
                 ERROR("FILEMakePathA: strncpy_s failed\n");
-                return -1;  
+                return -1;
             }
         }
 
@@ -717,10 +717,10 @@ static int FILEGlobQsortCompare(const void *in_str1, const void *in_str2)
 }
 
 /*++
-Function: 
+Function:
   FILEEscapeSquareBrackets
-  
-Simple helper function to insert backslashes before square brackets   
+
+Simple helper function to insert backslashes before square brackets
 to prevent glob from using them as wildcards.
 
 note: this functions assumes all backslashes have previously been
@@ -748,7 +748,7 @@ static void FILEEscapeSquareBrackets(char *pattern, char *escaped_pattern)
     }
     *escaped_pattern='\0';
 
-    TRACE("FILEEscapeSquareBrackets done. escaped_pattern=%s\n", 
+    TRACE("FILEEscapeSquareBrackets done. escaped_pattern=%s\n",
                 escaped_pattern_base);
 }
 
@@ -766,7 +766,7 @@ produce the same result as just calling glob() on the pattern.
 static int FILEGlobFromSplitPath( const char *dir,
                                   const char *fname,
                                   const char *ext,
-                                  int flags, 
+                                  int flags,
                                   glob_t *pgGlob )
 {
     int  Ret;
@@ -782,7 +782,7 @@ static int FILEGlobFromSplitPath( const char *dir,
     if (dir) length = strlen(dir);
     if (fname) length += strlen(fname);
     if (ext) length += strlen(ext);
-    
+
     Pattern = PatternPS.OpenStringBuffer(length);
     if (NULL == Pattern)
     {
@@ -818,7 +818,7 @@ static int FILEGlobFromSplitPath( const char *dir,
         Ret = 0;
     }
 #endif  // GLOB_NOMATCH
-    
+
     /* Ensure that . and .. are placed in front, and sort the rest */
     qsort(pgGlob->gl_pathv, pgGlob->gl_pathc, sizeof(char*),
           FILEGlobQsortCompare);
@@ -836,21 +836,21 @@ Generate pathnames matching a DOS globbing pattern. This function has a similar
 prototype to glob(3), and fulfils the same purpose.  However, DOS globbing
 is slightly different than Unix in the following ways:
 
-- '.*' at the end of a pattern means "any file extension, or none at all", 
+- '.*' at the end of a pattern means "any file extension, or none at all",
 whereas Unix has no concept of file extensions, and will match the '.' like
 any other character
 
 - on Unix, filenames beginning with '.' must be explicitly matched. This is
 not true in DOS
 
-- in DOS, the first two entries (if they match) will be '.' and '..', followed 
-by all other matching entries sorted in ASCII order. In Unix, all entries are 
+- in DOS, the first two entries (if they match) will be '.' and '..', followed
+by all other matching entries sorted in ASCII order. In Unix, all entries are
 treated equally, so '+file' would appear before '.' and '..'
 
 - DOS globbing will fail if any wildcard characters occur before the last path
 separator
 
-This implementation of glob implements the DOS behavior in all these cases, 
+This implementation of glob implements the DOS behavior in all these cases,
 but otherwise attempts to behave exactly like POSIX glob.  The only exception
 is its return value -- it returns TRUE if it succeeded (finding matches or
 finding no matches but without any error occurring) or FALSE if any error
@@ -858,13 +858,13 @@ occurs.  It calls SetLastError() if it returns FALSE.
 
 Sorting doesn't seem to be consistent on all Windows platform, and it's
 not required for CoreCLR to have the same sorting algorithm as Windows 2000.
-This implementation will give slightly different result for the sort list 
+This implementation will give slightly different result for the sort list
 than Windows 2000.
 
 --*/
 static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
-                          const char *pattern, 
-                          int flags, 
+                          const char *pattern,
+                          int flags,
                           glob_t *pgGlob )
 {
     char Dir[_MAX_DIR];
@@ -881,7 +881,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
     Ext[0] = 0;
 
      _splitpath_s( pattern, NULL, 0, Dir, _MAX_DIR, Filename, _MAX_FNAME+1, Ext, _MAX_EXT);
-    
+
     /* check to see if _splitpath_s failed */
     if ( Filename[0] == 0 )
     {
@@ -933,7 +933,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
        to the second character of a buffer which happens to have '.' as
        its first character.
     */
-       
+
     A = strncmp(Ext, ".*", 3) == 0;
     B = (Filename[strlen(Filename) - 1] == '*');
     C = (*Filename == '*');
@@ -942,7 +942,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
           "and filename DOES%s begin with '*'\n",
           A?"":" NOT", B?"":" NOT", C?"":" NOT");
 
-    if ( !(A && B) ) 
+    if ( !(A && B) )
     {
         /* the original pattern */
         globResult = FILEGlobFromSplitPath(Dir, Filename, Ext, 0, pgGlob);

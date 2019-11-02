@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ClassFactory.h
-// 
+//
 
 //
-// Class factories are used by the pluming in COM to activate new objects.  
+// Class factories are used by the pluming in COM to activate new objects.
 // This module contains the class factory code to instantiate the debugger
 // objects described in RSPriv.h.
 //
@@ -22,34 +22,34 @@ typedef HRESULT (STDMETHODCALLTYPE * PFN_CREATE_OBJ)(REFIID riid, void **ppvObje
 
 
 //*****************************************************************************
-// One class factory object satifies all of our clsid's, to reduce overall 
+// One class factory object satifies all of our clsid's, to reduce overall
 // code bloat.
 //*****************************************************************************
 class CClassFactory :
 	public IClassFactory
 {
 	CClassFactory() { }						// Can't use without data.
-	
+
 public:
 	CClassFactory(PFN_CREATE_OBJ pfnCreateObject)
 		: m_cRef(1), m_pfnCreateObject(pfnCreateObject)
 	{ }
 
 	virtual ~CClassFactory() {}
-	
+
 	//
 	// IUnknown methods.
 	//
 
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID		riid,
         void		**ppvObject);
-    
+
     virtual ULONG STDMETHODCALLTYPE AddRef()
 	{
 		return (InterlockedIncrement(&m_cRef));
 	}
-    
+
     virtual ULONG STDMETHODCALLTYPE Release()
 	{
 		LONG cRef = InterlockedDecrement(&m_cRef);
@@ -63,12 +63,12 @@ public:
 	// IClassFactory methods.
 	//
 
-    virtual HRESULT STDMETHODCALLTYPE CreateInstance( 
+    virtual HRESULT STDMETHODCALLTYPE CreateInstance(
         IUnknown	*pUnkOuter,
         REFIID		riid,
         void		**ppvObject);
-    
-    virtual HRESULT STDMETHODCALLTYPE LockServer( 
+
+    virtual HRESULT STDMETHODCALLTYPE LockServer(
         BOOL		fLock);
 
 

@@ -37,7 +37,7 @@ const SIZE_T g_rgNumPrimes = sizeof(g_rgPrimes) / sizeof(*g_rgPrimes);
 
 const unsigned int SLOTS_PER_BUCKET = 4;
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 void *PtrHashMap::operator new(size_t size, LoaderHeap *pHeap)
 {
@@ -141,7 +141,7 @@ void HashMap::HashFunction(const UPTR key, const UINT numBuckets, UINT &seed, UI
     _ASSERTE(incr > 0 && incr < numBuckets);
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------
 //  inline void HashMap::SetSize(Bucket *rgBuckets, size_t size)
@@ -170,11 +170,11 @@ HashMap::HashMap()
     m_cbPrevSlotsInUse = 0; // track valid slots present during previous rehash
 
     //Debug data member
-#ifdef _DEBUG 
+#ifdef _DEBUG
     m_fInSyncCode = false;
 #endif
     // profile data members
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
     m_cbRehash = 0;
     m_cbRehashSlots = 0;
     m_cbObsoleteTables = 0;
@@ -183,7 +183,7 @@ HashMap::HashMap()
     maxFailureProbe =0;
     memset(m_rgLookupProbes,0,HASHTABLE_LOOKUP_PROBES_DATA*sizeof(LONG));
 #endif // HASHTABLE_PROFILE
-#ifdef _DEBUG 
+#ifdef _DEBUG
     m_lockData = NULL;
     m_pfnLockOwner = NULL;
 #endif // _DEBUG
@@ -282,11 +282,11 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
     //      (m_pCompare->CompareHelper(0,0) != 0)
     //    );
 
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
     m_cbTotalBuckets = size+1;
 #endif
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     if (pLock == NULL) {
         m_lockData = NULL;
         m_pfnLockOwner = NULL;
@@ -363,14 +363,14 @@ void HashMap::Clear()
 //  UPTR   HashMap::CompareValues(const UPTR value1, const UPTR value2)
 //  compare values with the function pointer provided
 //
-#ifndef _DEBUG 
+#ifndef _DEBUG
 inline
 #endif
 UPTR   HashMap::CompareValues(const UPTR value1, const UPTR value2)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef _DEBUG 
+#ifndef _DEBUG
     CONTRACTL
     {
         DISABLED(THROWS);       // This is not a bug, we cannot decide, since the function ptr called may be either.
@@ -388,7 +388,7 @@ UPTR   HashMap::CompareValues(const UPTR value1, const UPTR value2)
 //  bool HashMap::Leave()
 //  check  valid use of the hash table in synchronus mode
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 #ifndef DACCESS_COMPILE
 void HashMap::Enter(HashMap *map)
 {
@@ -400,10 +400,10 @@ void HashMap::Enter(HashMap *map)
     map->m_fInSyncCode = true;
 }
 #else
-// In DAC builds, we don't want to take the lock, we just want to know if it's held. If it is, 
-// we assume the hash map is in an inconsistent state and throw an exception. 
-// Arguments: 
-//     input: map - the map controlled by the lock. 
+// In DAC builds, we don't want to take the lock, we just want to know if it's held. If it is,
+// we assume the hash map is in an inconsistent state and throw an exception.
+// Arguments:
+//     input: map - the map controlled by the lock.
 // Note: Throws
 void HashMap::Enter(HashMap *map)
 {
@@ -439,8 +439,8 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
 
-#ifndef DACCESS_COMPILE 
-    #ifdef HASHTABLE_PROFILE 
+#ifndef DACCESS_COMPILE
+    #ifdef HASHTABLE_PROFILE
         if (ntry < HASHTABLE_LOOKUP_PROBES_DATA - 2)
             FastInterlockIncrement(&m_rgLookupProbes[ntry]);
         else
@@ -461,7 +461,7 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
 #endif // !DACCESS_COMPILE
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------
 //  void HashMap::InsertValue (UPTR key, UPTR value)
@@ -515,7 +515,7 @@ LReturn: // label for return
 
     m_cbInserts++;
 
-    #ifdef _DEBUG 
+    #ifdef _DEBUG
         ASSERT (m_pCompare != NULL || value == LookupValue (key,value));
         // check proper concurrent use of the hash table in synchronous mode
     #endif // _DEBUG
@@ -541,7 +541,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     SCAN_IGNORE_THROW;          // See contract above.
     SCAN_IGNORE_TRIGGER;        // See contract above.
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
     // BROKEN: This is called for the RCWCache on the GC thread
@@ -585,7 +585,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
 // Not using compare function in DAC build.
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
                 if (CompareValues(value,storedVal))
 #endif
                 {
@@ -608,7 +608,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     return INVALIDENTRY;
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------
 //  UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
@@ -761,7 +761,7 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
     // not found
     ProfileLookup(ntry,INVALIDENTRY); //no-op in non HASHTABLE_PROFILE code
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     ASSERT (m_pCompare != NULL || (UPTR) INVALIDENTRY == LookupValue (key,value));
     // check proper concurrent use of the hash table in synchronous mode
 #endif // _DEBUG
@@ -918,11 +918,11 @@ void HashMap::Rehash()
                 UPTR key =rgBuckets[nb].m_rgKeys[i];
                 if (key > DELETED)
                 {
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
                     UPTR ntry =
 #endif
                     PutEntry (rgNewBuckets+1, key, rgBuckets[nb].GetValue (i));
-                    #ifdef HASHTABLE_PROFILE 
+                    #ifdef HASHTABLE_PROFILE
                         if(ntry >=8)
                             m_cbInsertProbesGt8++;
                     #endif // HASHTABLE_PROFILE
@@ -946,14 +946,14 @@ LDone:
     // replace the old array with the new one.
     m_rgBuckets = rgNewBuckets;
 
-    #ifdef HASHTABLE_PROFILE 
+    #ifdef HASHTABLE_PROFILE
         m_cbRehash++;
         m_cbRehashSlots+=m_cbInserts;
         m_cbObsoleteTables++; // track statistics
         m_cbTotalBuckets += (cbNewSize+1);
     #endif // HASHTABLE_PROFILE
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 
     unsigned nb;
     if (m_fAsyncMode)
@@ -1023,7 +1023,7 @@ void HashMap::Compact()
 
     _ASSERTE (OwnLock());
 
-    // 
+    //
     GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
     ASSERT(m_rgBuckets != NULL);
 
@@ -1075,7 +1075,7 @@ void HashMap::Compact()
 
 }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 // A thread must own a lock for a hash if it is a writer.
 BOOL HashMap::OwnLock()
 {
@@ -1100,7 +1100,7 @@ BOOL HashMap::OwnLock()
 }
 #endif // _DEBUG
 
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
 //---------------------------------------------------------------------
 //  void HashMap::DumpStatistics()
 //  dump statistics collected in profile mode
@@ -1139,7 +1139,7 @@ void HashMap::DumpStatistics()
 
 #endif // !DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
 
 void
 HashMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -1168,7 +1168,7 @@ HashMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // DACCESS_COMPILE
 
 #if 0 // Perf test code, enabled on-demand for private testing.
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 // This is for testing purposes only!
 void HashMap::HashMapTest()
 {
@@ -1231,7 +1231,7 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
     for(unsigned int i = MinThreshold * 80; i < MinThreshold * 80 + 1000; i++)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
     printf("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
     table->DumpStatistics();
 #else // !HASHTABLE_PROFILE

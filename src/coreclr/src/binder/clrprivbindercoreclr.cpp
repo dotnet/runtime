@@ -18,7 +18,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
-    
+
 #ifdef _DEBUG
     // MSCORLIB should be bound using BindToSystem
     _ASSERTE(!pAssemblyName->IsMscorlib());
@@ -36,7 +36,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
     }
-    
+
     return hr;
 }
 
@@ -48,7 +48,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pIAssemblyName != nullptr && ppAssembly != nullptr);
-    
+
     EX_TRY
     {
         *ppAssembly = nullptr;
@@ -58,7 +58,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
 
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
-        
+
         hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -79,7 +79,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
             if (pManagedAssemblyLoadContext != NULL)
             {
-                hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, 
+                hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName,
                                                                    NULL, &pCoreCLRFoundAssembly);
                 if (SUCCEEDED(hr))
                 {
@@ -94,12 +94,12 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             }
         }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-        
+
         IF_FAIL_GO(hr);
 
         *ppAssembly = pCoreCLRFoundAssembly.Extract();
 
-Exit:;        
+Exit:;
     }
     EX_CATCH_HRESULT(hr);
 
@@ -107,8 +107,8 @@ Exit:;
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage, 
-                                                /* in */ BOOL fIsNativeImage, 
+HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
+                                                /* in */ BOOL fIsNativeImage,
                                                 /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -116,28 +116,28 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
-        ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;        
+        ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
         ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-        
+
         PEKIND PeKind = peNone;
-        
+
         // Get the Metadata interface
         DWORD dwPAFlags[2];
         IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
         IF_FAIL_GO(AssemblyBinder::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-        
+
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
-        
+
         // Using the information we just got, initialize the assemblyname
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
-        
+
         // Validate architecture
         if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
-        
+
         // Easy out for mscorlib
         if (pAssemblyName->IsMscorlib())
         {
@@ -164,7 +164,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 }
             }
         }
-            
+
         hr = AssemblyBinder::BindUsingPEImage(&m_appContext, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
@@ -172,7 +172,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             pCoreCLRFoundAssembly->SetBinder(this);
             *ppAssembly = pCoreCLRFoundAssembly.Extract();
         }
-Exit:;        
+Exit:;
     }
     EX_CATCH_HRESULT(hr);
 
@@ -180,20 +180,20 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-HRESULT CLRPrivBinderCoreCLR::GetBinderID( 
+HRESULT CLRPrivBinderCoreCLR::GetBinderID(
         UINT_PTR *pBinderId)
 {
-    *pBinderId = reinterpret_cast<UINT_PTR>(this); 
+    *pBinderId = reinterpret_cast<UINT_PTR>(this);
     return S_OK;
 }
-         
+
 HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
                                                 SString  &sAppPaths,
                                                 SString  &sAppNiPaths)
 {
     HRESULT hr = S_OK;
-    
+
     EX_TRY
     {
         hr = m_appContext.SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, sAppNiPaths, TRUE /* fAcquireLock */);
@@ -216,16 +216,16 @@ HRESULT CLRPrivBinderCoreCLR::Bind(SString           &assemblyDisplayName,
     VALIDATE_ARG_RET(ppAssembly != NULL);
 
     AssemblyName assemblyName;
-    
+
     ReleaseHolder<AssemblyName> pAssemblyName;
-    
+
     if (!assemblyDisplayName.IsEmpty())
     {
         // AssemblyDisplayName can be empty if wszCodeBase is specified.
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(assemblyDisplayName));
     }
-    
+
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
@@ -245,8 +245,8 @@ HRESULT CLRPrivBinderCoreCLR::Bind(SString           &assemblyDisplayName,
         }
     }
     EX_CATCH_HRESULT(hr);
-    
-Exit:    
+
+Exit:
     return hr;
 }
 

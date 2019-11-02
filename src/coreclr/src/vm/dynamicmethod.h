@@ -14,15 +14,15 @@
 #include <daccess.h>
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // This links together a set of news and release in one object.
 // The idea is to have a predefined size allocated up front and used by different calls to new.
 // All the allocation will be released at the same time releaseing an instance of this class
 // Here is how the object is laid out
-// | ptr_to_next_chunk | size_left_in_chunk | data | ... | data 
+// | ptr_to_next_chunk | size_left_in_chunk | data | ... | data
 // This is not a particularly efficient allocator but it works well for a small number of allocation
 // needed while jitting a method
-// 
+//
 class ChunkAllocator
 {
 private:
@@ -39,7 +39,7 @@ public:
 };
 
 //---------------------------------------------------------------------------------------
-// 
+//
 class DynamicResolver
 {
 public:
@@ -63,9 +63,9 @@ public:
     //
     // code info data
     virtual BYTE * GetCodeInfo(
-        unsigned *       pCodeSize, 
-        unsigned *       pStackSize, 
-        CorInfoOptions * pOptions, 
+        unsigned *       pCodeSize,
+        unsigned *       pStackSize,
+        CorInfoOptions * pOptions,
         unsigned *       pEHSize) = 0;
     virtual SigPointer GetLocalSig() = 0;
 
@@ -82,11 +82,11 @@ public:
 };  // class DynamicResolver
 
 //---------------------------------------------------------------------------------------
-// 
+//
 class StringLiteralEntry;
 
 //---------------------------------------------------------------------------------------
-// 
+//
 struct DynamicStringLiteral
 {
     DynamicStringLiteral *  m_pNext;
@@ -94,12 +94,12 @@ struct DynamicStringLiteral
 };
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // LCGMethodResolver
 //
 //  a jit resolver for managed dynamic methods
 //
-class LCGMethodResolver : public DynamicResolver 
+class LCGMethodResolver : public DynamicResolver
 {
     friend class DynamicMethodDesc;
     friend class DynamicMethodTable;
@@ -126,7 +126,7 @@ public:
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
-    
+
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
@@ -165,11 +165,11 @@ private:
 };  // class LCGMethodResolver
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // a DynamicMethodTable is used by the light code generation to lazily allocate methods.
 // The methods in this MethodTable are not known up front and their signature is defined
 // at runtime
-// 
+//
 class DynamicMethodTable
 {
 public:
@@ -217,16 +217,16 @@ public:
 
 
 //---------------------------------------------------------------------------------------
-// 
+//
 #define HOST_CODEHEAP_SIZE_ALIGN 64
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Implementation of the CodeHeap for DynamicMethods.
 // This CodeHeap uses the host interface VirtualAlloc/Free and allows
 // for reclamation of generated code
 // (Check the base class - CodeHeap in codeman.h - for comments on the functions)
-// 
+//
 class HostCodeHeap : CodeHeap
 {
 #ifdef DACCESS_COMPILE
@@ -307,7 +307,7 @@ public:
 }; // class HostCodeHeap
 
 //---------------------------------------------------------------------------------------
-// 
+//
 #include "ilstubresolver.h"
 
 inline MethodDesc* GetMethod(CORINFO_METHOD_HANDLE methodHandle)
@@ -346,7 +346,7 @@ inline DynamicResolver* GetDynamicResolver(CORINFO_MODULE_HANDLE module)
     return (DynamicResolver*)(((size_t)module) & ~((size_t)CORINFO_MODULE_HANDLE_TYPE_MASK));
 }
 
-inline Module* GetModule(CORINFO_MODULE_HANDLE scope) 
+inline Module* GetModule(CORINFO_MODULE_HANDLE scope)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -360,7 +360,7 @@ inline Module* GetModule(CORINFO_MODULE_HANDLE scope)
     }
 }
 
-inline CORINFO_MODULE_HANDLE GetScopeHandle(Module* module) 
+inline CORINFO_MODULE_HANDLE GetScopeHandle(Module* module)
 {
     LIMITED_METHOD_CONTRACT;
     return(CORINFO_MODULE_HANDLE(module));

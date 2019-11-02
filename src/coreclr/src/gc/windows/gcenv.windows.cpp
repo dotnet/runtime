@@ -62,7 +62,7 @@ public:
     uint16_t GetCombinedValue() { return m_groupProc; }
 };
 
-struct CPU_Group_Info 
+struct CPU_Group_Info
 {
     WORD    nr_active;  // at most 64
     WORD    reserved[1];
@@ -82,7 +82,7 @@ static CPU_Group_Info *g_CPUGroupInfoArray;
 void InitNumaNodeInfo()
 {
     ULONG highest = 0;
-    
+
     g_fEnableGCNumaAware = false;
 
     if (!GCConfig::GetGCNumaAware())
@@ -196,7 +196,7 @@ bool InitCPUGroupInfoArray()
     }
 
     g_CPUGroupInfoArray = new (std::nothrow) CPU_Group_Info[g_nGroups];
-    if (g_CPUGroupInfoArray == NULL) 
+    if (g_CPUGroupInfoArray == NULL)
     {
         delete[] bBuffer;
         return false;
@@ -233,7 +233,7 @@ bool InitCPUGroupInfoRange()
     WORD begin   = 0;
     WORD nr_proc = 0;
 
-    for (WORD i = 0; i < g_nGroups; i++) 
+    for (WORD i = 0; i < g_nGroups; i++)
     {
         nr_proc += g_CPUGroupInfoArray[i].nr_active;
         g_CPUGroupInfoArray[i].begin = begin;
@@ -326,7 +326,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
             goto exit;
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit_info;
-        if (GCQueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info, 
+        if (GCQueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info,
             sizeof(limit_info), NULL))
         {
             size_t job_memory_limit = (size_t)UINTPTR_MAX;
@@ -335,13 +335,13 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 
             // Notes on the NT job object:
             //
-            // You can specific a bigger process commit or working set limit than 
+            // You can specific a bigger process commit or working set limit than
             // job limit which is pointless so we use the smallest of all 3 as
             // to calculate our "physical memory load" or "available physical memory"
             // when running inside a job object, ie, we treat this as the amount of physical memory
             // our process is allowed to use.
-            // 
-            // The commit limit is already reflected by default when you run in a 
+            //
+            // The commit limit is already reflected by default when you run in a
             // job but the physical memory load is not.
             //
             if ((limit_info.BasicLimitInformation.LimitFlags & JOB_OBJECT_LIMIT_JOB_MEMORY) != 0)
@@ -414,13 +414,13 @@ exit:
     return g_RestrictedPhysicalMemoryLimit;
 }
 
-// This function checks to see if GetLogicalProcessorInformation API is supported. 
-// On success, this function allocates a SLPI array, sets nEntries to number 
-// of elements in the SLPI array and returns a pointer to the SLPI array after filling it with information. 
+// This function checks to see if GetLogicalProcessorInformation API is supported.
+// On success, this function allocates a SLPI array, sets nEntries to number
+// of elements in the SLPI array and returns a pointer to the SLPI array after filling it with information.
 //
 // Note: If successful, GetLPI allocates memory for the SLPI array and expects the caller to
 // free the memory once the caller is done using the information in the SLPI array.
-SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries) 
+SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries)
 {
     DWORD cbslpi = 0;
     DWORD dwNumElements = 0;
@@ -442,7 +442,7 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries)
 
     dwNumElements = cbslpi / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
 
-    // allocate a buffer in the free heap to hold an array of SLPI entries from GLPI, number of elements in the array is dwNumElements 
+    // allocate a buffer in the free heap to hold an array of SLPI entries from GLPI, number of elements in the array is dwNumElements
 
     pslpi = new (std::nothrow) SYSTEM_LOGICAL_PROCESSOR_INFORMATION[ dwNumElements ];
 
@@ -450,7 +450,7 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries)
     {
         // the memory allocation failed
         return NULL;
-    }      
+    }
 
     // Make call to GetLogicalProcessorInformation. Returns array of SLPI structures
 
@@ -459,7 +459,7 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries)
         // GetLogicalProcessorInformation failed
         delete[] pslpi ; //Allocation was fine but the API call itself failed and so we are releasing the memory before the return NULL.
         return NULL ;
-    } 
+    }
 
     // GetLogicalProcessorInformation successful, set nEntries to number of entries in the SLPI array
     *nEntries  = dwNumElements;
@@ -478,11 +478,11 @@ size_t GetLogicalProcessorCacheSizeFromOS()
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
     // if API not present or on failure.
 
-    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = GetLPI(&nEntries) ;   
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = GetLPI(&nEntries) ;
 
     if (pslpi == NULL)
     {
-        // GetLogicalProcessorInformation not supported or failed.  
+        // GetLogicalProcessorInformation not supported or failed.
         goto Exit;
     }
 
@@ -496,14 +496,14 @@ size_t GetLogicalProcessorCacheSizeFromOS()
             if (pslpi[i].Relationship == RelationCache)
             {
                 last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
-            }             
-        }  
+            }
+        }
         cache_size = last_cache_size;
     }
 Exit:
 
     if(pslpi)
-        delete[] pslpi;  // release the memory allocated for the SLPI array.    
+        delete[] pslpi;  // release the memory allocated for the SLPI array.
 
     return cache_size;
 }
@@ -595,10 +595,10 @@ void GCToOSInterface::Shutdown()
     // nothing to do.
 }
 
-// Get numeric id of the current thread if possible on the 
+// Get numeric id of the current thread if possible on the
 // current platform. It is indended for logging purposes only.
 // Return:
-//  Numeric id of the current thread or 0 if the 
+//  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
     return ::GetCurrentThreadId();
@@ -707,7 +707,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
     // TODO(segilles) CLR implementation of __SwitchToThread spins for short sleep durations
     // to avoid context switches - is that interesting or useful here?
-    if (sleepMSec > 0) 
+    if (sleepMSec > 0)
     {
         ::SleepEx(sleepMSec, FALSE);
     }
@@ -906,11 +906,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     int maxCpuId = dwBuffer[0];
 
-    if (dwBuffer[1] == 'uneG') 
+    if (dwBuffer[1] == 'uneG')
     {
-        if (dwBuffer[3] == 'Ieni') 
+        if (dwBuffer[3] == 'Ieni')
         {
-            if (dwBuffer[2] == 'letn') 
+            if (dwBuffer[2] == 'letn')
             {
                 maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
 #ifdef BIT64
@@ -943,7 +943,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
                     DWORD dwL3CacheBits = dwBuffer[3];
 
                     maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-                            
+
                     __cpuid(dwBuffer, 0x1);
                     DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
                     DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
@@ -1155,7 +1155,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
 // Remarks:
-//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
+//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
 //  specified, it returns amount of actual physical memory.
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
@@ -1209,7 +1209,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
                     *available_physical = restricted_limit - workingSetSize;
             }
             // Available page file doesn't mean much when physical memory is restricted since
-            // we don't know how much of it is available to this process so we are not going to 
+            // we don't know how much of it is available to this process so we are not going to
             // bother to make another OS call for it.
             if (available_page_file)
                 *available_page_file = 0;
@@ -1220,7 +1220,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
     MEMORYSTATUSEX ms;
     ::GetProcessMemoryLoad(&ms);
-    
+
     if (g_UseRestrictedVirtualMemory)
     {
         _ASSERTE (ms.ullTotalVirtual == restricted_limit);
@@ -1297,7 +1297,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
         return g_SystemInfo.dwNumberOfProcessors;
     }
 }
- 
+
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_fEnableGCNumaAware;

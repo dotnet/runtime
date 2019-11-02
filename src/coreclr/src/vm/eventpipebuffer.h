@@ -62,7 +62,7 @@ private:
     // The sequence number corresponding to m_pCurrentReadEvent
     // Prior to read iteration it is the sequence number of the first event in the buffer
     unsigned int m_eventSequenceNumber;
-    
+
     // A pointer to the actual buffer.
     BYTE *m_pBuffer;
 

@@ -36,7 +36,7 @@ inline
 void StubUnwindInfoHeader::Init ()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     pNext = (StubUnwindInfoHeader*)(SIZE_T)1;
 }
 
@@ -59,7 +59,7 @@ void StubLinker::Push(UINT size)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ClrSafeInt<SHORT> stackSize(m_stackSize); 
+    ClrSafeInt<SHORT> stackSize(m_stackSize);
     _ASSERTE(FitsIn<SHORT>(size));
     SHORT sSize = static_cast<SHORT>(size);
     stackSize += sSize;

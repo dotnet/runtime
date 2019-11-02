@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // FilterManager.h
-// 
+//
 
 //
 // Contains utility code for MD directory
@@ -16,7 +16,7 @@
 
 
 //*********************************************************************
-// FilterManager Class 
+// FilterManager Class
 //*********************************************************************
 class FilterManager
 {

@@ -10,7 +10,7 @@
 ** Purpose: This file contains the list of managed standard
 **          interfaces. Each standard interface also has the
 **          list of method that it contains.
-** 
+**
 ===========================================================*/
 
 #ifndef FEATURE_COMINTEROP
@@ -29,7 +29,7 @@
 
 #define MNGSTDITF_DEFINE_METH3(FriendlyName, MethName, MethSig, FcallDecl) \
     MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, MethName##_3, MethName, MethSig, FcallDecl)
-        
+
 #define CUSTOM_MARSHALER_ASM ", System.Private.CoreLib, Version=" VER_ASSEMBLYVERSION_STR ", Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
 
 

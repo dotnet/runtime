@@ -12,7 +12,7 @@ class ArgDestination
     // Base address to which the m_offset is applied to get the actual argument location.
     PTR_VOID m_base;
     // Offset of the argument relative to the m_base. On AMD64 on Unix, it can have a special
-    // value that represent a struct that contain both general purpose and floating point fields 
+    // value that represent a struct that contain both general purpose and floating point fields
     // passed in registers.
     int m_offset;
     // For structs passed in registers, this member points to an ArgLocDesc that contains
@@ -33,9 +33,9 @@ public:
 #elif defined(_TARGET_ARM64_)
         // This assert is not interesting on arm64. argLocDescForStructInRegs could be
         // initialized if the args are being enregistered.
-#else        
+#else
         _ASSERTE(argLocDescForStructInRegs == NULL);
-#endif        
+#endif
     }
 
     // Get argument destination address for arguments that are not structs passed in registers.
@@ -56,7 +56,7 @@ public:
 
     // Copy struct argument into registers described by the current ArgDestination.
     // Arguments:
-    //  src = source data of the structure 
+    //  src = source data of the structure
     //  fieldBytes - size of the structure
     void CopyHFAStructToRegister(void *src, int fieldBytes)
     {
@@ -67,7 +67,7 @@ public:
         int hfaFieldSize = m_argLocDescForStructInRegs->m_hfaFieldSize;
         UINT64* dest = (UINT64*) this->GetDestinationAddress();
 
-        for (int i = 0; i < floatRegCount; ++i) 
+        for (int i = 0; i < floatRegCount; ++i)
         {
             // Copy 4 or 8 bytes from src.
             UINT64 val = (hfaFieldSize == 4) ? *((UINT32*)src) : *((UINT64*)src);
@@ -135,7 +135,7 @@ public:
 
     // Copy struct argument into registers described by the current ArgDestination.
     // Arguments:
-    //  src = source data of the structure 
+    //  src = source data of the structure
     //  fieldBytes - size of the structure
     //  destOffset - nonzero when copying values into Nullable<T>, it is the offset
     //               of the T value inside of the Nullable<T>
@@ -147,7 +147,7 @@ public:
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         _ASSERTE(IsStructPassedInRegs());
-     
+
         BYTE* genRegDest = (BYTE*)GetStructGenRegDestinationAddress() + destOffset;
         BYTE* floatRegDest = (BYTE*)GetStructFloatRegDestinationAddress();
         INDEBUG(int remainingBytes = fieldBytes;)
@@ -204,7 +204,7 @@ public:
             INDEBUG(remainingBytes -= eightByteSize;)
         }
 
-        _ASSERTE(remainingBytes == 0);        
+        _ASSERTE(remainingBytes == 0);
     }
 
 #endif //DACCESS_COMPILE

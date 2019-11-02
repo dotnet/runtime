@@ -19,7 +19,7 @@
 #include "vars.hpp"
 
 // #SyncBlockOverview
-// 
+//
 // Every Object is preceded by an ObjHeader (at a negative offset). The code:ObjHeader has an index to a
 // code:SyncBlock. This index is 0 for the bulk of all instances, which indicates that the object shares a
 // dummy SyncBlock with most other objects.
@@ -97,8 +97,8 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 
-// This lock is only taken when we need to modify the index value in m_SyncBlockValue. 
-// It should not be taken if the object already has a real syncblock index. 
+// This lock is only taken when we need to modify the index value in m_SyncBlockValue.
+// It should not be taken if the object already has a real syncblock index.
 #define BIT_SBLK_SPIN_LOCK                  0x10000000
 
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
@@ -115,7 +115,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 // add more bits here... (adjusting the following mask to make room)
 
-// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is set, 
+// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is set,
 // then if BIT_SBLK_IS_HASHCODE is also set, the rest of the dword is the hash code (bits 0 thru 25),
 // otherwise the rest of the dword is the sync block index (bits 0 thru 25)
 #define BIT_SBLK_IS_HASHCODE            0x04000000
@@ -136,7 +136,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 #else // !BIT64
 #define SIZEOF_OBJHEADER    4
 #endif // !BIT64
- 
+
 
 inline void InitializeSpinConstants()
 {
@@ -450,10 +450,10 @@ private:
     // Only SyncBlocks can create AwareLocks.  Hence this private constructor.
     AwareLock(DWORD indx)
         : m_Recursion(0),
-#ifndef DACCESS_COMPILE          
+#ifndef DACCESS_COMPILE
 // PreFAST has trouble with intializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
-#endif // DACCESS_COMPILE          
+#endif // DACCESS_COMPILE
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
           m_waiterStarvationStartTimeMs(0)
@@ -541,7 +541,7 @@ public:
     EnterHelperResult TryEnterInsideSpinLoopHelper(Thread *pCurThread);
     bool TryEnterAfterSpinLoopHelper(Thread *pCurThread);
 
-    // Helper encapsulating the core logic for leaving monitor. Returns what kind of 
+    // Helper encapsulating the core logic for leaving monitor. Returns what kind of
     // follow up action is necessary
     AwareLock::LeaveHelperAction LeaveHelper(Thread* pCurThread);
 
@@ -554,7 +554,7 @@ public:
     void    Signal()
     {
         WRAPPER_NO_CONTRACT;
-        
+
         // CLREvent::SetMonitorEvent works even if the event has not been intialized yet
         m_SemEvent.SetMonitorEvent();
 
@@ -607,7 +607,7 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
-    
+
 public:
 #ifndef FEATURE_PAL
     // List of InteropSyncBlockInfo instances that have been freed since the last syncblock cleanup.
@@ -667,7 +667,7 @@ public:
 
         if (pCCW == NULL)
             pCCW = (ComCallWrapper*) 0x1;
-        
+
         m_pCCW = pCCW;
     }
 #endif // !DACCESS_COMPILE
@@ -678,7 +678,7 @@ public:
 
         if (m_pCCW == (PTR_ComCallWrapper)0x1)
             return NULL;
-        
+
         return m_pCCW;
     }
 
@@ -699,7 +699,7 @@ public:
 
         if (pCCF == NULL)
             pCCF = (ComClassFactory*)0x1;
-        
+
         m_pCCF = pCCF;
     }
 
@@ -709,7 +709,7 @@ public:
 
         if (m_pCCF == (ComClassFactory*)0x1)
             return NULL;
-        
+
         return m_pCCF;
     }
 
@@ -774,7 +774,7 @@ private:
 #ifdef FEATURE_COMINTEROP
     // If this object is being exposed to COM, it will have an associated CCW object
     PTR_ComCallWrapper  m_pCCW;
-    
+
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     // If this object represents a type object, it will have an associated class factory
     ComClassFactory*    m_pCCF;
@@ -846,7 +846,7 @@ class SyncBlock
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays
     // The way this was done was by adding a trail byte at the end of the BSTR
     // To support this scenario, we need to use the sync block for this special case and
-    // save the trail character in here. 
+    // save the trail character in here.
     // This stores the trail character when a BSTR is used as an array
     WCHAR m_BSTRTrailByte;
 
@@ -862,7 +862,7 @@ class SyncBlock
         LIMITED_METHOD_CONTRACT;
 
         m_pInteropInfo = NULL;
-        
+
         // The monitor must be 32-bit aligned for atomicity to be guaranteed.
         _ASSERTE((((size_t) &m_Monitor) & 3) == 0);
     }
@@ -887,8 +887,8 @@ class SyncBlock
        return (m_Monitor.m_dwSyncIndex & SyncBlockPrecious) != 0;
    }
 
-    // True is the syncblock and its index are disposable. 
-    // If new members are added to the syncblock, this 
+    // True is the syncblock and its index are disposable.
+    // If new members are added to the syncblock, this
     // method needs to be modified accordingly
     BOOL IsIDisposable()
     {
@@ -909,7 +909,7 @@ class SyncBlock
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         if (!m_pInteropInfo)
         {
             NewHolder<InteropSyncBlockInfo> pInteropInfo;
@@ -930,7 +930,7 @@ class SyncBlock
             if (SetInteropInfo(pInteropInfo))
                 pInteropInfo.SuppressRelease();
         }
-        
+
         RETURN m_pInteropInfo;
     }
 
@@ -952,15 +952,15 @@ class SyncBlock
     // Returns false if the InteropInfo block was already set - does not overwrite the previous value.
     // True if the InteropInfo block was successfully set with the passed in value.
     bool SetInteropInfo(InteropSyncBlockInfo* pInteropInfo);
-        
+
 #ifdef EnC_SUPPORTED
     // Get information about fields added to this object by the Debugger's Edit and Continue support
-    PTR_EnCSyncBlockInfo GetEnCInfo() 
+    PTR_EnCSyncBlockInfo GetEnCInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pEnCInfo;
     }
-        
+
     // Store information about fields added to this object by the Debugger's Edit and Continue support
     void SetEnCInfo(EnCSyncBlockInfo *pEnCInfo);
 #endif // EnC_SUPPORTED
@@ -1019,7 +1019,7 @@ class SyncBlock
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        //hold the syncblock 
+        //hold the syncblock
 #ifndef DACCESS_COMPILE
         SetPrecious();
 #endif
@@ -1122,8 +1122,8 @@ typedef DPTR(SyncBlockCache) PTR_SyncBlockCache;
 // as well as SyncTableEntries (See explaintation at top of this file).
 //
 // There is only one process global SyncBlockCache (SyncBlockCache::s_pSyncBlockCache)
-// and SyncTableEntry table (g_pSyncTable).  
-// 
+// and SyncTableEntry table (g_pSyncTable).
+//
 // see code:#SyncBlockOverview for more
 class SyncBlockCache
 {
@@ -1133,7 +1133,7 @@ class SyncBlockCache
 
     friend class SyncBlock;
 
-    
+
   private:
     PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
     SLink*      m_FreeBlockList;        // list of free sync blocks
@@ -1141,23 +1141,23 @@ class SyncBlockCache
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active
     SyncBlockArray *m_SyncBlocks;       // Array of new SyncBlocks.
-    DWORD       m_FreeSyncBlock;        // Next Free Syncblock in the array 
+    DWORD       m_FreeSyncBlock;        // Next Free Syncblock in the array
 
         // The next variables deal with SyncTableEntries.  Instead of having the object-header
         // point directly at SyncBlocks, the object points a a syncTableEntry, which points at
         // the syncBlock.  This is done because in a common case (need a hash code for an object)
-        // you just need a syncTableEntry.  
+        // you just need a syncTableEntry.
 
-    DWORD       m_FreeSyncTableIndex;   // We allocate a large array of SyncTableEntry structures.  
+    DWORD       m_FreeSyncTableIndex;   // We allocate a large array of SyncTableEntry structures.
                                         // This index points at the boundry between used, and never-been
-                                        // used SyncTableEntries.  
+                                        // used SyncTableEntries.
     size_t      m_FreeSyncTableList;    // index of the first free SyncTableEntry in our free list.
                                         // The entry at this index has its m_object field to the index
                                         // of the next element (shifted by 1, low bit marks not in use)
     DWORD       m_SyncTableSize;
     SyncTableEntry *m_OldSyncTables;    // Next old SyncTable
 
-    BOOL        m_bSyncBlockCleanupInProgress;  // A flag indicating if sync block cleanup is in progress.    
+    BOOL        m_bSyncBlockCleanupInProgress;  // A flag indicating if sync block cleanup is in progress.
     DWORD*      m_EphemeralBitmap;      // card table for ephemeral scanning
 
     BOOL        GCWeakPtrScanElement(int elindex, HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2, BOOL& cleanup);
@@ -1266,7 +1266,7 @@ class SyncBlockCache
 #endif
 };
 
-// See code:#SyncBlockOverView for more 
+// See code:#SyncBlockOverView for more
 class ObjHeader
 {
     friend class CheckAsmOffsets;
@@ -1305,7 +1305,7 @@ class ObjHeader
     }
     // Ditto for setting the index, which is careful not to disturb the underlying
     // bit field -- even in the presence of threaded access.
-    // 
+    //
     // This service can only be used to transition from a 0 index to a non-0 index.
     void SetIndex(DWORD indx)
     {
@@ -1326,12 +1326,12 @@ class ObjHeader
         while (TRUE) {
             oldValue = m_SyncBlockValue.LoadWithoutBarrier();
             _ASSERTE(GetHeaderSyncBlockIndex() == 0);
-            // or in the old value except any index that is there - 
+            // or in the old value except any index that is there -
             // note that indx could be carrying the BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX bit that we need to preserve
-            newValue = (indx | 
+            newValue = (indx |
                 (oldValue & ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX)));
-            if (FastInterlockCompareExchange((LONG*)&m_SyncBlockValue, 
-                                             newValue, 
+            if (FastInterlockCompareExchange((LONG*)&m_SyncBlockValue,
+                                             newValue,
                                              oldValue)
                 == oldValue)
             {
@@ -1375,7 +1375,7 @@ class ObjHeader
         _ASSERTE((bit & MASK_SYNCBLOCKINDEX) == 0);
         FastInterlockAnd(&m_SyncBlockValue, ~bit);
     }
-    //GC accesses this bit when all threads are stopped. 
+    //GC accesses this bit when all threads are stopped.
     void SetGCBit()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1438,7 +1438,7 @@ class ObjHeader
     PTR_SyncBlock PassiveGetSyncBlock()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return g_pSyncTable [(int)GetHeaderSyncBlockIndex()].m_SyncBlock;    
+        return g_pSyncTable [(int)GetHeaderSyncBlockIndex()].m_SyncBlock;
     }
 
     DWORD GetSyncBlockIndex();
@@ -1533,7 +1533,7 @@ struct ThreadQueue
     // Enqueue is the slow one.  We have to find the end of the Q since we don't
     // want to burn storage for this in the SyncBlock.
     static void          EnqueueThread(WaitEventLink *pWaitEventLink, SyncBlock *psb);
-    
+
     // Wade through the SyncBlock's list of waiting threads and remove the
     // specified thread.
     static BOOL          RemoveThread (Thread *pThread, SyncBlock *psb);

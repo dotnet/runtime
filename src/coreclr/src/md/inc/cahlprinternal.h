@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifndef __CAHLPR_H__
 #define __CAHLPR_H__
@@ -24,7 +24,7 @@ struct CaType
         szEnumName = NULL;
         cEnumName = 0;
     }
-   
+
     void Init(CorSerializationType _type, CorSerializationType _arrayType, CorSerializationType _enumType, LPCSTR _szEnumName, ULONG _cEnumName)
     {
         tag = _type;
@@ -35,7 +35,7 @@ struct CaType
     }
 
     CorSerializationType tag;
-    CorSerializationType arrayType;    
+    CorSerializationType arrayType;
     CorSerializationType enumType;
     LPCSTR szEnumName;
     ULONG cEnumName;
@@ -45,9 +45,9 @@ struct CaTypeCtor : public CaType
 {
     CaTypeCtor(CorSerializationType _type)
     {
-        Init(_type);        
+        Init(_type);
     }
-    
+
     CaTypeCtor(CorSerializationType _type, CorSerializationType _arrayType, CorSerializationType _enumType, LPCSTR _szEnumName, ULONG _cEnumName)
     {
         Init(_type, _arrayType, _enumType, _szEnumName, _cEnumName);
@@ -69,24 +69,24 @@ typedef struct CaValue
         unsigned __int64    u8;
         float               r4;
         double              r8;
-        
+
         struct
         {
             CorSerializationType tag;
             SArray<CaValue>* pSArray;
             ULONG length;
-            inline CaValue &operator[](int index) { return (*pSArray)[index]; }            
+            inline CaValue &operator[](int index) { return (*pSArray)[index]; }
         } arr;
-        
+
         struct
         {
             LPCUTF8 pStr;
             ULONG cbStr;
-        } str;        
+        } str;
     };
-    
+
     CaType type;
-    
+
 } CaValue;
 
 

@@ -60,7 +60,7 @@ namespace CorUnix
         SHMPTR shmPrevObj;
         SHMPTR shmNextObj;
         BOOL fAddedToList;
-        
+
         SHMPTR shmObjName;
         SHMPTR shmObjImmutableData;
         SHMPTR shmObjSharedData;
@@ -79,7 +79,7 @@ namespace CorUnix
     class CSharedMemoryObject : public CPalObjectBase
     {
         template <class T> friend void InternalDelete(T *p);
-        
+
     protected:
 
         //
@@ -98,7 +98,7 @@ namespace CorUnix
         // The SHMObjData for this object, protected by the
         // shared memory lock.
         //
-        
+
         SHMPTR m_shmod;
 
         //
@@ -110,14 +110,14 @@ namespace CorUnix
         //
 
         VOID *m_pvSharedData;
-        
+
         CSimpleSharedMemoryLock m_ssmlSharedData;
         CSimpleDataLock m_sdlSharedData;
 
         //
         // Is this object process local or shared?
         //
-        
+
         ObjectDomain m_ObjectDomain;
 
         //
@@ -158,7 +158,7 @@ namespace CorUnix
             CPalThread *pthr,
             bool fDestructionPending
             );
-        
+
         virtual ~CSharedMemoryObject();
 
     public:
@@ -259,7 +259,7 @@ namespace CorUnix
         //
         // IPalObject routines
         //
-        
+
         virtual
         PAL_ERROR
         GetSharedData(
@@ -300,13 +300,13 @@ namespace CorUnix
     class CSharedMemoryWaitableObject : public CSharedMemoryObject
     {
         template <class T> friend void InternalDelete(T *p);
-        
+
     protected:
 
         VOID *m_pvSynchData;
 
         virtual ~CSharedMemoryWaitableObject();
-        
+
     public:
 
         CSharedMemoryWaitableObject(

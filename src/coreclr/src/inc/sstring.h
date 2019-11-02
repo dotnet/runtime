@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // SString.h  (Safe String)
-// 
+//
 
 // ---------------------------------------------------------------------------
 
@@ -208,22 +208,22 @@ private:
     COUNT_T GetCount() const;
     BOOL IsEmpty() const;
 
-    // Return whether a single byte string has all characters which fit in the ASCII set.  
-    // (Note that this will return FALSE if the string has been converted to unicode for any 
+    // Return whether a single byte string has all characters which fit in the ASCII set.
+    // (Note that this will return FALSE if the string has been converted to unicode for any
     // reason.)
     BOOL IsASCII() const;
 
-    // !!!!!!!!!!!!!! WARNING about case insensitive operations !!!!!!!!!!!!!!! 
+    // !!!!!!!!!!!!!! WARNING about case insensitive operations !!!!!!!!!!!!!!!
     //
-    //                 THIS IS NOT SUPPORTED FULLY ON WIN9x  
-    //      SString case-insensitive comparison is based off LCMapString, 
+    //                 THIS IS NOT SUPPORTED FULLY ON WIN9x
+    //      SString case-insensitive comparison is based off LCMapString,
     //      which does not work on characters outside the current OS code page.
     //
-    //      Case insensitive code in SString is primarily targeted at 
-    //      supporting path comparisons, which is supported correctly on 9x, 
+    //      Case insensitive code in SString is primarily targeted at
+    //      supporting path comparisons, which is supported correctly on 9x,
     //      since file system names are limited to the OS code page.
-    // 
-    // !!!!!!!!!!!!!! WARNING about case insensitive operations !!!!!!!!!!!!!!! 
+    //
+    // !!!!!!!!!!!!!! WARNING about case insensitive operations !!!!!!!!!!!!!!!
 
     // Compute a content-based hash value
     ULONG Hash() const;
@@ -320,13 +320,13 @@ private:
     // Iterators:
     // ------------------------------------------------------------------
 
-    // SString splits iterators into two categories.  
+    // SString splits iterators into two categories.
     //
     // CIterator and Iterator are cheap to create, but allow only read-only
-    // access to the string.  
+    // access to the string.
     //
     // UIterator forces a unicode conversion, but allows
-    // assignment to individual string characters.  They are also a bit more 
+    // assignment to individual string characters.  They are also a bit more
     // efficient once created.
 
     // ------------------------------------------------------------------
@@ -523,10 +523,10 @@ private:
 
     void LowerCase();
     void UpperCase();
-    
+
     // Helper function to convert string in-place to lower-case (no allocation overhead for SString instance)
     static void LowerCase(__inout_z LPWSTR wszString);
-    
+
     // These routines will use the given scratch string if necessary
     // to perform a conversion to the desired representation
 
@@ -626,7 +626,7 @@ private:
     // Instantiate a copy of the raw buffer in the host and return a pointer to it
     void * DacGetRawContent() const;
 
-    // Instantiate a copy of the raw buffer in the host.  Requires that the underlying 
+    // Instantiate a copy of the raw buffer in the host.  Requires that the underlying
     // representation is already unicode.
     const WCHAR * DacGetRawUnicode() const;
 
@@ -737,7 +737,7 @@ private:
  private:
     static int CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount);
     static int CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount);
-    
+
     // Internal helpers:
 
     static const BYTE s_EmptyBuffer[2];
@@ -786,13 +786,13 @@ private:
     void ConvertASCIIToUnicode(SString &dest) const;
     void ConvertToUnicode() const;
     void ConvertToUnicode(const CIterator &i) const;
-  
+
     const SString &GetCompatibleString(const SString &s, SString &scratch) const;
     const SString &GetCompatibleString(const SString &s, SString &scratch, const CIterator &i) const;
     BOOL ScanASCII() const;
     void NullTerminate();
 
-    void Resize(COUNT_T count, Representation representation, 
+    void Resize(COUNT_T count, Representation representation,
                 Preserve preserve = DONT_PRESERVE);
 
     void OpenBuffer(Representation representation, COUNT_T countChars);

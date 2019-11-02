@@ -1,7 +1,7 @@
 Changing or adding new public APIs to System.Private.CoreLib
 ============================================================
 
-### Context 
+### Context
 Many of the CoreFX libraries type-forward their public APIs to the implementations in `System.Private.CoreLib`.
 - The CoreFX build uses `System.Private.CoreLib` via a NuGet package named `Microsoft.TargetingPack.Private.CoreCLR`
 - Some of the CoreFX libraries are not built in the CoreFX repository. For example, `System.Runtime.Loader.dll` is purely a facade and type-forwards everything to `System.Private.CoreLib`. These libraries are built and published through a separate process.

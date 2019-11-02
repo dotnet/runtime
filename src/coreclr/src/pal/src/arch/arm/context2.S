@@ -17,7 +17,7 @@
 
 #define CONTEXT_CONTROL 1 // Sp, Lr, Pc, Cpsr
 #define CONTEXT_INTEGER 2 // R0-R12
-#define CONTEXT_SEGMENTS 4 // 
+#define CONTEXT_SEGMENTS 4 //
 #define CONTEXT_FLOATING_POINT 8
 #define CONTEXT_DEBUG_REGISTERS 16 //
 
@@ -36,53 +36,53 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mrs r1, apsr // Get APSR - equivalent to eflags
     push {r1} // Save APSR
     END_PROLOGUE
-    
+
     push {r2}
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_INTEGER)
     pop {r2}
-    
+
     // Add 4 to stack so we point at R1, pop, then sub 8 to point at APSR
     add sp, sp, #4
     pop {r1}
     sub sp, sp, #8
-    
+
     itttt ne
     strne r0, [r0, #(CONTEXT_R0)]
     addne r0, CONTEXT_R1
     stmiane r0, {r1-r12}
     subne r0, CONTEXT_R1
-    
+
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_CONTROL)
-    
+
     ittt ne
     addne sp, sp, #(10*4) // This needs to put the stack in the same state as it started
     strne sp, [r0, #(CONTEXT_Sp)]
     subne sp, sp, #(10*4)
-    
+
     itt ne
     strne lr, [r0, #(CONTEXT_Lr)]
     strne lr, [r0, #(CONTEXT_Pc)]
-    
+
     // Get the APSR pushed onto the stack at the start
     pop {r1}
     it ne
     strne r1, [r0, #(CONTEXT_Cpsr)]
-    
+
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_FLOATING_POINT)
-    
+
     itt ne
     vmrsne r3, fpscr
     strne r3, [r0, #(CONTEXT_Fpscr)]
-    
+
     itttt ne
     addne r0, CONTEXT_D0
     vstmiane r0!, {d0-d15}
     vstmiane r0!, {d16-d31}
     subne r0, CONTEXT_D31
-    
+
     // Make sure sp is restored
     add sp, sp, #4
 
@@ -126,32 +126,32 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
 #endif
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_FLOATING_POINT)
-    
+
     itttt ne
     addne r0, CONTEXT_D0
     vldmiane r0!, {d0-d15}
     vldmiane r0, {d16-d31}
     subne r0, CONTEXT_D16
-    
+
     itt ne
     ldrne r3, [r0, #(CONTEXT_Fpscr)]
     vmrsne r3, FPSCR
-    
+
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_CONTROL)
-    
+
     it eq
     beq LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
-    
+
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_INTEGER)
-    
+
     it eq
     beq LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
-    
+
     ldr R2, [r0, #(CONTEXT_Cpsr)]
-    msr APSR, r2    
-    
+    msr APSR, r2
+
     // Ideally, we would like to use `ldmia r0, {r0-r12, sp, lr, pc}` here,
     // but clang 3.6 and later, as per ARM recommendation, disallows using
     // Sp in the register list, and Pc and Lr simultaneously.
@@ -164,18 +164,18 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     ldr pc, [r12, #(CONTEXT_Pc - (CONTEXT_R0))]
 
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
-    
+
     ldr r2, [r0, #(CONTEXT_Cpsr)]
-    msr APSR, r2    
-    
+    msr APSR, r2
+
     ldr sp, [r0, #(CONTEXT_Sp)]
     ldr lr, [r0, #(CONTEXT_Lr)]
     ldr pc, [r0, #(CONTEXT_Pc)]
-    
+
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_INTEGER)
-    
+
     itt ne
     addne r0, CONTEXT_R0
     ldmiane r0, {r0-r12}

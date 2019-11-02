@@ -8,7 +8,7 @@
     <BuildInPhaseDefault>false</BuildInPhaseDefault>
     <BuildCoreBinaries>true</BuildCoreBinaries>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(BuildProjectName)' != 'CoreSys' and '$(BuildArchitecture)' == 'amd64'">
     <BuildSysBinaries>false</BuildSysBinaries>
   </PropertyGroup>

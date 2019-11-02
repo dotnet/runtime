@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModel.h -- header file for compressed COM+ metadata.
-// 
+//
 
 //
 //*****************************************************************************
@@ -69,19 +69,19 @@ extern TblCol g_PtrTableIxs[TBL_COUNT];
 class IMetaModelCommon
 {
 public:
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetScopeProps(
         LPCUTF8     *pszName,
         GUID        *pMvid) = 0;
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetTypeRefProps(
         mdTypeRef tr,
         LPCUTF8     *pszNamespace,
         LPCUTF8     *pszName,
         mdToken     *ptkResolution) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetTypeDefProps(
         mdTypeDef td,
         LPCUTF8     *pszNameSpace,
@@ -89,19 +89,19 @@ public:
         DWORD       *pdwFlags,
         mdToken     *pdwExtends,
         ULONG       *pMethodList) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetTypeSpecProps(
         mdTypeSpec ts,
         PCCOR_SIGNATURE *ppvSig,
         ULONG       *pcbSig) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetEnclosingClassOfTypeDef(
-        mdTypeDef  td, 
+        mdTypeDef  td,
         mdTypeDef *ptkEnclosingTypeDef) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetAssemblyProps(
         USHORT      *pusMajorVersion,
         USHORT      *pusMinorVersion,
@@ -112,8 +112,8 @@ public:
         ULONG       *pcbPublicKey,
         LPCUTF8     *pszName,
         LPCUTF8     *pszLocale) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetAssemblyRefProps(
         mdAssemblyRef tkAssemRef,
         USHORT      *pusMajorVersion,
@@ -127,29 +127,29 @@ public:
         LPCUTF8     *pszLocale,
         const void  **ppbHashValue,
         ULONG       *pcbHashValue) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetModuleRefProps(
         mdModuleRef tkModuleRef,
         LPCUTF8     *pszName) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonFindExportedType(
         LPCUTF8     szNamespace,
         LPCUTF8     szName,
         mdToken     tkEnclosingType,
         mdExportedType   *ptkExportedType) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT CommonGetExportedTypeProps(
         mdToken     tkExportedType,
         LPCUTF8     *pszNamespace,
         LPCUTF8     *pszName,
         mdToken     *ptkImpl) = 0;
-    
+
     virtual int CommonIsRo() = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT CommonGetCustomAttributeByName( // S_OK or error.
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
@@ -159,7 +159,7 @@ public:
         return CommonGetCustomAttributeByNameEx(tkObj, szName, NULL, ppData, pcbData);
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetCustomAttributeByNameEx( // S_OK or error.
         mdToken            tkObj,            // [IN] Object with Custom Attribute.
         LPCUTF8            szName,           // [IN] Name of desired Custom Attribute.
@@ -167,9 +167,9 @@ public:
         const void       **ppData,           // [OUT] Put pointer to data here.
         ULONG             *pcbData) = 0;     // [OUT] Put size of data here.
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT FindParentOfMethodHelper(mdMethodDef md, mdTypeDef *ptd) = 0;
-    
+
 };  // class IMetaModelCommon
 
 
@@ -188,7 +188,7 @@ public:
         mdMethodDef      tkMethodDef,
         LPCUTF8         *pszName,
         DWORD           *pdwFlags,
-        PCCOR_SIGNATURE *ppvSigBlob,   
+        PCCOR_SIGNATURE *ppvSigBlob,
         ULONG           *pcbSigBlob
         ) = 0;
 
@@ -297,7 +297,7 @@ public:
 
     ULONG LoadFrom(const void*, ULONG); // Load from a compressed version.  Return bytes consumed.
     ULONG SaveTo(void *);               // Store a compressed version.  Return bytes used in buffer.
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew(MetadataVersion);
 };
 
@@ -416,14 +416,14 @@ class CMiniMdBase : public IMetaModelCommonRO
 public:
     CMiniMdBase();
     ~CMiniMdBase();
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vGetRow(UINT32 nTableIndex, UINT32 nRowIndex, void **ppRow) = 0;
     ULONG GetCountRecs(ULONG ixTbl);
     ULONG GetCountTables() { return m_TblCount;}
 
     // Search a table for the row containing the given key value.
     //  EG. Constant table has pointer back to Param or Field.
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTable(           // RID of matching row, or 0.
         ULONG       ixTbl,              // Table to search.
         CMiniColDef sColumn,            // Sorted key column, containing search value.
@@ -433,7 +433,7 @@ public:
     // Search a table for the highest-RID row containing a value that is less than
     //  or equal to the target value.  EG.  TypeDef points to first Field, but if
     //  a TypeDef has no fields, it points to first field of next TypeDef.
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTableNotGreater( // RID of matching row, or 0.
         ULONG       ixTbl,              // Table to search.
         CMiniColDef sColumn,            // the column def containing search value
@@ -441,7 +441,7 @@ public:
         RID        *pRid) = 0;
 
     // Search for a custom value with a given type.
-    __checkReturn 
+    __checkReturn
     HRESULT FindCustomAttributeFor(// RID of custom value, or 0.
         RID         rid,                // The object's rid.
         mdToken     tkOjb,              // The object's type.
@@ -455,16 +455,16 @@ public:
         DWORD       ixTbl);
 
     // Return RID to EventMap table, given the rid to a TypeDef.
-    __checkReturn 
+    __checkReturn
     HRESULT FindEventMapFor(RID ridParent, RID *pFoundRid);
-    
+
     // Return RID to PropertyMap table, given the rid to a TypeDef.
-    __checkReturn 
+    __checkReturn
     HRESULT FindPropertyMapFor(RID ridParent, RID *pFoundRid);
 
 #if BIGENDIAN
     // Swap a constant
-    __checkReturn 
+    __checkReturn
     HRESULT SwapConstant(const void *pBlobValue, DWORD dwType, VOID *pConstant, ULONG BlobLength);
 #endif
 
@@ -520,7 +520,7 @@ public:
         //<TODO>@FUTURE: make compile-time calculation</TODO>
         ULONG32 ix = (ULONG32)(val & ~(-1 << m_cb[cTokens]));
         // If the coded token has an invalid table index, return the first entry
-        //  from the array of valid token types.  It would be preferable to 
+        //  from the array of valid token types.  It would be preferable to
         //  return an error or to raise an exception.
         if (ix >= cTokens)
             return rTokens[0];
@@ -590,7 +590,7 @@ public:
 
 public:
     virtual BOOL IsWritable() = 0;
-  
+
 
 protected:
     CMiniMdSchema   m_Schema;                       // data header.
@@ -601,7 +601,7 @@ protected:
     // static const BYTE s_xyz[];
     // or
     // static const BYTE* s_xyz;
-    
+
     #include "mdcolumndescriptors.h"
 
     static const BYTE* const s_TableColumnDescriptors[TBL_COUNT];
@@ -611,16 +611,16 @@ protected:
     ULONG       m_iGuidsMask;
     ULONG       m_iBlobsMask;
 
-    __checkReturn 
+    __checkReturn
     HRESULT SchemaPopulate(const void *pvData, ULONG cbData, ULONG *pcbUsed);
-    __checkReturn 
+    __checkReturn
     HRESULT SchemaPopulate(const CMiniMdBase &that);
-    __checkReturn 
+    __checkReturn
     HRESULT InitColsForTable(CMiniMdSchema &Schema, int ixTbl, CMiniTableDef *pTable, int bExtra, BOOL fUsePointers);
-    __checkReturn 
+    __checkReturn
     HRESULT SchemaPopulate2(ULONG *pcbTables, int bExtra=false);
     const CMiniTableDef* GetTableDefTemplate(int ixTbl);
-    __checkReturn 
+    __checkReturn
     HRESULT SetNewColumnDefinition(CMiniTableDef *pTable, CMiniColDef* pCols, DWORD ixTbl);
 
 private:
@@ -654,56 +654,56 @@ protected:
 
     // Primitives -- these must be implemented in the Impl class.
 public:
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getString(UINT32 nIndex, __out LPCSTR *pszString)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetString(nIndex, pszString);
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getStringW(ULONG nIndex, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetStringW(nIndex, szOut, cchBuffer, pcchBuffer);
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getGuid(UINT32 nIndex, GUID *pGuid)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetGuid(nIndex, pGuid);
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getBlob(UINT32 nIndex, __out MetaData::DataBlob *pData)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetBlob(nIndex, pData);
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getRow(UINT32 nTableIndex, UINT32 nRowIndex, __deref_out void **ppRow)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetRow(nTableIndex, nRowIndex, reinterpret_cast<BYTE **>(ppRow));
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT getEndRidForColumn(
-              UINT32       nTableIndex, 
-              RID          nRowIndex, 
-              CMiniColDef &columnDefinition, 
-              UINT32       nTargetTableIndex, 
+              UINT32       nTableIndex,
+              RID          nRowIndex,
+              CMiniColDef &columnDefinition,
+              UINT32       nTargetTableIndex,
         __out RID         *pEndRid)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetEndRidForColumn(nTableIndex, nRowIndex, columnDefinition, nTargetTableIndex, pEndRid);
     }
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT doSearchTable(ULONG ixTbl, CMiniColDef sColumn, ULONG ixColumn, ULONG ulTarget, RID *pFoundRid)
-    { 
+    {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_SearchTable(ixTbl, sColumn, ixColumn, ulTarget, pFoundRid);
     }
 
     // IMetaModelCommonRO interface beginning
-    __checkReturn 
+    __checkReturn
     HRESULT CommonGetScopeProps(
         LPCUTF8     *pszName,
         GUID        *pMvid)
@@ -726,18 +726,18 @@ public:
     // Search a table for multiple (adjacent) rows containing the given
     //  key value.  EG, InterfaceImpls all point back to the implementing class.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT SearchTableForMultipleRows(
         ULONG       ixTbl,      // Table to search.
         CMiniColDef sColumn,    // Sorted key column, containing search value.
         ULONG       ulTarget,   // Target for search.
-        RID        *pEnd,       // [OPTIONAL, OUT] 
+        RID        *pEnd,       // [OPTIONAL, OUT]
         RID        *pFoundRid)  // First RID found, or 0.
     {
         HRESULT hr;
         ULONG   ridBegin;   // RID of first entry.
         ULONG   ridEnd;     // RID of first entry past last entry.
-        
+
         // Search for any entry in the table.
         IfFailRet(static_cast<Impl*>(this)->vSearchTable(ixTbl, sColumn, ulTarget, &ridBegin));
 
@@ -757,10 +757,10 @@ public:
         // CMiniMdRW::GetHotMetadataTokensSearchAware
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        
+
         // End will be at least one larger than found record.
         ridEnd = ridBegin + 1;
-        
+
         // Search back to start of group.
         for (;;)
         {
@@ -776,7 +776,7 @@ public:
             }
             --ridBegin;
         }
-        
+
         // If desired, search forward to end of group.
         if (pEnd != NULL)
         {
@@ -796,7 +796,7 @@ public:
             }
             *pEnd = ridEnd;
         }
-        
+
         *pFoundRid = ridBegin;
         return S_OK;
     } // SearchTableForMultipleRows
@@ -808,7 +808,7 @@ public:
         mdMethodDef      tkMethodDef,
         LPCUTF8         *pszName,
         DWORD           *pdwFlags,
-        PCCOR_SIGNATURE *ppvSigBlob,   
+        PCCOR_SIGNATURE *ppvSigBlob,
         ULONG           *pcbSigBlob
         )
     {
@@ -862,8 +862,8 @@ public:
 
 
 
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT CommonGetTypeRefProps(
         mdTypeRef   tr,
         LPCUTF8     *pszNamespace,
@@ -888,7 +888,7 @@ public:
         return hr;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetTypeDefProps(
         mdTypeDef   td,
         LPCUTF8     *pszNamespace,
@@ -923,7 +923,7 @@ public:
         return hr;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetTypeSpecProps(
         mdTypeSpec  ts,
         PCCOR_SIGNATURE *ppvSig,
@@ -938,13 +938,13 @@ public:
         return hr;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetEnclosingClassOfTypeDef(
-        mdTypeDef  td, 
+        mdTypeDef  td,
         mdTypeDef *ptkEnclosingTypeDef)
     {
         _ASSERTE(ptkEnclosingTypeDef != NULL);
-        
+
         HRESULT hr;
         NestedClassRec *pRec;
         RID     iRec;
@@ -955,14 +955,14 @@ public:
             *ptkEnclosingTypeDef = mdTypeDefNil;
             return S_OK;
         }
-        
+
         IfFailRet(GetNestedClassRecord(iRec, &pRec));
         *ptkEnclosingTypeDef = getEnclosingClassOfNestedClass(pRec);
         return S_OK;
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetAssemblyProps(
         USHORT      *pusMajorVersion,
         USHORT      *pusMinorVersion,
@@ -1012,7 +1012,7 @@ public:
         return hr;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetAssemblyRefProps(
         mdAssemblyRef tkAssemRef,
         USHORT      *pusMajorVersion,
@@ -1056,7 +1056,7 @@ public:
         return hr;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetModuleRefProps(
         mdModuleRef tkModuleRef,
         LPCUTF8     *pszName)
@@ -1068,8 +1068,8 @@ public:
         IfFailRet(getNameOfModuleRef(pRec, pszName));
         return hr;
     }
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT CommonFindExportedType(
         LPCUTF8     szNamespace,
         LPCUTF8     szName,
@@ -1126,7 +1126,7 @@ public:
         return CLDB_E_RECORD_NOTFOUND;
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetExportedTypeProps(
         mdToken     tkExportedType,
         LPCUTF8     *pszNamespace,
@@ -1183,7 +1183,7 @@ public:
             pcbSize = &cbSize;
         IfFailRet(getValueOfCustomAttribute(pRec, (const BYTE **)ppBlob, pcbSize));
         return S_OK;
-    }   
+    }
 
     //*****************************************************************************
     // Get name, parent and flags of a fieldDef
@@ -1216,7 +1216,7 @@ public:
         return S_OK;
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT FindParentOfMethodHelper(mdMethodDef md, mdTypeDef *ptd)
     {
         HRESULT hr;
@@ -1228,8 +1228,8 @@ public:
     //*****************************************************************************
     // Helper function to lookup and retrieve a CustomAttribute.
     //*****************************************************************************
-    __checkReturn 
-    HRESULT CompareCustomAttribute( 
+    __checkReturn
+    HRESULT CompareCustomAttribute(
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         ULONG       rid)                    // [IN] the rid of the custom attribute to compare to
@@ -1278,7 +1278,7 @@ public:
 
         if (FAILED(hr))
             return hr;
-        
+
         return hrMatch;
     }   // CompareCustomAttribute
 
@@ -1289,8 +1289,8 @@ public:
     //   by CompareCustomAttribute.  See GetTypeDefRefTokenInTypeSpec for
     //   details on when this will happen.
     //*****************************************************************************
-    __checkReturn 
-    HRESULT CommonGetNameOfCustomAttribute( 
+    __checkReturn
+    HRESULT CommonGetNameOfCustomAttribute(
         ULONG       rid,                    // [IN] the rid of the custom attribute
         LPCUTF8    *pszNamespace,           // [OUT] Namespace of Custom Attribute.
         LPCUTF8    *pszName)                // [OUT] Name of Custom Attribute.
@@ -1299,7 +1299,7 @@ public:
         mdToken     tkTypeTmp;              // Type of some CustomAttribute.
         RID         ridTmp;                 // Rid of some custom value.
         HRESULT     hr = S_FALSE;
-        
+
         // Get the row.
         IfFailGo(GetCustomAttributeRecord(rid, &pRec));
 
@@ -1345,7 +1345,7 @@ public:
                 if (hr == S_OK)
                     // Ok, tkTypeTmp should be the type token now.
                     goto CheckParentType;
-                    
+
                 // This doesn't have a coded typedef or typeref.
                 goto ErrExit;
             }
@@ -1379,14 +1379,14 @@ public:
         return hr;
     }   // CommonGetNameOfCustomAttribute
 
-    __checkReturn 
-    HRESULT GetTypeDefRefTokenInTypeSpec(mdTypeSpec  tkTypeSpec,     // [IN] TypeSpec token to look 
+    __checkReturn
+    HRESULT GetTypeDefRefTokenInTypeSpec(mdTypeSpec  tkTypeSpec,     // [IN] TypeSpec token to look
                                                              mdToken    *tkEnclosedToken) // [OUT] The enclosed type token
     {
         _ASSERTE(TypeFromToken(tkTypeSpec) == mdtTypeSpec);
         if (TypeFromToken(tkTypeSpec) != mdtTypeSpec || !_IsValidTokenBase(tkTypeSpec))
             return COR_E_BADIMAGEFORMAT;
-        
+
         HRESULT hr;
         TypeSpecRec *pTS;
         IfFailRet(GetTypeSpecRecord(RidFromToken(tkTypeSpec), &pTS));
@@ -1394,59 +1394,59 @@ public:
         PCCOR_SIGNATURE pSig;
         PCCOR_SIGNATURE pEnd;
         ULONG data = 0;
-        
+
         IfFailRet(getSignatureOfTypeSpec(pTS, &pSig, &cbSig));
         pEnd = pSig + cbSig;
-        
+
         if (cbSig == 0)
             return COR_E_BADIMAGEFORMAT;
-        
+
         pSig += CorSigUncompressData(pSig, &data);
-        
+
         while (pSig < pEnd && CorIsModifierElementType((CorElementType) data))
         {
             pSig += CorSigUncompressData(pSig, &data);
         }
-        
+
         // See if the signature was bad
         if (pSig >= pEnd)
             return COR_E_BADIMAGEFORMAT;
-        
+
         // pSig should point to the element type now.
         if (data == ELEMENT_TYPE_VALUETYPE || data == ELEMENT_TYPE_CLASS)
         {
             // Get the new type token
             if (CorSigUncompressToken(pSig, tkEnclosedToken) == 0)
                 return COR_E_BADIMAGEFORMAT;
-            
+
             // Ok, tkEnclosedToken should be the type token now
             return S_OK;
         }
-        
+
         // The enclosed type is a base type or an array. We don't have a token to hand out
         *tkEnclosedToken = mdTokenNil;
-        
+
         return S_FALSE;
     }
 
 
 
     //*****************************************************************************
-    // Given a scope, return the number of tokens in a given table 
+    // Given a scope, return the number of tokens in a given table
     //*****************************************************************************
     ULONG CommonGetRowCount(     // return hresult
-        DWORD       tkKind)                 // [IN] pass in the kind of token. 
+        DWORD       tkKind)                 // [IN] pass in the kind of token.
     {
         _ASSERTE(!IsWritable() && "IMetaModelCommonRO methods cannot be used because this importer is writable.");
 
         ULONG       ulCount = 0;
-    
+
         switch (tkKind)
         {
-        case mdtTypeDef: 
+        case mdtTypeDef:
             ulCount = getCountTypeDefs();
             break;
-        case mdtTypeRef: 
+        case mdtTypeRef:
             ulCount = getCountTypeRefs();
             break;
         case mdtMethodDef:
@@ -1537,7 +1537,7 @@ public:
         HRESULT hr;
 
         RID ridEnd;
-        RID ridStart; 
+        RID ridStart;
         IfFailGo(getMethodImplsForClass(RidFromToken(tkTypeDef), &ridEnd, &ridStart));
         *pMethodImplCount = ridEnd - ridStart;
         if (*pMethodImplCount)
@@ -1582,7 +1582,7 @@ public:
 public:
 //  friend class CLiteWeightStgdb;
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vGetRow(UINT32 nTableIndex, UINT32 nRowIndex, void **ppRow)
     {
         return getRow(nTableIndex, nRowIndex, ppRow);
@@ -1611,36 +1611,36 @@ public:
 #define MiniMdTable(tbl) __checkReturn HRESULT Get##tbl##Record(RID rid, tbl##Rec **ppRecord) { \
         return getRow(TBL_##tbl, rid, reinterpret_cast<void **>(ppRecord)); }
     MiniMdTables();
-    
+
     //*************************************************************************
     // These are specialized searching functions.  Mostly generic (ie, find
     //  a custom value for any object).
 
     // Functions to search for a record relating to another record.
     // Return RID to Constant table.
-    __checkReturn 
+    __checkReturn
     HRESULT FindConstantFor(RID rid, mdToken typ, RID *pFoundRid)
     { return doSearchTable(TBL_Constant, _COLPAIR(Constant,Parent), encodeToken(rid,typ,mdtHasConstant,lengthof(mdtHasConstant)), pFoundRid); }
-    
+
     // Return RID to FieldMarshal table.
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldMarshalFor(RID rid, mdToken typ, RID *pFoundRid)
     { return doSearchTable(TBL_FieldMarshal, _COLPAIR(FieldMarshal,Parent), encodeToken(rid,typ,mdtHasFieldMarshal,lengthof(mdtHasFieldMarshal)), pFoundRid); }
 
     // Return RID to ClassLayout table, given the rid to a TypeDef.
-    __checkReturn 
+    __checkReturn
     HRESULT FindClassLayoutFor(RID rid, RID *pFoundRid)
     { return doSearchTable(TBL_ClassLayout, _COLPAIR(ClassLayout,Parent), RidFromToken(rid), pFoundRid); }
 
     // given a rid to the Event table, find an entry in EventMap table that contains the back pointer
     // to its typedef parent
-    __checkReturn 
+    __checkReturn
     HRESULT FindEventMapParentOfEvent(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_EventMap, _COLDEF(EventMap,EventList), rid, pFoundRid);
     }
     // return the parent eventmap rid given a event rid
-    __checkReturn 
+    __checkReturn
     HRESULT FindParentOfEvent(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_EventMap, _COLDEF(EventMap,EventList), rid, pFoundRid);
@@ -1648,60 +1648,60 @@ public:
 
     // given a rid to the Event table, find an entry in EventMap table that contains the back pointer
     // to its typedef parent
-    __checkReturn 
+    __checkReturn
     HRESULT FindPropertyMapParentOfProperty(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_PropertyMap, _COLDEF(PropertyMap,PropertyList), rid, pFoundRid);
     }
     // return the parent propertymap rid given a property rid
-    __checkReturn 
+    __checkReturn
     HRESULT FindParentOfProperty(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_PropertyMap, _COLDEF(PropertyMap,PropertyList), rid, pFoundRid);
     }
-    
+
     // Return RID to MethodSemantics table, given the rid to a MethodDef.
-    __checkReturn 
+    __checkReturn
     HRESULT FindMethodSemanticsFor(RID rid, RID *pFoundRid)
     { return doSearchTable(TBL_MethodSemantics, _COLPAIR(MethodSemantics,Method), RidFromToken(rid), pFoundRid); }
-    
+
     // return the parent typedef rid given a field def rid
-    __checkReturn 
+    __checkReturn
     HRESULT FindParentOfField(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_TypeDef, _COLDEF(TypeDef,FieldList), rid, pFoundRid);
     }
-    
+
     // return the parent typedef rid given a method def rid
-    __checkReturn 
+    __checkReturn
     HRESULT FindParentOfMethod(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_TypeDef, _COLDEF(TypeDef,MethodList), rid, pFoundRid);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT FindParentOfParam(RID rid, RID *pFoundRid)
     {
         return vSearchTableNotGreater(TBL_Method, _COLDEF(Method,ParamList), rid, pFoundRid);
     }
 
     // Find a FieldLayout record given the corresponding Field.
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldLayoutFor(RID rid, RID *pFoundRid)
     {   return doSearchTable(TBL_FieldLayout, _COLPAIR(FieldLayout, Field), rid, pFoundRid); }
 
     // Return RID to Constant table.
-    __checkReturn 
+    __checkReturn
     HRESULT FindImplMapFor(RID rid, mdToken typ, RID *pFoundRid)
     { return doSearchTable(TBL_ImplMap, _COLPAIR(ImplMap,MemberForwarded), encodeToken(rid,typ,mdtMemberForwarded,lengthof(mdtMemberForwarded)), pFoundRid); }
 
     // Return RID to FieldRVA table.
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldRVAFor(RID rid, RID *pFoundRid)
     {   return doSearchTable(TBL_FieldRVA, _COLPAIR(FieldRVA, Field), rid, pFoundRid); }
 
     // Find a NestedClass record given the corresponding Field.
-    __checkReturn 
+    __checkReturn
     HRESULT FindNestedClassFor(RID rid, RID *pFoundRid)
     {   return doSearchTable(TBL_NestedClass, _COLPAIR(NestedClass, NestedClass), rid, pFoundRid); }
 
@@ -1727,50 +1727,50 @@ public:
     _GETLIST(TypeDef,FieldList,Field);      // RID getFieldListOfTypeDef(TypeDefRec *pRec);
     _GETLIST(TypeDef,MethodList,Method);    // RID getMethodListOfTypeDef(TypeDefRec *pRec);
     mdToken _GETCDTKN(TypeDef,Extends,mdtTypeDefOrRef); // mdToken getExtendsOfTypeDef(TypeDefRec *pRec);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT getGenericParamsForTypeDef(RID rid, RID *pEnd, RID *pFoundRid)
-    { 
-        return SearchTableForMultipleRows(TBL_GenericParam, 
+    {
+        return SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
                             encodeToken(rid, mdtTypeDef, mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
-    __checkReturn 
+    __checkReturn
     HRESULT getGenericParamsForMethodDef(RID rid, RID *pEnd, RID *pFoundRid)
-    { 
-        return SearchTableForMultipleRows(TBL_GenericParam, 
+    {
+        return SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
                             encodeToken(rid, mdtMethodDef, mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
-    __checkReturn 
+    __checkReturn
     HRESULT getMethodSpecsForMethodDef(RID rid, RID *pEnd, RID *pFoundRid)
-    { 
-        return SearchTableForMultipleRows(TBL_MethodSpec, 
+    {
+        return SearchTableForMultipleRows(TBL_MethodSpec,
                             _COLDEF(MethodSpec,Method),
                             encodeToken(rid, mdtMethodDef, mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
-    __checkReturn 
+    __checkReturn
     HRESULT getMethodSpecsForMemberRef(RID rid, RID *pEnd, RID *pFoundRid)
-    { 
-        return SearchTableForMultipleRows(TBL_MethodSpec, 
+    {
+        return SearchTableForMultipleRows(TBL_MethodSpec,
                             _COLDEF(MethodSpec,Method),
                             encodeToken(rid, mdtMemberRef, mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
-    __checkReturn 
+    __checkReturn
     HRESULT getInterfaceImplsForTypeDef(RID rid, RID *pEnd, RID *pFoundRid)
     {
         return SearchTableForMultipleRows(TBL_InterfaceImpl,
                             _COLDEF(InterfaceImpl,Class),
                             rid,
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
 
@@ -1816,13 +1816,13 @@ public:
     _GETBLOB(Constant,Value);
 
     // CustomAttributeRec
-    __checkReturn 
+    __checkReturn
     HRESULT getCustomAttributeForToken(mdToken  tk, RID *pEnd, RID *pFoundRid)
     {
         return SearchTableForMultipleRows(TBL_CustomAttribute,
                             _COLDEF(CustomAttribute,Parent),
                             encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, lengthof(mdtHasCustomAttribute)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
 
@@ -1835,13 +1835,13 @@ public:
     _GETSIGBLOB(FieldMarshal,NativeType);
 
     // DeclSecurityRec
-    __checkReturn 
+    __checkReturn
     HRESULT getDeclSecurityForToken(mdToken tk, RID *pEnd, RID *pFoundRid)
     {
         return SearchTableForMultipleRows(TBL_DeclSecurity,
                             _COLDEF(DeclSecurity,Parent),
                             encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
 
@@ -1886,13 +1886,13 @@ public:
     // Given an event or a property token, return the beginning/ending
     // associates.
     //
-    __checkReturn 
+    __checkReturn
     HRESULT getAssociatesForToken(mdToken tk, RID *pEnd, RID *pFoundRid)
     {
         return SearchTableForMultipleRows(TBL_MethodSemantics,
                             _COLDEF(MethodSemantics,Association),
                             encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasSemantic, lengthof(mdtHasSemantic)),
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
 
@@ -1903,13 +1903,13 @@ public:
     // MethodImpl
     // Given a class token, return the beginning/ending MethodImpls.
     //
-    __checkReturn 
+    __checkReturn
     HRESULT getMethodImplsForClass(RID rid, RID *pEnd, RID *pFoundRid)
     {
         return SearchTableForMultipleRows(TBL_MethodImpl,
-                            _COLDEF(MethodImpl, Class), 
-                            rid, 
-                            pEnd, 
+                            _COLDEF(MethodImpl, Class),
+                            rid,
+                            pEnd,
                             pFoundRid);
     }
 
@@ -1994,14 +1994,14 @@ public:
     USHORT _GETFLD(GenericParam,Flags);
     mdToken _GETCDTKN(GenericParam,Owner,mdtTypeOrMethodDef);
     _GETSTR(GenericParam,Name);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT getGenericParamConstraintsForGenericParam(RID rid, RID *pEnd, RID *pFoundRid)
-    { 
-        return SearchTableForMultipleRows(TBL_GenericParamConstraint, 
+    {
+        return SearchTableForMultipleRows(TBL_GenericParamConstraint,
                             _COLDEF(GenericParamConstraint,Owner),
                             rid,
-                            pEnd, 
+                            pEnd,
                             pFoundRid);
     }
 
@@ -2029,7 +2029,7 @@ public:
     {
         BOOL bRet = FALSE;
         RID  rid = RidFromToken(tk);
-        
+
         if (rid != 0)
         {
             switch (TypeFromToken(tk))

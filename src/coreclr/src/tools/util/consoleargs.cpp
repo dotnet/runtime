@@ -34,7 +34,7 @@ size_t SafeStrLower( _In_ LPCWSTR wszSrc, _In_ size_t cchSrc, _Out_ LPWSTR wszDe
         SetLastError(ERROR_FILENAME_EXCED_RANGE);
         return 0;
     }
-    
+
     SafeStrCopy(wszSrc, cchSrc, wszDest, cchDest);
     _wcslwr_s((WCHAR*)wszDest, cchDest);
     return wcslen(wszDest);
@@ -113,7 +113,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
         SetLastError(ERROR_INVALID_NAME);
         goto FAIL;
     }
-        
+
 
     if (hasDrive) {
         size_t len = SafeStrLower( full_path, 3, out_cur, out_end - out_cur);
@@ -216,7 +216,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
                     temp_len = SafeStrCopy( full_cur, slash - full_cur, out_cur, out_end - out_cur);
                 } else {
                     temp_len = SafeStrLower( full_cur, slash - full_cur, out_cur, out_end - out_cur);
-                }                    
+                }
                 if (temp_len == 0)
                     goto FAIL;
 
@@ -266,7 +266,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
             }
             else if (name_len != (slash - full_cur) || _wcsnicmp(find_data.cFileName, full_cur, name_len) != 0) {
                 // The user asked us to preserve the casing of the filename
-                // and the filename is different by more than just casing so report 
+                // and the filename is different by more than just casing so report
                 // an error indicating we can't create the file
                 SetLastError(ERROR_FILE_EXISTS);
                 goto FAIL;
@@ -512,7 +512,7 @@ LEADINGWHITE:
         // Additionally, in order to allow multi-line arguments we allow a ^ at the
         // end of a line to specify "invisible space". A character sequence matching
         // "\^(\r\n|\r|\n)[ \t]*" will be completely ignored (whether inside a quoted
-        // string or not). The below transformations occur (and represent a single 
+        // string or not). The below transformations occur (and represent a single
         // argument):
         //   "foo ^
         //    bar"      -> foo bar
@@ -520,15 +520,15 @@ LEADINGWHITE:
         //   bar        -> foo;bar
         // Notes:
         //   1. Comments are not recognized in a multi-line argument
-        //   2. A caret escapes only one new-line followed by an arbitrary number of 
+        //   2. A caret escapes only one new-line followed by an arbitrary number of
         //      tabs or blanks.
-        // The following will be parsed as the names suggest, into several different 
+        // The following will be parsed as the names suggest, into several different
         // arguments:
         //   /option1 ^
         //      val1_1;^
         //      val1_2;^
         //      val1_3;^
-        //   
+        //
         //   /option2
         //   /opt^
         //       ion3     -> /option1 val1_1;val1_2;val1_3; /option2 /option3
@@ -691,14 +691,14 @@ bool ConsoleArgs::ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) con
             return false;
         }
         wcscpy_s(copyArg, wcslen(argv[0]) + 1, argv[0]);
-        
+
         WStrList * listArgNew = new WStrList(copyArg, (*argLast));
         if (!listArgNew)
         {
             SetErrorMessage(W("Out of memory."));
             return false;
         }
-        
+
         *argLast = listArgNew;
         argLast = &listArgNew->next;
 
@@ -761,7 +761,7 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
     {
     DWORD size = GetFileSize(hFile, NULL);
     bufA = new char[size];
-    
+
     if (!bufA)
     {
         SetErrorMessage(W("Out of memory"));
@@ -858,9 +858,9 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
 
         bufW[requiredSize] = L'\0';
     }
-    
+
     *ppwzTextBuffer = bufW;
-    
+
     success = true;
     }
 
@@ -903,7 +903,7 @@ void ConsoleArgs::ProcessResponseArgs()
         if (!GetFullFileName(&szArg[1], szFilename, MAX_LONGPATH, false))
             continue;
 
-        
+
         hr = TreeAdd(&response_files, szFilename);
         if (hr == E_OUTOFMEMORY)
         {
@@ -915,7 +915,7 @@ void ConsoleArgs::ProcessResponseArgs()
             SetErrorMessage(W("Duplicate response file."));
             goto CONTINUE;
         }
-        
+
         {
         LPWSTR pwzFileBuffer;
         pwzFileBuffer = nullptr;
@@ -941,11 +941,11 @@ void ConsoleArgs::ProcessResponseArgs()
             else
             {
                 // Expand failed
-                
+
             }
         }
 #endif
-        
+
         TextToArgs(szActualText, &listCurArg->next);
         }
 

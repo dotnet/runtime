@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CustAttr_Emit.cpp
-// 
+//
 
-// 
+//
 // Implementation for the meta data custom attribute emit code (code:IMetaDataEmit).
-// 
+//
 //*****************************************************************************
 #include "stdafx.h"
 #include "regmeta.h"
@@ -72,7 +72,7 @@ enum {
 //*****************************************************************************
 // Properties of the known custom attributes.
 //
-// These tables describe the known custom attributes.  For each custom 
+// These tables describe the known custom attributes.  For each custom
 //  attribute, we know the namespace and name of the custom attribute,
 //  the types to which the CA applies, the ctor args, and possible named
 //  args.  There is a flag which specifies whether the custom attribute
@@ -98,7 +98,7 @@ struct KnownCaProp
 };
 
 // Recognized targets for known custom attributes.
-// If Target includes mdtAssembly, then make sure to include mdtTypeRef as well, 
+// If Target includes mdtAssembly, then make sure to include mdtTypeRef as well,
 // aLink uses mdtTypeRef target temporarily for assembly target attributes
 const mdToken DllImportTargets[]                    = {mdtMethodDef, (ULONG32) -1};
 const mdToken GuidTargets[]                         = {mdtTypeDef, mdtTypeRef, mdtModule, mdtAssembly, (ULONG32) -1};
@@ -139,7 +139,7 @@ const mdToken WindowsRuntimeImportTargets[]         = {mdtTypeDef, (ULONG32) -1}
     {
 
 #define DEFINE_CA_NAMED_ARG(NAME, PROPORFIELD, TYPE, ARRAYTYPE, ENUMTYPE, ENUMNAME)                                 \
-    { NAME, sizeof(NAME) - 1, PROPORFIELD,   {   TYPE, ARRAYTYPE, ENUMTYPE, ENUMNAME, sizeof(ENUMNAME) - 1   } }, 
+    { NAME, sizeof(NAME) - 1, PROPORFIELD,   {   TYPE, ARRAYTYPE, ENUMTYPE, ENUMNAME, sizeof(ENUMNAME) - 1   } },
 
 #define DEFINE_CA_NAMED_PROP_I4ENUM(NAME, ENUM) \
     DEFINE_CA_NAMED_ARG(NAME, SERIALIZATION_TYPE_PROPERTY, SERIALIZATION_TYPE_ENUM, SERIALIZATION_TYPE_UNDEFINED, SERIALIZATION_TYPE_I4, ENUM)
@@ -166,7 +166,7 @@ const mdToken WindowsRuntimeImportTargets[]         = {mdtTypeDef, (ULONG32) -1}
 //-----------------------------------------------------------------------------
 // index 0 is used as a placeholder.
 const KnownCaProp UNKNOWNProps                   = {0};
-    
+
 //-----------------------------------------------------------------------------
 // DllImport args, named args, and known attribute properties.
 DEFINE_CA_CTOR_ARGS(DllImportAttribute)
@@ -254,7 +254,7 @@ const KnownCaProp WindowsRuntimeImportAttributeProps = {"System.Runtime.InteropS
 // MethodImpl #1 args (none), named args, and known attribute properties.
 // MethodImpl #2 args (short), named args, and known attribute properties.
 // MethodImpl #3 args (enum), named args, and known attribute properties.
-// Note: first two match by signature; third by name only, because signature matching code is not 
+// Note: first two match by signature; third by name only, because signature matching code is not
 //  strong enough for enums.
 DEFINE_CA_CTOR_ARGS(MethodImplAttribute2)
     DEFINE_CA_CTOR_ARG(SERIALIZATION_TYPE_I2)
@@ -376,12 +376,12 @@ DEFINE_CA_NAMED_ARGS(StructLayoutAttribute)
 DEFINE_CA_NAMED_ARGS_END()
 
 const KnownCaProp StructLayoutAttribute1Props       = {"System.Runtime.InteropServices", "StructLayoutAttribute", StructLayoutTargets, bDONTKEEPCA,
-                                                rStructLayoutAttribute1Args, lengthof(rStructLayoutAttribute1Args), 
-                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs), 
+                                                rStructLayoutAttribute1Args, lengthof(rStructLayoutAttribute1Args),
+                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs),
                                                 bMATCHBYSIG};
 const KnownCaProp StructLayoutAttribute2Props       = {"System.Runtime.InteropServices", "StructLayoutAttribute", StructLayoutTargets, bDONTKEEPCA,
-                                                rStructLayoutAttribute2Args, lengthof(rStructLayoutAttribute2Args), 
-                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs), 
+                                                rStructLayoutAttribute2Args, lengthof(rStructLayoutAttribute2Args),
+                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs),
                                                 bMATCHBYNAME};
 
 //-----------------------------------------------------------------------------
@@ -427,7 +427,7 @@ const KnownCaProp * const rKnownCaProps[CA_COUNT] =
 {
     KnownCaList()
 };
-    
+
 //*****************************************************************************
 // Helper to turn on or off a single bit in a bitmask.
 //*****************************************************************************
@@ -451,9 +451,9 @@ HRESULT ParseEncodedType(
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    
+
     CorSerializationType* pType = &pCaType->tag;
-    
+
     IfFailGo(ca.GetTag(pType));
 
     if (*pType == SERIALIZATION_TYPE_SZARRAY)
@@ -467,7 +467,7 @@ HRESULT ParseEncodedType(
         // We cannot determine the underlying type without loading the Enum.
         pCaType->enumType = SERIALIZATION_TYPE_UNDEFINED;
         IfFailGo(ca.GetNonNullString(&pCaType->szEnumName, &pCaType->cEnumName));
-    } 
+    }
 
 ErrExit:
     return hr;
@@ -488,17 +488,17 @@ HRESULT ParseKnownCaValue(
         PRECONDITION(CheckPointer(pCaArg));
         PRECONDITION(CheckPointer(pCaParam));
         PRECONDITION(pCaParam->tag != SERIALIZATION_TYPE_TAGGED_OBJECT && pCaParam->tag != SERIALIZATION_TYPE_SZARRAY);
-        NOTHROW; 
+        NOTHROW;
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     CorSerializationType underlyingType;
-    
+
     pCaArg->type = *pCaParam;
 
     underlyingType = pCaArg->type.tag == SERIALIZATION_TYPE_ENUM ? pCaArg->type.enumType : pCaArg->type.tag;
-    
+
     // Grab the value.
     switch (underlyingType)
     {
@@ -507,43 +507,43 @@ HRESULT ParseKnownCaValue(
     case SERIALIZATION_TYPE_U1:
         IfFailGo(ca.GetU1(&pCaArg->u1));
         break;
-    
+
     case SERIALIZATION_TYPE_CHAR:
     case SERIALIZATION_TYPE_I2:
     case SERIALIZATION_TYPE_U2:
         IfFailGo(ca.GetU2(&pCaArg->u2));
         break;
-        
+
     case SERIALIZATION_TYPE_I4:
     case SERIALIZATION_TYPE_U4:
         IfFailGo(ca.GetU4(&pCaArg->u4));
         break;
-        
+
     case SERIALIZATION_TYPE_I8:
     case SERIALIZATION_TYPE_U8:
         IfFailGo(ca.GetU8(&pCaArg->u8));
         break;
-        
+
     case SERIALIZATION_TYPE_R4:
         IfFailGo(ca.GetR4(&pCaArg->r4));
         break;
-        
+
     case SERIALIZATION_TYPE_R8:
         IfFailGo(ca.GetR8(&pCaArg->r8));
         break;
-        
+
     case SERIALIZATION_TYPE_STRING:
     case SERIALIZATION_TYPE_TYPE:
         IfFailGo(ca.GetString(&pCaArg->str.pStr, &pCaArg->str.cbStr));
         break;
-        
+
     default:
         // The arguments of all known custom attributes are Type, String, Enum, or primitive types.
         _ASSERTE(!"Unexpected internal error");
         hr = E_FAIL;
         break;
     } // End switch
-    
+
 ErrExit:
     return hr;
 }
@@ -561,21 +561,21 @@ HRESULT ParseKnownCaNamedArgs(
     ULONG       cNamedParams)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     HRESULT hr = S_OK;
     ULONG ixParam;
     INT32 ixArg;
     INT16 cActualArgs;
     CaNamedArgCtor namedArg;
     CaNamedArg* pNamedParam;
-        
+
     // Get actual count of named arguments.
     if (FAILED(ca.GetI2(&cActualArgs)))
         cActualArgs = 0; // Everett behavior
- 
+
     for (ixParam = 0; ixParam < cNamedParams; ixParam++)
         pNamedParams[ixParam].val.type.tag = SERIALIZATION_TYPE_UNDEFINED;
-    
+
     // For each named argument...
     for (ixArg = 0; ixArg < cActualArgs; ixArg++)
     {
@@ -586,16 +586,16 @@ HRESULT ParseKnownCaNamedArgs(
 
         // Get argument type information
         IfFailGo(ParseEncodedType(ca, &namedArg.type));
-        
+
         // Get name of Arg.
         if (FAILED(ca.GetNonEmptyString(&namedArg.szName, &namedArg.cName)))
             IfFailGo(PostError(META_E_CA_INVALID_BLOB));
-        
+
         // Match arg by name and type
         for (ixParam = 0; ixParam < cNamedParams; ixParam++)
         {
             pNamedParam = &pNamedParams[ixParam];
-        
+
             // Match type
             if (pNamedParam->type.tag != SERIALIZATION_TYPE_TAGGED_OBJECT)
             {
@@ -603,14 +603,14 @@ HRESULT ParseKnownCaNamedArgs(
                     continue;
 
                 // Match array type
-                if (namedArg.type.tag == SERIALIZATION_TYPE_SZARRAY && 
+                if (namedArg.type.tag == SERIALIZATION_TYPE_SZARRAY &&
                     pNamedParam->type.arrayType != SERIALIZATION_TYPE_TAGGED_OBJECT &&
                     namedArg.type.arrayType != pNamedParam->type.arrayType)
                     continue;
             }
 
             // Match name (and its length to avoid substring matching)
-            if ((pNamedParam->cName != namedArg.cName) || 
+            if ((pNamedParam->cName != namedArg.cName) ||
                 (strncmp(pNamedParam->szName, namedArg.szName, namedArg.cName) != 0))
             {
                 continue;
@@ -618,31 +618,31 @@ HRESULT ParseKnownCaNamedArgs(
 
             // If enum, match enum name.
             if (pNamedParam->type.tag == SERIALIZATION_TYPE_ENUM ||
-                (pNamedParam->type.tag == SERIALIZATION_TYPE_SZARRAY && pNamedParam->type.arrayType == SERIALIZATION_TYPE_ENUM )) 
+                (pNamedParam->type.tag == SERIALIZATION_TYPE_SZARRAY && pNamedParam->type.arrayType == SERIALIZATION_TYPE_ENUM ))
             {
                 if (pNamedParam->type.cEnumName > namedArg.type.cEnumName)
                     continue; // name cannot possibly match
-                    
+
                 if (strncmp(pNamedParam->type.szEnumName, namedArg.type.szEnumName, pNamedParam->type.cEnumName) != 0 ||
-                    (pNamedParam->type.cEnumName < namedArg.type.cEnumName && 
+                    (pNamedParam->type.cEnumName < namedArg.type.cEnumName &&
                      namedArg.type.szEnumName[pNamedParam->type.cEnumName] != ','))
                     continue;
 
-                // TODO: For now assume the property\field array size is correct - later we should verify this 
+                // TODO: For now assume the property\field array size is correct - later we should verify this
                 namedArg.type.enumType = pNamedParam->type.enumType;
             }
 
             // Found a match.
             break;
         }
-        
+
         // Better have found an argument.
         if (ixParam == cNamedParams)
         {
             MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
             IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, wcslen(pWideStr), pWideStr));
         }
-        
+
         // Argument had better not have been seen already.
         if (pNamedParams[ixParam].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
         {
@@ -652,7 +652,7 @@ HRESULT ParseKnownCaNamedArgs(
 
         IfFailGo(ParseKnownCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type));
     }
-  
+
 ErrExit:
     return hr;
 }
@@ -673,20 +673,20 @@ HRESULT ParseKnownCaArgs(
 
     HRESULT     hr = S_OK;              // A result.
     ULONG       ix;                     // Loop control.
-    
+
     // If there is a blob, check the prolog.
     if (FAILED(ca.ValidateProlog()))
     {
         IfFailGo(PostError(META_E_CA_INVALID_BLOB));
     }
-    
+
     // For each expected arg...
     for (ix=0; ix<cArgs; ++ix)
     {
         CaArg* pArg = &pArgs[ix];
         IfFailGo(ParseKnownCaValue(ca, &pArg->val, &pArg->type));
     }
-    
+
 ErrExit:
     return hr;
 } // ParseKnownCaArgs
@@ -705,34 +705,34 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
-    
+
     BEGIN_ENTRYPOINT_NOTHROW;
-    
+
     CustomAttributeRec  *pRecord = NULL; // New custom Attribute record.
     RID         iRecord;                // New custom Attribute RID.
     CMiniMdRW   *pMiniMd = &m_pStgdb->m_MiniMd;
     int         ixKnown;                // Index of known custom attribute.
-    
-    LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor, 
+
+    LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
             pCustomAttribute, cbCustomAttribute, pcv));
     START_MD_PERF();
     LOCKWRITE();
-    
+
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);
-    
+
     if (TypeFromToken(tkOwner) == mdtCustomAttribute)
         IfFailGo(E_INVALIDARG);
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-    
-    if (IsNilToken(tkOwner) || 
+
+    if (IsNilToken(tkOwner) ||
         IsNilToken(tkCtor) ||
         (TypeFromToken(tkCtor) != mdtMethodDef &&
         TypeFromToken(tkCtor) != mdtMemberRef) )
     {
         IfFailGo(E_INVALIDARG);
     }
-    
+
     // See if this is a known custom attribute.
     IfFailGo(_IsKnownCustomAttribute(tkCtor, &ixKnown));
     if (ixKnown != 0)
@@ -745,7 +745,7 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
         if (!bKeep)
             goto ErrExit;
     }
-    
+
     if (((TypeFromToken(tkOwner) == mdtTypeDef) || (TypeFromToken(tkOwner) == mdtMethodDef)) &&
         (TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef))
     {
@@ -756,7 +756,7 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
         TypeRefRec  *pTypeRefRec = NULL;
         TypeDefRec  *pTypeDefRec = NULL;
         mdToken     tkParent;
-        
+
         if (TypeFromToken(tkCtor) == mdtMemberRef)
         {
             MemberRefRec *pMemberRefRec;
@@ -779,7 +779,7 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
             IfFailGo(pMiniMd->FindParentOfMethodHelper(tkCtor, &tkParent));
             IfFailGo(pMiniMd->GetTypeDefRecord(RidFromToken(tkParent), &pTypeDefRec));
         }
-        
+
         if (pTypeDefRec != NULL)
         {
             IfFailGo(pMiniMd->getNamespaceOfTypeDef(pTypeDefRec, &szNamespace));
@@ -789,7 +789,7 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 
         if ((TypeFromToken(tkOwner) == mdtMethodDef) && strcmp(szName, COR_REQUIRES_SECOBJ_ATTRIBUTE_ANSI) == 0)
         {
-            // Turn REQ_SO attribute into flag bit on the methoddef. 
+            // Turn REQ_SO attribute into flag bit on the methoddef.
             MethodRec *pMethod;
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(tkOwner), &pMethod));
             pMethod->AddFlags(mdRequireSecObject);
@@ -812,25 +812,25 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
             IfFailGo(UpdateENCLog(tkOwner));
         }
     }
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.AddCustomAttributeRecord(&pRecord, &iRecord));
     IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_CustomAttribute, CustomAttributeRec::COL_Type, pRecord, tkCtor));
     IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_CustomAttribute, CustomAttributeRec::COL_Parent, pRecord, tkOwner));
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_CustomAttribute, CustomAttributeRec::COL_Value, pRecord, pCustomAttribute, cbCustomAttribute));
-    
+
     // Give token back to caller.
     if (pcv != NULL)
         *pcv = TokenFromRid(iRecord, mdtCustomAttribute);
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.AddCustomAttributesToHash(TokenFromRid(iRecord, mdtCustomAttribute)) );
-    
+
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
-    
+
 ErrExit:
     STOP_MD_PERF(DefineCustomAttribute);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineCustomAttribute
@@ -854,9 +854,9 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     START_MD_PERF();
     LOCKWRITE();
-    
+
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-    
+
     _ASSERTE(TypeFromToken(tkAttr) == mdtCustomAttribute && !InvalidRid(tkAttr));
 
     // Retrieve and update the custom value.
@@ -865,10 +865,10 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
-    
+
     STOP_MD_PERF(SetCustomAttributeValue);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetCustomAttributeValue
@@ -890,14 +890,14 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
     int         ixCa;                   // Index of Known CustomAttribute, or 0.
     int         i;                      // Loop control.
     mdToken     tkParent;
-    
+
     *pca = 0;
-    
+
     // Only for Custom Attributes.
     _ASSERTE(TypeFromToken(tkCtor) != mdtTypeRef && TypeFromToken(tkCtor) != mdtTypeDef);
-    
+
     sLookup.tkType = tkCtor;
-    
+
     // See if this custom attribute type has been seen before.
     if ((pFound = m_caHash.Find(&sLookup)))
     {   // Yes, already seen.
@@ -905,9 +905,9 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
         hr = (pFound->ca == CA_UNKNOWN) ? S_FALSE : S_OK;
         goto ErrExit;
     }
-    
+
     // Hasn't been seen before.  See if it is well known.
-    
+
     // Get the CA name.
     if (TypeFromToken(tkCtor) == mdtMemberRef)
     {
@@ -942,7 +942,7 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
             continue;
         if (strcmp(szNamespace, rKnownCaProps[i]->szNamespace) == 0)
         {
-            // Some custom attributes have overloaded ctors.  For those, 
+            // Some custom attributes have overloaded ctors.  For those,
             //  see if this is the matching overload.
             if (rKnownCaProps[i]->bMatchBySig)
             {
@@ -953,7 +953,7 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
                 ULONG       cb;                         // Size of an element
                 ULONG       elem;                       // Signature element.
                 ULONG       j;                          // Loop control.
-                
+
                 // Get the signature.
                 if (TypeFromToken(tkCtor) == mdtMemberRef)
                 {
@@ -967,7 +967,7 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
                     IfFailGo(pMiniMd->GetMethodRecord(RidFromToken(tkCtor), &pMethod));
                     IfFailGo(pMiniMd->getSignatureOfMethod(pMethod, &pSig, &cbSig));
                 }
-                
+
                 // Skip calling convention.
                 cb = CorSigUncompressData(pSig, &elem);
                 pSig += cb;
@@ -976,11 +976,11 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
                 cb = CorSigUncompressData(pSig, &cParams);
                 pSig += cb;
                 cbSig -= cb;
-    
+
                 // If param count mismatch, not the right CA.
                 if (cParams != rKnownCaProps[i]->cArgs)
                     continue;
-    
+
                 // Count is fine, check each param.  Skip return type (better be void).
                 cb = CorSigUncompressData(pSig, &elem);
                 _ASSERTE(elem == ELEMENT_TYPE_VOID);
@@ -1005,14 +1005,14 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
             break;
         }
     }
-    
+
     // Add to hash.
     sLookup.ca = ixCa;
     pFound = m_caHash.Add(&sLookup);
     IfNullGo(pFound);
     *pFound = sLookup;
     *pca = ixCa;
-    
+
 ErrExit:
     return hr;
 } // RegMeta::_IsKnownCustomAttribute
@@ -1041,10 +1041,10 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     CQuickArray<CaArg>      qArgs;      // Un-named arguments.
     CQuickArray<CaNamedArg> qNamedArgs; // Named arguments.
     CQuickArray<BYTE>       qNativeType;// Native type string.
-    
+
     _ASSERTE(ixCa > 0 && ixCa < CA_COUNT);
     *bKeep = props->bKeepCa || m_bKeepKnownCa;
-    
+
     // Validate that target is valid for attribute.
     tkObjType = TypeFromToken(tkObj);
     for (ix=0; props->rTypes[ix] != (mdToken) -1; ++ix)
@@ -1061,7 +1061,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     ixTbl = pMiniMd->GetTblForToken(tkObj);
     _ASSERTE(ixTbl >= 0 && ixTbl <= pMiniMd->GetCountTables());
     IfFailGo(pMiniMd->getRow(ixTbl, RidFromToken(tkObj), &pRow));
-    
+
     // If this custom attribute expects any args...
     if (props->cArgs || props->cNamedArgs)
     {   // Initialize array ctor arg descriptors.
@@ -1070,7 +1070,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             qArgs[ix] = props->pArgs[ix];
         // Parse any ctor args (unnamed, fixed args).
         IfFailGo(ParseKnownCaArgs(ca, qArgs.Ptr(), props->cArgs));
-        
+
         // If this custom attribute accepts named args, parse them, or if there
         //  are unused bytes, parse them.
         if (props->cNamedArgs || ca.BytesLeft() > 0)
@@ -1082,10 +1082,10 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             IfFailGo(ParseKnownCaNamedArgs(ca, qNamedArgs.Ptr(), props->cNamedArgs));
         }
     }
-   
+
     switch (ixCa)
     {
-    case CA_DllImportAttribute: 
+    case CA_DllImportAttribute:
         {
         // Validate parameters.
         if (qArgs[0].val.str.cbStr == 0 || qArgs[0].val.str.pStr == NULL)
@@ -1108,7 +1108,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
                 IfFailGo(PostError(META_E_CA_INVALID_VALUE));
             IfFailGo(_DefineModuleRef(wzDllName, &mrModule));
         }
-        
+
         // Create a p/invoke map entry.
         ULONG dwFlags; dwFlags=0;
         // Was a calling convention set?
@@ -1126,7 +1126,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             case 3: dwFlags |= pmCallConvStdcall;  break;
             case 4: dwFlags |= pmCallConvThiscall; break;
             case 5: dwFlags |= pmCallConvFastcall; break;
-            default: 
+            default:
                 _ASSERTE(!"Flags are out of sync! ");
                 break;
             }
@@ -1136,7 +1136,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         {   // No calling convention specified for a method.  Default to pmCallConvWinApi.
             dwFlags = (dwFlags & ~pmCallConvMask) | pmCallConvWinapi;
         }
-        
+
         // Charset
         if (qNamedArgs[DI_CharSet].val.type.tag)
         {   // Turn of all charset bits, then turn on specified bits.
@@ -1148,7 +1148,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             case 2: dwFlags |= pmCharSetAnsi;    break;
             case 3: dwFlags |= pmCharSetUnicode; break;
             case 4: dwFlags |= pmCharSetAuto;    break;
-            default: 
+            default:
                 _ASSERTE(!"Flags are out of sync! ");
                 break;
             }
@@ -1162,7 +1162,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             if (qNamedArgs[DI_SetLastError].val.u1)
                 dwFlags |= pmSupportsLastError;
         }
-            
+
         // If an entrypoint name was specified, use it, otherwise grab the name from the member.
         LPCWSTR wzEntry;
         if (qNamedArgs[DI_EntryPoint].val.type.tag)
@@ -1217,14 +1217,14 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         goto ErrExit;
         }
         break;
-    
+
     case CA_GuidAttribute:
         { // Just verify the attribute.  It still gets stored as a real custom attribute.
         // format is "{01234567-0123-0123-0123-001122334455}"
         GUID guid;
         WCHAR wzGuid[40];
         int cch = qArgs[0].val.str.cbStr;
-        
+
         // Guid should be 36 characters; need to add curlies.
         if (cch == 36)
         {
@@ -1234,14 +1234,14 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             wzGuid[38] = 0;
             hr = IIDFromString(wzGuid, &guid);
         }
-        else 
+        else
             hr = META_E_CA_INVALID_UUID;
         if (hr != S_OK)
             IfFailGo(PostError(META_E_CA_INVALID_UUID));
         goto ErrExit;
         }
         break;
-    
+
     case CA_ComImportAttribute:
         reinterpret_cast<TypeDefRec*>(pRow)->AddFlags(tdImport);
         break;
@@ -1253,7 +1253,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
                 IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         }
         break;
-        
+
     case CA_ClassInterfaceAttribute:
         {
             // Verify the attribute.
@@ -1281,37 +1281,37 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             case mdtProperty:
                 reinterpret_cast<PropertyRec*>(pRow)->AddPropFlags(prSpecialName);
                 break;
-                
+
             case mdtEvent:
                 reinterpret_cast<EventRec*>(pRow)->AddEventFlags(evSpecialName);
                 break;
 
             default:
                 _ASSERTE(!"Unfamilar type for SpecialName custom attribute");
-                IfFailGo(PostError(META_E_CA_INVALID_VALUE)); 
+                IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         }
 
         break;
     case CA_SerializableAttribute:
         reinterpret_cast<TypeDefRec*>(pRow)->AddFlags(tdSerializable);
         break;
-    
+
     case CA_NonSerializedAttribute:
         reinterpret_cast<FieldRec*>(pRow)->AddFlags(fdNotSerialized);
         break;
-    
+
     case CA_InAttribute:
         reinterpret_cast<ParamRec*>(pRow)->AddFlags(pdIn);
         break;
-    
+
     case CA_OutAttribute:
         reinterpret_cast<ParamRec*>(pRow)->AddFlags(pdOut);
         break;
-    
+
     case CA_OptionalAttribute:
         reinterpret_cast<ParamRec*>(pRow)->AddFlags(pdOptional);
         break;
-    
+
     case CA_MethodImplAttribute2:
         // Force to wider value.
         qArgs[0].val.u4 = (unsigned)qArgs[0].val.i2;
@@ -1342,7 +1342,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     case CA_MarshalAsAttribute2:
         IfFailGo(_HandleNativeTypeCustomAttribute(tkObj, qArgs.Ptr(), qNamedArgs.Ptr(), qNativeType));
         break;
-        
+
     case CA_PreserveSigAttribute:
         reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(miPreserveSig);
         break;
@@ -1369,8 +1369,8 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         case 3: // tdAutoLayout:
             dwFlags = (dwFlags & ~tdLayoutMask) | tdAutoLayout;
             break;
-        default: 
-            IfFailGo(PostError(META_E_CA_INVALID_VALUE)); 
+        default:
+            IfFailGo(PostError(META_E_CA_INVALID_VALUE));
             break;
         }
 
@@ -1380,9 +1380,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[SL_Pack].val.type.tag)
         {    // Only 1,2,4,8,16,32,64,128 are legal values.
              ulPack = qNamedArgs[SL_Pack].val.u4;
-             if ((ulPack > 128) || 
+             if ((ulPack > 128) ||
                  (ulPack & (ulPack-1)))
-                 IfFailGo(PostError(META_E_CA_INVALID_VALUE)); 
+                 IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         }
         if (qNamedArgs[SL_Size].val.type.tag)
         {
@@ -1399,28 +1399,28 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
             switch (qNamedArgs[SL_CharSet].val.u4)
             {
             //case 1: // Not specified.
-            //    IfFailGo(PostError(META_E_CA_INVALID_VALUE)); 
+            //    IfFailGo(PostError(META_E_CA_INVALID_VALUE));
             //    break;
             case 2: // ANSI
                 dwFlags = (dwFlags & ~tdStringFormatMask) | tdAnsiClass;
                 break;
             case 3: // Unicode
-                dwFlags = (dwFlags & ~tdStringFormatMask) | tdUnicodeClass; 
+                dwFlags = (dwFlags & ~tdStringFormatMask) | tdUnicodeClass;
                 break;
             case 4: // Auto
                 dwFlags = (dwFlags & ~tdStringFormatMask) | tdAutoClass;
                 break;
-            default: 
-                IfFailGo(PostError(META_E_CA_INVALID_VALUE)); 
+            default:
+                IfFailGo(PostError(META_E_CA_INVALID_VALUE));
                 break;
             }
         }
-        
+
         // Persist possibly-changed value of flags.
         reinterpret_cast<TypeDefRec*>(pRow)->SetFlags(dwFlags);
         }
         break;
-    
+
     case CA_FieldOffsetAttribute:
         if (qArgs[0].val.u4 > INT_MAX)
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
@@ -1452,9 +1452,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         goto ErrExit;
         break;
     }
-    
+
     IfFailGo(UpdateENCLog(tkObj));
-    
+
 ErrExit:
     return hr;
 } // RegMeta::_HandleKnownCustomAttribute
@@ -1473,7 +1473,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
     CaArg       *pArgs,                 // Pointer to args.
     CaNamedArg  *pNamedArgs,            // Pointer to named args.
     CQuickArray<BYTE> &qNativeType)     // Native type is built here.
-{ 
+{
     HRESULT     hr = S_OK;              // A result.
     int         cch = 0;                // Size of a string argument.
     ULONG       cb;                     // Count of some character operation.
@@ -1490,7 +1490,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
 
     // Retrieve the type of the token.
     tkObjType = TypeFromToken(tkObj);
-    
+
     // Compute maximum size of the native type.
     if (pArgs[0].val.i4 == NATIVE_TYPE_CUSTOMMARSHALER)
     {   // N_T_* + 3 string lengths
@@ -1512,10 +1512,10 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
     {   // N_T_* + sub-type + size + additive + NativeTypeArrayFlags.
         cbMax = sizeof(ULONG) * 4 + sizeof(UINT16);
     }
-    
+
     // IidParameterIndex.
     cbMax += sizeof(DWORD);
-    
+
     // Extra space to prevent buffer overrun.
     cbMax += 8;
 
@@ -1525,7 +1525,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
     cbNative = 0;
 
     //<TODO>@FUTURE: check for valid combinations of args.</TODO>
-    
+
     // Put in the NativeType.
     cb = CorSigCompressData(pArgs[0].val.i4, pbNative);
     if (cb == ((ULONG)(-1)))
@@ -1550,7 +1550,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             int iidparam = pNamedArgs[M_IidParameterIndex].val.i4;
             if (iidparam < 0)
                 IfFailGo(PostError(META_E_CA_NEGATIVE_PARAMINDEX));
-            
+
             cb = CorSigCompressData(pNamedArgs[M_IidParameterIndex].val.i4, pbNative);
             if (cb == ((ULONG)(-1)))
                 IfFailGo(PostError(META_E_CA_INVALID_BLOB));
@@ -1561,13 +1561,13 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
                 IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
         }
         break;
-            
-        
+
+
     case NATIVE_TYPE_FIXEDARRAY:
         // Validate that only fields valid for NATIVE_TYPE_FIXEDARRAY are set.
         if (pNamedArgs[M_SafeArraySubType].val.type.tag)
             IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
-        
+
         if (pNamedArgs[M_SizeParamIndex].val.type.tag)
             IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
 
@@ -1633,7 +1633,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
         // This native type is only applicable on fields.
         if (tkObjType != mdtFieldDef)
             IfFailGo(PostError(META_E_CA_NT_FIELDONLY));
-            
+
         // Put in the constant value.
         cb = CorSigCompressData(pNamedArgs[M_SizeConst].val.i4, pbNative);
         if (cb == ((ULONG)(-1)))
@@ -1645,7 +1645,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
         if (cbNative > cbMax)
             IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
         break;
-        
+
     case NATIVE_TYPE_BYVALSTR:
         // This native type is only applicable on parameters.
         if (tkObjType != mdtParamDef)
@@ -1680,8 +1680,8 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             if (pNamedArgs[M_SafeArrayUserDefinedSubType].val.type.tag)
             {
                 // Validate that this is only set for valid VT's.
-                if (pNamedArgs[M_SafeArraySubType].val.i4 != VT_RECORD && 
-                    pNamedArgs[M_SafeArraySubType].val.i4 != VT_DISPATCH && 
+                if (pNamedArgs[M_SafeArraySubType].val.i4 != VT_RECORD &&
+                    pNamedArgs[M_SafeArraySubType].val.i4 != VT_DISPATCH &&
                     pNamedArgs[M_SafeArraySubType].val.i4 != VT_UNKNOWN)
                 {
                     IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
@@ -1705,7 +1705,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             }
         }
         break;
-        
+
     case NATIVE_TYPE_ARRAY:
         // Validate that the array sub type is not set.
         if (pNamedArgs[M_SafeArraySubType].val.type.tag)
@@ -1747,7 +1747,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             // Make sure the parameter index is not negative.
             if (pNamedArgs[M_SizeParamIndex].val.i4 < 0)
                 IfFailGo(PostError(META_E_CA_NEGATIVE_PARAMINDEX));
-            
+
             // Yes, put it in.
             cb = CorSigCompressData(pNamedArgs[M_SizeParamIndex].val.i2, pbNative);
             if (cb == ((ULONG)(-1)))
@@ -1758,7 +1758,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             pbNative += cb;
             if (cbNative > cbMax)
                 IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
-        
+
             // Is there a const?
             if (pNamedArgs[M_SizeConst].val.type.tag)
             {
@@ -1804,7 +1804,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
                 pbNative += cb;
                 if (cbNative > cbMax)
                     IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
-    
+
                 // Put in the constant value.
                 cb = CorSigCompressData(pNamedArgs[M_SizeConst].val.i4, pbNative);
                 if (cb == ((ULONG)(-1)))
@@ -1815,7 +1815,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
                 pbNative += cb;
                 if (cbNative > cbMax)
                     IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
-                
+
                 // Set the flags field to 0 to indicate the size param index was not specified.
                 cb = CorSigCompressData((UINT16)0, pbNative);
                 if (cb == ((ULONG)(-1)))
@@ -1829,7 +1829,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             }
         }
         break;
-        
+
     case NATIVE_TYPE_CUSTOMMARSHALER:
         // Validate that the marshaler type field is set.
         if (!pNamedArgs[M_MarshalType].val.type.tag && !pNamedArgs[M_MarshalTypeRef].val.type.tag)
@@ -1856,7 +1856,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
         pbNative += cb;
         if (cbNative > cbMax)
             IfFailGo(PostError(META_E_CA_INVALID_MARSHALAS_FIELDS));
-        
+
         // Put in the marshaler type name.
         if (pNamedArgs[M_MarshalType].val.type.tag)
         {
@@ -1890,7 +1890,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             pbNative += cch;
             _ASSERTE(cbNative <= cbMax);
         }
-        
+
         // Put in the cookie.
         cch = pNamedArgs[M_MarshalCookie].val.str.cbStr;
         cb = CorSigCompressData(cch, pbNative);
@@ -1909,10 +1909,10 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
         break;
     }
     _ASSERTE(cbNative <= cbMax);
-    
+
     // Resize to actual size.
     IfFailGo(qNativeType.ReSizeNoThrow(cbNative));
-    
+
     // Now apply the native type to actual token.  If it is a property token,
     //  apply to the methods.
     switch (TypeFromToken(tkObj))
@@ -1921,7 +1921,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
     case mdtFieldDef:
         IfFailGo(_SetFieldMarshal(tkObj, (PCCOR_SIGNATURE)qNativeType.Ptr(), (DWORD)qNativeType.Size()));
         break;
-    
+
     case mdtProperty:
         // Get any setter/getter methods.
         IfFailGo(GetPropertyProps(tkObj, 0,0,0,0,0,0,0,0,0,0, &tkSetter, &tkGetter, 0,0,0));
@@ -1942,7 +1942,7 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
                           break;
                     }
                 }
-            
+
             } while (hr == S_OK);
             if (!IsNilToken(tkParam))
                 IfFailGo(_SetFieldMarshal(tkParam, (PCCOR_SIGNATURE)qNativeType.Ptr(), (DWORD)qNativeType.Size()));
@@ -1982,12 +1982,12 @@ HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
             phEnum = 0;
         }
         break;
-        
+
     default:
         _ASSERTE(!"Should not have this token type in _HandleNativeTypeCustomAttribute()");
         break;
     }
-    
+
 ErrExit:
     if (phEnum)
         CloseEnum(phEnum);

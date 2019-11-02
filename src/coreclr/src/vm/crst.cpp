@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // CRST.CPP
-// 
+//
 
-// 
+//
 
 
 #include "common.h"
@@ -36,7 +36,7 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
     } CONTRACTL_END;
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
-    
+
     {
         SetOSCritSec ();
     }
@@ -101,12 +101,12 @@ void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
     CONTRACTL {
         NOTHROW;
 
-        // We're almost always MODE_PREEMPTIVE, but if it's a thread suspending for GC, 
+        // We're almost always MODE_PREEMPTIVE, but if it's a thread suspending for GC,
         // then we might be MODE_COOPERATIVE. Fortunately in that case, we don't block on shutdown.
         // We assert this below.
         MODE_ANY;
         GC_NOTRIGGER;
-        
+
         PRECONDITION(this->OwnedByCurrentThread());
     }
     CONTRACTL_END;
@@ -169,7 +169,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     //     (due to deadlock breaking by the host.) A non-breakable crst will never
     //     throw or OOM or fail an enter.
     //
-    //     
+    //
     //
     //
     // GC/MODE
@@ -200,7 +200,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     //            MODE_ANY
     //            GC_NOTRIGGER
     //------------------------------------------------------------------------------------------------
-    
+
 #ifdef ENABLE_CONTRACTS_IMPL
     ClrDebugState *pClrDebugState = CheckClrDebugState();
     if (pClrDebugState)
@@ -234,9 +234,9 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         {
             if (pClrDebugState->GetGCNoTriggerCount())
             {
-                // If we have no thread object, we won't be toggling the GC.  This is the case, 
+                // If we have no thread object, we won't be toggling the GC.  This is the case,
                 // for example, on the debugger helper thread which is always GC_NOTRIGGERS.
-                if (GetThreadNULLOk() != NULL) 
+                if (GetThreadNULLOk() != NULL)
                 {
                     // Will we really need to change GC mode COOPERATIVE to PREEMPTIVE?
                     if (GetThreadNULLOk()->PreemptiveGCDisabled())
@@ -254,7 +254,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
                 }
             }
         }
-        
+
         // The mode checks and enforcement of GC_NOTRIGGER during the lock are done in CrstBase::PostEnter().
 
     }
@@ -270,7 +270,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     _ASSERTE(IsCrstInitialized());
 
     // Is Critical Section entered?
-    // We could have perhaps used m_criticalsection.LockCount, but 
+    // We could have perhaps used m_criticalsection.LockCount, but
     // while spinning, we want to fire the ETW event only once
     BOOL fIsCriticalSectionEnteredAfterFailingOnce = FALSE;
 
@@ -281,7 +281,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     pThread = GetThread();
     fToggle = ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN)) == 0)   // condition normally false
               && pThread &&  pThread->PreemptiveGCDisabled();
-    
+
     if (fToggle) {
         pThread->EnablePreemptiveGC();
     }
@@ -315,7 +315,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 #ifdef _DEBUG
     PostEnter();
 #endif
-    
+
     if (fToggle)
     {
         BEGIN_GETTHREAD_ALLOWED;
@@ -365,8 +365,8 @@ void CrstBase::Leave()
 
 #ifdef _DEBUG
     //_ASSERTE(m_cannotLeave==0 || OwnedByCurrentThread());
-    
-    if ((pThread != NULL) && 
+
+    if ((pThread != NULL) &&
         (m_dwFlags & CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD))
     {   // The lock requires ForbidSuspendRegion while it is taken
         CONSISTENCY_CHECK_MSGF(pThread->IsInForbidSuspendRegion(), ("ForbidSuspend region was released before the lock:'%s'", m_tag));
@@ -386,7 +386,7 @@ void CrstBase::PreEnter()
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to take a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");
-    }   
+    }
 
     Thread * pThread = GetThreadNULLOk();
 
@@ -407,7 +407,7 @@ void CrstBase::PreEnter()
     }
 
     // If a thread suspends another thread, it cannot acquire locks.
-    if ((pThread != NULL) && 
+    if ((pThread != NULL) &&
         (pThread->Debug_GetUnsafeSuspendeeCount() != 0))
     {
         CONSISTENCY_CHECK_MSGF(false, ("Suspender thread taking non-suspender lock:'%s'", m_tag));
@@ -415,7 +415,7 @@ void CrstBase::PreEnter()
 
     if (ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
         return;
-    
+
     if (m_dwFlags & CRST_UNSAFE_COOPGC)
     {
         CONSISTENCY_CHECK (IsGCThread ()
@@ -424,8 +424,8 @@ void CrstBase::PreEnter()
                            // This check is mainly for code called from EEStartup.
                           || (pThread == NULL && !GCHeapUtilities::IsGCHeapInitialized()) );
     }
-    
-    if ((pThread != NULL) && 
+
+    if ((pThread != NULL) &&
         (m_dwFlags & CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD))
     {
         CONSISTENCY_CHECK_MSGF(pThread->IsInForbidSuspendRegion(), ("The lock '%s' can be taken only in ForbidSuspend region.", m_tag));
@@ -455,7 +455,7 @@ void CrstBase::PostEnter()
     if (m_entercount == 1)
     {
         _ASSERTE((m_next == NULL) && (m_prev == NULL));
-        
+
         // Link this Crst into the Thread's chain of OwnedCrsts
         CrstBase *pcrst = GetThreadsOwnedCrsts();
         if (pcrst == NULL)
@@ -487,7 +487,7 @@ void CrstBase::PostEnter()
     {
         if (pThread == NULL)
         {
-            // Cannot set NoTrigger.  This could conceivably turn into 
+            // Cannot set NoTrigger.  This could conceivably turn into
             // A GC hole if the thread is created and then a GC rendezvous happens
             // while the lock is still held.
         }
@@ -516,7 +516,7 @@ void CrstBase::PreLeave()
             m_prev->m_next = m_next;
         else
             SetThreadsOwnedCrsts(m_next);
-        
+
         if (m_next)
             m_next->m_prev = m_prev;
 
@@ -557,11 +557,11 @@ void CrstBase::PreLeave()
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to leave a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");
-    }   
+    }
 
 }
 
-// We have seen several times that a Crst is not destroyed before its memory is freed.  This corrupts 
+// We have seen several times that a Crst is not destroyed before its memory is freed.  This corrupts
 // our chain, and also causes memory leak.  The following structure is to track what Crst exists.
 // If our chain is broken, find out which Crst causes problem, then lookup this array.  The problematic
 // Crst can be identified with crstType.
@@ -595,21 +595,21 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
     m_next = NULL;
     m_prev = NULL;
     m_cannotLeave=0;
-    
+
     _ASSERTE((m_dwFlags & ~(CRST_REENTRANCY |
                           CRST_UNSAFE_SAMELEVEL |
                           CRST_UNSAFE_COOPGC |
-                          CRST_UNSAFE_ANYMODE | 
+                          CRST_UNSAFE_ANYMODE |
                           CRST_DEBUGGER_THREAD |
                           CRST_HOST_BREAKABLE |
                           CRST_OS_CRIT_SEC |
                           CRST_INITIALIZED |
-                          CRST_TAKEN_DURING_SHUTDOWN | 
-                          CRST_GC_NOTRIGGER_WHEN_TAKEN | 
+                          CRST_TAKEN_DURING_SHUTDOWN |
+                          CRST_GC_NOTRIGGER_WHEN_TAKEN |
                           CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)) == 0);
 
     // @todo - Any Crst w/ CRST_DEBUGGER_THREAD must be on a special blessed list. Check that here.
-    
+
     LOG((LF_SYNC, INFO3, "ConstructCrst with this:0x%x\n", this));
 
     for (int i = 0; i < crstDebugInfoCount; i++)
@@ -630,7 +630,7 @@ void CrstBase::DebugDestroy()
     LIMITED_METHOD_CONTRACT;
 
     // Ideally, when we destroy the crst, it wouldn't be held.
-    // This is violated if a thread holds a lock and is asynchronously killed 
+    // This is violated if a thread holds a lock and is asynchronously killed
     // (such as what happens on ExitProcess).
     // Delink it from the Thread's chain of OwnedChain
     if (IsAtProcessExit())
@@ -660,7 +660,7 @@ void CrstBase::DebugDestroy()
             ("CRST '%s' is destroyed while being held in non-shutdown scenario.\n"
             "this=0x%p, m_prev=0x%p. m_next=0x%p", m_tag, this, this->m_prev, this->m_next));
     }
-    
+
     FillMemory(&m_criticalsection, sizeof(m_criticalsection), 0xcc);
     m_holderthreadid.Clear();
     m_entercount     = 0xcccccccc;
@@ -688,7 +688,7 @@ BOOL CrstBase::IsSafeToTake()
         DEBUG_ONLY;
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-    } CONTRACTL_END;    
+    } CONTRACTL_END;
 
     // If mscoree.dll is being detached
     if (IsAtProcessExit())
@@ -722,11 +722,11 @@ BOOL CrstBase::IsSafeToTake()
     }
 
     // Is the current Crst exempt from the Crst ranking enforcement?
-    if (m_crstlevel == CRSTUNORDERED 
+    if (m_crstlevel == CRSTUNORDERED
         // when the thread is doing a stressing GC, some Crst violations could be ignored
         // also, we want to keep an explicit list of Crst's that we may take during GC stress
-        || (pThread && pThread->GetGCStressing () 
-            && (m_crstType == CrstThreadStore || m_crstType == CrstHandleTable 
+        || (pThread && pThread->GetGCStressing ()
+            && (m_crstType == CrstThreadStore || m_crstType == CrstHandleTable
                 || m_crstType == CrstSyncBlockCache || m_crstType == CrstIbcProfile
                 || m_crstType == CrstAvailableParamTypes || m_crstType == CrstSystemDomainDelayedUnloadList
                 || m_crstType == CrstAssemblyList || m_crstType == CrstJumpStubCache
@@ -742,7 +742,7 @@ BOOL CrstBase::IsSafeToTake()
     BOOL fSafe = TRUE;
     for (CrstBase *pcrst = GetThreadsOwnedCrsts(); pcrst != NULL; pcrst = pcrst->m_next)
     {
-        fSafe = 
+        fSafe =
             !pcrst->m_holderthreadid.IsCurrentThread()
             || (pcrst->m_crstlevel == CRSTUNORDERED)
             || (pcrst->m_crstlevel > m_crstlevel)
@@ -771,10 +771,10 @@ BOOL CrstBase::IsSafeToTake()
 #endif // !DACCESS_COMPILE
 
 #ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held. 
+// used for test purposes. Determines if a crst is held.
 // Arguments:
 //     input: pLock - the lock to test
-// Note: Throws if the lock is held    
+// Note: Throws if the lock is held
 
 void DebugTryCrst(CrstBase * pLock)
 {

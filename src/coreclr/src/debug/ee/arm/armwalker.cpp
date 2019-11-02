@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: armwalker.cpp
-// 
+//
 
 //
 // ARM instruction decoding/stepping logic

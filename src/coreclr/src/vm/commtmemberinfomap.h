@@ -69,13 +69,13 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        
+
         IfFailThrow(InitNew());
     }
 
     // Allocate some bytes from the pool.
     BYTE* Alloc(ULONG nBytes)
-    {   
+    {
         CONTRACT (BYTE*)
         {
             DISABLED(THROWS); // Fix when StgPool throws
@@ -95,7 +95,7 @@ public:
 
     // Allocate and clear some bytes.
     BYTE* AllocZero(ULONG nBytes)
-    {   
+    {
         CONTRACT (BYTE*)
         {
             DISABLED(THROWS);   // Fix when StgPool throws
@@ -104,7 +104,7 @@ public:
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
         BYTE *pRslt = Alloc(nBytes);
         if (pRslt)
             memset(pRslt, 0, nBytes);
@@ -125,7 +125,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     EEModuleTokenPair(mdToken tk, Module *pModule) : m_tk(tk), m_pModule(pModule)
     {
         LIMITED_METHOD_CONTRACT;
@@ -165,7 +165,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        
+
         m_DefaultProp.ReSizeThrows(1);
         m_DefaultProp[0] = 0;
     }
@@ -204,7 +204,7 @@ private:
 
     EEModuleTokenHashTable          m_TokenToComMTMethodPropsMap;
     CQuickArray<ComMTMethodProps>   m_MethodProps;
-    MethodTable *                   m_pMT;  
+    MethodTable *                   m_pMT;
     CQuickArray<CHAR>               m_DefaultProp;
     CDescPool                       m_sNames;
     BOOL                            m_bHadDuplicateDispIds;

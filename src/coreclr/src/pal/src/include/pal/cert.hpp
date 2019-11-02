@@ -26,7 +26,7 @@ Abstract:
 
 CorUnix::PAL_ERROR OIDToStr(CSSM_DATA &data, CHAR *&oidStrOut);
 
-CSSM_RETURN InitCSSMModule(const CSSM_GUID *inGuid, CSSM_SERVICE_TYPE inService, 
+CSSM_RETURN InitCSSMModule(const CSSM_GUID *inGuid, CSSM_SERVICE_TYPE inService,
     CSSM_MODULE_HANDLE_PTR outModule);
 CSSM_RETURN TermCSSMModule(const CSSM_GUID *inGuid, CSSM_MODULE_HANDLE_PTR inModule);
 

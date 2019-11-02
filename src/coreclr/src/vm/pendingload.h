@@ -32,7 +32,7 @@ public:
                  CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL)
                  ),
         m_typeKey(typeKey)
-          
+
     {
         WRAPPER_NO_CONTRACT;
 
@@ -61,7 +61,7 @@ public:
         m_Crst.Enter(INDEBUG(Crst::CRST_NO_LEVEL_CHECK));
     }
 
-    ~PendingTypeLoadEntry() 
+    ~PendingTypeLoadEntry()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -136,7 +136,7 @@ public:
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
-    
+
     void SetResult(TypeHandle typeHnd)
     {
         CONTRACTL
@@ -150,7 +150,7 @@ public:
 
         m_typeHandle = typeHnd;
     }
-    
+
     void UnblockWaiters()
     {
         CONTRACTL
@@ -197,7 +197,7 @@ public:
 
  public:
     // Result of loading; this is first created in the CREATE stage of class loading
-    TypeHandle          m_typeHandle;   
+    TypeHandle          m_typeHandle;
 
  private:
     // Type that we're loading

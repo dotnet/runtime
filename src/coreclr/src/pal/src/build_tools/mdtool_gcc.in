@@ -7,7 +7,7 @@
 #     mdtool_gcc
 #
 #Abstract:
-#  Generates dependencies for a makefile 
+#  Generates dependencies for a makefile
 #  (for gcc compilers)
 #
 

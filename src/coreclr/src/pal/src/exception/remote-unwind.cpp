@@ -69,7 +69,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #include <elf.h>
 #include <link.h>
 
-#if defined(_X86_) || defined(_ARM_) 
+#if defined(_X86_) || defined(_ARM_)
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
@@ -345,7 +345,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         case PT_LOAD:
             if ((ip >= (loadbias + ph.p_vaddr)) && (ip < (loadbias + ph.p_vaddr + ph.p_memsz))) {
                 start_ip = loadbias + ph.p_vaddr;
-                end_ip = start_ip + ph.p_memsz; 
+                end_ip = start_ip + ph.p_memsz;
                 TRACE("ELF: found start_ip/end_ip\n");
             }
             break;

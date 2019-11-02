@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RsAppDomain.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -30,7 +30,7 @@
  * ------------------------------------------------------------------------- */
 
 //
-// Create a CordbAppDomain object based on a pointer to the AppDomain instance 
+// Create a CordbAppDomain object based on a pointer to the AppDomain instance
 // in the CLR.  Pre-populates some cached information about the AppDomain
 // from the CLR using DAC.
 //
@@ -45,8 +45,8 @@
 //
 //
 CordbAppDomain::CordbAppDomain(CordbProcess *  pProcess, VMPTR_AppDomain vmAppDomain)
-  : CordbBase(pProcess, LsPtrToCookie(vmAppDomain.ToLsPtr()), enumCordbAppDomain),    
-    m_AppDomainId(0),    
+  : CordbBase(pProcess, LsPtrToCookie(vmAppDomain.ToLsPtr()), enumCordbAppDomain),
+    m_AppDomainId(0),
     m_breakpoints(17),
     m_sharedtypes(3),
     m_modules(17),
@@ -57,8 +57,8 @@ CordbAppDomain::CordbAppDomain(CordbProcess *  pProcess, VMPTR_AppDomain vmAppDo
 
     // @dbgtodo  reliability: we should probably tolerate failures here and keep track
     // of whether our ADID is valid or not, and requery if necessary.
-    m_AppDomainId = m_pProcess->GetDAC()->GetAppDomainId(m_vmAppDomain);    
-    
+    m_AppDomainId = m_pProcess->GetDAC()->GetAppDomainId(m_vmAppDomain);
+
     LOG((LF_CORDB,LL_INFO10000, "CAD::CAD: this:0x%x (void*)this:0x%x<%d>\n", this, (void *)this, m_AppDomainId));
 
 #ifdef _DEBUG
@@ -200,7 +200,7 @@ HRESULT CordbAppDomain::RefreshName()
     }
 
     // Use DAC to get the name.
-    
+
     _ASSERTE(!m_vmAppDomain.IsNull());
     IDacDbiInterface * pDac = NULL;
     HRESULT hr = S_OK;
@@ -217,12 +217,12 @@ HRESULT CordbAppDomain::RefreshName()
         // Get the actual string contents.
         pDac->GetAppDomainFullName(m_vmAppDomain, &m_strAppDomainName);
 
-        // Now that m_strAppDomainName is set, don't fail without clearing it.        
+        // Now that m_strAppDomainName is set, don't fail without clearing it.
     }
     EX_CATCH_HRESULT(hr);
 
     _ASSERTE(SUCCEEDED(hr) == m_strAppDomainName.IsSet());
-   
+
     return hr;
 }
 
@@ -284,7 +284,7 @@ HRESULT CordbAppDomain::EnumerateThreads(ICorDebugThreadEnum **ppThreads)
         // This builds up auxillary list. don't need pEnum after this.
         hr = pThreadEnum->Init(pEnum, this);
         IfFailThrow(hr);
-    
+
         pThreadEnum.TransferOwnershipExternal(ppThreads);
     }
     PUBLIC_API_END(hr);
@@ -371,14 +371,14 @@ HRESULT CordbAppDomain::GetProcess(ICorDebugProcess **ppProcess)
 //
 //
 // Assumptions:
-//    Invoked as callback from code:CordbAppDomain::PrepopulateAssemblies 
+//    Invoked as callback from code:CordbAppDomain::PrepopulateAssemblies
 //
-// Notes: 
+// Notes:
 //
 
 // static
 void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pThis)
-{   
+{
     CordbAppDomain * pAppDomain = static_cast<CordbAppDomain *> (pThis);
     INTERNAL_DAC_CALLBACK(pAppDomain->GetProcess());
 
@@ -389,7 +389,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 
 //---------------------------------------------------------------------------------------
 //
-// Cache a new assembly 
+// Cache a new assembly
 //
 // Arguments:
 //      vmDomainAssembly - new assembly to add to cache
@@ -403,7 +403,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 //    Called under the stop-go lock.
 //
 // Notes:
-//    
+//
 CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly)
 {
     INTERNAL_API_ENTRY(GetProcess());
@@ -427,7 +427,7 @@ CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_Assembly vmAssembly)
 
 //---------------------------------------------------------------------------------------
 //
-// Build up cache of assmeblies 
+// Build up cache of assmeblies
 //
 // Arguments:
 //
@@ -452,7 +452,7 @@ void CordbAppDomain::PrepopulateAssembliesOrThrow()
         return;
     }
 
-    // DD-primitive  that invokes a callback.   
+    // DD-primitive  that invokes a callback.
     GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
         this->m_vmAppDomain,
         CordbAppDomain::AssemblyEnumerationCallback,
@@ -484,10 +484,10 @@ HRESULT CordbAppDomain::EnumerateAssemblies(ICorDebugAssemblyEnum **ppAssemblies
         *ppAssemblies = NULL;
 
         PrepopulateAssembliesOrThrow();
-        
+
         RSInitHolder<CordbHashTableEnum> pEnum;
         CordbHashTableEnum::BuildOrThrow(
-            this, 
+            this,
             GetProcess()->GetContinueNeuterList(), // ownership
             &m_assemblies,
             IID_ICorDebugAssemblyEnum,
@@ -509,7 +509,7 @@ HRESULT CordbAppDomain::GetModuleFromMetaDataInterface(
     VALIDATE_POINTER_TO_OBJECT(pIMetaData, IUnknown *);
     VALIDATE_POINTER_TO_OBJECT(ppModule, ICorDebugModule **);
 
-    
+
 
     HRESULT hr = S_OK;
 
@@ -521,9 +521,9 @@ HRESULT CordbAppDomain::GetModuleFromMetaDataInterface(
     {
         CordbModule * pModule = GetModuleFromMetaDataInterface(pIMetaData);
         _ASSERTE(pModule != NULL); // thrown on error
-        
+
         *ppModule = static_cast<ICorDebugModule*> (pModule);
-        pModule->ExternalAddRef();        
+        pModule->ExternalAddRef();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -543,9 +543,9 @@ HRESULT CordbAppDomain::GetModuleFromMetaDataInterface(
 CordbModule * CordbAppDomain::GetModuleFromMetaDataInterface(IUnknown *pIMetaData)
 {
     HRESULT hr = S_OK;
-        
+
     RSExtSmartPtr<IMetaDataImport> pImport;
-    RSLockHolder lockHolder(GetProcess()->GetProcessLock());  // need for module enumeration      
+    RSLockHolder lockHolder(GetProcess()->GetProcessLock());  // need for module enumeration
 
     // Grab the interface we need...
     hr = pIMetaData->QueryInterface(IID_IMetaDataImport, (void**)&pImport);
@@ -570,7 +570,7 @@ CordbModule * CordbAppDomain::GetModuleFromMetaDataInterface(IUnknown *pIMetaDat
     {
         IMetaDataImport * pImportCurrent = pModule->GetMetaDataImporter(); // throws
         _ASSERTE(pImportCurrent != NULL);
-        
+
         // Get the mvid of this module
         GUID MVID;
         hr = pImportCurrent->GetScopeProps(NULL, 0, 0, &MVID);
@@ -579,7 +579,7 @@ CordbModule * CordbAppDomain::GetModuleFromMetaDataInterface(IUnknown *pIMetaDat
         if (MVID == matchMVID)
         {
             return pModule;
-        }        
+        }
     }
 
     ThrowHR(E_INVALIDARG);
@@ -597,7 +597,7 @@ HRESULT CordbAppDomain::EnumerateBreakpoints(ICorDebugBreakpointEnum **ppBreakpo
     {
         RSInitHolder<CordbHashTableEnum> pEnum;
         CordbHashTableEnum::BuildOrThrow(
-            this, 
+            this,
             GetProcess()->GetContinueNeuterList(), // ownership
             &m_breakpoints,
             IID_ICorDebugBreakpointEnum,
@@ -626,7 +626,7 @@ HRESULT CordbAppDomain::EnumerateSteppers(ICorDebugStepperEnum **ppSteppers)
 
         RSInitHolder<CordbHashTableEnum> pEnum;
         CordbHashTableEnum::BuildOrThrow(
-            GetProcess(), 
+            GetProcess(),
             GetProcess()->GetContinueNeuterList(),  // ownership
             &(m_pProcess->m_steppers),
             IID_ICorDebugStepperEnum,
@@ -647,7 +647,7 @@ HRESULT CordbAppDomain::EnumerateSteppers(ICorDebugStepperEnum **ppSteppers)
 //    pfAttached - out parameter, will be set to TRUE
 //
 // Return Value:
-//    CORDB_E_OBJECT_NEUTERED if the AppDomain has been neutered 
+//    CORDB_E_OBJECT_NEUTERED if the AppDomain has been neutered
 //    E_INVALIDARG if pbAttached is null
 //    Otherwise always returns S_OK.
 //
@@ -677,7 +677,7 @@ HRESULT CordbAppDomain::IsAttached(BOOL *pfAttached)
 // Arguments:
 //
 // Return Value:
-//    CORDB_E_OBJECT_NEUTERED if the AppDomain has been neutered 
+//    CORDB_E_OBJECT_NEUTERED if the AppDomain has been neutered
 //    Otherwise always returns S_OK.
 //
 // Notes:
@@ -718,7 +718,7 @@ HRESULT CordbAppDomain::GetName(ULONG32 cchName,
         IfFailThrow(RefreshName());
 
         const WCHAR * pName = m_strAppDomainName;
-        _ASSERTE(pName != NULL); 
+        _ASSERTE(pName != NULL);
 
         hr = CopyOutString(pName, cchName, pcchName, szName);
     }
@@ -787,7 +787,7 @@ HRESULT CordbAppDomain::GetID (ULONG32 *pId)
 //     This only need to be called at assembly unload events.
 void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssembly)
 {
-    // This will handle if the assembly is not in the hash. 
+    // This will handle if the assembly is not in the hash.
     // This could happen if we attach right before an assembly-unload event.
     m_assemblies.RemoveBase(VmPtrToCookie(vmDomainAssembly));
 }
@@ -800,7 +800,7 @@ void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssemb
 //
 // Returns:
 //     a CordbAssembly object for the given CLR assembly. This may be from the cache,
-//     or newly created if not yet in the cache. 
+//     or newly created if not yet in the cache.
 //     Never returns NULL. Throws on error (eg, oom).
 //
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_DomainAssembly vmDomainAssembly)
@@ -831,10 +831,10 @@ CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly
 //
 // Arguments:
 //    vmDomainFile - non-null module to lookup
-// 
+//
 // Returns:
 //    a CordbModule object for the given cookie. Object may be from the cache, or created
-//    lazily. 
+//    lazily.
 //    Never returns null.  Throws on error.
 //
 // Notes:
@@ -844,9 +844,9 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
 {
     INTERNAL_API_ENTRY(this);
     CordbModule * pModule;
-    
+
     RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  locking: push this up.
-    
+
     _ASSERTE(!vmDomainFile.IsNull() || !vmModule.IsNull());
 
     // check to see if the module is present in this app domain
@@ -855,10 +855,10 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
     {
         return pModule;
     }
-    
+
     if (vmModule.IsNull())
         GetProcess()->GetDAC()->GetModuleForDomainFile(vmDomainFile, &vmModule);
-    
+
     RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainFile));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);
 
@@ -872,7 +872,7 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
 CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_DomainFile vmDomainFile)
 {
     INTERNAL_API_ENTRY(this);
-    
+
     _ASSERTE(!vmDomainFile.IsNull());
     return LookupOrCreateModule(VMPTR_Module::NullPtr(), vmDomainFile);
 }
@@ -913,22 +913,22 @@ void CordbAppDomain::ModuleEnumerationCallback(VMPTR_DomainFile vmModule, void *
 //     This may pick up modules for which a load notification has not yet been dispatched.
 void CordbAppDomain::PrepopulateModules()
 {
-    INTERNAL_API_ENTRY(GetProcess()); 
+    INTERNAL_API_ENTRY(GetProcess());
 
     if (!GetProcess()->IsDacInitialized())
     {
         return;
-    } 
-    
+    }
+
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
     // Want to make sure we don't double-add modules.
-    // Modules for all assemblies are stored in 1 giant hash in the AppDomain, so 
+    // Modules for all assemblies are stored in 1 giant hash in the AppDomain, so
     // we don't have a good way of querying if this specific assembly needs to be prepopulated.
     // We'll check before adding each module that it's unique.
 
     PrepopulateAssembliesOrThrow();
-    
+
     HASHFIND hashfind;
 
     for (CordbAssembly * pAssembly = m_assemblies.FindFirst(&hashfind);
@@ -936,7 +936,7 @@ void CordbAppDomain::PrepopulateModules()
          pAssembly = m_assemblies.FindNext(&hashfind))
     {
 
-        // DD-primitive  that invokes a callback.   
+        // DD-primitive  that invokes a callback.
         GetProcess()->GetDAC()->EnumerateModulesInAssembly(
             pAssembly->GetDomainAssemblyPtr(),
             CordbAppDomain::ModuleEnumerationCallback,
@@ -946,7 +946,7 @@ void CordbAppDomain::PrepopulateModules()
 }
 
 //-----------------------------------------------------------------------------
-// 
+//
 // Get a type that represents an array or pointer of the given type.
 //
 // Arguments:
@@ -979,17 +979,17 @@ HRESULT CordbAppDomain::GetArrayOrPointerType(CorElementType elementType,
     }
 
     HRESULT hr = CordbType::MkType(
-        this, 
-        elementType, 
-        (ULONG) nRank, 
-        static_cast<CordbType *>(pTypeArg), 
+        this,
+        elementType,
+        (ULONG) nRank,
+        static_cast<CordbType *>(pTypeArg),
         &pResultType);
 
     if (FAILED(hr))
     {
         return hr;
     }
-    
+
     _ASSERTE(pResultType != NULL);
 
     pResultType->ExternalAddRef();
@@ -1001,7 +1001,7 @@ HRESULT CordbAppDomain::GetArrayOrPointerType(CorElementType elementType,
 
 
 //-----------------------------------------------------------------------------
-// 
+//
 // Get a type that represents a function pointer with signature of the types given.
 //
 // Arguments:
@@ -1047,7 +1047,7 @@ HRESULT CordbAppDomain::GetFunctionPointerType(ULONG32 cTypeArgs,
     {
         return hr;
     }
-    
+
     _ASSERTE(pType != NULL);
 
     pType->ExternalAddRef();
@@ -1104,8 +1104,8 @@ HRESULT CordbAppDomain::GetCachedWinRTTypesForIIDs(
             pTypes = new CordbType*[cItfs];
             for (int n = 0; n < cItfs; ++n)
             {
-                hr = CordbType::TypeDataToType(this, 
-                                               &(dacTypes[n]), 
+                hr = CordbType::TypeDataToType(this,
+                                               &(dacTypes[n]),
                                                &pTypes[n]);
             }
         }

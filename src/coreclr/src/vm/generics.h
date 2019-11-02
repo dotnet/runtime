@@ -26,12 +26,12 @@ class DictionaryEntryLayout;
 namespace Generics
 {
     // Part of the recursive inheritance graph as defined by ECMA part.II Section 9.2.
-    // 
+    //
     // code:MethodTable.DoFullyLoad and code:TypeDesc.DoFullyLoad declare local variable of
     // this type and initialize it with:
     // - pointer to the previous (in terms of callstack) RecursionGraph instance,
     // - the type handle representing the type that is being fully-loaded.
-    // 
+    //
     // By walking the RecursionGraph chain, it is possible to tell whether the same type is
     // not being fully-loaded already. So far this could as well be a description of the
     // code:TypeHandleList. But aside from the "owner type", RecursionGraph can also hold
@@ -39,21 +39,21 @@ namespace Generics
     // is-substituted-by relation. In particular, one RecursionGraph instance maintains nodes
     // corresponding to generic variables declared by the owner type, and all edges going
     // out of these nodes.
-    // 
+    //
     // As an example consider:
     // class B<U> { }
     // class A<T> : B<T> { }
-    // 
+    //
     // B's RecursionGraph has one node (U) and no edges. A's RecursionGraph has one node (T)
     // and one edge from T to U.
-    // 
+    //
     // This is how it looks like on the stack:
-    // 
+    //
     // A's DoFullyLoad activation  -  RecursionGraph(NULL, A<>) -> [T]
     //                                       ^--------              |
     //                                                |             v
     // B's DoFullyLoad activation  -  RecursionGraph( |  , B<>) -> [U]
-    // 
+    //
     // The edges are obviously not real pointers because the destination may not yet be
     // present on the stack when the edge is being added. Instead the edge end points are
     // identified by TypeVarTypeDesc pointers. Edges come in two flavors - non-expanding
@@ -61,25 +61,25 @@ namespace Generics
     // (i.e. cycle with at least one expanding edge) in the graph means that the types
     // currently on stack are defined recursively and should be refused by the loader.
     // Reliable detection of this condition is the ultimate purpose of this class.
-    // 
+    //
     // We do not always see all dependencies of a type on the stack. If the dependencies
     // have been loaded earlier, loading stops there and part of the graph may be missing.
     // However, this is of no concern because we are only interested in types with cyclic
     // dependencies, and loading any type from such a closure will cause loading the rest
     // of it. If part of the rest had been loaded earlier, it would have triggered loading
     // the current type so there's really no way how expanding cycles can go undetected.
-    // 
+    //
     // Observation: if there is a cycle in type dependencies, there will be a moment when
     // we'll have all the types participating in the cycle on the stack.
-    // 
+    //
     // Note that having a cycle in type dependencies is OK as long as it is not an expanding
     // cycle. The simplest example of a cycle that is not expanding is A<T> : B<A<T>>. That
     // is a perfectly valid type.
-    // 
+    //
     // The most interesting methods in this class are:
     // * code:RecursionGraph.AddDependency - adds edges according to a type's instantiation.
     // * code:RecursionGraph.HasExpandingCycle - looks for expanding cycles in the graph.
-    // 
+    //
     class RecursionGraph
     {
     public:
@@ -94,7 +94,7 @@ namespace Generics
         BOOL CheckForIllegalRecursion();
 
         // Returns TRUE iff the given type is already on the stack (in fact an analogue of
-        // code:TypeHandleList.Exists). This is to prevent recursively loading exactly the 
+        // code:TypeHandleList.Exists). This is to prevent recursively loading exactly the
         // same type.
         static BOOL HasSeenType(RecursionGraph *pDepGraph, TypeHandle thType);
 

@@ -23,10 +23,10 @@ enum OpFlow {
 	FLOW_CALL,			// a call instruction
 	FLOW_BRANCH,			// unconditional branch, does not fall through
 	FLOW_COND_BRANCH,	// may fall through
-	FLOW_PHI,			
+	FLOW_PHI,
 	FLOW_THROW,
 	FLOW_BREAK,
-	FLOW_RETURN,		
+	FLOW_RETURN,
 	FLOW_NEXT,			// flows into next instruction (none of the above)
 };
 
@@ -52,11 +52,11 @@ union OpArgsVal {
 class OpInfo {
 public:
 	OpInfo()			  { data = 0; }
-	OpInfo(OPCODE opCode) { _ASSERTE(opCode < CEE_COUNT); data = &table[opCode]; } 
+	OpInfo(OPCODE opCode) { _ASSERTE(opCode < CEE_COUNT); data = &table[opCode]; }
 
-		// fetch instruction at 'instrPtr, fills in 'args' returns pointer 
-		// to next instruction 
-	const unsigned char* fetch(const unsigned char* instrPtr, OpArgsVal* args);	
+		// fetch instruction at 'instrPtr, fills in 'args' returns pointer
+		// to next instruction
+	const unsigned char* fetch(const unsigned char* instrPtr, OpArgsVal* args);
 
 	const char* getName() 	 	{ return(data->name); }
 	OPCODE_FORMAT getArgsInfo()	{ return(OPCODE_FORMAT(data->format & PrimaryMask)); }

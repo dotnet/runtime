@@ -217,7 +217,7 @@ inline void SoftwareWriteWatch::DisableForGCHeap()
 
     VerifyCreated();
     assert(IsEnabledForGCHeap());
-    g_gc_sw_ww_enabled_for_gc_heap = false;     
+    g_gc_sw_ww_enabled_for_gc_heap = false;
 
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::SwitchToNonWriteWatch;

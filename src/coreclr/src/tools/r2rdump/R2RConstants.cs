@@ -324,7 +324,7 @@ namespace R2RDump
         // ELEMENT_TYPE_INTERNAL followed by ParamTypeDesc with ELEMENT_TYPE_VALUETYPE element
         // type. It acts like a modifier to the underlying structure making it look like its
         // unmanaged view (size determined by unmanaged layout, blittable, no GC pointers).
-        // 
+        //
         // ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG is used when encoding such types to NGEN images.
         // The signature looks like this: ET_NATIVE_VALUETYPE_ZAPSIG ET_VALUETYPE <token>.
         // See code:ZapSig.GetSignatureForTypeHandle and code:SigPointer.GetTypeHandleThrowing
@@ -369,5 +369,5 @@ namespace R2RDump
         mdtString = 0x70000000,
         mdtName = 0x71000000,
         mdtBaseType = 0x72000000,
-    }     
+    }
 }

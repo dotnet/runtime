@@ -34,7 +34,7 @@ void OutputStats ()
     } CONTRACTL_END;
 
     LARGE_INTEGER cycleFreq;
-    if (QueryPerformanceFrequency (&cycleFreq)) 
+    if (QueryPerformanceFrequency (&cycleFreq))
     {
         double dJitC = (double) g_JitCycles;
         double dNonJitC = (double) g_NonJitCycles;
@@ -55,7 +55,7 @@ void OutputStats ()
     }
 }
 
-void InitJitPerf(void) 
+void InitJitPerf(void)
 {
     CONTRACTL {
         NOTHROW;
@@ -65,7 +65,7 @@ void InitJitPerf(void)
 
     InlineSString<4> lpszValue;
     g_fJitPerfOn = WszGetEnvironmentVariable (W("JIT_PERF_OUTPUT"), lpszValue);
-    if (g_fJitPerfOn) 
+    if (g_fJitPerfOn)
     {
         g_csJit = ClrCreateCriticalSection(CrstJitPerf,CRST_UNSAFE_ANYMODE);
     }
@@ -79,14 +79,14 @@ void DoneJitPerfStats()
         CANNOT_TAKE_LOCK;
     } CONTRACTL_END;
 
-    if (g_fJitPerfOn) 
+    if (g_fJitPerfOn)
     {
         ClrDeleteCriticalSection(g_csJit);
-    
+
         // Output stats to stdout and if necessary to the perf automation file.
         OutputStats();
     }
-    
+
 
 }
 

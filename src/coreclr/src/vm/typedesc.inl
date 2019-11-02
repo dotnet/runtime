@@ -27,7 +27,7 @@ inline PTR_MethodTable  TypeDesc::GetMethodTable() {
 
     _ASSERTE(HasTypeParam());
     ParamTypeDesc* asParam = dac_cast<PTR_ParamTypeDesc>(this);
-    
+
     if (GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE)
         return dac_cast<PTR_MethodTable>(asParam->m_Arg.AsMethodTable());
     else

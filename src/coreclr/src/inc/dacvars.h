@@ -4,21 +4,21 @@
 // This file contains the globals and statics that are visible to DAC.
 // It is used for the following:
 // 1. in daccess.h to build the table of DAC globals
-// 2. in enummem.cpp to dump out the related memory of static and globals 
+// 2. in enummem.cpp to dump out the related memory of static and globals
 //    in a mini dump or heap dump
 // 3. in DacUpdateDll and toolbox\DacTablenGen\main.cs
 //
-// To use this functionality for other tools or purposes, define the 
-// DEFINE_DACVAR macro & include dacvars.h like so (see enummem.cpp and/or 
+// To use this functionality for other tools or purposes, define the
+// DEFINE_DACVAR macro & include dacvars.h like so (see enummem.cpp and/or
 // daccess.h for examples):
 //
 // #define DEFINE_DACVAR(type, size, id, var)  type id;     //this defn. discards
 //                                                          //the size
 // #include "dacvars.h"
 //
-// @dbgtodo: 
-// Ideally we may be able to build a tool that generates this automatically.  
-// At the least, we should automatically verify that the contents of this file 
+// @dbgtodo:
+// Ideally we may be able to build a tool that generates this automatically.
+// At the least, we should automatically verify that the contents of this file
 // are consistent with the uses of all the macros like SVAL_DECL and GARY_DECL.
 //
 //=================================================
@@ -26,45 +26,45 @@
 //=================================================
 // You need to add a global or static declared with DAC macros, such as SPTR_*
 // GPTR_*, SVAL_*, GVAL_*, or GARY_*, only if the global or static is actually used
-// in a DACized code path. If you have declared a static or global that way just 
-// because you were pattern-matching or because you anticipate that the variable 
+// in a DACized code path. If you have declared a static or global that way just
+// because you were pattern-matching or because you anticipate that the variable
 // may eventually be used in a DACized code path, you don't need to add it here,
 // although in that case, you should not really use the DAC macro when you declare
-// the global or static. 
+// the global or static.
 //					*				*				*
 // The FIRST ARGUMENT should always be specified as ULONG. This is the type of
-// the offsets for the corresponding id in the _DacGlobals table. 
-// @dbgtodo: 
+// the offsets for the corresponding id in the _DacGlobals table.
+// @dbgtodo:
 // We should get rid of the ULONG argument since it's always the same. We would
 // also need to modify DacTablenGen\main.cs.
 //					*				*				*
-// The SECOND ARGUMENT, "true_type," is used to calculate the true size of the 
-// static/global variable. It is currently used only in enummem.cpp to write out   
+// The SECOND ARGUMENT, "true_type," is used to calculate the true size of the
+// static/global variable. It is currently used only in enummem.cpp to write out
 // theproper size of memory for dumps.
 //					*				*				*
 // The THIRD ARGUMENT should be a qualified name. If the variable is a static data
-// member, the name should be <class_name>__<member_name>. If the variable is a 
+// member, the name should be <class_name>__<member_name>. If the variable is a
 // global, the name should be <dac>__<global_name>.
 //					*				*				*
-// The FOURTH ARGUMENT should be the actual name of the static/global variable. If 
+// The FOURTH ARGUMENT should be the actual name of the static/global variable. If
 // static data the should be [<namespace>::]<class_name>::<member_name>. If global,
 // it should look like <global_name>.
 //					*				*				*
-// If you need to add an entry to this file, your type may not be visible when  
+// If you need to add an entry to this file, your type may not be visible when
 // this file is compiled. In that case, you need to do one of two things:
-// - If the type is a pointer type, you can simply use UNKNOWN_POINTER_TYPE as the 
-//	 "true type." It may be useful to specify the non-visible type in a comment. 
-// - If the type is a composite/user-defined type, you must #include the header 
+// - If the type is a pointer type, you can simply use UNKNOWN_POINTER_TYPE as the
+//	 "true type." It may be useful to specify the non-visible type in a comment.
+// - If the type is a composite/user-defined type, you must #include the header
 //   file that defines the type in enummem.cpp. Do NOT #include it in daccess.h
-// Array types may be dumped via an explicit call to enumMem, so they should 
-// be declared with DEFINE_DACVAR_NO_DUMP. The size in this case is immaterial, since 
-// nothing will be dumped. 
+// Array types may be dumped via an explicit call to enumMem, so they should
+// be declared with DEFINE_DACVAR_NO_DUMP. The size in this case is immaterial, since
+// nothing will be dumped.
 
 #ifndef DEFINE_DACVAR
 #define DEFINE_DACVAR(type, true_type, id, var)
 #endif
 
-// Use this macro to define a static var that is known to DAC, but not captured in a dump.                         
+// Use this macro to define a static var that is known to DAC, but not captured in a dump.
 #ifndef DEFINE_DACVAR_NO_DUMP
 #define DEFINE_DACVAR_NO_DUMP(type, true_type, id, var)
 #endif
@@ -103,7 +103,7 @@ DEFINE_DACVAR(ULONG, ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__WorkerCounter,
 DEFINE_DACVAR(ULONG, int, ThreadpoolMgr__MinLimitTotalWorkerThreads, ThreadpoolMgr::MinLimitTotalWorkerThreads)
 DEFINE_DACVAR(ULONG, DWORD, ThreadpoolMgr__MaxLimitTotalWorkerThreads, ThreadpoolMgr::MaxLimitTotalWorkerThreads)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestHead, ThreadpoolMgr::WorkRequestHead)  // PTR_WorkRequest is not defined. So use a pointer type
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE  /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestTail, ThreadpoolMgr::WorkRequestTail) // 
+DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE  /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestTail, ThreadpoolMgr::WorkRequestTail) //
 DEFINE_DACVAR(ULONG, ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__CPThreadCounter, ThreadpoolMgr::CPThreadCounter)
 DEFINE_DACVAR(ULONG, LONG, ThreadpoolMgr__MaxFreeCPThreads, ThreadpoolMgr::MaxFreeCPThreads)
 DEFINE_DACVAR(ULONG, LONG, ThreadpoolMgr__MaxLimitTotalCPThreads, ThreadpoolMgr::MaxLimitTotalCPThreads)
@@ -160,7 +160,7 @@ DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_highest_address, ::g_highest_address)
 
 DEFINE_DACVAR(ULONG, IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)    
+DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pModuleIndexDispenser, ::g_pModuleIndexDispenser)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pObjectClass, ::g_pObjectClass)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pRuntimeTypeClass, ::g_pRuntimeTypeClass)

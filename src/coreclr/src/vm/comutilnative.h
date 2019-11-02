@@ -8,7 +8,7 @@
 /*============================================================
 **
 ** Header:  COMUtilNative
-** 
+**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the VM.
@@ -93,7 +93,7 @@ private:
     static UINT64   m_addPressure[NEW_PRESSURE_COUNT];
     static UINT64   m_remPressure[NEW_PRESSURE_COUNT];
     static UINT     m_iteration;
-    
+
 public:
     static CrstStatic m_MemoryPressureLock;
 
@@ -114,10 +114,10 @@ public:
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
-    static 
+    static
     INT64 QCALLTYPE GetTotalMemory();
 
-    static 
+    static
     void QCALLTYPE Collect(INT32 generation, INT32 mode);
 
     static
@@ -128,7 +128,7 @@ public:
     static FCDECL1(void,    SuppressFinalize, Object *obj);
     static FCDECL1(void,    ReRegisterForFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
-    
+
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
 
@@ -142,15 +142,15 @@ public:
     void QCALLTYPE UnregisterFrozenSegment(void *segmentHandle);
 #endif // FEATURE_BASICFREEZE
 
-    static 
+    static
     int QCALLTYPE StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
-    static 
+    static
     int QCALLTYPE EndNoGCRegion();
 
     static
     void QCALLTYPE _AddMemoryPressure(UINT64 bytesAllocated);
-    
+
     static
     void QCALLTYPE _RemoveMemoryPressure(UINT64 bytesAllocated);
 

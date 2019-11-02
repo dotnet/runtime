@@ -86,19 +86,19 @@ struct StackFrame
 
 //---------------------------------------------------------------------------------------
 //
-// On WIN64, all the stack range tracking done by the Exception Handling (EH) subsystem is based on the 
+// On WIN64, all the stack range tracking done by the Exception Handling (EH) subsystem is based on the
 // establisher frame given by the OS.  On IA64, the establisher frame is the caller SP and the current BSP.
 // On X64, it is the initial SP before any dynamic stack allocation, i.e. it is the SP when a function exits
 // the prolog.  The EH subsystem uses the same format.
 //
-// The stackwalker needs to get information from the EH subsystem in order to skip funclets.  Unfortunately, 
-// stackwalking is based on the current SP, i.e. the SP when the control flow leaves a function via a 
-// function call.  Thus, for stack frames with dynamic stack allocations on X64, the SP values used by the 
-// stackwalker and the EH subsystem don't match.  
+// The stackwalker needs to get information from the EH subsystem in order to skip funclets.  Unfortunately,
+// stackwalking is based on the current SP, i.e. the SP when the control flow leaves a function via a
+// function call.  Thus, for stack frames with dynamic stack allocations on X64, the SP values used by the
+// stackwalker and the EH subsystem don't match.
 //
 // To work around this problem, we need to somehow bridge the different SP values.  We do so by using the
-// caller SP instead of the current SP for comparisons during a stackwalk on X64.  Creating a new type 
-// explicitly spells out the important distinction that this is NOT in the same format as the 
+// caller SP instead of the current SP for comparisons during a stackwalk on X64.  Creating a new type
+// explicitly spells out the important distinction that this is NOT in the same format as the
 // OS establisher frame.
 //
 // Notes:

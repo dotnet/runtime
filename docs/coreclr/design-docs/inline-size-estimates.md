@@ -1,4 +1,4 @@
-# Inline Size Estimates 
+# Inline Size Estimates
 
 Note this is work in progress....
 
@@ -106,7 +106,7 @@ greater than 49:   0
 
 It should be evident from this set of observations that `SizeImpact`
 cannot be completely characterized by a simple formula like `(2)`. For
-this inlinee, inlining always saves at least 5 bytes, roughly half the time 
+this inlinee, inlining always saves at least 5 bytes, roughly half the time
 it saves 8 or 9 bytes, on average it saves about 12.5 bytes, but it often
 saves considerably more.
 
@@ -115,20 +115,20 @@ where sometimes the `SizeImpact` is negative and other times it's
 positive.
 
 ```
-Inlining for System.Threading.CancellationToken:get_IsCancellationRequested():bool:this (size 29) 
+Inlining for System.Threading.CancellationToken:get_IsCancellationRequested():bool:this (size 29)
 Instances 42 SizeImpact Mean 11.33 Min -20 Max 28
 Distribution
   less than -50:   0
-      [-50,-41]:   0    0    0    0    0    0    0    0    0    0 
-      [-40,-31]:   0    0    0    0    0    0    0    0    0    0 
-      [-30,-21]:   0    0    0    0    0    0    0    0    0    0 
-      [-20,-11]:   1    0    0    0    0    0    0    1    0    0 
-      [-10, -1]:   0    2    0    0    0    0    0    0    1    2 
-      [  0,  9]:   0    0    1    1    0    2    0    1    4    1 
-      [ 10, 19]:   1    0    1    0    4    1    2    1    2    6 
-      [ 20, 29]:   0    0    2    0    2    0    0    0    3    0 
-      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0 
-      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0 
+      [-50,-41]:   0    0    0    0    0    0    0    0    0    0
+      [-40,-31]:   0    0    0    0    0    0    0    0    0    0
+      [-30,-21]:   0    0    0    0    0    0    0    0    0    0
+      [-20,-11]:   1    0    0    0    0    0    0    1    0    0
+      [-10, -1]:   0    2    0    0    0    0    0    0    1    2
+      [  0,  9]:   0    0    1    1    0    2    0    1    4    1
+      [ 10, 19]:   1    0    1    0    4    1    2    1    2    6
+      [ 20, 29]:   0    0    2    0    2    0    0    0    3    0
+      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0
+      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0
 greater than 49:   0
 ```
 
@@ -136,20 +136,20 @@ Not all inlinee `SizeImpacts` exhibit such wide distributions. Some spread
 just a little:
 
 ```
-Inlining for System.Environment:GetResourceString(ref):ref (size 15) 
+Inlining for System.Environment:GetResourceString(ref):ref (size 15)
 Instances 2238 SizeImpact Mean 0.01 Min -3 Max 6
 Distribution
-  less than -50:   0 
-      [-50,-41]:   0    0    0    0    0    0    0    0    0    0 
-      [-40,-31]:   0    0    0    0    0    0    0    0    0    0 
-      [-30,-21]:   0    0    0    0    0    0    0    0    0    0 
-      [-20,-11]:   0    0    0    0    0    0    0    0    0    0 
-      [-10, -1]:   0    0    0    0    0    0    0    7    0    7 
-      [  0,  9]:2212    3    0    5    0    0    4    0    0    0 
-      [ 10, 19]:   0    0    0    0    0    0    0    0    0    0 
-      [ 20, 29]:   0    0    0    0    0    0    0    0    0    0 
-      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0 
-      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0 
+  less than -50:   0
+      [-50,-41]:   0    0    0    0    0    0    0    0    0    0
+      [-40,-31]:   0    0    0    0    0    0    0    0    0    0
+      [-30,-21]:   0    0    0    0    0    0    0    0    0    0
+      [-20,-11]:   0    0    0    0    0    0    0    0    0    0
+      [-10, -1]:   0    0    0    0    0    0    0    7    0    7
+      [  0,  9]:2212    3    0    5    0    0    4    0    0    0
+      [ 10, 19]:   0    0    0    0    0    0    0    0    0    0
+      [ 20, 29]:   0    0    0    0    0    0    0    0    0    0
+      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0
+      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0
 greater than 49:   0
 ```
 
@@ -159,17 +159,17 @@ and some not at all:
 Inlining for System.DateTime:get_Ticks():long:this (size 15)
 Instances 129 SizeImpact Mean 0.00 Min 0 Max 0
 Distribution
-  less than -50:   0 
-      [-50,-41]:   0    0    0    0    0    0    0    0    0    0 
-      [-40,-31]:   0    0    0    0    0    0    0    0    0    0 
-      [-30,-21]:   0    0    0    0    0    0    0    0    0    0 
-      [-20,-11]:   0    0    0    0    0    0    0    0    0    0 
-      [-10, -1]:   0    0    0    0    0    0    0    0    0    0 
-      [  0,  9]: 129    0    0    0    0    0    0    0    0    0 
-      [ 10, 19]:   0    0    0    0    0    0    0    0    0    0 
-      [ 20, 29]:   0    0    0    0    0    0    0    0    0    0 
-      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0 
-      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0 
+  less than -50:   0
+      [-50,-41]:   0    0    0    0    0    0    0    0    0    0
+      [-40,-31]:   0    0    0    0    0    0    0    0    0    0
+      [-30,-21]:   0    0    0    0    0    0    0    0    0    0
+      [-20,-11]:   0    0    0    0    0    0    0    0    0    0
+      [-10, -1]:   0    0    0    0    0    0    0    0    0    0
+      [  0,  9]: 129    0    0    0    0    0    0    0    0    0
+      [ 10, 19]:   0    0    0    0    0    0    0    0    0    0
+      [ 20, 29]:   0    0    0    0    0    0    0    0    0    0
+      [ 30, 39]:   0    0    0    0    0    0    0    0    0    0
+      [ 40, 49]:   0    0    0    0    0    0    0    0    0    0
 greater than 49:   0
 ```
 
@@ -249,7 +249,7 @@ Inline System.Object:.ctor():this
 into   System.IO.UnmanagedMemoryAccessor:.ctor(ref,long,long,int):this
 CalleeSize  = 6
 CallerSize  = 72
-CallerSize' = 24 
+CallerSize' = 24
 SizeImpact  = -48
 ```
 
@@ -258,8 +258,8 @@ where `System.Object:.ctor():this` is simply:
 ```Assembly
 ; System.Object:.ctor():this
 ; Total bytes of code 6, prolog size 5
-       0F1F440000           nop      
-       C3                   ret      
+       0F1F440000           nop
+       C3                   ret
 ```
 
 As an aside, one might wonder why there are 5 bytes of nops here --
@@ -271,7 +271,7 @@ another method to initialize the object:
 
 ```C#
  UnmanagedMemoryAccessor(
-     SafeBuffer buffer, Int64 offset, 
+     SafeBuffer buffer, Int64 offset,
      Int64 capacity, FileAccess access) {
    Initialize(buffer, offset, capacity, access);
  }
@@ -317,8 +317,8 @@ and here's the code after the inline:
 ; AFTER
 ; System.IO.UnmanagedMemoryAccessor:.ctor(ref,long,long,int):this
 ; Total bytes of code 24, prolog size 5
-       0F1F440000           nop      
-       90                   nop      
+       0F1F440000           nop
+       90                   nop
        8B442428             mov      eax, dword ptr [rsp+28H]
        89442428             mov      dword ptr [rsp+28H], eax
        488D0500000000       lea      rax, [(reloc)]
@@ -361,7 +361,7 @@ Inline System.Object:.ctor():this
 into   System.Security.SecurityElement:.ctor():this
 CalleeSize = 6
 CallerSize = 15
-CallerSize' = 6 
+CallerSize' = 6
 SizeImpact = -9
 ```
 
@@ -371,7 +371,7 @@ Here are before and after listings for the caller:
 ; BEFORE
 ; System.Security.SecurityElement:.ctor():this
 ; Total bytes of code 15, prolog size 5
-       0F1F440000           nop      
+       0F1F440000           nop
        488D0500000000       lea      rax, [(reloc)]
        48FFE0               rex.jmp  rax
 ```
@@ -380,8 +380,8 @@ Here are before and after listings for the caller:
 ; AFTER
 ; System.Security.SecurityElement:.ctor():this
 ; Total bytes of code 6, prolog size 5
-       0F1F440000           nop      
-       C3                   ret      
+       0F1F440000           nop
+       C3                   ret
 ```
 
 In this case the call site was initially handled via a tail call that
@@ -395,7 +395,7 @@ Now let's look at a set of examples where an inline can either
 decrease or increase the caller size. Here's the good case:
 
 ```
-Inline System.IntPtr:op_Explicit(long):long 
+Inline System.IntPtr:op_Explicit(long):long
 into   System.Runtime.InteropServices.Marshal:WriteIntPtr(ref,int,long)
 CalleeSize  = 35
 CallerSize  = 50
@@ -403,7 +403,7 @@ CallerSize' = 22
 SizeImpact  = -28
 ```
 
-Here's the callee code: 
+Here's the callee code:
 
 SIGH -- turns out the above has the wrong callee size -- there are
 several overloaded versions and my script picks up the wrong one.
@@ -412,9 +412,9 @@ true callee is only 9 bytes long:
 ```Assembly
 ; System.IntPtr:op_Explicit(long):long
 ; Total bytes of code 9, prolog size 5
-       0F1F440000           nop      
+       0F1F440000           nop
        488BC1               mov      rax, rcx
-       C3                   ret      
+       C3                   ret
 ```
 
 At any rate the `SizeImpact` is still correct.
@@ -455,10 +455,10 @@ and the after caller code:
        4883EC20             sub      rsp, 32
        488D6C2420           lea      rbp, [rsp+20H]
        E800000000           call     System.Runtime.InteropServices.Marshal:WriteInt64(ref,int,long)
-       90                   nop      
+       90                   nop
        488D6500             lea      rsp, [rbp]
        5D                   pop      rbp
-       C3                   ret      
+       C3                   ret
 ```
 
 Somewhat confusingly, the inline has stopped the jit from making a
@@ -469,8 +469,8 @@ jit. The IL for the callee is
 ```
 IL_0000  0f 00             ldarga.s     0x0
 IL_0002  7b 8f 02 00 04    ldfld        0x400028F
-IL_0007  6e                conv.u8     
-IL_0008  2a                ret         
+IL_0007  6e                conv.u8
+IL_0008  2a                ret
 
 ```
 and the JIT rejects the tail call because
@@ -488,7 +488,7 @@ case:
 straghtened out)
 
 ```
-Inline System.IntPtr:op_Explicit(long):long [35] 
+Inline System.IntPtr:op_Explicit(long):long [35]
 into   EventData:get_DataPointer():long:this [18] size 35 delta 17
 CalleeSize  = 35
 CallerSize  = 18
@@ -500,7 +500,7 @@ SizeImpact  = 17
 ; BEFORE
 ; EventData:get_DataPointer():long:this
 ; Total bytes of code 18, prolog size
-       0F1F440000           nop      
+       0F1F440000           nop
        488B09               mov      rcx, qword ptr [rcx]
        488D0500000000       lea      rax, [(reloc)]
        48FFE0               rex.jmp  rax
@@ -518,7 +518,7 @@ SizeImpact  = 17
        E800000000           call     System.IntPtr:.ctor(long):this
        488B442420           mov      rax, qword ptr [rsp+20H]
        4883C428             add      rsp, 40
-       C3                   ret      
+       C3                   ret
 ```
 
 Here the un-inlined case made a tail call. The inlined case was unable

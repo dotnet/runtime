@@ -78,7 +78,7 @@
     ;; Imports for singleDomain statics helpers
     IMPORT JIT_GetSharedNonGCStaticBase_Helper
     IMPORT JIT_GetSharedGCStaticBase_Helper
-    
+
     TEXTAREA
 
 ;; LPVOID __stdcall GetCurrentIP(void);
@@ -192,7 +192,7 @@ LFloatingPointReturnDone
 LReturnDone
 
 #ifdef _DEBUG
-        ;; trash the floating point registers to ensure that the HFA return values 
+        ;; trash the floating point registers to ensure that the HFA return values
         ;; won't survive by accident
         vldm    sp, {d0-d3}
 #endif
@@ -207,9 +207,9 @@ LReturnDone
 ;; This helper routine is where returns for irregular tail calls end up
 :: so they can dynamically pop their stack arguments.
 ;;-----------------------------------------------------------------------------
-; 
+;
 ; Stack Layout (stack grows up, 0 at the top, offsets relative to frame pointer, r7):
-; 
+;
 ; sp ->     callee stack arguments
 ;           :
 ;           :
@@ -238,10 +238,10 @@ LReturnDone
         ; This prolog is never executed, but we keep it here for reference
         ; and for the unwind data it generates
         ;
-        
+
         ; Spill callee saved registers and return address.
         PROLOG_PUSH         {r4-r11,lr}
-        
+
         PROLOG_STACK_SAVE   r7
 
         ;
@@ -252,7 +252,7 @@ LReturnDone
         ; PROLOG_STACK_ALLOC  0x0C
         ;
         ; Set r11 for frame chain
-        ;add     r11, r7, 0x1C 
+        ;add     r11, r7, 0x1C
         ;
         ; Set the vtable for TailCallFrame
         ;bl      TCF_GETMETHODFRAMEVPTR
@@ -266,7 +266,7 @@ LReturnDone
         ; and initialize r5 & r6 for unlinking later
         ;CALL_GETTHREAD
         ;mov     r6, r0
-        ;ldr     r5, [r6, #Thread__m_pFrame]        
+        ;ldr     r5, [r6, #Thread__m_pFrame]
         ;str     r5, [r7, #-4]
         ;sub     r0, r7, 8
         ;str     r0, [r6, #Thread__m_pFrame]
@@ -306,13 +306,13 @@ GoodGSCookie
         ;
         str     r5, [r6, #Thread__m_pFrame]
 
-        ; 
+        ;
         ; epilog
         ;
         EPILOG_STACK_RESTORE    r7
         EPILOG_POP              {r4-r11,lr}
         EPILOG_RETURN
-        
+
     NESTED_END
 
 ; ------------------------------------------------------------------
@@ -460,7 +460,7 @@ UMThunkStub_DoTrapReturningThreads
         b                   UMThunkStub_InCooperativeMode
 
         NESTED_END
-        
+
         INLINE_GETTHREAD_CONSTANT_POOL
 
 ; ------------------------------------------------------------------
@@ -714,8 +714,8 @@ LsetFP8
         add         r0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         r1, r12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(pFrame). This call will set up the rest of the frame (including the vfptr, 
-        ; the GS cookie and linking to the thread), make the client call and return with correct registers set 
+        ; Call CLRToCOMWorker(pFrame). This call will set up the rest of the frame (including the vfptr,
+        ; the GS cookie and linking to the thread), make the client call and return with correct registers set
         ; (r0/r1/s0-s3/d0-d3 as appropriate).
 
         bl          CLRToCOMWorker
@@ -987,7 +987,7 @@ __ProfilerHelperFunc SETS "$HelperName":CC:"Naked"
         PROLOG_VPUSH        {d0-d7}         ; Spill floting point argument registers
         PROLOG_PUSH         {r1,r11,lr}     ; Save possible return value in r1, frame pointer and return address
         PROLOG_PUSH         {r2}            ; Save possible return value in r0. Before calling Leave Hook Jit moves contents of r0 to r2
-                                            ; so pushing r2 instead of r0. This push statement cannot be combined with the above push 
+                                            ; so pushing r2 instead of r0. This push statement cannot be combined with the above push
                                             ; as r2 gets pushed before r1.
 
         CHECK_STACK_ALIGNMENT
@@ -1004,7 +1004,7 @@ __ProfilerHelperFunc SETS "$HelperName":CC:"Naked"
 
         ; Save caller's SP (at the point where only argument registers have been spilled).
         ldr         r2, [r11]
-        add         r2, r2, #8             ; location of arguments is at frame pointer(r11) + 8 (lr & prev frame ptr is saved before changing 
+        add         r2, r2, #8             ; location of arguments is at frame pointer(r11) + 8 (lr & prev frame ptr is saved before changing
         str         r2, [sp, #profiledSp]
 
         ; Clear hiddenArg.
@@ -1375,7 +1375,7 @@ stackProbe_loop
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     PATCH_LABEL StubDispatchFixupPatchLabel
     EPILOG_BRANCH_REG   r12
- 
+
     NESTED_END
 #endif // FEATURE_PREJIT
 
@@ -1464,7 +1464,7 @@ CallCppHelper3
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
     LEAF_ENTRY JIT_Stelem_Ref
-    
+
     ; We retain arguments as they were passed and use r0 == array; r1 == idx; r2 == val
 
     ; check for null array
@@ -1492,14 +1492,14 @@ CallCppHelper3
     beq     JIT_Stelem_DoWrite
 
     ; array type and val type do not exactly match. Raise frame and do detailed match
-    b       JIT_Stelem_Ref_NotExactMatch   
+    b       JIT_Stelem_Ref_NotExactMatch
 
 AssigningNull
     ; Assigning null doesn't need write barrier
     adds    r0, r1, LSL #2               ; r0 = r0 + (r1 x 4) = array->m_array[idx]
     str     r2, [r0, #PtrArray__m_Array] ; array->m_array[idx] = val
     bx      lr
-   
+
 ThrowNullReferenceException
     ; Tail call JIT_InternalThrow(NullReferenceException)
     ldr     r0, =CORINFO_NullReferenceException_ASM
@@ -1521,14 +1521,14 @@ ThrowIndexOutOfRangeException
     PROLOG_PUSH   {lr}
     PROLOG_PUSH   {r0-r2}
 
-    CHECK_STACK_ALIGNMENT 
+    CHECK_STACK_ALIGNMENT
 
     ; allow in case val can be casted to array element type
     ; call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     r1, r12 ; array->GetArrayElementTypeHandle()
     mov     r0, r2
     bl      ObjIsInstanceOfCached
-    cmp     r0, TypeHandle_CanCast 
+    cmp     r0, TypeHandle_CanCast
     beq     DoWrite             ; ObjIsInstance returned TypeHandle::CanCast
 
     ; check via raising frame
@@ -1536,7 +1536,7 @@ NeedFrame
     mov     r1, sp              ; r1 = &array
     adds    r0, sp, #8          ; r0 = &val
     bl      ArrayStoreCheck     ; ArrayStoreCheck(&val, &array)
- 
+
 DoWrite
     EPILOG_POP  {r0-r2}
     EPILOG_POP  {lr}
@@ -1870,7 +1870,7 @@ tempReg     SETS "$tmpReg"
         LOAD_GC_GLOBAL $__wbscratch, g_ephemeral_low
         cmp     $valReg, $__wbscratch
         blo     %FT0
-        ; Only in post grow higher generation can be beyond ephemeral segment 
+        ; Only in post grow higher generation can be beyond ephemeral segment
         IF $postGrow
             LOAD_GC_GLOBAL $__wbscratch, g_ephemeral_high
             cmp     $valReg, $__wbscratch
@@ -1939,11 +1939,11 @@ tempReg     SETS "$tmpReg"
 ;   $__wbscratch : trashed
 ;
 
-    ; If you update any of the writebarrier be sure to update the sizes of patchable 
-    ; writebarriers in 
+    ; If you update any of the writebarrier be sure to update the sizes of patchable
+    ; writebarriers in
     ; see ValidateWriteBarriers()
 
-    ; The write barriers are macro taking arguments like 
+    ; The write barriers are macro taking arguments like
     ; $name: Name of the write barrier
     ; $mp: {true} for multi-proc, {false} otherwise
     ; $post: {true} for post-grow version, {false} otherwise
@@ -2025,7 +2025,7 @@ tempReg     SETS "$tmpReg"
     JIT_WRITEBARRIER JIT_WriteBarrier_SP_Post, {false}, {true}
     JIT_WRITEBARRIER JIT_WriteBarrier_MP_Pre,  {true}, {false}
     JIT_WRITEBARRIER JIT_WriteBarrier_MP_Post, {true}, {true}
-    
+
     JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Pre,  {false}
     JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Post, {true}
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  {false}

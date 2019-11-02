@@ -6,7 +6,7 @@
 //
 // ===========================================================================
 // File: oaidl.h
-// 
+//
 // ===========================================================================
 
 #ifndef __OAIDL_H__
@@ -38,23 +38,23 @@ EXTERN_C const IID IID_IErrorInfo;
     IErrorInfo : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetGUID( 
+        virtual HRESULT STDMETHODCALLTYPE GetGUID(
             /* [out] */ GUID *pGUID) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetSource( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetSource(
             /* [out] */ BSTR *pBstrSource) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetDescription( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetDescription(
             /* [out] */ BSTR *pBstrDescription) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetHelpFile( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetHelpFile(
             /* [out] */ BSTR *pBstrHelpFile) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE GetHelpContext( 
+
+        virtual HRESULT STDMETHODCALLTYPE GetHelpContext(
             /* [out] */ DWORD *pdwHelpContext) = 0;
-        
+
     };
-    
+
 typedef interface ICreateErrorInfo ICreateErrorInfo;
 
 EXTERN_C const IID IID_ICreateErrorInfo;
@@ -65,23 +65,23 @@ typedef /* [unique] */ ICreateErrorInfo *LPCREATEERRORINFO;
     ICreateErrorInfo : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE SetGUID( 
+        virtual HRESULT STDMETHODCALLTYPE SetGUID(
             /* [in] */ REFGUID rguid) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetSource( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetSource(
             /* [in] */ LPOLESTR szSource) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetDescription( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetDescription(
             /* [in] */ LPOLESTR szDescription) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetHelpFile( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetHelpFile(
             /* [in] */ LPOLESTR szHelpFile) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE SetHelpContext( 
+
+        virtual HRESULT STDMETHODCALLTYPE SetHelpContext(
             /* [in] */ DWORD dwHelpContext) = 0;
-        
+
     };
-    
+
 STDAPI
 SetErrorInfo(ULONG dwReserved, IErrorInfo FAR* perrinfo);
 
@@ -98,14 +98,14 @@ typedef /* [unique] */ ISupportErrorInfo *LPSUPPORTERRORINFO;
 
 EXTERN_C const IID IID_ISupportErrorInfo;
 
-    
+
     interface
     ISupportErrorInfo : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE InterfaceSupportsErrorInfo( 
+        virtual HRESULT STDMETHODCALLTYPE InterfaceSupportsErrorInfo(
             /* [in] */ REFIID riid) = 0;
-        
+
     };
 
 #endif //__OAIDL_H__

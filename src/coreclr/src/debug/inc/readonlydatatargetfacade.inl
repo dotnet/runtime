@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ReadOnlyDataTargetFacade.inl
-// 
+//
 
 //
 //*****************************************************************************
@@ -49,18 +49,18 @@ ReadOnlyDataTargetFacade::QueryInterface(
 }
 
 // Standard impl of IUnknown::AddRef
-ULONG STDMETHODCALLTYPE 
+ULONG STDMETHODCALLTYPE
 ReadOnlyDataTargetFacade::AddRef()
 {
     SUPPORTS_DAC;
-    LONG ref = InterlockedIncrement(&m_ref);    
+    LONG ref = InterlockedIncrement(&m_ref);
     return ref;
 }
 
 // Standard impl of IUnknown::Release
-ULONG STDMETHODCALLTYPE 
+ULONG STDMETHODCALLTYPE
 ReadOnlyDataTargetFacade::Release()
-{    
+{
     SUPPORTS_DAC;
     LONG ref = InterlockedDecrement(&m_ref);
     if (ref == 0)
@@ -72,7 +72,7 @@ ReadOnlyDataTargetFacade::Release()
 
 // impl of interface method ICorDebugDataTarget::GetPlatform
 HRESULT STDMETHODCALLTYPE
-ReadOnlyDataTargetFacade::GetPlatform( 
+ReadOnlyDataTargetFacade::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
     SUPPORTS_DAC;
@@ -82,7 +82,7 @@ ReadOnlyDataTargetFacade::GetPlatform(
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
 HRESULT STDMETHODCALLTYPE
-ReadOnlyDataTargetFacade::ReadVirtual( 
+ReadOnlyDataTargetFacade::ReadVirtual(
     CORDB_ADDRESS address,
     PBYTE pBuffer,
     ULONG32 cbRequestSize,
@@ -108,7 +108,7 @@ ReadOnlyDataTargetFacade::GetThreadContext(
 
 // impl of interface method ICorDebugMutableDataTarget::WriteVirtual
 HRESULT STDMETHODCALLTYPE
-ReadOnlyDataTargetFacade::WriteVirtual( 
+ReadOnlyDataTargetFacade::WriteVirtual(
     CORDB_ADDRESS pAddress,
     const BYTE * pBuffer,
     ULONG32 cbRequestSize)

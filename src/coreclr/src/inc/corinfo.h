@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 /*****************************************************************************\
 *                                                                             *
@@ -22,7 +22,7 @@
 // The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
-// 
+//
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,9 +38,9 @@ code:EEStartup#TableOfContents for information on the runtime as a whole.
 -------------------------------------------------------------------------------
 #Tokens
 
-The tokens in IL stream needs to be resolved to EE handles (CORINFO_CLASS/METHOD/FIELD_HANDLE) that 
-the runtime operates with. ICorStaticInfo::resolveToken is the method that resolves the found in IL stream 
-to set of EE handles (CORINFO_RESOLVED_TOKEN). All other APIs take resolved token as input. This design 
+The tokens in IL stream needs to be resolved to EE handles (CORINFO_CLASS/METHOD/FIELD_HANDLE) that
+the runtime operates with. ICorStaticInfo::resolveToken is the method that resolves the found in IL stream
+to set of EE handles (CORINFO_RESOLVED_TOKEN). All other APIs take resolved token as input. This design
 avoids redundant token resolutions.
 
 The token validation is done as part of token resolution. The JIT is not required to do explicit upfront
@@ -61,7 +61,7 @@ neutral and appdomain specialized. The difference between these two kinds of cod
 For appdomain specific code, the address of a particular static variable is embeded in the code. This makes
 it usable only for one appdomain (since every appdomain gets a own copy of its statics). Appdomain neutral
 code calls a helper that looks up static variables off of a thread local variable. Thus the same code can be
-used by mulitple appdomains in the same process.  
+used by mulitple appdomains in the same process.
 
 Generics also introduce a similar issue. Code for generic classes might be specialised for a particular set
 of type arguments, or it could use helpers to access data that depends on type parameters and thus be shared
@@ -98,7 +98,7 @@ Nevertheless, the cost of plugging these holes is considered to high and the ben
 
 ----------------------------------------------------------------------
 
-#ClassConstructionFlags 
+#ClassConstructionFlags
 
 Thus the JIT's cctor responsibilities require it to check with the EE on every static field access using
 initClass and before jitting any method to see if a .cctor check must be placed in the prolog.
@@ -109,14 +109,14 @@ initClass and before jitting any method to see if a .cctor check must be placed 
         classes with precise .cctor semantics do not allow this optimization.
 
 Inlining also complicates things. Because the class could have precise semantics it is also required that the
-inlining of any constructor or static method must also do the initClass check. The inliner has the option of 
+inlining of any constructor or static method must also do the initClass check. The inliner has the option of
 inserting any required runtime check or simply not inlining the function.
 
 -------------------------------------------------------------------------------
 
 #StaticFields
 
-The first 4 options are mutially exclusive 
+The first 4 options are mutially exclusive
 
     * CORINFO_FLG_HELPER If the field has this set, then the JIT must call getFieldHelper and call the
         returned helper with the object ref (for an instance field) and a fieldDesc. Note that this should be
@@ -160,7 +160,7 @@ Instance fields
         must call getFieldHelper and call the returned helper with the object ref. If the helper returned is
         helpers that are for structures the args are as follows
 
-    * CORINFO_HELP_GETFIELDSTRUCT - args are: retBuff, object, fieldDesc 
+    * CORINFO_HELP_GETFIELDSTRUCT - args are: retBuff, object, fieldDesc
     * CORINFO_HELP_SETFIELDSTRUCT - args are object fieldDesc value
 
 The other GET helpers take an object fieldDesc and return the value The other SET helpers take an object
@@ -172,11 +172,11 @@ fieldDesc and value
     CORINFO_FLG_EnC This is to support adding new field for edit and continue. This field also indicates that
     a helper is needed to access this field. However this helper is always CORINFO_HELP_GETFIELDADDR, and
     this helper always takes the object and field handle and returns the address of the field. It is the
-                            JIT's responcibility to do the fetch or set. 
+                            JIT's responcibility to do the fetch or set.
 
 -------------------------------------------------------------------------------
 
-TODO: Talk about initializing strutures before use 
+TODO: Talk about initializing strutures before use
 
 
 *******************************************************************************
@@ -232,7 +232,7 @@ SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d8
 
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.
-#define CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS   2 
+#define CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS   2
 #define CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS 2
 #define CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS       16
 
@@ -255,13 +255,13 @@ enum SystemVClassificationType : unsigned __int8
 
     // Internal flags - never returned outside of the classification implementation.
 
-    // This value represents a very special type with two eightbytes. 
+    // This value represents a very special type with two eightbytes.
     // First ByRef, second Integer (platform int).
     // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-    // This is the classification counterpart for that element type. It is used to detect 
+    // This is the classification counterpart for that element type. It is used to detect
     // the special TypedReference type and specialize its classification.
     // This type is represented as a struct with two fields. The classification needs to do
-    // special handling of it since the source/methadata type of the fieds is IntPtr. 
+    // special handling of it since the source/methadata type of the fieds is IntPtr.
     // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
     // special handling is warranted (similar thing is done in the getGCLayout function for this type).
     SystemVClassificationTypeTypedReference     = 8,
@@ -311,7 +311,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     //
     // Return value:
     //     returns true if we the eightbyte at index slotIndex is of integral type.
-    // 
+    //
 
     bool IsIntegralSlot(unsigned slotIndex) const
     {
@@ -328,7 +328,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     //
     // Return value:
     //     returns true if we the eightbyte at index slotIndex is of SSE type.
-    // 
+    //
     // Follows the rules of the AMD64 System V ABI specification at www.x86-64.org/documentation/abi.pdf.
     // Please refer to it for definitions/examples.
     //
@@ -394,7 +394,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_FLTROUND,
     CORINFO_HELP_DBLROUND,
 
-    /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide 
+    /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
 
     CORINFO_HELP_NEW_CROSSCONTEXT,  // cross context new object
@@ -432,7 +432,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTARRAY,
     CORINFO_HELP_CHKCASTCLASS,
     CORINFO_HELP_CHKCASTANY,
-    CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 
+    CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
 
     CORINFO_HELP_BOX,
@@ -473,11 +473,11 @@ enum CorInfoHelpFunc
     CORINFO_HELP_MON_EXIT_STATIC,
 
     CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor 
+    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                           // in its ManagedClassObject
 
     /* Security callout support */
-    
+
     CORINFO_HELP_SECURITY_PROLOG,   // Required if CORINFO_FLG_SECURITYCHECK is set, or CORINFO_FLG_NOSECURITYWRAP is not set
     CORINFO_HELP_SECURITY_PROLOG_FRAMED, // Slow version of CORINFO_HELP_SECURITY_PROLOG. Used for instrumentation.
 
@@ -535,7 +535,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT,    // Helper for context-static fields
     CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
-    // There are a variety of specialized helpers for accessing static fields. The JIT should use 
+    // There are a variety of specialized helpers for accessing static fields. The JIT should use
     // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
     // Helpers for regular statics
@@ -575,7 +575,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
-    
+
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
 
     CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
@@ -658,7 +658,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
 
-    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle 
+    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
@@ -1063,7 +1063,7 @@ enum CorInfoCanSkipVerificationResult
     CORINFO_VERIFICATION_CANNOT_SKIP    = 0,    // Cannot skip verification during jit time.
     CORINFO_VERIFICATION_CAN_SKIP       = 1,    // Can skip verification during jit time.
     CORINFO_VERIFICATION_RUNTIME_CHECK  = 2,    // Cannot skip verification during jit time,
-                                                //     but need to insert a callout to the VM to ask during runtime 
+                                                //     but need to insert a callout to the VM to ask during runtime
                                                 //     whether to raise a verification or not (if the method is unverifiable).
     CORINFO_VERIFICATION_DONT_JIT       = 3,    // Cannot skip verification during jit time,
                                                 //     but do not jit the method if is is unverifiable.
@@ -1071,13 +1071,13 @@ enum CorInfoCanSkipVerificationResult
 
 enum CorInfoInitClassResult
 {
-    CORINFO_INITCLASS_NOT_REQUIRED  = 0x00, // No class initialization required, but the class is not actually initialized yet 
+    CORINFO_INITCLASS_NOT_REQUIRED  = 0x00, // No class initialization required, but the class is not actually initialized yet
                                             // (e.g. we are guaranteed to run the static constructor in method prolog)
     CORINFO_INITCLASS_INITIALIZED   = 0x01, // Class initialized
     CORINFO_INITCLASS_SPECULATIVE   = 0x02, // Class may be initialized speculatively
     CORINFO_INITCLASS_USE_HELPER    = 0x04, // The JIT must insert class initialization helper call.
-    CORINFO_INITCLASS_DONT_INLINE   = 0x08, // The JIT should not inline the method requesting the class initialization. The class 
-                                            // initialization requires helper class now, but will not require initialization 
+    CORINFO_INITCLASS_DONT_INLINE   = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+                                            // initialization requires helper class now, but will not require initialization
                                             // if the method is compiled standalone. Or the method cannot be inlined due to some
                                             // requirement around class initialization such as shared generics.
 };
@@ -1118,16 +1118,16 @@ enum CorInfoIndirectCallReason
 // instantiations) passed verification.
 enum CorInfoInstantiationVerification
 {
-    // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method 
-    // in a generic class or a generic method. It is either the typical instantiation 
+    // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method
+    // in a generic class or a generic method. It is either the typical instantiation
     // (eg. List<T>.Add()) or entirely non-generic.
     INSTVER_NOT_INSTANTIATION           = 0,
 
-    // The method is an instantiation of a method in a generic class or a generic method, 
+    // The method is an instantiation of a method in a generic class or a generic method,
     // and the generic class was successfully verified
     INSTVER_GENERIC_PASSED_VERIFICATION = 1,
 
-    // The method is an instantiation of a method in a generic class or a generic method, 
+    // The method is an instantiation of a method in a generic class or a generic method,
     // and the generic class failed verification
     INSTVER_GENERIC_FAILED_VERIFICATION = 2,
 };
@@ -1165,14 +1165,14 @@ typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
 // Generic tokens are resolved with respect to a context, which is usually the method
 // being compiled. The CORINFO_CONTEXT_HANDLE indicates which exact instantiation
 // (or the open instantiation) is being referred to.
-// CORINFO_CONTEXT_HANDLE is more tightly scoped than CORINFO_MODULE_HANDLE. For cases 
+// CORINFO_CONTEXT_HANDLE is more tightly scoped than CORINFO_MODULE_HANDLE. For cases
 // where the exact instantiation does not matter, CORINFO_MODULE_HANDLE is used.
 typedef CORINFO_METHOD_HANDLE               CORINFO_CONTEXT_HANDLE;
 
 typedef struct CORINFO_DEPENDENCY_STRUCT_
 {
     CORINFO_MODULE_HANDLE moduleFrom;
-    CORINFO_MODULE_HANDLE moduleTo; 
+    CORINFO_MODULE_HANDLE moduleTo;
 } CORINFO_DEPENDENCY;
 
 // Bit-twiddling of contexts assumes word-alignment of method handles and type handles
@@ -1293,7 +1293,7 @@ struct CORINFO_METHOD_INFO
 struct CORINFO_CONST_LOOKUP
 {
     // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
-    // Otherwise, it's a representative... 
+    // Otherwise, it's a representative...
     // If accessType is
     //     IAT_VALUE     --> "handle" stores the real handle or "addr " stores the computed address
     //     IAT_PVALUE    --> "addr" stores a pointer to a location which will hold the real handle
@@ -1595,7 +1595,7 @@ enum CorInfoIsAccessAllowedResult
 
 
 // This enum is used for JIT to tell EE where this token comes from.
-// E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or 
+// E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
 // return different types of handles (e.g. boxed vs. regular entrypoints)
 enum CorInfoTokenKind
 {
@@ -1637,10 +1637,10 @@ struct CORINFO_RESOLVED_TOKEN
     CorInfoTokenKind        tokenType;
 
     //
-    // [Out] arguments of resolveToken. 
+    // [Out] arguments of resolveToken.
     // - Type handle is always non-NULL.
     // - At most one of method and field handles is non-NULL (according to the token type).
-    // - Method handle is an instantiating stub only for generic methods. Type handle 
+    // - Method handle is an instantiating stub only for generic methods. Type handle
     //   is required to provide the full context for methods in generic types.
     //
     CORINFO_CLASS_HANDLE    hClass;
@@ -1859,7 +1859,7 @@ struct CORINFO_EE_INFO
     unsigned    osBuild;
 };
 
-// This is used to indicate that a finally has been called 
+// This is used to indicate that a finally has been called
 // "locally" by the try block
 enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
 
@@ -2012,9 +2012,9 @@ enum class TypeCompareState
 };
 
 //
-// This interface is logically split into sections for each class of information 
+// This interface is logically split into sections for each class of information
 // (ICorMethodInfo, ICorModuleInfo, etc.). This split used to exist physically as well
-// using virtual inheritance, but was eliminated to improve efficiency of the JIT-EE 
+// using virtual inheritance, but was eliminated to improve efficiency of the JIT-EE
 // interface calls.
 //
 class ICorStaticInfo
@@ -2156,8 +2156,8 @@ public:
 
     // Given resolved token that corresponds to an intrinsic classified as
     // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
-    // with the token. If this is not possible at compile-time (because the current method's 
-    // code is shared and the token contains generic parameters) then indicate 
+    // with the token. If this is not possible at compile-time (because the current method's
+    // code is shared and the token contains generic parameters) then indicate
     // how the handle should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
@@ -2289,7 +2289,7 @@ public:
     // If it is cached, it should only be used as a hint.
     // This is only used by ngen for calculating certain hints.
     //
-   
+
     // Returns enum whether the module does not require verification
     // Also see ICorMethodInfo::canSkipMethodVerification();
     virtual CorInfoCanSkipVerificationResult canSkipVerification (
@@ -2339,10 +2339,10 @@ public:
     // Return the type argument of the instantiated generic class,
     // which is specified by the index
     virtual CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
-            CORINFO_CLASS_HANDLE cls, 
+            CORINFO_CLASS_HANDLE cls,
             unsigned             index
             ) = 0;
-    
+
 
     // Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
     // If fNamespace=TRUE, include the namespace/enclosing classes
@@ -2350,7 +2350,7 @@ public:
     // If fAssembly=TRUE, suffix with a comma and the full assembly qualification
     // return size of representation
     virtual int appendClassName(
-            __deref_inout_ecount(*pnBufLen) WCHAR** ppBuf, 
+            __deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
             int* pnBufLen,
             CORINFO_CLASS_HANDLE    cls,
             BOOL fNamespace,
@@ -2376,7 +2376,7 @@ public:
             ) = 0;
 
     // Returns "TRUE" iff "cls" is a struct type such that return buffers used for returning a value
-    // of this type must be stack-allocated.  This will generally be true only if the struct 
+    // of this type must be stack-allocated.  This will generally be true only if the struct
     // contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
     // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
     // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
@@ -2405,8 +2405,8 @@ public:
     virtual void LongLifetimeFree(void* obj) = 0;
 
     virtual size_t getClassModuleIdForStatics (
-            CORINFO_CLASS_HANDLE    cls, 
-            CORINFO_MODULE_HANDLE *pModule, 
+            CORINFO_CLASS_HANDLE    cls,
+            CORINFO_MODULE_HANDLE *pModule,
             void **ppIndirection
             ) = 0;
 
@@ -2495,23 +2495,23 @@ public:
             ) = 0;
 
     // returns the correct box helper for a particular class.  Note
-    // that if this returns CORINFO_HELP_BOX, the JIT can assume 
+    // that if this returns CORINFO_HELP_BOX, the JIT can assume
     // 'standard' boxing (allocate object and copy), and optimize
     virtual CorInfoHelpFunc getBoxHelper(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // returns the unbox helper.  If 'helperCopies' points to a true 
+    // returns the unbox helper.  If 'helperCopies' points to a true
     // value it means the JIT is requesting a helper that unboxes the
     // value into a particular location and thus has the signature
     //     void unboxHelper(void* dest, CORINFO_CLASS_HANDLE cls, Object* obj)
-    // Otherwise (it is null or points at a FALSE value) it is requesting 
-    // a helper that returns a pointer to the unboxed data 
+    // Otherwise (it is null or points at a FALSE value) it is requesting
+    // a helper that returns a pointer to the unboxed data
     //     void* unboxHelper(CORINFO_CLASS_HANDLE cls, Object* obj)
     // The EE has the option of NOT returning the copy style helper
     // (But must be able to always honor the non-copy style helper)
     // The EE set 'helperCopies' on return to indicate what kind of
-    // helper has been created.  
+    // helper has been created.
 
     virtual CorInfoHelpFunc getUnBoxHelper(
             CORINFO_CLASS_HANDLE        cls
@@ -2535,7 +2535,7 @@ public:
             ) = 0;
 
     // This function tries to initialize the class (run the class constructor).
-    // this function returns whether the JIT must insert helper calls before 
+    // this function returns whether the JIT must insert helper calls before
     // accessing static field or method.
     //
     // See code:ICorClassInfo#ClassConstruction.
@@ -2646,7 +2646,7 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // Get the numbmer of dimensions in an array 
+    // Get the numbmer of dimensions in an array
     virtual unsigned getArrayRank(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
@@ -2920,7 +2920,7 @@ public:
             ) = 0;
 
     // Return method name as in metadata, or nullptr if there is none,
-    // and optionally return the class, enclosing class, and namespace names 
+    // and optionally return the class, enclosing class, and namespace names
     // as in metadata.
     // Suitable for non-debugging use.
     virtual const char* getMethodNameFromMetadata(
@@ -3024,7 +3024,7 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*). 
+    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
                     CORINFO_MODULE_HANDLE   handle
@@ -3166,7 +3166,7 @@ public:
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.
-    // 
+    //
     // If pIsSpeculative is not NULL, fetch the class handle for the value of all ref-class
     // typed static fields, if there is a unique location for the static and the field is
     // not null.

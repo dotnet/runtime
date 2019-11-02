@@ -49,7 +49,7 @@ extern WriteBarrierManager g_WriteBarrierManager;
 
 #endif // BIT64
 
-/*********************************************************************/ 
+/*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
 /*********************************************************************/
@@ -66,9 +66,9 @@ void InitJITHelpers1()
     g_WriteBarrierManager.Initialize();
 
     // Allocation helpers, faster but non-logging
-    if (!((TrackAllocationsEnabled()) || 
+    if (!((TrackAllocationsEnabled()) ||
         (LoggingOn(LF_GCALLOC, LL_INFO10))
-#ifdef _DEBUG 
+#ifdef _DEBUG
         || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
 #endif // _DEBUG
         ))
@@ -102,7 +102,7 @@ void InitJITHelpers1()
         {
             // Replace the 1p slow allocation helpers with faster version
             //
-            // When we're running Workstation GC on a single proc box we don't have 
+            // When we're running Workstation GC on a single proc box we don't have
             // InlineGetThread versions because there is no need to call GetThread
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_TrialAllocSFastSP);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_TrialAllocSFastSP);

@@ -11,14 +11,14 @@ size_t MemoryPool::GetSize()
 {
     LIMITED_METHOD_CONTRACT;
     size_t retval=0;
-    
+
     Block *block = m_blocks;
     while (block != NULL)
     {
         retval+=(BYTE*)block->elementsEnd-(BYTE*)block->elements;
         block = block->next;
     }
-    return retval;  
+    return retval;
 }
 
 #ifndef DACCESS_COMPILE
@@ -42,19 +42,19 @@ BOOL MemoryPool::AddBlock(SIZE_T elementCount)
     //
     // Allocate the new block.
     //
-    
+
     Block *block = (Block *) new (nothrow) BYTE [cbAllocSize.Value()];
 
     if (block == NULL)
         return FALSE;
-    
+
     //
     // Chain all elements together for the free list
     //
-    
+
     _ASSERTE(m_freeList == NULL);
     Element **prev = &m_freeList;
-    
+
     Element *e = block->elements;
     Element *eEnd = (Element *) ((BYTE*) block->elements + elementCount*m_elementSize);
     while (e < eEnd)
@@ -68,11 +68,11 @@ BOOL MemoryPool::AddBlock(SIZE_T elementCount)
     }
 
     *prev = NULL;
-    
+
     //
     // Initialize the other block fields & link the block into the block list
     //
-    
+
     block->elementsEnd = e;
     block->next = m_blocks;
     m_blocks = block;
@@ -111,7 +111,7 @@ MemoryPool::MemoryPool(SIZE_T elementSize, SIZE_T initGrowth, SIZE_T initCount)
 
     _ASSERTE(elementSize >= sizeof(Element));
     _ASSERTE((elementSize & ((sizeof(PVOID)-1))) == 0);
-    
+
     if (initCount > 0)
         AddBlock(initCount);
 }
@@ -135,14 +135,14 @@ BOOL MemoryPool::IsElement(void *element)
     Block *block = m_blocks;
     while (block != NULL)
     {
-        if (element >= block->elements    && 
+        if (element >= block->elements    &&
             element <  block->elementsEnd  )
         {
             return ((BYTE *)element - (BYTE*)block->elements) % m_elementSize == 0;
         }
         block = block->next;
     }
-    
+
     return FALSE;
 }
 
@@ -165,15 +165,15 @@ BOOL MemoryPool::IsAllocatedElement(void *element)
 #if _DEBUG
     //
     // In a debug build, all objects on the free list
-    // will be marked with deadbeef.  This means that 
+    // will be marked with deadbeef.  This means that
     // if the object is not deadbeef, it's not on the
     // free list.
     //
     // This check will give us decent performance in
-    // a debug build for FreeElement, since we 
+    // a debug build for FreeElement, since we
     // always expect to return TRUE in that case.
     //
-    
+
     if (((Element*)element)->deadBeef != (int) 0xdeadBeef)
         return TRUE;
 #endif
@@ -185,7 +185,7 @@ BOOL MemoryPool::IsAllocatedElement(void *element)
             return FALSE;
         f = f->next;
     }
-    
+
 #if _DEBUG
     //
     // We should never get here in a debug build, because
@@ -229,11 +229,11 @@ void *MemoryPool::AllocateElementNoThrow()
         m_growCount *= 2;
         element = m_freeList;
     }
-    
+
     // if we come there means that addblock succeeded and m_freelist isn't null anymore
     PREFIX_ASSUME(m_freeList!= NULL);
     m_freeList = m_freeList->next;
-    
+
     return element;
 }
 
@@ -262,7 +262,7 @@ void MemoryPool::FreeElement(void *element)
 void MemoryPool::FreeAllElements()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     Block *block = m_blocks;
     while (block != NULL)
     {
@@ -270,7 +270,7 @@ void MemoryPool::FreeAllElements()
         delete [] block;
         block = next;
     }
-    
+
     m_freeList = NULL;
     m_blocks = NULL;
 }
@@ -308,9 +308,9 @@ BOOL MemoryPool::Iterator::Next()
         if (m_e == m_end)
             return FALSE;
     }
-    
+
     m_e += m_size;
-    
+
     return TRUE;
 }
 

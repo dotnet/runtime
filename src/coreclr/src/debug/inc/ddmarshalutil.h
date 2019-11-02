@@ -78,7 +78,7 @@ public:
 
             m_size = cbNewSize;
             m_pBuffer = pNewBuffer;
-        }        
+        }
     }
 
     void WriteString(const WCHAR * pString)
@@ -123,7 +123,7 @@ public:
             delete [] m_pBuffer;
         }
     }
-    
+
     // Create on existing stream
     void Open(BYTE * pStream, DWORD cbLength)
     {
@@ -147,7 +147,7 @@ public:
         m_size = pBuffer->m_idx;
         m_pBuffer = pBuffer->m_pBuffer;
 
-        
+
         pBuffer->m_pBuffer = NULL;
         m_fDeleteOnClose = true;
     }
@@ -195,11 +195,11 @@ protected:
 
 //
 // Writers
-// 
+//
 template<class T> inline
 void WriteToBuffer(WriteBuffer * p, T & data)
 {
-    p->WriteBlob(&data, sizeof(T));    
+    p->WriteBlob(&data, sizeof(T));
 }
 
 inline
@@ -220,7 +220,7 @@ void WriteCookie(WriteBuffer * p, BYTE cookie)
 template<class T> inline
 void WriteToBuffer(WriteBuffer * p, T * pData)
 {
-    p->WriteBlob(pData, sizeof(T));    
+    p->WriteBlob(pData, sizeof(T));
 }
 
 inline
@@ -231,10 +231,10 @@ void WriteToBuffer(WriteBuffer * p, StringCopyHolder * pString)
     {
         pData = *pString; // gets raw data
     }
-    p->WriteString(pData);    
+    p->WriteString(pData);
     WriteCookie(p, 0x1F);
 }
-    
+
 template<class T> inline
 void WriteToBuffer(WriteBuffer * p, DacDbiArrayList<T> * pList)
 {
@@ -265,7 +265,7 @@ inline
 void WriteToBuffer(WriteBuffer * p, NativeVarData * pData)
 {
     WriteCookie(p, 0xD1);
-    p->WriteBlob(pData, sizeof(NativeVarData));  
+    p->WriteBlob(pData, sizeof(NativeVarData));
     WriteToBuffer(p, pData->m_offsetInfo);
 }
 
@@ -273,21 +273,21 @@ inline
 void WriteToBuffer(WriteBuffer * p, SequencePoints  * pData)
 {
     WriteCookie(p, 0xD2);
-    p->WriteBlob(pData, sizeof(SequencePoints));  
+    p->WriteBlob(pData, sizeof(SequencePoints));
     WriteToBuffer(p, pData->m_map);
 }
 inline
 void WriteToBuffer(WriteBuffer * p, ClassInfo * pData)
 {
     WriteCookie(p, 0xD3);
-    p->WriteBlob(pData, sizeof(ClassInfo));  
+    p->WriteBlob(pData, sizeof(ClassInfo));
     WriteToBuffer(p, pData->m_fieldList);
 }
 
 //-----------------------------------------------------------------------------
 //
 // Readers
-// 
+//
 template<class T> inline
 void ReadFromBuffer(ReadBuffer * p, T & data)
 {
@@ -347,7 +347,7 @@ void ReadFromBuffer(ReadBuffer * p, DacDbiArrayList<T> * pList)
     {
         return;
     }
-    
+
     // Read raw data.
     for(int i = 0; i < count; i++)
     {
@@ -367,7 +367,7 @@ inline
 void ReadFromBuffer(ReadBuffer * p, NativeVarData * pData)
 {
     ReadCookie(p, 0xD1);
-    p->ReadBlob(pData, sizeof(NativeVarData));  
+    p->ReadBlob(pData, sizeof(NativeVarData));
     ReadFromBuffer(p, &pData->m_offsetInfo);
 }
 
@@ -375,7 +375,7 @@ inline
 void ReadFromBuffer(ReadBuffer * p, SequencePoints  * pData)
 {
     ReadCookie(p, 0xD2);
-    p->ReadBlob(pData, sizeof(SequencePoints));  
+    p->ReadBlob(pData, sizeof(SequencePoints));
     ReadFromBuffer(p, &pData->m_map);
 }
 
@@ -383,12 +383,12 @@ inline
 void ReadFromBuffer(ReadBuffer * p, ClassInfo * pData)
 {
     ReadCookie(p, 0xD3);
-    p->ReadBlob(pData, sizeof(ClassInfo));  
+    p->ReadBlob(pData, sizeof(ClassInfo));
     ReadFromBuffer(p, &pData->m_fieldList);
 }
 
 
 
- 
+
 #endif  // _DDMarshal_Util_h
 

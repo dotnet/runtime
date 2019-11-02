@@ -79,12 +79,12 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             // we know that the com implementation is ours so we use mode-any to simplify
-            // having to switch mode 
-            MODE_ANY; 
+            // having to switch mode
+            MODE_ANY;
             FORBID_FAULT;
         }
         CONTRACTL_END;
-        if (pOnDiskEmitter) 
+        if (pOnDiskEmitter)
             pOnDiskEmitter->AddRef();
         if (m_pOnDiskEmitter)
             m_pOnDiskEmitter->Release();

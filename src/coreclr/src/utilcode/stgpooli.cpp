@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgPool.cpp
-// 
+//
 
-// 
+//
 // Pools are used to reduce the amount of data actually required in the database.
 // This allows for duplicate string and binary values to be folded into one
 // copy shared by the rest of the database.  Strings are tracked in a hash
@@ -22,7 +22,7 @@ int CStringPoolHash::Cmp(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     LPCSTR p1 = reinterpret_cast<LPCSTR>(pData);
     LPCSTR p2;
     if (FAILED(m_Pool->GetString(reinterpret_cast<STRINGHASH*>(pItem)->iOffset, &p2)))
@@ -39,26 +39,26 @@ int CBlobPoolHash::Cmp(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     ULONG ul1;
     ULONG ul2;
     MetaData::DataBlob data2;
-    
+
     // Get size of first item.
     ul1 = CPackedLen::GetLength(pData);
     // Adjust size to include the length of size field.
     ul1 += CPackedLen::Size(ul1);
-    
+
     // Get the second item.
     if (FAILED(m_Pool->GetData(reinterpret_cast<BLOBHASH*>(pItem)->iOffset, &data2)))
     {
         return -1;
     }
-    
+
     // Get and adjust size of second item.
     ul2 = CPackedLen::GetLength(data2.GetDataPointer());
     ul2 += CPackedLen::Size(ul2);
-    
+
     if (ul1 < ul2)
         return (-1);
     else if (ul1 > ul2)
@@ -70,7 +70,7 @@ int CGuidPoolHash::Cmp(const void *pData, void *pItem)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     GUID *p2;
     if (FAILED(m_Pool->GetGuid(reinterpret_cast<GUIDHASH*>(pItem)->iIndex, &p2)))
     {

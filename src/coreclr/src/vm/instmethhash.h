@@ -19,7 +19,7 @@
 class AllocMemTracker;
 
 //========================================================================================
-// The hash table types defined in this header file are used by the loader to 
+// The hash table types defined in this header file are used by the loader to
 // look up instantiation-specific methods:
 // - per-instantiation static method stubs e.g ArrayList<string>.HelperMeth
 // - instantiated methods e.g. Array.Sort<string>
@@ -113,9 +113,9 @@ public:
     void InsertMethodDesc(MethodDesc *pMD);
 
     // Look up a method in the hash table
-    MethodDesc *FindMethodDesc(TypeHandle declaringType, 
-                               mdMethodDef token, 
-                               BOOL unboxingStub, 
+    MethodDesc *FindMethodDesc(TypeHandle declaringType,
+                               mdMethodDef token,
+                               BOOL unboxingStub,
                                Instantiation inst,
                                BOOL getSharedNotStub);
 
@@ -145,7 +145,7 @@ public:
 
         Iterator(InstMethodHashTable * pTable);
         ~Iterator();
-        
+
     private:
         friend class InstMethodHashTable;
 

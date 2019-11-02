@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: typedesc.cpp
-// 
+//
 
 
-// 
-// This file contains definitions for methods in the code:TypeDesc class and its 
-// subclasses 
-//     code:ParamTypeDesc, 
-//     code:ArrayTypeDesc, 
-//     code:TyVarTypeDesc, 
+//
+// This file contains definitions for methods in the code:TypeDesc class and its
+// subclasses
+//     code:ParamTypeDesc,
+//     code:ArrayTypeDesc,
+//     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
-// 
+//
 
-// 
+//
 // ============================================================================
 
 #include "common.h"
@@ -109,7 +109,7 @@ PTR_Module TypeDesc::GetLoaderModule()
         if (!fFail)
         {
             retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
-        }                                              
+        }
         return retVal;
     }
 }
@@ -435,7 +435,7 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
 
         if (toTypeHnd.IsArray())
         {
-            // NOTE: in a few cases array type desc may contain a methodtable for object[] 
+            // NOTE: in a few cases array type desc may contain a methodtable for object[]
             //       we cannot delegate the cast analysis to the method tables here
             //       we could get a wrong result, so we need to use the typedesc helpers.
             fCast = dac_cast<PTR_ArrayTypeDesc>(this)->ArrayIsInstanceOf(toTypeHnd.AsArray(), pVisited);
@@ -469,7 +469,7 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
         {
             fCast = TRUE;
         }
-        else if (toTypeHnd == g_pValueTypeClass) 
+        else if (toTypeHnd == g_pValueTypeClass)
         {
             mdGenericParam genericParamToken = tyvar->GetToken();
             DWORD flags;
@@ -561,13 +561,13 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
     else if (CorTypeInfo::IsGenericVariable(fromParamCorType))
     {
         TypeVarTypeDesc* varFromParam = fromParam.AsGenericVariable();
-            
+
         if (!varFromParam->ConstraintsLoaded())
             varFromParam->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
 
         if (!varFromParam->ConstrainedAsObjRef())
             return FALSE;
-            
+
         return fromParam.CanCastTo(toParam, pVisited);
     }
     else if(CorTypeInfo::IsPrimitiveType(fromParamCorType))
@@ -578,7 +578,7 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
             if (GetNormalizedIntegralArrayElementType(toParamCorType) == GetNormalizedIntegralArrayElementType(fromParamCorType))
                 return TRUE;
         } // end if(CorTypeInfo::IsPrimitiveType(toParamCorType))
-    } // end if(CorTypeInfo::IsPrimitiveType(fromParamCorType)) 
+    } // end if(CorTypeInfo::IsPrimitiveType(fromParamCorType))
 
         // Anything else is not a match.
     return FALSE;
@@ -623,7 +623,7 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
     // if the TypeDesc types are different, then they are not equivalent
     if (GetInternalCorElementType() != pOther->GetInternalCorElementType())
         return FALSE;
-        
+
     if (HasTypeParam())
     {
         // pointer, byref, array
@@ -807,7 +807,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 //              is responsible for promoting the type after the full transitive closure has been
 //              walked. Note that it would be just as correct to always defer to the pending list -
 //              however, that is a little less performant.
-//              
+//
 //  pInstContext - instantiation context created in code:SigPointer.GetTypeHandleThrowing and ultimately
 //                 passed down to code:TypeVarTypeDesc.SatisfiesConstraints.
 //
@@ -859,7 +859,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 
     // First ensure that we're loaded to just below CLASS_LOADED
     ClassLoader::EnsureLoaded(TypeHandle(this), (ClassLoadLevel) (level-1));
-    
+
     Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
 
     if (HasTypeParam())
@@ -986,7 +986,7 @@ void TypeDesc::Fixup(DataImage *image)
     {
         // Works for array and PTR/BYREF types, but not function pointers
         _ASSERTE(HasTypeParam());
-        
+
         if (IsArray())
         {
             ((ArrayTypeDesc*) this)->Fixup(image);
@@ -1000,7 +1000,7 @@ void TypeDesc::Fixup(DataImage *image)
     if (NeedsRestore(image))
     {
         TypeDesc *pTD = (TypeDesc*) image->GetImagePointer(this);
-        _ASSERTE(pTD != NULL);        
+        _ASSERTE(pTD != NULL);
         pTD->m_typeAndFlags |= TypeDesc::enum_flag_Unrestored | TypeDesc::enum_flag_UnrestoredTypeKey | TypeDesc::enum_flag_IsNotFullyLoaded;
     }
 
@@ -1128,7 +1128,7 @@ BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisit
     // This set of checks matches precisely those in Module::CreateArrayMethodTable and ParamTypeDesc::Fixup
     //
     if (!m_TemplateMT.IsNull())
-    { 
+    {
         if (OwnsTemplateMethodTable())
         {
             if (GetTemplateMethodTableInternal()->ComputeNeedsRestore(image, pVisited))
@@ -1341,9 +1341,9 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         {
             MethodDesc *pMD = LoadOwnerMethod();
             _ASSERTE(pMD->IsGenericMethodDefinition());
-            
+
             SigTypeContext::InitTypeContext(pMD,&typeContext);
-            
+
             _ASSERTE(!typeContext.m_methodInst.IsEmpty());
             pMT = pMD->GetMethodTable();
         }
@@ -1355,14 +1355,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
 
             SigTypeContext::InitTypeContext(genericType,&typeContext);
         }
-        
+
         hEnum.EnumInit(mdtGenericParamConstraint, GetToken());
         numConstraints = pInternalImport->EnumGetCount(&hEnum);
         if (numConstraints != 0)
         {
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
             // If there is a single class constraint we put in in element 0 of the array
-            AllocMemHolder<TypeHandle> constraints 
+            AllocMemHolder<TypeHandle> constraints
                 (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
 
             DWORD i = 0;
@@ -1375,9 +1375,9 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
                 }
                 _ASSERTE(tkParam == GetToken());
-                TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(), tkConstraintType, 
-                                                                                      &typeContext, 
-                                                                                      ClassLoader::ThrowIfNotFound, 
+                TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(), tkConstraintType,
+                                                                                      &typeContext,
+                                                                                      ClassLoader::ThrowIfNotFound,
                                                                                       ClassLoader::FailIfUninstDefOrRef,
                                                                                       ClassLoader::LoadTypes,
                                                                                       level);
@@ -1386,7 +1386,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
 
                 // Method type constraints behave contravariantly
                 // (cf Bounded polymorphism e.g. see
-                //     Cardelli & Wegner, On understanding types, data abstraction and polymorphism, Computing Surveys 17(4), Dec 1985)                
+                //     Cardelli & Wegner, On understanding types, data abstraction and polymorphism, Computing Surveys 17(4), Dec 1985)
                 if (pMT != NULL && pMT->HasVariance() && TypeFromToken(tkConstraintType) == mdtTypeSpec)
                 {
                     ULONG cSig;
@@ -1396,7 +1396,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
                         GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
                     }
                     if (!EEClass::CheckVarianceInSig(pMT->GetNumGenericArgs(),
-                                                     pMT->GetClass()->GetVarianceInfo(), 
+                                                     pMT->GetClass()->GetVarianceInfo(),
                                                      pMT->GetModule(),
                                                      SigPointer(pSig, cSig),
                                                      gpContravariant))
@@ -1411,7 +1411,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
                 constraints.SuppressRelease();
             }
         }
-        
+
         m_numConstraints = numConstraints;
     }
 
@@ -1431,7 +1431,7 @@ BOOL TypeVarTypeDesc::ConstrainedAsObjRef()
         PRECONDITION(ConstraintsLoaded());
     }
     CONTRACTL_END;
-    
+
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
     mdGenericParam genericParamToken = GetToken();
     DWORD flags;
@@ -1440,10 +1440,10 @@ BOOL TypeVarTypeDesc::ConstrainedAsObjRef()
         return FALSE;
     }
     DWORD specialConstraints = flags & gpSpecialConstraintMask;
-    
+
     if ((specialConstraints & gpReferenceTypeConstraint) != 0)
         return TRUE;
-    
+
     return ConstrainedAsObjRefHelper();
 }
 
@@ -1470,7 +1470,7 @@ BOOL TypeVarTypeDesc::ConstrainedAsObjRefHelper()
 
         if (constraint.IsGenericVariable() && constraint.AsGenericVariable()->ConstrainedAsObjRefHelper())
             return TRUE;
-        
+
         if (!constraint.IsInterface() && CorTypeInfo::IsObjRef_NoThrow(constraint.GetInternalCorElementType()))
         {
             // Object, ValueType, and Enum are ObjRefs but they do not constrain the var to ObjRef!
@@ -1498,7 +1498,7 @@ BOOL TypeVarTypeDesc::ConstrainedAsValueType()
         PRECONDITION(ConstraintsLoaded());
     }
     CONTRACTL_END;
-    
+
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
     mdGenericParam genericParamToken = GetToken();
     DWORD flags;
@@ -1560,7 +1560,7 @@ TypeHandle LoadTypeVarConstraint(TypeVarTypeDesc *pTypeVar, mdGenericParamConstr
     IfFailThrow(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType));
     _ASSERTE(tkParam == pTypeVar->GetToken());
     mdToken tkOwnerToken = pTypeVar->GetTypeOrMethodDef();
-    
+
     if (TypeFromToken(tkConstraintType) == mdtTypeSpec && pInstContext != NULL)
     {
         if(pInstContext->m_pSubstChain == NULL)
@@ -1591,11 +1591,11 @@ TypeHandle LoadTypeVarConstraint(TypeVarTypeDesc *pTypeVar, mdGenericParamConstr
         // obtain the constraint type's signature if it's a typespec
         ULONG cbSig;
         PCCOR_SIGNATURE ptr;
-        
+
         IfFailThrow(pInternalImport->GetSigFromToken(tkConstraintType, &cbSig, &ptr));
-        
+
         SigPointer pSig(ptr, cbSig);
-        
+
         // instantiate the signature using the current InstantiationContext
         return pSig.GetTypeHandleThrowing(pTyModule,
                                           pInstContext->m_pArgContext,
@@ -1607,7 +1607,7 @@ TypeHandle LoadTypeVarConstraint(TypeVarTypeDesc *pTypeVar, mdGenericParamConstr
 LoadConstraintOnOpenType:
 
         SigTypeContext sigTypeContext;
-        
+
         switch (TypeFromToken(tkOwnerToken))
         {
             case mdtTypeDef:
@@ -1644,7 +1644,7 @@ LoadConstraintOnOpenType:
         return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pTyModule,
                                                            tkConstraintType,
                                                            &sigTypeContext,
-                                                           ClassLoader::ThrowIfNotFound, 
+                                                           ClassLoader::ThrowIfNotFound,
                                                            ClassLoader::FailIfUninstDefOrRef,
                                                            ClassLoader::LoadTypes,
                                                            CLASS_DEPENDENCIES_LOADED);
@@ -1685,7 +1685,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
     // Get the argument type's own special constraints
     DWORD argFlags;
     IfFailThrow(pTyArg->GetModule()->GetMDImport()->GetGenericParamProps(pTyArg->GetToken(), NULL, &argFlags, NULL, NULL, NULL));
-    
+
     DWORD argSpecialConstraints = argFlags & gpSpecialConstraintMask;
 
     // First, if the argument's own special constraints match the parameter's special constraints,
@@ -1700,7 +1700,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
             }
             break;
         }
-    
+
         case gpReferenceTypeConstraint:
         {
             // gpReferenceTypeConstraint is not "inherited" so ignore it if pTyArg is a variable
@@ -1712,7 +1712,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
             }
             break;
         }
- 
+
         case gpDefaultConstructorConstraint:
         {
             // gpDefaultConstructorConstraint is not "inherited" so ignore it if pTyArg is a variable
@@ -1743,12 +1743,12 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
         {
             // The variable is constrained by another variable, which we need to check recursively. An
             // example of why this is necessary follows:
-            // 
+            //
             // class A<T> where T : class
             // { }
             // class B<S, R> : A<S> where S : R where R : EventArgs
             // { }
-            // 
+            //
             if (!TypeHandleList::Exists(pVisitedVars, thConstraint))
             {
                 TypeHandleList newVisitedVars(thConstraint, pVisitedVars);
@@ -1765,7 +1765,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
             // This is a secondary constraint - this tells us nothing about the eventual instantiation that
             // we can use here.
         }
-        else 
+        else
         {
             // This is a type constraint. Remember that the eventual instantiation is only guaranteed to be
             // something *derived* from this type, not the actual type itself. To emphasize, we rename the local.
@@ -1779,7 +1779,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
                     return TRUE;
                 }
             }
-            
+
             if (specialConstraint == gpReferenceTypeConstraint)
             {
 
@@ -1810,7 +1810,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
                     }
                 }
             }
-         
+
             if (specialConstraint == gpDefaultConstructorConstraint)
             {
                 // If a valuetype, just check to ensure that doesn't have a private default ctor.
@@ -1820,7 +1820,7 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
                     return TRUE;
                 }
             }
-            
+
         }
     }
 
@@ -1891,9 +1891,9 @@ void GatherConstraintsRecursive(TypeVarTypeDesc *pTyArg, ArrayList *pArgList, co
 //                                    This is needed to load the "X" type when the constraint is the frm
 //                                    "where T:X".
 //                                    Caution: Do NOT use it to load types or constraints attached to "thArg".
-//                                     
+//
 // thArg                            = typehandle of the type being substituted for the type parameter.
-// 
+//
 // pInstContext                     = the instantiation context (type context + substitution chain) to be
 //                                    used when loading constraints attached to "thArg".
 //
@@ -1913,13 +1913,13 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
     mdGenericParamConstraint tkConstraint;
-        
+
     INDEBUG(mdToken defToken = GetTypeOrMethodDef());
     _ASSERTE(TypeFromToken(defToken) == mdtMethodDef || TypeFromToken(defToken) == mdtTypeDef);
 
     // prepare for the enumeration of this variable's general constraints
     mdGenericParam genericParamToken = GetToken();
-    
+
     HENUMInternalHolder hEnum(pInternalImport);
     hEnum.EnumInit(mdtGenericParamConstraint, genericParamToken);
 
@@ -1928,7 +1928,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     // First check special constraints (must-be-reference-type, must-be-value-type, and must-have-default-constructor)
     DWORD flags;
     IfFailThrow(pInternalImport->GetGenericParamProps(genericParamToken, NULL, &flags, NULL, NULL, NULL));
-    
+
     DWORD specialConstraints = flags & gpSpecialConstraintMask;
 
     if (thArg.IsGenericVariable())
@@ -1966,31 +1966,31 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         }
 
         // Now walk the "constraining chain" of type variables and gather all constraint types.
-        // 
+        //
         // This work should not be left to code:TypeHandle.CanCastTo because we need typespec constraints
         // to be instantiated in pInstContext. If we just do thArg.CanCastTo(thConstraint), it would load
         // typical instantiations of the constraints and the can-cast-to check may fail. In addition,
         // code:TypeHandle.CanCastTo will SO if the constraints are circular.
-        // 
+        //
         // Consider:
-        // 
+        //
         // class A<T>
         // {
         //     void f<U>(B<U, T> b) where U : A<T> { }
         // }
         // class B<S, R> where S : A<R> { }
-        // 
+        //
         // If we load the signature of, say, A<int>.f<U> (concrete class but typical method), and end up
         // here verifying that S : A<R> is satisfied by U : A<T>, we must instantiate the constraint type
         // A<T> using pInstContext so that it becomes A<int>. Otherwise the constraint check fails.
-        //  
+        //
         GatherConstraintsRecursive(pTyVar, &argList, pInstContext);
     }
     else
     {
         if ((specialConstraints & gpNotNullableValueTypeConstraint) != 0)
-        { 
-            if (!thArg.IsValueType()) 
+        {
+            if (!thArg.IsValueType())
                 return FALSE;
             else
             {
@@ -2000,13 +2000,13 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                     return FALSE;
             }
         }
-       
+
         if ((specialConstraints & gpReferenceTypeConstraint) != 0)
         {
             if (thArg.IsValueType())
                 return FALSE;
         }
-    
+
         if ((specialConstraints & gpDefaultConstructorConstraint) != 0)
         {
             if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
@@ -2029,12 +2029,12 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     {
         mdToken tkConstraintType, tkParam;
         IfFailThrow(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType));
-        
+
         _ASSERTE(tkParam == GetToken());
-        TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(), 
-                                                                              tkConstraintType, 
-                                                                              pTypeContextOfConstraintDeclarer, 
-                                                                              ClassLoader::ThrowIfNotFound, 
+        TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(),
+                                                                              tkConstraintType,
+                                                                              pTypeContextOfConstraintDeclarer,
+                                                                              ClassLoader::ThrowIfNotFound,
                                                                               ClassLoader::FailIfUninstDefOrRef,
                                                                               ClassLoader::LoadTypes,
                                                                               CLASS_DEPENDENCIES_LOADED);
@@ -2043,10 +2043,10 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         if (!thConstraint.IsObjectType())
         {
             BOOL fCanCast = FALSE;
-            
+
             // loop over all types that we know the arg will be assignable to
             ArrayList::Iterator iter = argList.Iterate();
-            while (iter.Next())  
+            while (iter.Next())
             {
                 TypeHandle thElem = TypeHandle::FromPtr(iter.GetElement());
 
@@ -2065,13 +2065,13 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                     {
                         TypeVarTypeDesc *pTyElem = thElem.AsGenericVariable();
                         IfFailThrow(pTyElem->GetModule()->GetMDImport()->GetGenericParamProps(
-                            pTyElem->GetToken(), 
-                            NULL, 
-                            &flags, 
-                            NULL, 
-                            NULL, 
+                            pTyElem->GetToken(),
+                            NULL,
+                            &flags,
+                            NULL,
+                            NULL,
                             NULL));
-                        
+
                         if ((flags & gpNotNullableValueTypeConstraint) != 0)
                         {
                             fCanCast = TRUE;
@@ -2093,7 +2093,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
             if (!fCanCast)
                 return FALSE;
         }
-    }	   
+    }
     return TRUE;
 }
 
@@ -2107,11 +2107,11 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         MODE_COOPERATIVE;
 
         INJECT_FAULT(COMPlusThrowOM());
-        
+
         PRECONDITION(IsGenericVariable());
     }
     CONTRACTL_END;
-            
+
     if (m_hExposedClassObject == NULL) {
         REFLECTCLASSBASEREF  refClass = NULL;
         GCPROTECT_BEGIN(refClass);
@@ -2123,7 +2123,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
 
         // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_hExposedClassObject from NULL.      
+        // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
         if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
@@ -2139,9 +2139,9 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 
 #endif //!DACCESS_COMPILE
 
-TypeHandle * 
+TypeHandle *
 FnPtrTypeDesc::GetRetAndArgTypes()
-{ 
+{
     CONTRACTL
     {
         THROWS;
@@ -2164,7 +2164,7 @@ FnPtrTypeDesc::GetRetAndArgTypes()
 #ifndef DACCESS_COMPILE
 
 // Returns TRUE if all return and argument types are externally visible.
-BOOL 
+BOOL
 FnPtrTypeDesc::IsExternallyVisible() const
 {
     CONTRACTL
@@ -2174,7 +2174,7 @@ FnPtrTypeDesc::IsExternallyVisible() const
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
@@ -2196,8 +2196,8 @@ void FnPtrTypeDesc::Save(DataImage * image)
     STANDARD_VM_CONTRACT;
 
     image->StoreStructure(
-        this, 
-        sizeof(FnPtrTypeDesc) + (m_NumArgs * sizeof(TypeHandle)), 
+        this,
+        sizeof(FnPtrTypeDesc) + (m_NumArgs * sizeof(TypeHandle)),
         DataImage::ITEM_FPTR_TYPEDESC);
 }
 
@@ -2208,7 +2208,7 @@ void FnPtrTypeDesc::Fixup(DataImage * image)
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
         image->FixupTypeHandlePointerInPlace(
-            this, 
+            this,
             (BYTE *)&m_RetAndArgTypes[i] - (BYTE *)this);
     }
 }

@@ -60,7 +60,7 @@ namespace BINDER_SPACE
     {
         ULONG ulRef = InterlockedDecrement(&m_cRef);
 
-        if (ulRef == 0) 
+        if (ulRef == 0)
         {
             delete this;
         }
@@ -127,7 +127,7 @@ namespace BINDER_SPACE
 
             m_pFailureCache = pFailureCache;
         }
-        
+
     Exit:
         return hr;
     }
@@ -221,7 +221,7 @@ namespace BINDER_SPACE
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
         m_pFileNameHash = new TpaFileNameHash();
-        
+
         sTrustedPlatformAssemblies.Normalize();
 
         for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
@@ -243,7 +243,7 @@ namespace BINDER_SPACE
 
             // Find the beginning of the simple name
             SString::Iterator iSimpleNameStart = fileName.End();
-            
+
             if (!fileName.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
             {
                 iSimpleNameStart = fileName.Begin();
@@ -269,7 +269,7 @@ namespace BINDER_SPACE
             SString sDll(W(".dll"));
             SString sExe(W(".exe"));
             SString sWinmd(W(".winmd"));
-            
+
             if (fileName.EndsWithCaseInsensitive(sNiDll) ||
                 fileName.EndsWithCaseInsensitive(sNiExe))
             {
@@ -312,7 +312,7 @@ namespace BINDER_SPACE
                     continue;
                 }
             }
-            
+
             LPWSTR wszSimpleName = nullptr;
             if (pExistingEntry == nullptr)
             {
@@ -327,14 +327,14 @@ namespace BINDER_SPACE
             {
                 wszSimpleName = pExistingEntry->m_wszSimpleName;
             }
-            
+
             LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
             if (wszFileName == nullptr)
             {
                 GO_WITH_HRESULT(E_OUTOFMEMORY);
             }
             wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
-            
+
             SimpleNameToFileNameMapEntry mapEntry;
             mapEntry.m_wszSimpleName = wszSimpleName;
             if (isNativeImage)
@@ -349,7 +349,7 @@ namespace BINDER_SPACE
             }
 
             m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
-            
+
             FileNameMapEntry fileNameExistenceEntry;
             fileNameExistenceEntry.m_wszFileName = wszFileName;
             m_pFileNameHash->AddOrReplace(fileNameExistenceEntry);
@@ -394,7 +394,7 @@ namespace BINDER_SPACE
             {
                 break;
             }
-            
+
 #ifndef CROSSGEN_COMPILE
             if (Path::IsRelative(pathName))
             {

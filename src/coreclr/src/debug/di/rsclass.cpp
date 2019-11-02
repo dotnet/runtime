@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: class.cpp
 //
 //*****************************************************************************
@@ -107,14 +107,14 @@ HRESULT CordbClass::QueryInterface(REFIID id, void **pInterface)
 // Get a ICorDebugValue for a static field on this class.
 //
 // Parameters:
-//   fieldDef - metadata token for field on this class. Can not be from an 
+//   fieldDef - metadata token for field on this class. Can not be from an
 //      inherited class.
 //   pFrame - frame used to resolve Thread-static, AppDomain-static, etc.
 //   ppValue - OUT: gets value of the field.
 //
 // Returns:
 //    S_OK on success.
-//    CORDBG_E_STATIC_VAR_NOT_AVAILABLE 
+//    CORDBG_E_STATIC_VAR_NOT_AVAILABLE
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
                                         ICorDebugFrame *pFrame,
@@ -204,10 +204,10 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 
 //-----------------------------------------------------------------------------
 // Common helper for accessing statics from both CordbClass and CordbType.
-// 
+//
 // Arguments:
 //   pModule - module containing the class
-//   pFieldData - field data describing the field (this is correlated to a 
+//   pFieldData - field data describing the field (this is correlated to a
 //         mdFieldDef, but has more specific data)
 //   fEnCHangingField - field storage hangs off the FieldDesc for EnC
 //   pInst - generic instantiation.
@@ -215,7 +215,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 //   ppValue - OUT: out parameter to get value.
 //
 // Returns:
-//   S_OK on success. 
+//   S_OK on success.
 //   CORDBG_E_FIELD_NOT_STATIC - if field isn't static.
 //   CORDBG_E_STATIC_VAR_NOT_AVAILABLE - if field storage is not available.
 //   Else some other failure.
@@ -246,7 +246,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
         {
             EX_TRY
             {
-                pRmtStaticValue = pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc, 
+                pRmtStaticValue = pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc,
                                                                                       pModule->GetAppDomain()->GetADToken());
             }
             EX_CATCH_HRESULT(hr);
@@ -292,7 +292,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                                                                              pThread->m_vmThreadToken);
             }
             EX_CATCH_HRESULT(hr);
-            if(FAILED(hr)) 
+            if(FAILED(hr))
             {
                 return hr;
             }
@@ -337,13 +337,13 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 
     TargetBuffer remoteValue(pRmtStaticValue, CordbValue::GetSizeForType(pType, fIsBoxed ? kBoxed : kUnboxed));
     ICorDebugValue * pValue;
-    
+
     EX_TRY
     {
         CordbValue::CreateValueByType(pModule->GetAppDomain(),
                                       pType,
                                       fIsBoxed,
-                                      remoteValue, 
+                                      remoteValue,
                                       MemoryRange(NULL, 0),
                                       NULL,
                                       &pValue);  // throws
@@ -375,9 +375,9 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 // Returns:
 //   S_OK on success. Else false.
 //
-HRESULT CordbClass::GetParameterizedType(CorElementType elementType, 
-                                         ULONG32 cTypeArgs, 
-                                         ICorDebugType * rgpTypeArgs[], 
+HRESULT CordbClass::GetParameterizedType(CorElementType elementType,
+                                         ULONG32 cTypeArgs,
+                                         ICorDebugType * rgpTypeArgs[],
                                          ICorDebugType ** ppType)
 {
     PUBLIC_API_ENTRY(this);
@@ -475,8 +475,8 @@ bool IsFieldStaticLiteral(IMetaDataImport *pImport, mdFieldDef fieldDef)
 
 //-----------------------------------------------------------------------------
 // Filter to determine a more descriptive failing HResult for a field lookup.
-// 
-// Parameters: 
+//
+// Parameters:
 //   hr - incoming ambiguous HR.
 //   pImport - metadata importer for this class.
 //   feildDef - field being looked up.
@@ -510,7 +510,7 @@ HRESULT CordbClass::PostProcessUnavailableHRESULT(HRESULT hr,
 // Public method to get the Module that this class lives in.
 //
 // Parameters:
-//    ppModule - OUT: holds module that this class gets in. 
+//    ppModule - OUT: holds module that this class gets in.
 //
 // Returns:
 //   S_OK on success.
@@ -529,11 +529,11 @@ HRESULT CordbClass::GetModule(ICorDebugModule **ppModule)
 //-----------------------------------------------------------------------------
 // Get the mdTypeDef token that this class corresponds to.
 //
-// Parameters: 
+// Parameters:
 //   pTypeDef - OUT: out param to get typedef token.
-// 
+//
 // Returns:
-//   S_OK - on success. 
+//   S_OK - on success.
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::GetToken(mdTypeDef *pTypeDef)
 {
@@ -555,11 +555,11 @@ HRESULT CordbClass::GetToken(mdTypeDef *pTypeDef)
 // perf-critical situation.
 //
 // Parameters:
-//    fIsUserCode - true to set entire class to user code. False to set to 
+//    fIsUserCode - true to set entire class to user code. False to set to
 //       non-user code.
 //
 // Returns:
-//    S_OK on success. On failure, the user-code status of the methods in the 
+//    S_OK on success. On failure, the user-code status of the methods in the
 //      class is random.
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
@@ -585,7 +585,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
     ULONG count;
 
     EX_TRY
-    {   
+    {
         pImport = pModule->GetMetaDataImporter();
         do
         {
@@ -599,7 +599,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
                 CordbFunction * pFunction = pModule->LookupOrCreateFunctionLatestVersion(rTokens[i]);
 
                 lockHolder.Release(); // Must release before sending an IPC event
-                hr = pFunction->SetJMCStatus(fIsUserCode);            
+                hr = pFunction->SetJMCStatus(fIsUserCode);
                 IfFailThrow(hr);
             }
         }
@@ -644,7 +644,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
 //
 // Return Value:
 //   indicates whether this is a value-class
-// 
+//
 // Notes:
 //   Throws CORDBG_E_CLASS_NOT_LOADED or synchronization errors on failure
 //-----------------------------------------------------------------------------
@@ -664,10 +664,10 @@ bool CordbClass::IsValueClass()
 //-----------------------------------------------------------------------------
 // Get a CordbType for the 'this' pointer of a method in a CordbClass.
 // The 'this' pointer is argument #0 in an instance method.
-// 
-// For ReferenceTypes (ELEMENT_TYPE_CLASS), the 'this' pointer is just a 
+//
+// For ReferenceTypes (ELEMENT_TYPE_CLASS), the 'this' pointer is just a
 // normal reference, and so GetThisType() behaves like GetParameterizedType().
-// For ValueTypes, the 'this' pointer is a byref. 
+// For ValueTypes, the 'this' pointer is a byref.
 //
 // Arguments:
 //   pInst - instantiation info (eg, the type parameters) to produce CordbType
@@ -679,7 +679,7 @@ bool CordbClass::IsValueClass()
 HRESULT CordbClass::GetThisType(const Instantiation * pInst, CordbType ** ppResultType)
 {
     FAIL_IF_NEUTERED(this);
-    
+
     HRESULT hr = S_OK;
     // Note: We have to call Init() here to find out if it really a VC or not.
     bool fIsValueClass = false;
@@ -699,24 +699,24 @@ HRESULT CordbClass::GetThisType(const Instantiation * pInst, CordbType ** ppResu
         CordbType *pType;
 
         hr = CordbType::MkType(GetAppDomain(),   // OK: this E_T_VALUETYPE will be normalized by MkType
-                               ELEMENT_TYPE_VALUETYPE, 
-                               this, 
-                               pInst, 
+                               ELEMENT_TYPE_VALUETYPE,
+                               this,
+                               pInst,
                                &pType);
-        
+
         if (!SUCCEEDED(hr))
         {
             return hr;
         }
 
         hr = CordbType::MkType(GetAppDomain(), ELEMENT_TYPE_BYREF, 0, pType, ppResultType);
-        
+
         if (!SUCCEEDED(hr))
         {
             return hr;
         }
     }
-    else 
+    else
     {
         hr = CordbType::MkType(GetAppDomain(), ELEMENT_TYPE_CLASS, this, pInst, ppResultType);
 
@@ -736,7 +736,7 @@ HRESULT CordbClass::GetThisType(const Instantiation * pInst, CordbType ** ppResu
 // whether this Type is a ReferenceType or ValueType.
 //
 // Parameters:
-//   fForceInit - if true, always reinitialize. If false, may skip 
+//   fForceInit - if true, always reinitialize. If false, may skip
 //     initialization if we believe we already have the info.
 //
 // Note:
@@ -744,7 +744,7 @@ HRESULT CordbClass::GetThisType(const Instantiation * pInst, CordbType ** ppResu
 //-----------------------------------------------------------------------------
 void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
 {
-    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(this->GetProcess());
 
     CordbProcess * pProcess = GetProcess();
     IDacDbiInterface* pDac = pProcess->GetDAC();
@@ -790,9 +790,9 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
                 vmAppDomain = info.vmAppDomain;
             }
             pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo);
-        
+
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
-            
+
             // if we have an unallocated static don't record that we reached FullInfo stage
             // this seems pretty ugly but I don't want to bite off cleaning this up just yet
             // Not saving the FullInfo stage effectively means future calls to Init() will
@@ -839,7 +839,7 @@ BOOL CordbClass::GotUnallocatedStatic(DacDbiArrayList<FieldData> * pFieldList)
  *    HRESULT for success or failure.
  *
  */
-HRESULT FieldData::GetFieldSignature(CordbModule *pModule, 
+HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
                                                   SigParser *pSigParser)
 {
     CONTRACTL
@@ -882,7 +882,7 @@ HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
         // Point past the calling convention
         CorCallingConvention conv;
 
-        // Move pointer, 
+        // Move pointer,
         BYTE * pOldPtr = (BYTE*) fieldSignature;
         conv = (CorCallingConvention) CorSigUncompressData(fieldSignature);
         _ASSERTE(conv == IMAGE_CEE_CS_CALLCONV_FIELD);
@@ -890,14 +890,14 @@ HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
 
         // Although the pointer will keep updating, the size should be the same. So we assert that.
         _ASSERTE((m_fldSignatureCacheSize == 0) || (m_fldSignatureCacheSize == size));
-        
+
         // Cache the value for non-dynamic modules, so this is faster later.
         // Since we're caching in a FieldData, we can't store the actual SigParser object.
         if (!pModule->IsDynamic())
         {
             m_fldSignatureCache = fieldSignature;
             m_fldSignatureCacheSize = size;
-        }      
+        }
     }
     else
     {
@@ -921,15 +921,15 @@ HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
 // Initializes an instance of EnCHangingFieldInfo.
 // Arguments:
 //     input:  fStatic       - flag to indicate whether the EnC field is static
-//             pObject       - For instance fields, the Object instance containing the the sync-block. 
+//             pObject       - For instance fields, the Object instance containing the the sync-block.
 //                             For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //             fieldToken    - token for the EnC field
 //             metadataToken - metadata token for this instance of CordbClass
 //     output: pEncField     - the fields of this class will be appropriately initialized
-void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField, 
+void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                   BOOL                  fStatic,
-                                  CordbObjectValue *    pObject, 
-                                  mdFieldDef            fieldToken, 
+                                  CordbObjectValue *    pObject,
+                                  mdFieldDef            fieldToken,
                                   mdTypeDef             classToken)
 {
     IDacDbiInterface * pInterface = GetProcess()->GetDAC();
@@ -939,43 +939,43 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
         // the field is static, we don't need any additional data
         pEncField->Init(VMPTR_Object::NullPtr(),      /* vmObject */
                         NULL,                         /* offsetToVars */
-                        fieldToken, 
-                        ELEMENT_TYPE_MAX, 
-                        classToken, 
+                        fieldToken,
+                        ELEMENT_TYPE_MAX,
+                        classToken,
                         m_pModule->GetRuntimeDomainFile());
     }
     else
     {
         // This is an instance field, we need to pass a bunch of type information back
         _ASSERTE(pObject != NULL);
-        
+
         pEncField->Init(pInterface->GetObject(pObject->m_id),      // VMPTR to the object instance of interest.
-                        pObject->GetInfo().objOffsetToVars,         // The offset from the beginning of the object 
-                                                                    // to the beginning of the fields. Fields added 
-                                                                    // with EnC don't actually reside in the object 
-                                                                    // (they hang off the sync block instead), so 
-                                                                    // this is used to compute the returned field 
-                                                                    // offset (fieldData.m_fldInstanceOffset). This 
+                        pObject->GetInfo().objOffsetToVars,         // The offset from the beginning of the object
+                                                                    // to the beginning of the fields. Fields added
+                                                                    // with EnC don't actually reside in the object
+                                                                    // (they hang off the sync block instead), so
+                                                                    // this is used to compute the returned field
+                                                                    // offset (fieldData.m_fldInstanceOffset). This
                                                                     // makes it appear to be an offset from the object.
-                                                                    // Ideally we wouldn't do any of this, and just 
+                                                                    // Ideally we wouldn't do any of this, and just
                                                                     // explicitly deal with absolute addresses (instead
                                                                     // of "offsets") for EnC hanging instance fields.
                         fieldToken,                                 // Field token for the added field.
                         pObject->GetInfo().objTypeData.elementType, // An indication of the type of object to which
                                                                     // we're adding a field (specifically,
                                                                     // whether it's a value type or a class).
-                                                                    // This is used only for log messages, and could 
+                                                                    // This is used only for log messages, and could
                                                                     // be removed.
-                        classToken,                                 // metadata token for the class 
+                        classToken,                                 // metadata token for the class
                         m_pModule->GetRuntimeDomainFile());         // Domain file for the class
     }
 } // CordbClass::InitFieldData
 
 // CordbClass::GetEnCFieldFromDac
 // Get information via the DAC about a field added with Edit and Continue.
-// Arguments: 
+// Arguments:
 //     input: fStatic       - flag to indicate whether the EnC field is static
-//            pObject       - For instance fields, the Object instance containing the the sync-block. 
+//            pObject       - For instance fields, the Object instance containing the the sync-block.
 //                            For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //            fieldToken    - token for the EnC field
 //     output: pointer to an initialized instance of FieldData that has been added to the appropriate table
@@ -986,7 +986,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 {
     EnCHangingFieldInfo encField;
     mdTypeDef           metadataToken;
-    FieldData           fieldData, 
+    FieldData           fieldData,
                       * pInfo = NULL;
     BOOL                fDacStatic;
     CordbProcess *      pProcess = GetModule()->GetProcess();
@@ -1021,7 +1021,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //-----------------------------------------------------------------------------
 // Internal helper to get a FieldData for fields added by EnC after the type
 // was loaded.  Since object and MethodTable layout has already been fixed,
-// such added fields are "hanging" off some other data structure.  For instance 
+// such added fields are "hanging" off some other data structure.  For instance
 // fields, they're stored in a syncblock off the object.  For static fields
 // they're stored off the EnCFieldDesc.
 //
@@ -1030,10 +1030,10 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //
 // Arguments:
 //     input:  fldToken - field of interest to get.
-//             pObject  - For instance fields, the Object instance containing the the sync-block. 
+//             pObject  - For instance fields, the Object instance containing the the sync-block.
 //                        For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //     output: ppFieldData - the FieldData matching the fldToken.
-// 
+//
 // Returns:
 //   S_OK on success, failure code otherwise.
 //-----------------------------------------------------------------------------
@@ -1098,13 +1098,13 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
 //-----------------------------------------------------------------------------
 // Get a FieldData (which rich information, including details about storage)
 //  from a metadata token.
-// 
+//
 // Parameters:
 //   fldToken - incoming metadata token specifying the field.
 //   ppFieldData - OUT: resulting FieldData structure.
 //
 // Returns:
-//   S_OK on success. else failure. 
+//   S_OK on success. else failure.
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, FieldData **ppFieldData)
 {
@@ -1117,11 +1117,11 @@ HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, FieldData **ppFieldData)
 
 //-----------------------------------------------------------------------------
 // Search an array of FieldData (pFieldList) for a field (fldToken).
-// The FieldData array must match the class supplied by classToken, and live 
+// The FieldData array must match the class supplied by classToken, and live
 // in the supplied module.
-// 
+//
 // Internal helper used by CordbType::GetFieldInfo, CordbClass::GetFieldInfo
-// 
+//
 // Parameters:
 //    module -     module containing the class that the FieldData array matches.
 //    pFieldList - array of fields to search through and the number of elements in
@@ -1136,18 +1136,18 @@ HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, FieldData **ppFieldData)
 //    Returns S_OK, set ppFieldData = pointer into data array for matching field. (*retval)->m_fldMetadataToken == fldToken)
 //    Throws on other errors.
 //-----------------------------------------------------------------------------
-/* static */ 
+/* static */
 HRESULT CordbClass::SearchFieldInfo(
-    CordbModule * pModule, 
-    DacDbiArrayList<FieldData> * pFieldList, 
-    mdTypeDef classToken, 
-    mdFieldDef fldToken, 
+    CordbModule * pModule,
+    DacDbiArrayList<FieldData> * pFieldList,
+    mdTypeDef classToken,
+    mdFieldDef fldToken,
     FieldData **ppFieldData
 )
 {
     unsigned int i;
 
-    IMetaDataImport * pImport = pModule->GetMetaDataImporter(); // throws      
+    IMetaDataImport * pImport = pModule->GetMetaDataImporter(); // throws
 
     HRESULT hr = S_OK;
     for (i = 0; i < pFieldList->Count(); i++)
@@ -1169,7 +1169,7 @@ HRESULT CordbClass::SearchFieldInfo(
                 }
 
                 // This is a field added by EnC, caller needs to get instance-specific info.
-                return CORDBG_E_ENC_HANGING_FIELD; 
+                return CORDBG_E_ENC_HANGING_FIELD;
             }
 
             *ppFieldData = &((*pFieldList)[i]);

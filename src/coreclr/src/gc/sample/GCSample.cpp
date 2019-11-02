@@ -11,10 +11,10 @@
 //
 //  * How to initialize GC without the rest of CoreCLR
 //  * How to create a type layout information in format that the GC expects
-//  * How to implement fast object allocator and write barrier 
+//  * How to implement fast object allocator and write barrier
 //  * How to allocate objects and work with GC handles
 //
-//  An important part of the sample is the GC environment (gcenv.*) that provides methods for GC to interact 
+//  An important part of the sample is the GC environment (gcenv.*) that provides methods for GC to interact
 //  with the OS and execution engine.
 //
 // The methods to interact with the OS should be no surprise - block memory allocation, synchronization primitives, etc.
@@ -31,11 +31,11 @@
 // * Scanning of stack roots:
 //      static void GcScanRoots(promote_func* fn,  int condemned, int max_gen, ScanContext* sc);
 //
-//  The sample has trivial implementation for these methods. It is single threaded, and there are no stack roots to 
-//  be reported. There are number of other callbacks that GC calls to optionally allow the execution engine to do its 
+//  The sample has trivial implementation for these methods. It is single threaded, and there are no stack roots to
+//  be reported. There are number of other callbacks that GC calls to optionally allow the execution engine to do its
 //  own bookkeeping.
 //
-//  For now, the sample GC environment has some cruft in it to decouple the GC from Windows and rest of CoreCLR. 
+//  For now, the sample GC environment has some cruft in it to decouple the GC from Windows and rest of CoreCLR.
 //  It is something we would like to clean up.
 //
 
@@ -93,8 +93,8 @@ inline void ErectWriteBarrier(Object ** dst, Object * ref)
     //      simply exit
     if (((uint8_t*)dst < g_gc_lowest_address) || ((uint8_t*)dst >= g_gc_highest_address))
         return;
-        
-    // volatile is used here to prevent fetch of g_card_table from being reordered 
+
+    // volatile is used here to prevent fetch of g_card_table from being reordered
     // with g_lowest/highest_address check above. See comments in StompWriteBarrier
     uint8_t* pCardByte = (uint8_t *)*(volatile uint8_t **)(&g_gc_card_table) + card_byte((uint8_t *)dst);
     if(*pCardByte != 0xFF)

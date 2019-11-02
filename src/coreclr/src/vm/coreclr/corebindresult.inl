@@ -4,7 +4,7 @@
 // ============================================================
 //
 // CoreBindResult.inl
-// 
+//
 
 //
 // Implements the CoreBindResult class
@@ -46,7 +46,7 @@ inline void CoreBindResult::GetBindAssembly(ICLRPrivAssembly** ppAssembly)
         PRECONDITION(Found());
     }
     CONTRACTL_END;
-    
+
     m_pAssembly->AddRef();
     *ppAssembly = m_pAssembly;
 }

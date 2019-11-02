@@ -93,13 +93,13 @@ namespace BINDER_SPACE
                     continue;
                 }
             }
-            
+
             if (wcCurrentChar == wcOpeningQuote)
             {
                 // We've found the closing quote for a quoted string
                 break;
             }
-           
+
             if (!fPermitUnescapedQuotes && !fIsEscaped && IsQuoteCharacter(wcCurrentChar) && !IsQuoteCharacter(wcOpeningQuote))
             {
                 // Unescaped quotes in the middle of the string are an error
@@ -142,7 +142,7 @@ namespace BINDER_SPACE
             }
             break;
         }
-            
+
         if (fFoundWhiteSpace)
         {
             currentString.Truncate(cursor + 1);

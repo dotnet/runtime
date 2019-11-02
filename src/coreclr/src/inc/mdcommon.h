@@ -13,7 +13,7 @@
 
 // File types for the database.
 enum FILETYPE
-{	
+{
 	FILETYPE_UNKNOWN,					// Unknown or undefined type.
 	FILETYPE_CLB,						// Native .clb file format.
 	FILETYPE_CLX, 					    // An obsolete file format.

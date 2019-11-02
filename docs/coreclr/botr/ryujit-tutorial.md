@@ -77,7 +77,7 @@ This is the more detailed view, and shows all of the significant phases of RyuJI
 The phases in orange are the optimization phases, and the phases in purple are the lower-level, back-end phases.
 
 ### Initial Phases of RyuJIT
-![RyuJIT Initial Phases](../images/ryujit-initial-phases.png) 
+![RyuJIT Initial Phases](../images/ryujit-initial-phases.png)
 - Importer:
   - initialize the local variable table and scan the MSIL to form BasicBlocks
   - Create the IR from the MSIL
@@ -171,13 +171,13 @@ The initial construction of the IR ensures that any ordering dependencies are ob
 
 ### GenTrees Sample
 ```
-▌  Statement  (top level) (IL 0x01D 
+▌  Statement  (top level) (IL 0x01D
 │        ┌──▌  const int 1
-│     ┌──▌  & int   
+│     ┌──▌  & int
 │     │  └──▌  lclVar int V08
-│  ┌──▌  + int   
+│  ┌──▌  + int
 │  │  └──▌  lclVar int V06
-└──▌  = int   
+└──▌  = int
    └──▌  lclVar int V06
 ```
 From the example we’ll look at later: count = count + (bits & 1)
@@ -342,7 +342,7 @@ This is used by all of the front-end optimizations.
   - It then imports the IL for the candidate, producing IR
     - This is inserted at the call site, if successful
 - This phase has been undergoing significant refactoring and enhancement:
-  - https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/inlining-plans.md 
+  - https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/inlining-plans.md
 
 #### Notes
 The inliner re-invokes the importer for each method that is considered a suitable candidate. Along the way, it may determine that the method cannot, or should not, be inlined, at which case it abandons the constructed IR, and leaves the callsite as-is. Otherwise, it inserts the newly created IR at the callsite, adds the local variables of the called method to the callee, and fixes up the arguments and returns.
@@ -367,7 +367,7 @@ This phases has recently been significantly refactored, and enhancements are in 
 - Identifies and normalizes loops
   - Transforms while loops to “do while”
   - Performs loop cloning and unrolling
-  - Loops may be invalidated, but must be marked as such. 
+  - Loops may be invalidated, but must be marked as such.
 
 ### LclVar Sorting and Tree Ordering
 - lvaMarkLocalVars()
@@ -391,7 +391,7 @@ This phases has recently been significantly refactored, and enhancements are in 
   - The earlier IR diagram shows the IR with only the parent/child links
 - After ordering (`fgSetBlockOrder()`):
   - The execution order *within a statement* is specified by the `gtNext` and `gtPrev` links
-  
+
 ![RyuJIT IR Overview](../images/ryujit-ir-ordered.png)
 
 #### Notes
@@ -475,7 +475,7 @@ This is the same diagram as before, but with additional links to indicate execut
 ##### Front-end IR
 ```
    ┌──▌  const 0
-   ├──▌  lclVarAddr V00 
+   ├──▌  lclVarAddr V00
    ├──▌  const 16
  ──▌  initBlk
 ```
@@ -483,7 +483,7 @@ This is the same diagram as before, but with additional links to indicate execut
 ```
    ┌──▌  const 0
    │  ┌──▌  lclVar V00
-   ├──▌  addr 
+   ├──▌  addr
    ├──▌  const 16
  ──▌  initBlk
 
@@ -682,8 +682,8 @@ Add Pattern Recognition (SampleStep2 shelveset):
 ## Backup
 
 ### COMPlus Variables
-- COMPlus_JitDump={method-list} – lots of info about what the JIT is doing 
-- COMPlus_JitDisasm={method-list} – disassembly listing of each method 
+- COMPlus_JitDump={method-list} – lots of info about what the JIT is doing
+- COMPlus_JitDisasm={method-list} – disassembly listing of each method
 - COMPlus_JitDiffableDasm – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
 - COMPlus_JITGCDump={method-list} – this dumps the GC information.
 - COMPlus_JitUnwindDump={method-list} – dumps the unwind tables.
@@ -697,16 +697,16 @@ Here is an example dump in tree order (shown with COMPlus_JitDumpAscii=0)
 ```
 STMT00000 (IL   ???...  ???)
 [000067] -AC-G-------      ▌  call help void   HELPER.CORINFO_HELP_ARRADDR_ST
-[000047] ------------ arg0 ├──▌  lclVar    ref    V03 loc2         
+[000047] ------------ arg0 ├──▌  lclVar    ref    V03 loc2
 [000048] ------------ arg1 ├──▌  const     int    0
-[000063] -A---------- arg2 └──▌  box       ref   
-[000061] ------------         │  ┌──▌  lclVar    ref    V04 tmp0         
-[000062] -A----------         └──▌  comma     ref   
-[000049] ------------            │  ┌──▌  lclVar    long   V01 loc0         
-[000060] -A----------            └──▌  =         long  
-[000059] -------N----               └──▌  indir     long  
+[000063] -A---------- arg2 └──▌  box       ref
+[000061] ------------         │  ┌──▌  lclVar    ref    V04 tmp0
+[000062] -A----------         └──▌  comma     ref
+[000049] ------------            │  ┌──▌  lclVar    long   V01 loc0
+[000060] -A----------            └──▌  =         long
+[000059] -------N----               └──▌  indir     long
 [000057] ------------                  │  ┌──▌  const     long   8
-[000058] ------------                  └──▌  +         byref 
+[000058] ------------                  └──▌  +         byref
 [000056] ------------                     └──▌  lclVar    ref    V04 tmp0
 ```
 

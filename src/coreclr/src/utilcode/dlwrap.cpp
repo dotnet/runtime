@@ -13,7 +13,7 @@
 #include <urlmon.h>
 #include <version.h>
 
-DWORD 
+DWORD
 GetFileVersionInfoSizeW_NoThrow(
         LPCWSTR lptstrFilename, /* Filename of version stamped file */
         LPDWORD lpdwHandle
@@ -24,13 +24,13 @@ GetFileVersionInfoSizeW_NoThrow(
     DWORD dwRet=0;
     EX_TRY
     {
-        dwRet=GetFileVersionInfoSize( (LPWSTR)lptstrFilename,  lpdwHandle );  
+        dwRet=GetFileVersionInfoSize( (LPWSTR)lptstrFilename,  lpdwHandle );
     }
     EX_CATCH_HRESULT(hr);
     if (hr!=S_OK)
         SetLastError(hr);
     return dwRet;
-    
+
 }
 
 BOOL
@@ -39,20 +39,20 @@ GetFileVersionInfoW_NoThrow(
         DWORD dwHandle,         /* Information from GetFileVersionSize */
         DWORD dwLen,            /* Length of buffer for info */
         LPVOID lpData
-        )         
+        )
 {
     WRAPPER_NO_CONTRACT;
     HRESULT hr=S_OK;
     BOOL bRet=FALSE;
     EX_TRY
     {
-        bRet=GetFileVersionInfo( (LPWSTR)lptstrFilename, dwHandle,dwLen,lpData );  
+        bRet=GetFileVersionInfo( (LPWSTR)lptstrFilename, dwHandle,dwLen,lpData );
     }
     EX_CATCH_HRESULT(hr);
     if (hr!=S_OK)
         SetLastError(hr);
     return bRet;
-    
+
 }
 
 BOOL
@@ -61,7 +61,7 @@ VerQueryValueW_NoThrow(
         LPCWSTR lpSubBlock,
         LPVOID * lplpBuffer,
         PUINT puLen
-        )     
+        )
 {
     WRAPPER_NO_CONTRACT;
     HRESULT hr=S_OK;
@@ -74,6 +74,6 @@ VerQueryValueW_NoThrow(
     if (hr!=S_OK)
         SetLastError(hr);
     return bRet;
-    
+
 }
 

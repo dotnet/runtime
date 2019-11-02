@@ -151,7 +151,7 @@ int CompareErrorStrings(const void *a, const void *b)
     {
         return 0;
     }
-    else 
+    else
     {
         return 1;
     }

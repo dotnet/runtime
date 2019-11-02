@@ -194,8 +194,8 @@ public:
 
         kStateMask = 0x0000000F,
 
-        // Indicates that the method being ReJITted is an inliner of the actual 
-        // ReJIT request and we should not issue the GetReJITParameters for this 
+        // Indicates that the method being ReJITted is an inliner of the actual
+        // ReJIT request and we should not issue the GetReJITParameters for this
         // method.
         kSuppressParams = 0x80000000
     };

@@ -5,10 +5,10 @@
 // MDCommon.h
 //
 
-// 
+//
 // Header for functions exported by metadata. These are consumed 2 ways:
 // 1. Mscoree provides public exports that plumb to some of these functions to invoke these dynamically.
-// 2. Standalone metadata (statically linked) 
+// 2. Standalone metadata (statically linked)
 //
 //*****************************************************************************
 
@@ -25,8 +25,8 @@ STDAPI  MetaDataDllGetClassObject(REFCLSID rclsid, REFIID riid, void ** ppv);
 HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut);
 
 STDAPI  GetMDInternalInterface(
-    LPVOID      pData, 
-    ULONG       cbData, 
+    LPVOID      pData,
+    ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
     void        **ppIUnk);              // [out] Return interface on success.
@@ -50,7 +50,7 @@ STDAPI MDReOpenMetaDataWithMemoryEx(
     void        *pImport,               // [IN] Given scope. public interfaces
     LPCVOID     pData,                  // [in] Location of scope data.
     ULONG       cbData,                 // [in] Size of the data pointed to by pData.
-    DWORD       dwReOpenFlags);         // [in] ReOpen flags      
+    DWORD       dwReOpenFlags);         // [in] ReOpen flags
 
 
 

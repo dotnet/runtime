@@ -9,7 +9,7 @@
 // A MemoTable is a 0-based N element array designed for safe multithreaded access
 // and single-initialization rules (e.g. multiple threads can race to initialize an entry
 // but only the first one actually modifies the table.)
-// 
+//
 // Template parameters:
 //
 //    ELEMTYPE   - Type of the data stored in the array. This type must be small enough
@@ -18,7 +18,7 @@
 //    INITVALUE  - Sentinel that indicates that InitEntry() has not been called for that entry yet.
 //                 This is the "initial value" for all elements of the array.
 //
-//    ELEMDELETER - (set to NULL if ELEMTYPE does not represent allocated storage.) 
+//    ELEMDELETER - (set to NULL if ELEMTYPE does not represent allocated storage.)
 //                 A function that deallocates the memory referenced by a pointer-typed ELEMTYPE.
 //                 MemoTable will never pass INITVALUE to this function.
 //
@@ -120,10 +120,10 @@ HRESULT MemoTable<ELEMTYPE, ELEMDELETER>::GetEntry(ULONG index, /* [out] */ ELEM
 // and your new value thrown away via ELEMDELETER if you lose the race to initialize.
 //
 // Returns:
-//    *pElem overwritten with the actual value written into the table 
+//    *pElem overwritten with the actual value written into the table
 //           (for pointer tables, this may not be the original pointer you passed
 //           due to races.)
-//    
+//
 //    S_OK is the only success value.
 //==============================================================================
 template <typename ELEMTYPE, void (*ELEMDELETER)(ELEMTYPE)>
@@ -142,7 +142,7 @@ HRESULT MemoTable<ELEMTYPE, ELEMDELETER>::InitEntry(ULONG index, /* [in,out] */ 
     {
         IfFailGo(CLDB_E_INDEX_NOTFOUND);
     }
-    _ASSERTE(incomingElem != m_initValue); 
+    _ASSERTE(incomingElem != m_initValue);
 
     // If this is first call to InitEntry(), must initialize the table itself.
     if (m_pTable == NULL)
@@ -153,7 +153,7 @@ HRESULT MemoTable<ELEMTYPE, ELEMDELETER>::InitEntry(ULONG index, /* [in,out] */ 
         {
             IfFailGo(E_OUTOFMEMORY);
         }
-        
+
         // When loading NGen images we go through code paths that expect no faults and no
         // throws.  We will need to take a look at how we use the winmd metadata with ngen,
         // potentially storing the post-mangled metadata in the NI because as the adapter grows
@@ -161,7 +161,7 @@ HRESULT MemoTable<ELEMTYPE, ELEMDELETER>::InitEntry(ULONG index, /* [in,out] */ 
         CONTRACT_VIOLATION(FaultViolation);
         pNewTable = new (nothrow) ELEMTYPE[m_numElems];
         IfNullGo(pNewTable);
-        
+
         for (ULONG walk = 0; walk < m_numElems; walk++)
         {
             pNewTable[walk] = m_initValue;
@@ -188,7 +188,7 @@ HRESULT MemoTable<ELEMTYPE, ELEMDELETER>::InitEntry(ULONG index, /* [in,out] */ 
         if (winner != m_initValue)
         {
             ELEMDELETER(incomingElem); // Lost the race
-            *pElem = winner; 
+            *pElem = winner;
         }
     }
     _ASSERTE(*pElem != m_initValue);

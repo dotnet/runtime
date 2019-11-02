@@ -17,7 +17,7 @@
 
 class SynchronizationContextNative
 {
-public:    
+public:
 
 #ifdef FEATURE_APPX
     static void* QCALLTYPE GetWinRTDispatcherForCurrentThread();

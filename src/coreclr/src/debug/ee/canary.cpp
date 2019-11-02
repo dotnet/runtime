@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: Canary.cpp
-// 
+//
 
 //
 // Canary for debugger helper thread. This will sniff out if it's safe to take locks.
@@ -33,7 +33,7 @@ HelperCanary::HelperCanary()
 // Dtor for class
 //-----------------------------------------------------------------------------
 HelperCanary::~HelperCanary()
-{   
+{
     // Since we're deleting this memory, we need to kill the canary thread.
     m_fStop = true;
     SetEvent(m_hPingEvent);
@@ -53,16 +53,16 @@ void HelperCanary::ClearCache()
 
 //-----------------------------------------------------------------------------
 // The helper thread can call this to determine if it can safely take a certain
-// set of locks (mainly the heap lock(s)). The canary thread will go off and 
+// set of locks (mainly the heap lock(s)). The canary thread will go off and
 // try and take these and report back to the helper w/o ever blocking the
 // helper.
-// 
+//
 // Returns 'true' if it's safe for helper to take locks; else false.
 // We err on the side of safety (returning false).
 //-----------------------------------------------------------------------------
 bool HelperCanary::AreLocksAvailable()
 {
-    // If we're not on the helper thread, then we're guaranteed safe. 
+    // If we're not on the helper thread, then we're guaranteed safe.
     // We check this to support MaybeHelperThread code.
     if (!ThisIsHelperThreadWorker())
     {
@@ -78,7 +78,7 @@ bool HelperCanary::AreLocksAvailable()
     m_fCachedAnswer = AreLocksAvailableWorker();
     m_fCachedValid = true;
 
-#ifdef _DEBUG  
+#ifdef _DEBUG
     // For managed-only debugging, we should always be safe.
     if (!g_pRCThread->GetDCB()->m_rightSideIsWin32Debugger)
     {
@@ -98,7 +98,7 @@ bool HelperCanary::AreLocksAvailable()
             _ASSERTE(!"Potential deadlock detected.\nLocks that the helper thread may need are currently held by other threads.");
         }
     }
-#endif // _DEBUG    
+#endif // _DEBUG
 
     return m_fCachedAnswer;
 }
@@ -145,8 +145,8 @@ void HelperCanary::Init()
     // Spin up the canary. This will call dllmain, but that's ok because it just
     // degenerates to our timeout case.
     const DWORD flags = CREATE_SUSPENDED;
-    m_hCanaryThread = CreateThread(NULL, 0, 
-        HelperCanary::ThreadProc, this, 
+    m_hCanaryThread = CreateThread(NULL, 0,
+        HelperCanary::ThreadProc, this,
         flags, &m_CanaryThreadId);
 
     // in the past if we failed to start the thread we just assumed it was unsafe
@@ -174,7 +174,7 @@ void HelperCanary::Init()
 bool HelperCanary::AreLocksAvailableWorker()
 {
 #if _DEBUG
-    // For debugging, allow a way to force the canary to fail, and thus test our 
+    // For debugging, allow a way to force the canary to fail, and thus test our
     // failure paths.
     static BOOL fShortcut= -1;
     if (fShortcut == -1)
@@ -202,7 +202,7 @@ bool HelperCanary::AreLocksAvailableWorker()
         return false;
     }
 
-    // Canary will take the locks of interest and then set the Answer counter equal to our request counter. 
+    // Canary will take the locks of interest and then set the Answer counter equal to our request counter.
     m_RequestCounter = m_RequestCounter + 1;
     ResetEvent(m_hWaitEvent);
     SetEvent(m_hPingEvent);
@@ -210,14 +210,14 @@ bool HelperCanary::AreLocksAvailableWorker()
     // Spin waiting for answer. If canary gets back to us, then the locks must be free and so it's safe for helper-thread.
     // If we timeout, then we err on the side of safety and assume canary blocked on a lock and so it's not safe
     // for the helper thread to take those locks.
-    // We explicitly have a simple spin-wait instead of using win32 events because we want something simple and 
-    // provably correct. Since we already need the spin-wait for the counters, adding an extra win32 event 
+    // We explicitly have a simple spin-wait instead of using win32 events because we want something simple and
+    // provably correct. Since we already need the spin-wait for the counters, adding an extra win32 event
     // to get rid of the sleep would be additional complexity and race windows without a clear benefit.
-    
+
     // We need to track what iteration of "AreLocksAvailable" the helper is on. Say canary sniffs two locks, now Imagine if:
-    // 1) Helper calls AreLocksAvailable, 
-    // 2) the canary does get blocked on lock #1, 
-    // 3) process resumes, canary now gets + releases lock #1, 
+    // 1) Helper calls AreLocksAvailable,
+    // 2) the canary does get blocked on lock #1,
+    // 3) process resumes, canary now gets + releases lock #1,
     // 4) another random thread takes lock #1
     // 5) then helper calls AreLocksAvailable again later
     // 6) then the canary finally finishes. Note it's never tested lock #1 on the 2nd iteration.
@@ -226,13 +226,13 @@ bool HelperCanary::AreLocksAvailableWorker()
     DWORD retry = 0;
 
     const DWORD msSleepSteadyState = 150; // sleep time in ms
-    const DWORD maxRetry = 15; // number of times to try. 
-    DWORD msSleep = 80; // how much to sleep on first iteration. 
-    
+    const DWORD maxRetry = 15; // number of times to try.
+    DWORD msSleep = 80; // how much to sleep on first iteration.
+
     while(m_RequestCounter != m_AnswerCounter)
     {
         retry ++;
-        if (retry > maxRetry) 
+        if (retry > maxRetry)
         {
             STRESS_LOG0(LF_CORDB, LL_ALWAYS, "Canary timed out!\n");
             return false;
@@ -246,7 +246,7 @@ bool HelperCanary::AreLocksAvailableWorker()
         // a live spin-lock.
         ResetEvent(m_hWaitEvent);
 
-        
+
         msSleep = msSleepSteadyState;
     }
 
@@ -262,9 +262,9 @@ bool HelperCanary::AreLocksAvailableWorker()
 DWORD HelperCanary::ThreadProc(LPVOID param)
 {
     _ASSERTE(!ThisIsHelperThreadWorker());
-    
+
     STRESS_LOG0(LF_CORDB, LL_ALWAYS, "Canary thread spun up\n");
-    HelperCanary * pThis = reinterpret_cast<HelperCanary*> (param);    
+    HelperCanary * pThis = reinterpret_cast<HelperCanary*> (param);
     pThis->ThreadProc();
     _ASSERTE(pThis->m_fStop);
     STRESS_LOG0(LF_CORDB, LL_ALWAYS, "Canary thread exiting\n");
@@ -292,32 +292,32 @@ void HelperCanary::ThreadProc()
             return;
         }
         STRESS_LOG2(LF_CORDB, LL_ALWAYS, "stage:%d,req:%d", 0, dwRequest);
-    
+
         // Now take the locks of interest. This could block indefinitely. If this blocks, we may even get multiple requests.
         TakeLocks();
 
         m_AnswerCounter = dwRequest;
 
-        // Set wait event to let Requesting thread shortcut its spin lock. This is purely an 
+        // Set wait event to let Requesting thread shortcut its spin lock. This is purely an
         // optimization because requesting thread will still check Answer/Request counters.
         // That protects us from recyling bugs.
         SetEvent(m_hWaitEvent);
     }
 }
-    
+
 //-----------------------------------------------------------------------------
-// Try and take locks.  
+// Try and take locks.
 //-----------------------------------------------------------------------------
 void HelperCanary::TakeLocks()
 {
     _ASSERTE(::GetThread() == NULL); // Canary Thread should always be outside the runtime.
     _ASSERTE(m_CanaryThreadId == GetCurrentThreadId());
-    
+
     // Call new, which will take whatever standard heap locks there are.
     // We don't care about what memory we get; we just want to take the heap lock(s).
     DWORD * p = new (nothrow) DWORD();
     delete p;
-    
+
     STRESS_LOG1(LF_CORDB, LL_ALWAYS, "canary stage:%d\n", 1);
 }
 

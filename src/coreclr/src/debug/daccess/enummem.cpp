@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: enummem.cpp
-// 
+//
 
 //
 // ICLRDataEnumMemoryRegions implementation.
@@ -21,7 +21,7 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef FEATURE_PAL            
+#ifdef FEATURE_PAL
 #include <dactablerva.h>
 #endif
 
@@ -49,10 +49,10 @@ unsigned __int64 g_nFindStackTotalTime;
 // EnumMemCollectImages - collect all images of interest for heap dumps
 //
 // This is used primarily to save ngen images.
-// This is necessary so that heap dumps contain the full native code for the 
-// process.  Normally mini/heap dump debugging requires that the images be 
-// available at debug-time, (in fact, watson explicitly does not want to 
-// be downloading 3rd party images).  Not including images is the main size 
+// This is necessary so that heap dumps contain the full native code for the
+// process.  Normally mini/heap dump debugging requires that the images be
+// available at debug-time, (in fact, watson explicitly does not want to
+// be downloading 3rd party images).  Not including images is the main size
 // advantage of heap dumps over full dumps.  However, since ngen images are
 // produced on the client, we can't always ensure that the debugger will
 // have access to the exact ngen image used in the dump.  Therefore, managed
@@ -96,14 +96,14 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 }
                 // We also want to save any in-memory images.  These show up like mapped files
                 // and so would not be in a heap dump by default.  Technically it's not clear we
-                // should include them in the dump - you can often have the files available 
-                // after-the-fact. But in-memory modules may be harder to track down at debug time 
+                // should include them in the dump - you can often have the files available
+                // after-the-fact. But in-memory modules may be harder to track down at debug time
                 // and people may have come to rely on this - so we'll include them for now.
                 else
                 if (
                     file->GetPath().IsEmpty() && // is in-memory
                     file->HasMetadata() &&       // skip resource assemblies
-                    file->IsLoaded(FALSE) &&     // skip files not yet loaded 
+                    file->IsLoaded(FALSE) &&     // skip files not yet loaded
                     !file->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)
                 {
                     pStartAddr = PTR_TO_TADDR(file->GetLoadedIL()->GetBase());
@@ -158,7 +158,7 @@ HRESULT ClrDataAccess::EnumMemCLRHeapCrticalStatic(IN CLRDataEnumMemoryFlags fla
     // This is pointing to a static buffer
     DacEnumHostDPtrMem(g_pConfig);
 
-    // dump GC heap structures. Note that the managed heap is not dumped out. 
+    // dump GC heap structures. Note that the managed heap is not dumped out.
     // We are just dump the GC heap structures.
     //
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( EnumWksGlobalMemoryRegions(flags); );
@@ -173,9 +173,9 @@ HRESULT ClrDataAccess::EnumMemCLRHeapCrticalStatic(IN CLRDataEnumMemoryFlags fla
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// collecting memory for mscorwks's statics. This is the minimal 
+// collecting memory for mscorwks's statics. This is the minimal
 // set of global and statics that we need to have !threads, !pe, !ClrStack
-// to work. 
+// to work.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
@@ -188,8 +188,8 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     // write out the static and global content that we care.
     //
 
-    // The followig macro will report memory all of the dac related mscorwks static and 
-    // global variables. But it won't report the structures that are pointed by 
+    // The followig macro will report memory all of the dac related mscorwks static and
+    // global variables. But it won't report the structures that are pointed by
     // global pointers.
     //
 #define DEFINE_DACVAR(id_type, size_type, id, var) \
@@ -331,7 +331,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
     // Iterating to all threads' stacks, as we have to collect data stored inside (core)clr.dll
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAllThreadsStack(flags); )
 
-    // Dump AppDomain-specific info 
+    // Dump AppDomain-specific info
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAppDomainInfo(flags); )
 
     // Dump the Debugger object data needed
@@ -364,16 +364,16 @@ HRESULT ClrDataAccess::DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF
     {
         return status;
     }
-    
+
     if (*g_gcDacGlobals->gc_structures_invalid_cnt != 0)
     {
         // GC is in progress, don't dump this object
         return S_OK;
     }
-    
+
     EX_TRY
     {
-        // write out the current EE class and the direct/indirect inherited EE Classes        
+        // write out the current EE class and the direct/indirect inherited EE Classes
         MethodTable *pMethodTable = objRef->GetGCSafeMethodTable();
 
         while (pMethodTable)
@@ -383,12 +383,12 @@ HRESULT ClrDataAccess::DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF
                 pMethodTable->EnumMemoryRegions(flags);
 
                 StackSString s;
-                
+
                 // This might look odd. We are not using variable s after forming it.
                 // That is because our DAC inspecting API is using TypeString to form
                 // full type name. Form the full name here is a implicit reference to needed
-                // memory. 
-                // 
+                // memory.
+                //
                 TypeString::AppendType(s, TypeHandle(pMethodTable), TypeString::FormatNamespace|TypeString::FormatFullInst);
             }
             EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
@@ -429,10 +429,10 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
         return S_OK;
     }
 
-    // write out the managed object for exception. This will only write out the 
-    // direct field value. After this, we need to visit some selected fields, such as 
+    // write out the managed object for exception. This will only write out the
+    // direct field value. After this, we need to visit some selected fields, such as
     // exception message and stack trace field, and dump out the object referenced via
-    // the fields. 
+    // the fields.
     //
     DumpManagedObject(flags, objRef);
 
@@ -652,7 +652,7 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 // Implicitly gets the COR header.
                 if ((pILImage) && (pILImage->HasLoadedLayout()))
                 {
-                    pILImage->GetCorHeaderFlags(); 
+                    pILImage->GetCorHeaderFlags();
                 }
                 if ((pNIImage) && (pNIImage->HasLoadedLayout()))
                 {
@@ -932,7 +932,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
-                          
+
                             if (addr != NULL)
                             {
                                 EECodeInfo codeInfo(addr);
@@ -979,7 +979,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
     g_nStackTotalTime += nEnd - nStart;
     g_nStackWalk = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     return status;
 }
 
@@ -1586,8 +1586,8 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerSkinny(IN CLRDataEnumMemoryFlags f
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Generating triage micro-dump. Triage dumps will only support stack trace 
-// and Exception viewing.More than that triage dumps have to be PII free, 
+// Generating triage micro-dump. Triage dumps will only support stack trace
+// and Exception viewing.More than that triage dumps have to be PII free,
 // so all exception messages have to be poisoned with 0xcc mask.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1639,7 +1639,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerMicroTriage(IN CLRDataEnumMemoryFl
 // Write out mscorwks's data segment. This will write out the whole
 // data segment for mscorwks. It is about 200 or 300K. Most of it (90%) are
 // vtable definition that we don't really care. But we don't have a
-// good walk to just write out all globals and statics. 
+// good walk to just write out all globals and statics.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemWriteDataSegment()
@@ -1665,7 +1665,7 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
                     pSection->Name[2] == 'a' &&
                     pSection->Name[3] == 't' &&
                     pSection->Name[4] == 'a')
-                {   
+                {
                     // This is the .data section of mscorwks
                     ReportMem(m_globalBase + pSection->VirtualAddress, pSection->Misc.VirtualSize);
                 }
@@ -1675,14 +1675,14 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
-    return S_OK;        
-}    
+    return S_OK;
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // Custom Dump. Depending on the value of g_ECustomDumpFlavor, different dump
 // will be taken. You can set this global variable using hosting API
-// ICLRErrorReportingManager::BeginCustomDump. 
+// ICLRErrorReportingManager::BeginCustomDump.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
@@ -1690,7 +1690,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
     SUPPORTS_DAC;
 
     HRESULT status = S_OK;
-    
+
     ECustomDumpFlavor eFlavor;
 
     eFlavor = DUMP_FLAVOR_Default;
@@ -1787,7 +1787,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
 // Unfortunately the stack unwind will already have happened.
 //
 // Internal API to support minidump and heap dump. It just delegate
-// to proper function but with a top level catch. 
+// to proper function but with a top level catch.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
@@ -1827,7 +1827,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
 
     // The only exception that should reach here is the cancel exception
     _ASSERTE(SUCCEEDED(status) || status == COR_E_OPERATIONCANCELED);
-    
+
     return status;
 }
 
@@ -1836,7 +1836,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
 // Entry function for generating CLR aware dump. This function is called
 // for minidump, heap dump, and custom dumps. CLR specific memory will
 // be reported to outer level dumper (usually dbghelp's MiniDumpWriteDump api)
-// through the callback. We do not write out to file directly. 
+// through the callback. We do not write out to file directly.
 //
 // N.B.: The CLR may report duplicate memory chunks and it's up to
 // the debugger to coalesce memory.  *However* the debugger's current
@@ -1874,7 +1874,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     LARGE_INTEGER nClockFrequency;
     unsigned __int64 nStart = 0;
     unsigned __int64 nEnd = 0;
-    
+
     QueryPerformanceFrequency(&nClockFrequency);
 
     FILE* fp = fopen("c:\\dumpLog.txt", "a");
@@ -1883,9 +1883,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
         fprintf(fp, "\nMinidumpFlags = %d\n", miniDumpFlags);
         fclose(fp);
     }
-    
+
     nStart = GetCycleCount();
-    
+
 #endif // #if defined(DAC_MEASURE_PERF)
 
     DAC_ENTER();
@@ -1894,7 +1894,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     _ASSERTE(m_enumMemCb==NULL);
     m_enumMemCb = callback;
 
-    // QI for ICLRDataEnumMemoryRegionsCallback2 will succeed only for Win8+. 
+    // QI for ICLRDataEnumMemoryRegionsCallback2 will succeed only for Win8+.
     // It is expected to fail on pre Win8 OSes.
     callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsCallback2, (void **)&m_updateMemCb);
 
@@ -1973,17 +1973,17 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     fprintf(fp, "Total = %g msec\n"
                "ReadVirtual = %g msec\n"
                "StackWalk = %g msec; Find: %g msec\n"
-               "Find = %g msec; Hash = %g msec; Calls = %I64u; Hits = %I64u; Not found = %I64u\n\n=====\n", 
+               "Find = %g msec; Hash = %g msec; Calls = %I64u; Hits = %I64u; Not found = %I64u\n\n=====\n",
                (float) (1000*g_nTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nReadVirtualTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nStackTotalTime/nClockFrequency.QuadPart), (float) (1000*g_nFindStackTotalTime/nClockFrequency.QuadPart),
-               (float) (1000*g_nFindTotalTime/nClockFrequency.QuadPart), (float) (1000*g_nFindHashTotalTime/nClockFrequency.QuadPart), 
+               (float) (1000*g_nFindTotalTime/nClockFrequency.QuadPart), (float) (1000*g_nFindHashTotalTime/nClockFrequency.QuadPart),
                g_nFindCalls, g_nFindHits, g_nFindFails
                );
     fclose(fp);
 
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     return status;
 }
 
@@ -1991,9 +1991,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // Clear the statistics for the dump. For each dump generation, we
-// clear the dump statistics. At the end of the dump generation, you can 
+// clear the dump statistics. At the end of the dump generation, you can
 // view the statics data member m_dumpStats and see how many bytes that
-// we have reported to our debugger host. 
+// we have reported to our debugger host.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void ClrDataAccess::ClearDumpStats()

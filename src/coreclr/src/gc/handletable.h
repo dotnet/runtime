@@ -58,7 +58,7 @@ void            HndDestroyHandleTable(HHANDLETABLE hTable);
 #endif // !DACCESS_COMPILE
 
 /*
- * retrieve index stored in table at creation 
+ * retrieve index stored in table at creation
  */
 void            HndSetHandleTableIndex(HHANDLETABLE hTable, uint32_t uTableIndex);
 uint32_t        HndGetHandleTableIndex(HHANDLETABLE hTable);
@@ -92,7 +92,7 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
  */
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
 
-/* 
+/*
  * logging an ETW event (for inlined methods)
  */
 void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);

@@ -10,7 +10,7 @@ Code versioning, and in particular its use for tiered compilation means that the
 
 1. There will be more JITCompilation events, and potentially more ReJIT compilation events than there were before.
 
-2. These JIT events may originate from a background worker thread that may be different from the thread which ultimately runs the jitted code. 
+2. These JIT events may originate from a background worker thread that may be different from the thread which ultimately runs the jitted code.
 
 3. Calls to ICorProfilerInfo4::GetCodeInfo3 will only return information about the first jitted code body for a given FunctionID,rejitID pair. We'll need to create a new API to handle code bodies after the first.
 

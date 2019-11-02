@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.cpp
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -32,7 +32,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&(pDst->Cpsr), &(pSrc->Cpsr), &(pDst->X),
                          DT_CONTEXT_CONTROL);
     }
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
         CopyContextChunk(&(pDst->X[0]), &(pSrc->X[0]), &(pDst->Fp),
                          DT_CONTEXT_INTEGER);

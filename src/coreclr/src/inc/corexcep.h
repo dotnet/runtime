@@ -30,7 +30,7 @@
 #endif
 
 // This is the exception code to report SetupThread failure to caller of reverse pinvoke
-// It is misleading to use our COM+ exception code, since this is not a managed exception.  
+// It is misleading to use our COM+ exception code, since this is not a managed exception.
 // In the end, we picked e0455858 (EXX).
 #define EXCEPTION_EXX     0xe0455858    // 0xe0000000 | 'EXX'
 #endif // __COREXCEP_H__

@@ -162,7 +162,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
 
     // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
     // and the Width custom rule will be at most 212 halfwidth characters * 5 = 1060 chars long.
-    int capacity = 
+    int capacity =
         ((needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule) ? 4 * (hiraganaEnd - hiraganaStart + 1) : 0) +
         ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
 
@@ -571,12 +571,12 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
             U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
             if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
             {
-                match = FALSE; 
+                match = FALSE;
                 break;
             }
         }
 
-        if (match) 
+        if (match)
         {
             result = i;
             if (!findLast)
@@ -738,7 +738,7 @@ int32_t GlobalizationNative_StartsWith(
                         int32_t cwSourceLength,
                         int32_t options)
 {
-    
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
 

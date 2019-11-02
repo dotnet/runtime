@@ -5,7 +5,7 @@
 // md5.h
 //
 
-// 
+//
 // A pretty fast implementation of MD5
 //
 
@@ -18,14 +18,14 @@
 // Declaration of the central transform function
 //
 void __stdcall MD5Transform(ULONG state[4], const ULONG* data);
-        
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 #include <pshpack1.h>
 
 
 // This structure is used to return the final resulting hash.
-// 
+//
 struct MD5HASHDATA
     {
     union
@@ -67,17 +67,17 @@ class MD5
         ULONG       m_state[4];
         struct
             {
-            ULONG       m_a;              // state 
+            ULONG       m_a;              // state
             ULONG       m_b;              //     ... variables
             ULONG       m_c;              //            ... as found in
             ULONG       m_d;              //                    ... RFC1321
             } u;
         };
-    
+
     BYTE        m_data[64];       // where to accumulate the data as we are passed it
     ULONGLONG   m_cbitHashed;     // amount of data that we've hashed
     ULONG       m_cbData;         // number of bytes presently in data
-    
+
     BYTE        m_padding[64];    // padding data, used if length data not = 0 mod 64
 
 public:
@@ -107,7 +107,7 @@ public:
             pbData      += cbHash;
             ul.QuadPart -= cbHash;
             }
-        
+
         HashMore(pbData, ul.u.LowPart);                       // Hash whatever is left
 
         GetHashValue(phash);

@@ -46,7 +46,7 @@ PrecodeType FuncPtrStubs::GetDefaultType(MethodDesc* pMD)
     WRAPPER_NO_CONTRACT;
 
     PrecodeType type = PRECODE_STUB;
- 
+
 #ifdef HAS_FIXUP_PRECODE
     // Use the faster fixup precode if it is available
     type = PRECODE_FIXUP;
@@ -114,16 +114,16 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
 
     //
     // We currently do not have a precode for this MethodDesc, so we will allocate one.
-    // We allocate outside of the lock and then take the lock (m_hashTableCrst) and 
-    // if we still do not have a precode we Add the one that we just allocated and 
+    // We allocate outside of the lock and then take the lock (m_hashTableCrst) and
+    // if we still do not have a precode we Add the one that we just allocated and
     // call SuppressRelease to keep our allocation
     // If another thread beat us in adding the precode we don't call SuppressRelease
     // so the AllocMemTracker destructor will free the memory that we allocated
-    // 
+    //
     {
         AllocMemTracker amt;
         Precode* pNewPrecode = Precode::Allocate(type, pMD, pMD->GetLoaderAllocator(), &amt);
-   
+
         if (target != NULL)
         {
             pNewPrecode->SetTargetInterlocked(target);

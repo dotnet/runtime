@@ -47,7 +47,7 @@
 extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);
 extern "C" DWORD STDCALL GetSpecificCpuFeaturesAsm(DWORD *pInfo);
 
-// NOTE on Frame Size C_ASSERT usage in this file 
+// NOTE on Frame Size C_ASSERT usage in this file
 // if the frame size changes then the stubs have to be revisited for correctness
 // kindly revist the logic and then update the constants so that the C_ASSERT will again fire
 // if someone changes the frame size.  You are expected to keep this hard coded constant
@@ -102,12 +102,12 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
     CORINFO_CPU tempVal;
     tempVal.dwCPUType = GetSpecificCpuTypeAsm();  // written in ASM & doesn't participate in contracts
     _ASSERTE(tempVal.dwCPUType);
-    
+
 #ifdef _DEBUG
     /* Set Family+Model+Stepping string (eg., x690 for Banias, or xF30 for P4 Prescott)
      * instead of Family only
      */
-     
+
     const DWORD cpuDefault = 0xFFFFFFFF;
     static ConfigDWORD cpuFamily;
     DWORD configCpuFamily = cpuFamily.val_DontUse_(CLRConfig::INTERNAL_CPUFamily, cpuDefault);
@@ -123,7 +123,7 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 #ifdef _DEBUG
     /* Set the 32-bit feature mask
      */
-    
+
     const DWORD cpuFeaturesDefault = 0xFFFFFFFF;
     static ConfigDWORD cpuFeatures;
     DWORD configCpuFeatures = cpuFeatures.val_DontUse_(CLRConfig::INTERNAL_CPUFeatures, cpuFeaturesDefault);
@@ -143,15 +143,15 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 //---------------------------------------------------------------------------------------
 //
 // Initialize the EHContext using the resume PC and the REGDISPLAY.  The EHContext is currently used in two
-// scenarios: to store the register state before calling an EH clause, and to retrieve the ambient SP of a 
+// scenarios: to store the register state before calling an EH clause, and to retrieve the ambient SP of a
 // particular stack frame.  resumePC means different things in the two scenarios.  In the former case, it
-// is the IP at which we are going to resume execution when we call an EH clause.  In the latter case, it 
+// is the IP at which we are going to resume execution when we call an EH clause.  In the latter case, it
 // is just the current IP.
 //
 // Arguments:
 //    resumePC - refer to the comment above
 //    regs     - This is the REGDISPLAY obtained from the CrawlFrame used in the stackwalk.  It represents the
-//               stack frame of the method containing the EH clause we are about to call.  For getting the 
+//               stack frame of the method containing the EH clause we are about to call.  For getting the
 //               ambient SP, this is the stack frame we are interested in.
 //
 
@@ -172,12 +172,12 @@ void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
 //
 // Update the registers using new context
 //
-// This is necessary to reflect GC pointer changes during the middle of a unwind inside a 
+// This is necessary to reflect GC pointer changes during the middle of a unwind inside a
 // finally clause, because:
-// 1. GC won't see the part of stack inside try (which has thrown an exception) that is already 
-// unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the 
+// 1. GC won't see the part of stack inside try (which has thrown an exception) that is already
+// unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the
 // call stack in finally.
-// 2. upon return of finally, the unwind process continues and unwinds stack based on the part 
+// 2. upon return of finally, the unwind process continues and unwinds stack based on the part
 // of stack inside try and won't see the updated values in finally.
 // As a result, we need to manually update the context using register values upon return of finally
 //
@@ -189,15 +189,15 @@ void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
 void EHContext::UpdateFrame(PREGDISPLAY regs)
 {
     LIMITED_METHOD_CONTRACT;
-    
-    // EAX ECX EDX are scratch. 
+
+    // EAX ECX EDX are scratch.
     // No need to update ESP as unwinder takes care of that for us
 
     LOG((LF_EH, LL_INFO1000, "Updating saved EBX: *%p= %p\n", regs->pEbx, this->Ebx));
     LOG((LF_EH, LL_INFO1000, "Updating saved ESI: *%p= %p\n", regs->pEsi, this->Esi));
     LOG((LF_EH, LL_INFO1000, "Updating saved EDI: *%p= %p\n", regs->pEdi, this->Edi));
     LOG((LF_EH, LL_INFO1000, "Updating saved EBP: *%p= %p\n", regs->pEbp, this->Ebp));
-    
+
     *regs->pEbx = this->Ebx;
     *regs->pEsi = this->Esi;
     *regs->pEdi = this->Edi;
@@ -417,7 +417,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifdef _DEBUG_IMPL
 // Confirm that if the machine state was not initialized, then
 // any unspilled callee saved registers did not change
-EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* frame, void* esiVal, void* ediVal, void* ebxVal, void* ebpVal) 
+EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* frame, void* esiVal, void* ediVal, void* ebxVal, void* ebpVal)
     {
     CONTRACTL
     {
@@ -428,7 +428,7 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
     }
     CONTRACTL_END;
 
-    MachState* state = frame->MachineState(); 
+    MachState* state = frame->MachineState();
 
     // if we've already executed this check once for this helper method frame then
     // we don't do the check again because it is very expensive.
@@ -502,7 +502,7 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         UpdateRegDisplayHelper(pRD, 0);
 
-        // If we do not have owning MethodDesc, we need to pretend that 
+        // If we do not have owning MethodDesc, we need to pretend that
         // the call happened on the call instruction to get the ESP unwound properly.
         //
         // This path is hit when we are throwing null reference exception from
@@ -595,7 +595,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // We should skip over InlinedCallFrame if it is not active.
         // It will be part of a JITed method's frame, and the stack-walker
         // can handle such a case.
-#ifdef PROFILING_SUPPORTED        
+#ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
         HOST_NOCALLS;
@@ -611,8 +611,8 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
         return;
     }
-    
-    DWORD stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);   
+
+    DWORD stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
 
     if (stackArgSize & ~0xFFFF)
     {
@@ -914,13 +914,13 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
                                                  &unpatchedOpcode))
     {
         // PRD_TYPE is supposed to be an opaque debugger structure representing data to remove a patch.
-        // Although PRD_TYPE is currently typedef'ed to be a DWORD_PTR, it's actually semantically just a BYTE. 
+        // Although PRD_TYPE is currently typedef'ed to be a DWORD_PTR, it's actually semantically just a BYTE.
         // (since a patch on x86 is just an 0xCC instruction).
         // Ideally, the debugger subsystem would expose a patch-code stripper that returns BYTE/WORD/etc, and
-        // not force us to crack it ourselves here. 
+        // not force us to crack it ourselves here.
         bLow = (BYTE) unpatchedOpcode;
     }
-    // 
+    //
 #endif
 
     WORD w = bLow + (bHigh << 8);
@@ -963,7 +963,7 @@ Stub *GenerateUMThunkPrestub()
     // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
     psl->X86EmitIndexRegLoad(kECX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
 
-    // The call conv is a __stdcall   
+    // The call conv is a __stdcall
     psl->X86EmitPushReg(kECX);
 
     // call UMEntryThunk::DoRunTimeInit
@@ -973,7 +973,7 @@ Stub *GenerateUMThunkPrestub()
     psl->X86EmitIndexRegLoad(kEAX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
 
     //    lea eax, [eax + UMEntryThunk.m_code]  // point to fixedup UMEntryThunk
-    psl->X86EmitOp(0x8d, kEAX, kEAX, 
+    psl->X86EmitOp(0x8d, kEAX, kEAX,
                    UMEntryThunk::GetCodeOffset() + UMEntryThunkCode::GetEntryPointOffset());
 
     psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
@@ -1154,7 +1154,7 @@ extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
     }
 }
 
-// The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms. 
+// The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms.
 //  This function takes 3 arguments:
 //     Arg1 is an input to ECX. Used as index to specify which cache level to return infoformation on by CPUID.
 //     Arg2 is an input to EAX. For deterministic code enumeration, we pass in 4H in arg2.

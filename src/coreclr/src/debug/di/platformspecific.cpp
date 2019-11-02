@@ -21,7 +21,7 @@
 #include "EventRedirectionPipeline.cpp"
 #include "ShimLocalDataTarget.cpp"
 #include "LocalEventChannel.cpp"
-#endif 
+#endif
 
 #if DBG_TARGET_X86
 #include "i386/cordbregisterset.cpp"

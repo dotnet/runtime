@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // EEToProfInterfaceWrapper.inl
-// 
+//
 
 //
 // Inline implementation of wrappers around code that calls into some of the profiler's
@@ -191,7 +191,7 @@ class EEToProfilerExceptionInterfaceWrapper
             {
                 // <TODO>Remove the thrown variable as well as the
                 // gcprotect they are pointless.</TODO>
-    
+
                 // Note that the callee must be aware that the ObjectID
                 // passed CAN change when gc happens.
                 OBJECTREF thrown = NULL;
@@ -218,7 +218,7 @@ class EEToProfilerExceptionInterfaceWrapper
             END_PIN_PROFILER();
         }
     }
-        
+
 
 #else // !PROFILING_SUPPORTED
     static inline void ExceptionThrown(Thread * pThread) { LIMITED_METHOD_CONTRACT;}

@@ -5,8 +5,8 @@
 /*****************************************************************************
  *                                  GCDump.h
  *
- * Defines functions to display the GCInfo as defined by the GC-encoding 
- * spec. The GC information may be either dynamically created by a 
+ * Defines functions to display the GCInfo as defined by the GC-encoding
+ * spec. The GC information may be either dynamically created by a
  * Just-In-Time compiler conforming to the standard code-manager spec,
  * or may be persisted by a managed native code compiler conforming
  * to the standard code-manager spec.
@@ -33,8 +33,8 @@ class GCDump
 public:
 
     GCDump                          (UINT32         gcInfoVersion,
-                                     bool           encBytes     = true, 
-                                     unsigned       maxEncBytes  = 5, 
+                                     bool           encBytes     = true,
+                                     unsigned       maxEncBytes  = 5,
                                      bool           dumpCodeOffs = true);
 
 #ifdef _TARGET_X86_
@@ -78,7 +78,7 @@ public:
 
 public:
 	typedef void (*printfFtn)(const char* fmt, ...);
-	printfFtn gcPrintf;	
+	printfFtn gcPrintf;
     UINT32              gcInfoVersion;
     //-------------------------------------------------------------------------
 protected:

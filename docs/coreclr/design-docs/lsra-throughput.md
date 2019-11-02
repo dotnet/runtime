@@ -26,7 +26,7 @@ is otherwise unused, and is basically duplicated when the `RefPosition`s are bui
 * The loop over all the candidate registers in `LinearScan::tryAllocateFreeReg()` and in `LinearScan::allocateBusyReg()` could be
   short-circuited when a register is found that has the best possible score. Additionally, in the case of MinOpts, it could potentially
   short-circuit as soon as a suitable candidate is found, though one would want to weight the throughput benefit against the code
-  quality impact. 
+  quality impact.
 
 Representing Containedness
 ==========================
@@ -71,4 +71,4 @@ This step would still use the `TreeNodeInfo` data structure and the `TreeNodeInf
 each node is handled by `LinearScan::buildRefPositionsForNode()`.
 
 
- 
+

@@ -17,8 +17,8 @@
 // ============================================================================
 // Pending type load hash table methods
 // ============================================================================
-/*static */ PendingTypeLoadTable* PendingTypeLoadTable::Create(LoaderHeap *pHeap, 
-                                                               DWORD dwNumBuckets, 
+/*static */ PendingTypeLoadTable* PendingTypeLoadTable::Create(LoaderHeap *pHeap,
+                                                               DWORD dwNumBuckets,
                                                                AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -33,7 +33,7 @@
     PendingTypeLoadTable * pThis;
 
     _ASSERT( dwNumBuckets >= 0 );
-    S_SIZE_T allocSize = S_SIZE_T( dwNumBuckets ) 
+    S_SIZE_T allocSize = S_SIZE_T( dwNumBuckets )
                                         * S_SIZE_T( sizeof(PendingTypeLoadTable::TableEntry*) )
                                         + S_SIZE_T( size );
     if( allocSize.IsOverflow() )
@@ -220,7 +220,7 @@ void PendingTypeLoadTable::Dump()
             TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
             TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
             LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", name.GetUnicode(), pSearch->pData->m_typeHandle.AsPtr(),
-                 pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));            
+                 pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));
         }
     }
 }

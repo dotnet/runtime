@@ -303,7 +303,7 @@
   <Message>"The native image could not be loaded, because it was generated for use by a different version of the runtime."</Message>
   <Comment> The native image could not be loaded, because it was generated for use by a different version of the runtime. </Comment>
 </HRESULT>
-  
+
 <HRESULT NumericValue="0x80131069">
   <SymbolicName>COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY</SymbolicName>
   <Message>"Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."</Message>
@@ -876,11 +876,11 @@
 <HRESULT NumericValue="0x80131327">
     <SymbolicName>CORDBG_E_NON_MATCHING_CONTEXT</SymbolicName>
     <Message>"The provided CONTEXT does not match the specified thread."</Message>
-    <Comment> The provided CONTEXT does not match the specified thread.  
-    The stack pointer in the provided CONTEXT must match the cached stack base and stack limit of the thread. 
+    <Comment> The provided CONTEXT does not match the specified thread.
+    The stack pointer in the provided CONTEXT must match the cached stack base and stack limit of the thread.
     </Comment>
 </HRESULT>
-  
+
 <HRESULT NumericValue="0x80131328">
     <SymbolicName>CORDBG_E_PAST_END_OF_STACK</SymbolicName>
     <Message>"The stackwalker is now past the end of stack.  No information is available."</Message>
@@ -1018,7 +1018,7 @@
 	<Message>"The debugger can only handle a finite number of debuggees."</Message>
 	<Comment> The debugger can only handle a finite number of debuggees. </Comment>
 </HRESULT>
-    
+
 <HRESULT NumericValue="0x8013134d">
 	<SymbolicName>CORDBG_E_INTEROP_NOT_SUPPORTED</SymbolicName>
 	<Message>"Interop debugging is not supported."</Message>
@@ -1175,7 +1175,7 @@
   <SymbolicName>CORPROF_E_UNSUPPORTED_FOR_ATTACHING_PROFILER</SymbolicName>
   <Comment> This call was attempted by a profiler that attached to the process after startup, but this call is only supported by profilers that are loaded into the process on startup.</Comment>
 </HRESULT>
-  
+
 <HRESULT NumericValue="0x80131370">
   <SymbolicName>CORPROF_E_IRREVERSIBLE_INSTRUMENTATION_PRESENT</SymbolicName>
   <Comment> Detach is impossible because the profiler has either instrumented IL or inserted enter/leave hooks. Detach was not attempted; the profiler is still fully attached. </Comment>
@@ -1245,7 +1245,7 @@
     <SymbolicName>CORPROF_E_CALLBACK6_REQUIRED</SymbolicName>
     <Comment> Profiler must implement ICorProfilerCallback6 interface for this call to be supported. </Comment>
 </HRESULT>
-  
+
 <!-- This HRESULT is used only internally by our rejit implementation right now. If it ever appears in
      a public API HRESULT it is a bug. It is included here to prevent anyone else from defining
      a new failure with the same value and causing confusion.
@@ -1254,7 +1254,7 @@
     <Comment> This call can't be completed safely because the runtime is not suspended </Comment>
 </HRESULT>
 -->
-    
+
 <HRESULT NumericValue="0x80131382">
     <SymbolicName>CORPROF_E_CALLBACK7_REQUIRED</SymbolicName>
     <Comment> Profiler must implement ICorProfilerCallback7 interface for this call to be supported. </Comment>
@@ -2059,7 +2059,7 @@
 <HRESULT NumericValue="0x80131c37">
   <SymbolicName>CORDBG_E_DETACH_FAILED_OUTSTANDING_TARGET_RESOURCES</SymbolicName>
   <Message>"Detach failed because there are outstanding resources in the target."</Message>
-  <Comment>The debugger is holding resource in the target (such as GC handles, function evaluations, etc). 
+  <Comment>The debugger is holding resource in the target (such as GC handles, function evaluations, etc).
   These resources must be released through the appropriate ICorDebug API before detach can succeed.</Comment>
 </HRESULT>
 
@@ -2164,7 +2164,7 @@
   <Message>"The specified action is unsupported by this version of the runtime."</Message>
   <Comment>The specified action is unsupported by this version of the runtime.</Comment>
 </HRESULT>
-  
+
 <HRESULT NumericValue="0x80131c4f">
   <SymbolicName>CORDBG_E_MISSING_DEBUGGER_EXPORTS</SymbolicName>
   <Message>"The debuggee memory space does not have the expected debugging export table."</Message>

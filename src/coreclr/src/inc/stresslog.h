@@ -7,18 +7,18 @@
 /*                                   StressLog.h                                     */
 /*************************************************************************************/
 
-/* StressLog is a binary, memory based circular queue of logging messages.  It is 
+/* StressLog is a binary, memory based circular queue of logging messages.  It is
    intended to be used in retail builds during stress runs (activated
-   by registry key), so to help find bugs that only turn up during stress runs.  
+   by registry key), so to help find bugs that only turn up during stress runs.
 
    It is meant to have very low overhead and can not cause deadlocks, etc.  It is
    however thread safe */
 
-/* The log has a very simple structure, and it meant to be dumped from a NTSD 
+/* The log has a very simple structure, and it meant to be dumped from a NTSD
    extention (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
-// WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should 
+// WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/stresslog.h
 // Parser: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/stressLogDump.cpp
@@ -26,7 +26,7 @@
 
 /*************************************************************************************/
 
-#ifndef StressLog_h 
+#ifndef StressLog_h
 #define StressLog_h  1
 
 #include "log.h"
@@ -47,7 +47,7 @@
 #endif
 
 /* The STRESS_LOG* macros work like printf.  In fact the use printf in their implementation
-   so all printf format specifications work.  In addition the Stress log dumper knows 
+   so all printf format specifications work.  In addition the Stress log dumper knows
    about certain suffixes for the %p format specification (normally used to print a pointer)
 
             %pM     // The pointer is a MethodDesc
@@ -56,10 +56,10 @@
             %pK     // The pointer is a code address (used for stack track)
 */
 
-/*  STRESS_LOG_VA was added to allow sendign GC trace output to the stress log. msg must be enclosed 
-      in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or 
-      string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.  
-      This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are  
+/*  STRESS_LOG_VA was added to allow sendign GC trace output to the stress log. msg must be enclosed
+      in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
+      string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
+      This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
       getting passed in and using va_args would require parsing the format string during the GC
 */
 #define STRESS_LOG_VA(msg) do {                                               \
@@ -250,8 +250,8 @@
                     StressLog::LogCallStack ("GC");                                               \
                 }                                                                                 \
             } while(0)
-            
-#else //!_DEBUG 
+
+#else //!_DEBUG
 #define STRESS_LOG_OOM_STACK(size)
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
@@ -260,10 +260,10 @@ class ThreadStressLog;
 
 /*************************************************************************************/
 /* a log is a circular queue of messages */
-    
+
 class StressLog {
 public:
-    static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread, 
+    static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
                     unsigned maxBytesTotal, HMODULE hMod);
     static void Terminate(BOOL fProcessDetach=FALSE);
     static void ThreadDetach(ThreadStressLog *msgs);         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
@@ -276,7 +276,7 @@ public:
         return InterlockedDecrement (&theLog.totalChunk);
     }
 
-    //the result is not 100% accurate. If multiple threads call this funciton at the same time, 
+    //the result is not 100% accurate. If multiple threads call this funciton at the same time,
     //we could allow the total size be bigger than required. But the memory won't grow forever
     //and this is not critical so we don't try to fix the race
     static BOOL AllowNewChunk (LONG numChunksInCurThread);
@@ -287,9 +287,9 @@ public:
     static BOOL ReserveStressLogChunks (unsigned chunksToReserve);
 
     // used by out of process debugger to dump the stress log to 'fileName'
-    // IDebugDataSpaces is the NTSD execution callback for getting process memory.  
+    // IDebugDataSpaces is the NTSD execution callback for getting process memory.
     // This function is defined in the tools\strike\stressLogDump.cpp file
-    static HRESULT Dump(ULONG64 logAddr, const char* fileName, struct IDebugDataSpaces* memCallBack);    
+    static HRESULT Dump(ULONG64 logAddr, const char* fileName, struct IDebugDataSpaces* memCallBack);
 
     static BOOL StressLogOn(unsigned facility, unsigned level);
     static BOOL ETWLogOn(unsigned facility, unsigned level);
@@ -334,50 +334,50 @@ public:
     template < typename T1 >
     static void LogMsgOL(const char* format, T1 data1)
     {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*)); 
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 1, format, (void*)(size_t)data1);
     }
 
     template < typename T1, typename T2 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2)
     {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*)); 
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 2, format, (void*)(size_t)data1, (void*)(size_t)data2);
     }
 
     template < typename T1, typename T2, typename T3 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3)
-    { 
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*)); 
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 3, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3);
     }
 
     template < typename T1, typename T2, typename T3, typename T4 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4)
-    { 
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*)); 
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 4, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4);
     }
 
     template < typename T1, typename T2, typename T3, typename T4, typename T5 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5)
-    { 
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*)); 
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 5, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5);
     }
 
     template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6)
-    { 
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*)); 
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*));
         LogMsg(LL_ALWAYS, LF_GC, 6, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6);
     }
 
     template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7 >
     static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7)
-    { 
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*)); 
-        LogMsg(LL_ALWAYS, LF_GC, 7, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7); 
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*));
+        LogMsg(LL_ALWAYS, LF_GC, 7, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7);
     }
 
 #ifdef _MSC_VER
@@ -423,7 +423,7 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 #endif
 
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste 
+// And make sure the timeStamp field is naturally alligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
     union {
@@ -439,7 +439,7 @@ struct StressMsg {
 
     static const size_t maxArgCnt = 7;
     static const size_t maxOffset = 0x20000000;
-    static size_t maxMsgSize () 
+    static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
     friend class ThreadStressLog;
@@ -459,10 +459,10 @@ struct StressLogChunk
     StressLogChunk * next;
     char buf[STRESSLOG_CHUNK_SIZE];
     DWORD dwSig1;
-    DWORD dwSig2;         
+    DWORD dwSig2;
 
 #if !defined(STRESS_LOG_READONLY)
-    static HANDLE s_LogChunkHeap; 
+    static HANDLE s_LogChunkHeap;
 
     void * operator new (size_t) throw()
     {
@@ -470,7 +470,7 @@ struct StressLogChunk
         {
             return NULL;
         }
-        
+
         _ASSERTE (s_LogChunkHeap != NULL);
         //no need to zero memory because we could handle garbage contents
         return ClrHeapAlloc (s_LogChunkHeap, 0, S_SIZE_T(sizeof (StressLogChunk)));
@@ -484,8 +484,8 @@ struct StressLogChunk
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
-        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)    
-    {} 
+        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
+    {}
 
     char * StartPtr ()
     {
@@ -512,13 +512,13 @@ struct StressLogChunk
 //    .readPtr points to the next log message to be dumped
 //    .hasWrapped is TRUE while dumping the log, if we had wrapped
 //     past the endPtr marker, back to startPtr
-// The AdvanceRead/AdvanceWrite operations simply update the 
-//     readPtr / curPtr fields. thecaller is responsible for reading/writing 
+// The AdvanceRead/AdvanceWrite operations simply update the
+//     readPtr / curPtr fields. thecaller is responsible for reading/writing
 //     to the corresponding field
 class ThreadStressLog {
     ThreadStressLog* next;      // we keep a linked list of these
     uint64_t   threadId;        // the id for the thread using this buffer
-    uint8_t    isDead;          // Is this thread dead 
+    uint8_t    isDead;          // Is this thread dead
     uint8_t    readHasWrapped;  // set when read ptr has passed chunListTail
     uint8_t    writeHasWrapped; // set when write ptr has passed chunListHead
     StressMsg* curPtr;          // where packets are being put on the queue
@@ -570,30 +570,30 @@ class ThreadStressLog {
 public:
 #ifndef STRESS_LOG_READONLY
     ThreadStressLog ()
-    {  
+    {
         chunkListHead = chunkListTail = curWriteChunk = NULL;
-        StressLogChunk * newChunk =new StressLogChunk;        
+        StressLogChunk * newChunk =new StressLogChunk;
         //OOM or in cantalloc region
         if (newChunk == NULL)
         {
             return;
-        }     
+        }
         StressLog::NewChunk ();
 
         newChunk->prev = newChunk;
         newChunk->next = newChunk;
-            
+
         chunkListHead = chunkListTail = newChunk;
 
         next = NULL;
         threadId = 0;
         isDead = TRUE;
         curPtr = NULL;
-        readPtr = NULL;        
-        writeHasWrapped = FALSE;        
+        readPtr = NULL;
+        writeHasWrapped = FALSE;
         curReadChunk = NULL;
         curWriteChunk = NULL;
-        chunkListLength = 1;            
+        chunkListLength = 1;
     }
 
 #endif //!STRESS_LOG_READONLY
@@ -604,17 +604,17 @@ public:
         {
             return;
         }
-#ifndef STRESS_LOG_READONLY          
+#ifndef STRESS_LOG_READONLY
         _ASSERTE (chunkListLength >= 1 && chunkListLength <= StressLog::theLog.totalChunk);
-#endif //!STRESS_LOG_READONLY          
-        StressLogChunk * chunk = chunkListHead;      
-        
+#endif //!STRESS_LOG_READONLY
+        StressLogChunk * chunk = chunkListHead;
+
         do
         {
             StressLogChunk * tmp = chunk;
             chunk = chunk->next;
             delete tmp;
-#ifndef STRESS_LOG_READONLY            
+#ifndef STRESS_LOG_READONLY
             StressLog::ChunkDeleted ();
 #endif //!STRESS_LOG_READONLY
         } while (chunk != chunkListHead);
@@ -624,8 +624,8 @@ public:
     {
 #ifndef STRESS_LOG_READONLY
         //there is no need to zero buffers because we could handle garbage contents
-        threadId = GetCurrentThreadId ();       
-        isDead = FALSE;        
+        threadId = GetCurrentThreadId ();
+        isDead = FALSE;
         curWriteChunk = chunkListTail;
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();
         writeHasWrapped = FALSE;
@@ -635,7 +635,7 @@ public:
         readHasWrapped = FALSE;
         // the last written log, if it wrapped around may have partially overwritten
         // a previous record.  Update curPtr to reflect the last safe beginning of a record,
-        // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress 
+        // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
         // log
         curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
         if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
@@ -648,21 +648,21 @@ public:
             AdvReadPastBoundary();
         }
 #endif //!STRESS_LOG_READONLY
-    }    
+    }
 
     BOOL IsValid () const
     {
         return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
     }
-    
-#ifdef STRESS_LOG_READONLY    
+
+#ifdef STRESS_LOG_READONLY
     // Called while dumping.  Returns true after all messages in log were dumped
     FORCEINLINE BOOL CompletedDump ()
     {
-        return readPtr->timeStamp == 0 
+        return readPtr->timeStamp == 0
                 //if read has passed end of list but write has not passed head of list yet, we are done
                 //if write has also wrapped, we are at the end if read pointer passed write pointer
-                || (readHasWrapped && 
+                || (readHasWrapped &&
                         (!writeHasWrapped || (curReadChunk == curWriteChunk && readPtr >= curPtr)));
     }
 #endif //STRESS_LOG_READONLY
@@ -678,7 +678,7 @@ public:
         STATIC_CONTRACT_LEAF;
         return "========== ENDGC %d (gen = %lu, collect_classes = %lu) ===========}\n";
     }
-    
+
     static const char* gcRootMsg()
     {
         STATIC_CONTRACT_LEAF;
@@ -695,7 +695,7 @@ public:
     {
         STATIC_CONTRACT_LEAF;
         return "GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n";
-    }    
+    }
 
     static const char* TaskSwitchMsg()
     {
@@ -714,7 +714,7 @@ public:
 #ifdef STRESS_LOG_READONLY
     static size_t OffsetOfNext () {return offsetof (ThreadStressLog, next);}
     static size_t OffsetOfListHead () {return offsetof (ThreadStressLog, chunkListHead);}
-#endif //STRESS_LOG_READONLY    
+#endif //STRESS_LOG_READONLY
 };
 
 #ifdef STRESS_LOG_READONLY
@@ -735,7 +735,7 @@ inline StressMsg* ThreadStressLog::AdvanceRead() {
 }
 
 // It's the factored-out slow codepath for AdvanceRead() and
-// is only called by AdvanceRead().  
+// is only called by AdvanceRead().
 // Updates readPtr to and returns the first stress message >= startPtr
 inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     STATIC_CONTRACT_LEAF;
@@ -743,7 +743,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     if (curReadChunk == chunkListTail)
     {
         readHasWrapped = TRUE;
-        //If write has not wrapped, we know the contents from list head to 
+        //If write has not wrapped, we know the contents from list head to
         //cur pointer is garbage, we don't need to read them
         if (!writeHasWrapped)
         {
@@ -770,7 +770,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
 // Called at runtime when writing the log (by StressLog::LogMsg())
 // Updates curPtr to point to the next spot in the log where we can write
 // a stress message with cArgs arguments
-// For convenience it returns a pointer to the empty slot where we can 
+// For convenience it returns a pointer to the empty slot where we can
 // write the next stress message.
 // cArgs is the number of arguments in the message to be written.
 inline StressMsg* ThreadStressLog::AdvanceWrite(int cArgs) {
@@ -789,26 +789,26 @@ inline StressMsg* ThreadStressLog::AdvanceWrite(int cArgs) {
     {
         curPtr = p;
     }
-    
+
     return curPtr;
 }
 
 // It's the factored-out slow codepath for AdvanceWrite() and
-// is only called by AdvanceWrite().  
+// is only called by AdvanceWrite().
 // Returns the stress message flushed against endPtr
 // In addition it writes NULLs b/w the startPtr and curPtr
 inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
     STATIC_CONTRACT_WRAPPER;
-#ifndef STRESS_LOG_READONLY    
+#ifndef STRESS_LOG_READONLY
      //zeroed out remaining buffer
     memset (curWriteChunk->StartPtr (), 0, (BYTE *)curPtr - (BYTE *)curWriteChunk->StartPtr ());
-        
+
     //if we are already at head of the list, try to grow the list
     if (curWriteChunk == chunkListHead)
     {
-        GrowChunkList ();            
+        GrowChunkList ();
     }
-#endif //!STRESS_LOG_READONLY        
+#endif //!STRESS_LOG_READONLY
 
     curWriteChunk = curWriteChunk->prev;
 #ifndef STRESS_LOG_READONLY
@@ -817,7 +817,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
         writeHasWrapped = TRUE;
    }
 #endif //STRESS_LOG_READONLY
-    curPtr = (StressMsg*)((char*)curWriteChunk->EndPtr () - sizeof(StressMsg) - cArgs * sizeof(void*));    
+    curPtr = (StressMsg*)((char*)curWriteChunk->EndPtr () - sizeof(StressMsg) - cArgs * sizeof(void*));
     return curPtr;
 }
 
@@ -843,4 +843,4 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #define STRESS_LOG_RESERVE_MEM(numChunks) do {} while (0)
 #endif // STRESS_LOG
 
-#endif // StressLog_h 
+#endif // StressLog_h

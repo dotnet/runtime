@@ -77,7 +77,7 @@ endif
         ;
         add             rsp, TheUMEntryPrestub_STACK_FRAME_SIZE
         TAILJMP_RAX
-        
+
 NESTED_END TheUMEntryPrestub, _TEXT
 
 
@@ -94,7 +94,7 @@ UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + (UMThunk
 
 ; rare path spill area
 UMThunkStubAMD64_RARE_PATH_SPILL_SIZE = 10h
-UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + UMThunkStubAMD64_RARE_PATH_SPILL_SIZE 
+UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + UMThunkStubAMD64_RARE_PATH_SPILL_SIZE
 UMThunkStubAMD64_RARE_PATH_SPILL_NEGOFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE
 
 
@@ -103,7 +103,7 @@ UMThunkStubAMD64_RARE_PATH_SPILL_NEGOFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE
 UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + 8
 UMThunkStubAMD64_HOST_NOTIFY_FLAG_NEGOFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE
 
-; XMM save area 
+; XMM save area
 UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + SIZEOF_MAX_FP_ARG_SPILL
 
 ; Ensure that the offset of the XMM save area will be 16-byte aligned.
@@ -121,8 +121,8 @@ UMThunkStubAMD64_STACK_FRAME_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE + UMThunkS
 ; top, so negate them to make them relative to the post-prologue rsp.
 UMThunkStubAMD64_FRAME_OFFSET = UMThunkStubAMD64_CALLEE_SCRATCH_SIZE
 UMThunkStubAMD64_RARE_PATH_SPILL_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE - UMThunkStubAMD64_FRAME_OFFSET - UMThunkStubAMD64_RARE_PATH_SPILL_NEGOFFSET
-UMThunkStubAMD64_HOST_NOTIFY_FLAG_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE - UMThunkStubAMD64_FRAME_OFFSET - UMThunkStubAMD64_HOST_NOTIFY_FLAG_NEGOFFSET 
-UMThunkStubAMD64_XMM_SAVE_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE - UMThunkStubAMD64_FRAME_OFFSET - UMThunkStubAMD64_XMM_SAVE_NEGOFFSET 
+UMThunkStubAMD64_HOST_NOTIFY_FLAG_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE - UMThunkStubAMD64_FRAME_OFFSET - UMThunkStubAMD64_HOST_NOTIFY_FLAG_NEGOFFSET
+UMThunkStubAMD64_XMM_SAVE_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE - UMThunkStubAMD64_FRAME_OFFSET - UMThunkStubAMD64_XMM_SAVE_NEGOFFSET
 UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET = UMThunkStubAMD64_STACK_FRAME_SIZE + 8 - UMThunkStubAMD64_FRAME_OFFSET    ; +8 for return address
 UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE = UMThunkStubAMD64_STACK_FRAME_SIZE - (UMThunkStubAMD64_NUM_REG_PUSHES * 8)
 
@@ -191,7 +191,7 @@ InCooperativeMode:
         mov             eax, [r11 + OFFSETOF__UMThunkMarshInfo__m_cbActualArgSize]                      ; stack_args
         test            rax, rax                                                                        ; stack_args
         jnz             CopyStackArgs                                                                   ; stack_args
-        
+
 ArgumentsSetup:
 
         mov             rax, [r11 + OFFSETOF__UMThunkMarshInfo__m_pILStub]                              ; rax <- Stub*
@@ -228,9 +228,9 @@ DoThreadSetup:
         call            CreateThreadBlockThrow
         mov             METHODDESC_REGISTER, [rbp + UMThunkStubAMD64_RARE_PATH_SPILL_OFFSET]
 
-        mov             rcx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h] 
-        mov             rdx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h] 
-        mov             r8,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h] 
+        mov             rcx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h]
+        mov             rdx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h]
+        mov             r8,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h]
         mov             r9,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 18h]
 
         ; @CONSIDER: mark UMEntryThunks that have FP params and only save/restore xmm regs on those calls
@@ -240,9 +240,9 @@ DoThreadSetup:
         movdqa          xmm3, xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 30h]
 
         mov             r12, rax
-        
+
         jmp             HaveThread
-        
+
 InvalidTransition:
         ; ReversePInvokeBadTransition will failfast
         call            ReversePInvokeBadTransition
@@ -268,9 +268,9 @@ DoTrapReturningThreadsTHROW:
         call            UMThunkStubRareDisableWorker
         mov             METHODDESC_REGISTER, [rbp + UMThunkStubAMD64_RARE_PATH_SPILL_OFFSET]
 
-        mov             rcx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h] 
-        mov             rdx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h] 
-        mov             r8,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h] 
+        mov             rcx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h]
+        mov             rdx,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h]
+        mov             r8,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h]
         mov             r9,   [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 18h]
 
         ; @CONSIDER: mark UMEntryThunks that have FP params and only save/restore xmm regs on those calls
@@ -293,7 +293,7 @@ CopyStackArgs:
 
         ; rax = number of bytes
 
-        lea             rcx, [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES] 
+        lea             rcx, [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES]
         lea             rdx, [rsp + UMThunkStubAMD64_CALLEE_SCRATCH_SIZE]
 
 CopyLoop:
@@ -310,7 +310,7 @@ CopyLoop:
         mov             rcx, [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h]
         mov             rdx, [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h]
         mov             r8, [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h]
-        
+
         jmp             ArgumentsSetup
 
 NESTED_END UMThunkStub, _TEXT

@@ -98,7 +98,7 @@ ZapBlob * ZapImportTable::PlaceImportBlob(ZapImport * pImport, BOOL fEager)
     return pBlob;
 }
 
-static const struct ImportSectionProperties 
+static const struct ImportSectionProperties
 {
     BYTE                    Type;
     BYTE                    EntrySize;
@@ -493,7 +493,7 @@ void ZapExternalMethodThunk::Save(ZapWriter * pZapWriter)
     thunk.callJmp[0]  = 0xE8;  // call rel32
     pImage->WriteReloc(&thunk, 1, helper, 0, IMAGE_REL_BASED_REL32);
     thunk.precodeType = _PRECODE_EXTERNAL_METHOD_THUNK;
-#elif defined(_TARGET_ARM_) 
+#elif defined(_TARGET_ARM_)
     // Setup the call to ExternalMethodFixupStub
     //
     // mov r12, pc
@@ -516,11 +516,11 @@ void ZapExternalMethodThunk::Save(ZapWriter * pZapWriter)
     // Setup the initial target to be our assembly helper.
     pImage->WriteReloc(&thunk, offsetof(CORCOMPILE_EXTERNAL_METHOD_THUNK, m_pTarget), helper, 0, IMAGE_REL_BASED_PTR);
 #elif defined(_TARGET_ARM64_)
-    
+
     thunk.m_rgCode[0] = 0x1000000C; //adr       x12, #0
     thunk.m_rgCode[1] = 0xF940098A; //ldr       x10, [x12, #16]
     thunk.m_rgCode[2] = 0xD61F0140; //br        x10
-        
+
     pImage->WriteReloc(&thunk, offsetof(CORCOMPILE_EXTERNAL_METHOD_THUNK, m_pTarget), helper, 0, IMAGE_REL_BASED_PTR);
 #else
     PORTABILITY_ASSERT("ZapExternalMethodThunk::Save");
@@ -906,7 +906,7 @@ void ZapGCRefMapTable::Save(ZapWriter * pZapWriter)
 
         if (iLookupEntry >= nLookupEntries)
             break;
-        
+
         for (int i = 0; i < GCREFMAP_LOOKUP_STRIDE; i++)
         {
             while ((*(pBlob + pos) & 0x80) != 0)
@@ -1106,7 +1106,7 @@ ZapImport * ZapImportTable::GetClassHandleImport(CORINFO_CLASS_HANDLE handle, PV
 
         pImport->SetBlob(GetBlob(&sigBuilder));
     }
- 
+
     return pImport;
 }
 
@@ -1249,7 +1249,7 @@ public:
         if (token != mdTokenNil)
         {
             _ASSERTE(TypeFromToken(token) == mdtMethodDef || TypeFromToken(token) == mdtMemberRef);
-            
+
             // It's a NativeCallable method , then encode it as ENCODE_METHOD_NATIVE_ENTRY
             if (pTable->GetCompileInfo()->IsNativeCallableMethod(handle))
             {
@@ -1445,11 +1445,11 @@ public:
         ZapImport::Save(pZapWriter);
 
         // Save zeroes for the rest of the entries
-        
+
         // If this assert fires, someone changed the
         // kZapProfilingHandleImportValueIndex... enum values without updating me!
         _ASSERTE(kZapProfilingHandleImportValueIndexCount == 5);
-        
+
         TADDR value = 0;
         pZapWriter->Write(&value, sizeof(value));
         pZapWriter->Write(&value, sizeof(value));
@@ -1541,7 +1541,7 @@ ZapImport * ZapImportTable::GetClassImport(CORCOMPILE_FIXUP_BLOB_KIND kind, CORI
     return pImport;
 }
 
-ZapImport * ZapImportTable::GetMethodImport(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle, 
+ZapImport * ZapImportTable::GetMethodImport(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle,
     CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /*=NULL*/)
 {
     SigBuilder sigBuilder;
@@ -1776,7 +1776,7 @@ void ZapImportSectionSignatures::PlaceDynamicHelperCell(ZapImport * pImport)
     ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(
         (CORCOMPILE_FIXUP_BLOB_KIND)(pCell->GetKind() & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE));
 
-    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)(SIZE_T)m_dwIndex, 
+    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)(SIZE_T)m_dwIndex,
         (pCell->GetKind() & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) ? pCell : NULL);
 
     pCell->SetDelayLoadHelper(pDelayLoadHelper);
@@ -1872,7 +1872,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
     return pImport;
 }
 
-ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle, CORINFO_RESOLVED_TOKEN * pResolvedToken, 
+ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_METHOD_HANDLE handle, CORINFO_RESOLVED_TOKEN * pResolvedToken,
     CORINFO_CLASS_HANDLE delegateType /*=NULL*/)
 {
     SigBuilder sigBuilder;

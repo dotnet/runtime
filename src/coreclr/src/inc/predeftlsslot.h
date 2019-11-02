@@ -8,7 +8,7 @@
 #define __PREDEFTLSSLOT_H__
 
 // ******************************************************************************
-// WARNING!!!: These enums are used by SOS in the diagnostics repo. Values should 
+// WARNING!!!: These enums are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/predeftlsslot.h
 // ******************************************************************************
@@ -32,7 +32,7 @@ enum PredefinedTlsSlots
     TlsIdx_StressThread,
 
     // Add more indices here.
-    TlsIdx_ThreadType, // bit flags to indicate special thread's type 
+    TlsIdx_ThreadType, // bit flags to indicate special thread's type
     TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
     TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
 
@@ -41,11 +41,11 @@ enum PredefinedTlsSlots
     // some problematic checks in the loader, guarantee that types & assemblies
     // encountered during the walk must already be loaded, and provide information to control
     // assembly loading behavior during stack walks.
-    // 
+    //
     // This value is set around the main portions of the stack walk (as those portions may
     // enter the type & assembly loaders). This is also explicitly cleared while the
     // walking thread calls the stackwalker callback or needs to execute managed code, as
-    // such calls may execute arbitrary code unrelated to the actual stack walking, and	
+    // such calls may execute arbitrary code unrelated to the actual stack walking, and
     // may never return, in the case of exception stackwalk callbacks.
     TlsIdx_StackWalkerWalkingThread, // Thread* that the stack walker is currently walking.
 
@@ -77,7 +77,7 @@ enum TlsThreadTypeFlag // flag used for thread type in Tls data
     ThreadType_ProfAPI_Attach           = 0x00004000,
     ThreadType_ProfAPI_Detach           = 0x00008000,
     ThreadType_ETWRundownThread         = 0x00010000,
-    ThreadType_GenericInstantiationCompare= 0x00020000, // Used to indicate that the thread is determining if a generic instantiation in an ngen image matches a lookup. 
+    ThreadType_GenericInstantiationCompare= 0x00020000, // Used to indicate that the thread is determining if a generic instantiation in an ngen image matches a lookup.
 };
 
 static_assert(TlsIdx_ThreadType == 11, "SOS in diagnostics repo has a dependency on this value.");

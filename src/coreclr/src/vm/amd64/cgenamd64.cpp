@@ -120,7 +120,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-#ifdef PROFILING_SUPPORTED        
+#ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
         HOST_NOCALLS;
@@ -237,7 +237,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
     pRD->ControlPC = m_ctx.Rip;
@@ -373,7 +373,7 @@ BOOL isJumpRel32(PCODE pCode)
 }
 
 //
-//  Given the same pBuffer that was used by emitJump this 
+//  Given the same pBuffer that was used by emitJump this
 //  method decodes the instructions and returns the jump target
 //
 PCODE decodeJump32(PCODE pBuffer)
@@ -388,7 +388,7 @@ PCODE decodeJump32(PCODE pBuffer)
 
     // jmp rel32
     _ASSERTE(isJumpRel32(pBuffer));
-    
+
     return rel32Decode(pBuffer+1);
 }
 
@@ -421,7 +421,7 @@ PCODE decodeJump64(PCODE pBuffer)
     // mov rax, xxx
     // jmp rax
     _ASSERTE(isJumpRel64(pBuffer));
-    
+
     return *PTR_UINT64(pBuffer+2);
 }
 
@@ -616,7 +616,7 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
     return (UMEntryThunk*)pThunkCode->m_uet;
 }
 
-INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod, 
+INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
     CONTRACTL
@@ -629,7 +629,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         PRECONDITION(pLoaderAllocator != NULL || pMethod->GetLoaderAllocator() != NULL);
         // If a domain is provided, the MethodDesc mustn't yet be set up to have one, or it must match the MethodDesc's domain,
         // unless we're in a compilation domain (NGen loads assemblies as domain-bound but compiles them as domain neutral).
-        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTablePtr()->IsNull() || 
+        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTablePtr()->IsNull() ||
             pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator() || IsCompilationProcess());
     }
     CONTRACTL_END;
@@ -647,7 +647,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         if (hiAddr < baseAddr) hiAddr = UINT64_MAX; // overflow
 
         // Always try to allocate with throwOnOutOfMemoryWithinRange:false first to conserve reserveForJumpStubs until when
-        // it is really needed. LoaderCodeHeap::CreateCodeHeap and EEJitManager::CanUseCodeHeap won't use the reserved 
+        // it is really needed. LoaderCodeHeap::CreateCodeHeap and EEJitManager::CanUseCodeHeap won't use the reserved
         // space when throwOnOutOfMemoryWithinRange is false.
         //
         // The reserved space should be only used by jump stubs for precodes and other similar code fragments. It should
@@ -832,7 +832,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;    // GC not allowed until we call pEMFrame->SetFunction(pMD);  
+        GC_TRIGGERS;    // GC not allowed until we call pEMFrame->SetFunction(pMD);
 
         ENTRY_POINT;
     }
@@ -841,7 +841,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     PCODE         pCode   = NULL;
-    MethodDesc *  pMD     = NULL;   
+    MethodDesc *  pMD     = NULL;
 
 #ifdef _DEBUG
     Thread::ObjectRefFlush(CURRENT_THREAD);
@@ -867,7 +867,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     {
         pMD = MethodTable::GetMethodDescForSlotAddress(pCode);
 
-        pEMFrame->SetFunction(pMD);   //  We will use the pMD to enumerate the GC refs in the arguments 
+        pEMFrame->SetFunction(pMD);   //  We will use the pMD to enumerate the GC refs in the arguments
         pEMFrame->Push(CURRENT_THREAD);
 
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -904,7 +904,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
-        
+
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         pEMFrame->Pop(CURRENT_THREAD);

@@ -215,7 +215,7 @@ public:
         {
             return static_cast<CorInfoType>(iTypeAsInt >> 2);
         }
-        // Is a class or struct (or refany?).  
+        // Is a class or struct (or refany?).
         else
         {
             return CORINFO_TYPE_VALUECLASS;
@@ -420,8 +420,8 @@ struct CORINFO_SIG_INFO_SMALL
 #ifdef _DEBUG
     bool operator==(const CORINFO_SIG_INFO_SMALL& csis) const
     {
-        return retTypeClass == csis.retTypeClass 
-            && numArgs == csis.numArgs 
+        return retTypeClass == csis.retTypeClass
+            && numArgs == csis.numArgs
             && callConv == csis.callConv
             && retType == csis.retType;
     }
@@ -464,7 +464,7 @@ struct CachedItem
         CORINFO_CLASS_HANDLE                m_clsHnd;
     } m_value;
 
-    CachedItem() 
+    CachedItem()
 #ifdef _DEBUG
         : m_tag(CIK_Undefined)
 #endif
@@ -478,9 +478,9 @@ struct CachedItem
         {
         case CIK_CallSite:
             return *m_value.m_callSiteInfo == *ci.m_value.m_callSiteInfo;
-        case CIK_StaticField: 
+        case CIK_StaticField:
             return *m_value.m_staticFieldAddr == *ci.m_value.m_staticFieldAddr;
-        case CIK_InstanceField: 
+        case CIK_InstanceField:
             return m_value.m_instanceField == ci.m_value.m_instanceField;
         case CIK_ClassHandle:
             return m_value.m_clsHnd == ci.m_value.m_clsHnd;
@@ -649,8 +649,8 @@ struct InterpreterMethodInfo
     ArgDesc*                    m_argDescs;
 
     // This is an array of size "m_numLocals", such that entry "i" describes the "i'th"
-    // local : that is, the LocalDesc contains the type, stack-normal type, and, if the type 
-    // is a large struct type, the offset in the local variable large-struct memory array.  
+    // local : that is, the LocalDesc contains the type, stack-normal type, and, if the type
+    // is a large struct type, the offset in the local variable large-struct memory array.
     LocalDesc*                  m_localDescs;
 
     // A bit map, with 1 bit per local, indicating whether it contains a pinning reference.
@@ -673,7 +673,7 @@ struct InterpreterMethodInfo
     unsigned                    m_maxIlInstructionsExeced;
 
     void RecordExecInstrs(unsigned instrs)
-    {  
+    {
         m_totIlInstructionsExeced += instrs;
         if (instrs > m_maxIlInstructionsExeced)
         {
@@ -718,7 +718,7 @@ class InterpreterCEEInfo: public CEEInfo
     CEEJitInfo m_jitInfo;
 public:
     InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { m_pOverride = this; }
-    
+
     // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
     // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
     // CEEJitInfo m_jitInfo.
@@ -756,7 +756,7 @@ public:
     // will NOT generate a stub. Instead it will provide a MethodInfo that is initialized correctly after computing
     // arg descs.
     static CorJitResult GenerateInterpreterStub(CEEInfo* comp,
-                                                CORINFO_METHOD_INFO* info, 
+                                                CORINFO_METHOD_INFO* info,
                                                 /*OUT*/ BYTE **nativeEntry,
                                                 /*OUT*/ ULONG *nativeSizeOfCode,
                                                 InterpreterMethodInfo** ppInterpMethodInfo = NULL,
@@ -773,7 +773,7 @@ public:
     // The "frameMemory" should be a pointer to a locally-allocated memory block
     // whose size is sufficient to hold the m_localVarMemory, the operand stack, and the
     // operand type stack.
-    Interpreter(InterpreterMethodInfo* methInfo_, bool directCall_, BYTE* ilArgs_, void* stubContext_, BYTE* frameMemory) 
+    Interpreter(InterpreterMethodInfo* methInfo_, bool directCall_, BYTE* ilArgs_, void* stubContext_, BYTE* frameMemory)
         : m_methInfo(methInfo_),
           m_interpCeeInfo(methInfo_->m_method),
           m_ILCodePtr(methInfo_->m_ILCode),
@@ -798,11 +798,11 @@ public:
           m_securityObject((Object*)NULL),
           m_args(NULL),
           m_argsSize(0),
-          m_callThisArg(NULL), 
+          m_callThisArg(NULL),
           m_structRetValITPtr(NULL),
 #ifndef DACCESS_COMPILE
           // Means "uninitialized"
-          m_thisExecCache(UninitExecCache), 
+          m_thisExecCache(UninitExecCache),
 #endif
           m_constrainedFlag(false),
           m_readonlyFlag(false),
@@ -906,7 +906,7 @@ public:
 #endif
 
     OBJECTREF* GetAddressOfSecurityObject() { return &m_securityObject; }
- 
+
     void*      GetParamTypeArg() { return m_genericsCtxtArg; }
 
 private:
@@ -974,10 +974,10 @@ private:
         };
         ArgRegStatus*  argIsReg;
 
-        ArgState(unsigned totalArgs) : 
+        ArgState(unsigned totalArgs) :
             numRegArgs(0),
             numFPRegArgSlots(0), fpArgsUsed(0),
-            callerArgStackSlots(0), 
+            callerArgStackSlots(0),
             argOffsets(new short[totalArgs]),
             argIsReg(new ArgRegStatus[totalArgs])
         {
@@ -1062,7 +1062,7 @@ private:
     }
 
     // Private fields:
-    // 
+    //
     InterpreterMethodInfo* m_methInfo;
     InterpreterCEEInfo m_interpCeeInfo;
 
@@ -1247,7 +1247,7 @@ private:
     void LargeStructOperandStackEnsureCanPush(size_t sz);
 
 #ifdef _DEBUG
-    // Returns "true" iff the sum of sizes of large structures on the operand stack 
+    // Returns "true" iff the sum of sizes of large structures on the operand stack
     // equals "m_largeStructOperandStackHt", which should be an invariant.
     bool LargeStructStackHeightIsValid();
 #endif // _DEBUG
@@ -1319,7 +1319,7 @@ private:
 
     // Storing "this" and "typeCtxt" args if necessary.
     Object* m_thisArg;   // This must be scanned by GC.
-    void*   m_retBufArg; // This must be scanned by GC: 
+    void*   m_retBufArg; // This must be scanned by GC:
                          // if the caller is JITted, o.f = Foo(), for o.f a value type, retBuf may be ref o.f.
     void*   m_genericsCtxtArg;
 
@@ -1351,7 +1351,7 @@ private:
     // currently-executing method.  If "alloc" is true, allocate one if its not there.
     ILOffsetToItemCache* GetThisExecCache(bool alloc)
     {
-        if (m_thisExecCache == UninitExecCache || 
+        if (m_thisExecCache == UninitExecCache ||
             (m_thisExecCache == NULL && alloc))
         {
             m_thisExecCache = m_methInfo->GetCacheForCall(m_thisArg, m_genericsCtxtArg, alloc);
@@ -1359,7 +1359,7 @@ private:
         assert(!alloc || m_thisExecCache != NULL);
         return m_thisExecCache;
     }
-    
+
     // Cache that a call at "iloffset" has the given CallSiteCacheData "callInfo".
     void CacheCallInfo(unsigned iloffset, CallSiteCacheData* callInfo);
 
@@ -1569,7 +1569,7 @@ private:
                 {
                     newLocAllocs[j] = m_locAllocs[j];
                 }
-                m_locAllocSize = newSize; 
+                m_locAllocSize = newSize;
                 delete[] m_locAllocs;
                 m_locAllocs = newLocAllocs;
             }
@@ -1670,7 +1670,7 @@ private:
     // If non-NULL, we've determined the field to be loaded by other means (e.g., we've identified a
     // "dead simple" property getter).  In this case, use this FieldDesc*, otherwise, look up via token
     // or cache.
-    void LdFld(FieldDesc* fld = NULL);  
+    void LdFld(FieldDesc* fld = NULL);
 
     void LdFldA();
     void LdSFld();
@@ -1682,12 +1682,12 @@ private:
     // Requires that the code stream be pointing to a LDSFLD, LDSFLDA, or STSFLD.
     // The "accessFlgs" variable should indicate which, by which of the CORINFO_ACCESS_GET,
     // CORINFO_ACCESS_GET, and CORINFO_ACCESS_ADDRESS bits are set.
-    // Sets *pStaticFieldAddr, which must be a pointer to memory protected as a byref) to the address of the static field, 
+    // Sets *pStaticFieldAddr, which must be a pointer to memory protected as a byref) to the address of the static field,
     // sets *pit to the InterpreterType of the field,
     // sets *pFldSize to the size of the field, and sets *pManagedMem to true iff the address is in managed memory (this is
     // false only if the static variable is an "RVA").  (Increments the m_ILCodePtr of 'this' by 5, the
     // assumed size of all the listed instructions.
-    __forceinline void StaticFldAddr(CORINFO_ACCESS_FLAGS accessFlgs, 
+    __forceinline void StaticFldAddr(CORINFO_ACCESS_FLAGS accessFlgs,
                                      /*out (byref)*/void** pStaticFieldAddr,
                                      /*out*/InterpreterType* pit, /*out*/UINT* pFldSize, /*out*/bool* pManagedMem);
 
@@ -1696,7 +1696,7 @@ private:
 
     // The version above does caching; this version always does the work.  Returns "true" iff the results
     // are cacheable.
-    bool StaticFldAddrWork(CORINFO_ACCESS_FLAGS accessFlgs, 
+    bool StaticFldAddrWork(CORINFO_ACCESS_FLAGS accessFlgs,
                            /*out (byref)*/void** pStaticFieldAddr,
                            /*out*/InterpreterType* pit, /*out*/UINT* pFldSize, /*out*/bool* pManagedMem);
 
@@ -1787,7 +1787,7 @@ private:
     // Emit a barrier if the m_volatile flag is set, and reset the flag.
     void BarrierIfVolatile()
     {
-        if (m_volatileFlag) 
+        if (m_volatileFlag)
         {
             MemoryBarrier(); m_volatileFlag = false;
         }
@@ -1814,7 +1814,7 @@ private:
 
     INT32 RemFunc(INT32 v1, INT32 v2) { return v1 % v2; }
     INT64 RemFunc(INT64 v1, INT64 v2) { return v1 % v2; }
-    float RemFunc(float v1, float v2); 
+    float RemFunc(float v1, float v2);
     double RemFunc(double v1, double v2);
 
     enum BinaryIntOpEnum
@@ -1846,11 +1846,11 @@ private:
 
     void ConvRUn();
 
-    // This version is for conversion to integral types. 
+    // This version is for conversion to integral types.
     template<typename T, INT64 TMin, UINT64 TMax, bool TCanHoldPtr, CorInfoType cit>
     void ConvOvf();
 
-    // This version is for conversion to integral types. 
+    // This version is for conversion to integral types.
     template<typename T, INT64 TMin, UINT64 TMax, bool TCanHoldPtr, CorInfoType cit>
     void ConvOvfUn();
 

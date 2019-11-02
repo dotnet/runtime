@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CeeGenTokenMapper.cpp
-// 
+//
 
 //
 // This helper class tracks mapped tokens from their old value to the new value
@@ -24,13 +24,13 @@ int CeeGenTokenMapper::IndexForType(mdToken tk)
 #undef CEEGEN_TRACKED_TOKEN
 #endif
 #define CEEGEN_TRACKED_TOKEN(type) case INDEX_OF_TYPE(mdt ## type): return (tkix ## type);
-    
+
     int iType = INDEX_OF_TYPE(TypeFromToken(tk));
     switch(iType)
     {
         CEEGEN_TRACKED_TOKENS()
     }
-    
+
     return (-1);
 }
 
@@ -41,7 +41,7 @@ int CeeGenTokenMapper::IndexForType(mdToken tk)
 // from token value.
 //*****************************************************************************
 HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
-    mdToken     tkFrom, 
+    mdToken     tkFrom,
     mdToken     tkTo)
 {
     HRESULT hr = S_OK;
@@ -65,7 +65,7 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     // ahead and call it now.
     if (m_pIMapToken)
         m_pIMapToken->Map(tkFrom, tkTo);
-    
+
     ridFrom = RidFromToken(tkFrom);
     pMap = &m_rgMap[IndexForType(tkFrom)];
 
@@ -73,7 +73,7 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     // and mark the token to nil so we know there is no valid data yet.
     if ((ULONG) pMap->Count() <= ridFrom)
     {
-        for (int i=ridFrom - pMap->Count() + 1;  i;  i--) 
+        for (int i=ridFrom - pMap->Count() + 1;  i;  i--)
         {
             pToken = pMap->Append();
             if (!pToken)
@@ -86,12 +86,12 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
         pToken = pMap->Get(ridFrom);
 
     IfNullGo(pToken);
-    
+
     *pToken = tkTo;
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 }
 
@@ -123,7 +123,7 @@ int CeeGenTokenMapper::HasTokenMoved(
     tk = *pMap->Get(RidFromToken(tkFrom));
     if (tk == mdTokenNil)
         return (false);
-    
+
     // Had to move to a new location, return that new location.
     tkTo = tk;
     return (true);

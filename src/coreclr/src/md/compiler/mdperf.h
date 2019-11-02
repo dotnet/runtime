@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
-// Mdperf.h 
-// 
+// Mdperf.h
+//
 
-// 
+//
 //*****************************************************************************
 
 #ifndef __MDCOMPILERPERF_H__
@@ -19,21 +19,21 @@
 #define API_NAME_STR_SIZE 80
 
 //-----------------------------------------------------------------------------
-// In order to add instrumentation for an API, two changes have to be made. 
-// One, add the API name in the table below (MD_TABLE). 
-// Second, add two lines of code (shown below) in the implementation 
+// In order to add instrumentation for an API, two changes have to be made.
+// One, add the API name in the table below (MD_TABLE).
+// Second, add two lines of code (shown below) in the implementation
 // of the API itself. e.g.
 //      RegMeta::MyNewMetataDataAPI(...)
 //      {
 //           LOG(...);
 //           START_MD_PERF();        // <------ add this line as is.
-//           .... 
+//           ....
 //           // API implementation
 //       ErrExit:
 //           STOP_MD_PERF(RegMeta_MyNewMetaDataAPI); // <---------- add this line with the appropriate name
 //           return (hr);
 //      ]
-//  
+//
 //-----------------------------------------------------------------------------
 #define MD_COMPILER_PERF_TABLE\
     MD_FUNC(SaveToMemory)\
@@ -191,7 +191,7 @@ typedef enum _MDAPIs
 } MDApis;
 
 //-----------------------------------------------------------------------------
-// Declare the struct which contais all the interesting stats for a particular 
+// Declare the struct which contais all the interesting stats for a particular
 // API call.
 //-----------------------------------------------------------------------------
 typedef struct _MDAPIPerfData
@@ -200,26 +200,26 @@ typedef struct _MDAPIPerfData
     DWORD dwCalledNumTimes;              // # of times this API was called
 } MDAPIPerfData;
 
-    
+
 //-----------------------------------------------------------------------------
 // MDCompilerPerf
 //-----------------------------------------------------------------------------
-class MDCompilerPerf 
+class MDCompilerPerf
 {
 public:
     MDCompilerPerf();
     ~MDCompilerPerf();
-    
+
 private:
     MDAPIPerfData MDPerfStats[LAST_MD_API];
-    
+
     void MetaDataPerfReport ();
 };
 
-// Note that this macro declares a local var. 
+// Note that this macro declares a local var.
 #define START_MD_PERF()\
     LARGE_INTEGER __startVal;\
-    QueryPerformanceCounter(&__startVal); 
+    QueryPerformanceCounter(&__startVal);
 
 #undef MD_FUNC
 #define MD_FUNC(MDTag)\
@@ -231,7 +231,7 @@ private:
     QueryPerformanceCounter(&__stopVal);\
     m_MDCompilerPerf.MDPerfStats[MD_FUNC(MDTag)].dwCalledNumTimes++;\
     m_MDCompilerPerf.MDPerfStats[MD_FUNC(MDTag)].dwQueryPerfCycles += (DWORD)(__stopVal.QuadPart - __startVal.QuadPart);
-    
+
 #else //!FEATURE_METADATA_PERF_STATS
 
 #define START_MD_PERF()

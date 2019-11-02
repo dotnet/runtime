@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// 
+//
 
 #include "common.h"
 #include "simplerwlock.hpp"
@@ -30,11 +30,11 @@ BOOL SimpleRWLock::TryEnterRead()
 #ifdef _DEBUG
     PostEnter();
 #endif //_DEBUG
-    
+
     return TRUE;
 }
 
-//=====================================================================        
+//=====================================================================
 void SimpleRWLock::EnterRead()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -43,7 +43,7 @@ void SimpleRWLock::EnterRead()
     // Custom contract is needed for PostEnter()'s unscoped GC_NoTrigger counter change
 #ifdef ENABLE_CONTRACTS_IMPL
     CheckGCNoTrigger();
-#endif //ENABLE_CONTRACTS_IMPL 
+#endif //ENABLE_CONTRACTS_IMPL
 
     GCX_MAYBE_PREEMP(m_gcMode == PREEMPTIVE);
 
@@ -55,8 +55,8 @@ void SimpleRWLock::EnterRead()
 
     while (TRUE)
     {
-        // prevent writers from being starved. This assumes that writers are rare and 
-        // dont hold the lock for a long time. 
+        // prevent writers from being starved. This assumes that writers are rare and
+        // dont hold the lock for a long time.
         while (IsWriterWaiting())
         {
             int spinCount = m_spinCount;
@@ -96,7 +96,7 @@ void SimpleRWLock::EnterRead()
     }
 }
 
-//=====================================================================        
+//=====================================================================
 BOOL SimpleRWLock::TryEnterWrite()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -109,7 +109,7 @@ BOOL SimpleRWLock::TryEnterWrite()
     LONG RWLock = InterlockedCompareExchange( &m_RWLock, -1, 0 );
 
     _ASSERTE (RWLock >= 0 || RWLock == -1);
-    
+
     if( RWLock ) {
         return FALSE;
     }
@@ -121,11 +121,11 @@ BOOL SimpleRWLock::TryEnterWrite()
 #endif //_DEBUG
 
     ResetWriterWaiting();
-    
+
     return TRUE;
 }
 
-//=====================================================================        
+//=====================================================================
 void SimpleRWLock::EnterWrite()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -189,7 +189,7 @@ void SimpleRWLock::EnterWrite()
 #ifdef ENABLE_CONTRACTS_IMPL
 //=========================================================================
 // Asserts if lock mode is PREEMPTIVE and thread in a GC_NOTRIGGER contract
-//=========================================================================        
+//=========================================================================
 void SimpleRWLock::CheckGCNoTrigger()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -202,9 +202,9 @@ void SimpleRWLock::CheckGCNoTrigger()
         {
             if (pClrDebugState->GetGCNoTriggerCount())
             {
-                // If we have no thread object, we won't be toggling the GC.  This is the case, 
+                // If we have no thread object, we won't be toggling the GC.  This is the case,
                 // for example, on the debugger helper thread which is always GC_NOTRIGGERS.
-                if (GetThreadNULLOk() != NULL) 
+                if (GetThreadNULLOk() != NULL)
                 {
                     if (!( (GCViolation|BadDebugState) & pClrDebugState->ViolationMask()))
                     {
@@ -225,9 +225,9 @@ void SimpleRWLock::CheckGCNoTrigger()
 #endif  //ENABLE_CONTRACTS_IMPL
 
 #ifdef _DEBUG
-//=====================================================================        
+//=====================================================================
 // GC mode assertions before acquiring a lock based on its mode.
-//=====================================================================        
+//=====================================================================
 void SimpleRWLock::PreEnter()
 {
     CONTRACTL
@@ -244,9 +244,9 @@ void SimpleRWLock::PreEnter()
         _ASSERTE(!GetThread() || GetThread()->PreemptiveGCDisabled());
 }
 
-//=====================================================================        
+//=====================================================================
 // GC checks after lock acquisition for avoiding deadlock scenarios.
-//=====================================================================        
+//=====================================================================
 void SimpleRWLock::PostEnter()
 {
     WRAPPER_NO_CONTRACT;
@@ -256,7 +256,7 @@ void SimpleRWLock::PostEnter()
         Thread * pThread = GetThreadNULLOk();
         if (pThread == NULL)
         {
-            // Cannot set NoTrigger.  This could conceivably turn into 
+            // Cannot set NoTrigger.  This could conceivably turn into
             // A GC hole if the thread is created and then a GC rendezvous happens
             // while the lock is still held.
         }
@@ -270,9 +270,9 @@ void SimpleRWLock::PostEnter()
     }
 }
 
-//=====================================================================        
+//=====================================================================
 // GC checks before lock release for avoiding deadlock scenarios.
-//=====================================================================        
+//=====================================================================
 void SimpleRWLock::PreLeave()
 {
     WRAPPER_NO_CONTRACT;

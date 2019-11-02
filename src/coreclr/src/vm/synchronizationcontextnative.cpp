@@ -19,7 +19,7 @@
 #include <windows.ui.core.h>
 #include "winrtdispatcherqueue.h"
 #include "synchronizationcontextnative.h"
-    
+
 Volatile<ABI::Windows::UI::Core::ICoreWindowStatic*> g_pICoreWindowStatic;
 
 void* QCALLTYPE SynchronizationContextNative::GetWinRTDispatcherForCurrentThread()
@@ -41,7 +41,7 @@ void* QCALLTYPE SynchronizationContextNative::GetWinRTDispatcherForCurrentThread
             HRESULT hr = clr::winrt::GetActivationFactory(RuntimeClass_Windows_UI_Core_CoreWindow, (ABI::Windows::UI::Core::ICoreWindowStatic**)pNewICoreWindowStatic.GetAddr());
 
             //
-            // Older Windows builds don't support ICoreWindowStatic.  We should just return a null CoreDispatcher 
+            // Older Windows builds don't support ICoreWindowStatic.  We should just return a null CoreDispatcher
             // in that case, rather than throwing.
             //
             if (hr != E_NOTIMPL)
@@ -157,7 +157,7 @@ void SynchronizationContextNative::Cleanup()
         GC_TRIGGERS;
         MODE_ANY;
     } CONTRACTL_END;
-    
+
     if (g_pICoreWindowStatic)
     {
         SafeRelease(g_pICoreWindowStatic);

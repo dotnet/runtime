@@ -107,7 +107,7 @@ void MakePath (
                 // suppress warning for the following line; this is safe but would require significant code
                 // delta for prefast to understand.
 #ifdef _PREFAST_
-                #pragma warning( suppress: 26001 ) 
+                #pragma warning( suppress: 26001 )
 #endif
                 if (*(p-1) != _T('/') && *(p-1) != _T('\\')) {
 #endif  /* _MBCS */
@@ -171,28 +171,28 @@ HRESULT GetHModuleDirectory(
     CONTRACTL_END;
 
     DWORD dwRet = WszGetModuleFileName(hMod, wszPath);
-   
+
      if (dwRet == 0)
     {   // Some other error.
         return HRESULT_FROM_GetLastError();
     }
 
      CopySystemDirectory(wszPath, wszPath);
-         
+
 
     return S_OK;
 }
 
 //
-// Returns path name from a file name. 
+// Returns path name from a file name.
 // Example: For input "C:\Windows\System.dll" returns "C:\Windows\".
 // Warning: The input file name string might be destroyed.
-// 
+//
 // Arguments:
 //    pPathString - [in] SString with file  name
-//                
+//
 //    pBuffer    - [out] SString .
-// 
+//
 // Return Value:
 //    S_OK - Output buffer contains path name.
 //    other errors - If Sstring throws.

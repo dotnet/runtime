@@ -32,15 +32,15 @@
 #include "sigbuilder.h"
 #include "compile.h"
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
 //static
-DictionaryLayout * 
+DictionaryLayout *
 DictionaryLayout::Allocate(
-    WORD              numSlots, 
-    LoaderAllocator * pAllocator, 
+    WORD              numSlots,
+    LoaderAllocator * pAllocator,
     AllocMemTracker * pamTracker)
 {
     CONTRACT(DictionaryLayout*)
@@ -77,11 +77,11 @@ DictionaryLayout::Allocate(
 //---------------------------------------------------------------------------------------
 //
 // Count the number of bytes that are required by the first bucket in a dictionary with the specified layout
-// 
+//
 //static
-DWORD 
+DWORD
 DictionaryLayout::GetFirstDictionaryBucketSize(
-    DWORD                numGenericArgs, 
+    DWORD                numGenericArgs,
     PTR_DictionaryLayout pDictLayout)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -95,7 +95,7 @@ DictionaryLayout::GetFirstDictionaryBucketSize(
     return bytes;
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Find a token in the dictionary layout and return the offsets of indirections
@@ -107,9 +107,9 @@ DictionaryLayout::GetFirstDictionaryBucketSize(
 // reliability scenarios.
 //
 // Optimize the case of a token being !i (for class dictionaries) or !!i (for method dictionaries)
-// 
+//
 /* static */
-BOOL 
+BOOL
 DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
                                   DWORD                             numGenericArgs,
                                   DictionaryLayout *                pDictLayout,
@@ -163,7 +163,7 @@ DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
 
                     if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
                     {
-                        // Compare the signatures. We do not need to worry about the size of pCandidate. 
+                        // Compare the signatures. We do not need to worry about the size of pCandidate.
                         // As long as we are comparing one byte at a time we are guaranteed to not overrun.
                         DWORD j;
                         for (j = 0; j < cbSig; j++)
@@ -252,13 +252,13 @@ DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
 } // DictionaryLayout::FindToken
 
 /* static */
-BOOL 
-DictionaryLayout::FindToken(LoaderAllocator *               pAllocator, 
-                            DWORD                           numGenericArgs, 
-                            DictionaryLayout *              pDictLayout, 
-                            CORINFO_RUNTIME_LOOKUP *        pResult, 
-                            SigBuilder *                    pSigBuilder, 
-                            int                             nFirstOffset, 
+BOOL
+DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
+                            DWORD                           numGenericArgs,
+                            DictionaryLayout *              pDictLayout,
+                            CORINFO_RUNTIME_LOOKUP *        pResult,
+                            SigBuilder *                    pSigBuilder,
+                            int                             nFirstOffset,
                             DictionaryEntrySignatureSource  signatureSource)
 {
     WRAPPER_NO_CONTRACT;
@@ -271,11 +271,11 @@ DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
 }
 
 /* static */
-BOOL 
+BOOL
 DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
-                            DWORD                           numGenericArgs, 
-                            DictionaryLayout *              pDictLayout, 
-                            CORINFO_RUNTIME_LOOKUP *        pResult, 
+                            DWORD                           numGenericArgs,
+                            DictionaryLayout *              pDictLayout,
+                            CORINFO_RUNTIME_LOOKUP *        pResult,
                             BYTE *                          signature,
                             int                             nFirstOffset,
                             DictionaryEntrySignatureSource  signatureSource,
@@ -290,7 +290,7 @@ DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
 
 //---------------------------------------------------------------------------------------
 //
-DWORD 
+DWORD
 DictionaryLayout::GetMaxSlots()
 {
     LIMITED_METHOD_CONTRACT;
@@ -299,7 +299,7 @@ DictionaryLayout::GetMaxSlots()
 
 //---------------------------------------------------------------------------------------
 //
-DWORD 
+DWORD
 DictionaryLayout::GetNumUsedSlots()
 {
     LIMITED_METHOD_CONTRACT;
@@ -315,12 +315,12 @@ DictionaryLayout::GetNumUsedSlots()
 
 
 //---------------------------------------------------------------------------------------
-// 
-DictionaryEntryKind 
+//
+DictionaryEntryKind
 DictionaryEntryLayout::GetKind()
 {
     STANDARD_VM_CONTRACT;
-    
+
     if (m_signature == NULL)
         return EmptySlot;
 
@@ -333,11 +333,11 @@ DictionaryEntryLayout::GetKind()
 }
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION 
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
 
 //---------------------------------------------------------------------------------------
-// 
-DWORD 
+//
+DWORD
 DictionaryLayout::GetObjectSize()
 {
     LIMITED_METHOD_CONTRACT;
@@ -347,8 +347,8 @@ DictionaryLayout::GetObjectSize()
 //---------------------------------------------------------------------------------------
 //
 // Save the dictionary layout for prejitting
-// 
-void 
+//
+void
 DictionaryLayout::Save(
     DataImage * image)
 {
@@ -367,8 +367,8 @@ DictionaryLayout::Save(
 //---------------------------------------------------------------------------------------
 //
 // Save the dictionary layout for prejitting
-// 
-void 
+//
+void
 DictionaryLayout::Trim()
 {
     CONTRACTL
@@ -393,10 +393,10 @@ DictionaryLayout::Trim()
 //---------------------------------------------------------------------------------------
 //
 // Fixup pointers in the dictionary layout for prejitting
-// 
-void 
+//
+void
 DictionaryLayout::Fixup(
-    DataImage * image, 
+    DataImage * image,
     BOOL        fMethod)
 {
     STANDARD_VM_CONTRACT;
@@ -423,14 +423,14 @@ DictionaryLayout::Fixup(
 //
 // Fixup pointers in the actual dictionary, including the type arguments.  Delete entries
 // that are expensive or difficult to restore.
-// 
-void 
+//
+void
 Dictionary::Fixup(
-    DataImage *        image, 
-    BOOL               canSaveInstantiation, 
-    BOOL               canSaveSlots, 
-    DWORD              numGenericArgs, 
-    Module *           pModule, 
+    DataImage *        image,
+    BOOL               canSaveInstantiation,
+    BOOL               canSaveSlots,
+    DWORD              numGenericArgs,
+    Module *           pModule,
     DictionaryLayout * pDictLayout)
 {
     STANDARD_VM_CONTRACT;
@@ -515,10 +515,10 @@ Dictionary::Fixup(
 
 //---------------------------------------------------------------------------------------
 //
-BOOL 
+BOOL
 Dictionary::IsWriteable(
-    DataImage *         image, 
-    BOOL                canSaveSlots, 
+    DataImage *         image,
+    BOOL                canSaveSlots,
     DWORD               numGenericArgs, // Must be non-zero
     Module *            pModule,        // module of the generic code
     DictionaryLayout *  pDictLayout)
@@ -567,7 +567,7 @@ Dictionary::IsWriteable(
                     image->CanEagerBindToFieldDesc(GetFieldDescSlot(numGenericArgs,i)) &&
                     image->CanHardBindToZapModule(GetFieldDescSlot(numGenericArgs,i)->GetLoaderModule()))
                 {
-                    // do nothing                
+                    // do nothing
                 }
                 else
                 {
@@ -587,10 +587,10 @@ Dictionary::IsWriteable(
 
 //---------------------------------------------------------------------------------------
 //
-BOOL 
+BOOL
 Dictionary::ComputeNeedsRestore(
-    DataImage *      image, 
-    TypeHandleList * pVisited, 
+    DataImage *      image,
+    TypeHandleList * pVisited,
     DWORD            numGenericArgs)
 {
     STANDARD_VM_CONTRACT;
@@ -615,9 +615,9 @@ Dictionary::ComputeNeedsRestore(
 #ifdef FEATURE_PREJIT
 //---------------------------------------------------------------------------------------
 //
-void 
+void
 Dictionary::Restore(
-    DWORD          numGenericArgs, 
+    DWORD          numGenericArgs,
     ClassLoadLevel level)
 {
     CONTRACTL
@@ -641,13 +641,13 @@ Dictionary::Restore(
 #endif // FEATURE_PREJIT
 
 //---------------------------------------------------------------------------------------
-// 
-DictionaryEntry 
+//
+DictionaryEntry
 Dictionary::PopulateEntry(
-    MethodDesc *       pMD, 
-    MethodTable *      pMT, 
-    LPVOID             signature, 
-    BOOL               nonExpansive, 
+    MethodDesc *       pMD,
+    MethodTable *      pMT,
+    LPVOID             signature,
+    BOOL               nonExpansive,
     DictionaryEntry ** ppSlot,
     DWORD              dictionaryIndexAndSlot, /* = -1 */
     Module *           pModule /* = NULL */)
@@ -761,8 +761,8 @@ Dictionary::PopulateEntry(
         {
             IfFailThrow(ptr.GetData(&dictionaryIndex));
         }
-        
-        // MethodTable is expected to be normalized      
+
+        // MethodTable is expected to be normalized
         _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
     }
     else
@@ -791,11 +791,11 @@ Dictionary::PopulateEntry(
         {
             declaringType = ptr.GetTypeHandleThrowing(
                 pLookupModule,
-                &typeContext, 
-                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                CLASS_LOADED, 
-                FALSE, 
-                NULL, 
+                &typeContext,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                CLASS_LOADED,
+                FALSE,
+                NULL,
                 pZapSigContext);
             if (declaringType.IsNull())
             {
@@ -811,11 +811,11 @@ Dictionary::PopulateEntry(
         {
             TypeHandle th = ptr.GetTypeHandleThrowing(
                 pLookupModule,
-                &typeContext, 
-                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                CLASS_LOADED, 
-                FALSE, 
-                NULL, 
+                &typeContext,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                CLASS_LOADED,
+                FALSE,
+                NULL,
                 pZapSigContext);
             if (th.IsNull())
             {
@@ -842,11 +842,11 @@ Dictionary::PopulateEntry(
         {
             constraintType = ptr.GetTypeHandleThrowing(
                 pLookupModule,
-                &typeContext, 
-                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                CLASS_LOADED, 
-                FALSE, 
-                NULL, 
+                &typeContext,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                CLASS_LOADED,
+                FALSE,
+                NULL,
                 pZapSigContext);
             if (constraintType.IsNull())
             {
@@ -1191,7 +1191,7 @@ Dictionary::PopulateEntry(
             {
                 FieldDesc* pField = ZapSig::DecodeField((Module*)pZapSigContext->pModuleContext, pZapSigContext->pInfoModule, ptr.GetPtr(), &typeContext, &ownerType);
                 _ASSERTE(!ownerType.IsNull());
-                
+
                 if (!IsCompilationProcess())
                     ownerType.AsMethodTable()->EnsureInstanceActive();
 
@@ -1254,11 +1254,11 @@ Dictionary::PopulateEntry(
 } // Dictionary::PopulateEntry
 
 //---------------------------------------------------------------------------------------
-// 
-void 
+//
+void
 Dictionary::PrepopulateDictionary(
-    MethodDesc *  pMD, 
-    MethodTable * pMT, 
+    MethodDesc *  pMD,
+    MethodTable * pMT,
     BOOL          nonExpansive)
 {
     STANDARD_VM_CONTRACT;
@@ -1275,12 +1275,12 @@ Dictionary::PrepopulateDictionary(
                 DictionaryEntry * pSlot;
                 DictionaryEntry entry;
                 entry = PopulateEntry(
-                    pMD, 
-                    pMT, 
-                    pDictLayout->GetEntryLayout(i)->m_signature, 
-                    nonExpansive, 
+                    pMD,
+                    pMT,
+                    pDictLayout->GetEntryLayout(i)->m_signature,
+                    nonExpansive,
                     &pSlot);
-                
+
                 _ASSERT((entry == NULL) || (entry == GetSlot(numGenericArgs,i)) || IsCompilationProcess());
                 _ASSERT((pSlot == NULL) || (pSlot == GetSlotAddr(numGenericArgs,i)));
             }

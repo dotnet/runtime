@@ -2403,7 +2403,7 @@ GetProcessTimes(
     BOOL retval = FALSE;
     struct rusage resUsage;
     UINT64 calcTime;
-    const UINT64 SECS_TO_100NS = 10000000ULL;  // 10^7 
+    const UINT64 SECS_TO_100NS = 10000000ULL;  // 10^7
     const UINT64 USECS_TO_100NS = 10ULL;       // 10
     const UINT64 EPOCH_DIFF = 11644473600ULL;  // number of seconds from 1 Jan. 1601 00:00 to 1 Jan 1970 00:00 UTC
 
@@ -2457,7 +2457,7 @@ GetProcessTimes(
             calcTime += (UINT64)tv.tv_sec;
             calcTime *= SECS_TO_100NS;
             calcTime += ((UINT64)tv.tv_usec * USECS_TO_100NS);
-            
+
             // Assign the time into lpCreationTime
             lpCreationTime->dwLowDateTime = (DWORD)calcTime;
             lpCreationTime->dwHighDateTime = (DWORD)(calcTime >> 32);
@@ -3285,7 +3285,7 @@ PROCBuildCreateDumpCommandLine(
 Function:
   PROCCreateCrashDump
 
-  Creates crash dump of the process. Can be called from the 
+  Creates crash dump of the process. Can be called from the
   unhandled native exception handler.
 
 (no return value)
@@ -3360,7 +3360,7 @@ PROCAbortInitialize()
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
-        char* program = nullptr; 
+        char* program = nullptr;
         char* pidarg = nullptr;
 
         if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag))
@@ -3394,8 +3394,8 @@ Return:
 --*/
 BOOL
 PAL_GenerateCoreDump(
-    LPCSTR dumpName, 
-    INT dumpType, 
+    LPCSTR dumpName,
+    INT dumpType,
     BOOL diag)
 {
     char* argvCreateDump[8] = { nullptr };
@@ -3413,7 +3413,7 @@ PAL_GenerateCoreDump(
     {
         dumpName = nullptr;
     }
-    char* program = nullptr; 
+    char* program = nullptr;
     char* pidarg = nullptr;
     BOOL result = PROCBuildCreateDumpCommandLine((const char **)argvCreateDump, &program, &pidarg, (char*)dumpName, dumpTypeStr, diag);
     if (result)

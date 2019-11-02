@@ -13,7 +13,7 @@ namespace R2RDump
 {
     /// <summary>
     /// Represents the debug information for a single method in the ready-to-run image.
-    /// See <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/cordebuginfo.h">src\inc\cordebuginfo.h</a> for 
+    /// See <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/cordebuginfo.h">src\inc\cordebuginfo.h</a> for
     /// the fundamental types this is based on.
     /// </summary>
     public class DebugInfo
@@ -108,7 +108,7 @@ namespace R2RDump
                     case VarLocType.VLT_STK_REG:
                         writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data1}");
                         writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tRegister: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data3)}");                        
+                        writer.WriteLine($"\tRegister: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data3)}");
                         break;
                     case VarLocType.VLT_STK2:
                         writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
@@ -174,9 +174,9 @@ namespace R2RDump
         private void ParseNativeVarInfo(byte[] image, int offset)
         {
             // Each Varinfo has a:
-            // - native start +End offset. We can use a delta for the end offset. 
+            // - native start +End offset. We can use a delta for the end offset.
             // - Il variable number. These are usually small.
-            // - VarLoc information. This is a tagged variant. 
+            // - VarLoc information. This is a tagged variant.
             // The entries aren't sorted in any particular order.
             NibbleReader reader = new NibbleReader(image, offset);
             uint nativeVarCount = reader.ReadUInt();
@@ -231,7 +231,7 @@ namespace R2RDump
                 }
 
                 entry.VariableLocation = varLoc;
-                _variablesList.Add(entry);                
+                _variablesList.Add(entry);
             }
 
             if (_normalize)
@@ -239,7 +239,7 @@ namespace R2RDump
                 _variablesList.Sort(CompareNativeVarInfo);
             }
         }
-        
+
         private static int CompareNativeVarInfo(NativeVarInfo left, NativeVarInfo right)
         {
             if (left.VariableNumber < right.VariableNumber)

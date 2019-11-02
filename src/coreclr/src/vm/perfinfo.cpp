@@ -68,7 +68,7 @@ void PerfInfo::LogImage(PEFile* pFile, WCHAR* guid)
 void PerfInfo::WriteLine(SString& type, SString& value)
 {
 
-    CONTRACTL    
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;

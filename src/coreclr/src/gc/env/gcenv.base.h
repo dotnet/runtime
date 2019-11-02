@@ -128,7 +128,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 #define WAIT_TIMEOUT            258
 #define WAIT_FAILED             0xFFFFFFFF
 
-#if defined(_MSC_VER) 
+#if defined(_MSC_VER)
  #if defined(_ARM_)
 
   __forceinline void YieldProcessor() { }
@@ -147,12 +147,12 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
  #elif defined(_AMD64_)
-  
+
   extern "C" void
   _mm_pause (
       void
       );
-  
+
   extern "C" void
   _mm_mfence (
       void
@@ -160,12 +160,12 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
   #pragma intrinsic(_mm_pause)
   #pragma intrinsic(_mm_mfence)
-  
+
   #define YieldProcessor _mm_pause
   #define MemoryBarrier _mm_mfence
 
  #elif defined(_X86_)
-  
+
   #define YieldProcessor() __asm { rep nop }
   #define MemoryBarrier() MemoryBarrierImpl()
   __forceinline void MemoryBarrierImpl()
@@ -272,7 +272,7 @@ inline uint8_t BitScanForward64(uint32_t *bitIndex, uint64_t mask)
     uint32_t hi = (mask >> 32) & 0xFFFFFFFF;
     uint32_t lo = mask & 0xFFFFFFFF;
     uint32_t fakeBitIndex = 0;
-    
+
     uint8_t result = BitScanForward(bitIndex, lo);
     if (result == 0)
     {

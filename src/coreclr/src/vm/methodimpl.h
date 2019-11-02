@@ -11,7 +11,7 @@
 //
 // ============================================================================
 
-#ifndef _METHODIMPL_H 
+#ifndef _METHODIMPL_H
 #define _METHODIMPL_H
 
 class MethodDesc;
@@ -29,7 +29,7 @@ class MethodImpl
 
 public:
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     ///////////////////////////////////////////////////////////////////////////////////////
     class Iterator
     {
@@ -108,7 +108,7 @@ public:
         return RelativePointer<PTR_DWORD>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(MethodImpl, this, pdwSlots));
     }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
     ///////////////////////////////////////////////////////////////////////////////////////
     inline mdToken* GetTokens()
@@ -134,11 +134,11 @@ public:
 
 #endif // !DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifdef FEATURE_PREJIT 
+#ifdef FEATURE_PREJIT
     void Save(DataImage *image);
     void Fixup(DataImage *image, PVOID p, SSIZE_T offset);
 #endif // FEATURE_PREJIT
@@ -153,7 +153,7 @@ public:
 private:
     static const DWORD INVALID_INDEX = (DWORD)(-1);
     DWORD FindSlotIndex(DWORD slot);
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     MethodDesc* RestoreSlot(DWORD slotIndex, MethodTable *pMT);
 #endif
 

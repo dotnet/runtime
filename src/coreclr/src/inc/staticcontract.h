@@ -68,7 +68,7 @@
 
 // here is the plan:
 //
-//  a special holder which implements a violation 
+//  a special holder which implements a violation
 //
 
 #define ANNOTATION_FN_SPECIAL_HOLDER_BEGIN  __annotation(W("SPECIAL_HOLDER_BEGIN ") SCAN_WIDEN(__FUNCTION__))
@@ -97,7 +97,7 @@
 #define ANNOTATION_FN_HOST_NOCALLS          __annotation(W("HOST_NOCALLS ") SCAN_WIDEN(__FUNCTION__))
 #define ANNOTATION_FN_HOST_CALLS            __annotation(W("HOST_CALLS ") SCAN_WIDEN(__FUNCTION__))
 
-#define ANNOTATION_ENTRY_POINT              __annotation(W("SO_EP ") SCAN_WIDEN(__FUNCTION__))  
+#define ANNOTATION_ENTRY_POINT              __annotation(W("SO_EP ") SCAN_WIDEN(__FUNCTION__))
 
 
 // for DacCop
@@ -181,7 +181,7 @@
 #define STATIC_CONTRACT_GC_TRIGGERS         ANNOTATION_FN_GC_TRIGGERS
 #define STATIC_CONTRACT_GC_NOTRIGGER        ANNOTATION_FN_GC_NOTRIGGER
 #define STATIC_CONTRACT_HOST_NOCALLS        ANNOTATION_FN_HOST_NOCALLS
-#define STATIC_CONTRACT_HOST_CALLS          ANNOTATION_FN_HOST_CALLS 
+#define STATIC_CONTRACT_HOST_CALLS          ANNOTATION_FN_HOST_CALLS
 
 #define STATIC_CONTRACT_SUPPORTS_DAC        ANNOTATION_SUPPORTS_DAC
 #define STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY ANNOTATION_SUPPORTS_DAC_HOST_ONLY
@@ -201,7 +201,7 @@
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;                               \
     ANNOTATION_VIOLATION(TakesLockViolation);
 #else
-#define STATIC_CONTRACT_DEBUG_ONLY 
+#define STATIC_CONTRACT_DEBUG_ONLY
 #endif
 
 #define STATIC_CONTRACT_VIOLATION(mask)                             \

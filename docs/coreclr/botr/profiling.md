@@ -28,12 +28,12 @@ Goals for the Profiling API
 	- Exceptions
 	- Transitions between managed and unmanaged execution
 	- Transitions between different Runtime _contexts_
-	- Information about Runtime suspensions 
+	- Information about Runtime suspensions
 	- Information about the Runtime memory heap and garbage collection activity
 
 - Callable from any (non-managed) COM-compatible language
 - Efficient, in terms of CPU and memory consumption - the act of profiling should not cause such a big change upon the program being profiled that the results are misleading
-- Useful to both _sampling_ and _non-sampling_ profilers.  [A _sampling _profiler inspects the profilee at regular clock ticks - maybe 5 milliseconds apart, say.  A _non-sampling _profiler is informed of events, synchronously with the thread that causes them] 
+- Useful to both _sampling_ and _non-sampling_ profilers.  [A _sampling _profiler inspects the profilee at regular clock ticks - maybe 5 milliseconds apart, say.  A _non-sampling _profiler is informed of events, synchronously with the thread that causes them]
 
 Non-goals for the Profiling API
 ===============================
@@ -94,7 +94,7 @@ This mask would be used for a profiler interested only in function enter/leave n
 
 By setting the notifications mask in this way, the profiler can limit which notifications it receives.  This obviously helps the user build a simpler, or special-purpose profiler; it also reduces wasted cpu time in sending notifications that the profiler would simply 'drop on the floor'  (see later for details).
 
-TODO: This text is a bit confusing. It seems to be conflating the fact that you need to create a different 'environment' (as in environment variables) to specify a different profiler and the fact that only one profiler can attach to a process at once. It may also be conflating launch vs. attach scenarios. Is that right?? 
+TODO: This text is a bit confusing. It seems to be conflating the fact that you need to create a different 'environment' (as in environment variables) to specify a different profiler and the fact that only one profiler can attach to a process at once. It may also be conflating launch vs. attach scenarios. Is that right??
 
 Note that only one profiler can be profiling a process at one time in a given environment. In different environments it is possible to have two different profilers registered in each environment, each profiling separate processes.
 

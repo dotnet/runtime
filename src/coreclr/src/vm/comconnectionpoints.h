@@ -66,7 +66,7 @@ struct ConnectionCookie
             PRECONDITION(NULL != hndEventProvObj);
         }
         CONTRACT_END;
-        
+
         RETURN (new ConnectionCookie(hndEventProvObj));
     }
 
@@ -78,7 +78,7 @@ struct ConnectionCookie
 FORCEINLINE void ConnectionCookieRelease(ConnectionCookie* p)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     delete p;
 }
 
@@ -91,7 +91,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     FORCEINLINE void operator=(ConnectionCookie* p)
     {
         WRAPPER_NO_CONTRACT;
@@ -102,9 +102,9 @@ public:
 // List of connection cookies.
 typedef SList<ConnectionCookie, true> CONNECTIONCOOKIELIST;
 
-// ConnectionPoint class. This class implements IConnectionPoint and does the mapping 
+// ConnectionPoint class. This class implements IConnectionPoint and does the mapping
 // from a CP handler to a TCE provider.
-class ConnectionPoint : public IConnectionPoint 
+class ConnectionPoint : public IConnectionPoint
 {
 public:
     // Encapsulate CrstHolder, so that clients of our lock don't have to know the
@@ -143,7 +143,7 @@ public:
         return &m_ConnectionList;
     }
 
-private:   
+private:
     // Structures used for the AD callback wrappers.
     struct GetConnectionPointContainer_Args
     {
@@ -163,7 +163,7 @@ private:
         ConnectionPoint *pThis;
         DWORD dwCookie;
     };
-      
+
     // Worker methods.
     void AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie);
     void UnadviseWorker( DWORD dwCookie );
@@ -176,7 +176,7 @@ private:
     void InsertWithLock(ConnectionCookie* pConCookie);
     void FindAndRemoveWithLock(ConnectionCookie* pConCookie);
     ConnectionCookie* FindWithLock(DWORD idOfCookie);
-    
+
     ComCallWrapper*                 m_pOwnerWrap;
     GUID                            m_rConnectionIID;
     MethodTable*                    m_pTCEProviderMT;
@@ -213,9 +213,9 @@ public:
     ULONG __stdcall AddRef();
     ULONG __stdcall Release();
 
-    HRESULT __stdcall Next(ULONG cConnections, IConnectionPoint **ppCP, ULONG *pcFetched);   
-    HRESULT __stdcall Skip(ULONG cConnections);    
-    HRESULT __stdcall Reset();    
+    HRESULT __stdcall Next(ULONG cConnections, IConnectionPoint **ppCP, ULONG *pcFetched);
+    HRESULT __stdcall Skip(ULONG cConnections);
+    HRESULT __stdcall Reset();
     HRESULT __stdcall Clone(IEnumConnectionPoints **ppEnum);
 
 private:
@@ -237,7 +237,7 @@ public:
     ULONG __stdcall AddRef();
     ULONG __stdcall Release();
 
-    HRESULT __stdcall Next(ULONG cConnections, CONNECTDATA* rgcd, ULONG *pcFetched);       
+    HRESULT __stdcall Next(ULONG cConnections, CONNECTDATA* rgcd, ULONG *pcFetched);
     HRESULT __stdcall Skip(ULONG cConnections);
     HRESULT __stdcall Reset();
     HRESULT __stdcall Clone(IEnumConnections **ppEnum);

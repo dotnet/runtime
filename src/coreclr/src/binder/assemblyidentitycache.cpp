@@ -42,7 +42,7 @@ namespace BINDER_SPACE
 
         pAssemblyIdentityCacheEntry->SetTextualIdentity(szTextualIdentity);
         pAssemblyIdentityCacheEntry->SetAssemblyIdentity(pAssemblyIdentity);
-        
+
         Hash::Add(pAssemblyIdentityCacheEntry);
         pAssemblyIdentityCacheEntry.SuppressRelease();
 

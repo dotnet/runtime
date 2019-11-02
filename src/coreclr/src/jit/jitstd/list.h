@@ -76,7 +76,7 @@ public:
         friend class list<T, Allocator>;
         Node* m_pNode;
     };
-    
+
     class iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
     {
         iterator(Node* ptr);
@@ -132,7 +132,7 @@ public:
         friend class list<T, Allocator>;
         Node* m_pNode;
     };
-    
+
     class reverse_iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
     {
     private:
@@ -160,7 +160,7 @@ public:
         friend class list<T, Allocator>;
         Node* m_pNode;
     };
-    
+
     explicit list(const Allocator&);
     list(size_type n, const T& value, const Allocator&);
 
@@ -279,7 +279,7 @@ private:
     void insert_helper(iterator position, size_type n, const T& value, int_not_an_iterator_tag);
     template <typename InputIterator>
     void insert_helper(iterator position, InputIterator first, InputIterator last, forward_iterator_tag);
-    
+
     void insert_new_node_helper(Node* pInsert, Node* pNewNode);
 
     Node* m_pHead;
@@ -479,7 +479,7 @@ typename list<T, Allocator>::iterator
 
 template <typename T, typename Allocator>
 template <typename... Args>
-typename list<T, Allocator>::iterator 
+typename list<T, Allocator>::iterator
     list<T, Allocator>::emplace(iterator position, Args&&... args)
 {
     Node* pNewNode = new (m_nodeAllocator.allocate(1), placement_t()) Node(jitstd::forward<Args>(args)...);
@@ -921,7 +921,7 @@ list<T, Allocator>::iterator::iterator(const iterator& it)
 {
 }
 
-        
+
 template <typename T, typename Allocator>
 typename list<T, Allocator>::iterator& list<T, Allocator>::iterator::operator++()
 {
@@ -1013,7 +1013,7 @@ list<T, Allocator>::const_iterator::const_iterator(const typename list<T, Alloca
     : m_pNode(it.m_pNode)
 {
 }
-        
+
 template <typename T, typename Allocator>
 typename list<T, Allocator>::const_iterator& list<T, Allocator>::const_iterator::operator++()
 {
@@ -1098,7 +1098,7 @@ list<T, Allocator>::reverse_iterator::reverse_iterator(const reverse_iterator& i
 {
 }
 
-        
+
 template <typename T, typename Allocator>
 typename list<T, Allocator>::reverse_iterator& list<T, Allocator>::reverse_iterator::operator++()
 {

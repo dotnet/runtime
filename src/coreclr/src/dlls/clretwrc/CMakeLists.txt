@@ -9,7 +9,7 @@ if(WIN32)
 
     # remove /guard:cf from resource-only libraries
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-    
+
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
 endif(WIN32)
 

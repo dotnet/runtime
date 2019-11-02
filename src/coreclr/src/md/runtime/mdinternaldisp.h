@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDInternalDispenser.h
-// 
+//
 
 //
 // Contains utility code for MD directory

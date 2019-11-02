@@ -56,8 +56,8 @@ Testing and Debugging CoreCLR
 Book of the Runtime
 ===================
 
-The Book of the Runtime is a set of chapters that go in depth into various 
-interesting aspects of the design of the .NET Framework.  
+The Book of the Runtime is a set of chapters that go in depth into various
+interesting aspects of the design of the .NET Framework.
 
 - [Book of the Runtime](botr/README.md)
 

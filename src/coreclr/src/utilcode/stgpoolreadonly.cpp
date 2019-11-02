@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgPoolReadOnly.cpp
-// 
+//
 
-// 
+//
 // Read only pools are used to reduce the amount of data actually required in the database.
-// 
+//
 //*****************************************************************************
 #include "stdafx.h"                     // Standard include.
 #include <stgpool.h>                    // Our interface definitions.
@@ -55,14 +55,14 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
-    
+
     // Make sure we aren't stomping anything and are properly initialized.
     _ASSERTE(m_pSegData == m_zeros);
-    
+
     // Create case requires no further action.
     if (pData == NULL)
         return E_INVALIDARG;
-    
+
     // Keep m_zeros data pointer if there's no content of the pool
     if (iSize != 0)
     {
@@ -95,11 +95,11 @@ HRESULT StgPoolReadOnly::GetStringW(        // Return code.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;
-    
+
     HRESULT hr;
     LPCSTR  pString;                // The string in UTF8.
     int     iChars;
-    
+
     IfFailRet(GetString(iOffset, &pString));
     iChars = ::WszMultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
     if (iChars == 0)
@@ -111,36 +111,36 @@ HRESULT StgPoolReadOnly::GetStringW(        // Return code.
 // Return a pointer to a null terminated blob given an offset previously
 // handed out by Addblob or Findblob.
 //*****************************************************************************
-HRESULT 
+HRESULT
 StgPoolReadOnly::GetBlob(
     UINT32              nOffset,    // Offset of blob in pool.
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     HRESULT hr;
     UINT32  cbBlobContentSize;
-    
-    // This should not be a necessary special case.  The zero byte at the 
+
+    // This should not be a necessary special case.  The zero byte at the
     //  start of the pool will code for a length of zero.  We will return
     //  a pointer to the next length byte, but the caller should notice that
     //  the size is zero, and should not look at any bytes.
     // [SL] Yes, but we don't need all further computations and checks if iOffset==0
-    
+
     if (nOffset == 0)
     {
         pData->Clear();
         return S_OK;
     }
-    
+
     // Is the offset within this heap?
     if (!IsValidOffset(nOffset))
     {
         Debug_ReportError("Invalid blob offset.");
         IfFailGo(CLDB_E_INDEX_NOTFOUND);
     }
-    
+
     IfFailGo(GetDataReadOnly(nOffset, pData));
     if (!pData->GetCompressedU(&cbBlobContentSize))
     {
@@ -152,7 +152,7 @@ StgPoolReadOnly::GetBlob(
         Debug_ReportError("Invalid blob - reaches behind the end of data block.");
         IfFailGo(COR_E_BADIMAGEFORMAT);
     }
-    
+
     return S_OK;
 ErrExit:
     pData->Clear();
@@ -163,23 +163,23 @@ ErrExit:
 // code:StgPoolReadOnly::GetBlob specialization with inlined check for valid offsets to avoid redundant code:StgPoolReadOnly::GetDataReadOnly calls.
 // code:StgPoolReadOnly::GetDataReadOnly is not cheap because of it performs binary lookup in hot metadata.
 //*****************************************************************************
-HRESULT 
+HRESULT
 StgBlobPoolReadOnly::GetBlob(
     UINT32              nOffset,    // Offset of blob in pool.
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     HRESULT hr;
     UINT32  cbBlobContentSize;
-    
-    // This should not be a necessary special case.  The zero byte at the 
+
+    // This should not be a necessary special case.  The zero byte at the
     //  start of the pool will code for a length of zero.  We will return
     //  a pointer to the next length byte, but the caller should notice that
     //  the size is zero, and should not look at any bytes.
     // [SL] Yes, but we don't need all further computations and checks if iOffset==0
-    
+
     if (nOffset == 0)
     {
         pData->Clear();
@@ -203,7 +203,7 @@ StgBlobPoolReadOnly::GetBlob(
         Debug_ReportError("Invalid blob - reaches behind the end of data block.");
         IfFailGo(CLDB_E_INDEX_NOTFOUND);
     }
-    
+
     return S_OK;
 ErrExit:
     pData->Clear();

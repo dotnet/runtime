@@ -1,7 +1,7 @@
 project(CoreConsole)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
- 
+
 set(CoreConsole_SOURCES coreconsole.cpp logger.cpp)
 set(CoreConsole_RESOURCES native.rc)
 

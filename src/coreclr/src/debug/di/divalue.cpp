@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: DIValue.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -11,7 +11,7 @@
 #include "primitives.h"
 
 // copy from a MemoryRange to dest
-// Arguments: 
+// Arguments:
 //     input:  source - MemoryRange describing the start address and size of the source buffer
 //     output: dest   - address of the buffer to which the source buffer is copied
 // Note: the buffer for dest must be allocated by the caller and must be large enough to hold the
@@ -23,7 +23,7 @@ void localCopy(void * dest, MemoryRange source)
 
     memcpy(dest, source.StartAddress(), source.Size());
 }
-// for an inheritance graph of the ICDValue types, // See file:./ICorDebugValueTypes.vsd for a diagram of the types.  
+// for an inheritance graph of the ICDValue types, // See file:./ICorDebugValueTypes.vsd for a diagram of the types.
 
 /* ------------------------------------------------------------------------- *
  * CordbValue class
@@ -50,20 +50,20 @@ CordbValue::CordbValue(CordbAppDomain *        appdomain,
     // Add to a neuter list. If none is provided, use the ExitProcess list as a default.
     // The main neuter lists of interest here are:
     // - CordbProcess::GetContinueNeuterList() - Shortest. Neuter when the process continues.
-    // - CordbAppDomain::GetExitNeuterList() - Middle. Neuter when the AD exits. Since most Values (except globals) are in 
+    // - CordbAppDomain::GetExitNeuterList() - Middle. Neuter when the AD exits. Since most Values (except globals) are in
     //                                  a specific AD, this almost catches all; and keeps us safe in AD-unload scenarios.
-    // - CordbProcess::GetExitNeuterList() - Worst. Doesn't neuter until the process exits (or we detach). 
+    // - CordbProcess::GetExitNeuterList() - Worst. Doesn't neuter until the process exits (or we detach).
     //                                  This could be a long time.
     if (pList == NULL)
     {
         pList = GetProcess()->GetExitNeuterList();
     }
 
-    
+
     EX_TRY
     {
         pList->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 } // CordbValue::CordbValue
@@ -73,7 +73,7 @@ CordbValue::~CordbValue()
     DTOR_ENTRY(this);
 
     _ASSERTE(this->IsNeutered());
-    
+
     _ASSERTE(m_type == NULL);
 } // CordbValue::~CordbValue
 
@@ -86,8 +86,8 @@ void CordbValue::Neuter()
     if (pValueHome != NULL)
     {
         pValueHome->Clear();
-    }    
-    CordbBase::Neuter();    
+    }
+    CordbBase::Neuter();
 } // CordbValue::Neuter
 
 // Helper for code:CordbValue::CreateValueByType. Create a new instance of CordbGenericValue
@@ -98,9 +98,9 @@ void CordbValue::Neuter()
 //             localValue      - local address and size of the value
 //             ppRemoteRegAddr - register address of the value
 //     output: ppValue         - the newly created instance of an ICDValue
-// Notes: 
-//     - only one of the three locations will be non-NULL 
-//     - Throws           
+// Notes:
+//     - only one of the three locations will be non-NULL
+//     - Throws
 /* static */
 void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                     CordbType *                    pType,
@@ -112,12 +112,12 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
     LOG((LF_CORDB,LL_INFO100000,"CV::CreateValueByType CreateGenericValue\n"));
     RSSmartPtr<CordbGenericValue> pGenValue;
     // A generic value
-    // By using a RSSmartPtr we ensure that in both success and failure cases, 
-    // this object is cleaned up properly (deleted or not depending on ref counts).  
-    // Specifically, the object has probably been placed on a neuter list so we 
+    // By using a RSSmartPtr we ensure that in both success and failure cases,
+    // this object is cleaned up properly (deleted or not depending on ref counts).
+    // Specifically, the object has probably been placed on a neuter list so we
     // can't delete it (but this is a detail we shouldn't rely on)
-    pGenValue.Assign(new CordbGenericValue(pAppdomain, 
-                                           pType, 
+    pGenValue.Assign(new CordbGenericValue(pAppdomain,
+                                           pType,
                                            remoteValue,
                                            ppRemoteRegAddr));
 
@@ -136,10 +136,10 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
 //             localValue      - local address and size of the value
 //             ppRemoteRegAddr - register address of the value
 //     output: ppValue         - the newly created instance of an ICDValue
-// Notes: 
+// Notes:
 //     - only one of the three locations will be non-NULL
 //     - Throws error codes from reading process memory
-/* static */                 
+/* static */
 void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain,
                                        CordbType *                    pType,
                                        bool                           boxed,
@@ -153,20 +153,20 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     LOG((LF_CORDB,LL_INFO1000000,"CV::CreateValueByType Creating ReferenceValue\n"));
 
     // We either have a boxed or unboxed value type, or we have a value that's not a value type.
-    // For an unboxed value type, we'll create an instance of CordbVCObjectValue. Otherwise, we'll 
-    // create an instance of CordbReferenceValue. 
+    // For an unboxed value type, we'll create an instance of CordbVCObjectValue. Otherwise, we'll
+    // create an instance of CordbReferenceValue.
 
 	// do we have a value type?
     bool isVCObject = pType->IsValueType(); // throws
 
     if (!boxed && isVCObject)
-    {               
-        RSSmartPtr<CordbVCObjectValue> pVCValue(new CordbVCObjectValue(pAppdomain, 
+    {
+        RSSmartPtr<CordbVCObjectValue> pVCValue(new CordbVCObjectValue(pAppdomain,
                                                                        pType,
-                                                                       remoteValue,									
+                                                                       remoteValue,
                                                                        ppRemoteRegAddr));
 
-        IfFailThrow(pVCValue->Init(localValue)); 
+        IfFailThrow(pVCValue->Init(localValue));
 
         pVCValue->AddRef();
         *ppValue = (ICorDebugValue*)(ICorDebugObjectValue*)pVCValue;
@@ -175,11 +175,11 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     {
         // either the value is boxed or it's not a value type
         RSSmartPtr<CordbReferenceValue> pRef;
-        hr = CordbReferenceValue::Build(pAppdomain, 
-                                        pType, 
-                                        remoteValue, 
-                                        localValue, 
-                                        VMPTR_OBJECTHANDLE::NullPtr(), 
+        hr = CordbReferenceValue::Build(pAppdomain,
+                                        pType,
+                                        remoteValue,
+                                        localValue,
+                                        VMPTR_OBJECTHANDLE::NullPtr(),
                                         ppRemoteRegAddr, // Home
                                         &pRef);
         IfFailThrow(hr);
@@ -198,8 +198,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
 //             localValue      - local address and size of the value
 //             ppRemoteRegAddr - register address of the value
 //     output: ppValue         - the newly created instance of an ICDValue
-// Notes: 
-//     - Only one of the three locations, remoteValue, localValue or ppRemoteRegAddr, will be non-NULL.            
+// Notes:
+//     - Only one of the three locations, remoteValue, localValue or ppRemoteRegAddr, will be non-NULL.
 //     - Throws.
 /*static*/ void CordbValue::CreateValueByType(CordbAppDomain *               pAppdomain,
                                               CordbType *                    pType,
@@ -288,7 +288,7 @@ CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDo
     MemoryRange localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
     RSSmartPtr<CordbReferenceValue> pRefValue;
     IfFailThrow(CordbReferenceValue::Build(pAppDomain,
-                                           NULL, 
+                                           NULL,
                                            EMPTY_BUFFER,
                                            localReferenceDescription,
                                            VMPTR_OBJECTHANDLE::NullPtr(),
@@ -298,16 +298,16 @@ CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDo
     return pRefValue;
 }
 
-// Gets the size om bytes of a value from its type. If the value is complex, we assume it is represented as 
+// Gets the size om bytes of a value from its type. If the value is complex, we assume it is represented as
 // a reference, since this is called for values that have been found on the stack, as an element of an
-// array (represented as CordbArrayValue) or field of an object (CordbObjectValue) or the result of a 
-// func eval. For unboxed value types, we get the size of the entire value (it is not represented as a 
+// array (represented as CordbArrayValue) or field of an object (CordbObjectValue) or the result of a
+// func eval. For unboxed value types, we get the size of the entire value (it is not represented as a
 // reference).
 // Examples:
-// - int on the stack 
+// - int on the stack
 //         => sizeof(int)
 // - int as a field in an object on the heap
-//         =>sizeof(int) 
+//         =>sizeof(int)
 // - Boxed int on the heap
 //         => size of a pointer
 // - Class Point { int x; int y};  // class will have a method table / object header which may increase size.
@@ -396,7 +396,7 @@ HRESULT CordbValue::GetExactType(ICorDebugType **ppType)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(ppType, ICorDebugType **);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
@@ -430,7 +430,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
         return E_INVALIDARG;
     }
 
-    *ppHandle = NULL;        
+    *ppHandle = NULL;
 
     if (handleType == HANDLE_STRONG)
     {
@@ -479,7 +479,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     {
         // Free the handle from the left-side.
         pHandle->Dispose();
-                
+
         // The RSInitHolder will neuter and delete it.
         return hr;
     }
@@ -496,17 +496,17 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
 //
 // CordbGenericValue constructor that builds a generic value from
-// a remote address or register. 
+// a remote address or register.
 // Arguments:
 //     input: pAppdomain      - the app domain to which the value belongs
 //            pType           - the type of the value
 //            remoteValue     - buffer (and size) of the remote location where
 //                              the value resides. This may be NULL if the value
 //                              is enregistered.
-//            ppRemoteRegAddr - information describing the register in which the 
-//                              value resides. This may be NULL--only one of 
+//            ppRemoteRegAddr - information describing the register in which the
+//                              value resides. This may be NULL--only one of
 //                              ppRemoteRegAddr and remoteValue will be non-NULL,
-//                              depending on whether the value is in a register or 
+//                              depending on whether the value is in a register or
 //                              memory.
 CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
                                      CordbType *                   pType,
@@ -544,7 +544,7 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
 // CordbGenericValue constructor that builds an empty generic value
 // from just an element type. Used for literal values for func evals
 // only.
-// Arguments: 
+// Arguments:
 //     input: pType - the type of the value
 CordbGenericValue::CordbGenericValue(CordbType * pType)
     : CordbValue(NULL, pType, NULL, true),
@@ -608,13 +608,13 @@ HRESULT CordbGenericValue::QueryInterface(REFIID id, void **pInterface)
 // initialize a generic value by copying the necessary data, either
 // from the remote process or from another value in this process.
 // Argument:
-//     input: localValue - RS location of value to be copied. This could be NULL or it 
+//     input: localValue - RS location of value to be copied. This could be NULL or it
 //            could be a field from the cached copy of a CordbVCObjectValue or CordbObjectValue
 //            instance or an element from the cached copy of a CordbArrayValue instance
 // Note: Throws error codes from reading process memory
 void CordbGenericValue::Init(MemoryRange localValue)
 {
-    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(this->GetProcess());
 
     if(!m_isLiteral)
     {
@@ -635,7 +635,7 @@ void CordbGenericValue::Init(MemoryRange localValue)
 // gets the value (i.e., number, boolean or pointer value) for this instance of CordbGenericValue
 // Arguments:
 //    output: pTo - the starting address of a buffer in which the value will be written. This buffer must
-//                  be guaranteed by the caller to be large enough to hold the value. There is no way for 
+//                  be guaranteed by the caller to be large enough to hold the value. There is no way for
 //                  us to check here if it is. This must be non-NULL.
 // Return Value: S_OK on success or E_INVALIDARG if the pTo is NULL
 HRESULT CordbGenericValue::GetValue(void *pTo)
@@ -652,7 +652,7 @@ HRESULT CordbGenericValue::GetValue(void *pTo)
 } // CordbGenericValue::GetValue
 
 // Sets the value of this instance of CordbGenericValue
-// Arguments: 
+// Arguments:
 //     input: pFrom - pointer to a buffer holding the new value. We assume this is the same size as the
 //                    original value; we have no way to check. This must be non-NULL.
 // Return Value: S_OK on success or E_INVALIDARG if the pFrom is NULL
@@ -672,7 +672,7 @@ HRESULT CordbGenericValue::SetValue(void *pFrom)
     {
         if(!m_isLiteral)
         {
-            m_pValueHome->SetValue(MemoryRange(pFrom, m_size), m_type);  // throws 
+            m_pValueHome->SetValue(MemoryRange(pFrom, m_size), m_type);  // throws
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -689,12 +689,12 @@ HRESULT CordbGenericValue::SetValue(void *pFrom)
 // Arguments:
 //     output: pBuffer - pointer to the beginning of a caller-allocated buffer.This buffer must
 //                  be guaranteed by the caller to be large enough to hol
-//                  d the value. There is no way for 
+//                  d the value. There is no way for
 //                  us to check here if it is. This must be non-NULL.
 // Return Value: true iff this is a literal value and pBuffer is a valid writeable address
 bool CordbGenericValue::CopyLiteralData(BYTE *pBuffer)
 {
-    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(this->GetProcess());
     _ASSERTE(pBuffer != NULL);
 
     // If this is a RS fabrication, copy the literal data into the
@@ -714,21 +714,21 @@ bool CordbGenericValue::CopyLiteralData(BYTE *pBuffer)
  * ------------------------------------------------------------------------- */
 
 // constructor
-// Arguments: 
+// Arguments:
 //     input: pAppdomain      - appdomain to which the value belongs
 //            pType           - the type of the referent (the object pointed to)
 //            localValue      - the RS address and size of the buffer from which the reference
-//                              will be copied. This will be NULL if either remoteValue, 
-//                              ppRemoteRegAddr or vmObjectHandle is non-NULL. Otherwise, it will 
+//                              will be copied. This will be NULL if either remoteValue,
+//                              ppRemoteRegAddr or vmObjectHandle is non-NULL. Otherwise, it will
 //                              point into the local cached copy of another instance of ICDValue
 //            remoteValue     - the LS address and size of the buffer from which the reference
-//                              will be copied. This will be NULL if either localValue, 
+//                              will be copied. This will be NULL if either localValue,
 //                              ppRemoteRegAddr, or vmObjectHandle is non-NULL.
-//            ppRemoteRegAddr - information about the register location of the buffer from which 
-//                              the reference will be copied. This will be NULL if either localValue, 
+//            ppRemoteRegAddr - information about the register location of the buffer from which
+//                              the reference will be copied. This will be NULL if either localValue,
 //                              remoteValue, or vmObjectHandle is non-NULL.
-//            vmObjectHandle  - a LS object handle holding the reference. This will be NULL if either 
-//                              localValue, remoteValue, or ppRemoteRegAddr is non-NULL. 
+//            vmObjectHandle  - a LS object handle holding the reference. This will be NULL if either
+//                              localValue, remoteValue, or ppRemoteRegAddr is non-NULL.
 // Note: this may throw OOM
 CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomain,
                                          CordbType *                   pType,
@@ -736,11 +736,11 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
                                          TargetBuffer                  remoteValue,
                                          EnregisteredValueHomeHolder * ppRemoteRegAddr,
                                          VMPTR_OBJECTHANDLE            vmObjectHandle)
-    : CordbValue(pAppdomain, pType, remoteValue.pAddress, false, 
+    : CordbValue(pAppdomain, pType, remoteValue.pAddress, false,
             // We'd like to change this to be a ContinueList so it gets neutered earlier,
             // but it may be a breaking change
             pAppdomain->GetSweepableExitNeuterList()),
-            
+
       m_realTypeOfTypedByref(NULL)
 {
     memset(&m_info, 0, sizeof(m_info));
@@ -748,9 +748,9 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
     LOG((LF_CORDB,LL_EVERYTHING,"CRV::CRV: this:0x%x\n",this));
     m_size = sizeof(void *);
 
-    // now instantiate the value home 
+    // now instantiate the value home
     NewHolder<ValueHome> pHome(NULL);
-    
+
     if (!vmObjectHandle.IsNull())
     {
         pHome = (new HandleValueHome(pAppdomain->GetProcess(), vmObjectHandle));
@@ -774,13 +774,13 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
 // CordbReferenceValue constructor that builds an empty reference value
 // from just an element type. Used for literal values for func evals
 // only.
-// Arguments: 
+// Arguments:
 //     input: pType - the type of the value
 CordbReferenceValue::CordbReferenceValue(CordbType * pType)
     : CordbValue(NULL, pType, NULL, true, pType->GetAppDomain()->GetSweepableExitNeuterList())
 {
     memset(&m_info, 0, sizeof(m_info));
-    
+
     // The only purpose of a literal value is to hold a RS literal value.
     m_size = sizeof(void*);
 
@@ -791,7 +791,7 @@ CordbReferenceValue::CordbReferenceValue(CordbType * pType)
 // copies the value from this instance of CordbReferenceValue iff the value represents a literal
 // Arguments:
 //     output: pBuffer - pointer to the beginning of a caller-allocated buffer.This buffer must
-//                  be guaranteed by the caller to be large enough to hold the value. 
+//                  be guaranteed by the caller to be large enough to hold the value.
 //                  There is no way for us to check here if it is. This must be non-NULL.
 // Return Value: true iff this is a literal value and pBuffer is a valid writeable address
 bool CordbReferenceValue::CopyLiteralData(BYTE *pBuffer)
@@ -866,7 +866,7 @@ HRESULT CordbReferenceValue::QueryInterface(REFIID id, void **pInterface)
 } // CordbReferenceValue::QueryInterface
 
 // gets the type of the referent of the object ref
-// Arguments: 
+// Arguments:
 //     output: pType - the type of the value. The caller must guarantee that pType is non-null.
 // Return Value: S_OK on success, E_INVALIDARG on failure
 HRESULT CordbReferenceValue::GetType(CorElementType *pType)
@@ -894,25 +894,25 @@ HRESULT CordbReferenceValue::GetType(CorElementType *pType)
     return S_OK;
 } // CordbReferenceValue::GetType
 
-// gets the remote (LS) address of the reference. This may return NULL if the 
-// reference is a literal or resides in a register. 
+// gets the remote (LS) address of the reference. This may return NULL if the
+// reference is a literal or resides in a register.
 // Arguments:
 //     output: pAddress - the LS location of the reference. The caller must guarantee pAddress is non-null,
-//                        but the contents may be null after the call if the reference is enregistered or is 
-//                        the value of a field or element of some other Cordb*Value instance. 
+//                        but the contents may be null after the call if the reference is enregistered or is
+//                        the value of a field or element of some other Cordb*Value instance.
 // Return Value: S_OK on success or E_INVALIDARG if pAddress is null
 HRESULT CordbReferenceValue::GetAddress(CORDB_ADDRESS *pAddress)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(pAddress, CORDB_ADDRESS *);
-    
+
     *pAddress = m_valueHome.m_pHome ? m_valueHome.m_pHome->GetAddress() : NULL;
     return (S_OK);
 }
-    
+
 // Determines whether the reference is null
 // Arguments:
-//     output - pfIsNull - pointer to a BOOL that will be set to true iff this represents a 
+//     output - pfIsNull - pointer to a BOOL that will be set to true iff this represents a
 //              null reference
 // Return  Value: S_OK on success or E_INVALIDARG if pfIsNull is null
 HRESULT CordbReferenceValue::IsNull(BOOL * pfIsNull)
@@ -931,7 +931,7 @@ HRESULT CordbReferenceValue::IsNull(BOOL * pfIsNull)
 
 // gets the value (object address) of this CordbReferenceValue
 // Arguments:
-//     output: pTo - reference value 
+//     output: pTo - reference value
 // Return Value: S_OK on success or E_INVALIDARG if pAddress is null
 HRESULT CordbReferenceValue::GetValue(CORDB_ADDRESS *pAddress)
 {
@@ -949,16 +949,16 @@ HRESULT CordbReferenceValue::GetValue(CORDB_ADDRESS *pAddress)
 }
 
 // sets the value of the reference
-// Arguments: 
+// Arguments:
 //     input: address - the new reference--this must be a LS address
 // Return Value: S_OK on success or E_INVALIDARG or  write process memory errors
-// Note: We make no effort to ensure that the new reference is of the same type as the old one. 
+// Note: We make no effort to ensure that the new reference is of the same type as the old one.
 // We simply assume it is. As long as this assumption is correct, we only need to update information about
-// the referent if it's a string (its length can change). 
+// the referent if it's a string (its length can change).
 
 // @dbgtodo Microsoft inspection: consider whether it's worthwhile to verify that the type of the new referent is
 // the same as the type of the existing one. We'd have to do most of the work for a call to InitRef to do
-// this, since we need to know the type of the new referent. 
+// this, since we need to know the type of the new referent.
 HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
 {
     PUBLIC_API_ENTRY(this);
@@ -966,25 +966,25 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     HRESULT hr = S_OK;
 
-    // If this is a heap object, ideally we'd prevent violations of AppDomain isolation 
+    // If this is a heap object, ideally we'd prevent violations of AppDomain isolation
     // here.  However, we have no reliable way of determining what AppDomain the address is in.
 
     // Can't change literal refs.
     if (m_isLiteral)
     {
         return E_INVALIDARG;
-    }        
+    }
 
     // Either we know the type, or it's a handle to a null value
-    _ASSERTE((m_type != NULL) || 
-             (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == NULL)));  
-    
+    _ASSERTE((m_type != NULL) ||
+             (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == NULL)));
+
 	EX_TRY
 	{
         m_valueHome.m_pHome->SetValue(MemoryRange(&address, sizeof(void *)), m_type); // throws
 	}
 	EX_CATCH_HRESULT(hr);
-        
+
     if (SUCCEEDED(hr))
     {
         // That worked, so update the copy of the value we have in
@@ -996,7 +996,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
         {
             // update information about the string
             InitRef(MemoryRange(&m_info.objRef, sizeof (void *)));
-        } 
+        }
 
         // All other data in m_info is no longer valid, and we may have invalidated other
         // ICDRVs at this address.  We have to invalidate all cached debuggee data.
@@ -1060,7 +1060,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
 //-----------------------------------------------------------------------------
 HRESULT CordbReferenceValue::DereferenceCommon(
     CordbAppDomain * pAppDomain,
-    CordbType * pType, 
+    CordbType * pType,
     CordbType * pRealTypeOfTypedByref,
     DebuggerIPCE_ObjectData * pInfo,
     ICorDebugValue **ppValue
@@ -1107,7 +1107,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
                 EX_TRY
                 {
                     RSSmartPtr<CordbBoxValue> pBoxValue(new CordbBoxValue(
-                        pAppDomain, 
+                        pAppDomain,
                         pType,
                         remoteValue,
                         (ULONG32)pInfo->objSize,
@@ -1130,7 +1130,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
 
                     pObj->ExternalAddRef();
                     *ppValue = static_cast<ICorDebugValue*>( static_cast<ICorDebugObjectValue*>(pObj) );
-                }               
+                }
                 EX_CATCH_HRESULT(hr);
             } // boxed?
 
@@ -1145,9 +1145,9 @@ HRESULT CordbReferenceValue::DereferenceCommon(
             EX_TRY
             {
                 RSSmartPtr<CordbArrayValue> pArrayValue(new CordbArrayValue(
-                    pAppDomain, 
-                    pType, 
-                    pInfo, 
+                    pAppDomain,
+                    pType,
+                    pInfo,
                     remoteValue));
 
                 IfFailThrow(pArrayValue->Init());
@@ -1241,7 +1241,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
 // static helper to build a CordbReferenceValue from a general variable home.
 // We can find the CordbType from the object instance.
 HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
-                                   CordbType *               type, 
+                                   CordbType *               type,
                                    TargetBuffer                  remoteValue,
                                    MemoryRange                   localValue,
                                    VMPTR_OBJECTHANDLE        vmObjectHandle,
@@ -1253,12 +1253,12 @@ HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
     // We can find the AD from an object handle (but not a normal object), so the AppDomain may
     // be NULL if if it's an OH.
     //_ASSERTE((appdomain != NULL) || objectRefsInHandles);
-    
+
     // A reference, possibly to an object or value class
-    // Weak by default 
+    // Weak by default
     EX_TRY
     {
-        RSSmartPtr<CordbReferenceValue> pRefValue(new CordbReferenceValue(appdomain, 
+        RSSmartPtr<CordbReferenceValue> pRefValue(new CordbReferenceValue(appdomain,
                                                                           type,
                                                                           localValue,
                                                                           remoteValue,
@@ -1277,14 +1277,14 @@ HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
 // Static helper to build a CordbReferenceValue from a GCHandle
 // The LS can actually determine an AppDomain from an OBJECTHandles, however, the RS
 // should already have this infromation too, so we pass it in.
-// We also supply the AppDomain here because it provides the CordbValue with 
+// We also supply the AppDomain here because it provides the CordbValue with
 // process affinity.
 // Note that the GC handle may point to a NULL reference, in which case we should still create
 // an appropriate ICorDebugReferenceValue for which IsNull returns TRUE.
 //-----------------------------------------------------------------------------
 HRESULT CordbReferenceValue::BuildFromGCHandle(
-    CordbAppDomain *pAppDomain, 
-    VMPTR_OBJECTHANDLE gcHandle, 
+    CordbAppDomain *pAppDomain,
+    VMPTR_OBJECTHANDLE gcHandle,
     ICorDebugReferenceValue ** pOutRef
 )
 {
@@ -1293,13 +1293,13 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
 
     CordbProcess * pProc;
     pProc = pAppDomain->GetProcess();
-    INTERNAL_SYNC_API_ENTRY(pProc);    
+    INTERNAL_SYNC_API_ENTRY(pProc);
 
     HRESULT hr = S_OK;
 
     *pOutRef = NULL;
 
-    // Make sure we even have a GC handle. 
+    // Make sure we even have a GC handle.
     // Also, We may have a handle, but its contents may be null.
     if (gcHandle.IsNull())
     {
@@ -1321,19 +1321,19 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
     IfFailRet(hr);
 
     hr = CordbReferenceValue::Build(
-        pAppDomain, 
+        pAppDomain,
         NULL, // unknown type
         remoteValue, // CORDB_ADDRESS remoteAddress,
-        MemoryRange(NULL, 0), 
+        MemoryRange(NULL, 0),
         gcHandle, // objectRefsInHandles,
-        NULL, // EnregisteredValueHome * pRemoteRegAddr,        
+        NULL, // EnregisteredValueHome * pRemoteRegAddr,
         &pRefValue);
 
     if (SUCCEEDED(hr))
     {
         pRefValue->QueryInterface(__uuidof(ICorDebugReferenceValue), (void**)pOutRef);
     }
-    
+
     return hr;
 }
 
@@ -1341,10 +1341,10 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
 // of the reference.
 // Arguments: none
 // Notes:
-//     - Throws 
+//     - Throws
 //     - m_info.objRefBad must be set to true before calling this function. If we throw, we'll
 //       never end up setting m_info.objRefBad, but throwing indicates that the reference is
-//       indeed bad. Only if we exit normally will we end up setting m_info.objRefBad to false.   
+//       indeed bad. Only if we exit normally will we end up setting m_info.objRefBad to false.
 void CordbReferenceValue::TryDereferencingTarget()
 {
     _ASSERTE(!!m_info.objRefBad == true);
@@ -1358,10 +1358,10 @@ void CordbReferenceValue::TryDereferencingTarget()
     if (dataSize <= 0)
         sizeToRead = 1; // Read at least one byte.
     else if (dataSize >= 8)
-        sizeToRead = 8; // Read at most eight bytes--this is just a perf improvement. Even if we read 
-                        // all the bytes, we are only able to determine that we can read those bytes, 
+        sizeToRead = 8; // Read at most eight bytes--this is just a perf improvement. Even if we read
+                        // all the bytes, we are only able to determine that we can read those bytes,
                         // we can't really tell if the data we are reading is actually the data we
-                        // want. 
+                        // want.
     else sizeToRead = dataSize;
 
     // Now see if we can read from the address where the object is supposed to be
@@ -1381,7 +1381,7 @@ void CordbReferenceValue::TryDereferencingTarget()
 // readable. We're actually just checking that we can dereference the pointer.
 // Arguments:
 //     input:  type - the type of the pointer to which the object reference points.
-//     output: none, but fills in m_info.objRefBad 
+//     output: none, but fills in m_info.objRefBad
 // Note: Throws
 void CordbReferenceValue::SanityCheckPointer (CorElementType type)
 {
@@ -1396,7 +1396,7 @@ void CordbReferenceValue::SanityCheckPointer (CorElementType type)
             {
                 // The only way to tell if the reference in PTR is bad or
                 // not is to try to deref the thing.
-                TryDereferencingTarget(); 
+                TryDereferencingTarget();
             }
         } // !m_info.m_basicData.m_vmObject.IsNull()
         // else Null refs are considered "bad".
@@ -1407,8 +1407,8 @@ void CordbReferenceValue::SanityCheckPointer (CorElementType type)
 
 } // CordbReferenceValue::SanityCheckPointer
 
-// get information about the reference when it's not an object address but another kind of pointer type: 
-// ELEMENT_TYPE_BYREF, ELEMENT_TYPE_PTR or ELEMENT_TYPE_FNPTR 
+// get information about the reference when it's not an object address but another kind of pointer type:
+// ELEMENT_TYPE_BYREF, ELEMENT_TYPE_PTR or ELEMENT_TYPE_FNPTR
 // Arguments:
 //    input: type       - type of the referent
 //           localValue - starting address and length of a local buffer containing the object ref
@@ -1421,7 +1421,7 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
     // Fill in the type since we will not be getting it from the DAC
     m_info.objTypeData.elementType = type;
 
-    // First get the objRef  
+    // First get the objRef
     if (localValue.StartAddress() != NULL)
     {
         // localValue represents a buffer containing a copy of the objectRef that exists locally. It could be a
@@ -1430,29 +1430,29 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         // element, or referent of a different object reference for that other Cordb*Value instance. It
         // could also be a pointer to the value of a local register display of the frame from which this object
         // ref comes.
-        
+
         // For example, if we have a value class (represented by a CordbVCObject instance) with a field
         // that is an object pointer, localValue will contain a pointer to that field in the local
         // cache of the CordbVCObjectValue instance (CordbVCObjectValue::m_pObjectCopy).
-        
+
         // Note, though, that pLocalValue holds the address of a target object. We will cache
-        // the contents of pLocalValue (the object ref) here for efficiency of read access, but if we 
+        // the contents of pLocalValue (the object ref) here for efficiency of read access, but if we
         // want to set the reference later (e.g., we want the object ref to point to NULL instead of an
-        // object), we'll have to set the object ref in the target, not our local copy. 
+        // object), we'll have to set the object ref in the target, not our local copy.
         //                     Host memory                                     Target memory
-        //                                           ---------------    |      
+        //                                           ---------------    |
         // CordbVCObjectValue::m_copyOfObject ----> |               |
         //                                          |      ...      |   |
         //                                          |               |
         //                                          |---------------|   |             Object
         //                        localAddress ---> |  object addr  |------------->   --------------
         //                                          |---------------|   |      --->  |              |
-        //                                          |      ...      |         |      |              |	
+        //                                          |      ...      |         |      |              |
         //                                           ---------------    |     |       --------------
         //                                                                    |
         // CordbReferenceValue::m_info.objRef --->   ---------------    |     |
-        //                                          | object addr   |---------	
-        //                                           ---------------    |	      	                 
+        //                                          | object addr   |---------
+        //                                           ---------------    |
 
         _ASSERTE(localValue.Size() == sizeof(void *));
         localCopy(&(m_info.objRef), localValue);
@@ -1460,7 +1460,7 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
     else
     {
         // we have a non-local location, so we'll get the value of the ref from its home
-        
+
         // do some preinitialization in case we get an exception
         EX_TRY
         {
@@ -1493,7 +1493,7 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
 void PreInitObjectData(DebuggerIPCE_ObjectData * pObjectData, void * objAddress, CorElementType objectType)
 {
     _ASSERTE(pObjectData != NULL);
-    
+
     memset(pObjectData, 0, sizeof(DebuggerIPCE_ObjectData));
     pObjectData->objRef = objAddress;
     pObjectData->objTypeData.elementType = objectType;
@@ -1503,17 +1503,17 @@ void PreInitObjectData(DebuggerIPCE_ObjectData * pObjectData, void * objAddress,
 // get basic object specific data when a reference points to an object, plus extra data if the object is an
 // array or string
 // Arguments:
-//     input:  pProcess      - process to which the object belongs 
-//             objectAddress - pointer to the TypedByRef object (this is the value of the object reference 
-//                             or handle. 
+//     input:  pProcess      - process to which the object belongs
+//             objectAddress - pointer to the TypedByRef object (this is the value of the object reference
+//                             or handle.
 //             type          - the type of the object referenced
-//             vmAppDomain   - appdomain to which the object belongs 
-//     output: pInfo         - filled with information about the object to which the TypedByRef refers. 
+//             vmAppDomain   - appdomain to which the object belongs
+//     output: pInfo         - filled with information about the object to which the TypedByRef refers.
 // Note: Throws
 /* static */
-void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess, 
-                                        void *                    objectAddress, 
-                                        CorElementType            type, 
+void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
+                                        void *                    objectAddress,
+                                        CorElementType            type,
                                         VMPTR_AppDomain           vmAppdomain,
                                         DebuggerIPCE_ObjectData * pInfo)
 {
@@ -1532,12 +1532,12 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
         {
             pInterface->GetStringData(objTargetAddr, pInfo);
         }
-        else if ((pInfo->objTypeData.elementType == ELEMENT_TYPE_ARRAY) || 
+        else if ((pInfo->objTypeData.elementType == ELEMENT_TYPE_ARRAY) ||
                  (pInfo->objTypeData.elementType == ELEMENT_TYPE_SZARRAY))
         {
             pInterface->GetArrayData(objTargetAddr, pInfo);
         }
-    } 
+    }
 
 } // CordbReferenceValue::GetObjectData
 
@@ -1548,12 +1548,12 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
 //                           handle.
 //             type          - the type of the object referenced
 //             vmAppDomain - appdomain to which the object belongs
-//     output: pInfo       - filled with information about the object to which the TypedByRef refers. 
+//     output: pInfo       - filled with information about the object to which the TypedByRef refers.
 // Note: Throws
 /* static */
-void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess, 
-                                            CORDB_ADDRESS             pTypedByRef, 
-                                            CorElementType            type, 
+void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
+                                            CORDB_ADDRESS             pTypedByRef,
+                                            CorElementType            type,
                                             VMPTR_AppDomain           vmAppDomain,
                                             DebuggerIPCE_ObjectData * pInfo)
 {
@@ -1565,7 +1565,7 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
     // it is not the address of an object, as we would ordinarily expect. Instead, in the special case of
     // TypedByref objects, it is actually the address of the TypedByRef struct which  contains the
     // type and the object address.
-    
+
     pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, vmAppDomain, pInfo);
 } // CordbReferenceValue::GetTypedByRefData
 
@@ -1577,7 +1577,7 @@ void * CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
 {
     void * objectAddress;
     if (localValue.StartAddress() != NULL)
-    {  
+    {
         // the object ref comes from a local cached copy
         _ASSERTE(localValue.Size() == sizeof(void *));
         memcpy(&objectAddress, localValue.StartAddress(), localValue.Size());
@@ -1590,7 +1590,7 @@ void * CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
     return objectAddress;
 } // CordbReferenceValue::GetObjectAddress
 
-// update type information after initializing -- when we initialize, we may get more exact type information 
+// update type information after initializing -- when we initialize, we may get more exact type information
 // than we previously had
 // Arguments: none--uses and updates data members
 // Note: Throws
@@ -1602,7 +1602,7 @@ void CordbReferenceValue::UpdateTypeInfo()
     // Update our signature accordingly, which is okay since we always have a copy of our sig. This
     // ensures that the reference's signature accurately reflects what the Runtime knows it's pointing
     // to.
-    // 
+    //
     // GENERICS: do this for all types: for example, an array might have been discovered to be a more
     // specific kind of array (String[] where an Object[] was expected).
     CordbType *newtype;
@@ -1616,7 +1616,7 @@ void CordbReferenceValue::UpdateTypeInfo()
     // what the "real" type of the object is...
     if (m_info.objTypeData.elementType == ELEMENT_TYPE_TYPEDBYREF)
 {
-        IfFailThrow(CordbType::TypeDataToType(m_appdomain, 
+        IfFailThrow(CordbType::TypeDataToType(m_appdomain,
                     &m_info.typedByrefInfo.typedByrefType,
                     &m_realTypeOfTypedByref));
     }
@@ -1624,15 +1624,15 @@ void CordbReferenceValue::UpdateTypeInfo()
 
 // Initialize this CordbReferenceValue. This may involve inspecting the LS to get information about the
 // referent.
-// Arguments: 
-//     input: localValue - buffer address and size of the RS location of the reference. (This may be NULL 
+// Arguments:
+//     input: localValue - buffer address and size of the RS location of the reference. (This may be NULL
 //                         if the reference didn't come from a local cached copy. See
-//                         code:CordbReferenceValue::GetPointerData for further explanation of local locations.) 
+//                         code:CordbReferenceValue::GetPointerData for further explanation of local locations.)
 // Return Value: S_OK on success or E_INVALIDARG or  write process memory errors on failure
 
 HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
 {
-    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(this->GetProcess());
 
     HRESULT hr = S_OK;
     CordbProcess * pProcess = GetProcess();
@@ -1673,15 +1673,15 @@ HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
             // information we need
             GetPointerData(type, localValue);
         }
-        else // we have to get more information about the object from the DAC 
+        else // we have to get more information about the object from the DAC
         {
             if (type == ELEMENT_TYPE_TYPEDBYREF)
             {
                 _ASSERTE(m_valueHome.m_pHome != NULL);
-                GetTypedByRefData(pProcess, 
-                                  m_valueHome.m_pHome->GetAddress(), 
-                                  type, 
-                                  m_appdomain->GetADToken(), 
+                GetTypedByRefData(pProcess,
+                                  m_valueHome.m_pHome->GetAddress(),
+                                  type,
+                                  m_appdomain->GetADToken(),
                                   &m_info);
             }
             else
@@ -1720,7 +1720,7 @@ HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
     }while(0)
 
 // constructor
-// Arguments: 
+// Arguments:
 //     input:  pAppDomain  - the appdomain to which the object belongs
 //             pType       - the type of the object
 //             remoteValue - the LS address and size of the object
@@ -1734,7 +1734,7 @@ CordbObjectValue::CordbObjectValue(CordbAppDomain *          pAppdomain,
                 false, pAppdomain->GetProcess()->GetContinueNeuterList()),
       m_info(*pObjectData),
       m_pObjectCopy(NULL), m_objectLocalVars(NULL), m_stringBuffer(NULL),
-      m_valueHome(pAppdomain->GetProcess(), remoteValue), 
+      m_valueHome(pAppdomain->GetProcess(), remoteValue),
       m_fIsExceptionObject(FALSE), m_fIsRcw(FALSE), m_fIsDelegate(FALSE)
 {
     _ASSERTE(pAppdomain != NULL);
@@ -1775,7 +1775,7 @@ CordbObjectValue::~CordbObjectValue()
 {
     DTOR_ENTRY(this);
 
-    _ASSERTE(IsNeutered());    
+    _ASSERTE(IsNeutered());
 } // CordbObjectValue::~CordbObjectValue
 
 void CordbObjectValue::Neuter()
@@ -1785,7 +1785,7 @@ void CordbObjectValue::Neuter()
     {
         delete [] m_pObjectCopy;
         m_pObjectCopy = NULL;
-    }    
+    }
 
     CordbValue::Neuter();
 } // CordbObjectValue::Neuter
@@ -1860,7 +1860,7 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
 } // CordbObjectValue::QueryInterface
 
 // gets the type of the object
-// Arguments: 
+// Arguments:
 //     output: pType - the type of the value. The caller must guarantee that pType is non-null.
 // Return Value: S_OK on success, E_INVALIDARG on failure
 HRESULT CordbObjectValue::GetType(CorElementType *pType)
@@ -1871,7 +1871,7 @@ HRESULT CordbObjectValue::GetType(CorElementType *pType)
 } // CordbObjectValue::GetType
 
 // gets the size of the object
-// Arguments: 
+// Arguments:
 //     output: pSize - the size of the value. The caller must guarantee that pSize is non-null.
 // Return Value: S_OK on success, E_INVALIDARG on failure
 HRESULT CordbObjectValue::GetSize(ULONG32 *pSize)
@@ -1882,7 +1882,7 @@ HRESULT CordbObjectValue::GetSize(ULONG32 *pSize)
 } // CordbObjectValue::GetSize
 
 // gets the size of the object
-// Arguments: 
+// Arguments:
 //     output: pSize - the size of the value. The caller must guarantee that pSize is non-null.
 // Return Value: S_OK on success, E_INVALIDARG on failure
 HRESULT CordbObjectValue::GetSize64(ULONG64 *pSize)
@@ -1893,10 +1893,10 @@ HRESULT CordbObjectValue::GetSize64(ULONG64 *pSize)
 } // CordbObjectValue::GetSize64
 
 
-// gets the remote (LS) address of the object. This may return NULL if the 
-// object is a literal or resides in a register. 
+// gets the remote (LS) address of the object. This may return NULL if the
+// object is a literal or resides in a register.
 // Arguments:
-//     output: pAddress - the LS address (the contents should not be null since objects 
+//     output: pAddress - the LS address (the contents should not be null since objects
 //                        aren't enregistered nor are they fields or elements of other
 //                        types). The caller must ensure that pAddress is not null.
 // Return Value: S_OK on success or E_INVALIDARG if pAddress is null
@@ -1904,7 +1904,7 @@ HRESULT CordbObjectValue::GetAddress(CORDB_ADDRESS *pAddress)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    COV_VALIDATE_OBJECT();    
+    COV_VALIDATE_OBJECT();
     VALIDATE_POINTER_TO_OBJECT(pAddress, CORDB_ADDRESS *);
 
     *pAddress = m_valueHome.GetAddress();
@@ -1914,7 +1914,7 @@ HRESULT CordbObjectValue::GetAddress(CORDB_ADDRESS *pAddress)
 HRESULT CordbObjectValue::CreateBreakpoint(ICorDebugValueBreakpoint ** ppBreakpoint)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
     COV_VALIDATE_OBJECT();
 
     return (CordbValue::CreateBreakpoint(ppBreakpoint));
@@ -1960,21 +1960,21 @@ HRESULT CordbObjectValue::CreateHandle(
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CreateHandle
 
 // Get class information for this object
-// Arguments: 
+// Arguments:
 //    output: ppClass - ICDClass instance for this object
-// Return Value:  S_OK if success, CORDBG_E_CLASS_NOT_LOADED, E_INVALIDARG, OOM on failure 
+// Return Value:  S_OK if success, CORDBG_E_CLASS_NOT_LOADED, E_INVALIDARG, OOM on failure
 HRESULT CordbObjectValue::GetClass(ICorDebugClass **ppClass)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(ppClass, ICorDebugClass **);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     HRESULT hr = S_OK;
     if (m_type->m_pClass == NULL)
     {
@@ -1996,11 +1996,11 @@ HRESULT CordbObjectValue::GetClass(ICorDebugClass **ppClass)
 
 
 //-----------------------------------------------------------------------------
-// 
+//
 // Public API to get instance field of the given type in the object and returns an ICDValue for it.
 //
 // Arguments:
-//    pType - The type containing the field token. 
+//    pType - The type containing the field token.
 //    fieldDef - The field's metadata def.
 //    ppValue - OUT: the ICDValue for the field.
 //
@@ -2024,7 +2024,7 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
     COV_VALIDATE_OBJECT();
-    
+
     CordbType * pCordbType = NULL;
     HRESULT hr = S_OK;
 
@@ -2049,13 +2049,13 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
         // Validate the token.
         if (pCordbType->m_pClass == NULL)
         {
-            ThrowHR(E_INVALIDARG);            
+            ThrowHR(E_INVALIDARG);
         }
         IMetaDataImport * pImport = pCordbType->m_pClass->GetModule()->GetMetaDataImporter();
 
         if (!pImport->IsValidToken(fieldDef))
         {
-            ThrowHR(E_INVALIDARG);            
+            ThrowHR(E_INVALIDARG);
         }
 
        FieldData * pFieldData;
@@ -2081,7 +2081,7 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
         if (SUCCEEDED(hr))
         {
             _ASSERTE(pFieldData != NULL);
-            
+
             if (pFieldData->m_fFldIsStatic)
             {
                 ThrowHR(CORDBG_E_FIELD_NOT_INSTANCE);
@@ -2094,10 +2094,10 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
             fldOffset = pFieldData->GetInstanceOffset();
 
             CordbModule * pModule = pCordbType->m_pClass->GetModule();
-            
+
             SigParser sigParser;
             IfFailThrow(pFieldData->GetFieldSignature(pModule, &sigParser));
-            
+
             CordbType * pFieldType;
             IfFailThrow(CordbType::SigToType(pModule, &sigParser, &(pCordbType->m_inst), &pFieldType));
 
@@ -2107,13 +2107,13 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
             if (!fSyncBlockField)
             {
                 // verify that the field starts and ends before the end of m_pObjectCopy
-                _ASSERTE(m_info.objOffsetToVars + fldOffset < m_size);  
+                _ASSERTE(m_info.objOffsetToVars + fldOffset < m_size);
                 _ASSERTE(m_info.objOffsetToVars + fldOffset + size <= m_size);
                 localAddr = m_objectLocalVars + fldOffset;
             }
-            
-            // pass the computed local field address, but don't claim we have a local addr if the fldOffset 
-            // has been cooked to point us to a sync block field. 
+
+            // pass the computed local field address, but don't claim we have a local addr if the fldOffset
+            // has been cooked to point us to a sync block field.
             m_valueHome.CreateInternalValue(pFieldType,
                                             m_info.objOffsetToVars + fldOffset,
                                             localAddr,
@@ -2129,11 +2129,11 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
 } // CordbObjectValue::GetFieldValueForType
 
 // Public implementation of ICorDebugObjectValue::GetFieldValue
-// Arguments: 
+// Arguments:
 //     input:  pClass   - class information for this object
 //             fieldDef - the field token for the requested field
 //     output: ppValue  - instance of ICDValue created to represent the field
-// Return Value: S_OK on success, E_INVALIDARG, CORDBG_E_ENC_HANGING_FIELD, CORDBG_E_FIELD_NOT_INSTANCE 
+// Return Value: S_OK on success, E_INVALIDARG, CORDBG_E_ENC_HANGING_FIELD, CORDBG_E_FIELD_NOT_INSTANCE
 // or OOM on failure
 HRESULT CordbObjectValue::GetFieldValue(ICorDebugClass *pClass,
                                         mdFieldDef fieldDef,
@@ -2156,14 +2156,14 @@ HRESULT CordbObjectValue::GetFieldValue(ICorDebugClass *pClass,
         return E_INVALIDARG;
     }
 
-    // mdFieldDef may specify a field within a base class. mdFieldDef tokens are unique throughout a module. 
+    // mdFieldDef may specify a field within a base class. mdFieldDef tokens are unique throughout a module.
     // So we still need a metadata scope to resolve the mdFieldDef. We can infer the scope from pClass.
     // Beware that this Type may be derived from a type in another module, and so the incoming
     // fieldDef has to be resolved in the metadata scope of pClass.
 
     RSExtSmartPtr<CordbType> relevantType;
 
-    // This object has an ICorDebugType which has the type-parameters for generics. 
+    // This object has an ICorDebugType which has the type-parameters for generics.
     // ICorDebugClass provided by the caller does not have type-parameters. So we resolve that
     // by using the provided ICDClass with the type parameters from this object's ICDType.
     if (FAILED (hr= m_type->GetParentType((CordbClass *) pClass, &relevantType)))
@@ -2218,7 +2218,7 @@ HRESULT CordbObjectValue::GetContext(ICorDebugContext **ppContext)
 //                              value classes, so by definition, a CordbObjectValue instance
 //                              does not represent a value class
 // Return Value: S_OK
-// 
+//
 HRESULT CordbObjectValue::IsValueClass(BOOL * pfIsValueClass)
 {
     FAIL_IF_NEUTERED(this);
@@ -2250,8 +2250,8 @@ HRESULT CordbObjectValue::SetFromManagedCopy(IUnknown *pObject)
 // Arguments:
 //     output: pTo - buffer to hold the object copy. The caller must guarantee that this
 //                   is non-null and the buffer is large enough to hold the object
-// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure  
-//     
+// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
+//
 HRESULT CordbObjectValue::GetValue(void *pTo)
 {
     FAIL_IF_NEUTERED(this);
@@ -2274,14 +2274,14 @@ HRESULT CordbObjectValue::SetValue(void *pFrom)
 // If this instance of CordbObjectValue is actually a string, get its length
 // Arguments:
 //     output: pcchString - the count of characters in the string
-// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure  
-// Note: if the object is not really a string, the value in pcchString will be garbage on exit  
+// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
+// Note: if the object is not really a string, the value in pcchString will be garbage on exit
 HRESULT CordbObjectValue::GetLength(ULONG32 *pcchString)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(pcchString, SIZE_T *);
     FAIL_IF_NEUTERED(this);
-    
+
     _ASSERTE(m_info.objTypeData.elementType == ELEMENT_TYPE_STRING);
 
     COV_VALIDATE_OBJECT();
@@ -2292,14 +2292,14 @@ HRESULT CordbObjectValue::GetLength(ULONG32 *pcchString)
 
 // If this instance of CordbObjectValue represents a string, extract the string and its length.
 // If cchString is less than the length of the string, we'll return only the first cchString characters
-// but pcchString will still hold the full length. If cchString is more than the string length, we'll 
+// but pcchString will still hold the full length. If cchString is more than the string length, we'll
 // return only string length characters.
 // Arguments:
 //     input:  cchString -  the maximum number of characters to return, including NULL terminator
 //     output: pcchString - the actual length of the string, excluding NULL terminator (this may be greater than cchString)
-//             szString   - a buffer holding the string. The memory for this must be allocated and 
+//             szString   - a buffer holding the string. The memory for this must be allocated and
 //                          managed by the caller and must have space for at least cchString characters
-// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure  
+// Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
 HRESULT CordbObjectValue::GetString(ULONG32 cchString,
                                     ULONG32 *pcchString,
                                     __out_ecount_opt(cchString) WCHAR szString[])
@@ -2370,12 +2370,12 @@ HRESULT CordbObjectValue::Init()
 // CordbObjectValue::GetThreadOwningMonitorLock
 // If a managed thread owns the monitor lock on this object then *ppThread
 // will point to that thread and S_OK will be returned. The thread object is valid
-// until the thread exits. *pAcquisitionCount will indicate the number of times 
-// this thread would need to release the lock before it returns to being 
+// until the thread exits. *pAcquisitionCount will indicate the number of times
+// this thread would need to release the lock before it returns to being
 // unowned.
 // If no managed thread owns the monitor lock on this object then *ppThread
 // and pAcquisitionCount will be unchanged and S_FALSE returned.
-// If ppThread or pAcquisitionCount is not a valid pointer the result is 
+// If ppThread or pAcquisitionCount is not a valid pointer the result is
 // undefined.
 // If any error occurs such that it cannot be determined which, if any, thread
 // owns the monitor lock on this object then a failing HRESULT will be returned
@@ -2392,14 +2392,14 @@ HRESULT CordbObjectValue::GetThreadOwningMonitorLock(ICorDebugThread **ppThread,
 }
 
 // CordbObjectValue::GetMonitorEventWaitList
-// Provides an ordered list of threads which are queued on the event associated 
-// with a monitor lock. The first thread in the list is the first thread which 
-// will be released by the next call to Monitor.Pulse, the next thread in the list   
+// Provides an ordered list of threads which are queued on the event associated
+// with a monitor lock. The first thread in the list is the first thread which
+// will be released by the next call to Monitor.Pulse, the next thread in the list
 // will be released on the following call, and so on.
 // If this list is non-empty S_OK will be returned, if it is empty S_FALSE
 // will be returned (the enumeration is still valid, just empty).
 // In either case the enumeration interface is only usable for the duration
-// of the current synchronized state, however the threads interfaces dispensed 
+// of the current synchronized state, however the threads interfaces dispensed
 // from it are valid until the thread exits.
 // If ppThread is not a valid pointer the result is undefined.
 // If any error occurs such that it cannot be determined which, if any, threads
@@ -2410,7 +2410,7 @@ HRESULT CordbObjectValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThread
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    return CordbHeapValue3Impl::GetMonitorEventWaitList(GetProcess(), 
+    return CordbHeapValue3Impl::GetMonitorEventWaitList(GetProcess(),
                                                         GetValueHome()->GetAddress(),
                                                         ppThreadEnum);
 }
@@ -2444,7 +2444,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
         {
             DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
-        
+
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainFile);
 
@@ -2696,7 +2696,7 @@ HRESULT CordbObjectValue::GetFunction(ICorDebugFunction **ppFunction)
 }
 
 HRESULT CordbObjectValue::GetCachedInterfaceTypes(
-                        BOOL bIInspectableOnly, 
+                        BOOL bIInspectableOnly,
                         ICorDebugTypeEnum * * ppInterfacesEnum)
 {
 #if !defined(FEATURE_COMINTEROP)
@@ -2722,14 +2722,14 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
 
         // retrieve interface types
         DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> dacInterfaces;
-    
+
         IDacDbiInterface* pDAC = GetProcess()->GetDAC();
 
         CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
         VMPTR_Object vmObj = pDAC->GetObject(objAddr);
 
         // retrieve type info from LS
-        pDAC->GetRcwCachedInterfaceTypes(vmObj, m_appdomain->GetADToken(), 
+        pDAC->GetRcwCachedInterfaceTypes(vmObj, m_appdomain->GetADToken(),
                         bIInspectableOnly, &dacInterfaces);
 
         // synthesize CordbType instances
@@ -2739,8 +2739,8 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
             pItfs = new CordbType*[cItfs];
             for (int n = 0; n < cItfs; ++n)
             {
-                hr = CordbType::TypeDataToType(m_appdomain, 
-                                               &(dacInterfaces[n]), 
+                hr = CordbType::TypeDataToType(m_appdomain,
+                                               &(dacInterfaces[n]),
                                                &pItfs[n]);
             }
         }
@@ -2764,7 +2764,7 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
 }
 
 HRESULT CordbObjectValue::GetCachedInterfacePointers(
-                        BOOL bIInspectableOnly, 
+                        BOOL bIInspectableOnly,
                         ULONG32 celt,
                         ULONG32 *pcEltFetched,
                         CORDB_ADDRESS * ptrs)
@@ -2838,7 +2838,7 @@ HRESULT CordbObjectValue::GetCachedInterfacePointers(
 //            pType           - type information for the value
 //            remoteValue     - buffer describing the target location of the value
 //            ppRemoteRegAddr - describes the register information if the value resides in a register
-// Note: May throw E_OUTOFMEMORY           
+// Note: May throw E_OUTOFMEMORY
 CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain,
                                        CordbType *                    pType,
                                        TargetBuffer                   remoteValue,
@@ -2846,17 +2846,17 @@ CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain
 
     // We'd like to neuter this on Continue (not just exit), but it may be a breaking change,
     // especially for ValueTypes that don't have any GC refs in them.
-    : CordbValue(pAppdomain, 
-                 pType, 
-                 remoteValue.pAddress, 
-                 false, 
+    : CordbValue(pAppdomain,
+                 pType,
+                 remoteValue.pAddress,
+                 false,
                  pAppdomain->GetSweepableExitNeuterList()),
       m_pObjectCopy(NULL),
       m_pValueHome(NULL)
 {
-    // instantiate the value home 
+    // instantiate the value home
     NewHolder<ValueHome> pHome(NULL);
-    
+
     if (remoteValue.IsEmpty())
     {
         pHome = (new RegisterValueHome(pAppdomain->GetProcess(), ppRemoteRegAddr));
@@ -2933,9 +2933,9 @@ HRESULT CordbVCObjectValue::QueryInterface(REFIID id, void **pInterface)
 } // CordbVCObjectValue::QueryInterface
 
 // returns the basic type of the ICDValue
-// Arguments: 
+// Arguments:
 //     output: pType - the type of the ICDValue (always E_T_VALUETYPE)
-// ReturnValue: S_OK on success or E_INVALIDARG if pType is NULL 
+// ReturnValue: S_OK on success or E_INVALIDARG if pType is NULL
 HRESULT CordbVCObjectValue::GetType(CorElementType *pType)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -2974,7 +2974,7 @@ CordbClass *CordbVCObjectValue::GetClass()
 } // CordbVCObjectValue::GetClass
 
 //-----------------------------------------------------------------------------
-// 
+//
 // Finds the given field of the given type in the object and returns an ICDValue for it.
 //
 // Arguments:
@@ -3032,14 +3032,14 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
         // since the new fields _can't_ be contiguous with the old fields,
         // and having all the fields contiguous is kinda the point of a V.C.
         IfFailThrow(hr);
-        
+
         _ASSERTE(pFieldData != NULL);
 
         CordbModule * pModule = pCordbType->m_pClass->GetModule();
-        
+
         SigParser sigParser;
         IfFailThrow(pFieldData->GetFieldSignature(pModule, &sigParser));
-            
+
         // <TODO>
         // How can I assert that I have exactly one field?
         // </TODO>
@@ -3051,13 +3051,13 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
         // Compute the address of the field contents in our local object cache
         SIZE_T fieldOffset = pFieldData->GetInstanceOffset();
         ULONG32 size = GetSizeForType(pFieldType, kUnboxed);
-        
+
         // verify that the field starts before the end of m_pObjectCopy
-        _ASSERTE(fieldOffset < m_size);  
+        _ASSERTE(fieldOffset < m_size);
         _ASSERTE(fieldOffset + size <= m_size);
 
-        m_pValueHome->CreateInternalValue(pFieldType, 
-                                          fieldOffset, 
+        m_pValueHome->CreateInternalValue(pFieldType,
+                                          fieldOffset,
                                           m_pObjectCopy + fieldOffset,
                                           size,
                                           ppValue); // throws
@@ -3068,8 +3068,8 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
 } // CordbVCObjectValue::GetFieldValueForType
 
 // gets an ICDValue to represent a field of the VC object
-// Arguments: 
-//     input:  pClass   - the class information for this object (needed to get the parent class information) 
+// Arguments:
+//     input:  pClass   - the class information for this object (needed to get the parent class information)
 //             fieldDef - field token for the desired field
 //     output: ppValue  - on success, the ICDValue representing the desired field
 // Return Value: S_OK on success, CORDBG_E_OBJECT_NEUTERED, CORDBG_E_CLASS_NOT_LOADED, E_INVALIDARG, OOM,
@@ -3109,7 +3109,7 @@ HRESULT CordbVCObjectValue::GetFieldValue(ICorDebugClass *pClass,
 } // CordbVCObjectValue::GetFieldValue
 
 // get a copy of the VC object
-// Arguments: 
+// Arguments:
 //     output: pTo - a caller-allocated buffer to hold the copy
 // Return Value: S_OK on success, CORDBG_E_OBJECT_NEUTERED on failure
 // Note:  The caller must ensure the buffer is large enough to hold the value (by a previous call to GetSize)
@@ -3118,7 +3118,7 @@ HRESULT CordbVCObjectValue::GetValue(void *pTo)
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY(pTo, BYTE, m_size, false, true);
     FAIL_IF_NEUTERED(this);
-    
+
     // Copy out the value, which is the whole object.
     memcpy(pTo, m_pObjectCopy, m_size);
 
@@ -3126,7 +3126,7 @@ HRESULT CordbVCObjectValue::GetValue(void *pTo)
 } // CordbVCObjectValue::GetValue
 
 // set the value of a VC object
-// Arguments: 
+// Arguments:
 //     input: pSrc - buffer containing the new value. Allocated and managed by the caller.
 // Return Value: S_OK on success, CORDBG_E_OBJECT_NEUTERED, synchronization errors, E_INVALIDARG, write
 //               process memory errors, CORDBG_E_CLASS_NOT_LOADED or OOM on failure
@@ -3147,7 +3147,7 @@ HRESULT CordbVCObjectValue::SetValue(void * pSrc)
     if (m_type)
     {
         IfFailRet(m_type->Init(FALSE));
-    }        
+    }
 
     EX_TRY
     {
@@ -3208,7 +3208,7 @@ HRESULT CordbVCObjectValue::SetFromManagedCopy(IUnknown *pObject)
 // Description
 //      Initializes the Right-Side's representation of a Value Class object.
 // Parameters
-//      input: localValue - buffer containing the value if this instance of CordbObjectValue 
+//      input: localValue - buffer containing the value if this instance of CordbObjectValue
 //                          was a field or array element of an existing value, otherwise this
 //                          will have a start address equal to NULL
 // Returns
@@ -3222,7 +3222,7 @@ HRESULT CordbVCObjectValue::Init(MemoryRange localValue)
 {
     HRESULT hr = S_OK;
 
-    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); // 
+    INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
 
     // Get the object size from the class
     ULONG32 size;
@@ -3242,13 +3242,13 @@ HRESULT CordbVCObjectValue::Init(MemoryRange localValue)
         // The data is already in the local address space. Go ahead and copy it
         // from there.
         // localValue.StartAddress points to:
-        // 1. A field from the local cached copy belonging to an instance of CordbVCObjectValue (different 
+        // 1. A field from the local cached copy belonging to an instance of CordbVCObjectValue (different
         //    instance from "this") or CordbObjectValue
         // 2. An element in the locally cached subrange of an array belonging to an instance of CordbArrayValue
-        // 3. The address of a particular register in the register display of an instance of CordbNativeFrame 
+        // 3. The address of a particular register in the register display of an instance of CordbNativeFrame
         //    for an enregistered value type. In this case, it's possible that the size of the value is
         //    smaller than the size of a full register. For that reason, we can't just use localValue.Size()
-        //    as the number of bytes to copy, because only enough space for the value has been allocated. 
+        //    as the number of bytes to copy, because only enough space for the value has been allocated.
         _ASSERTE(localValue.Size() >= m_size);
         localCopy(m_pObjectCopy, MemoryRange(localValue.StartAddress(), m_size));
         return S_OK;
@@ -3268,7 +3268,7 @@ HRESULT CordbVCObjectValue::Init(MemoryRange localValue)
 
 // constructor
 // Arguments:
-//     input: appdomain    - app domain to which the value belongs 
+//     input: appdomain    - app domain to which the value belongs
 //            type         - type information for the boxed value
 //            remoteValue  - buffer describing the remote location of the value
 //            size         - size of the value
@@ -3282,7 +3282,7 @@ CordbBoxValue::CordbBoxValue(CordbAppDomain *appdomain,
        m_offsetToVars(offsetToVars),
        m_valueHome(appdomain->GetProcess(), remoteValue)
 {
-    m_size = size; 
+    m_size = size;
 } // CordbBoxValue::CordbBoxValue
 
 // destructor
@@ -3341,9 +3341,9 @@ HRESULT CordbBoxValue::QueryInterface(REFIID id, void **pInterface)
 } // CordbBoxValue::QueryInterface
 
 // returns the basic type of the ICDValue
-// Arguments: 
+// Arguments:
 //     output: pType - the type of the ICDValue (always E_T_CLASS)
-// ReturnValue: S_OK on success or E_INVALIDARG if pType is NULL 
+// ReturnValue: S_OK on success or E_INVALIDARG if pType is NULL
 HRESULT CordbBoxValue::GetType(CorElementType *pType)
 {
     VALIDATE_POINTER_TO_OBJECT(pType, CorElementType *);
@@ -3384,7 +3384,7 @@ HRESULT CordbBoxValue::CreateHandle(
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CordbBoxValue::CreateHandle
 
@@ -3404,7 +3404,7 @@ HRESULT CordbBoxValue::SetValue(void *pFrom)
 // Arguments:
 //     output: ppObject - pointer to an instance of ICDValue representing the unboxed value, unless ppObject
 //                        is NULL
-// Return Value: S_OK on success or a variety of possible failures: OOM, E_FAIL, errors from 
+// Return Value: S_OK on success or a variety of possible failures: OOM, E_FAIL, errors from
 //               ReadProcessMemory.
 HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
 {
@@ -3421,7 +3421,7 @@ HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
     {
         m_valueHome.CreateInternalValue(m_type,
                                         m_offsetToVars,
-                                        NULL, 
+                                        NULL,
                                         size,
                                         reinterpret_cast<ICorDebugValue **>(ppObject)); // throws
     }
@@ -3431,12 +3431,12 @@ HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
 
 // If a managed thread owns the monitor lock on this object then *ppThread
 // will point to that thread and S_OK will be returned. The thread object is valid
-// until the thread exits. *pAcquisitionCount will indicate the number of times 
-// this thread would need to release the lock before it returns to being 
+// until the thread exits. *pAcquisitionCount will indicate the number of times
+// this thread would need to release the lock before it returns to being
 // unowned.
 // If no managed thread owns the monitor lock on this object then *ppThread
 // and pAcquisitionCount will be unchanged and S_FALSE returned.
-// If ppThread or pAcquisitionCount is not a valid pointer the result is 
+// If ppThread or pAcquisitionCount is not a valid pointer the result is
 // undefined.
 // If any error occurs such that it cannot be determined which, if any, thread
 // owns the monitor lock on this object then a failing HRESULT will be returned
@@ -3452,14 +3452,14 @@ HRESULT CordbBoxValue::GetThreadOwningMonitorLock(ICorDebugThread **ppThread, DW
                                                            pAcquisitionCount);
 }
 
-// Provides an ordered list of threads which are queued on the event associated 
-// with a monitor lock. The first thread in the list is the first thread which 
-// will be released by the next call to Monitor.Pulse, the next thread in the list   
+// Provides an ordered list of threads which are queued on the event associated
+// with a monitor lock. The first thread in the list is the first thread which
+// will be released by the next call to Monitor.Pulse, the next thread in the list
 // will be released on the following call, and so on.
 // If this list is non-empty S_OK will be returned, if it is empty S_FALSE
 // will be returned (the enumeration is still valid, just empty).
 // In either case the enumeration interface is only usable for the duration
-// of the current synchronized state, however the threads interfaces dispensed 
+// of the current synchronized state, however the threads interfaces dispensed
 // from it are valid until the thread exits.
 // If ppThread is not a valid pointer the result is undefined.
 // If any error occurs such that it cannot be determined which, if any, threads
@@ -3496,7 +3496,7 @@ HRESULT CordbBoxValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnu
 
 // constructor
 // Arguments:
-//     input: 
+//     input:
 //         pAppDomain  - app domain to which the value belongs
 //         pType       - type information for the value
 //         pObjectInfo - array specific type information
@@ -3505,10 +3505,10 @@ CordbArrayValue::CordbArrayValue(CordbAppDomain *          pAppdomain,
                                  CordbType *               pType,
                                  DebuggerIPCE_ObjectData * pObjectInfo,
                                  TargetBuffer              remoteValue)
-    : CordbValue(pAppdomain, 
+    : CordbValue(pAppdomain,
                  pType,
                  remoteValue.pAddress,
-                 false, 
+                 false,
                  pAppdomain->GetProcess()->GetContinueNeuterList()),
       m_info(*pObjectInfo),
       m_pObjectCopy(NULL),
@@ -3525,7 +3525,7 @@ CordbArrayValue::CordbArrayValue(CordbAppDomain *          pAppdomain,
 CordbArrayValue::~CordbArrayValue()
 {
     DTOR_ENTRY(this);
-    _ASSERTE(IsNeutered());    
+    _ASSERTE(IsNeutered());
 
     // Destroy the copy of the object.
     if (m_pObjectCopy != NULL)
@@ -3583,7 +3583,7 @@ HRESULT CordbArrayValue::QueryInterface(REFIID id, void **pInterface)
 // gets the type of the array elements
 // Arguments:
 //     output: pType - the element type unless pType is NULL
-// Return Value: S_OK on success or E_INVALIDARG if pType is null    
+// Return Value: S_OK on success or E_INVALIDARG if pType is null
 HRESULT CordbArrayValue::GetElementType(CorElementType *pType)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -3618,7 +3618,7 @@ HRESULT CordbArrayValue::GetRank(ULONG32 *pnRank)
 HRESULT CordbArrayValue::GetCount(ULONG32 *pnCount)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pnCount, ULONG32 *);
 
     *pnCount = (ULONG32)m_info.arrayInfo.componentCount;
@@ -3629,8 +3629,8 @@ HRESULT CordbArrayValue::GetCount(ULONG32 *pnCount)
 // Arguments:
 //     input:  cdim - the number of dimensions about which to get dimensions--this must be the same as the rank
 //     output: dims - an array to hold the sizes of the dimensions of the array--this is allocated and
-//                    managed by the caller  
-// Return Value: S_OK on success or E_INVALIDARG                   
+//                    managed by the caller
+// Return Value: S_OK on success or E_INVALIDARG
 HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -3660,7 +3660,7 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
     return S_OK;
 } // CordbArrayValue::GetDimensions
 
-// 
+//
 // indicates whether the array has base indices
 // Arguments:
 //     output: pbHasBaseIndices - true iff the array has more than one dimension and pbHasBaseIndices is not null
@@ -3668,7 +3668,7 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pbHasBaseIndices, BOOL *);
 
     *pbHasBaseIndices = m_info.arrayInfo.offsetToLowerBounds != 0;
@@ -3676,15 +3676,15 @@ HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 } // CordbArrayValue::HasBaseIndicies
 
 // gets the base indices for a multidimensional array
-// Arguments: 
+// Arguments:
 //     input: cdim - the number of dimensions (this must be the same as the actual rank of the array)
-//            indices - an array to hold the base indices for the array dimensions (allocated and managed 
+//            indices - an array to hold the base indices for the array dimensions (allocated and managed
 //                      by the caller, it must have space for cdim elements)
-// Return Value: S_OK on success or E_INVALIDARG if cdim is not equal to the array rank or indices is null 
+// Return Value: S_OK on success or E_INVALIDARG if cdim is not equal to the array rank or indices is null
 HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(indices, SIZE_T, cdim, true, true);
 
     // Rank info is duplicated for sanity checking - double check it here.
@@ -3702,16 +3702,16 @@ HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
 } // CordbArrayValue::GetBaseIndicies
 
 // Get an element at the position indicated by the values in indices (one index for each dimension)
-// Arguments: 
+// Arguments:
 //     input:  cdim    - the number of dimensions and thus the number of elements in indices. This must match
 //                       the actual rank of the array value.
 //             indices - an array of indices to specify the position of the element. For example, to get a[2][1][0],
 //                       indices would contain 2, 1, and 0 in that order.
 //     output: ppValue - an ICDValue representing the element, unless an error occurs
-// Return Value: S_OK on success or E_INVALIDARG if cdim != rank, indices is NULL or ppValue is NULL                               
-//               or a variety of possible failures: OOM, E_FAIL, errors from 
+// Return Value: S_OK on success or E_INVALIDARG if cdim != rank, indices is NULL or ppValue is NULL
+//               or a variety of possible failures: OOM, E_FAIL, errors from
 //               ReadProcessMemory.
-HRESULT CordbArrayValue::GetElement(ULONG32           cdim, 
+HRESULT CordbArrayValue::GetElement(ULONG32           cdim,
                                     ULONG32           indices[],
                                     ICorDebugValue **ppValue)
 {
@@ -3773,10 +3773,10 @@ HRESULT CordbArrayValue::GetElement(ULONG32           cdim,
 } // CordbArrayValue::GetElement
 
 // get an ICDValue to represent the element at a given position
-// Arguments: 
-//     input:  nPosition - the offset from the beginning of the array to the element 
+// Arguments:
+//     input:  nPosition - the offset from the beginning of the array to the element
 //     output: ppValue   - the ICDValue representing the array element on success
-// Return Value: S_OK on success, E_INVALIDARG  or a variety of possible failures: OOM, E_FAIL, errors from 
+// Return Value: S_OK on success, E_INVALIDARG  or a variety of possible failures: OOM, E_FAIL, errors from
 //               ReadProcessMemory.
 HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
                                               ICorDebugValue **ppValue)
@@ -3798,14 +3798,14 @@ HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
     // The header consists of two DWORDs for each dimension, representing the upper and lower bound for that dimension. A
     // vector of lower bounds comes first, followed by a vector of upper bounds. We want to copy a range of
     // elements into m_pObjectCopy following these vectors, so we need to compute the address where the
-    // vectors end and the elements begin. 
+    // vectors end and the elements begin.
     const int cbHeader = 2 * m_type->m_rank * sizeof(DWORD);
     HRESULT hr = S_OK;
 
     // Ensure that the proper subset is in the cache. m_idxLower and m_idxUpper are initialized to -1, so the
     // first time we hit this condition check, it will evaluate to true. We will set these inside the
     // consequent to the range starting at nPosition and ending at the last available cache position. Thus,
-    // after the first time we hit this, we are asking if nPosition lies outside the range we've cached. 
+    // after the first time we hit this, we are asking if nPosition lies outside the range we've cached.
     if (nPosition < m_idxLower || nPosition >= m_idxUpper)
     {
         const SIZE_T cbElemSize = m_info.arrayInfo.elementSize;
@@ -3815,9 +3815,9 @@ HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
         {
         // the element size could be bigger than the cache, but we want len to be at least 1.
             len = max(ARRAY_CACHE_SIZE / cbElemSize, len);
-        }    
+        }
         else  _ASSERTE(cbElemSize != 0);
-                                                             
+
         m_idxLower = nPosition;
         m_idxUpper = min(m_idxLower + len, m_info.arrayInfo.componentCount);
         _ASSERTE(m_idxLower < m_idxUpper);
@@ -3841,12 +3841,12 @@ HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
 
     SIZE_T offset = m_info.arrayInfo.offsetToArrayBase + (nPosition * size);
     void * localAddress = m_pObjectCopy + cbHeader + ((nPosition - m_idxLower) * size);
-	
+
     EX_TRY
     {
-	    m_valueHome.CreateInternalValue(m_elemtype, 
+	    m_valueHome.CreateInternalValue(m_elemtype,
                                         offset,
-                                        localAddress, 
+                                        localAddress,
                                         (ULONG32)size,
                                         ppValue); // throws
     }
@@ -3885,7 +3885,7 @@ HRESULT CordbArrayValue::CreateHandle(
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CordbArrayValue::CreateHandle
 
@@ -3893,12 +3893,12 @@ HRESULT CordbArrayValue::CreateHandle(
 // Arguments
 //     output: pTo - pointer to a caller-allocated and managed buffer to hold the copy. The caller must guarantee
 //             that this is large enough to hold the entire array
-// Return Value: S_OK on success, E_INVALIDARG or read process memory errors on failure            
+// Return Value: S_OK on success, E_INVALIDARG or read process memory errors on failure
 HRESULT CordbArrayValue::GetValue(void *pTo)
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY(pTo, void *, 1, false, true);
     FAIL_IF_NEUTERED(this);
-    
+
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -3916,7 +3916,7 @@ HRESULT CordbArrayValue::SetValue(void *pFrom)
     return E_INVALIDARG;
 }
 
-// initialize a new instance of CordbArrayValue 
+// initialize a new instance of CordbArrayValue
 // Arguments: none
 // Return Value: S_OK on success or E_OUTOFMEMORY or read process memory errors on failure
 // Note: we are only initializing information about the array (rank, sizes, dimensions, etc) here. We will not
@@ -3959,7 +3959,7 @@ HRESULT CordbArrayValue::Init()
         m_arrayLowerBase  = (DWORD*)(m_pObjectCopy);
         EX_TRY
         {
-            m_valueHome.GetInternalValue(MemoryRange(m_arrayLowerBase, cbVector), 
+            m_valueHome.GetInternalValue(MemoryRange(m_arrayLowerBase, cbVector),
                                                      m_info.arrayInfo.offsetToLowerBounds); // throws
         }
         EX_CATCH_HRESULT(hr);
@@ -3972,7 +3972,7 @@ HRESULT CordbArrayValue::Init()
         m_arrayUpperBase  = (DWORD*)(m_pObjectCopy + cbVector);
         EX_TRY
         {
-            m_valueHome.GetInternalValue(MemoryRange(m_arrayUpperBase, cbVector), 
+            m_valueHome.GetInternalValue(MemoryRange(m_arrayUpperBase, cbVector),
                                                      m_info.arrayInfo.offsetToUpperBounds); // throws
         }
         EX_CATCH_HRESULT(hr);
@@ -3987,12 +3987,12 @@ HRESULT CordbArrayValue::Init()
 // CordbArrayValue::GetThreadOwningMonitorLock
 // If a managed thread owns the monitor lock on this object then *ppThread
 // will point to that thread and S_OK will be returned. The thread object is valid
-// until the thread exits. *pAcquisitionCount will indicate the number of times 
-// this thread would need to release the lock before it returns to being 
+// until the thread exits. *pAcquisitionCount will indicate the number of times
+// this thread would need to release the lock before it returns to being
 // unowned.
 // If no managed thread owns the monitor lock on this object then *ppThread
 // and pAcquisitionCount will be unchanged and S_FALSE returned.
-// If ppThread or pAcquisitionCount is not a valid pointer the result is 
+// If ppThread or pAcquisitionCount is not a valid pointer the result is
 // undefined.
 // If any error occurs such that it cannot be determined which, if any, thread
 // owns the monitor lock on this object then a failing HRESULT will be returned
@@ -4007,14 +4007,14 @@ HRESULT CordbArrayValue::GetThreadOwningMonitorLock(ICorDebugThread **ppThread, 
 }
 
 // CordbArrayValue::GetMonitorEventWaitList
-// Provides an ordered list of threads which are queued on the event associated 
-// with a monitor lock. The first thread in the list is the first thread which 
-// will be released by the next call to Monitor.Pulse, the next thread in the list   
+// Provides an ordered list of threads which are queued on the event associated
+// with a monitor lock. The first thread in the list is the first thread which
+// will be released by the next call to Monitor.Pulse, the next thread in the list
 // will be released on the following call, and so on.
 // If this list is non-empty S_OK will be returned, if it is empty S_FALSE
 // will be returned (the enumeration is still valid, just empty).
 // In either case the enumeration interface is only usable for the duration
-// of the current synchronized state, however the threads interfaces dispensed 
+// of the current synchronized state, however the threads interfaces dispensed
 // from it are valid until the thread exits.
 // If ppThread is not a valid pointer the result is undefined.
 // If any error occurs such that it cannot be determined which, if any, threads
@@ -4025,7 +4025,7 @@ HRESULT CordbArrayValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadE
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    return CordbHeapValue3Impl::GetMonitorEventWaitList(GetProcess(), 
+    return CordbHeapValue3Impl::GetMonitorEventWaitList(GetProcess(),
                                                         GetValueHome()->GetAddress(),
                                                         ppThreadEnum);
 }
@@ -4034,7 +4034,7 @@ HRESULT CordbArrayValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadE
  * Handle Value
  * ------------------------------------------------------------------------- */
 // constructor
-// Arguments: 
+// Arguments:
 //     input:
 //         pAppDomain  - app domain to which the value belongs
 //         pType       - type information for the value
@@ -4043,7 +4043,7 @@ CordbHandleValue::CordbHandleValue(
     CordbAppDomain *   pAppdomain,
     CordbType *        pType,             // The type of object that we create handle on
     CorDebugHandleType handleType)         // strong or weak handle
-    : CordbValue(pAppdomain, pType, NULL, false, 
+    : CordbValue(pAppdomain, pType, NULL, false,
                     pAppdomain->GetSweepableExitNeuterList()
                 )
 {
@@ -4056,16 +4056,16 @@ CordbHandleValue::CordbHandleValue(
 
 //-----------------------------------------------------------------------------
 // Assign internal handle to the given value, and update pertinent counters
-// 
+//
 // Arguments:
 //    handle - non-null CLR ObjectHandle that this CordbHandleValue will represent
-//    
+//
 // Notes:
 //    Call code:CordbHandleValue::ClearHandle to clear the handle value.
 void CordbHandleValue::AssignHandle(VMPTR_OBJECTHANDLE handle)
 {
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
-    _ASSERTE(m_vmHandle.IsNull()); 
+    _ASSERTE(m_vmHandle.IsNull());
 
     // Use code:CordbHandleValue::ClearHandle to clear the handle value.
     _ASSERTE(!handle.IsNull());
@@ -4075,11 +4075,11 @@ void CordbHandleValue::AssignHandle(VMPTR_OBJECTHANDLE handle)
 }
 
 //-----------------------------------------------------------------------------
-// Clear the handle value 
-// 
+// Clear the handle value
+//
 // Assumptions:
 //    Caller only clears if not already cleared.
-//    
+//
 // Notes:
 //    This is the inverse of code:CordbHandleValue::AssignHandle
 void CordbHandleValue::ClearHandle()
@@ -4097,7 +4097,7 @@ void CordbHandleValue::ClearHandle()
 // Return Value: S_OK on success or CORDBG_E_TARGET_INCONSISTENT, E_INVALIDARG, read process memory errors.
 HRESULT CordbHandleValue::Init(VMPTR_OBJECTHANDLE pHandle)
 {
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
     HRESULT hr = S_OK;
 
     {
@@ -4106,7 +4106,7 @@ HRESULT CordbHandleValue::Init(VMPTR_OBJECTHANDLE pHandle)
         // If it is a weak handle, m_pHandle can be NULL when Dispose is called.
         AssignHandle(pHandle);
     }
-    
+
     // This will init m_info.
     IfFailRet(RefreshHandleValue());
 
@@ -4151,13 +4151,13 @@ void CordbHandleValue::NeuterLeftSideResources()
 //   implicitly by the left-side process exiting.
 void CordbHandleValue::Neuter()
 {
-    // CordbHandleValue is on the AppDomainExit neuter list. 
+    // CordbHandleValue is on the AppDomainExit neuter list.
 
     // We should have cleaned up our Left-side resource by now (m_vmHandle
     // should be null). If AppDomain / Process has already exited, then the LS
     // already cleaned them up for us, and so we don't worry about them.
     bool fAppDomainIsAlive = (m_appdomain != NULL && !m_appdomain->IsNeutered());
-    if (fAppDomainIsAlive) 
+    if (fAppDomainIsAlive)
     {
         BOOL fTargetIsDead = !GetProcess()->IsSafeToSendEvents() || GetProcess()->m_exiting;
         if (!fTargetIsDead)
@@ -4165,7 +4165,7 @@ void CordbHandleValue::Neuter()
             _ASSERTE(m_vmHandle.IsNull());
         }
     }
-    
+
     CordbValue::Neuter();
 } // CordbHandleValue::Neuter
 
@@ -4219,18 +4219,18 @@ HRESULT CordbHandleValue::RefreshHandleValue()
     {
         if (type == ELEMENT_TYPE_TYPEDBYREF)
         {
-            CordbReferenceValue::GetTypedByRefData(pProcess, 
-                                                   objectHandle, 
-                                                   type, 
-                                                   m_appdomain->GetADToken(), 
+            CordbReferenceValue::GetTypedByRefData(pProcess,
+                                                   objectHandle,
+                                                   type,
+                                                   m_appdomain->GetADToken(),
                                                    &m_info);
         }
         else
         {
-            CordbReferenceValue::GetObjectData(pProcess, 
-                                               objectAddress, 
-                                               type, 
-                                               m_appdomain->GetADToken(), 
+            CordbReferenceValue::GetObjectData(pProcess,
+                                               objectAddress,
+                                               type,
+                                               m_appdomain->GetADToken(),
                                                &m_info);
         }
     }
@@ -4243,7 +4243,7 @@ HRESULT CordbHandleValue::RefreshHandleValue()
     if ((m_info.objRefBad) || (m_info.objRef == NULL))
     {
         m_fCanBeValid = FALSE;
-    }        
+    }
 
     return hr;
 }
@@ -4372,7 +4372,7 @@ HRESULT CordbHandleValue::Dispose()
     hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
 
     hr = WORST_HR(hr, event.hr);
-    
+
     return hr;
 }   // CordbHandleValue::Dispose
 
@@ -4380,7 +4380,7 @@ HRESULT CordbHandleValue::Dispose()
 // Arguments:
 //     output: pType - the object type on success
 // Return Value: S_OK on success, CORDBG_E_HANDLE_HAS_BEEN_DISPOSED, CORDBG_E_CLASS_NOT_LOADED or synchronization errors on
-// failure 
+// failure
 HRESULT CordbHandleValue::GetType(CorElementType *pType)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -4389,7 +4389,7 @@ HRESULT CordbHandleValue::GetType(CorElementType *pType)
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     _ASSERTE(m_appdomain != NULL);
     _ASSERTE(!m_appdomain->IsNeutered());
-        
+
     HRESULT     hr = S_OK;
 
     if (m_vmHandle.IsNull())
@@ -4423,11 +4423,11 @@ HRESULT CordbHandleValue::GetType(CorElementType *pType)
 }   // CordbHandleValue::GetType
 
 // get the size of the handle-- this will always return the size of the handle itself (just pointer size), so
-// it's not particularly interesting. 
+// it's not particularly interesting.
 // Arguments:
 //     output: pSize - the size of the handle (on success). This must be non-null. Memory management belongs
-//                     to the caller.      
-// Return Value: S_OK on success, E_INVALIDARG (if pSize is null), or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED on failure   
+//                     to the caller.
+// Return Value: S_OK on success, E_INVALIDARG (if pSize is null), or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED on failure
 HRESULT CordbHandleValue::GetSize(ULONG32 *pSize)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -4454,11 +4454,11 @@ HRESULT CordbHandleValue::GetSize(ULONG32 *pSize)
 }   // CordbHandleValue::GetSize
 
 // get the size of the handle-- this will always return the size of the handle itself (just pointer size), so
-// it's not particularly interesting. 
+// it's not particularly interesting.
 // Arguments:
 //     output: pSize - the size of the handle (on success). This must be non-null. Memory management belongs
-//                     to the caller.      
-// Return Value: S_OK on success, E_INVALIDARG (if pSize is null), or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED on failure   
+//                     to the caller.
+// Return Value: S_OK on success, E_INVALIDARG (if pSize is null), or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED on failure
 HRESULT CordbHandleValue::GetSize64(ULONG64 *pSize)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -4481,7 +4481,7 @@ HRESULT CordbHandleValue::GetSize64(ULONG64 *pSize)
 // Get the target address of the handle
 // Arguments:
 //     output: pAddress - handle address on success. This must be non-null and memory is managed by the caller
-// Return Value: S_OK on success or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED or E_INVALIDARG on failure    
+// Return Value: S_OK on success or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED or E_INVALIDARG on failure
 HRESULT CordbHandleValue::GetAddress(CORDB_ADDRESS *pAddress)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -4519,7 +4519,7 @@ HRESULT CordbHandleValue::IsNull(BOOL *pbNull)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(pbNull, BOOL *);
-    FAIL_IF_NEUTERED(this);    
+    FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     _ASSERTE(m_appdomain != NULL);
     _ASSERTE(!m_appdomain->IsNeutered());
@@ -4589,7 +4589,7 @@ HRESULT CordbHandleValue::SetValue(CORDB_ADDRESS value)
 }   // CordbHandleValue::GetValue
 
 // get an ICDValue to represent the object to which the handle refers
-// Arguments: 
+// Arguments:
 //     output: ppValue - pointer to the ICDValue for the handle referent as long as ppValue is non-null
 // Return Value: S_OK on success or CORDBG_E_HANDLE_HAS_BEEN_DISPOSED or E_INVALIDARG, CORDBG_E_BAD_REFERENCE_VALUE,
 //               errors from read process memory.
@@ -4598,8 +4598,8 @@ HRESULT CordbHandleValue::Dereference(ICorDebugValue **ppValue)
     HRESULT hr = S_OK;
     PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
-    FAIL_IF_NEUTERED(this);    
-    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());  
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     _ASSERTE(m_appdomain != NULL);
     _ASSERTE(!m_appdomain->IsNeutered());
 
@@ -4614,7 +4614,7 @@ HRESULT CordbHandleValue::Dereference(ICorDebugValue **ppValue)
     if (FAILED(hr))
     {
         return hr;
-    }        
+    }
 
     if ((m_info.objRefBad) || (m_info.objRef == NULL))
     {
@@ -4623,10 +4623,10 @@ HRESULT CordbHandleValue::Dereference(ICorDebugValue **ppValue)
 
     EX_TRY
     {
-        hr = CordbReferenceValue::DereferenceCommon(m_appdomain, 
-        m_type, 
+        hr = CordbReferenceValue::DereferenceCommon(m_appdomain,
+        m_type,
         NULL, // don't support typed-by-refs
-        &m_info, 
+        &m_info,
         ppValue);
     }
     EX_CATCH_HRESULT(hr);
@@ -4641,12 +4641,12 @@ HRESULT CordbHandleValue::DereferenceStrong(ICorDebugValue **ppValue)
 // CordbHeapValue3Impl::GetThreadOwningMonitorLock
 // If a managed thread owns the monitor lock on this object then *ppThread
 // will point to that thread and S_OK will be returned. The thread object is valid
-// until the thread exits. *pAcquisitionCount will indicate the number of times 
-// this thread would need to release the lock before it returns to being 
+// until the thread exits. *pAcquisitionCount will indicate the number of times
+// this thread would need to release the lock before it returns to being
 // unowned.
 // If no managed thread owns the monitor lock on this object then *ppThread
 // and pAcquisitionCount will be unchanged and S_FALSE returned.
-// If ppThread or pAcquisitionCount is not a valid pointer the result is 
+// If ppThread or pAcquisitionCount is not a valid pointer the result is
 // undefined.
 // If any error occurs such that it cannot be determined which, if any, thread
 // owns the monitor lock on this object then a failing HRESULT will be returned
@@ -4692,14 +4692,14 @@ VOID ThreadEnumerationCallback(VMPTR_Thread vmThread, VOID* pUserData)
 }
 
 // CordbHeapValue3Impl::GetMonitorEventWaitList
-// Provides an ordered list of threads which are queued on the event associated 
-// with a monitor lock. The first thread in the list is the first thread which 
-// will be released by the next call to Monitor.Pulse, the next thread in the list   
+// Provides an ordered list of threads which are queued on the event associated
+// with a monitor lock. The first thread in the list is the first thread which
+// will be released by the next call to Monitor.Pulse, the next thread in the list
 // will be released on the following call, and so on.
 // If this list is non-empty S_OK will be returned, if it is empty S_FALSE
 // will be returned (the enumeration is still valid, just empty).
 // In either case the enumeration interface is only usable for the duration
-// of the current synchronized state, however the threads interfaces dispensed 
+// of the current synchronized state, however the threads interfaces dispensed
 // from it are valid until the thread exits.
 // If ppThread is not a valid pointer the result is undefined.
 // If any error occurs such that it cannot be determined which, if any, threads
@@ -4715,7 +4715,7 @@ HRESULT CordbHeapValue3Impl::GetMonitorEventWaitList(CordbProcess* pProcess,
         IDacDbiInterface *pDac = pProcess->GetDAC();
         VMPTR_Object vmObj = pDac->GetObject(remoteObjAddress);
         CQuickArrayList<VMPTR_Thread> threads;
-        pDac->EnumerateMonitorEventWaitList(vmObj, 
+        pDac->EnumerateMonitorEventWaitList(vmObj,
             (IDacDbiInterface::FP_THREAD_ENUMERATION_CALLBACK)ThreadEnumerationCallback, (VOID*)&threads);
 
         rsThreads = new RSSmartPtr<CordbThread>[threads.Size()];

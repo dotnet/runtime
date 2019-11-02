@@ -9,7 +9,7 @@
 ** Class:  SafeHandle
 **
 **
-** Purpose: The unmanaged implementation of the SafeHandle 
+** Purpose: The unmanaged implementation of the SafeHandle
 **          class
 **
 ===========================================================*/
@@ -32,7 +32,7 @@ void SafeHandle::Init()
         GC_TRIGGERS;
         MODE_ANY;
     } CONTRACTL_END;
-    
+
     // For reliability purposes, we need to eliminate all possible failure
     // points before making a call to a CER method. IsInvalidHandle, and
     // ReleaseHandle methods are critical calls that are already prepared (code:
@@ -41,10 +41,10 @@ void SafeHandle::Init()
     // has been already cached. Since figuring out the method slot for these 2
     // methods involves calling .GetMethod which can fail, we are doing this
     // eagerly here, Otherwise we will have to do it at the time of the call,
-    // and this could be at risk if .GetMethod failed. 
+    // and this could be at risk if .GetMethod failed.
     MethodDesc* pMD = MscorlibBinder::GetMethod(METHOD__SAFE_HANDLE__GET_IS_INVALID);
     s_IsInvalidHandleMethodSlot = pMD->GetSlot();
-    
+
     pMD = MscorlibBinder::GetMethod(METHOD__SAFE_HANDLE__RELEASE_HANDLE);
     s_ReleaseHandleMethodSlot = pMD->GetSlot();
 }
@@ -98,7 +98,7 @@ void SafeHandle::Release(bool fDispose)
     _ASSERTE(sh->IsFullyInitialized());
 
     // See comments in SafeHandle.cs
-    
+
     bool fPerformRelease = false;
 
     INT32 oldState, newState;
@@ -118,7 +118,7 @@ void SafeHandle::Release(bool fDispose)
             GCPROTECT_BEGIN(sh);
 
             CLR_BOOL fIsInvalid = FALSE;
- 
+
             DECLARE_ARGHOLDER_ARRAY(args, 1);
             args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(sh);
 
@@ -126,12 +126,12 @@ void SafeHandle::Release(bool fDispose)
 
             CRITICAL_CALLSITE;
             CALL_MANAGED_METHOD(fIsInvalid, CLR_BOOL, args);
- 
+
             if (fIsInvalid)
             {
                 fPerformRelease = false;
             }
-            
+
             GCPROTECT_END();
         }
 
@@ -163,25 +163,25 @@ void SafeHandle::SetHandle(LPVOID handle)
     m_handle = handle;
 }
 
-void AcquireSafeHandle(SAFEHANDLEREF* s) 
+void AcquireSafeHandle(SAFEHANDLEREF* s)
 {
     WRAPPER_NO_CONTRACT;
     GCX_COOP();
     _ASSERTE(s != NULL && *s != NULL);
-    (*s)->AddRef(); 
+    (*s)->AddRef();
 }
 
-void ReleaseSafeHandle(SAFEHANDLEREF* s) 
+void ReleaseSafeHandle(SAFEHANDLEREF* s)
 {
     WRAPPER_NO_CONTRACT;
     GCX_COOP();
     _ASSERTE(s != NULL && *s != NULL);
-    (*s)->Release(false); 
+    (*s)->Release(false);
 }
 
 
-// This could theoretically be an instance method, but we'd need to 
-// somehow GC protect the this pointer or never dereference any 
+// This could theoretically be an instance method, but we'd need to
+// somehow GC protect the this pointer or never dereference any
 // field within the object.  It's a lot simpler if we simply make
 // this method static.
 void SafeHandle::RunReleaseMethod(SafeHandle* psh)
@@ -201,17 +201,17 @@ void SafeHandle::RunReleaseMethod(SafeHandle* psh)
 
     // Save last error from P/Invoke in case the implementation of ReleaseHandle
     // trashes it (important because this ReleaseHandle could occur implicitly
-    // as part of unmarshaling another P/Invoke). 
+    // as part of unmarshaling another P/Invoke).
     Thread *pThread = GetThread();
     DWORD dwSavedError = pThread->m_dwLastError;
-    
+
     CLR_BOOL fReleaseHandle = FALSE;
 
     DECLARE_ARGHOLDER_ARRAY(args, 1);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(sh);
 
     PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(s_ReleaseHandleMethodSlot, sh);
- 
+
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD(fReleaseHandle, CLR_BOOL, args);
 

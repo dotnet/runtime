@@ -9,15 +9,15 @@
 #include "assembly.hpp"
 
 #ifndef DACCESS_COMPILE
-inline LOADERALLOCATORREF LoaderAllocator::GetExposedObject() 
-{ 
+inline LOADERALLOCATORREF LoaderAllocator::GetExposedObject()
+{
     LIMITED_METHOD_CONTRACT;
     OBJECTREF loaderAllocatorObject = (m_hLoaderAllocatorObjectHandle != NULL) ? ObjectFromHandle(m_hLoaderAllocatorObjectHandle) : NULL;
     return (LOADERALLOCATORREF)loaderAllocatorObject;
 }
 #endif
 
-inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain) 
+inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
 {
     LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);
 }
@@ -83,13 +83,13 @@ inline DomainAssemblyIterator LoaderAllocatorID::GetDomainAssemblyIterator()
 
 inline LoaderAllocatorID* AssemblyLoaderAllocator::Id()
 {
-    LIMITED_METHOD_DAC_CONTRACT; 
+    LIMITED_METHOD_DAC_CONTRACT;
     return &m_Id;
 }
 
 inline LoaderAllocatorID* GlobalLoaderAllocator::Id()
 {
-    LIMITED_METHOD_DAC_CONTRACT; 
+    LIMITED_METHOD_DAC_CONTRACT;
     return &m_Id;
 }
 

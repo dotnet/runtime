@@ -28,11 +28,11 @@ namespace mpl // 'mpl' => 'meta-programming library'
 
     template <class TList, size_t IDX>
     struct type_at;
-    
+
     template <class head, class tail, size_t IDX>
     struct type_at<type_list<head, tail>, IDX>
     { typedef typename type_at<tail, IDX-1>::type type; };
-    
+
     template <class head, class tail>
     struct type_at<type_list<head, tail>, 0>
     { typedef head type; };
@@ -46,7 +46,7 @@ namespace mpl // 'mpl' => 'meta-programming library'
         typename T10 = null_type, typename T11 = null_type, typename T12 = null_type,
         typename T13 = null_type, typename T14 = null_type, typename T15 = null_type,
         typename T16 = null_type, typename T17 = null_type, typename T18 = null_type
-    > 
+    >
     struct make_type_list
     {
     private:

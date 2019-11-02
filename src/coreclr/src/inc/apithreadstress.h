@@ -24,19 +24,19 @@
 //      {
 //          int a1;
 //          void *a2;
-//          stress(int a1, void *a2) : a1(a1), a2(a2) 
+//          stress(int a1, void *a2) : a1(a1), a2(a2)
 //               { DoThreadStress(); }
 //          void Invoke() { MyRoutine(a1, a2); }
 //      } ts (a1, a2);
 //
 //      // implementation
 //
-//      // perhaps we have a common sub-point in the routine where we want the threads to 
+//      // perhaps we have a common sub-point in the routine where we want the threads to
 //      // queue up and race again
 //
 //      ts.SyncThreadStress();
 //
-//      // more implementation    
+//      // more implementation
 //  }
 // ---------------------------------------------------------------------------
 

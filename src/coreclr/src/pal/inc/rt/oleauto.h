@@ -6,7 +6,7 @@
 //
 // ===========================================================================
 // File: oleauto.h
-// 
+//
 // ===========================================================================
 // simplified oleauto.h for PAL
 
@@ -76,7 +76,7 @@ typedef struct {
 #endif
 
 // Compare results for VarDecCmp.  These are returned as a SUCCESS HResult.
-// Subtracting one gives the usual values of -1 for Less Than, 
+// Subtracting one gives the usual values of -1 for Less Than,
 // 0 for Equal To, +1 for Greater Than.
 //
 #define VARCMP_LT   0

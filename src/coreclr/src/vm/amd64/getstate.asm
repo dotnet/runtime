@@ -36,10 +36,10 @@ LEAF_ENTRY GetRBP, _TEXT
 
 LEAF_END GetRBP, _TEXT
 
-;// this is the same implementation as the function of the same name in di\amd64\floatconversion.asm and they must 
+;// this is the same implementation as the function of the same name in di\amd64\floatconversion.asm and they must
 ;// remain in sync.
 
-;// @dbgtodo inspection: remove this function when we remove the ipc event to load the float state 
+;// @dbgtodo inspection: remove this function when we remove the ipc event to load the float state
 
 ; extern "C" double FPFillR8(void* fpContextSlot);
 LEAF_ENTRY FPFillR8, _TEXT
@@ -62,7 +62,7 @@ LEAF_END get_cycle_count, _TEXT
 LEAF_ENTRY LazyMachStateCaptureState, _TEXT
 
         mov     rdx, [rsp]      ; get the return address
-        
+
         mov     [rcx + OFFSETOF__MachState__m_Capture + 0*8], rdi
         mov     [rcx + OFFSETOF__MachState__m_Capture + 1*8], rsi
         mov     [rcx + OFFSETOF__MachState__m_Capture + 2*8], rbx

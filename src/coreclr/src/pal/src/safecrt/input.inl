@@ -160,7 +160,7 @@ static int __check_float_string(size_t nFloatStrUsed,
         }
 
         newSize = *pnFloatStrSz * 2 * sizeof(_TCHAR);
-        
+
         if ((*pFloatStr)==floatstring)
         {
             if (((*pFloatStr)=(_TCHAR *)_malloc_crt(newSize))==NULL)
@@ -257,7 +257,7 @@ static int __check_float_string(size_t nFloatStrUsed,
     char *table = AsciiTable;
 #endif  /* ALLOC_TABLE */
 
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
     uint64_t num64 = 0LL;             /* temp for 64-bit integers          */
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
     void *pointer=NULL;                 /* points to user data receptacle    */
@@ -288,7 +288,7 @@ static int __check_float_string(size_t nFloatStrUsed,
 
     char done_flag;                     /* general purpose loop monitor      */
     char longone;                       /* 0 = SHORT, 1 = LONG, 2 = L_DOUBLE */
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
     int integer64;                      /* 1 for 64-bit integer, 0 otherwise */
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
     signed char widechar;               /* -1 = char, 0 = ????, 1 = char16_t  */
@@ -355,7 +355,7 @@ static int __check_float_string(size_t nFloatStrUsed,
 
             longone = 1;
 
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
             integer64 = 0;
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
 
@@ -376,7 +376,7 @@ static int __check_float_string(size_t nFloatStrUsed,
                             --widechar;         /* set widechar = -1 */
                             break;
 
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
                         case _T('I'):
                             if ( (*(format + 1) == _T('6')) &&
                                  (*(format + 2) == _T('4')) )
@@ -885,7 +885,7 @@ d_incwidth:
                         }
 
 getnum:
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
                         if ( integer64 ) {
 
                             while (!done_flag) {
@@ -971,7 +971,7 @@ getnum:
 
                             if (negative)
                                 number = (unsigned long)(-(long)number);
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
                         }
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
                         if (_T('F')==comchr) /* expected ':' in long pointer */
@@ -982,7 +982,7 @@ getnum:
 
                                 ++count;
 assign_num:
-#if _INTEGRAL_MAX_BITS >= 64   
+#if _INTEGRAL_MAX_BITS >= 64
                                 if ( integer64 )
                                     *(__int64 UNALIGNED *)pointer = ( uint64_t )num64;
                                 else
@@ -1048,7 +1048,7 @@ f_incwidth:
                         decimal = L'.';
                         _MBTOWC(&decimal, _INTRN_LOCALE_CONV(_loc_update)->decimal_point, MB_CUR_MAX);
 #else  /* _UNICODE */
-                       
+
                         decimal=*((_INTRN_LOCALE_CONV(_loc_update))->decimal_point);
 #endif  /* _UNICODE */
 

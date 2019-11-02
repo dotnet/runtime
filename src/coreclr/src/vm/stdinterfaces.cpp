@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------------
 // stdinterfaces.cpp
 //
-// Defines various standard com interfaces 
+// Defines various standard com interfaces
 
 //---------------------------------------------------------------------------------
 
@@ -71,17 +71,17 @@ EXTERN_C SELECTANY const GUID IID_IAgileObject = { 0x94ea2b94, 0xe9cc, 0x49e0, {
 static const GUID IID_INoMarshal = {0xecc8691b, 0xc1db, 0x4dc0, { 0x85, 0x5e, 0x65, 0xf6, 0xc5, 0x51, 0xaf, 0x49 } };
 #endif // !__INoMarshal_INTERFACE_DEFINED__
 
-// NOTE: In the following vtables, QI points to the same function 
+// NOTE: In the following vtables, QI points to the same function
 //       this is because, during marshalling between COM & COM+ we want a fast way to
 //       check if a COM IP is a tear-off that we created.
 
 // array of vtable pointers for std. interfaces such as IProvideClassInfo etc.
-const SLOT * const g_rgStdVtables[] =  
+const SLOT * const g_rgStdVtables[] =
 {
     (SLOT*)&g_InnerUnknown.m_vtable,
     (SLOT*)&g_IProvideClassInfo.m_vtable,
     (SLOT*)&g_IMarshal.m_vtable,
-    (SLOT*)&g_ISupportsErrorInfo.m_vtable, 
+    (SLOT*)&g_ISupportsErrorInfo.m_vtable,
     (SLOT*)&g_IErrorInfo.m_vtable,
     (SLOT*)&g_IConnectionPointContainer.m_vtable,
     (SLOT*)&g_IObjectSafety.m_vtable,
@@ -117,7 +117,7 @@ static HRESULT InitUnmarshalSecret()
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-       
+
     HRESULT hr = S_OK;
 
     if (!g_fInitedUnmarshalSecret)
@@ -184,7 +184,7 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
         }
         else
         {
-            // Assert the component has been aggregated     
+            // Assert the component has been aggregated
             _ASSERTE(pWrap->GetSimpleWrapper()->GetOuter() != NULL);
 
             // Okay special case IUnknown
@@ -243,9 +243,9 @@ Unknown_AddRefInner_Internal(IUnknown* pUnk)
     CONTRACTL_END;
 
     SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-    ComCallWrapper* pWrap = pSimpleWrap->GetMainWrapper();     
+    ComCallWrapper* pWrap = pSimpleWrap->GetMainWrapper();
 
-    // Assert the component has been aggregated     
+    // Assert the component has been aggregated
     _ASSERTE(pSimpleWrap->GetOuter() != NULL);
 
     // We are guaranteed to be in the right domain here, so can always get the oref
@@ -269,7 +269,7 @@ Unknown_AddRef_Internal(IUnknown* pUnk)
     ComCallWrapper* pWrap = ComCallWrapper::GetWrapperFromIP(pUnk);
 
     // check for aggregation
-    IUnknown *pOuter; 
+    IUnknown *pOuter;
     SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
@@ -303,9 +303,9 @@ Unknown_ReleaseInner_Internal(IUnknown* pUnk)
     ULONG cbRef = -1;
 
     SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-    ComCallWrapper* pWrap = pSimpleWrap->GetMainWrapper();  
+    ComCallWrapper* pWrap = pSimpleWrap->GetMainWrapper();
 
-    // Assert the component has been aggregated     
+    // Assert the component has been aggregated
     _ASSERTE(pSimpleWrap->GetOuter() != NULL);
 
     // We know for sure this wrapper is a start wrapper let us pass this information in
@@ -325,14 +325,14 @@ Unknown_Release_Internal(IUnknown* pUnk)
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     ULONG cbRef = -1;
 
     // check for aggregation
     ComCallWrapper* pWrap = ComCallWrapper::GetWrapperFromIP(pUnk);
     SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
-    IUnknown *pOuter; 
+    IUnknown *pOuter;
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
@@ -391,7 +391,7 @@ Unknown_ReleaseSpecial_Internal(IUnknown* pUnk)
     ULONG cbRef = -1;
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-        
+
     // aggregation check
     IUnknown *pOuter = pSimpleWrap->GetOuter();
     if (pOuter != NULL)
@@ -434,7 +434,7 @@ Unknown_QueryInterface_IErrorInfo_Simple(IUnknown* pUnk, REFIID riid, void** ppv
         _ASSERTE(!IsInnerUnknown(pUnk) && IsSimpleTearOff(pUnk));
 
         SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-        
+
         // we must not switch to cooperative GC mode here, so respond only to the
         // two interfaces we always support
         if (riid == IID_IUnknown || riid == IID_IErrorInfo)
@@ -478,7 +478,7 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
 // ---------------------------------------------------------------------------
 //  Interface IProvideClassInfo
 // ---------------------------------------------------------------------------
-HRESULT __stdcall 
+HRESULT __stdcall
 ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
 {
     CONTRACTL
@@ -490,7 +490,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
         PRECONDITION(CheckPointer(ppTI));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
@@ -514,18 +514,18 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
                 for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
             }
 
-            // If the CLR part of the object is not visible then delegate the call to the 
+            // If the CLR part of the object is not visible then delegate the call to the
             // base COM object if it implements IProvideClassInfo.
             if (!pComMT || pComMT->GetMethodTable()->ParentEquals(g_pObjectClass))
             {
                 IProvideClassInfo *pProvClassInfo = NULL;
-                
+
                 SyncBlock* pBlock = pWrap->GetSyncBlock();
                 _ASSERTE(pBlock);
 
                 RCWHolder pRCW(GetThread());
                 RCWPROTECT_BEGIN(pRCW, pBlock);
-                
+
                 hr = pRCW->SafeQueryInterfaceRemoteAware(IID_IProvideClassInfo, (IUnknown**)&pProvClassInfo);
                 if (SUCCEEDED(hr))
                 {
@@ -708,7 +708,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                 OBJECTREF pThrowable = NULL;
                 GCPROTECT_BEGIN(pThrowable);
                 {
-                    EX_TRY 
+                    EX_TRY
                     {
                         pTemplate = ComCallWrapperTemplate::GetTemplate(pClass);
                         if (pTemplate->SupportsIClassX())
@@ -719,7 +719,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                             while (pComMT && !pComMT->IsComVisible())
                                 pComMT = pComMT->GetParentClassComMT();
                         }
-                    } 
+                    }
                     EX_CATCH
                     {
                         pThrowable = GET_THROWABLE();
@@ -731,8 +731,8 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                 }
                 GCPROTECT_END();
             }
-        
-            if (hr != S_OK) 
+
+            if (hr != S_OK)
                 goto ReturnHR;
 
             if (!pTemplate)
@@ -762,7 +762,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         IfFailGo(pITLB->GetTypeInfoOfGuid(clsid, ppTI));
     }
     else if (pClass->IsComImport())
-    {   
+    {
         // This is a COM imported class, with no IClassX.  Get default interface.
         IfFailGo(GetITypeLibForAssembly(pClass->GetAssembly(), &pITLB));
         IfFailGo(pClass->GetGuidNoThrow(&clsid, TRUE));
@@ -801,10 +801,10 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
 
                 // Get the GUID of the desired TypeRef.
                 IfFailGo(itfClassMT->GetGuidNoThrow(&clsid, TRUE));
-        
+
                 // Generate the IClassX IID from the class.
                 TryGenerateClassItfGuid(hndDefItfClass, &ciid);
-        
+
                 hr = pITLB->GetTypeInfoOfGuid(ciid, ppTI);
                 break;
             }
@@ -854,7 +854,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
 
     HRESULT     hr = S_OK;              // A result.
     ITypeInfo   *pTI;                   // The ITypeInfo.
-    
+
     pTI = pMT->GetITypeInfo();
 
     if (pTI == 0)
@@ -892,7 +892,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRe
 
     IErrorInfo *pRetErrorInfo = NULL;
     BOOL bUseThisErrorInfo = FALSE;
-    
+
     // This function must run in preemptive GC mode.
     {
         GCX_PREEMP();
@@ -935,15 +935,15 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRe
             {
 
                 // This is a WinRT IRestrictedErrorInfo scenario
-                bUseThisErrorInfo = TRUE;    
-            }                
+                bUseThisErrorInfo = TRUE;
+            }
         }
 
         if (bUseThisErrorInfo)
         {
             pRetErrorInfo = pErrorInfo;
             pErrorInfo.SuppressRelease();
-            pErrorInfo = NULL;        
+            pErrorInfo = NULL;
         }
     }
 
@@ -953,7 +953,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRe
 // ---------------------------------------------------------------------------
 //  Interface ISupportsErrorInfo
 /// ---------------------------------------------------------------------------
-HRESULT __stdcall 
+HRESULT __stdcall
 SupportsErroInfo_IntfSupportsErrorInfo(IUnknown* pUnk, REFIID riid)
 {
     CONTRACTL
@@ -975,7 +975,7 @@ SupportsErroInfo_IntfSupportsErrorInfo(IUnknown* pUnk, REFIID riid)
 //  Interface IErrorInfo
 // %%Function: ErrorInfo_GetDescription
 // ---------------------------------------------------------------------------
-HRESULT __stdcall 
+HRESULT __stdcall
 ErrorInfo_GetDescription(IUnknown* pUnk, BSTR* pbstrDescription)
 {
     CONTRACTL
@@ -988,11 +988,11 @@ ErrorInfo_GetDescription(IUnknown* pUnk, BSTR* pbstrDescription)
         PRECONDITION(CheckPointer(pbstrDescription, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pWrap = NULL;
 
-    if (pbstrDescription == NULL) 
+    if (pbstrDescription == NULL)
         IfFailGo(E_POINTER);
 
     pWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
@@ -1025,7 +1025,7 @@ HRESULT __stdcall ErrorInfo_GetGUID(IUnknown* pUnk, GUID* pguid)
         PRECONDITION(CheckPointer(pguid, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pWrap = NULL;
 
@@ -1051,11 +1051,11 @@ HRESULT _stdcall ErrorInfo_GetHelpContext(IUnknown* pUnk, DWORD* pdwHelpCtxt)
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsSimpleTearOff(pUnk));        
+        PRECONDITION(IsSimpleTearOff(pUnk));
         PRECONDITION(CheckPointer(pdwHelpCtxt, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pWrap = NULL;
 
@@ -1069,7 +1069,7 @@ HRESULT _stdcall ErrorInfo_GetHelpContext(IUnknown* pUnk, DWORD* pdwHelpCtxt)
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
         *pdwHelpCtxt = pWrap->IErrorInfo_dwHelpContext();
-    } 
+    }
     END_EXTERNAL_ENTRYPOINT;
 
     return hr;
@@ -1087,11 +1087,11 @@ HRESULT __stdcall ErrorInfo_GetHelpFile(IUnknown* pUnk, BSTR* pbstrHelpFile)
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsSimpleTearOff(pUnk));        
+        PRECONDITION(IsSimpleTearOff(pUnk));
         PRECONDITION(CheckPointer(pbstrHelpFile, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pWrap = NULL;
 
@@ -1123,11 +1123,11 @@ HRESULT __stdcall ErrorInfo_GetSource(IUnknown* pUnk, BSTR* pbstrSource)
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsSimpleTearOff(pUnk));        
+        PRECONDITION(IsSimpleTearOff(pUnk));
         PRECONDITION(CheckPointer(pbstrSource, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pWrap = NULL;
 
@@ -1161,7 +1161,7 @@ Dispatch_GetTypeInfoCount(IDispatch* pDisp, unsigned int *pctinfo)
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));        
+        PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(pctinfo, NULL_OK));
     }
     CONTRACTL_END;
@@ -1176,7 +1176,7 @@ Dispatch_GetTypeInfoCount(IDispatch* pDisp, unsigned int *pctinfo)
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    ITypeInfo *pTI; 
+    ITypeInfo *pTI;
     HRESULT hr = GetITypeInfoForMT(pCMT, &pTI);
 
     if (SUCCEEDED(hr))
@@ -1197,7 +1197,7 @@ Dispatch_GetTypeInfo(IDispatch* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));        
+        PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(pptinfo, NULL_OK));
     }
     CONTRACTL_END;
@@ -1220,7 +1220,7 @@ Dispatch_GetTypeInfo(IDispatch* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo
     HRESULT hr = GetITypeInfoForMT(pCMT, pptinfo);
     if (SUCCEEDED(hr))
     {
-        // GetITypeInfoForMT() can return other success codes besides S_OK so 
+        // GetITypeInfoForMT() can return other success codes besides S_OK so
         // we need to convert them to S_OK.
         hr = S_OK;
         SafeAddRefPreemp(*pptinfo);
@@ -1239,7 +1239,7 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHA
         MODE_PREEMPTIVE;
         INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));        
+        PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(rgszNames, NULL_OK));
     }
     CONTRACTL_END;
@@ -1280,7 +1280,7 @@ Dispatch_Invoke
         MODE_PREEMPTIVE;
         INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));        
+        PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
     CONTRACTL_END;
 
@@ -1322,7 +1322,7 @@ OleAutDispatchImpl_GetIDsOfNames
         MODE_PREEMPTIVE;
         INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));   
+        PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(rgszNames));
     }
     CONTRACTL_END;
@@ -1369,7 +1369,7 @@ OleAutDispatchImpl_Invoke
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Make sure that riid is IID_NULL.
@@ -1384,7 +1384,7 @@ OleAutDispatchImpl_Invoke
 
     ITypeInfo *pTI;
     hr = GetITypeInfoForMT(pCMT, &pTI);
-    if (FAILED(hr)) 
+    if (FAILED(hr))
         return hr;
 
     EX_TRY
@@ -1426,7 +1426,7 @@ InternalDispatchImpl_GetIDsOfNames (
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     DispatchInfo *pDispInfo;
     SimpleComCallWrapper *pSimpleWrap;
@@ -1506,7 +1506,7 @@ InternalDispatchImpl_Invoke
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
     CONTRACTL_END;
-    
+
     DispatchInfo *pDispInfo;
     SimpleComCallWrapper *pSimpleWrap;
     HRESULT hr = S_OK;
@@ -1531,7 +1531,7 @@ InternalDispatchImpl_Invoke
         // Invoke the member.
         pDispInfo = ComMethodTable::ComMethodTableFromIP(pDisp)->GetDispatchInfo();
         hr = pDispInfo->InvokeMember(pSimpleWrap, dispidMember, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, NULL, puArgErr);
-        
+
     }
     END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS; // This will ensure that entry points wont swallow CE and continue to let them propagate out.
 
@@ -1555,7 +1555,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfoCount(IDispatch* pDisp, unsigned int *
         PRECONDITION(CheckPointer(pctinfo, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     ITypeInfo *pTI = NULL;
 
@@ -1576,7 +1576,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfoCount(IDispatch* pDisp, unsigned int *
         // Retrieve the ITypeInfo for the ComMethodTable.
         IfFailThrow(GetITypeInfoForMT(pComMT, &pTI));
 
-        // GetITypeInfoForMT() can return other success codes besides S_OK so 
+        // GetITypeInfoForMT() can return other success codes besides S_OK so
         // we need to convert them to S_OK.
         hr = S_OK;
         *pctinfo = 1;
@@ -1604,7 +1604,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfo (
         PRECONDITION(CheckPointer(pptinfo, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Validate the arguments.
@@ -1624,7 +1624,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfo (
         // Retrieve the ITypeInfo for the ComMethodTable.
         IfFailThrow(GetITypeInfoForMT(pComMT, pptinfo));
 
-        // GetITypeInfoForMT() can return other success codes besides S_OK so 
+        // GetITypeInfoForMT() can return other success codes besides S_OK so
         // we need to convert them to S_OK.
         hr = S_OK;
         SafeAddRefPreemp(*pptinfo);
@@ -1654,7 +1654,7 @@ HRESULT __stdcall   DispatchEx_GetIDsOfNames (
         PRECONDITION(CheckPointer(rgdispid, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Validate the arguments.
@@ -1729,7 +1729,7 @@ HRESULT __stdcall   DispatchEx_Invoke (
         PRECONDITION(CheckPointer(puArgErr, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Check for valid input args that are not covered by DispatchInfo::InvokeMember.
@@ -1767,7 +1767,7 @@ HRESULT __stdcall   DispatchEx_DeleteMemberByDispID (
         PRECONDITION(IsSimpleTearOff(pDisp));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Retrieve the dispatch info and the simpler wrapper for this IDispatchEx.
@@ -1859,7 +1859,7 @@ HRESULT __stdcall   DispatchEx_GetDispID (
         PRECONDITION(CheckPointer(pid, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     SimpleComCallWrapper *pSimpleWrap;
     DispatchExInfo *pDispExInfo;
@@ -1890,7 +1890,7 @@ HRESULT __stdcall   DispatchEx_GetDispID (
         SString sName(bstrName);
         DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(sName, grfdex & fdexNameCaseSensitive);
 
-        // If we still have not found a match and the fdexNameEnsure flag is set then we 
+        // If we still have not found a match and the fdexNameEnsure flag is set then we
         // need to add the member to the expando object.
         if (!pDispMemberInfo)
         {
@@ -1939,7 +1939,7 @@ HRESULT __stdcall   DispatchEx_GetMemberName (
         PRECONDITION(CheckPointer(pbstrName, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Validate the arguments.
@@ -1994,7 +1994,7 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
         PRECONDITION(CheckPointer(pgrfdex, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     // Validate the arguments.
@@ -2035,10 +2035,10 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
                 {
                     case Field:
                     {
-                        *pgrfdex = fdexPropCanGet | 
-                                   fdexPropCanPut | 
-                                   fdexPropCannotPutRef | 
-                                   fdexPropCannotCall | 
+                        *pgrfdex = fdexPropCanGet |
+                                   fdexPropCanPut |
+                                   fdexPropCannotPutRef |
+                                   fdexPropCannotCall |
                                    fdexPropCannotConstruct |
                                    fdexPropCannotSourceEvents;
                         break;
@@ -2061,24 +2061,24 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
 
                         // Check to see if the property can be read.
                         ARG_SLOT CanReadArgs[] =
-                        { 
+                        {
                             ObjToArgSlot(MemberInfoObj)
                         };
-                        
+
                         bCanRead = canRead.Call_RetBool(CanReadArgs);
 
                         // Check to see if the property can be written to.
                         ARG_SLOT CanWriteArgs[] =
-                        { 
+                        {
                             ObjToArgSlot(MemberInfoObj)
                         };
-                        
+
                         bCanWrite = canWrite.Call_RetBool(CanWriteArgs);
 
                         *pgrfdex = (bCanRead ? fdexPropCanGet : fdexPropCannotGet) |
                                    (bCanWrite ? fdexPropCanPut : fdexPropCannotPut) |
-                                   fdexPropCannotPutRef | 
-                                   fdexPropCannotCall | 
+                                   fdexPropCannotPutRef |
+                                   fdexPropCannotCall |
                                    fdexPropCannotConstruct |
                                    fdexPropCannotSourceEvents;
                         break;
@@ -2086,10 +2086,10 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
 
                     case Method:
                     {
-                        *pgrfdex = fdexPropCannotGet | 
-                                   fdexPropCannotPut | 
-                                   fdexPropCannotPutRef | 
-                                   fdexPropCanCall | 
+                        *pgrfdex = fdexPropCannotGet |
+                                   fdexPropCannotPut |
+                                   fdexPropCannotPutRef |
+                                   fdexPropCanCall |
                                    fdexPropCannotConstruct |
                                    fdexPropCannotSourceEvents;
                         break;
@@ -2158,7 +2158,7 @@ HRESULT __stdcall   DispatchEx_GetNextDispID (
         PRECONDITION(CheckPointer(pid, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     DispatchMemberInfo *pNextMember = NULL;
     HRESULT hr = S_OK;
 
@@ -2211,9 +2211,9 @@ HRESULT __stdcall   DispatchEx_InvokeEx (
                                     LCID lcid,
                                     WORD wFlags,
                                     DISPPARAMS *pdp,
-                                    VARIANT *pVarRes, 
-                                    EXCEPINFO *pei, 
-                                    IServiceProvider *pspCaller 
+                                    VARIANT *pVarRes,
+                                    EXCEPINFO *pei,
+                                    IServiceProvider *pspCaller
                                     )
 {
     CONTRACTL
@@ -2229,9 +2229,9 @@ HRESULT __stdcall   DispatchEx_InvokeEx (
         PRECONDITION(CheckPointer(pspCaller, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
-    
+
     // Retrieve the dispatch info and the simpler wrapper for this IDispatchEx.
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pDisp);
     DispatchExInfo *pDispExInfo = pSimpleWrap->GetDispatchExInfo();
@@ -2259,7 +2259,7 @@ HRESULT __stdcall Inspectable_GetIIDs (
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pInsp));
-        PRECONDITION(IsInProcCCWTearOff(pInsp));        
+        PRECONDITION(IsInProcCCWTearOff(pInsp));
     }
     CONTRACTL_END;
 
@@ -2280,20 +2280,20 @@ HRESULT __stdcall Inspectable_GetIIDs (
 
     // determine the number of IIDs to return
     // Always add IID_ICustomPropertyProvider and skip any managed WinRT interface that is IID_ICustomPropertyProvider
-    ULONG numInspectables = 1;      
+    ULONG numInspectables = 1;
     for (ULONG i = 0; i < numInterfaces; i++)
     {
         ComMethodTable *pComMT = pTemplate->GetComMTForIndex(i);
-        
+
         // Skip any managed WinRT interface that is IID_ICustomPropertyProvider
-        if (pComMT != NULL && pComMT->GetInterfaceType() == ifInspectable && 
+        if (pComMT != NULL && pComMT->GetInterfaceType() == ifInspectable &&
             !IsEqualGUID(pComMT->GetIID(), IID_ICustomPropertyProvider))
         {
             numInspectables++;
         }
     }
 
-    
+
     // we shouldn't ever come here if the CCW does not support IInspectable
     _ASSERTE(numInspectables > 0);
 
@@ -2307,10 +2307,10 @@ HRESULT __stdcall Inspectable_GetIIDs (
     NewArrayHolder<IID> result = (IID *)CoTaskMemAlloc(cbAlloc.Value());
     if (result == NULL)
         return E_OUTOFMEMORY;
-    
+
     // now fill out the output array with IIDs
     result[0] = IID_ICustomPropertyProvider;
-    
+
     ULONG index = 1;
     for (ULONG i = 0; i < numInterfaces; i++)
     {
@@ -2339,7 +2339,7 @@ HRESULT __stdcall Inspectable_GetRuntimeClassName(IInspectable *pInsp, HSTRING *
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pInsp));
-        PRECONDITION(IsInProcCCWTearOff(pInsp));        
+        PRECONDITION(IsInProcCCWTearOff(pInsp));
     }
     CONTRACTL_END;
 
@@ -2350,19 +2350,19 @@ HRESULT __stdcall Inspectable_GetRuntimeClassName(IInspectable *pInsp, HSTRING *
     ComCallWrapper *pWrap = MapIUnknownToWrapper(pInsp);
 
     *className = NULL;
-    
+
     MethodTable *pMT = pWrap->GetSimpleWrapper()->GetMethodTable();
     _ASSERTE(pMT != NULL);
 
     EX_TRY
-    {        
+    {
         StackSString strClassName;
         TypeHandle thManagedType;
-        
+
         {
             GCX_COOP();
             OBJECTREF objref = NULL;
-            
+
             GCPROTECT_BEGIN(objref);
             {
                 objref = pWrap->GetObjectRef();
@@ -2385,7 +2385,7 @@ HRESULT __stdcall Inspectable_GetRuntimeClassName(IInspectable *pInsp, HSTRING *
     }
     EX_CATCH
     {
-        hr = GET_EXCEPTION()->GetHR();        
+        hr = GET_EXCEPTION()->GetHR();
     }
     EX_END_CATCH(SwallowAllExceptions);
 
@@ -2426,7 +2426,7 @@ HRESULT __stdcall WeakReferenceSource_GetWeakReference (
 }
 
 
-// Helper to setup IMarshal 
+// Helper to setup IMarshal
 HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap, ULONG dwDestContext, IMarshal **ppMarshalRet)
 {
     CONTRACTL
@@ -2445,7 +2445,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
     // In case of APPX process we always use the standard marshaller.
     // In Non-APPX process use standard marshalling for everything except in-proc servers.
     // In case of CoreCLR, we always use the standard marshaller as well.
-    
+
     SafeComHolderPreemp<IUnknown> pMarshalerObj = NULL;
     IfFailRet(CoCreateFreeThreadedMarshaler(NULL, &pMarshalerObj));
     return SafeQueryInterfacePreemp(pMarshalerObj, IID_IMarshal, (IUnknown**)ppMarshalRet);
@@ -2459,8 +2459,8 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
 HRESULT __stdcall Marshal_GetUnmarshalClass (
                             IMarshal* pMarsh,
-                            REFIID riid, void * pv, ULONG dwDestContext, 
-                            void * pvDestContext, ULONG mshlflags, 
+                            REFIID riid, void * pv, ULONG dwDestContext,
+                            void * pvDestContext, ULONG mshlflags,
                             LPCLSID pclsid)
 {
     CONTRACTL
@@ -2479,7 +2479,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
     HRESULT hr = S_OK;
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pMarsh);
-    
+
     // Prevent access to reflection over DCOM
     if(dwDestContext != MSHCTX_INPROC)
     {
@@ -2488,16 +2488,16 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
             LogInterop(W("Unmarshal class blocked for reflection types."));
             hr = E_NOINTERFACE;
             return hr;
-        } 
+        }
     }
 
     SafeComHolderPreemp<IMarshal> pMsh = NULL;
     hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
-    
+
     if (pMsh != NULL)
-    { 
+    {
         hr = pMsh->GetUnmarshalClass (riid, pv, dwDestContext, pvDestContext, mshlflags, pclsid);
         return hr;
     }
@@ -2510,8 +2510,8 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
 
 HRESULT __stdcall Marshal_GetMarshalSizeMax (
                                 IMarshal* pMarsh,
-                                REFIID riid, void * pv, ULONG dwDestContext, 
-                                void * pvDestContext, ULONG mshlflags, 
+                                REFIID riid, void * pv, ULONG dwDestContext,
+                                void * pvDestContext, ULONG mshlflags,
                                 ULONG * pSize)
 {
     CONTRACTL
@@ -2535,7 +2535,7 @@ HRESULT __stdcall Marshal_GetMarshalSizeMax (
         return hr;
 
     if (pMsh != NULL)
-    { 
+    {
         HRESULT hr = pMsh->GetMarshalSizeMax (riid, pv, dwDestContext, pvDestContext, mshlflags, pSize);
         return hr;
     }
@@ -2545,7 +2545,7 @@ HRESULT __stdcall Marshal_GetMarshalSizeMax (
     return S_OK;
 }
 
-HRESULT __stdcall Marshal_MarshalInterface ( 
+HRESULT __stdcall Marshal_MarshalInterface (
                         IMarshal* pMarsh,
                         LPSTREAM pStm, REFIID riid, void * pv,
                         ULONG dwDestContext, LPVOID pvDestContext,
@@ -2565,9 +2565,9 @@ HRESULT __stdcall Marshal_MarshalInterface (
 
     ULONG cbRef;
     HRESULT hr = S_OK;
-        
+
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pMarsh);
-    
+
     // Prevent access to reflection over DCOM
     if(dwDestContext != MSHCTX_INPROC)
     {
@@ -2585,7 +2585,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
         return hr;
 
     if (pMsh != NULL)
-    { 
+    {
         hr = pMsh->MarshalInterface (pStm, riid, pv, dwDestContext, pvDestContext, mshlflags);
         return hr;
     }
@@ -2614,13 +2614,13 @@ HRESULT __stdcall Marshal_MarshalInterface (
     // We have now created an additional reference to the object.
     cbRef = SafeAddRefPreemp((IUnknown *)pv);
     LogInteropAddRef((IUnknown *)pv, cbRef, "MarshalInterface");
-    
+
     return S_OK;
 }
 
 HRESULT __stdcall Marshal_UnmarshalInterface (
                         IMarshal* pMarsh,
-                        LPSTREAM pStm, REFIID riid, 
+                        LPSTREAM pStm, REFIID riid,
                         void ** ppvObj)
 {
     CONTRACTL
@@ -2679,7 +2679,7 @@ HRESULT __stdcall Marshal_DisconnectObject (IMarshal* pMarsh, ULONG dwReserved)
 //------------------------------------------------------------------------------------------
 
 // Enumerate all the connection points supported by the component.
-HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints(IUnknown* pUnk, 
+HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints(IUnknown* pUnk,
                                                                 IEnumConnectionPoints **ppEnum)
 {
     CONTRACTL
@@ -2691,7 +2691,7 @@ HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints(IUnknown* pUnk,
         PRECONDITION(CheckPointer(ppEnum, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     if (!ppEnum)
@@ -2711,7 +2711,7 @@ HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints(IUnknown* pUnk,
 }
 
 // Find a specific connection point based on the IID of the event interface.
-HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint(IUnknown* pUnk, 
+HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint(IUnknown* pUnk,
                                                                REFIID riid,
                                                                IConnectionPoint **ppCP)
 {
@@ -2724,7 +2724,7 @@ HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint(IUnknown* pUnk,
         PRECONDITION(CheckPointer(ppCP, NULL_OK));
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
 
     if (!ppCP)
@@ -2778,13 +2778,13 @@ HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
         // We support this interface so set the safety options accordingly
         *pdwSupportedOptions = (INTERFACESAFE_FOR_UNTRUSTED_DATA | INTERFACESAFE_FOR_UNTRUSTED_CALLER);
         *pdwEnabledOptions = (INTERFACESAFE_FOR_UNTRUSTED_DATA | INTERFACESAFE_FOR_UNTRUSTED_CALLER);
-        return S_OK;       
+        return S_OK;
     }
     else
     {
         // We don't support this interface
         *pdwSupportedOptions = 0;
-        *pdwEnabledOptions   = 0;       
+        *pdwEnabledOptions   = 0;
         return E_NOINTERFACE;
     }
 }
@@ -2792,7 +2792,7 @@ HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
 HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
                                                          REFIID riid,
                                                          DWORD dwOptionSetMask,
-                                                         DWORD dwEnabledOptions) 
+                                                         DWORD dwEnabledOptions)
 {
     CONTRACTL
     {
@@ -2835,27 +2835,27 @@ HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvide
 
     // Initialize [out] parameters
     *ppProperty = NULL;
-    
+
     HRESULT hr;
-    
+
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {   
+    {
         _ASSERTE(IsSimpleTearOff(pPropertyProvider));
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
-        
+
         GCX_COOP();
-        
+
         struct _gc {
                 OBJECTREF  TargetObj;
                 STRINGREF  StringRef;
                 OBJECTREF  RetVal;
         } gc;
         ZeroMemory(&gc, sizeof(gc));
-        
+
         GCPROTECT_BEGIN(gc);
 
         gc.TargetObj = pSimpleWrap->GetObjectRef();
-        
+
         //
         // Marshal HSTRING to String object
         // NULL HSTRINGS are equivilent to empty strings
@@ -2866,12 +2866,12 @@ HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvide
         {
             pwszString = WindowsGetStringRawBuffer(hstrName, &cchString);
         }
-            
+
         gc.StringRef = StringObject::NewString(pwszString, cchString);
 
         //
         // Call ICustomPropertyProviderImpl.CreateProperty
-        //        
+        //
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICUSTOMPROPERTYPROVIDERIMPL__CREATE_PROPERTY);
         DECLARE_ARGHOLDER_ARRAY(args, 2);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
@@ -2884,17 +2884,17 @@ HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvide
             // The object is a CustomPropertyImpl. Get the ICustomProperty implementation from CCW and return that
             *ppProperty = GetComIPFromObjectRef(&gc.RetVal, MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTY));
         }
-        
+
         GCPROTECT_END();
     }
     END_EXTERNAL_ENTRYPOINT;
-    
+
     // Don't fail if property can't be found - just return S_OK and NULL property
     return S_OK;
 }
 
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pPropertyProvider, 
-                                                             HSTRING hstrName, 
+HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pPropertyProvider,
+                                                             HSTRING hstrName,
                                                              TypeNameNative indexedParamType,
                                                              /* [out, retval] */ IUnknown **ppProperty)
 {
@@ -2914,27 +2914,27 @@ HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pProperty
 
     // Initialize [out] parameters
     *ppProperty = NULL;
-    
+
     HRESULT hr;
-    
+
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {   
+    {
         _ASSERTE(IsSimpleTearOff(pPropertyProvider));
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
 
         GCX_COOP();
-        
+
         struct _gc {
                 OBJECTREF  TargetObj;
                 STRINGREF  StringRef;
                 OBJECTREF  RetVal;
         } gc;
         ZeroMemory(&gc, sizeof(gc));
-        
+
         GCPROTECT_BEGIN(gc);
-        
+
         gc.TargetObj = pSimpleWrap->GetObjectRef();
-               
+
         //
         // Marshal HSTRING to String object
         // NULL HSTRINGS are equivilent to empty strings
@@ -2945,12 +2945,12 @@ HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pProperty
         {
             pwszString = WindowsGetStringRawBuffer(hstrName, &cchString);
         }
-            
+
         gc.StringRef = StringObject::NewString(pwszString, cchString);
-        
+
         //
         // Call ICustomPropertyProviderImpl.CreateIndexedProperty
-        //        
+        //
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICUSTOMPROPERTYPROVIDERIMPL__CREATE_INDEXED_PROPERTY);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
@@ -2964,8 +2964,8 @@ HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pProperty
             // The object is a CustomPropertyImpl. Get the ICustomProperty implementation from CCW and return that
             *ppProperty = GetComIPFromObjectRef(&gc.RetVal, MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTY));
         }
-        
-        GCPROTECT_END();        
+
+        GCPROTECT_END();
     }
     END_EXTERNAL_ENTRYPOINT;
 
@@ -2994,23 +2994,23 @@ HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPro
     *phstrStringRepresentation = NULL;
 
     HRESULT hr;
-    
+
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {   
+    {
         _ASSERTE(IsSimpleTearOff(pPropertyProvider));
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
 
         GCX_COOP();
-        
+
         struct _gc {
                 OBJECTREF  TargetObj;
                 STRINGREF  RetVal;
         } gc;
         ZeroMemory(&gc, sizeof(gc));
-        
+
         GCPROTECT_BEGIN(gc);
-        
-        gc.TargetObj = pSimpleWrap->GetObjectRef(); 
+
+        gc.TargetObj = pSimpleWrap->GetObjectRef();
 
         //
         // Call IStringableHelper.ToString() to get string representation either from IStringable.ToString() or ToString()
@@ -3022,21 +3022,21 @@ HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPro
 
         //
         // Convert managed string to HSTRING
-        // 
+        //
         if (gc.RetVal == NULL)
             *phstrStringRepresentation = NULL;
         else
             hr = ::WindowsCreateString(gc.RetVal->GetBuffer(), gc.RetVal->GetStringLength(), phstrStringRepresentation);
 
         GCPROTECT_END();
-        
+
     }
     END_EXTERNAL_ENTRYPOINT;
-    
+
     return hr;
 }
-                                                                  
-HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider, 
+
+HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
                                                   /* [out, retval] */ TypeNameNative *pTypeIdentifier)
 {
     CONTRACTL
@@ -3055,20 +3055,20 @@ HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
 
     // Initialize [out] parameters
     ::ZeroMemory(pTypeIdentifier, sizeof(TypeNameNative));
-    
+
     HRESULT hr;
-    
+
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {   
+    {
         _ASSERTE(IsSimpleTearOff(pPropertyProvider));
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
 
         GCX_COOP();
-        
+
         OBJECTREF  refTargetObj = NULL;
         GCPROTECT_BEGIN(refTargetObj);
-        
-        refTargetObj = pSimpleWrap->GetObjectRef(); 
+
+        refTargetObj = pSimpleWrap->GetObjectRef();
 
         //
         // Call ICustomPropertyProviderImpl.GetType()
@@ -3083,7 +3083,7 @@ HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
         GCPROTECT_END();
     }
     END_EXTERNAL_ENTRYPOINT;
-    
+
     return S_OK;
 }
 
@@ -3108,23 +3108,23 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
     *pResult = NULL;
 
     HRESULT hr;
-    
+
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {   
+    {
         _ASSERTE(IsSimpleTearOff(pStringable));
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pStringable);
 
         GCX_COOP();
-        
+
         struct _gc {
                 OBJECTREF  TargetObj;
                 STRINGREF  RetVal;
         } gc;
         ZeroMemory(&gc, sizeof(gc));
-        
+
         GCPROTECT_BEGIN(gc);
-        
-        gc.TargetObj = pSimpleWrap->GetObjectRef(); 
+
+        gc.TargetObj = pSimpleWrap->GetObjectRef();
         MethodDesc* pToStringMD = NULL;
 
         MethodTable* pMT = gc.TargetObj->GetMethodTable();
@@ -3138,7 +3138,7 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
         {
             // Find the ToString() method of the interface.
             pToStringMD = MemberLoader::FindMethod(
-                pMTIStringable, 
+                pMTIStringable,
                 "ToString",
                 &gsig_IM_RetStr);
 
@@ -3158,20 +3158,20 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
 
         CALL_MANAGED_METHOD_RETREF(gc.RetVal, STRINGREF, args);
-        
+
         //
         // Convert managed string to HSTRING
-        // 
+        //
         if (gc.RetVal == NULL)
             *pResult = NULL;
         else
             hr = ::WindowsCreateString(gc.RetVal->GetBuffer(), gc.RetVal->GetStringLength(), pResult);
 
         GCPROTECT_END();
-        
+
     }
     END_EXTERNAL_ENTRYPOINT;
-    
+
     return hr;
 
 }
@@ -3191,7 +3191,7 @@ ICCW_AddRefFromJupiter(IUnknown* pUnk)
     CONTRACTL_END;
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-        
+
     return pSimpleWrap->AddJupiterRef();
 }
 
@@ -3213,7 +3213,7 @@ ICCW_ReleaseFromJupiter(IUnknown* pUnk)
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-        
+
         cbRef = pSimpleWrap->ReleaseJupiterRef();
     }
     END_EXTERNAL_ENTRYPOINT;
@@ -3232,7 +3232,7 @@ ICCW_Peg(IUnknown* pUnk)
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
-    
+
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
 
     pSimpleWrap->MarkPegged();
@@ -3254,8 +3254,8 @@ ICCW_Unpeg(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);    
-    
+    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
+
     pSimpleWrap->UnMarkPegged();
 
     STRESS_LOG1(LF_INTEROP, LL_INFO1000, "CCW 0x%p unpegged\n", (ComCallWrapper *)pSimpleWrap->GetMainWrapper());

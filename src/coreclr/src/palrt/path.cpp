@@ -64,7 +64,7 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch)
 // check if a path is a root
 //
 // returns:
-//  TRUE 
+//  TRUE
 //      "\" "X:\" "\\" "\\foo" "\\foo\bar"
 //
 //  FALSE for others including "\\foo\bar\" (!)
@@ -72,30 +72,30 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch)
 STDAPI_(BOOL) PathIsRootW(LPCWSTR pPath)
 {
     RIPMSG(pPath && IS_VALID_STRING_PTR(pPath, -1), "PathIsRoot: caller passed bad pPath");
-    
+
     if (!pPath || !*pPath)
     {
         return FALSE;
     }
-    
+
     if (!lstrcmpiW(pPath + 1, W(":\\")))
     {
         return TRUE;    // "X:\" case
     }
-    
+
     if (IsPathSeparator(*pPath) && (*(pPath + 1) == 0))
     {
         return TRUE;    // "/" or "\" case
     }
-    
+
     if (DBL_BSLASH(pPath))      // smells like UNC name
     {
         LPCWSTR p;
         int cBackslashes = 0;
-        
+
         for (p = pPath + 2; *p; p++)
         {
-            if (*p == W('\\')) 
+            if (*p == W('\\'))
             {
                 //
                 //  return FALSE for "\\server\share\dir"
@@ -106,7 +106,7 @@ STDAPI_(BOOL) PathIsRootW(LPCWSTR pPath)
                 //  FALSE for this as well
                 //
                 if ((++cBackslashes > 1) || !*(p+1))
-                    return FALSE;   
+                    return FALSE;
             }
         }
         // end of string with only 1 more backslash
@@ -241,7 +241,7 @@ void NearRootFixups(LPWSTR lpszPath, BOOL fUNC)
     if (lpszPath[0] == W('\0'))
     {
         // Fix up.
-#ifndef PLATFORM_UNIX        
+#ifndef PLATFORM_UNIX
         lpszPath[0] = CH_WHACK;
 #else
         lpszPath[0] = CH_SLASH;
@@ -290,7 +290,7 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
     }
 
     *lpszDst = W('\0');
-    
+
     fUNC = PathIsUNCW(lpszSrc);    // Check for UNCness.
 
     // Init.
@@ -305,7 +305,7 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
         if (cchPC == 1 && IsPathSeparator(*lpchSrc))   // Check for slashes.
         {
             // Just copy them.
-#ifndef PLATFORM_UNIX            
+#ifndef PLATFORM_UNIX
             *lpchDst = CH_WHACK;
 #else
             *lpchDst = CH_SLASH;
@@ -350,7 +350,7 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
             }
 
             // skip ".."
-            lpchSrc += 2;       
+            lpchSrc += 2;
         }
         else                                                                        // Everything else
         {
@@ -492,7 +492,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
         // if szTemp has something in it we succeeded.  Also if szTemp is empty and
         // the input strings are empty we succeed and PathCanonicalize() will
         // return "\"
-        // 
+        //
         if (*szTemp || ((lpszDir || lpszFile) && !((lpszDir && *lpszDir) || (lpszFile && *lpszFile))))
         {
             PathCanonicalizeW(lpszDest, szTemp); // this deals with .. and . stuff

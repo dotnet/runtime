@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // VerifyLayouts.cpp
-// 
+//
 
 //
 // Make sure that layouts of MD data structures doesn't change accidentally

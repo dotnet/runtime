@@ -38,7 +38,7 @@ class FinalizerThread
     static void FinalizeAllObjects(int bitToCheck);
 
 public:
-    static Thread* GetFinalizerThread() 
+    static Thread* GetFinalizerThread()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pFinalizerThread != 0);

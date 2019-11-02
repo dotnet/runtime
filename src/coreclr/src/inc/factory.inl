@@ -12,13 +12,13 @@ PRODUCT* InlineFactory<PRODUCT, MAX_FACTORY_PRODUCT>::Create()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (m_cProduct == MAX_FACTORY_PRODUCT) 
+    if (m_cProduct == MAX_FACTORY_PRODUCT)
     {
         InlineFactory* pNext = GetNext();
         if (pNext)
         {
             return pNext->Create();
-        } 
+        }
         else
         {
             return NULL;

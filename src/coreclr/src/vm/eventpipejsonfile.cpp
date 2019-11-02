@@ -65,7 +65,7 @@ void EventPipeJsonFile::WriteEvent(EventPipeEventInstance &instance)
         GC_NOTRIGGER;
         MODE_ANY;
     }
-    CONTRACTL_END; 
+    CONTRACTL_END;
 
     instance.SerializeToJsonFile(this);
 }
@@ -78,7 +78,7 @@ void EventPipeJsonFile::WriteEvent(LARGE_INTEGER timeStamp, DWORD threadID, SStr
         GC_NOTRIGGER;
         MODE_ANY;
     }
-    CONTRACTL_END; 
+    CONTRACTL_END;
 
     if(m_pFileStream == NULL || m_writeErrorEncountered)
     {
@@ -146,11 +146,11 @@ void EventPipeJsonFile::FormatCallStack(StackContents &stackContents, SString &r
         GC_NOTRIGGER;
         MODE_ANY;
     }
-    CONTRACTL_END; 
+    CONTRACTL_END;
 
     StackScratchBuffer scratch;
     SString frameStr;
-    
+
     for(unsigned int i=0; i<stackContents.GetLength(); i++)
     {
         // Get the method declaration string.

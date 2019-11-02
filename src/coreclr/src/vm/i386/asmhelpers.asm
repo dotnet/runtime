@@ -104,7 +104,7 @@ endif ; _DEBUG
 PUSH_CPFH_FOR_COM macro trashReg, pFrameBaseReg, pFrameOffset
 
     ;
-    ; Setup the FrameHandlerExRecord 
+    ; Setup the FrameHandlerExRecord
     ;
     push    dword ptr [pFrameBaseReg + pFrameOffset]
     push    _COMPlusFrameHandlerRevCom
@@ -231,7 +231,7 @@ ResetCurrentContext ENDP
 ;Incoming:
 ;   ESP+4: Pointer to buffer to which FPU state should be saved
 _CaptureFPUContext@4 PROC public
-        
+
         mov ecx, [esp+4]
         fnstenv [ecx]
         retn 4
@@ -241,7 +241,7 @@ _CaptureFPUContext@4 ENDP
 ; Incoming:
 ;  ESP+4: Pointer to buffer from which FPU state should be restored
 _RestoreFPUContext@4 PROC public
-        
+
         mov ecx, [esp+4]
         fldenv [ecx]
         retn 4
@@ -287,11 +287,11 @@ CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
-                
+
         mov     ebx, [edx+EHContext_Ebx]
         mov     esi, [edx+EHContext_Esi]
         mov     edi, [edx+EHContext_Edi]
-        mov     ebp, [edx+EHContext_Ebp]        
+        mov     ebp, [edx+EHContext_Ebp]
         mov     ecx, [edx+EHContext_Esp]
         mov     eax, [edx+EHContext_Eip]
         mov     [ecx-4], eax
@@ -303,8 +303,8 @@ _ResumeAtJitEHHelper@4 PROC public
         mov     [ecx-10h], eax
         lea     esp, [ecx-10h]
         pop     edx
-        pop     ecx             
-        pop     eax           
+        pop     ecx
+        pop     eax
         ret
 _ResumeAtJitEHHelper@4 ENDP
 
@@ -380,14 +380,14 @@ ifdef _DEBUG
         nop  ; Indicate that it is OK to call managed code directly from here
 endif
 
-        ; Reflect the changes to the context and only update non-volatile registers. 
+        ; Reflect the changes to the context and only update non-volatile registers.
         ; This will be used later to update REGDISPLAY
-        mov     edx, [esp+12+12]        
+        mov     edx, [esp+12+12]
         mov     [edx+EHContext_Ebx], ebx
         mov     [edx+EHContext_Esi], esi
         mov     [edx+EHContext_Edi], edi
         mov     [edx+EHContext_Ebp], ebp
-        
+
         pop     edi
         pop     esi
         pop     ebx
@@ -700,7 +700,7 @@ FASTCALL_ENDFUNC HelperMethodFrameRestoreState
 
 ifdef FEATURE_HIJACK
 
-; A JITted method's return address was hijacked to return to us here.  
+; A JITted method's return address was hijacked to return to us here.
 ; VOID OnHijackTripThread()
 OnHijackTripThread PROC stdcall public
 
@@ -973,10 +973,10 @@ _ProfileEnterNaked@4 proc public
     push    ebp          ; Methods are always EBP framed
     add     [esp], 8     ; Skip past the return IP, straight to the stack args that were passed to our caller
                          ; Skip past saved EBP value: 4 bytes
-                         ;   - plus return address from caller's caller: 4 bytes   
+                         ;   - plus return address from caller's caller: 4 bytes
                          ;
-                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack 
-                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack
+                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass
                          ; the return address from caller's caller which is Foo() in this example.
                          ;
                          ; ProfileEnterNaked()
@@ -997,8 +997,8 @@ _ProfileEnterNaked@4 proc public
     mov     edx, esp     ; the address of the Platform structure
     mov     ecx, [esp+52]; The functionIDOrClientID parameter that was pushed to FunctionEnter
                          ; Skip past ProfilePlatformSpecificData we pushed: 40 bytes
-                         ;   - plus saved edi, esi : 8 bytes   
-                         ;   - plus return address from caller: 4 bytes   
+                         ;   - plus saved edi, esi : 8 bytes
+                         ;   - plus return address from caller: 4 bytes
 
     call    @ProfileEnter@8
 
@@ -1026,10 +1026,10 @@ _ProfileLeaveNaked@4 proc public
     push    ebp          ; Methods are always EBP framed
     add     [esp], 8     ; Skip past the return IP, straight to the stack args that were passed to our caller
                          ; Skip past saved EBP value: 4 bytes
-                         ;   - plus return address from caller's caller: 4 bytes   
+                         ;   - plus return address from caller's caller: 4 bytes
                          ;
-                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack 
-                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack
+                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass
                          ; the return address from caller's caller which is Foo() in this example.
                          ;
                          ; ProfileEnterNaked()
@@ -1043,7 +1043,7 @@ _ProfileLeaveNaked@4 proc public
     push    eax	         ;                                                  -- struct eax field
 
     ; Check if we need to save off any floating point registers
-    fstsw   ax           
+    fstsw   ax
     and     ax, 3800h    ; Check the top-of-fp-stack bits
     cmp     ax, 0        ; If non-zero, we have something to save
     jnz     SaveFPReg
@@ -1056,7 +1056,7 @@ _ProfileLeaveNaked@4 proc public
 
 SaveFPReg:
     push    1            ; mark that a float value is present               -- struct floatingPointValuePresent field
-    sub     esp, 4       ; Make room for the FP value                      
+    sub     esp, 4       ; Make room for the FP value
     fst     dword ptr [esp] ; Copy the FP value to the buffer as a float    -- struct floatBuffer field
     sub     esp, 8       ; Make room for the FP value
     fstp    qword ptr [esp] ; Copy FP values to the buffer as a double      -- struct doubleBuffer1 and doubleBuffer2 fields
@@ -1067,8 +1067,8 @@ Continue:
     mov     edx, esp     ; the address of the Platform structure
     mov     ecx, [esp+52]; The clientData that was pushed to FunctionEnter
                          ; Skip past ProfilePlatformSpecificData we pushed: 40 bytes
-                         ;   - plus saved edx, ecx : 8 bytes   
-                         ;   - plus return address from caller: 4 bytes   
+                         ;   - plus saved edx, ecx : 8 bytes
+                         ;   - plus return address from caller: 4 bytes
 
     call    @ProfileLeave@8
 
@@ -1104,10 +1104,10 @@ _ProfileTailcallNaked@4 proc public
     push    ebp          ; Methods are always EBP framed
     add     [esp], 8     ; Skip past the return IP, straight to the stack args that were passed to our caller
                          ; Skip past saved EBP value: 4 bytes
-                         ;   - plus return address from caller's caller: 4 bytes   
+                         ;   - plus return address from caller's caller: 4 bytes
                          ;
-                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack 
-                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass 
+                         ; Assuming Foo() calls Bar(), and Bar() calls ProfileEnterNake() as illustrated (stack
+                         ; grows up). We want to get what Foo() passed on the stack to Bar(), so we need to pass
                          ; the return address from caller's caller which is Foo() in this example.
                          ;
                          ; ProfileEnterNaked()
@@ -1128,8 +1128,8 @@ _ProfileTailcallNaked@4 proc public
     mov     edx, esp     ; the address of the Platform structure
     mov     ecx, [esp+52]; The clientData that was pushed to FunctionEnter
                          ; Skip past ProfilePlatformSpecificData we pushed: 40 bytes
-                         ;   - plus saved edx, ecx : 8 bytes   
-                         ;   - plus return address from caller: 4 bytes   
+                         ;   - plus saved edx, ecx : 8 bytes
+                         ;   - plus return address from caller: 4 bytes
 
     call    @ProfileTailcall@8
 
@@ -1145,25 +1145,25 @@ _ProfileTailcallNaked@4 endp
 ; EAX       - the NDirectMethodDesc
 ; ECX       - may be return buffer address
 ; [ESP + 4] - the VASigCookie
-; 
+;
 _VarargPInvokeStub@0 proc public
     ; EDX <- VASigCookie
     mov     edx, [esp + 4]           ; skip retaddr
 
     mov     edx, [edx + VASigCookie__StubOffset]
     test    edx, edx
-    
+
     jz      GoCallVarargWorker
     ; ---------------------------------------
-    
+
     ; EAX contains MD ptr for the IL stub
     jmp     edx
-    
+
 GoCallVarargWorker:
     ;
     ; MD ptr in EAX, VASigCookie ptr at [esp+4]
     ;
-    
+
     STUB_PROLOG
 
     mov         esi, esp
@@ -1179,7 +1179,7 @@ GoCallVarargWorker:
 
     ; restore pMD
     pop     eax
-    
+
     STUB_EPILOG
 
     ; jump back to the helper - this time it won't come back here as the stub already exists
@@ -1192,7 +1192,7 @@ _VarargPInvokeStub@0 endp
 ; EAX       - the unmanaged target
 ; ECX, EDX  - arguments
 ; [ESP + 4] - the VASigCookie
-; 
+;
 _GenericPInvokeCalliHelper@0 proc public
     ; save the target
     push    eax
@@ -1202,10 +1202,10 @@ _GenericPInvokeCalliHelper@0 proc public
 
     mov     eax, [eax + VASigCookie__StubOffset]
     test    eax, eax
-    
+
     jz      GoCallCalliWorker
     ; ---------------------------------------
-    
+
     push    eax
 
     ; stack layout at this point:
@@ -1221,11 +1221,11 @@ _GenericPInvokeCalliHelper@0 proc public
     ; +----------------------+
     ; |   stub entry point   | ESP + 0
     ; ------------------------
-    
+
     ; remove VASigCookie from the stack
     mov     eax, [esp + 8]
     mov     [esp + 12], eax
-    
+
     ; move stub entry point below the RA
     mov     eax, [esp]
     mov     [esp + 8], eax
@@ -1233,7 +1233,7 @@ _GenericPInvokeCalliHelper@0 proc public
     ; load EAX with the target address
     pop     eax
     pop     eax
-    
+
     ; stack layout at this point:
     ;
     ; |         ...          |
@@ -1246,7 +1246,7 @@ _GenericPInvokeCalliHelper@0 proc public
 
     ; CALLI target address is in EAX
     ret
-    
+
 GoCallCalliWorker:
     ; the target is on the stack and will become m_Datum of PInvokeCalliFrame
     ; call the stub generating worker
@@ -1255,7 +1255,7 @@ GoCallCalliWorker:
     ;
     ; target ptr in EAX, VASigCookie ptr in EDX
     ;
-    
+
     STUB_PROLOG
 
     mov         esi, esp
@@ -1271,7 +1271,7 @@ GoCallCalliWorker:
 
     ; restore target
     pop     eax
-    
+
     STUB_EPILOG
 
     ; jump back to the helper - this time it won't come back here as the stub already exists
@@ -1285,7 +1285,7 @@ ifdef FEATURE_COMINTEROP
 ; This is a fast alternative to CallDescr* tailored specifically for
 ; COM to CLR calls. Stack arguments don't come in a continuous buffer
 ; and secret argument can be passed in EAX.
-; 
+;
 
 ; extern "C" ARG_SLOT __fastcall COMToCLRDispatchHelper(
 ;     INT_PTR dwArgECX,                 ; ecx
@@ -1302,11 +1302,11 @@ FASTCALL_FUNC COMToCLRDispatchHelper, 32
     ; ecx: dwArgECX
     ; edx: dwArgEDX
 
-    offset_pTarget              equ 4   
-    offset_pSecretArg           equ 8   
-    offset_pInputStack          equ 0Ch 
+    offset_pTarget              equ 4
+    offset_pSecretArg           equ 8
+    offset_pInputStack          equ 0Ch
     offset_wOutputStackSlots    equ 10h
-    offset_pOutputStackOffsets  equ 14h 
+    offset_pOutputStackOffsets  equ 14h
     offset_pCurFrame            equ 18h
 
     movzx   eax, word ptr [esp + offset_wOutputStackSlots]
@@ -1314,7 +1314,7 @@ FASTCALL_FUNC COMToCLRDispatchHelper, 32
     jnz     CopyStackArgs
 
     ; There are no stack args to copy and ECX and EDX are already setup
-    ; with the correct arguments for the callee, so we just have to 
+    ; with the correct arguments for the callee, so we just have to
     ; push the CPFH and make the call.
 
     PUSH_CPFH_FOR_COM   eax, esp, offset_pCurFrame     ; trashes eax
@@ -1397,11 +1397,11 @@ ifndef FEATURE_CORECLR
 _CopyCtorCallStub@0 proc public
     ; there may be an argument in ecx - save it
     push    ecx
-    
+
     ; push pointer to arguments
     lea     edx, [esp + 8]
     push    edx
-    
+
     call    _CopyCtorCallStubWorker@4
 
     ; restore ecx and tail call to the target
@@ -1427,7 +1427,7 @@ _StubDispatchFixupStub@0 proc public
     push        esi             ; pTransitionBlock
 
     call        _StubDispatchFixupWorker@16
-    
+
     STUB_EPILOG
 
 _StubDispatchFixupPatchLabel@0:
@@ -1471,14 +1471,14 @@ _ExternalMethodFixupStub@0 proc public
     ; NULL (it throws an exception if stub creation fails.)
 
     ; From here on, mustn't trash eax
-    
+
     STUB_EPILOG
 
 _ExternalMethodFixupPatchLabel@0:
 public _ExternalMethodFixupPatchLabel@0
 
     ; Tailcall target
-    jmp eax    
+    jmp eax
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
@@ -1508,7 +1508,7 @@ _DelayLoad_MethodCall@0 proc public
     ; NULL (it throws an exception if stub creation fails.)
 
     ; From here on, mustn't trash eax
-    
+
     STUB_EPILOG
 
     ; Share the patch label
@@ -1526,7 +1526,7 @@ ifdef FEATURE_PREJIT
 ; The call in softbound vtable slots initially points to this function.
 ; The pupose of this function is to transfer the control to right target and
 ; to optionally patch the target of the jump so that we do not take this slow path again.
-; 
+;
 _VirtualMethodFixupStub@0 proc public
 
         pop     eax         ; Pop the return address. It points right after the call instruction in the thunk.
@@ -1539,7 +1539,7 @@ _VirtualMethodFixupStub@0 proc public
         ; Preserve argument registers
         push    ecx
         push    edx
-        
+
         push    eax         ; address of the thunk
         push    ecx         ; this ptr
         call    _VirtualMethodFixupWorker@8
@@ -1572,10 +1572,10 @@ _ThePreStub@0 proc public
 
     mov         esi, esp
 
-    ; EAX contains MethodDesc* from the precode. Push it here as argument 
-    ; for PreStubWorker 
+    ; EAX contains MethodDesc* from the precode. Push it here as argument
+    ; for PreStubWorker
     push        eax
-    
+
     push        esi
 
     call        _PreStubWorker@8
@@ -1584,12 +1584,12 @@ _ThePreStub@0 proc public
     ; NULL (it throws an exception if stub creation fails.)
 
     ; From here on, mustn't trash eax
-    
+
     STUB_EPILOG
-    
+
     ; Tailcall target
     jmp eax
-    
+
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
@@ -1633,12 +1633,12 @@ _GenericComPlusCallStub@0 proc public
 
     ; Get pComPlusCallInfo for return thunk
     mov         ecx, [ebx + ComPlusCallMethodDesc__m_pComPlusCallInfo]
-    
+
     STUB_EPILOG_RETURN
-    
+
     ; Tailcall return thunk
     jmp [ecx + ComPlusCallInfo__m_pRetThunk]
-    
+
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
@@ -1649,7 +1649,7 @@ endif ; FEATURE_COMINTEROP
 
 ifdef FEATURE_COMINTEROP
 ;--------------------------------------------------------------------------
-; This is the code that all com call method stubs run initially. 
+; This is the code that all com call method stubs run initially.
 ; Most of the real work occurs in ComStubWorker(), a C++ routine.
 ; The template only does the part that absolutely has to be in assembly
 ; language.
@@ -1671,7 +1671,7 @@ _ComCallPreStub@0 proc public
 
     lea     edi, [esp]
     lea     esi, [esp+3*4]
- 
+
     push    edi                 ; pErrorReturn
     push    esi                 ; pFrame
     call    _ComPreStubWorker@8
@@ -1695,10 +1695,10 @@ _ComCallPreStub@0 proc public
 
 nostub:
 
-    ; Even though the ComPreStubWorker sets a 64 bit value as the error return code. 
-    ; Only the lower 32 bits contain usefula data. The reason for this is that the 
+    ; Even though the ComPreStubWorker sets a 64 bit value as the error return code.
+    ; Only the lower 32 bits contain usefula data. The reason for this is that the
     ; possible error return types are: failure HRESULT, 0 and floating point 0.
-    ; In each case, the data fits in 32 bits. Instead, we use the upper half of 
+    ; In each case, the data fits in 32 bits. Instead, we use the upper half of
     ; the return value to store number of bytes to pop
     mov     eax, [edi]
     mov     edx, [edi+4]
@@ -1715,7 +1715,7 @@ nostub:
     add     esp, edx            ; pop bytes of the stack
     push    ecx                 ; return address
 
-    ; We need to deal with the case where the method is PreserveSig=true and has an 8 
+    ; We need to deal with the case where the method is PreserveSig=true and has an 8
     ; byte return type. There are 2 types of 8 byte return types: integer and floating point.
     ; For integer 8 byte return types, we always return 0 in case of failure. For floating
     ; point return types, we return the value in the floating point register. In both cases
@@ -1743,7 +1743,7 @@ _DelayLoad_Helper&suffix&@0 proc public
     push        ecx             ; module
     push        edx             ; section index
 
-    push        eax             ; indirection cell address. 
+    push        eax             ; indirection cell address.
     push        esi             ; pTransitionBlock
 
     call        _DynamicHelperWorker@20

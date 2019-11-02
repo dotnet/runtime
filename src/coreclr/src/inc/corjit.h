@@ -20,7 +20,7 @@
 // The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
-// 
+//
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,9 +218,9 @@ extern "C" ICorJitCompiler* __stdcall getJit();
 // ICorJitCompiler is the interface that the EE uses to get IL bytecode converted to native code. Note that
 // to accomplish this the JIT has to call back to the EE to get symbolic information.  The code:ICorJitInfo
 // type passed as 'comp' to compileMethod is the mechanism to get this information.  This is often the more
-// interesting interface.  
-// 
-// 
+// interesting interface.
+//
+//
 class ICorJitCompiler
 {
 public:
@@ -230,10 +230,10 @@ public:
     // nativeSizeOfCode are just for convenience because the JIT asks the EE for the memory to emit code into
     // (see code:ICorJitInfo.allocMem), so really the EE already knows where the method starts and how big
     // it is (in fact, it could be in more than one chunk).
-    // 
+    //
     // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
     // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
-    // 
+    //
     // Note: Obfuscators that are hacking the JIT depend on this method having __stdcall calling convention
     virtual CorJitResult __stdcall compileMethod (
             ICorJitInfo                 *comp,               /* IN */
@@ -257,7 +257,7 @@ public:
     // The EE asks the JIT for a "version identifier". This represents the version of the JIT/EE interface.
     // If the JIT doesn't implement the same JIT/EE interface expected by the EE (because the JIT doesn't
     // return the version identifier that the EE expects), then the EE fails to load the JIT.
-    // 
+    //
     virtual void getVersionIdentifier(
             GUID*   versionIdentifier   /* OUT */
             ) = 0;
@@ -279,16 +279,16 @@ public:
 
 //------------------------------------------------------------------------------------------
 // #JitToEEInterface
-// 
+//
 // ICorJitInfo is the main interface that the JIT uses to call back to the EE and get information. It is
 // the companion to code:ICorJitCompiler#EEToJitInterface. The concrete implementation of this in the
-// runtime is the code:CEEJitInfo type.  There is also a version of this for the NGEN case.  
-// 
-// See code:ICorMethodInfo#EEJitContractDetails for subtle conventions used by this interface.  
-// 
-// There is more information on the JIT in the book of the runtime entry 
+// runtime is the code:CEEJitInfo type.  There is also a version of this for the NGEN case.
+//
+// See code:ICorMethodInfo#EEJitContractDetails for subtle conventions used by this interface.
+//
+// There is more information on the JIT in the book of the runtime entry
 // http://devdiv/sites/CLR/Product%20Documentation/2.0/BookOfTheRuntime/JIT/JIT%20Design.doc
-// 
+//
 class ICorJitInfo : public ICorDynamicInfo
 {
 public:
@@ -332,7 +332,7 @@ public:
     // Parameters:
     //
     //    pHotCode        main method code buffer, always filled in
-    //    pColdCode       cold code buffer, only filled in if this is cold code, 
+    //    pColdCode       cold code buffer, only filled in if this is cold code,
     //                      null otherwise
     //    startOffset     start of code block, relative to appropriate code buffer
     //                      (e.g. pColdCode if cold, pHotCode if hot).
@@ -386,7 +386,7 @@ public:
     // do an assert.  will return true if the code should retry (DebugBreak)
     // returns false, if the assert should be igored.
     virtual int doAssert(const char* szFile, int iLine, const char* szExpr) = 0;
-    
+
     virtual void reportFatalError(CorJitResult result) = 0;
 
     struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
@@ -445,7 +445,7 @@ public:
     // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
     // is cross-compiling (such as the case for crossgen), it will return a
     // different value than if it was compiling for the host architecture.
-    // 
+    //
     virtual DWORD getExpectedTargetArchitecture() = 0;
 
     // Fetches extended flags for a particular compilation instance. Returns

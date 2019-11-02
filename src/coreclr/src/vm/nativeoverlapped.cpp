@@ -10,7 +10,7 @@
 ** Purpose: Native methods for allocating and freeing NativeOverlapped
 **
 
-** 
+**
 ===========================================================*/
 #include "common.h"
 #include "fcall.h"
@@ -24,7 +24,7 @@
 //
 //The function is called from managed code to quicly check if a packet is available.
 //This is a perf-critical function. Even helper method frames are not created. We fall
-//back to the VM to do heavy weight operations like creating a new CP thread. 
+//back to the VM to do heavy weight operations like creating a new CP thread.
 //
 FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, DWORD* numBytes)
 {
@@ -60,7 +60,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
         if(!pThread->IsRealThreadPoolResetNeeded())
         {
             pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
-            pThread->InternalReset(TRUE, FALSE, FALSE);  
+            pThread->InternalReset(TRUE, FALSE, FALSE);
             if(ThreadpoolMgr::ShouldGrowCompletionPortThreadpool(ThreadpoolMgr::CPThreadCounter.DangerousGetDirtyCounts()))
             {
                 //We may have to create a CP thread, go back to the Vm, and process the packet there.
@@ -70,7 +70,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
         }
         else
         {
-            //A more complete reset is needed (due to change in priority etc), go back to the VM, 
+            //A more complete reset is needed (due to change in priority etc), go back to the VM,
             //and process the packet there.
 
             ThreadpoolMgr::StoreOverlappedInfoInThread(pThread, *errorCode, *numBytes, key, *lpOverlapped);
@@ -104,7 +104,7 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
     if (g_pOverlappedDataClass == NULL)
     {
         g_pOverlappedDataClass = MscorlibBinder::GetClass(CLASS__OVERLAPPEDDATA);
-        // We have optimization to avoid creating event if IO is in default domain.  This depends on default domain 
+        // We have optimization to avoid creating event if IO is in default domain.  This depends on default domain
         // can not be unloaded.
     }
 

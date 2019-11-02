@@ -9,7 +9,7 @@
 // Multicore JIT internal implementation header file
 //
 // ======================================================================================
- 
+
 #ifdef _DEBUG
 
 #define MULTICOREJIT_LOGGING
@@ -36,7 +36,7 @@ const int      MULTICOREJITLIFE  = 60 * 1000;       // 60 seconds
 
 const int      MULTICOREJITBLOCKLIMIT = 10 * 1000;  // 10 seconds
 
-                                                    //  8-bit module index  
+                                                    //  8-bit module index
 
                                                     // Method JIT information: 8-bit module 4-bit flag 20-bit method index
 const unsigned MODULE_DEPENDENCY = 0x800000;        //  1-bit module dependency mask
@@ -71,7 +71,7 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 // Multicore JIT profile format
 
 // <profile>::= <HeaderRecord> { <ModuleRecord> | <JitInfRecord> }
-// 
+//
 //  1. Each record is DWORD aligned
 //  2. Each record starts with a DWORD <recordID> with Pack8_24(record type, record size)
 //  3. Counter are just statistical information gathed (mainly during play back), good for quick diagnosis, not used to guide playback
@@ -84,10 +84,10 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 // <ModuleRecord>::= <recordID> <ModuleVersion> <JitMethodCount> <loadLevel> <lenModuleName> char*lenModuleName <padding>
 // <JifInfRecord>::= <recordID> { <moduleDependency> | <methodJitInfo> }
 
-// <moduleDependency>:: 
+// <moduleDependency>::
 //    8-bit source module index,  current always 0 until we track per module dependency
 //    8-bit flag                  MODULE_DEPENDENCY is 1
-//    8-bit load level 
+//    8-bit load level
 //    8-bit target module index
 
 // <methodJitInfo>::
@@ -116,7 +116,7 @@ public:
     unsigned short minor;
     unsigned short build;
     unsigned short revision;
-    
+
     unsigned       versionFlags         :31;
     unsigned       hasNativeImage:1;
 
@@ -127,7 +127,7 @@ public:
     ModuleVersion()
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         memset(this, 0, sizeof(ModuleVersion));
     }
 
@@ -188,14 +188,14 @@ public:
     unsigned ModuleNameLen() const
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         return lenModuleName;
     }
 
     const char * GetModuleName() const
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         return (const char *) (this + 1); // after this record
     }
 
@@ -261,13 +261,13 @@ private:
     unsigned                           m_nMissingModule;
 
     int                                m_nLoadedModuleCount;
-    
+
     unsigned                           m_busyWith;
 
     unsigned                           m_headerModuleCount;
     unsigned                           m_moduleCount;
     PlayerModuleInfo                 * m_pModules;
-    
+
     void JITMethod(Module * pModule, unsigned methodIndex);
 
     HRESULT HandleModuleRecord(const ModuleRecord * pModule);
@@ -320,7 +320,7 @@ struct RecorderModuleInfo
     RecorderModuleInfo()
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         pModule     = NULL;
         methodCount = 0;
         flags       = 0;
@@ -345,7 +345,7 @@ private:
 
     unsigned                  m_JitInfoArray[MAX_METHOD_ARRAY];
     LONG                      m_JitInfoCount;
-    
+
     bool                      m_fFirstMethod;
     bool                      m_fAborted;
     bool                      m_fAppxMode;
@@ -359,15 +359,15 @@ private:
     unsigned GetModuleIndex(Module * pModule);
 
     HRESULT WriteModuleRecord(IStream * pStream,  const RecorderModuleInfo & module);
-    
+
     void RecordJitInfo(unsigned module, unsigned method);
 
     void AddAllModulesInAsm(DomainAssembly * pAssembly);
-    
+
     HRESULT WriteOutput(IStream * pStream);
 
     HRESULT WriteOutput();
-    
+
     void PreRecordFirstMethod();
 
 #ifndef FEATURE_PAL
@@ -401,7 +401,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         TP_TIMER * pTimer = InterlockedExchangeT(& s_delayedWriteTimer, NULL);
-    
+
         if (pTimer == NULL)
         {
             return false;
@@ -431,7 +431,7 @@ public:
     void RecordMethodJit(MethodDesc * pMethod, bool application);
 
     PCODE RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
-    
+
     HRESULT StartProfile(const WCHAR * pRoot, const WCHAR * pFileName, int suffix, LONG nSession);
 
     HRESULT StopProfile(bool appDomainShutdown);

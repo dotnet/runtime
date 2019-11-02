@@ -97,7 +97,7 @@ OFFSETOF_GSCookie = GenericComCallStub_ComMethodFrame_OFFSET - SIZEOF_GSCookie
         mov             r10, rsp
 
         alloc_stack     GenericComCallStub_ComMethodFrame_OFFSET
-            
+
         ;
         ; Save argument registers
         ;
@@ -112,12 +112,12 @@ OFFSETOF_GSCookie = GenericComCallStub_ComMethodFrame_OFFSET - SIZEOF_GSCookie
 
         mov            rcx, s_gsCookie
         mov            [rsp + OFFSETOF_GSCookie], rcx
-        
+
         ;
         ; Call COMToCLRWorker.  Note that the first parameter (pThread) is
         ; filled in by callee.
         ;
-        
+
 ifdef _DEBUG
         mov             rcx, 0cccccccccccccccch
 endif
@@ -172,7 +172,7 @@ ComMethodFrame_XMM_SAVE_OFFSET = GenericComCallStub_XMM_SAVE_OFFSET - GenericCom
         sub     rsp, rax                ; allocate argument list
         mov     rdi, rsp                ; set destination argument list address
         rep movsq                       ; copy arguments to the stack
-        
+
 
         ; Stack layout:
         ;
@@ -205,7 +205,7 @@ ComMethodFrame_XMM_SAVE_OFFSET = GenericComCallStub_XMM_SAVE_OFFSET - GenericCom
         ;
         mov     r10, r9
         mov     rax, r8
-        
+
         ;
         ; load argument registers
         ;
@@ -213,7 +213,7 @@ ComMethodFrame_XMM_SAVE_OFFSET = GenericComCallStub_XMM_SAVE_OFFSET - GenericCom
         mov     rdx, [rsp + 08h]
         mov     r8,  [rsp + 10h]
         mov     r9,  [rsp + 18h]
-        
+
         ;
         ; call the target
         ;
@@ -244,7 +244,7 @@ NESTED_END COMToCLRDispatchHelperWithStack, _TEXT
 NESTED_ENTRY COMToCLRDispatchHelper, _TEXT, CallDescrWorkerUnwindFrameChainHandler
 
         ;
-        ; Check to see if we have stack to copy and, if so, tail call to 
+        ; Check to see if we have stack to copy and, if so, tail call to
         ; the routine that can handle that.
         ;
         test    ecx, ecx
@@ -270,7 +270,7 @@ NESTED_ENTRY COMToCLRDispatchHelper, _TEXT, CallDescrWorkerUnwindFrameChainHandl
         ;
         mov     r10, r9
         mov     rax, r8
-        
+
         ;
         ; load argument registers
         ;
@@ -278,7 +278,7 @@ NESTED_ENTRY COMToCLRDispatchHelper, _TEXT, CallDescrWorkerUnwindFrameChainHandl
         mov     rdx, [r11 + 08h]
         mov     r8,  [r11 + 10h]
         mov     r9,  [r11 + 18h]
-        
+
         ;
         ; call the target
         ;

@@ -55,10 +55,10 @@
 ;}
 ;
 
-; Assembly code corresponding to above C++ method. JIT_MemSet can AV and clr exception personality routine needs to 
+; Assembly code corresponding to above C++ method. JIT_MemSet can AV and clr exception personality routine needs to
 ; determine if the exception has taken place inside JIT_Memset in order to throw corresponding managed exception.
 ; Determining this is slow if the method were implemented as C++ method (using unwind info). In .asm file by adding JIT_MemSet_End
-; marker it can be easily determined if exception happened in JIT_MemSet. Therefore, JIT_MemSet has been written in assembly instead of 
+; marker it can be easily determined if exception happened in JIT_MemSet. Therefore, JIT_MemSet has been written in assembly instead of
 ; as C++ method.
 
     LEAF_ENTRY JIT_MemSet

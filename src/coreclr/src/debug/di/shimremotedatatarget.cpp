@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: ShimRemoteDataTarget.cpp
 //
 //*****************************************************************************
 #include "stdafx.h"
 #include "safewrap.h"
 
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 
@@ -33,16 +33,16 @@ public:
     // ICorDebugMutableDataTarget.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetPlatform( 
+    virtual HRESULT STDMETHODCALLTYPE GetPlatform(
         CorDebugPlatform *pPlatform);
 
-    virtual HRESULT STDMETHODCALLTYPE ReadVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE ReadVirtual(
         CORDB_ADDRESS address,
         BYTE * pBuffer,
         ULONG32 request,
         ULONG32 *pcbRead);
 
-    virtual HRESULT STDMETHODCALLTYPE WriteVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE WriteVirtual(
         CORDB_ADDRESS address,
         const BYTE * pBuffer,
         ULONG32 request);
@@ -83,7 +83,7 @@ private:
 
 //---------------------------------------------------------------------------------------
 //
-// This is the ctor for ShimRemoteDataTarget. 
+// This is the ctor for ShimRemoteDataTarget.
 //
 // Arguments:
 //      processId  - pid of live process on the remote machine
@@ -91,8 +91,8 @@ private:
 //      pTransport - connection to the debuggee process
 //
 
-ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId, 
-                                           DbgTransportTarget * pProxy, 
+ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId,
+                                           DbgTransportTarget * pProxy,
                                            DbgTransportSession * pTransport)
 {
     m_ref = 0;
@@ -206,7 +206,7 @@ Label_Exit:
     {
         if (pRemoteDataTarget != NULL)
         {
-            // The ShimRemoteDataTarget has ownership of the proxy and the transport, 
+            // The ShimRemoteDataTarget has ownership of the proxy and the transport,
             // so we don't need to clean them up here.
             delete pRemoteDataTarget;
         }
@@ -224,7 +224,7 @@ Label_Exit:
 
 // impl of interface method ICorDebugDataTarget::GetPlatform
 HRESULT STDMETHODCALLTYPE
-ShimRemoteDataTarget::GetPlatform( 
+ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
 #ifdef FEATURE_PAL
@@ -292,7 +292,7 @@ ShimRemoteDataTarget::ReadVirtual(
 
 // impl of interface method ICorDebugMutableDataTarget::WriteVirtual
 HRESULT STDMETHODCALLTYPE
-ShimRemoteDataTarget::WriteVirtual( 
+ShimRemoteDataTarget::WriteVirtual(
     CORDB_ADDRESS pAddress,
     const BYTE * pBuffer,
     ULONG32 cbRequestSize)
@@ -300,8 +300,8 @@ ShimRemoteDataTarget::WriteVirtual(
     ReturnFailureIfStateNotOk();
 
     HRESULT hr = E_FAIL;
-    hr = m_pTransport->WriteMemory(reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(pAddress)), 
-                                   const_cast<BYTE *>(pBuffer), 
+    hr = m_pTransport->WriteMemory(reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(pAddress)),
+                                   const_cast<BYTE *>(pBuffer),
                                    cbRequestSize);
     return hr;
 }
@@ -315,16 +315,16 @@ ShimRemoteDataTarget::GetThreadContext(
     BYTE * pContext)
 {
     ReturnFailureIfStateNotOk();
-        
-    // GetThreadContext() is currently not implemented in ShimRemoteDataTarget, which is used with our pipe transport 
+
+    // GetThreadContext() is currently not implemented in ShimRemoteDataTarget, which is used with our pipe transport
     // (FEATURE_DBGIPC_TRANSPORT_DI). Pipe transport is used on POSIX system, but occasionally we can turn it on for Windows for testing,
     // and then we'd like to have same behavior as on POSIX system (zero context).
     //
-    // We don't have a good way to implement GetThreadContext() in ShimRemoteDataTarget yet, because we have no way to convert a thread ID to a 
-    // thread handle.  The function to do the conversion is OpenThread(), which is not implemented in PAL. Even if we had a handle, PAL implementation 
-    // of GetThreadContext() is very limited and doesn't work when we're not attached with ptrace. 
+    // We don't have a good way to implement GetThreadContext() in ShimRemoteDataTarget yet, because we have no way to convert a thread ID to a
+    // thread handle.  The function to do the conversion is OpenThread(), which is not implemented in PAL. Even if we had a handle, PAL implementation
+    // of GetThreadContext() is very limited and doesn't work when we're not attached with ptrace.
     // Instead, we just zero out the seed CONTEXT for the stackwalk.  This tells the stackwalker to
-    // start the stackwalk with the first explicit frame.  This won't work when we do native debugging, 
+    // start the stackwalk with the first explicit frame.  This won't work when we do native debugging,
     // but that won't happen on the POSIX systems since they don't support native debugging.
     ZeroMemory(pContext, contextSize);
     return E_NOTIMPL;
@@ -339,8 +339,8 @@ ShimRemoteDataTarget::SetThreadContext(
 {
     ReturnFailureIfStateNotOk();
 
-    // ICorDebugDataTarget::GetThreadContext() and ICorDebugDataTarget::SetThreadContext() are currently only 
-    // required for interop-debugging and inspection of floating point registers, both of which are not 
+    // ICorDebugDataTarget::GetThreadContext() and ICorDebugDataTarget::SetThreadContext() are currently only
+    // required for interop-debugging and inspection of floating point registers, both of which are not
     // implemented on Mac.
     _ASSERTE(!"The remote data target doesn't know how to set a thread's CONTEXT.");
     return E_NOTIMPL;
@@ -366,10 +366,10 @@ ShimRemoteDataTarget::ContinueStatusChanged(
 //
 // Unwind the stack to the next frame.
 //
-// Return Value: 
+// Return Value:
 //     context filled in with the next frame
 //
-HRESULT STDMETHODCALLTYPE 
+HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
 {
     return m_pTransport->VirtualUnwind(threadId, contextSize, context);

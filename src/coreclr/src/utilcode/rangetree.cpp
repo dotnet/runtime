@@ -20,7 +20,7 @@ void RangeTree::Node::Init(SIZE_T rangeStart, SIZE_T rangeEnd
 
     start = rangeStart;
     end   = rangeEnd;
-            
+
     mask = GetRangeCommonMask(start, end);
 
     IsIntermediate(FALSE);
@@ -33,7 +33,7 @@ void RangeTree::Node::Init(SIZE_T rangeStart, SIZE_T rangeEnd
 }
 
 
-RangeTree::RangeTree() : 
+RangeTree::RangeTree() :
     m_root(NULL), m_pool(sizeof(Node), 16, 16)
 {
     CONTRACTL {
@@ -67,7 +67,7 @@ RangeTree::Node *RangeTree::Lookup(SIZE_T address) const
     // * the address is greater than the range (and necessarily
     //   has the prefix m1) - traverse the one child
     //
-            
+
     while (node != NULL
            && (address < node->start || address >= node->end))
     {
@@ -102,7 +102,7 @@ RangeTree::Node *RangeTree::LookupEndInclusive(SIZE_T address)
     // Lookup an address which may be the ending range
     // of a node.  In order for this to make sense, it
     // must be the case that address is never the starting
-    // address of the node.  (Otherwise there is an 
+    // address of the node.  (Otherwise there is an
     // ambiguity when 2 nodes are adjacent.)
     //
 
@@ -124,7 +124,7 @@ HRESULT RangeTree::AddNode(Node *addNode, SIZE_T start, SIZE_T end)
     } CONTRACTL_END;
 
     addNode->Init(start, end DEBUGARG(++m_nodeCount));
-    
+
     Node **nodePtr = &m_root;
 
     while (TRUE)
@@ -226,7 +226,7 @@ HRESULT RangeTree::RemoveNode(Node *removeNode)
                 *nodePtr = node->children[0];
             else
             {
-                *nodePtr = AddIntermediateNode(node->children[0], 
+                *nodePtr = AddIntermediateNode(node->children[0],
                                                node->children[1]);
             }
 
@@ -289,7 +289,7 @@ void RangeTree::IterateRange(SIZE_T start, SIZE_T end, IterationCallback pCallba
                          pCallback, context);
 }
 
-void RangeTree::IterateRangeNode(Node *node, SIZE_T start, SIZE_T end, 
+void RangeTree::IterateRangeNode(Node *node, SIZE_T start, SIZE_T end,
                                  SIZE_T mask, IterationCallback pCallback, void *context)
 {
     WRAPPER_NO_CONTRACT;
@@ -424,7 +424,7 @@ void RangeTree::RemoveRangeNode(Node **nodePtr, SIZE_T start, SIZE_T end, SIZE_T
                 *nodePtr = node->children[0];
             else
             {
-                
+
                 // AddIntermediateNode throws to indicate OOM. We need to either
                 // propagate this behavior upward or convert the exception here.
                 CONTRACT_VIOLATION(ThrowsViolation);
@@ -460,7 +460,7 @@ SIZE_T RangeTree::GetRangeCommonMask(SIZE_T start, SIZE_T end)
     return ~diff;
 }
 
-RangeTree::Node *RangeTree::AddIntermediateNode(Node *node0, 
+RangeTree::Node *RangeTree::AddIntermediateNode(Node *node0,
                                                 Node *node1)
 {
     CONTRACTL {
@@ -470,16 +470,16 @@ RangeTree::Node *RangeTree::AddIntermediateNode(Node *node0,
 
     SIZE_T mask = GetRangeCommonMask(node0->start,
                                      node1->start);
-                
+
     _ASSERTE((mask & ~node0->mask) == 0);
     _ASSERTE((mask & ~node1->mask) == 0);
     _ASSERTE((node0->start & mask) == (node1->start & mask));
     _ASSERTE((node0->start & mask) == (node1->start & mask));
-                
+
     SIZE_T middle = (node0->start & mask) + (~mask>>1);
-                
+
     Node *intermediate = AllocateIntermediate();
-    
+
     intermediate->start = middle;
     intermediate->end   = middle+1;
     intermediate->mask  = mask;
@@ -487,7 +487,7 @@ RangeTree::Node *RangeTree::AddIntermediateNode(Node *node0,
 #ifdef _DEBUG
     intermediate->ordinal = ++m_nodeCount;
 #endif
-                
+
     int less = (node0->start < node1->start);
 
     intermediate->children[!less] = node0;

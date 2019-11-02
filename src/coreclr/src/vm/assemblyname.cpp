@@ -26,7 +26,7 @@
 
 #ifndef URL_ESCAPE_AS_UTF8
 #define URL_ESCAPE_AS_UTF8              0x00040000  // Percent-encode all non-ASCII characters as their UTF-8 equivalents.
-#endif 
+#endif
 
 FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameUNSAFE)
 {
@@ -71,7 +71,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL);
     spec.AssemblyNameInit(&gc.result, pImage);
-    
+
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(gc.result);
 }
@@ -91,7 +91,7 @@ FCIMPL1(Object*, AssemblyNameNative::ToString, Object* refThisUNSAFE)
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     AssemblySpec spec;
-    spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF*) &pThis, FALSE); 
+    spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF*) &pThis, FALSE);
 
     StackSString name;
     spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
@@ -125,7 +125,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
         DWORD cb = orPublicKey->GetNumComponents();
         StrongNameBufferHolder<BYTE> pbToken;
 
-        if (cb) {    
+        if (cb) {
             CQuickBytes qb;
             BYTE *pbKey = (BYTE*) qb.AllocThrows(cb);
             memcpy(pbKey, orPublicKey->GetDataPtr(), cb);
@@ -153,16 +153,16 @@ FCIMPL1(void, AssemblyNameNative::Init, Object * refThisUNSAFE)
 
     ASSEMBLYNAMEREF pThis = (ASSEMBLYNAMEREF) (OBJECTREF) refThisUNSAFE;
     HRESULT hr = S_OK;
-    
+
     HELPER_METHOD_FRAME_BEGIN_1(pThis);
-    
+
     if (pThis == NULL)
         COMPlusThrow(kNullReferenceException, W("NullReference_This"));
 
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     AssemblySpec spec;
-    hr = spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF *) &pThis, TRUE); 
+    hr = spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF *) &pThis, TRUE);
 
     if (SUCCEEDED(hr))
     {
@@ -172,7 +172,7 @@ FCIMPL1(void, AssemblyNameNative::Init, Object * refThisUNSAFE)
     {
         ThrowHR(hr);
     }
-    
+
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND

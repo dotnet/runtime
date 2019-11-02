@@ -4,10 +4,10 @@
 //
 // --------------------------------------------------------------------------------------------------
 // configuration.cpp
-// 
+//
 //
 // Access and update configuration values, falling back on legacy CLRConfig methods where necessary.
-// 
+//
 // --------------------------------------------------------------------------------------------------
 
 #include "stdafx.h"

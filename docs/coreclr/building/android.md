@@ -22,7 +22,7 @@ This will download the NDK and any packages required to compile Android on your 
 
 Cross compiling CoreCLR
 -----------------------
-Once the rootfs has been generated, it will be possible to cross compile CoreCLR. 
+Once the rootfs has been generated, it will be possible to cross compile CoreCLR.
 
 When cross compiling, you need to set both the `CONFIG_DIR` and `ROOTFS_DIR` variables.
 

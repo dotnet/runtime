@@ -35,7 +35,7 @@ is the most precise and most expensive (it is based on connection graphs) and wa
 is the least precise and cheapest (it doesn't track references through assignments of fields) and was used in MSR's Marmot implementation.
 [[2]](https://www.usenix.org/legacy/events/vee05/full_papers/p111-kotzmann.pdf)
 is between
-[[1]](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.73.4799&rep=rep1&type=pdf) and 
+[[1]](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.73.4799&rep=rep1&type=pdf) and
 [[3]](https://pdfs.semanticscholar.org/1b33/dff471644f309392049c2791bca9a7f3b19c.pdf)
 both in analysis precision and cost. It was used in Java HotSpot.
 
@@ -102,7 +102,7 @@ that analysis.
 
 ## Other restrictions on stack allocations
 
-* Objects with finalizers can't be stack-allocated since they always escape to the finalizer queue. 
+* Objects with finalizers can't be stack-allocated since they always escape to the finalizer queue.
 * Objects allocated in a loop can be stack allocated only if the allocation doesn't escape the iteration of the loop in which it is
 allocated. Such analysis is complicated and is beyond the scope of at least the initial implementation.
 * Conditional object allocations (i.e., allocations that don't dominate the exit) need to be restricted to avoid growing the stack
@@ -142,7 +142,7 @@ and a checked write barrier is used in the method.
 * All objects allocated on the stack also have a pre-header allocated. Pre-header is used for synchronization
 and hashing so we could eliminate it if we proved the object wasn't used for synchronization and hashing.
 
-We ran the prototype on System.Private.CoreLib via crossgen in 2016 and 
+We ran the prototype on System.Private.CoreLib via crossgen in 2016 and
 objects at 21 allocation sites were moved to the stack.
 
 We also ran an experiment where we changed the algorithm to optimistically assume that no arguments escape.
@@ -179,7 +179,7 @@ and updating inlining heuristics to help with object stack allocation.
 
 To get the maximum benefit from the optimization we will likely have to augment the jit analysis with more information. The information
 may come from manual annotations or from a tool analysis. ILLink or the upcoming [CPAOT](https://github.com/dotnet/corert/tree/r2r)
-may be appropriate places for ahead-of-time escape analysis. Self-contained applications will benefit the most from ILLink analysis 
+may be appropriate places for ahead-of-time escape analysis. Self-contained applications will benefit the most from ILLink analysis
 but framework assemblies can also be analyzed and annotated even though cross-assembly calls will have to be processed conservatively.
 
 In this context an algorithm similar to [[1]](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.73.4799&rep=rep1&type=pdf) can be used

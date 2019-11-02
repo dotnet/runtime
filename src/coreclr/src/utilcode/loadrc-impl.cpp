@@ -119,7 +119,7 @@ static bool FileExists(const MyString &file)
 
 // Little helper function to get the codepage integer ID from the LocaleInfo
 static UINT GetCodePage(LANGID LanguageID, DWORD locale)
-{    
+{
     WCHAR CodePageInt[12];
     GetLocaleInfo(MAKELCID(LanguageID, SORT_DEFAULT), LOCALE_IDEFAULTCODEPAGE, CodePageInt, _countof(CodePageInt));
     return _wtoi(CodePageInt);
@@ -150,9 +150,9 @@ static MyString FindLocaleDirectory(const MyString &path, const MyString &dllNam
         {
             // make sure the console can support a codepage for this language.
             UINT ConsoleCP = GetConsoleOutputCP();
-            
+
             // Dev10 #843375: For a GUI application, GetConsoleOutputCP returns 0
-            // If that's the case, we don't care about capabilities of the console, 
+            // If that's the case, we don't care about capabilities of the console,
             // since we're not outputting to the console, anyway...
             if ( ConsoleCP != 0 && lcid != ENGLISH_LCID )
             {
@@ -184,7 +184,7 @@ static void *LoadLocalFile(const MyString &path, const MyString &dllName, Locali
 
     MyString pathTemp = path;
 
-    // Languages are checked in the following order.  
+    // Languages are checked in the following order.
     //    1)  The UI language:  this is returned by GetUserDefaultUILanguage.
     //    2)  As step 1, but with SUBLANG_DEFAULT
     //    3)  English
@@ -201,7 +201,7 @@ static void *LoadLocalFile(const MyString &path, const MyString &dllName, Locali
         HANDLE hDirs = FindFirstFileW(GetChars(wildCard), &wfdw);
         if (hDirs == INVALID_HANDLE_VALUE)
             return NULL;
-        do 
+        do
         {
             // We are only interested in directories, since at this level, that should
             // be the only thing in this directory, i.e, LCID sub dirs
@@ -234,7 +234,7 @@ static void *LoadLocalFile(const MyString &path, const MyString &dllName, Locali
             //
             // With CoreCLR we have the resource dll directly in the bin directory so check there now.
             //
-            
+
             // Does this dir have the resource dll?
             MyString fullPath = MakePath(path, dllName);
 
@@ -264,7 +264,7 @@ static void *LoadSearchPath(const MyString &resourceDllName, LocalizedFileHandle
 
     MyStringIterator  endOfChunk, startOfChunk = StrBeginIter(envPath);
     MyString tryPath;
-    for (SkipChars(envPath, startOfChunk, W(' '), W(';')); 
+    for (SkipChars(envPath, startOfChunk, W(' '), W(';'));
         hmod == NULL && startOfChunk != StrEndIter(envPath);
         SkipChars(envPath, startOfChunk, W(' '), W(';')))
     {

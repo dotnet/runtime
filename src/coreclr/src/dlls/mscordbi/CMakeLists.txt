@@ -12,14 +12,14 @@ endif(CORECLR_SET_RPATH)
 
 set(MSCORDBI_SOURCES
     mscordbi.cpp
-)  
+)
 
 # Add the DAC PAL export mapping file
 if(CLR_CMAKE_PLATFORM_LINUX)
     list(APPEND MSCORDBI_SOURCES ${PAL_REDEFINES_FILE})
 endif(CLR_CMAKE_PLATFORM_LINUX)
 
-if(WIN32)    
+if(WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
 
     list(APPEND MSCORDBI_SOURCES
@@ -44,7 +44,7 @@ endif(WIN32)
 if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
     # This option is necessary to ensure that the overloaded new/delete operators defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")    
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
@@ -76,7 +76,7 @@ set(COREDBI_LIBRARIES
     mdruntimerw-dbi
     mddatasource_dbi
     corguids
-) 
+)
 
 if(WIN32)
     list(APPEND COREDBI_LIBRARIES

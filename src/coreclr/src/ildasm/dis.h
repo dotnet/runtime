@@ -71,15 +71,15 @@ void Cleanup();
 void CreateProgressBar(LONG lRange);
 BOOL ProgressStep();
 void DestroyProgressBar();
-char * DumpQString(void* GUICookie, 
-                   __in __nullterminated const char* szToDump, 
-                   __in __nullterminated const char* szPrefix, 
+char * DumpQString(void* GUICookie,
+                   __in __nullterminated const char* szToDump,
+                   __in __nullterminated const char* szPrefix,
                    unsigned uMaxLen);
 void DumpVtable(void* GUICookie);
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         __in_ecount(cbString) WCHAR* pszString,
-                        ULONG cbString, 
+                        ULONG cbString,
                         bool SwapString = false);
 
 void TokenSigInit(IMDInternalImport *pImport);
@@ -109,9 +109,9 @@ struct  MTokName
 extern BOOL g_fPrettyPrint;
 extern MTokName*    rExeloc;
 extern ULONG    nExelocs;
-void DumpImplementation(mdToken tkImplementation, 
-                        DWORD dwOffset, 
-                        __inout __nullterminated char* szString, 
+void DumpImplementation(mdToken tkImplementation,
+                        DWORD dwOffset,
+                        __inout __nullterminated char* szString,
                         void* GUICookie);
 void DumpComType(LocalComTypeDescr* pCTD,
                  __inout __nullterminated char* szString,
@@ -142,9 +142,9 @@ extern WCHAR   wzUniBuf[]; // defined in dis.cpp
 #define SZSTRING_SIZE 131072
 extern char   szString[]; // defined in dis.cpp
 
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, 
-                      mdToken tok, 
-                      void* GUICookie=NULL, 
+char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString,
+                      mdToken tok,
+                      void* GUICookie=NULL,
                       BOOL fSplit=FALSE);
 
 #include "safemath.h"

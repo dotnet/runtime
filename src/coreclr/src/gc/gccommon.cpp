@@ -4,7 +4,7 @@
 
 
 /*
- * GCCOMMON.CPP 
+ * GCCOMMON.CPP
  *
  * Code common to both SVR and WKS gcs
  */

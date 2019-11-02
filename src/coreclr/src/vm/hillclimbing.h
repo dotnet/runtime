@@ -19,9 +19,9 @@
 #include "complex.h"
 #include "random.h"
 
-enum HillClimbingStateTransition 
+enum HillClimbingStateTransition
 {
-    Warmup, 
+    Warmup,
     Initializing,
     RandomMove,
     ClimbingMove,
@@ -33,7 +33,7 @@ enum HillClimbingStateTransition
 };
 
 
-class HillClimbing	
+class HillClimbing
 {
 private:
     int m_wavePeriod;

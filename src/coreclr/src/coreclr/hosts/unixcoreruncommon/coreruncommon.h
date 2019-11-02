@@ -27,7 +27,7 @@ bool GetClrFilesAbsolutePath(const char* currentExePath, const char* clrFilesPat
 void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList);
 
 //
-// Execute the specified managed assembly. 
+// Execute the specified managed assembly.
 //
 // Parameters:
 //  currentExePath          - Path to the current executable

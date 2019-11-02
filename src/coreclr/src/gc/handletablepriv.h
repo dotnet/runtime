@@ -33,7 +33,7 @@
 #define HANDLE_SEGMENT_SIZE     (0x10000)   // MUST be a power of 2 (and currently must be 64K due to VirtualAlloc semantics)
 #define HANDLE_HEADER_SIZE      (0x1000)    // SHOULD be <= OS page size
 
-#define HANDLE_SEGMENT_ALIGNMENT     HANDLE_SEGMENT_SIZE 
+#define HANDLE_SEGMENT_ALIGNMENT     HANDLE_SEGMENT_SIZE
 
 
 #if !BIGENDIAN
@@ -212,7 +212,7 @@ struct _TableSegmentHeader
      *
      * Points to the next segment in the chain (if we ran out of space in this one).
      */
-#ifdef DACCESS_COMPILE     
+#ifdef DACCESS_COMPILE
     TADDR pNextSegment;
 #else
     struct TableSegment *pNextSegment;
@@ -273,7 +273,7 @@ typedef DPTR(uintptr_t) PTR_uintptr_t;
 
 // The handle table is large and may not be entirely mapped. That's one reason for splitting out the table
 // segment and the header as two separate classes. In DAC builds, we generally need only a single element from
-// the table segment, so we can use the DAC to retrieve just the information we require. 
+// the table segment, so we can use the DAC to retrieve just the information we require.
 /*
  * Table Segment
  *
@@ -290,7 +290,7 @@ struct TableSegment : public _TableSegmentHeader
      * Handles
      */
     _UNCHECKED_OBJECTREF rgValue[HANDLE_HANDLES_PER_SEGMENT];
-    
+
 #ifdef DACCESS_COMPILE
     static uint32_t DacSize(TADDR addr);
 #endif
@@ -320,7 +320,7 @@ struct HandleTypeCache
      * index of next available handle slot in the reserve bank
      */
     int32_t lReserveIndex;
-    
+
 
     /*---------------------------------------------------------------------------------
      * N.B. this structure is split up this way so that when HANDLES_PER_CACHE_BANK is

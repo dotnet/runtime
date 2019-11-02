@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: CordbRegisterSet.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -43,7 +43,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REG
     UINT iRegister = 0;
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(regBuffer, CORDB_REGISTER, regCount, true, true);
-    
+
     // @ARMTODO: floating point support
 
     for (int i = REGISTER_INSTRUCTION_POINTER;
@@ -54,7 +54,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REG
         {
             switch (i)
             {
-            case REGISTER_INSTRUCTION_POINTER: 
+            case REGISTER_INSTRUCTION_POINTER:
                 regBuffer[iRegister++] = m_rd->PC; break;
             case REGISTER_STACK_POINTER:
                 regBuffer[iRegister++] = m_rd->SP; break;
@@ -94,7 +94,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REG
     return S_OK;
 }
 
-HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount, 
+HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
                                                 BYTE    pAvailable[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -106,7 +106,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[], 
+HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
                                        ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);

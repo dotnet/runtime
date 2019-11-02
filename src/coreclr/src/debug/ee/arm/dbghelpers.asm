@@ -45,7 +45,7 @@
 
     CHECK_STACK_ALIGNMENT
 
-    ; FuncEvalHijackWorker returns the address we should jump to. 
+    ; FuncEvalHijackWorker returns the address we should jump to.
     bl      FuncEvalHijackWorker
 
     ; effective NOP to terminate unwind
@@ -87,4 +87,4 @@ ExceptionHijackEnd
 
     ; must be at end of file
     END
-    
+

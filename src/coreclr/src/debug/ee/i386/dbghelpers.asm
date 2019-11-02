@@ -3,24 +3,24 @@
 ; See the LICENSE file in the project root for more information.
 
 ; ==++==
-; 
+;
 
-; 
+;
 ; ==--==
 ;
 ;  *** NOTE:  If you make changes to this file, propagate the changes to
-;             dbghelpers.s in this directory                            
+;             dbghelpers.s in this directory
 
 	.586
 	.model	flat
         .code
 
         extern _FuncEvalHijackWorker@4:PROC
-        
+
 ; @dbgtodo- once we port Funceval, use the ExceptionHijack stub instead of this func-eval stub.
 ;
 ; This is the method that we hijack a thread running managed code. It calls
-; FuncEvalHijackWorker, which actually performs the func eval, then jumps to 
+; FuncEvalHijackWorker, which actually performs the func eval, then jumps to
 ; the patch address so we can complete the cleanup.
 ;
 ; Note: the parameter is passed in eax - see Debugger::FuncEvalSetup for

@@ -125,5 +125,5 @@ namespace clr
         };
     }
 }
-        
+
 #endif // _clr_fs_Dir_h_

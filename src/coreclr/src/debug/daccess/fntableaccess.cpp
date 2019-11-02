@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 
-// 
+//
 // File: DebugSupport.cpp
 //
 // Support routines for debugging the CLR
@@ -46,7 +46,7 @@
 static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUserContext, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead)
 {
     codeHead = 0;
-    
+
     DWORD       tmp;                              // must be a DWORD, not a DWORD_PTR
     DWORD_PTR   startPos  = ADDR2POS(addr);       // align to  128 byte buckets ( == index into the array of nibbles)
     DWORD_PTR   offset    = ADDR2OFFS(addr);      // this is the offset inside the bucket + 1
@@ -190,10 +190,10 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
             lSmallestOffset = (LONG64)(Hp.startAddress - Hp.mapBase);
 
             // Save the initial offset at which we start our enumeration (from the end to the beginning).
-            // The target process could be running when this function is called.  New methods could be 
+            // The target process could be running when this function is called.  New methods could be
             // added after we have started our enumeration, but their code headers would be added after
             // this initial offset.  Methods could also be deleted, but the memory would still be there.
-            // It just wouldn't be marked as the beginning of a method, and we would collect fewer entries 
+            // It just wouldn't be marked as the beginning of a method, and we would collect fewer entries
             // than we have anticipated.
             hdrOffsetInitial = hdrOffset;
 
@@ -308,7 +308,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
         {
             FakeStubUnwindInfoHeader unwindInfoHeader;
             move(unwindInfoHeader, pHeader);
-#if defined(_TARGET_AMD64_) 
+#if defined(_TARGET_AMD64_)
             // Consistency checks to detect corrupted process state
             if (unwindInfoHeader.FunctionEntry.BeginAddress > unwindInfoHeader.FunctionEntry.EndAddress ||
                 unwindInfoHeader.FunctionEntry.EndAddress > stubHeapSegment.cbSegment)
@@ -317,14 +317,14 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
                 return STATUS_UNSUCCESSFUL;
             }
 
-            if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindInfoHeader.FunctionEntry.UnwindData != 
+            if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindInfoHeader.FunctionEntry.UnwindData !=
                     pHeader + FIELD_OFFSET(FakeStubUnwindInfoHeader, UnwindInfo))
             {
                 _ASSERTE(1 == pass);
                 return STATUS_UNSUCCESSFUL;
             }
 #elif defined(_TARGET_ARM_)
-            
+
             // Skip checking the corrupted process stateon ARM
 
 #elif defined(_TARGET_ARM64_)
@@ -352,7 +352,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
             }
 #else
             PORTABILITY_ASSERT("OutOfProcessFunctionTableCallback_Stub");
-#endif 
+#endif
             if (nEntriesAllocated)
             {
                 if (nEntries >= nEntriesAllocated)

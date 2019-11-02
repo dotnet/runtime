@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgIO.h
-// 
+//
 
 //
 // This module handles disk/memory i/o for a generic set of storage solutions,
@@ -53,7 +53,7 @@ enum DBPROPMODE
     DBPROP_TMODEF_SLOWSAVE  = 0x100,
     // Means it is OK to use LoadLibrary to map the file. Used by code:ofTrustedImage.
     // We prefer that because it is shared with loader's image loading.
-    DBPROP_TMODEF_TRYLOADLIBRARY = 0x400, 
+    DBPROP_TMODEF_TRYLOADLIBRARY = 0x400,
 #if 0 // dead code
     DBPROP_TMODEF_NOTXNBACKUPFILE   = 0x200,
     DBPROP_TMODEF_COMPLUS   = 0x1000,
@@ -144,7 +144,7 @@ public:
     ULONG GetCurrentOffset();               // Current offset.
 
 //*****************************************************************************
-// Map the file contents to a memory mapped file and return a pointer to the 
+// Map the file contents to a memory mapped file and return a pointer to the
 // data.  For read/write with a backing store, map the file using an internal
 // paging system.
 //*****************************************************************************
@@ -198,10 +198,10 @@ public:
 // working set and remember this state.
 //*****************************************************************************
     HRESULT ResetBackingStore();            // Return code.
-    
+
     FILETYPE GetFileType()
     { return m_FileType; }
-    
+
     int IsReadOnly()
     { return ((m_fFlags & STGIO_WRITE) == 0); }
 
@@ -231,7 +231,7 @@ public:
     int IsAlignedPtr(ULONG_PTR Value, int iAlignment);
     MAPPINGTYPE GetMemoryMappedType()
     { return m_mtMappedType;}
-    
+
 
 //*****************************************************************************
 // Called to read the data into allocated memory and release the backing store.
@@ -253,7 +253,7 @@ private:
     void FreePageMap();
 
 private:
-    
+
     // Flags and state data.
     FILETYPE    m_FileType;             // Cached type of the file (based on extension).
     LONG        m_cRef;                 // Ref count on this object.
@@ -283,7 +283,7 @@ private:
     static int  m_iPageSize;            // Size of an OS page.
     static int  m_iCacheSize;           // How big a write back cache to use.
     BYTE *      m_rgPageMap;            // Track loaded pages on read/write.
-    
+
 };  // class StgIO
 
 #endif  // __STGIO_H_

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 template <class T>
-class ArrayHolder    
+class ArrayHolder
 {
 public:
     ArrayHolder(T *ptr)
@@ -15,7 +15,7 @@ public:
     {
         Clear();
     }
-    
+
     ArrayHolder(const ArrayHolder &rhs)
     {
         m_ptr = const_cast<ArrayHolder *>(&rhs)->Detach();

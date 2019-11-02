@@ -5,8 +5,8 @@
 ; ***********************************************************************
 ; File: JitHelpers_InlineGetThread.asm, see history in jithelp.asm
 ;
-; Notes: These routinues will be patched at runtime with the location in 
-;        the TLS to find the Thread* and are the fastest implementation 
+; Notes: These routinues will be patched at runtime with the location in
+;        the TLS to find the Thread* and are the fastest implementation
 ;        of their specific functionality.
 ; ***********************************************************************
 
@@ -173,7 +173,7 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
         ; have to worry about "large" objects, since the allocation quantum is never big enough for
         ; LARGE_OBJECT_SIZE.
 
-        ; For Value Classes, this needs to be 2^16 - slack (2^32 / max component size), 
+        ; For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
         ; The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
         ; slack value out of laziness.
 

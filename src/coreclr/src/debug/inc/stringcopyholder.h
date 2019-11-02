@@ -10,14 +10,14 @@
 
 //-----------------------------------------------------------------------------
 // Simple holder to keep a copy of a string.
-// Implements IStringHolder so we can pass instances through IDacDbiInterface 
+// Implements IStringHolder so we can pass instances through IDacDbiInterface
 // and have it fill in the contents.
 //-----------------------------------------------------------------------------
 class StringCopyHolder : public IDacDbiInterface::IStringHolder
 {
 public:
     StringCopyHolder();
-    
+
     // Free the memory allocated for the string contents
     ~StringCopyHolder();
 
@@ -50,7 +50,7 @@ private:
     // Disallow copying (to prevent double-free) - no implementation
     StringCopyHolder( const StringCopyHolder& rhs );
     StringCopyHolder& operator=( const StringCopyHolder& rhs );
-    
+
     WCHAR * m_szData;
 
 };

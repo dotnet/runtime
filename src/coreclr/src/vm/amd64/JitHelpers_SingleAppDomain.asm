@@ -10,8 +10,8 @@
 ; ***********************************************************************
 ; File: JitHelpers_SingleAppDomain.asm
 ;
-; Notes: JIT Static access helpers when coreclr host specifies single 
-;        appdomain flag 
+; Notes: JIT Static access helpers when coreclr host specifies single
+;        appdomain flag
 ; ***********************************************************************
 
 include AsmMacros.inc

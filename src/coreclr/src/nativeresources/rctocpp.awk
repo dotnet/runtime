@@ -27,7 +27,7 @@ function numberToHexString(number)
 }
 
 # Add each entry that is in our associative array of entries to the
-# C++ array we are building. The C++ array will be ordered by the 
+# C++ array we are building. The C++ array will be ordered by the
 # resourceId (lowest to highest) to facilitate quick lookups.
 function writesortedentries()
 {
@@ -42,7 +42,7 @@ function writesortedentries()
 }
 
 # Write entry for a string resource
-# This is called for each entry. Because we want to write them in 
+# This is called for each entry. Because we want to write them in
 # sorted order once all the entries have come in, for now we just
 # store each entry in an associative array.
 function writestringentry(id, str)
@@ -70,7 +70,7 @@ function writeheader(arrayName, tableName)
 # This function is called after all of the entries have been given to
 # writestringentry. Because we know there are no more entries, we can
 # now write all the entries we received so far when this is called.
-# After we have written all the entries, we close the array and add a 
+# After we have written all the entries, we close the array and add a
 # constant for the size of the array for convenience.
 function writefooter(arrayName, tableName)
 {

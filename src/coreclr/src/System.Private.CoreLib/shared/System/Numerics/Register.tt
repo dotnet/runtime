@@ -27,7 +27,7 @@ namespace System.Numerics
     {
         Debug.Assert(
             totalSize % Marshal.SizeOf(type) == 0,
-            "The size of supported structs must be a factor of the supported register size.");    
+            "The size of supported structs must be a factor of the supported register size.");
 #>
         // Internal <#= type.FullName #> Fields
 <#

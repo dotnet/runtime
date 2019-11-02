@@ -80,17 +80,17 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
-// 
+//
 // This is meant to detect following situations:
 //
 // When a ThreadAbortException is raised
-// in the prolog of a managed method, before the location for the generics 
+// in the prolog of a managed method, before the location for the generics
 // context has been initialized; when such a TAE is raised, we are open to a
 // race with the GC (e.g. while creating the managed object for the TAE).
 // The GC would cause a stack walk, and if we report the stack location for
 // the generic param context at this time we'd crash.
-// The long term solution is to avoid raising TAEs in any non-GC safe points, 
-// and to additionally ensure that we do not expose the runtime to TAE 
+// The long term solution is to avoid raising TAEs in any non-GC safe points,
+// and to additionally ensure that we do not expose the runtime to TAE
 // starvation.
 //
 // When we're in the process of resolution of an interface method and the
@@ -150,7 +150,7 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
 
     // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after 
+    // check (frequently) for stack-buffer-overrun corruptions after
     // any long operation
     if (pCtx->cf != NULL)
         pCtx->cf->CheckGSCookies();
@@ -183,14 +183,14 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
     {
         Object *refCollectionObject = OBJECTREFToObject(pLoaderAllocator->GetExposedObject());
-        
+
 #ifdef _DEBUG
         Object *oldObj = refCollectionObject;
 #endif
 
         _ASSERTE(refCollectionObject != NULL);
         fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
-        
+
         // We are reporting the location of a local variable, assert it doesn't change.
         _ASSERTE(oldObj == refCollectionObject);
     }
@@ -231,12 +231,12 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             _ASSERTE(pCM != NULL);
 
             unsigned flags = pCF->GetCodeManagerFlags();
-        
+
     #ifdef _TARGET_X86_
-            STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n", 
+            STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
     #else
-            STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n", 
+            STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()));
     #endif
 
@@ -256,24 +256,24 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                                     gcInfoToken,
                                     DECODE_CODE_LENGTH
                                     );
-                
+
                 if(_gcInfoDecoder.WantsReportOnlyLeaf())
                 {
                     // We're in a special case of unwinding from a funclet, and resuming execution in
-                    // another catch funclet associated with same parent function. We need to report roots. 
+                    // another catch funclet associated with same parent function. We need to report roots.
                     // Reporting at the original throw site gives incorrect liveness information. We choose to
-                    // report the liveness information at the first interruptible instruction of the catch funclet 
+                    // report the liveness information at the first interruptible instruction of the catch funclet
                     // that we are going to execute. We also only report stack slots, since no registers can be
-                    // live at the first instruction of a handler, except the catch object, which the VM protects 
-                    // specially. If the catch funclet has not interruptible point, we fall back and just report 
-                    // what we used to: at the original throw instruction. This might lead to bad GC behavior 
+                    // live at the first instruction of a handler, except the catch object, which the VM protects
+                    // specially. If the catch funclet has not interruptible point, we fall back and just report
+                    // what we used to: at the original throw instruction. This might lead to bad GC behavior
                     // if the liveness is not correct.
                     const EE_ILEXCEPTION_CLAUSE& ehClauseForCatch = pCF->GetEHClauseForCatch();
                     relOffsetOverride = FindFirstInterruptiblePoint(pCF, ehClauseForCatch.HandlerStartPC,
                                                                     ehClauseForCatch.HandlerEndPC);
                     _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
 
-                    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n", 
+                    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
                         relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
                 }
 
@@ -292,8 +292,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
         {
             Frame * pFrame = pCF->GetFrame();
 
-            STRESS_LOG3(LF_GCROOTS, LL_INFO1000, 
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n", 
+            STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
+                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
                 pFrame, pFrame->GetFunction(), *((void**) pFrame));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
@@ -303,7 +303,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     // If we're executing a LCG dynamic method then we must promote the associated resolver to ensure it
     // doesn't get collected and yank the method code out from under us).
 
-    // Be careful to only promote the reference -- we can also be called to relocate the reference and 
+    // Be careful to only promote the reference -- we can also be called to relocate the reference and
     // that can lead to all sorts of problems since we could be racing for the relocation with the long
     // weak handle we recover the reference from. Promoting the reference is enough, the handle in the
     // reference will be relocated properly as long as we keep it alive till the end of the collection
@@ -330,7 +330,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             _ASSERTE(refResolver != NULL);
             (*gcctx->f)(&refResolver, gcctx->sc, CHECK_APP_DOMAIN);
             _ASSERTE(!pMD->IsSharedByGenericInstantiations());
-            
+
             // We are reporting the location of a local variable, assert it doesn't change.
             _ASSERTE(oldObj == refResolver);
         }
@@ -348,7 +348,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 if (pCF->IsFrameless())
                 {
                     // We need to grab the Context Type here because there are cases where the MethodDesc
-                    // is shared, and thus indicates there should be an instantion argument, but the JIT 
+                    // is shared, and thus indicates there should be an instantion argument, but the JIT
                     // was still allowed to optimize it away and we won't grab it below because we're not
                     // reporting any references from this frame.
                     paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
@@ -363,7 +363,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
                 if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && SafeToReportGenericParamContext(pCF))
                 {
-                    // Handle the case where the method is a static shared generic method and we need to keep the type 
+                    // Handle the case where the method is a static shared generic method and we need to keep the type
                     // of the generic parameters alive
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
@@ -389,7 +389,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     }
 
     // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after 
+    // check (frequently) for stack-buffer-overrun corruptions after
     // any long operation
     pCF->CheckGSCookies();
 

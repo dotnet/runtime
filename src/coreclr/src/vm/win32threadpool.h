@@ -11,10 +11,10 @@ Module Name:
 
 Abstract:
 
-    This module is the header file for thread pools using Win32 APIs. 
+    This module is the header file for thread pools using Win32 APIs.
 
 Revision History:
- 
+
 
 --*/
 
@@ -28,7 +28,7 @@ Revision History:
 
 #define MAX_WAITHANDLES 64
 
-#define MAX_CACHED_EVENTS 40        // upper limit on number of wait events cached 
+#define MAX_CACHED_EVENTS 40        // upper limit on number of wait events cached
 
 #define WAIT_REGISTERED     0x01
 #define WAIT_ACTIVE         0x02
@@ -53,8 +53,8 @@ const int CpuUtilizationLow =80;                    // inject more threads if be
 
 #ifndef FEATURE_PAL
 extern HANDLE (WINAPI *g_pufnCreateIoCompletionPort)(HANDLE FileHandle,
-											  HANDLE ExistingCompletionPort,  
-											  ULONG_PTR CompletionKey,        
+											  HANDLE ExistingCompletionPort,
+											  ULONG_PTR CompletionKey,
 											  DWORD NumberOfConcurrentThreads);
 
 extern int (WINAPI *g_pufnNtQueryInformationThread) (HANDLE ThreadHandle,
@@ -79,7 +79,7 @@ extern int (WINAPI * g_pufnNtQuerySystemInformation) (SYSTEM_INFORMATION_CLASS S
  */
 struct WorkRequest {
     WorkRequest*            next;
-    LPTHREAD_START_ROUTINE  Function; 
+    LPTHREAD_START_ROUTINE  Function;
     PVOID                   Context;
 
 };
@@ -119,8 +119,8 @@ public:
             {
                 //
                 // Note: these are signed rather than unsigned to allow us to detect under/overflow.
-                //  
-                int MaxWorking  : 16;  //Determined by HillClimbing; adjusted elsewhere for timeouts, etc. 
+                //
+                int MaxWorking  : 16;  //Determined by HillClimbing; adjusted elsewhere for timeouts, etc.
                 int NumActive  : 16;  //Active means working or waiting on WorkerSemaphore.  These are "warm/hot" threads.
                 int NumWorking : 16;  //Trying to get work from various queues.  Not waiting on either semaphore.
                 int NumRetired : 16;  //Not trying to get work; waiting on RetiredWorkerSemaphore.  These are "cold" threads.
@@ -229,24 +229,24 @@ public:
     static BOOL SetMaxThreadsHelper(DWORD MaxWorkerThreads,
                                         DWORD MaxIOCompletionThreads);
 
-    static BOOL SetMaxThreads(DWORD MaxWorkerThreads, 
+    static BOOL SetMaxThreads(DWORD MaxWorkerThreads,
                               DWORD MaxIOCompletionThreads);
 
-    static BOOL GetMaxThreads(DWORD* MaxWorkerThreads, 
+    static BOOL GetMaxThreads(DWORD* MaxWorkerThreads,
                               DWORD* MaxIOCompletionThreads);
-    
-    static BOOL SetMinThreads(DWORD MinWorkerThreads, 
+
+    static BOOL SetMinThreads(DWORD MinWorkerThreads,
                               DWORD MinIOCompletionThreads);
-    
-    static BOOL GetMinThreads(DWORD* MinWorkerThreads, 
+
+    static BOOL GetMinThreads(DWORD* MinWorkerThreads,
                               DWORD* MinIOCompletionThreads);
- 
-    static BOOL GetAvailableThreads(DWORD* AvailableWorkerThreads, 
+
+    static BOOL GetAvailableThreads(DWORD* AvailableWorkerThreads,
                                  DWORD* AvailableIOCompletionThreads);
 
     static INT32 GetThreadCount();
 
-    static BOOL QueueUserWorkItem(LPTHREAD_START_ROUTINE Function, 
+    static BOOL QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
                                   PVOID Context,
                                   ULONG Flags,
                                   BOOL UnmanagedTPRequest=TRUE);
@@ -321,7 +321,7 @@ public:
 
     static BOOL HaveTimerInfosToFlush() { return TimerInfosToBeRecycled != NULL; }
 
-#ifndef FEATURE_PAL    
+#ifndef FEATURE_PAL
     static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey);
     static void StoreOverlappedInfoInThread(Thread* pThread, DWORD dwErrorCode, DWORD dwNumBytes, size_t key, LPOVERLAPPED lpOverlapped);
 #endif // !FEATURE_PAL
@@ -339,7 +339,7 @@ public:
     {
         // We ignore drainage events b/c they are uninteresting
         // We handle registered waits at a higher abstraction level
-        return (Function == ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue 
+        return (Function == ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue
                 || Function == ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue
                 || Function == ThreadpoolMgr::WaitIOCompletionCallback);
     }
@@ -358,12 +358,12 @@ private:
     {
         CONTRACTL
         {
-            THROWS;     
+            THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END;;
-        
+
         WorkRequest* wr = (WorkRequest*) GetRecycledMemory(MEMTYPE_WorkRequest);
         _ASSERTE(wr);
 		if (NULL == wr)
@@ -373,7 +373,7 @@ private:
         wr->next = NULL;
         return wr;
     }
-    
+
 #endif // #ifndef DACCESS_COMPILE
 
     typedef struct {
@@ -387,8 +387,8 @@ private:
     typedef struct _LIST_ENTRY {
         struct _LIST_ENTRY *Flink;
         struct _LIST_ENTRY *Blink;
-    } LIST_ENTRY, *PLIST_ENTRY;    
-    
+    } LIST_ENTRY, *PLIST_ENTRY;
+
     struct WaitInfo;
 
     typedef struct {
@@ -398,9 +398,9 @@ private:
         LONG            NumWaitHandles;                 // number of wait objects registered to the thread <=64
         LONG            NumActiveWaits;                 // number of objects, thread is actually waiting on (this may be less than
                                                            // NumWaitHandles since the thread may not have activated some waits
-        HANDLE          waitHandle[MAX_WAITHANDLES];    // array of wait handles (copied from waitInfo since 
+        HANDLE          waitHandle[MAX_WAITHANDLES];    // array of wait handles (copied from waitInfo since
                                                            // we need them to be contiguous)
-        LIST_ENTRY      waitPointer[MAX_WAITHANDLES];   // array of doubly linked list of corresponding waitinfo 
+        LIST_ENTRY      waitPointer[MAX_WAITHANDLES];   // array of doubly linked list of corresponding waitinfo
     } ThreadCB;
 
 
@@ -416,8 +416,8 @@ private:
         HANDLE              waitHandle;
         WAITORTIMERCALLBACK Callback;
         PVOID               Context;
-        ULONG               timeout;                
-        WaitTimerInfo       timer;              
+        ULONG               timeout;
+        WaitTimerInfo       timer;
         DWORD               flag;
         DWORD               state;
         ThreadCB*           threadCB;
@@ -437,7 +437,7 @@ private:
     } WaitThreadInfo;
 
 
-    struct AsyncCallback{   
+    struct AsyncCallback{
         WaitInfo*   wait;
         BOOL        waitTimedOut;
     } ;
@@ -455,7 +455,7 @@ private:
     {
         CONTRACTL
         {
-            THROWS;     
+            THROWS;
             GC_TRIGGERS;
             MODE_ANY;
         }
@@ -463,8 +463,8 @@ private:
 
             WaitInfo *waitInfo = pAsyncCB->wait;
             ThreadpoolMgr::RecycleMemory((LPVOID*)pAsyncCB, ThreadpoolMgr::MEMTYPE_AsyncCallback);
-            
-            // if this was a single execution, we now need to stop rooting registeredWaitHandle  
+
+            // if this was a single execution, we now need to stop rooting registeredWaitHandle
             // in a GC handle. This will cause the finalizer to pick it up and call the cleanup
             // routine.
             if ( (waitInfo->flag & WAIT_SINGLE_EXECUTION)  && (waitInfo->flag & WAIT_FREE_CONTEXT))
@@ -492,7 +492,7 @@ private:
         return (AsyncCallback*) GetRecycledMemory(MEMTYPE_AsyncCallback);
     }
 
-    static VOID ReleaseInfo(OBJECTHANDLE& hndSafeHandle, 
+    static VOID ReleaseInfo(OBJECTHANDLE& hndSafeHandle,
         HANDLE hndNativeHandle)
     {
         CONTRACTL
@@ -542,7 +542,7 @@ private:
             }
 
             GCPROTECT_END();
-            
+
             hndSafeHandle = NULL;
         }
 #endif
@@ -555,7 +555,7 @@ private:
         HANDLE      Handle;
     } WaitEvent ;
 
-    // Timer 
+    // Timer
     typedef struct {
         LIST_ENTRY  link;           // doubly linked list of timers
         ULONG FiringTime;           // TickCount of when to fire next
@@ -577,7 +577,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
-        ReleaseInfo(pInfo->ExternalEventSafeHandle, 
+        ReleaseInfo(pInfo->ExternalEventSafeHandle,
         pInfo->ExternalCompletionEvent);
 #endif
     }
@@ -588,7 +588,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
-        ReleaseInfo(pInfo->ExternalEventSafeHandle, 
+        ReleaseInfo(pInfo->ExternalEventSafeHandle,
         pInfo->ExternalCompletionEvent);
 #endif
     }
@@ -602,7 +602,7 @@ private:
         ULONG Period ;              // new period
     } TimerUpdateInfo;
 
-    // Definitions and data structures to support recycling of high-frequency 
+    // Definitions and data structures to support recycling of high-frequency
     // memory blocks. We use a spin-lock to access the list
 
     class RecycledListInfo
@@ -691,7 +691,7 @@ public:
                 YieldProcessorNormalized(); // indicate to the processor that we are spinning
 
 	            rounds++;
-	            
+
 	            if((rounds % 32) == 0)
 	            {
 	                __SwitchToThread( 0, ++dwSwitchCount );
@@ -718,7 +718,7 @@ public:
     class RecycledListsWrapper
     {
         DWORD                        CacheGuardPre[MAX_CACHE_LINE_SIZE/sizeof(DWORD)];
-        
+
         RecycledListInfo            (*pRecycledListPerProcessor)[MEMTYPE_COUNT];  // RecycledListInfo [numProc][MEMTYPE_COUNT]
 
         DWORD                        CacheGuardPost[MAX_CACHE_LINE_SIZE/sizeof(DWORD)];
@@ -732,7 +732,7 @@ public:
 
             return pRecycledListPerProcessor != NULL;
         }
-        
+
     	FORCEINLINE RecycledListInfo& GetRecycleMemoryInfo( enum MemType memType )
         {
             LIMITED_METHOD_CONTRACT;
@@ -766,7 +766,7 @@ public:
 
     typedef struct {
         LPTHREAD_START_ROUTINE  lpThreadFunction;
-        PVOID                   lpArg;        
+        PVOID                   lpArg;
     } intermediateThreadParam;
 
     static Thread* CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread);
@@ -787,7 +787,7 @@ public:
     {
         CONTRACTL
         {
-            NOTHROW;         
+            NOTHROW;
             MODE_ANY;
             GC_NOTRIGGER;
         }
@@ -812,7 +812,7 @@ public:
     {
         CONTRACTL
         {
-            NOTHROW;         
+            NOTHROW;
             MODE_ANY;
             GC_NOTRIGGER;
         }
@@ -888,7 +888,7 @@ public:
     static DWORD MinimumRemainingWait(LIST_ENTRY* waitInfo, unsigned int numWaits);
 
     static void ProcessWaitCompletion( WaitInfo* waitInfo,
-                                unsigned index,      // array index 
+                                unsigned index,      // array index
                                 BOOL waitTimedOut);
 
     static DWORD WINAPI WaitThreadStart(LPVOID lpArgs);
@@ -903,9 +903,9 @@ public:
     static void DeleteWait(WaitInfo* waitInfo);
 
 
-    inline static void ShiftWaitArray( ThreadCB* threadCB, 
-                                       ULONG SrcIndex, 
-                                       ULONG DestIndex, 
+    inline static void ShiftWaitArray( ThreadCB* threadCB,
+                                       ULONG SrcIndex,
+                                       ULONG DestIndex,
                                        ULONG count)
     {
         LIMITED_METHOD_CONTRACT;
@@ -923,7 +923,7 @@ public:
     // holds the aggregate of system cpu usage of all processors
     typedef struct _PROCESS_CPU_INFORMATION
     {
-        LARGE_INTEGER idleTime; 
+        LARGE_INTEGER idleTime;
         LARGE_INTEGER kernelTime;
         LARGE_INTEGER userTime;
         DWORD_PTR affinityMask;
@@ -956,7 +956,7 @@ private:
     static void EnsureGateThreadRunning();
     static bool ShouldGateThreadKeepRunning();
     static DWORD WINAPI GateThreadStart(LPVOID lpArgs);
-    static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime, 
+    static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime,
                                                unsigned NumThreads, // total number of threads of that type (worker or CP)
                                                double   throttleRate=0.0 // the delay is increased by this percentage for each extra thread
                                                );
@@ -980,7 +980,7 @@ private:
     {
         CONTRACTL
         {
-            NOTHROW;         
+            NOTHROW;
             MODE_ANY;
             GC_NOTRIGGER;
         }
@@ -993,7 +993,7 @@ private:
 
 
     inline static void SetWaitThreadAPCPending() {IsApcPendingOnWaitThread = TRUE;}
-    inline static void ResetWaitThreadAPCPending() {IsApcPendingOnWaitThread = FALSE;}	
+    inline static void ResetWaitThreadAPCPending() {IsApcPendingOnWaitThread = FALSE;}
     inline static BOOL IsWaitThreadAPCPending()  {return IsApcPendingOnWaitThread;}
 
 #ifdef _DEBUG
@@ -1002,7 +1002,7 @@ private:
         LIMITED_METHOD_CONTRACT;
         return ::GetTickCount() + TickCountAdjustment;
     }
-#endif 
+#endif
 
 #endif // #ifndef DACCESS_COMPILE
     // Private variables
@@ -1011,9 +1011,9 @@ private:
 
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
-        
+
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static unsigned int LastDequeueTime;      // used to determine if work items are getting thread starved
-    
+
     static HillClimbing HillClimbingInstance;
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static LONG PriorCompletedWorkRequests;
@@ -1046,25 +1046,25 @@ private:
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) SVAL_DECL(ThreadCounter,WorkerCounter);
 
-    // 
+    //
     // WorkerSemaphore is an UnfairSemaphore because:
     // 1) Threads enter and exit this semaphore very frequently, and thus benefit greatly from the spinning done by UnfairSemaphore
-    // 2) There is no functional reason why any particular thread should be preferred when waking workers.  This only impacts performance, 
+    // 2) There is no functional reason why any particular thread should be preferred when waking workers.  This only impacts performance,
     //    and un-fairness helps performance in this case.
     //
     static CLRLifoSemaphore* WorkerSemaphore;
 
     //
     // RetiredWorkerSemaphore is a regular CLRSemaphore, not an UnfairSemaphore, because if a thread waits on this semaphore is it almost certainly
-    // NOT going to be released soon, so the spinning done in UnfairSemaphore only burns valuable CPU time.  However, if UnfairSemaphore is ever 
+    // NOT going to be released soon, so the spinning done in UnfairSemaphore only burns valuable CPU time.  However, if UnfairSemaphore is ever
     // implemented in terms of a Win32 IO Completion Port, we should reconsider this.  The IOCP's LIFO unblocking behavior could help keep working set
     // down, by constantly re-using the same small set of retired workers rather than round-robining between all of them as CLRSemaphore will do.
     // If we go that route, we should add a "no-spin" option to UnfairSemaphore.Wait to avoid wasting CPU.
     //
     static CLRLifoSemaphore* RetiredWorkerSemaphore;
 
-    static CLREvent * RetiredCPWakeupEvent;    
-    
+    static CLREvent * RetiredCPWakeupEvent;
+
     static CrstStatic WaitThreadsCriticalSection;
     static LIST_ENTRY WaitThreadsHead;                  // queue of wait threads, each thread can handle upto 64 waits
 
@@ -1083,7 +1083,7 @@ public:
 
 private:
     SVAL_DECL(LONG,MaxLimitTotalCPThreads);             // = MaxLimitCPThreadsPerCPU * number of CPUS
-    SVAL_DECL(LONG,MinLimitTotalCPThreads);             
+    SVAL_DECL(LONG,MinLimitTotalCPThreads);
     SVAL_DECL(LONG,MaxFreeCPThreads);                   // = MaxFreeCPThreadsPerCPU * Number of CPUS
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static LONG GateThreadStatus;    // See GateThreadStatus enumeration

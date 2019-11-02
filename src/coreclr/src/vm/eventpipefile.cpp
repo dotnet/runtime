@@ -151,7 +151,7 @@ void EventPipeFile::InitializeFile()
     {
         // Create the file stream and write the FastSerialization header.
         m_pSerializer = new FastSerializer(m_pStreamWriter);
-        
+
         // Write the first object to the file.
         m_pSerializer->WriteObject(this);
     }
@@ -323,7 +323,7 @@ void EventPipeFile::WriteEnd()
     m_pSerializer->WriteTag(FastSerializerTags::NullReference);
 }
 
-void EventPipeFile::WriteEventToBlock(EventPipeEventInstance &instance, 
+void EventPipeFile::WriteEventToBlock(EventPipeEventInstance &instance,
                                       unsigned int metadataId,
                                       ULONGLONG captureThreadId,
                                       unsigned int sequenceNumber,

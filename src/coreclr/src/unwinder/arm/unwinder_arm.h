@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifndef __unwinder_arm__
 #define __unwinder_arm__
@@ -18,7 +18,7 @@
 class OOPStackUnwinderArm : public OOPStackUnwinder
 {
 public:
-    // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.  
+    // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.
     BOOL Unwind(T_CONTEXT * pContext);
 
     //

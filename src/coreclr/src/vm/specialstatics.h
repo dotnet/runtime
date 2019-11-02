@@ -8,7 +8,7 @@
 **
 **
 ** Purpose: Defines the data structures for context relative statics.
-**          
+**
 **
 **
 =============================================================================*/
@@ -31,7 +31,7 @@ typedef struct _STATIC_DATA
 
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    
+
 } STATIC_DATA;
 typedef SPTR(STATIC_DATA) PTR_STATIC_DATA;
 

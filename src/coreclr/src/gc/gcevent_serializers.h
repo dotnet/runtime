@@ -24,7 +24,7 @@
  * types. A type can opt-in to serialization using the mechanisms
  * in this file by specializing the `EventSerializationTraits` template,
  * providing implementations of `Serialize` and `SerializedSize`.
- * 
+ *
  * If you attempt to serialize a type that does not implement this trait,
  * you will receive an error message like this:
  *
@@ -33,11 +33,11 @@
  *  [
  *      Head=<your type you tried to serialize>,
  *      T=<your type you tried to serialize>
- *  ] 
- * 
+ *  ]
+ *
  * If you get this message, you will need to specialize `EventSerializationTraits`
  * for the type you want to serialize.
- */ 
+ */
 
 #ifdef _MSC_VER
 #define ByteSwap32 _byteswap_ulong
@@ -60,7 +60,7 @@ struct EventSerializationTraits
     /*
      * Serializes the value `value` to the buffer `buffer`, incrementing
      * the buffer double-pointer to point to the next byte to be written.
-     * 
+     *
      * It is the responsibility of the caller to ensure that the buffer is
      * large enough to accomodate the serialized form of T.
      */

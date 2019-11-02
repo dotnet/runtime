@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: stdafx.cpp
-// 
+//
 
 //
 // Host for precompiled headers.

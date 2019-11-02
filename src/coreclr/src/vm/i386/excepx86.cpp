@@ -494,7 +494,7 @@ EXCEPTION_DISPOSITION COMPlusAfterUnwind(
 // This function is called to intercept an exception and start an unwind.
 //
 // Arguments:
-//    pCurrentEstablisherFrame  - the exception registration record covering the stack range 
+//    pCurrentEstablisherFrame  - the exception registration record covering the stack range
 //                                containing the interception point
 //    pExceptionRecord          - EXCEPTION_RECORD of the exception being intercepted
 //
@@ -580,18 +580,18 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(EXCEPTION_REGISTRATION_REC
 #endif // DEBUGGING_SUPPORTED
 
 // This is a wrapper around the assembly routine that invokes RtlUnwind in the OS.
-// When we invoke RtlUnwind, the OS will modify the ExceptionFlags field in the 
+// When we invoke RtlUnwind, the OS will modify the ExceptionFlags field in the
 // exception record to reflect unwind. Since we call RtlUnwind in the first pass
-// with a valid exception record when we find an exception handler AND because RtlUnwind 
+// with a valid exception record when we find an exception handler AND because RtlUnwind
 // returns on x86, the OS would have flagged the exception record for unwind.
 //
 // Incase the exception is rethrown from the catch/filter-handler AND it's a non-COMPLUS
-// exception, the runtime will use the reference to the saved exception record to reraise 
+// exception, the runtime will use the reference to the saved exception record to reraise
 // the exception, as part of rethrow fixup. Since the OS would have modified the exception record
 // to reflect unwind, this wrapper will "reset" the ExceptionFlags field when RtlUnwind returns.
 // Otherwise, the rethrow will result in second pass, as opposed to first, since the ExceptionFlags
 // would indicate an unwind.
-// 
+//
 // This rethrow issue does not affect COMPLUS exceptions since we always create a brand new exception
 // record for them in RaiseTheExceptionInternalOnly.
 BOOL CallRtlUnwindSafe(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
@@ -734,7 +734,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     STRESS_LOG7(LF_EH, LL_INFO10, "CPFH_RealFirstPassHandler: code:%X, LastThrownObject:%p, MT:%pT"
         ", IP:%p, SP:%p, pContext:%p, pEstablisherFrame:%p\n",
         exceptionCode, OBJECTREFToObject(e), (e!=0)?e->GetMethodTable():0,
-        pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0, 
+        pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0,
         pContext, pEstablisherFrame);
 
 #ifdef LOGGING
@@ -766,9 +766,9 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     // The OS calls each registered handler in the chain, passing its establisher frame to it.
     if (pExInfo->m_pBottomMostHandler != NULL && pEstablisherFrame > pExInfo->m_pBottomMostHandler)
     {
-        STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_RealFirstPassHandler: detected subsequent handler.  ExInfo:0x%p, BottomMost:0x%p SearchBoundary:0x%p\n", 
+        STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_RealFirstPassHandler: detected subsequent handler.  ExInfo:0x%p, BottomMost:0x%p SearchBoundary:0x%p\n",
                     pExInfo, pExInfo->m_pBottomMostHandler, pExInfo->m_pSearchBoundary);
-        
+
         // If the establisher frame of this handler is greater than the bottommost then it must have been
         // installed earlier and therefore we are case 2
         if (pThread->GetThrowable() == NULL)
@@ -835,17 +835,17 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             if (!pNestedER || pNestedER >= pExInfo->m_pBottomMostHandler )
             {
                 // RARE CASE.  We've re-entered the EE from an unmanaged filter.
-                // 
+                //
                 // OR
                 //
-                // We can be here if we dont find a nested exception handler. This is exemplified using 
+                // We can be here if we dont find a nested exception handler. This is exemplified using
                 // call chain of scenario 2 explained further below.
                 //
                 // Assuming __try of NativeB throws an exception E1 and it gets caught in ManagedA2, then
                 // bottom-most handler (BMH) is going to be CPFH_A. The catch will trigger an unwind
                 // and invoke __finally in NativeB. Let the __finally throw a new exception E2.
                 //
-                // Assuming ManagedB2 has a catch block to catch E2, when we enter CPFH_B looking for a 
+                // Assuming ManagedB2 has a catch block to catch E2, when we enter CPFH_B looking for a
                 // handler for E2, our establisher frame will be that of CPFH_B, which will be lower
                 // in stack than current BMH (which is CPFH_A). Thus, we will come here, determining
                 // E2 to be nested exception correctly but not find a nested exception handler.
@@ -858,11 +858,11 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NestedEhOom))
                         _ASSERTE(!"OOM in callback from unmanaged filter.");
                     #endif // _DEBUG
-                    
+
                     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
                 }
 
-                
+
                 pNestedExInfo->m_StackAddress = limit;      // Note: this is also the flag that tells us this
                                                             // ExInfo was stack allocated.
             }
@@ -871,7 +871,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 pNestedExInfo = &((NestedHandlerExRecord*)pNestedER)->m_handlerInfo;
             }
 
-            LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: PushExInfo() current: 0x%p previous: 0x%p\n", 
+            LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: PushExInfo() current: 0x%p previous: 0x%p\n",
                  pExInfo->m_StackAddress, pNestedExInfo->m_StackAddress));
 
             _ASSERTE(pNestedExInfo);
@@ -913,32 +913,32 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             // for managed code), unlike 64bit where each frame has a personality routine attached to it. Thus,
             // for the example above, assume CPFH_A protects ManagedA* blocks and is setup just before the call to
             // ManagedA1. Likewise, CPFH_B protects ManagedB* blocks and is setup just before the call to ManagedB1.
-            // 
+            //
             // When ManagedB3 throws an exception, CPFH_B is invoked to look for a handler in all of the ManagedB* blocks.
             // At this point, it is setup as the "bottom-most-handler" (BMH). If no handler is found and exception reaches
-            // ManagedA* blocks, CPFH_A is invoked to look for a handler and thus, becomes BMH. 
+            // ManagedA* blocks, CPFH_A is invoked to look for a handler and thus, becomes BMH.
             //
-            // Thus, in the first pass on x86 for a given exception, a particular CPFH will be invoked only once when looking 
+            // Thus, in the first pass on x86 for a given exception, a particular CPFH will be invoked only once when looking
             // for a handler and thus, registered as BMH only once. Either the exception goes unhandled and the process will
             // terminate or a handler will be found and second pass will commence.
             //
             // However, assume NativeCodeB had a __try/__finally and raised an exception [E1] within the __try. Let's assume
             // it gets caught in ManagedB1 and thus, unwind is triggered. At this point, the active exception tracker
-            // has context about the exception thrown out of __try and CPFH_B is registered as BMH. 
+            // has context about the exception thrown out of __try and CPFH_B is registered as BMH.
             //
-            // If the __finally throws a new exception [E2], CPFH_B will be invoked again for first pass while looking for 
+            // If the __finally throws a new exception [E2], CPFH_B will be invoked again for first pass while looking for
             // a handler for the thrown exception. Since BMH is already non-NULL, we will come here since EstablisherFrame will be
             // the same as BMH (because EstablisherFrame will be that of CPFH_B). We will proceed to overwrite the "required" parts
-            // of the existing exception tracker with the details of E2 (see setting of exception record and context below), erasing 
-            // any artifact of E1. 
+            // of the existing exception tracker with the details of E2 (see setting of exception record and context below), erasing
+            // any artifact of E1.
             //
             // This is unlike Scenario 1 when exception tracker is completely initialized to default values. This is also
             // unlike 64bit which will detect that E1 and E2 are different exceptions and hence, will setup a new tracker
             // to track E2, effectively behaving like Scenario 1 above. X86 cannot do this since there is no nested exception
-            // tracker setup that gets to see the new exception. 
+            // tracker setup that gets to see the new exception.
             //
             // Thus, if E1 was a CSE and E2 isn't, we will come here and treat E2 as a CSE as well since corruption severity
-            // is initialized as part of exception tracker initialization. Thus, E2 will start to be treated as CSE, which is 
+            // is initialized as part of exception tracker initialization. Thus, E2 will start to be treated as CSE, which is
             // incorrect. Similar argument applies to delivery of First chance exception notification delivery.
             //
             // <QUIP> Another example why we should unify EH systems :) </QUIP>
@@ -950,7 +950,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             // in the first pass, assert that current exception and the one tracked by active exception tracker
             // are indeed different exceptions. In such a case, we must reset the exception tracker so that it can be
             // setup correctly further down when CEHelper::SetupCorruptionSeverityForActiveException is invoked.
-            
+
             if ((pExInfo->m_pBottomMostHandler != NULL) &&
                 (pEstablisherFrame == pExInfo->m_pBottomMostHandler))
             {
@@ -959,13 +959,13 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
                 // This cannot be nested exceptions - they are handled earlier (see above).
                 _ASSERTE(!bNestedException);
-                
-                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: Bottom-most handler (0x%p) is the same as EstablisherFrame.\n", 
+
+                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: Bottom-most handler (0x%p) is the same as EstablisherFrame.\n",
                  pExInfo->m_pBottomMostHandler));
-                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: Exception record in exception tracker is 0x%p, while that of new exception is 0x%p.\n", 
+                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: Exception record in exception tracker is 0x%p, while that of new exception is 0x%p.\n",
                  pExInfo->m_pExceptionRecord, pExceptionRecord));
                 LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: Resetting exception tracker (0x%p).\n", pExInfo));
-                
+
                 // This will reset the exception tracker state, including the corruption severity.
                 pExInfo->Init();
             }
@@ -1056,7 +1056,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
 
         g_exceptionCount++;
-        
+
     } // End of case-1-or-3
 
     {
@@ -1069,10 +1069,10 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         {
             // Setup the state in current exception tracker indicating the corruption severity
             // of the active exception.
-            CEHelper::SetupCorruptionSeverityForActiveException(bRethrownException, bNestedException, 
+            CEHelper::SetupCorruptionSeverityForActiveException(bRethrownException, bNestedException,
                 CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
 
-            // Failfast if exception indicates corrupted process state   
+            // Failfast if exception indicates corrupted process state
             if (pExInfo->GetCorruptionSeverity() == ProcessCorrupting)
                 EEPOLICY_HANDLE_FATAL_ERROR(exceptionCode);
         }
@@ -1087,19 +1087,19 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             // Its an AV - set the flag
             fIsThrownExceptionAV = TRUE;
         }
-        
+
         // Did we get an AV?
         if (fIsThrownExceptionAV == TRUE)
         {
             // Get the escalation policy action for handling AV
             EPolicyAction actionAV = GetEEPolicy()->GetActionOnFailure(FAIL_AccessViolation);
-            
+
             // Valid actions are: eNoAction (default behviour) or eRudeExitProcess
             _ASSERTE(((actionAV == eNoAction) || (actionAV == eRudeExitProcess)));
             if (actionAV == eRudeExitProcess)
             {
                 LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: AccessViolation handler found and doing RudeExitProcess due to escalation policy (eRudeExitProcess)\n"));
-                
+
                 // EEPolicy::HandleFatalError will help us RudeExit the process.
                 // RudeExitProcess due to AV is to prevent a security risk - we are ripping
                 // at the boundary, without looking for the handlers.
@@ -1119,7 +1119,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         {
             pExInfo->m_StackTraceInfo.AllocateStackTrace();
         }
-        
+
         GCPROTECT_END();
     }
 
@@ -1223,7 +1223,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         if (found == LFH_NOT_FOUND)
         {
             retval = ExceptionContinueSearch;
-                // we need to be sure to switch back into Cooperative mode since we are going to 
+                // we need to be sure to switch back into Cooperative mode since we are going to
                 // jump to the exit: label and follow the normal return path (it is expected that
                 // CPFH_RealFirstPassHandler returns in COOP.
                 GCX_PREEMP_NO_DTOR_END();
@@ -1420,7 +1420,7 @@ CPFH_UnwindFrames1(Thread* pThread, EXCEPTION_REGISTRATION_RECORD* pEstablisherF
     tct.bIsUnwind = TRUE;
     tct.pTopFrame = GetCurrFrame(pEstablisherFrame); // highest frame to search to
     tct.pBottomFrame = NULL;
-    
+
     // Set the flag indicating if the current exception represents a longjmp.
     // See comment in COMPlusUnwindCallback for details.
     CORRUPTING_EXCEPTIONS_ONLY(tct.m_fIsLongJump = (exceptionCode == STATUS_LONGJUMP);)
@@ -1432,20 +1432,20 @@ CPFH_UnwindFrames1(Thread* pThread, EXCEPTION_REGISTRATION_RECORD* pEstablisherF
 
     #ifdef DEBUGGING_SUPPORTED
         EXCEPTION_REGISTRATION_RECORD *pInterceptEstablisherFrame = NULL;
-    
+
         // If the exception is intercepted, use information stored in the DebuggerExState to unwind the stack.
         if (pExInfo->m_ExceptionFlags.DebuggerInterceptInfo())
         {
             pExInfo->m_DebuggerExState.GetDebuggerInterceptInfo(&pInterceptEstablisherFrame,
-                                              NULL,     // MethodDesc **ppFunc,                              
-                                              NULL,     // int *pdHandler,                                   
-                                              NULL,     // BYTE **ppStack                                    
-                                              NULL,     // ULONG_PTR *pNativeOffset,                        
-                                              NULL      // Frame **ppFrame)                                 
+                                              NULL,     // MethodDesc **ppFunc,
+                                              NULL,     // int *pdHandler,
+                                              NULL,     // BYTE **ppStack
+                                              NULL,     // ULONG_PTR *pNativeOffset,
+                                              NULL      // Frame **ppFrame)
                                              );
             LOG((LF_EH, LL_INFO1000, "CPFH_UnwindFrames1: frames are Est 0x%X, Intercept 0x%X\n",
                  pEstablisherFrame, pInterceptEstablisherFrame));
-    
+
             //
             // When we set up for the interception we store off the CPFH or CPNEH that we
             // *know* will handle unwinding the destination of the intercept.
@@ -1461,7 +1461,7 @@ CPFH_UnwindFrames1(Thread* pThread, EXCEPTION_REGISTRATION_RECORD* pEstablisherF
             //   we need to pass the interception destination during this unwind.
             //
             _ASSERTE(IsUnmanagedToManagedSEHHandler(pEstablisherFrame));
-    
+
             if ((pEstablisherFrame == pInterceptEstablisherFrame) ||
                 (GetCurrFrame(pEstablisherFrame) == GetCurrFrame(pInterceptEstablisherFrame)))
             {
@@ -1472,21 +1472,21 @@ CPFH_UnwindFrames1(Thread* pThread, EXCEPTION_REGISTRATION_RECORD* pEstablisherF
                                               NULL,
                                               &(tct.pBottomFrame)
                                              );
-    
+
                 LOG((LF_EH, LL_INFO1000, "CPFH_UnwindFrames1: going to: pFunc:%#X, pStack:%#X\n",
                     tct.pFunc, tct.pStack));
-    
+
             }
-    
+
         }
     #endif
-    
+
     UnwindFrames(pThread, &tct);
 
     LOG((LF_EH, LL_INFO1000, "CPFH_UnwindFrames1: after unwind ec:%#x, tct.pTopFrame:0x%p, pSearchBndry:0x%p\n"
-                             "                    pEstFrame:0x%p, IsC+NestExRec:%d, !Nest||Active:%d\n", 
-         exceptionCode, tct.pTopFrame, pExInfo->m_pSearchBoundary, pEstablisherFrame,  
-         IsComPlusNestedExceptionRecord(pEstablisherFrame), 
+                             "                    pEstFrame:0x%p, IsC+NestExRec:%d, !Nest||Active:%d\n",
+         exceptionCode, tct.pTopFrame, pExInfo->m_pSearchBoundary, pEstablisherFrame,
+         IsComPlusNestedExceptionRecord(pEstablisherFrame),
          (!IsComPlusNestedExceptionRecord(pEstablisherFrame) || reinterpret_cast<NestedHandlerExRecord*>(pEstablisherFrame)->m_ActiveForUnwind)));
 
     if (tct.pTopFrame >= pExInfo->m_pSearchBoundary &&
@@ -1561,7 +1561,7 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
                 // disappear.)
                 EXCEPTION_REGISTRATION_RECORD *pNextBottomMost = GetNextCOMPlusSEHRecord(pHandler->m_pCurrentHandler);
 
-                STRESS_LOG3(LF_EH, LL_INFO10000, "COMPlusNestedExceptionHandler: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n", 
+                STRESS_LOG3(LF_EH, LL_INFO10000, "COMPlusNestedExceptionHandler: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n",
                     pHandler->m_pCurrentExInfo, pHandler->m_pCurrentExInfo->m_pBottomMostHandler, pNextBottomMost);
 
                 pHandler->m_pCurrentExInfo->m_pBottomMostHandler = pNextBottomMost;
@@ -1593,16 +1593,16 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
     // it is, change it to the next COM+ frame.  (This one is not good, as it's about to
     // disappear.)
     if (pExInfo->m_pBottomMostHandler &&
-        pExInfo->m_pBottomMostHandler <= pEstablisherFrame) 
+        pExInfo->m_pBottomMostHandler <= pEstablisherFrame)
     {
         EXCEPTION_REGISTRATION_RECORD *pNextBottomMost = GetNextCOMPlusSEHRecord(pEstablisherFrame);
 
         // If there is no previous COM+ SEH handler, GetNextCOMPlusSEHRecord() will return -1.  Much later, we will dereference that and AV.
         _ASSERTE (pNextBottomMost != EXCEPTION_CHAIN_END);
-        
-        STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_UnwindHandler: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n", 
+
+        STRESS_LOG3(LF_EH, LL_INFO10000, "CPFH_UnwindHandler: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n",
             pExInfo, pExInfo->m_pBottomMostHandler, pNextBottomMost);
-        
+
         pExInfo->m_pBottomMostHandler = pNextBottomMost;
     }
 
@@ -1632,26 +1632,26 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
 //     _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
 //     CONTEXT *pContext,
 //     DISPATCHER_CONTEXT *pDispatcherContext)
-// 
+//
 // See http://www.microsoft.com/msj/0197/exception/exception.aspx for a background piece on Windows
-// unmanaged structured exception handling.  
+// unmanaged structured exception handling.
 EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
 
     STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHander EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
-        pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags, 
+        pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
         pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0, pEstablisherFrame);
 
     _ASSERTE((pContext == NULL) || ((pContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL));
-    
+
     if (g_fNoExceptions)
         return ExceptionContinueSearch; // No EH during EE shutdown.
 
     // Check if the exception represents a GCStress Marker. If it does,
     // we shouldnt record its entry in the TLS as such exceptions are
-    // continuable and can confuse the VM to treat them as CSE, 
+    // continuable and can confuse the VM to treat them as CSE,
     // as they are implemented using illegal instruction exception.
 
     bool fIsGCMarker = false;
@@ -1684,7 +1684,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
         // ExceptionContinueExecution to the OS.
         return ExceptionContinueExecution;
     }
-    
+
     EXCEPTION_DISPOSITION retVal = ExceptionContinueSearch;
 
     Thread *pThread = GetThread();
@@ -1701,7 +1701,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
             ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
             pExInfo->m_pContext = pContext;
 
-            // Save the reference to the topmost handler we see during first pass when an SO goes past us. 
+            // Save the reference to the topmost handler we see during first pass when an SO goes past us.
             // When an unwind gets triggered for the exception, we will reset the frame chain when we reach
             // the topmost handler we saw during the first pass.
             //
@@ -1735,8 +1735,8 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
         {
             // We saved the context during the first pass in case the stack overflow exception is
             // unhandled and Watson dump code needs it.  Now we are in the second pass, therefore
-            // either the exception is handled by user code, or we have finished unhandled exception 
-            // filter process, and the OS is unwinding the stack.  Either way, we don't need the 
+            // either the exception is handled by user code, or we have finished unhandled exception
+            // filter process, and the OS is unwinding the stack.  Either way, we don't need the
             // context any more.  It is very important to reset the context so that our code does not
             // accidentally walk the frame using the dangling context in ExInfoWalker::WalkToPosition.
             ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
@@ -1826,7 +1826,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // notification is done because because the ExInfo record is about to be popped off anyway
 
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch:pThread:0x%x\n",pThread));
-    
+
 #ifdef _DEBUG
     gLastResumedExceptionFunc = NULL;
     gLastResumedExceptionHandler = 0;
@@ -1849,7 +1849,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     esp = (void*)(size_t)pExInfo->m_dEsp;
 
     pExInfo->UnwindExInfo(esp);
-    
+
     // Prepare to sync managed exception state
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
@@ -1861,7 +1861,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // will not be available. Thus, we should reset the severity only if its not such a thread.
     //
     // This behaviour (of debugger doing SetIP) is not allowed on 64bit since the catch clauses are implemented
-    // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch 
+    // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
     // clause to outside of the catch clause.
     bool fIsDebuggerHelperThread = (g_pDebugInterface == NULL) ? false : g_pDebugInterface->ThisIsHelperThread();
 
@@ -1870,7 +1870,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
 
     if (InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
     {
-        // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from 
+        // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
         // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
         // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
         // ICF is not linked at the method prolog and unlined at the epilog when running R2R code. Since the
@@ -2095,7 +2095,7 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
 
         if (bCheckForUnknownHandlers)
         {
-            if (!IsComPlusNestedExceptionRecord(pEHR) || 
+            if (!IsComPlusNestedExceptionRecord(pEHR) ||
                 !((ExecuteHandler2Module != NULL) && IsIPInModule(ExecuteHandler2Module, (PCODE)pEHR->Handler)))
             {
                 return TRUE;
@@ -2241,7 +2241,7 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
         // We had an exception in filter invocation that remained unhandled.
         // Sync managed exception state, for the managed thread, based upon the active exception tracker.
         pThread->SyncManagedExceptionState(false);
-        
+
         //
         // Swallow exception.  Treat as exception continue search.
         //
@@ -2335,7 +2335,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         currentIP = (UINT_PTR)(pCf->GetFrame()->GetIP());
         currentSP = 0; //Don't have an SP to get.
     }
-    
+
     if (!pFunc->IsILStub())
     {
         // Append the current frame to the stack trace and save the save trace to the managed Exception object.
@@ -2414,7 +2414,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     CorruptionSeverity currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
     {
         // We must defer to the MethodDesc of the user method instead of the IL stub
-        // itself because the user can specify the policy on a per-method basis and 
+        // itself because the user can specify the policy on a per-method basis and
         // that won't be reflected via the IL stub's MethodDesc.
         MethodDesc * pMDWithCEAttribute = fIsILStub ? pUserMDForILStub : pFunc;
 
@@ -2543,7 +2543,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
 
             STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: Fault inside filter [%d,%d] startAdj %d endAdj %d\n",
                         EHClause.FilterOffset, EHClause.HandlerStartPC, start_adjust, end_adjust);
-            
+
             if (fGiveDebuggerAndProfilerNotification)
                 EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pFunc);
             return SWA_ABORT;
@@ -2600,17 +2600,17 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
 
             // We just need *any* address within the method. This will let the debugger
             // resolve the EnC version of the method.
-            PCODE pMethodAddr = GetControlPC(regs);            
+            PCODE pMethodAddr = GetControlPC(regs);
             if (fGiveDebuggerAndProfilerNotification)
                 EEToDebuggerExceptionInterfaceWrapper::ExceptionFilter(pFunc, pMethodAddr, EHClause.FilterOffset, pHandlerEBP);
 
             UINT_PTR uStartAddress = (UINT_PTR)pCf->GetCodeInfo()->GetStartAddress();
 
             // save clause information in the exinfo
-            pExInfo->m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_FILTER, 
-                                            uStartAddress + EHClause.FilterOffset, 
+            pExInfo->m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_FILTER,
+                                            uStartAddress + EHClause.FilterOffset,
                                             StackFrame((UINT_PTR)pHandlerEBP));
-           
+
             // Let the profiler know we are entering a filter
             if (fGiveDebuggerAndProfilerNotification)
                 EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterEnter(pFunc);
@@ -2677,7 +2677,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
             _ASSERTE(pData);
             // We just need *any* address within the method. This will let the debugger
             // resolve the EnC version of the method.
-            PCODE pMethodAddr = GetControlPC(regs);            
+            PCODE pMethodAddr = GetControlPC(regs);
 
             EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedExceptionCatcherFound(pThread,
                                                                                            pData->pFunc, pMethodAddr,
@@ -2758,16 +2758,16 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     // If this method's security information was not precalculated, then it would have been in the first pass
     // already using Security::IsMethodCritical which could take have taken us down a path which is GC_TRIGGERS.
     //
-    // 
+    //
     // However, this unwind callback (for X86) is GC_NOTRIGGER and at this point the security information would have been
-    // calculated already. Hence, we wouldnt endup in the GC_TRIGGERS path. Thus, to keep SCAN.EXE (static contract analyzer) happy, 
+    // calculated already. Hence, we wouldnt endup in the GC_TRIGGERS path. Thus, to keep SCAN.EXE (static contract analyzer) happy,
     // we will pass a FALSE to the CanMethodHandleException call, indicating we dont need to calculate security information (and thus,
     // not go down the GC_TRIGGERS path.
     //
     // Check if the exception can be delivered to the method? It will check if the exception
     // is a CE or not. If it is, it will check if the method can process it or not.
     CorruptionSeverity currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-    
+
     // We have to do this check for x86 since, unlike 64bit which will setup a new exception tracker for longjmp,
     // x86 only sets up new trackers in the first pass (and longjmp is 2nd pass only exception). Hence, we pass
     // this information in the callback structure without affecting any existing exception tracker (incase longjmp was
@@ -2784,7 +2784,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         //
         // In scenario (2), longjmp is no different than any other non-CSE native exception raised.
         //
-        // In both these case, longjmp should be treated as non-CSE. Since x86 does not setup a tracker for 
+        // In both these case, longjmp should be treated as non-CSE. Since x86 does not setup a tracker for
         // it (see comment above), we pass this information (of whether the current exception is a longjmp or not)
         // to this callback (from UnwindFrames) to setup the correct corruption severity.
         //
@@ -2797,7 +2797,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         if (pFunc->IsILStub())
         {
             // We must defer to the MethodDesc of the user method instead of the IL stub
-            // itself because the user can specify the policy on a per-method basis and 
+            // itself because the user can specify the policy on a per-method basis and
             // that won't be reflected via the IL stub's MethodDesc.
             pFuncWithCEAttribute = GetUserMethodForILStub(pThread, (UINT_PTR)pStack, pFunc, &pILStubFrame);
         }
@@ -2959,7 +2959,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             pExInfo->m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_FINALLY,
                                             uStartAddress + EHClause.HandlerStartPC,
                                             StackFrame((UINT_PTR)pHandlerEBP));
-            
+
             // Notify the profiler that we are about to execute the finally code
             if (fGiveDebuggerAndProfilerNotification)
                 EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFinallyEnter(pFunc);
@@ -2967,9 +2967,9 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             LOG((LF_EH, LL_INFO100, "COMPlusUnwindCallback: finally clause [%d,%d] - call\n", EHClause.TryStartPC, EHClause.TryEndPC));
 
             pExInfo->m_EHClauseInfo.SetManagedCodeEntered(TRUE);
-            
+
             ::CallJitEHFinally(pCf, (BYTE *)uStartAddress, &EHClause, nestingLevel);
-            
+
             pExInfo->m_EHClauseInfo.SetManagedCodeEntered(FALSE);
 
             LOG((LF_EH, LL_INFO100, "COMPlusUnwindCallback: finally - returned\n"));
@@ -2999,7 +2999,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
                                         uStartAddress  + EHClause.HandlerStartPC,
                                         StackFrame((UINT_PTR)pHandlerEBP));
 
-        // Notify the profiler that we are about to resume at the catcher.         
+        // Notify the profiler that we are about to resume at the catcher.
         if (fGiveDebuggerAndProfilerNotification)
         {
             DACNotify::DoExceptionCatcherEnterNotification(pFunc, EHClause.HandlerStartPC);
@@ -3013,12 +3013,12 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
                     offs, EHClause.TryStartPC, EHClause.TryEndPC, pFunc);
 
         // ResumeAtJitEH will set pExInfo->m_EHClauseInfo.m_fManagedCodeEntered = TRUE; at the appropriate time
-        ::ResumeAtJitEH(pCf, (BYTE *)uStartAddress, &EHClause, nestingLevel, pThread, pData->bUnwindStack);   
+        ::ResumeAtJitEH(pCf, (BYTE *)uStartAddress, &EHClause, nestingLevel, pThread, pData->bUnwindStack);
         //UNREACHABLE_MSG("ResumeAtJitEH shouldn't have returned!");
-        
-        // we do not set pExInfo->m_EHClauseInfo.m_fManagedCodeEntered = FALSE here, 
-        // that happens when the catch clause calls back to COMPlusEndCatch 
-        
+
+        // we do not set pExInfo->m_EHClauseInfo.m_fManagedCodeEntered = FALSE here,
+        // that happens when the catch clause calls back to COMPlusEndCatch
+
     }
 
     STRESS_LOG1(LF_EH, LL_INFO100, "COMPlusUnwindCallback: no handler found in method %pM\n", pFunc);
@@ -3046,11 +3046,11 @@ LDoDebuggerIntercept:
     context.Esi = *regs->pEsi;
     context.Edi = *regs->pEdi;
     context.Ebp = *regs->pEbp;
-    
+
     //
-    // Set scratch registers to 0 to avoid reporting incorrect values to GC in case of debugger changing the IP 
+    // Set scratch registers to 0 to avoid reporting incorrect values to GC in case of debugger changing the IP
     // in the middle of a scratch register lifetime (see Dev10 754922)
-    // 
+    //
     context.Eax = 0;
     context.Ecx = 0;
     context.Edx = 0;
@@ -3227,7 +3227,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // bottom-most handler the one BEFORE the nested record.
         if (pExInfo->m_pBottomMostHandler < pNewBottomMostHandler)
         {
-            STRESS_LOG3(LF_EH, LL_INFO10000, "ResumeAtJitEH: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n", 
+            STRESS_LOG3(LF_EH, LL_INFO10000, "ResumeAtJitEH: setting ExInfo:0x%p m_pBottomMostHandler from 0x%p to 0x%p\n",
                 pExInfo, pExInfo->m_pBottomMostHandler, pNewBottomMostHandler);
           pExInfo->m_pBottomMostHandler = pNewBottomMostHandler;
         }
@@ -3242,8 +3242,8 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                 context.Eip, context.GetSP(), context.GetFP());
 
 #ifdef STACK_GUARDS_DEBUG
-    // We are transitioning back to managed code, so ensure that we are in 
-    // SO-tolerant mode before we do so. 
+    // We are transitioning back to managed code, so ensure that we are in
+    // SO-tolerant mode before we do so.
     RestoreSOToleranceState();
 #endif
 
@@ -3256,14 +3256,14 @@ void ResumeAtJitEH(CrawlFrame* pCf,
     ResumeAtJitEHHelper(&context);
     UNREACHABLE_MSG("Should never return from ResumeAtJitEHHelper!");
 
-    // we do not set pExInfo->m_EHClauseInfo.m_fManagedCodeEntered = FALSE here, 
-    // that happens when the catch clause calls back to COMPlusEndCatch 
+    // we do not set pExInfo->m_EHClauseInfo.m_fManagedCodeEntered = FALSE here,
+    // that happens when the catch clause calls back to COMPlusEndCatch
     // we don't return to this point so it would be moot (see unreachable_msg above)
-    
+
 }
 #if defined(_MSC_VER)
 #pragma warning(pop)
-#endif    
+#endif
 
 // Must be in a separate function because INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter
 int CallJitEHFilterWorker(size_t *pShadowSP, EHContext *pContext)
@@ -3308,23 +3308,23 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
 
     // ExceptionFilterFrame serves two purposes:
     //
-    // 1. It serves as a frame that stops the managed search for handler 
-    // if we fault in the filter. ThrowCallbackType.pTopFrame is going point 
+    // 1. It serves as a frame that stops the managed search for handler
+    // if we fault in the filter. ThrowCallbackType.pTopFrame is going point
     // to this frame during search for exception handler inside filter.
     // The search for handler needs a frame to stop. If we had no frame here,
     // the exceptions in filters would not be swallowed correctly since we would
     // walk past the EX_TRY/EX_CATCH block in COMPlusThrowCallbackHelper.
     //
-    // 2. It allows setting of SHADOW_SP_FILTER_DONE flag in UnwindFrames() 
+    // 2. It allows setting of SHADOW_SP_FILTER_DONE flag in UnwindFrames()
     // if we fault in the filter. We have to set this flag together with unwinding
-    // of the filter frame. Using a regular C++ holder to clear this flag here would cause 
+    // of the filter frame. Using a regular C++ holder to clear this flag here would cause
     // GC holes. The stack would be in inconsistent state when we trigger gc just before
     // returning from UnwindFrames.
 
     FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
-    
+
     ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
-    
+
     retVal = CallJitEHFilterWorker(pShadowSP, &context);
 
     ETW::ExceptionLog::ExceptionFilterEnd();
@@ -3355,7 +3355,7 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
     }
 
     ETW::ExceptionLog::ExceptionFinallyBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
-    
+
     CallJitEHFinallyHelper(pShadowSP, &context);
 
     ETW::ExceptionLog::ExceptionFinallyEnd();
@@ -3363,12 +3363,12 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
     //
     // Update the registers using new context
     //
-    // This is necessary to reflect GC pointer changes during the middle of a unwind inside a 
+    // This is necessary to reflect GC pointer changes during the middle of a unwind inside a
     // finally clause, because:
-    // 1. GC won't see the part of stack inside try (which has thrown an exception) that is already 
-    // unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the 
+    // 1. GC won't see the part of stack inside try (which has thrown an exception) that is already
+    // unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the
     // call stack in finally.
-    // 2. upon return of finally, the unwind process continues and unwinds stack based on the part 
+    // 2. upon return of finally, the unwind process continues and unwinds stack based on the part
     // of stack inside try and won't see the updated values in finally.
     // As a result, we need to manually update the context using register values upon return of finally
     //
@@ -3378,7 +3378,7 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
     // 2. For catch handlers, the current unwinding is already finished
     //
     context.UpdateFrame(pCf->GetRegisterSet());
-    
+
     // This does not need to be guarded by a holder because the frame is dead if an exception gets thrown.  Filters are different
     //  since they are run in the first pass, so we must update the shadowSP reset in CallJitEHFilter.
     if (pShadowSP) {
@@ -3502,7 +3502,7 @@ EXCEPTION_HANDLER_IMPL(FastNExportExceptHandler)
     }
 #endif // _DEBUG
 
-    return retval;  
+    return retval;
 }
 
 
@@ -3522,7 +3522,7 @@ EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
     STATIC_CONTRACT_MODE_ANY;
 
     EXCEPTION_DISPOSITION retval = ExceptionContinueSearch;
-    
+
     // We must forward to the COMPlusFrameHandler. This will unwind the Frame Chain up to here, and also leave the
     // preemptive GC mode set correctly.
     retval = EXCEPTION_HANDLER_FWD(COMPlusFrameHandler);

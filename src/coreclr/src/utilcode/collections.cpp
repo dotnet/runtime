@@ -5,7 +5,7 @@
 // Collections.cpp
 //
 
-// 
+//
 // This contains Collections C++ utility classes.
 //
 //*****************************************************************************
@@ -36,7 +36,7 @@ HRESULT CHashTable::NewInit(            // Return status.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(iEntrySize >= sizeof(FREEHASHENTRY));
 
     // Allocate the bucket chain array and init it.
@@ -62,7 +62,7 @@ BYTE *CHashTable::Add(                  // New entry.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     HASHENTRY   *psEntry;               // The struct we are adding.
 
     // Get a pointer to the entry we are adding.
@@ -93,9 +93,9 @@ void CHashTable::Delete(
     ULONG      iIndex)                 // Index of struct in m_pcEntries.
 {
     WRAPPER_NO_CONTRACT;
-    
+
     HASHENTRY   *psEntry;               // Struct to delete.
-    
+
     // Get a pointer to the entry we are deleting.
     psEntry = EntryPtr(iIndex);
     Delete(iHash, psEntry);
@@ -113,7 +113,7 @@ void CHashTable::Delete(
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     // Compute the hash value for the entry.
     iHash %= m_iBuckets;
 
@@ -143,7 +143,7 @@ void CHashTable::Move(
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     HASHENTRY   *psEntry;               // The struct we are deleting.
 
     psEntry = EntryPtr(iNew);
@@ -173,7 +173,7 @@ BYTE *CHashTable::Find(                 // Index of struct in m_pcEntries.
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     ULONG      iNext;                  // Used to traverse the chains.
     HASHENTRY   *psEntry;               // Used to traverse the chains.
 
@@ -181,7 +181,7 @@ BYTE *CHashTable::Find(                 // Index of struct in m_pcEntries.
     iNext = m_piBuckets[iHash % m_iBuckets];
 
     // Search until we hit the end.
-    
+
 #ifdef _DEBUG
     unsigned count = 0;
 #endif
@@ -224,7 +224,7 @@ ULONG CHashTable::FindNext(            // Index of struct in m_pcEntries.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     ULONG      iNext;                  // Used to traverse the chains.
     HASHENTRY   *psEntry;               // Used to traverse the chains.
 
@@ -260,7 +260,7 @@ BYTE *CHashTable::FindNextEntry(        // The next entry, or0 for end of list.
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     HASHENTRY   *psEntry;               // Used to traverse the chains.
 
     for (;;)
@@ -321,7 +321,7 @@ void CClosedHashBase::Delete(
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     BYTE        *ptr;
 
     // Find the item to delete.
@@ -336,7 +336,7 @@ void CClosedHashBase::Delete(
     if (m_bPerfect)
     {
         SetStatus(ptr, FREE);
-        
+
         // One less non free entry.
         --m_iCount;
 
@@ -354,7 +354,7 @@ void CClosedHashBase::Delete(
         pnext = &m_rgData[0];
     if (Status(pnext) != FREE)
         return;
-    
+
     // We can now free consecutive entries starting with the one
     // we just deleted, up to the first non-deleted one.
     while (Status(ptr) == DELETED)
@@ -386,7 +386,7 @@ void CClosedHashBase::DeleteLoop(
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     int i;
 
     if (m_rgData == 0)
@@ -428,7 +428,7 @@ void CClosedHashBase::DeleteLoop(
         if (i != m_iSize)
         {
             int iFirstFree = i;
-    
+
             do
             {
                 if (i-- == 0)
@@ -439,7 +439,7 @@ void CClosedHashBase::DeleteLoop(
                 {
                     SetStatus(EntryPtr(i), FREE);
 
-                    
+
                     // One less non free entry.
                     --m_iCount;
 
@@ -448,7 +448,7 @@ void CClosedHashBase::DeleteLoop(
                         i = m_iSize - 1;
                     }
                 }
-    
+
                 while (Status(EntryPtr(i)) != FREE)
                 {
                     if (i-- == 0)
@@ -456,7 +456,7 @@ void CClosedHashBase::DeleteLoop(
                         i = m_iSize - 1;
                     }
                 }
-    
+
             }
             while (i != iFirstFree);
         }
@@ -475,7 +475,7 @@ BYTE *CClosedHashBase::Find(            // The item if found, 0 if not.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     unsigned int iHash;                // Hash value for this data.
     int         iBucket;                // Which bucke to start at.
     int         i;                      // Loop control.
@@ -540,7 +540,7 @@ BYTE *CClosedHashBase::FindOrAdd(       // The item if found, 0 if not.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     unsigned int iHash;                // Hash value for this data.
     int         iBucket;                // Which bucke to start at.
     int         i;                      // Loop control.
@@ -604,7 +604,7 @@ BYTE *CClosedHashBase::FindOrAdd(       // The item if found, 0 if not.
 //*****************************************************************************
 // This helper actually does the add for you.
 //*****************************************************************************
-BYTE *CClosedHashBase::DoAdd(void *pData, BYTE *rgData, int &iBuckets, int iSize, 
+BYTE *CClosedHashBase::DoAdd(void *pData, BYTE *rgData, int &iBuckets, int iSize,
             int &iCollisions, int &iCount)
 {
     CONTRACTL
@@ -612,7 +612,7 @@ BYTE *CClosedHashBase::DoAdd(void *pData, BYTE *rgData, int &iBuckets, int iSize
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     unsigned int iHash;                // Hash value for this data.
     int         iBucket;                // Which bucke to start at.
     int         i;                      // Loop control.
@@ -660,7 +660,7 @@ bool CClosedHashBase::ReHash()          // true if successful.
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     // Allocate memory if we don't have any.
     if (!m_rgData)
     {
@@ -688,13 +688,13 @@ bool CClosedHashBase::ReHash()          // true if successful.
         // Only copy used entries.
         if (Status(EntryPtr(i)) != USED)
             continue;
-        
+
         // Add this entry to the list again.
         VERIFY((p = DoAdd(GetKey(EntryPtr(i)), rgTemp, iBuckets,
                 iSize, iCollisions, iCount)));
         memmove(p, EntryPtr(i), m_iEntrySize);
     }
-    
+
     // Reset internals.
     delete [] m_rgData;
     m_rgData = rgTemp;
@@ -714,8 +714,8 @@ bool CClosedHashBase::ReHash()          // true if successful.
 
 
 //*****************************************************************************
-// Returns a pointer to the (iIndex)th element of the array, shifts the elements 
-// in the array if the location is already full. The iIndex cannot exceed the count 
+// Returns a pointer to the (iIndex)th element of the array, shifts the elements
+// in the array if the location is already full. The iIndex cannot exceed the count
 // of elements in the array.
 //*****************************************************************************
 void *CStructArray::InsertThrowing(
@@ -726,13 +726,13 @@ void *CStructArray::InsertThrowing(
         THROWS;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(iIndex >= 0);
-    
+
     // We can not insert an element further than the end of the array.
     if (iIndex > m_iCount)
         return (NULL);
-    
+
     // The array should grow, if we can't fit one more element into the array.
     Grow(1);
 
@@ -756,7 +756,7 @@ void *CStructArray::Insert(int iIndex)
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     void *result = NULL;
     EX_TRY
     {
@@ -766,7 +766,7 @@ void *CStructArray::Insert(int iIndex)
     {
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
     return result;
 }
 
@@ -782,7 +782,7 @@ void *CStructArray::AppendThrowing()
         THROWS;
     }
     CONTRACTL_END;
-    
+
     // The array should grow, if we can't fit one more element into the array.
     Grow(1);
 
@@ -800,7 +800,7 @@ void *CStructArray::Append()
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     void *result = NULL;
     EX_TRY
     {
@@ -828,7 +828,7 @@ void CStructArray::AllocateBlockThrowing(int iCount)
         THROWS;
     }
     CONTRACTL_END;
-    
+
     if (m_iSize < m_iCount+iCount)
         Grow(iCount);
     m_iCount += iCount;
@@ -844,7 +844,7 @@ int CStructArray::AllocateBlock(int iCount)
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     int result = FALSE;
     EX_TRY
     {
@@ -871,7 +871,7 @@ void CStructArray::Delete(
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(iIndex >= 0);
 
     // See if we need to slide anything down.
@@ -892,7 +892,7 @@ void CStructArray::Grow(
     CONTRACTL {
         THROWS;
     } CONTRACTL_END;
-    
+
     BYTE        *pTemp;                 // temporary pointer used in realloc.
     int         iGrow;
 
@@ -960,7 +960,7 @@ void CStructArray::Clear()
         NOTHROW;
     }
     CONTRACTL_END;
-    
+
     // Free the chunk of memory.
     if (m_bFree && m_pList != NULL)
         delete [] m_pList;

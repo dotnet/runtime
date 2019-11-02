@@ -101,7 +101,7 @@ void DumpDiagnosticProtocolHelper::GenerateCoreDump(DiagnosticsIpc::IpcMessage& 
             return;
         }
     }
-    else 
+    else
     {
         DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_OUTOFMEMORY);
         delete pStream;

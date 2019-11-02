@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
- 
+
 
 #include "stdafx.h"
 #include "winmdinterfaces.h"
@@ -28,7 +28,7 @@ class WinMDImport : public IMetaDataImport2
                          , IWinMDImport
 #ifdef FEATURE_METADATA_INTERNAL_APIS
                          , IGetIMDInternalImport
-#endif //FEATURE_METADATA_INTERNAL_APIS 
+#endif //FEATURE_METADATA_INTERNAL_APIS
 {
   public:
     //=========================================================
@@ -43,14 +43,14 @@ class WinMDImport : public IMetaDataImport2
 
         IfFailGo(pNewWinMDImport->m_pRawMDCommon->QueryInterface(IID_IMetaDataImport2, (void**)&pNewWinMDImport->m_pRawImport));
         IfFailGo(pNewWinMDImport->m_pRawImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&pNewWinMDImport->m_pRawAssemblyImport));
-        
+
         if (FAILED(pNewWinMDImport->m_pRawImport->QueryInterface(IID_IMetaDataValidate, (void**)&pNewWinMDImport->m_pRawValidate)))
         {
             pNewWinMDImport->m_pRawValidate = nullptr;
         }
-  
+
         pNewWinMDImport->m_pRawMetaModelCommonRO = pRawMDCommon->GetMetaModelCommonRO();
-  
+
         IfFailGo(WinMDAdapter::Create(pRawMDCommon, &pNewWinMDImport->m_pWinMDAdapter));
 
         (*ppWinMDImport = pNewWinMDImport)->AddRef();
@@ -61,7 +61,7 @@ class WinMDImport : public IMetaDataImport2
             pNewWinMDImport->Release();
         return hr;
     }
-    
+
 
   private:
     //=========================================================
@@ -119,7 +119,7 @@ class WinMDImport : public IMetaDataImport2
     STDMETHODIMP QueryInterface(REFIID riid, void** ppUnk)
     {
         HRESULT hr;
-        
+
         *ppUnk = 0;
         if (riid == IID_IUnknown || riid == IID_IWinMDImport)
             *ppUnk = (IWinMDImport*)this;
@@ -155,7 +155,7 @@ class WinMDImport : public IMetaDataImport2
                     pFreeThreadedMarshaler.SuppressRelease();
                 }
             }
-            return m_pFreeThreadedMarshaler->QueryInterface(riid, ppUnk); 
+            return m_pFreeThreadedMarshaler->QueryInterface(riid, ppUnk);
         }
         else
         {
@@ -244,15 +244,15 @@ class WinMDImport : public IMetaDataImport2
         m_pRawImport->CloseEnum(hEnum);
     }
 
-    STDMETHODIMP CountEnum(HCORENUM hEnum, ULONG *pulCount)      
+    STDMETHODIMP CountEnum(HCORENUM hEnum, ULONG *pulCount)
     {
         _ASSERTE(pulCount != NULL); // Crash on NULL pulCount (just like real RegMeta)
         if (hEnum != NULL)
         {
             HENUMInternal *henuminternal = static_cast<HENUMInternal*>(hEnum);
-            // Special case: We hijack MethodImpl enum's 
+            // Special case: We hijack MethodImpl enum's
             if (henuminternal->m_tkKind == (TBL_MethodImpl << 24))
-            {                                              
+            {
                 *pulCount = henuminternal->m_ulCount / 2;  // MethodImpl enum's are weird - their entries are body/decl pairs so the internal count is twice the number the caller wants to see.
                 return S_OK;
             }
@@ -261,26 +261,26 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->CountEnum(hEnum, pulCount);
     }
 
-    STDMETHODIMP ResetEnum(HCORENUM hEnum, ULONG ulPos)      
+    STDMETHODIMP ResetEnum(HCORENUM hEnum, ULONG ulPos)
     {
         return m_pRawImport->ResetEnum(hEnum, ulPos);
     }
 
     STDMETHODIMP EnumTypeDefs(HCORENUM *phEnum, mdTypeDef rTypeDefs[],
-                            ULONG cMax, ULONG *pcTypeDefs)      
+                            ULONG cMax, ULONG *pcTypeDefs)
     {
         return m_pRawImport->EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs);
     }
 
     STDMETHODIMP EnumInterfaceImpls(HCORENUM *phEnum, mdTypeDef td,
                             mdInterfaceImpl rImpls[], ULONG cMax,
-                            ULONG* pcImpls)      
+                            ULONG* pcImpls)
     {
         return m_pRawImport->EnumInterfaceImpls(phEnum, td, rImpls, cMax, pcImpls);
     }
 
     STDMETHODIMP EnumTypeRefs(HCORENUM *phEnum, mdTypeRef rTypeRefs[],
-                            ULONG cMax, ULONG* pcTypeRefs)      
+                            ULONG cMax, ULONG* pcTypeRefs)
     {
             // No trick needed: a previous call to EnumTypeRefs must have already taken care of the
             // extra type refs.
@@ -295,7 +295,7 @@ class WinMDImport : public IMetaDataImport2
         if (wszTypeDef == NULL)          // E_INVALIDARG on NULL szTypeDef (just like real RegMeta)
             return E_INVALIDARG;
         _ASSERTE(ptd != NULL);          // AV on NULL ptd (just like real RegMeta)
-        *ptd = mdTypeDefNil; 
+        *ptd = mdTypeDefNil;
 
         LPUTF8      szFullName;
         LPCUTF8     szNamespace;
@@ -341,7 +341,7 @@ class WinMDImport : public IMetaDataImport2
         LPCSTR szName;
         if (!IsValidNonNilToken(td, mdtTypeDef))
         {
-            // Idiosyncractic edge cases - delegate straight through to inherit the correct idiosyncractic edge results 
+            // Idiosyncractic edge cases - delegate straight through to inherit the correct idiosyncractic edge results
             return m_pRawImport->GetTypeDefProps(td, szTypeDef, cchTypeDef, pchTypeDef, pdwTypeDefFlags, ptkExtends);
         }
         IfFailRet(m_pWinMDAdapter->GetTypeDefProps(td, &szNamespace, &szName, pdwTypeDefFlags, ptkExtends));
@@ -358,7 +358,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->GetInterfaceImplProps(iiImpl, pClass, ptkIface);
     }
 
-            
+
     STDMETHODIMP GetTypeRefProps(             // S_OK or error.
         mdTypeRef   tr,                     // [IN] TypeRef token.
         mdToken     *ptkResolutionScope,    // [OUT] Resolution scope, ModuleRef or AssemblyRef.
@@ -387,14 +387,14 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd)      
+    STDMETHODIMP ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd)
     {
         WINMD_COMPAT_ASSERT("IMetaDataImport::ResolveTypeRef() not supported on .winmd files.");
         return E_NOTIMPL;
     }
 
 
-    STDMETHODIMP EnumMembers(                 // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumMembers(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdToken     rMembers[],             // [OUT] Put MemberDefs here.
@@ -417,7 +417,7 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP EnumMethods(                 // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumMethods(                 // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
         mdMethodDef rMethods[],             // [OUT] Put MethodDefs here.
@@ -464,9 +464,9 @@ class WinMDImport : public IMetaDataImport2
 
 
 
-    STDMETHODIMP EnumParams(                  // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumParams(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdParamDef  rParams[],              // [OUT] Put ParamDefs here.
         ULONG       cMax,                   // [IN] Max ParamDefs to put.
         ULONG       *pcTokens)              // [OUT] Put # put here.
@@ -475,7 +475,7 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP EnumMemberRefs(              // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumMemberRefs(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tkParent,               // [IN] Parent token to scope the enumeration.
         mdMemberRef rMemberRefs[],          // [OUT] Put MemberRefs here.
@@ -498,13 +498,13 @@ class WinMDImport : public IMetaDataImport2
         //   Pass a bad phEnum: Instant AV
         //   Pass out of range typedef: returns S_FALSE (i.e. generates empty list)
         //   Pass non-typedef: returns S_FALSE with assert
-        //   Pass bad output ptr for bodies or decls, AV 
+        //   Pass bad output ptr for bodies or decls, AV
         //   Pass bad output ptr for pcTokens, AV (but NULL is allowed.)
 
         HRESULT         hr;
         HENUMInternal **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
         HENUMInternal  *pEnum = *ppmdEnum;
-        
+
         if ( pEnum == 0 )
         {
             // Create the enumerator, DynamicArrayEnum does not use the token type.
@@ -513,22 +513,22 @@ class WinMDImport : public IMetaDataImport2
             // set the output parameter
             *ppmdEnum = pEnum;
         }
-    
+
         // fill the output token buffer
         hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethodBody, rMethodDecl, pcTokens);
-    
+
     ErrExit:
         HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
         return hr;
     }
 
 
-    STDMETHODIMP EnumPermissionSets(          // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumPermissionSets(          // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     tk,                     // [IN] if !NIL, token to scope the enumeration.
         DWORD       dwActions,              // [IN] if !0, return only these actions.
         mdPermission rPermission[],         // [OUT] Put Permissions here.
-        ULONG       cMax,                   // [IN] Max Permissions to put. 
+        ULONG       cMax,                   // [IN] Max Permissions to put.
         ULONG       *pcTokens)              // [OUT] Put # put here.
     {
         return m_pRawImport->EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens);
@@ -537,10 +537,10 @@ class WinMDImport : public IMetaDataImport2
 
     STDMETHODIMP FindMember(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdToken     *pmb)                   // [OUT] matching memberdef 
+        mdToken     *pmb)                   // [OUT] matching memberdef
     {
         HRESULT hr = FindMethod(
             td,
@@ -566,10 +566,10 @@ class WinMDImport : public IMetaDataImport2
 
     STDMETHODIMP FindMethod(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdMethodDef *pmb)                   // [OUT] matching memberdef 
+        mdMethodDef *pmb)                   // [OUT] matching memberdef
     {
         if (pvSigBlob == NULL || cbSigBlob == 0)
         {
@@ -643,10 +643,10 @@ class WinMDImport : public IMetaDataImport2
 
     STDMETHODIMP FindField(
         mdTypeDef   td,                     // [IN] given typedef
-        LPCWSTR     szName,                 // [IN] member name 
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+        LPCWSTR     szName,                 // [IN] member name
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-        mdFieldDef  *pmb)                   // [OUT] matching memberdef 
+        mdFieldDef  *pmb)                   // [OUT] matching memberdef
     {
         if (pvSigBlob == NULL || cbSigBlob == 0)
         {
@@ -705,35 +705,35 @@ class WinMDImport : public IMetaDataImport2
         return hr;
     }
 
-   
+
    STDMETHODIMP FindMemberRef(
 		   mdTypeRef   td,					   // [IN] given typeRef
-		   LPCWSTR	   szName,				   // [IN] member name 
-		   PCCOR_SIGNATURE pvSigBlob,		   // [IN] point to a blob value of CLR signature 
+		   LPCWSTR	   szName,				   // [IN] member name
+		   PCCOR_SIGNATURE pvSigBlob,		   // [IN] point to a blob value of CLR signature
 		   ULONG	   cbSigBlob,			   // [IN] count of bytes in the signature blob
-		   mdMemberRef *pmr)				   // [OUT] matching memberref 
+		   mdMemberRef *pmr)				   // [OUT] matching memberref
 	   {
 		   if (pvSigBlob == NULL || cbSigBlob == 0)
 		   {
 			   // if signature matching is not needed, we can delegate to the underlying implementation
 			   return m_pRawImport->FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr);
 		   }
-   
+
 		   // The following code emulates RegMeta::FindMemberRef. We cannot call the underlying
 		   // implementation because we need to compare pvSigBlob to reinterpreted signatures.
 		   HRESULT hr = S_OK;
 		   HCORENUM hEnum = NULL;
-   
+
 		   CQuickArray<WCHAR> rName;
-   
+
 		   if (szName == NULL || pmr == NULL)
 			   IfFailGo(CLDB_E_RECORD_NOTFOUND);
 
 		   *pmr = mdMemberRefNil;
-   
+
 		   // now iterate all members in td and compare name and signature
            IfNullGo(rName.AllocNoThrow(wcslen(szName) + 1));
-   
+
 		   mdMemberRef rd;
 		   ULONG count;
 		   while ((hr = EnumMemberRefs(&hEnum, td, &rd, 1, &count)) == S_OK)
@@ -741,15 +741,15 @@ class WinMDImport : public IMetaDataImport2
 			   PCCOR_SIGNATURE pvMemberSigBlob;
 			   ULONG cbMemberSigBlob;
 			   ULONG chMemberName;
-   
+
 			   IfFailGo(GetMemberRefProps(rd, NULL, rName.Ptr(), (ULONG)rName.Size(), &chMemberName, &pvMemberSigBlob, &cbMemberSigBlob));
-   
+
 			   if (chMemberName == rName.Size() && wcscmp(szName, rName.Ptr()) == 0)
 			   {
 				   // we have a name match, check signature
 				   if (cbSigBlob != cbMemberSigBlob || memcmp(pvSigBlob, pvMemberSigBlob, cbSigBlob) != 0)
 					   continue;
-   
+
 				   // we found the member
 				   *pmr = rd;
 				   goto ErrExit;
@@ -757,22 +757,22 @@ class WinMDImport : public IMetaDataImport2
 		   }
 		   IfFailGo(hr);
 		   hr = CLDB_E_RECORD_NOTFOUND;
-   
+
 	   ErrExit:
 		   if (hEnum != NULL)
 			   CloseEnum(hEnum);
-   
+
 		   return hr;
-	   }   
+	   }
 
 
-    STDMETHODIMP GetMethodProps( 
+    STDMETHODIMP GetMethodProps(
         mdMethodDef mb,                     // The method for which to get props.
-        mdTypeDef   *pClass,                // Put method's class here. 
+        mdTypeDef   *pClass,                // Put method's class here.
       __out_ecount_part_opt(cchMethod, *pchMethod)
         LPWSTR      szMethod,               // Put method's name here.
         ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
-        ULONG       *pchMethod,             // Put actual size here 
+        ULONG       *pchMethod,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
@@ -792,11 +792,11 @@ class WinMDImport : public IMetaDataImport2
         IfFailRet(hrNameTruncation = m_pRawImport->GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, &pOrigSig, &cbOrigSigBlob, pulCodeRVA, pdwImplFlags));
 
         IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodDef>(
-            mb, 
+            mb,
             &pOrigSig,          // ppOrigSig
             &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob, 
-            pcbSigBlob, 
+            ppvSigBlob,
+            pcbSigBlob,
             m_pRawImport)));
 
         LPCSTR szNewName = NULL;
@@ -806,15 +806,15 @@ class WinMDImport : public IMetaDataImport2
             // We want to return name truncation status from the method that really fills the output buffer, rewrite the previous value
             IfFailRet(hrNameTruncation = DeliverUtf8String(szNewName, szMethod, cchMethod, pchMethod));
         }
-        
+
         // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
         return hrNameTruncation;
     }
 
 
     STDMETHODIMP GetMemberRefProps(           // S_OK or error.
-        mdMemberRef mr,                     // [IN] given memberref 
-        mdToken     *ptk,                   // [OUT] Put classref or classdef here. 
+        mdMemberRef mr,                     // [IN] given memberref
+        mdToken     *ptk,                   // [OUT] Put classref or classdef here.
       __out_ecount_part_opt(cchMember, *pchMember)
         LPWSTR      szMember,               // [OUT] buffer to fill for member's name
         ULONG       cchMember,              // [IN] the count of char of szMember
@@ -831,11 +831,11 @@ class WinMDImport : public IMetaDataImport2
         LPCSTR szNewName = NULL;
         IfFailRet(m_pWinMDAdapter->ModifyMemberProps(mr, NULL, NULL, NULL, &szNewName));
         IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMemberRef>(
-            mr, 
+            mr,
             &pOrigSig,          // ppOrigSig
             &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob, 
-            pbSig, 
+            ppvSigBlob,
+            pbSig,
             m_pRawImport)));
         if (szNewName != NULL)
         {
@@ -847,7 +847,7 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP EnumProperties(              // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumProperties(              // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdProperty  rProperties[],          // [OUT] Put Properties here.
@@ -858,7 +858,7 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP EnumEvents(                  // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumEvents(                  // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
         mdEvent     rEvents[],              // [OUT] Put events here.
@@ -869,12 +869,12 @@ class WinMDImport : public IMetaDataImport2
     }
 
 
-    STDMETHODIMP GetEventProps(               // S_OK, S_FALSE, or error. 
-        mdEvent     ev,                     // [IN] event token 
+    STDMETHODIMP GetEventProps(               // S_OK, S_FALSE, or error.
+        mdEvent     ev,                     // [IN] event token
         mdTypeDef   *pClass,                // [OUT] typedef containing the event declarion.
-        LPCWSTR     szEvent,                // [OUT] Event name 
+        LPCWSTR     szEvent,                // [OUT] Event name
         ULONG       cchEvent,               // [IN] the count of wchar of szEvent
-        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name 
+        ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name
         DWORD       *pdwEventFlags,         // [OUT] Event flags.
         mdToken     *ptkEventType,          // [OUT] EventType class
         mdMethodDef *pmdAddOn,              // [OUT] AddOn method of the event
@@ -882,16 +882,16 @@ class WinMDImport : public IMetaDataImport2
         mdMethodDef *pmdFire,               // [OUT] Fire method of the event
         mdMethodDef rmdOtherMethod[],       // [OUT] other method of the event
         ULONG       cMax,                   // [IN] size of rmdOtherMethod
-        ULONG       *pcOtherMethod)         // [OUT] total number of other method of this event 
+        ULONG       *pcOtherMethod)         // [OUT] total number of other method of this event
     {
         // Returns error code from name filling (may be CLDB_S_TRUNCTATION)
         return m_pRawImport->GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod);
     }
 
 
-    STDMETHODIMP EnumMethodSemantics(         // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumMethodSemantics(         // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
-        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
+        mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
         mdToken     rEventProp[],           // [OUT] Put Event/Property here.
         ULONG       cMax,                   // [IN] Max properties to put.
         ULONG       *pcEventProp)           // [OUT] Put # put here.
@@ -899,19 +899,19 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp);
     }
 
-    STDMETHODIMP GetMethodSemantics(          // S_OK, S_FALSE, or error. 
+    STDMETHODIMP GetMethodSemantics(          // S_OK, S_FALSE, or error.
         mdMethodDef mb,                     // [IN] method token
         mdToken     tkEventProp,            // [IN] event/property token.
-        DWORD       *pdwSemanticsFlags)       // [OUT] the role flags for the method/propevent pair 
+        DWORD       *pdwSemanticsFlags)       // [OUT] the role flags for the method/propevent pair
     {
         return m_pRawImport->GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags);
     }
 
 
-    STDMETHODIMP GetClassLayout( 
+    STDMETHODIMP GetClassLayout(
         mdTypeDef   td,                     // [IN] give typedef
         DWORD       *pdwPackSize,           // [OUT] 1, 2, 4, 8, or 16
-        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array 
+        COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array
         ULONG       cMax,                   // [IN] size of the array
         ULONG       *pcFieldOffset,         // [OUT] needed array size
         ULONG       *pulClassSize)              // [OUT] the size of the class
@@ -932,7 +932,7 @@ class WinMDImport : public IMetaDataImport2
     STDMETHODIMP GetRVA(                      // S_OK or error.
         mdToken     tk,                     // Member for which to set offset
         ULONG       *pulCodeRVA,            // The offset
-        DWORD       *pdwImplFlags)          // the implementation flags 
+        DWORD       *pdwImplFlags)          // the implementation flags
     {
         HRESULT hr;
         if (!IsValidNonNilToken(tk, mdtMethodDef))
@@ -994,11 +994,11 @@ class WinMDImport : public IMetaDataImport2
         ULONG       *pcbSig)                // [OUT] return size of signature.
     {
         return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtTypeSpec>(
-            typespec, 
+            typespec,
             NULL,     // ppOrigSig
             NULL,     // pcbOrigSig
-            ppvSig, 
-            pcbSig, 
+            ppvSig,
+            pcbSig,
             m_pRawImport);
     }
 
@@ -1008,23 +1008,23 @@ class WinMDImport : public IMetaDataImport2
         MDUTF8CSTR  *pszUtf8NamePtr)        // [OUT] Return pointer to UTF8 name in heap.
     {
         HRESULT hr;
-        
+
         if (!IsValidNonNilToken(tk, mdtTypeRef))
         {
             // Handle corner error case
-            IfFailGo(m_pRawImport->GetNameFromToken(tk, pszUtf8NamePtr));        
+            IfFailGo(m_pRawImport->GetNameFromToken(tk, pszUtf8NamePtr));
         }
         else
         {
             IfFailGo(m_pWinMDAdapter->GetTypeRefProps(tk, NULL, pszUtf8NamePtr, NULL));
         }
-        
+
       ErrExit:
         return hr;
     }
 
 
-    STDMETHODIMP EnumUnresolvedMethods(       // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumUnresolvedMethods(       // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     rMethods[],             // [OUT] Put MemberDefs here.
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
@@ -1156,18 +1156,18 @@ class WinMDImport : public IMetaDataImport2
 
     STDMETHODIMP GetMemberProps(
         mdToken     mb,                     // The member for which to get props.
-        mdTypeDef   *pClass,                // Put member's class here. 
+        mdTypeDef   *pClass,                // Put member's class here.
       __out_ecount_part_opt(cchMember, *pchMember)
         LPWSTR      szMember,               // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
-        ULONG       *pchMember,             // Put actual size here 
+        ULONG       *pchMember,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         ULONG       *pulCodeRVA,            // [OUT] codeRVA
         DWORD       *pdwImplFlags,          // [OUT] Impl. Flags
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue)             // [OUT] size of constant string in chars, 0 for non-strings.
     {
         HRESULT hr;
@@ -1180,30 +1180,30 @@ class WinMDImport : public IMetaDataImport2
 
         PCCOR_SIGNATURE pOrigSig;
         ULONG cbOrigSig;
-        
+
         IfFailRet(hrNameTruncation = m_pRawImport->GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, &pOrigSig, &cbOrigSig, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue));
 
         LPCSTR szNewName = NULL;
         IfFailRet(m_pWinMDAdapter->ModifyMemberProps(mb, pdwAttr, pdwImplFlags, pulCodeRVA, &szNewName));
-        
+
         if (IsValidNonNilToken(mb, mdtMethodDef))
-        {        
+        {
             IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodDef>(
-                mb, 
+                mb,
                 &pOrigSig,          // ppOrigSig
                 &cbOrigSig,         // pcbOrigSig
-                ppvSigBlob, 
-                pcbSigBlob, 
+                ppvSigBlob,
+                pcbSigBlob,
                 m_pRawImport)));
         }
         else if (IsValidNonNilToken(mb, mdtFieldDef))
         {
             IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtFieldDef>(
-                mb, 
+                mb,
                 &pOrigSig,          // ppOrigSig
                 &cbOrigSig,         // pcbOrigSig
-                ppvSigBlob, 
-                pcbSigBlob, 
+                ppvSigBlob,
+                pcbSigBlob,
                 m_pRawImport)));
         }
         else
@@ -1213,14 +1213,14 @@ class WinMDImport : public IMetaDataImport2
 
             if (pcbSigBlob != NULL)
                 *pcbSigBlob = cbOrigSig;
-        } 
+        }
 
         if (szNewName != NULL)
         {
             // We want to return name truncation status from the method that really fills the output buffer, rewrite the previous value
             IfFailRet(hrNameTruncation = DeliverUtf8String(szNewName, szMember, cchMember, pchMember));
         }
-        
+
         // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
         return hrNameTruncation;
     }
@@ -1232,12 +1232,12 @@ class WinMDImport : public IMetaDataImport2
       __out_ecount_part_opt(cchField, *pchField)
         LPWSTR      szField,                // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
-        ULONG       *pchField,              // Put actual size here 
+        ULONG       *pchField,              // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcchValue)             // [OUT] size of constant string in chars, 0 for non-strings.
     {
         HRESULT hr;
@@ -1250,28 +1250,28 @@ class WinMDImport : public IMetaDataImport2
         IfFailRet(m_pWinMDAdapter->ModifyFieldDefProps(mb, pdwAttr));
         IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtFieldDef>(
             mb,
-            &pOrigSig, 
-            &cbOrigSig, 
-            ppvSigBlob, 
-            pcbSigBlob, 
+            &pOrigSig,
+            &cbOrigSig,
+            ppvSigBlob,
+            pcbSigBlob,
             m_pRawImport)));
-        
+
         // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
         return hrNameTruncation;
     }
 
 
-    STDMETHODIMP GetPropertyProps(            // S_OK, S_FALSE, or error. 
+    STDMETHODIMP GetPropertyProps(            // S_OK, S_FALSE, or error.
         mdProperty  prop,                   // [IN] property token
-        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion. 
+        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion.
         LPCWSTR     szProperty,             // [OUT] Property name
         ULONG       cchProperty,            // [IN] the count of wchar of szProperty
         ULONG       *pchProperty,           // [OUT] actual count of wchar for property name
         DWORD       *pdwPropFlags,          // [OUT] property flags.
-        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob 
+        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
         ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value 
+        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value
         ULONG       *pcchDefaultValue,      // [OUT] size of constant string in chars, 0 for non-strings.
         mdMethodDef *pmdSetter,             // [OUT] setter method of the property
         mdMethodDef *pmdGetter,             // [OUT] getter method of the property
@@ -1287,11 +1287,11 @@ class WinMDImport : public IMetaDataImport2
         IfFailRet(hrNameTruncation = m_pRawImport->GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, &pOrigSig, &cbOrigSigBlob, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod));
 
         IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtProperty>(
-            prop, 
+            prop,
             &pOrigSig,          // ppOrigSig
             &cbOrigSigBlob,     // pcbOrigSig
-            ppvSig, 
-            pbSig, 
+            ppvSig,
+            pbSig,
             m_pRawImport)));
         // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
         return hrNameTruncation;
@@ -1344,7 +1344,7 @@ class WinMDImport : public IMetaDataImport2
         mdToken tokenType = TypeFromToken(tk);
         if (tokenType == mdtAssemblyRef)
             return m_pWinMDAdapter->IsValidAssemblyRefToken(tk);
-        
+
         return m_pRawImport->IsValidToken(tk);
     }
 
@@ -1405,7 +1405,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->EnumGenericParams(phEnum, tk, rGenericParams, cMax, pcGenericParams);
     }
 
-    
+
     STDMETHODIMP GetGenericParamProps(        // S_OK or error.
         mdGenericParam gp,                  // [IN] GenericParam
         ULONG        *pulParamSeq,          // [OUT] Index of the type parameter
@@ -1421,7 +1421,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->GetGenericParamProps(gp, pulParamSeq, pdwParamFlags, ptOwner, reserved, wzname, cchName, pchName);
     }
 
-    
+
     STDMETHODIMP GetMethodSpecProps(
         mdMethodSpec mi,                    // [IN] The method instantiation
         mdToken *tkParent,                  // [OUT] MethodDef or MemberRef
@@ -1435,15 +1435,15 @@ class WinMDImport : public IMetaDataImport2
         IfFailRet(m_pRawImport->GetMethodSpecProps(mi, tkParent, &pOrigSig, &cbOrigSigBlob));
 
         return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodSpec>(
-            mi, 
+            mi,
             &pOrigSig,          // ppOrigSig
             &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob, 
-            pcbSigBlob, 
+            ppvSigBlob,
+            pcbSigBlob,
             m_pRawImport);
     }
 
-    
+
     STDMETHODIMP EnumGenericParamConstraints(
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdGenericParam tk,                  // [IN] GenericParam whose constraints are requested
@@ -1454,7 +1454,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints);
     }
 
-    
+
     STDMETHODIMP GetGenericParamConstraintProps( // S_OK or error.
         mdGenericParamConstraint gpc,       // [IN] GenericParamConstraint
         mdGenericParam *ptGenericParam,     // [OUT] GenericParam that is constrained
@@ -1463,7 +1463,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType);
     }
 
-    
+
     STDMETHODIMP GetPEKind(                   // S_OK or error.
         DWORD* pdwPEKind,                   // [OUT] The kind of PE (0 - not a PE)
         DWORD* pdwMachine)                  // [OUT] Machine as defined in NT header
@@ -1471,7 +1471,7 @@ class WinMDImport : public IMetaDataImport2
         return m_pRawImport->GetPEKind(pdwPEKind, pdwMachine);
     }
 
-    
+
     STDMETHODIMP GetVersionString(            // S_OK or error.
       __out_ecount_part_opt(ccBufSize, *pccBufSize)
         LPWSTR      pwzBuf,                 // [OUT] Put version string here.
@@ -1485,7 +1485,7 @@ class WinMDImport : public IMetaDataImport2
         return DeliverUtf8String(szVersion, pwzBuf, ccBufSize, pccBufSize);
     }
 
-    
+
     STDMETHODIMP EnumMethodSpecs(
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken      tk,                    // [IN] MethodDef or MemberRef whose MethodSpecs are requested
@@ -1574,7 +1574,7 @@ class WinMDImport : public IMetaDataImport2
             pusRevisionNumber,
             ppbHashValue,
             pcbHashValue);
-        
+
         if (szNewName != nullptr)
         {
             IfFailRet(hrNameTruncation = DeliverUtf8String(szNewName, szName, cchName, pchName));
@@ -1613,7 +1613,7 @@ class WinMDImport : public IMetaDataImport2
         LPCSTR szUtf8Name;
         if (!IsValidNonNilToken(mdct, mdtExportedType))
         {
-            // Idiosyncractic edge cases - delegate straight through to inherit the correct idiosyncractic edge results 
+            // Idiosyncractic edge cases - delegate straight through to inherit the correct idiosyncractic edge results
             return m_pRawAssemblyImport->GetExportedTypeProps(mdct, szName, cchName, pchName, ptkImplementation, ptkTypeDef, pdwExportedTypeFlags);
         }
         IfFailRet(m_pRawAssemblyImport->GetExportedTypeProps(mdct, NULL, 0, NULL, NULL, ptkTypeDef, pdwExportedTypeFlags));
@@ -1651,7 +1651,7 @@ class WinMDImport : public IMetaDataImport2
         }
         else
         {
-            // if *phEnum is NULL, we need create the HENUMInternal, adjust the assembly ref count, 
+            // if *phEnum is NULL, we need create the HENUMInternal, adjust the assembly ref count,
             // and enumerate the number of assembly refs requested. This is done in three steps:
             HRESULT hr;
 
@@ -1798,7 +1798,7 @@ ErrExit:
     //=========================================================
     // IMetaModelCommon methods
     //=========================================================
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetScopeProps(
         LPCUTF8     *pszName,
         GUID        *pMvid)
@@ -1806,7 +1806,7 @@ ErrExit:
         return m_pRawMetaModelCommonRO->CommonGetScopeProps(pszName, pMvid);
     }
 
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetTypeRefProps(
         mdTypeRef tr,
         LPCUTF8     *pszNamespace,
@@ -1815,9 +1815,9 @@ ErrExit:
     {
         return m_pWinMDAdapter->GetTypeRefProps(tr, pszNamespace, pszName, ptkResolution);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetTypeDefProps(
         mdTypeDef td,
         LPCUTF8     *pszNameSpace,
@@ -1832,34 +1832,34 @@ ErrExit:
       ErrExit:
         return hr;
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetTypeSpecProps(
         mdTypeSpec ts,
         PCCOR_SIGNATURE *ppvSig,
         ULONG       *pcbSig)
     {
         return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtTypeSpec>(
-            ts, 
+            ts,
             NULL,     // ppOrigSig
             NULL,     // pcbOrigSig
-            ppvSig, 
-            pcbSig, 
+            ppvSig,
+            pcbSig,
             m_pRawImport);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetEnclosingClassOfTypeDef(
-        mdTypeDef  td, 
+        mdTypeDef  td,
         mdTypeDef *ptkEnclosingTypeDef)
     {
         return m_pRawMetaModelCommonRO->CommonGetEnclosingClassOfTypeDef(td, ptkEnclosingTypeDef);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetAssemblyProps(
         USHORT      *pusMajorVersion,
         USHORT      *pusMinorVersion,
@@ -1873,9 +1873,9 @@ ErrExit:
     {
         return m_pRawMetaModelCommonRO->CommonGetAssemblyProps(pusMajorVersion, pusMinorVersion, pusBuildNumber, pusRevisionNumber, pdwFlags, ppbPublicKey, pcbPublicKey, pszName, pszLocale);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetAssemblyRefProps(
         mdAssemblyRef tkAssemRef,
         USHORT      *pusMajorVersion,
@@ -1902,17 +1902,17 @@ ErrExit:
         }
 
         IfFailRet(m_pRawMetaModelCommonRO->CommonGetAssemblyRefProps(
-            md, 
-            pusMajorVersion, 
-            pusMinorVersion, 
-            pusBuildNumber, 
-            pusRevisionNumber, 
-            pdwFlags, 
-            ppbPublicKeyOrToken, 
-            pcbPublicKeyOrToken, 
-            pszName, 
-            pszLocale, 
-            ppbHashValue, 
+            md,
+            pusMajorVersion,
+            pusMinorVersion,
+            pusBuildNumber,
+            pusRevisionNumber,
+            pdwFlags,
+            ppbPublicKeyOrToken,
+            pcbPublicKeyOrToken,
+            pszName,
+            pszLocale,
+            ppbHashValue,
             pcbHashValue));
 
         m_pWinMDAdapter->ModifyAssemblyRefProps(
@@ -1929,18 +1929,18 @@ ErrExit:
 
         return hr;
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetModuleRefProps(
         mdModuleRef tkModuleRef,
         LPCUTF8     *pszName)
     {
         return m_pRawMetaModelCommonRO->CommonGetModuleRefProps(tkModuleRef, pszName);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonFindExportedType(
         LPCUTF8     szNamespace,
         LPCUTF8     szName,
@@ -1949,9 +1949,9 @@ ErrExit:
     {
         return m_pWinMDAdapter->FindExportedType(szNamespace, szName, tkEnclosingType, ptkExportedType);
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetExportedTypeProps(
         mdToken     tkExportedType,
         LPCUTF8     *pszNamespace,
@@ -1963,15 +1963,15 @@ ErrExit:
         IfFailRet(m_pWinMDAdapter->ModifyExportedTypeName(tkExportedType, pszNamespace, pszName));
         return hr;
     }
-    
-    
+
+
     virtual int CommonIsRo()
     {
         return m_pRawMetaModelCommonRO->CommonIsRo();
     }
-    
-    
-    __checkReturn 
+
+
+    __checkReturn
     virtual HRESULT CommonGetCustomAttributeByNameEx( // S_OK or error.
         mdToken            tkObj,            // [IN] Object with Custom Attribute.
         LPCUTF8            szName,           // [IN] Name of desired Custom Attribute.
@@ -1981,9 +1981,9 @@ ErrExit:
     {
         return m_pWinMDAdapter->GetCustomAttributeByName(tkObj, szName, ptkCA, ppData, pcbData);
     }
-    
 
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT FindParentOfMethodHelper(mdMethodDef md, mdTypeDef *ptd)
     {
         return m_pRawMetaModelCommonRO->FindParentOfMethodHelper(md, ptd);
@@ -2004,11 +2004,11 @@ ErrExit:
         *ppIMDInternalImport = NULL;
         // Get the raw IMDInternalImport
         IfFailGo(GetMDInternalInterfaceFromPublic(m_pRawImport, IID_IMDInternalImport, (LPVOID*)(&pRawMDInternalImport)));
-    
+
         // Create an adapter around the internal raw interface
         IfFailGo(pRawMDInternalImport->QueryInterface(IID_IMDCommon, (LPVOID*)(&pMDCommon)));
         IfFailGo(CreateWinMDInternalImportRO(pMDCommon, IID_IMDInternalImport, (void**)ppIMDInternalImport));
-    
+
       ErrExit:
         return hr;
     }

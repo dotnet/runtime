@@ -43,7 +43,7 @@ BOOL StringLexer::IsEOS(WCHAR wcChar)
 {
     return (wcChar == 0);
 }
-        
+
 BOOL StringLexer::IsQuoteCharacter(WCHAR wcChar)
 {
     return ((wcChar == L'\'') || (wcChar == L'"'));
@@ -236,7 +236,7 @@ WCHAR StringLexer::ParseUnicode()
             return INVALID_CHARACTER;
         }
     }
-    
+
     return wcUnicodeChar;
 }
 

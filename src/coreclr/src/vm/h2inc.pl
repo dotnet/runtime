@@ -16,28 +16,28 @@ sub ProcessFile($) {
         print "#error: File can not be opened: $input_file\n";
         return;
     }
-    
+
     print ("// File start: $input_file\n");
-        
+
     while(<INPUT_FILE>) {
         # Skip all pragmas
         if (m/^\s*#\s*pragma/) {
             next;
         }
-        
+
         # Expand includes.
         if (m/\s*#\s*include\s*\"(.+)\"/) {
             ProcessFile(dirname($input_file) . "/" . $1);
             next;
         }
-        
+
         # Augment #defines with their MASM equivalent
         if (m/^\s*#\s*define\s+(\S+)\s+(.*)/) {
             my $name = $1;
             my $value = $2;
-            
+
             # Note that we do not handle multiline constants
-            
+
             # Strip comments from value
             $value =~ s/\/\/.*//;
             $value =~ s/\/\*.*\*\///g;
@@ -55,8 +55,8 @@ sub ProcessFile($) {
         }
         print;
     }
-    
-    print ("// File end: $input_file\n");   
+
+    print ("// File end: $input_file\n");
 }
 
 ProcessFile($ARGV[0]);

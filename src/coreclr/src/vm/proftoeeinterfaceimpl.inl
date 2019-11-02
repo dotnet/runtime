@@ -4,11 +4,11 @@
 //
 // FILE: ProfToEEInterfaceImpl.inl
 //
-// Inline implementation of portions of the code used to help implement the 
+// Inline implementation of portions of the code used to help implement the
 // ICorProfilerInfo* interfaces, which allow the Profiler to communicate with the EE.
 //
 
-// 
+//
 // ======================================================================================
 
 #ifndef __PROFTOEEINTERFACEIMPL_INL__
@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------------------
 //
-// "Callback flags" are typically set on the current EE Thread object just before we 
+// "Callback flags" are typically set on the current EE Thread object just before we
 // call into a profiler (see SetCallbackStateFlagsHolder).  This helps us remember that
 // we deliberately called into the profiler, as opposed to the profiler gaining control
 // by hijacking a thread. This helper function is used in PROFILER_TO_CLR_ENTRYPOINT_SYNC
@@ -95,7 +95,7 @@ inline BOOL IsCalledAsynchronously()
 // Simple helper that decides whether we should avoid calling into the host. Generally,
 // host calls should be avoided if the current Info method was called asynchronously
 // (i.e., from an F1-style hijack), for fear of re-entering the host (mainly SQL).
-// 
+//
 // Server GC threads are native (non-EE) threads, which therefore do not track enough
 // state for us to determine if a call is made asynhronously on those threads. So we
 // pessimistically assume that the current call on a server GC thread is from a hijack
@@ -117,9 +117,9 @@ inline BOOL ShouldAvoidHostCalls()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return 
+    return
     (
-        IsCalledAsynchronously() || 
+        IsCalledAsynchronously() ||
         (
             (GetThreadNULLOk() == NULL) && IsGCSpecialThread()
         )
@@ -129,7 +129,7 @@ inline BOOL ShouldAvoidHostCalls()
 
 //---------------------------------------------------------------------------------------
 //
-// Simple helper that returns nonzero iff the current thread is a non-EE thread in the 
+// Simple helper that returns nonzero iff the current thread is a non-EE thread in the
 // process of doing a GC
 //
 

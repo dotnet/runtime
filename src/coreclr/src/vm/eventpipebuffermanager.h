@@ -188,7 +188,7 @@ public:
 
     // Get next event.  This is used to dispatch events to EventListener.
     EventPipeEventInstance* GetNextEvent();
-    
+
     CLREvent *GetWaitEvent();
 
 #ifdef _DEBUG

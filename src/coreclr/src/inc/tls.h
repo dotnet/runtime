@@ -5,7 +5,7 @@
 //
 
 //
-// Encapsulates TLS access for maximum performance. 
+// Encapsulates TLS access for maximum performance.
 //
 
 // **************************************************************************************

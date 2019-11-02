@@ -7,7 +7,7 @@
 // All enumerators returned by the profiling API to enumerate objects or to catch up on
 // the current CLR state (usually for attaching profilers) are defined in
 // ProfilingEnumerators.h,cpp.
-// 
+//
 // This header file contains the base enumerator template implementation, plus the
 // definitions of the derived enumerators.
 //
@@ -492,8 +492,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE((pModule != NULL) && 
-                 ((m_rgAppDomainIds != NULL) || (m_cAppDomainIds == 0)) && 
+        _ASSERTE((pModule != NULL) &&
+                 ((m_rgAppDomainIds != NULL) || (m_cAppDomainIds == 0)) &&
                  (m_pcAppDomainIds != NULL));
     }
 

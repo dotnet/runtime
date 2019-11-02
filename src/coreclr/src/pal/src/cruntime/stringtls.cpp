@@ -40,8 +40,8 @@ Finds the next token in a string.
 
 Return value:
 
-A pointer to the next token found in strToken.  Returns NULL when no more 
-tokens are found.  Each call modifies strToken by substituting a NULL 
+A pointer to the next token found in strToken.  Returns NULL when no more
+tokens are found.  Each call modifies strToken by substituting a NULL
 character for each delimiter that is encountered.
 
 Parameters:
@@ -49,7 +49,7 @@ strToken        String cotaining token(s)
 strDelimit      Set of delimiter characters
 
 Remarks:
-In FreeBSD, strtok is not re-entrant, strtok_r is.  It manages re-entrancy 
+In FreeBSD, strtok is not re-entrant, strtok_r is.  It manages re-entrancy
 by using a passed-in context pointer (which will be stored in thread local
 storage)  According to the strtok MSDN documentation, "Calling these functions
 simultaneously from multiple threads does not have undesirable effects", so
@@ -63,16 +63,16 @@ PAL_strtok(char *strToken, const char *strDelimit)
     char *retval=NULL;
 
     PERF_ENTRY(strtok);
-    ENTRY("strtok (strToken=%p (%s), strDelimit=%p (%s))\n", 
-          strToken?strToken:"NULL", 
+    ENTRY("strtok (strToken=%p (%s), strDelimit=%p (%s))\n",
+          strToken?strToken:"NULL",
           strToken?strToken:"NULL", strDelimit?strDelimit:"NULL", strDelimit?strDelimit:"NULL");
 
     pThread = InternalGetCurrentThread();
 
     retval = strtok_r(strToken, strDelimit, &pThread->crtInfo.strtokContext);
- 
+
     LOGEXIT("strtok returns %p (%s)\n", retval?retval:"NULL", retval?retval:"NULL");
     PERF_EXIT(strtok);
-    
+
     return retval;
 }

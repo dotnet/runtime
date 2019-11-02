@@ -5,7 +5,7 @@
 // StgPool.h
 //
 
-// 
+//
 // Pools are used to reduce the amount of data actually required in the database.
 // This allows for duplicate string and binary values to be folded into one
 // copy shared by the rest of the database.  Strings are tracked in a hash
@@ -59,24 +59,24 @@ class CorProfileData;
 class RIDBinarySearch : public CBinarySearch<UINT32>
 {
 public:
-    RIDBinarySearch(const UINT32 *pBase, int iCount) : CBinarySearch<UINT32>(pBase, iCount) 
+    RIDBinarySearch(const UINT32 *pBase, int iCount) : CBinarySearch<UINT32>(pBase, iCount)
     {
         LIMITED_METHOD_CONTRACT;
     } // RIDBinarySearch::RIDBinarySearch
-    
+
     int Compare(UINT32 const *pFirst, UINT32 const *pSecond)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         if (*pFirst < *pSecond)
             return -1;
-        
+
         if (*pFirst > *pSecond)
             return 1;
-        
+
         return 0;
     } // RIDBinarySearch::Compare
-    
+
 };  // class RIDBinarySearch
 
 //*****************************************************************************
@@ -88,19 +88,19 @@ class StgPoolSeg
 {
     friend class VerifyLayoutsMD;
 public:
-    StgPoolSeg() : 
-        m_pSegData((BYTE*)m_zeros), 
-        m_pNextSeg(NULL), 
-        m_cbSegSize(0), 
-        m_cbSegNext(0) 
+    StgPoolSeg() :
+        m_pSegData((BYTE*)m_zeros),
+        m_pNextSeg(NULL),
+        m_cbSegSize(0),
+        m_cbSegNext(0)
     {LIMITED_METHOD_CONTRACT;  }
-    ~StgPoolSeg() 
+    ~StgPoolSeg()
     { LIMITED_METHOD_CONTRACT; _ASSERTE(m_pSegData == m_zeros);_ASSERTE(m_pNextSeg == NULL); }
 protected:
     BYTE       *m_pSegData;     // Pointer to the data.
     StgPoolSeg *m_pNextSeg;     // Pointer to next segment, or NULL.
-    // Size of the segment buffer. If this is last segment (code:m_pNextSeg is NULL), then it's the 
-    // allocation size. If this is not the last segment, then this is shrinked to segment data size 
+    // Size of the segment buffer. If this is last segment (code:m_pNextSeg is NULL), then it's the
+    // allocation size. If this is not the last segment, then this is shrinked to segment data size
     // (code:m_cbSegNext).
     ULONG       m_cbSegSize;
     ULONG       m_cbSegNext;    // Offset of next available byte in segment.
@@ -115,14 +115,14 @@ protected:
 public:
     const BYTE *GetSegData() const { LIMITED_METHOD_CONTRACT; return m_pSegData; }
     const StgPoolSeg* GetNextSeg() const { LIMITED_METHOD_CONTRACT; return m_pNextSeg; }
-    // Returns size of the segment. It can be bigger than the size of represented data by this segment if 
+    // Returns size of the segment. It can be bigger than the size of represented data by this segment if
     // this is the last segment.
     ULONG GetSegSize() const { LIMITED_METHOD_CONTRACT; return m_cbSegSize; }
     // Returns size of represented data in this segment.
     ULONG GetDataSize() const { LIMITED_METHOD_CONTRACT; return m_cbSegNext; }
 
     static const BYTE m_zeros[64];          // array of zeros for "0" indices.
-                // The size should be at least maximum of all MD table record sizes 
+                // The size should be at least maximum of all MD table record sizes
                 // (MD\Runtime\MDColumnDescriptors.cpp) which is currently 28 B.
 };  // class StgPoolSeg
 
@@ -138,7 +138,7 @@ namespace MetaData
 //
 // StgPoolReadOnly
 //
-// 
+//
 //*****************************************************************************
 // This is the read only StgPool class
 //*****************************************************************************
@@ -156,11 +156,11 @@ public:
 
     ~StgPoolReadOnly();
 
-    
+
 //*****************************************************************************
 // Init the pool from existing data.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMemReadOnly(                // Return code.
         void        *pData,                    // Predefined data.
         ULONG        iSize);                    // Size of data.
@@ -192,7 +192,7 @@ public:
 //*****************************************************************************
     virtual int IsValidCookie(UINT32 nCookie)
     { WRAPPER_NO_CONTRACT; return (IsValidOffset(nCookie)); }
-    
+
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -203,22 +203,22 @@ public:
 // Return a pointer to a null terminated string given an offset previously
 // handed out by AddString or FindString.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     inline HRESULT GetString(
-                    UINT32  nIndex, 
+                    UINT32  nIndex,
         __deref_out LPCSTR *pszString)
     {
         HRESULT hr;
-        
-        // Size of the data in the heap will be ignored, because we have verified during creation of the string 
-        // heap (code:Initialize) and when adding new strings (e.g. code:AddString, 
-        // code:AddTemporaryStringBuffer), that the heap is null-terminated, therefore we don't have to check it 
+
+        // Size of the data in the heap will be ignored, because we have verified during creation of the string
+        // heap (code:Initialize) and when adding new strings (e.g. code:AddString,
+        // code:AddTemporaryStringBuffer), that the heap is null-terminated, therefore we don't have to check it
         // for each string in the heap
         MetaData::DataBlob stringData;
-        
+
         // Get data from the heap (clears stringData on error)
         IfFailGo(GetData(
-            nIndex, 
+            nIndex,
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
@@ -226,12 +226,12 @@ public:
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
-        
+
         return hr;
     ErrExit:
         // Clears output string on error
         *pszString = NULL;
-        
+
         return hr;
     }
 
@@ -239,22 +239,22 @@ public:
 // Return a pointer to a null terminated string given an offset previously
 // handed out by AddString or FindString. Only valid for use if the Storage pool is actuall ReadOnly, and not derived
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     inline HRESULT GetStringReadOnly(
-                    UINT32  nIndex, 
+                    UINT32  nIndex,
         __deref_out LPCSTR *pszString)
     {
         HRESULT hr;
-        
-        // Size of the data in the heap will be ignored, because we have verified during creation of the string 
-        // heap (code:Initialize) and when adding new strings (e.g. code:AddString, 
-        // code:AddTemporaryStringBuffer), that the heap is null-terminated, therefore we don't have to check it 
+
+        // Size of the data in the heap will be ignored, because we have verified during creation of the string
+        // heap (code:Initialize) and when adding new strings (e.g. code:AddString,
+        // code:AddTemporaryStringBuffer), that the heap is null-terminated, therefore we don't have to check it
         // for each string in the heap
         MetaData::DataBlob stringData;
-        
+
         // Get data from the heap (clears stringData on error)
         IfFailGo(GetDataReadOnly(
-            nIndex, 
+            nIndex,
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
@@ -262,47 +262,47 @@ public:
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
-        
+
         return hr;
     ErrExit:
         // Clears output string on error
         *pszString = NULL;
-        
+
         return hr;
     }
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
-    
+
 //*****************************************************************************
 // Convert a string to UNICODE into the caller's buffer.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetStringW(                         // Return code.
         ULONG                          iOffset,         // Offset of string in pool.
         __out_ecount(cchBuffer) LPWSTR szOut,           // Output buffer for string.
         int                            cchBuffer);      // Size of output buffer.
-    
+
 //*****************************************************************************
 // Copy a GUID into the caller's buffer.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GetGuid(
         UINT32           nIndex,        // 1-based index of Guid in pool.
         GUID UNALIGNED **ppGuid)        // Output buffer for Guid.
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         HRESULT hr;
         MetaData::DataBlob heapData;
-        
+
         if (nIndex == 0)
         {
             *ppGuid = (GUID *)m_zeros;
             return S_OK;
         }
-        
+
         S_UINT32 nOffset = S_UINT32(nIndex - 1) * S_UINT32(sizeof(GUID));
         if (nOffset.IsOverflow() || !IsValidOffset(nOffset.Value()))
         {
@@ -320,27 +320,27 @@ public:
             IfFailGo(CLDB_E_INTERNALERROR);
         }
         _ASSERTE(heapData.GetSize() >= sizeof(GUID));
-        
+
         *ppGuid = (GUID UNALIGNED *)heapData.GetDataPointer();
         return S_OK;
-        
+
     ErrExit:
         *ppGuid = (GUID *)m_zeros;
         return hr;
     } // StgPoolReadOnly::GetGuid
-    
+
 //*****************************************************************************
 // Return a pointer to a null terminated blob given an offset previously
 // handed out by Addblob or Findblob.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetBlob(
         UINT32              nOffset,    // Offset of blob in pool.
         MetaData::DataBlob *pData);
-    
+
 #ifdef FEATURE_PREJIT
     // Initialize hot data structures.
-    // Method can be called multiple time, e.g. to disable usage of hot data structures in certain scenarios 
+    // Method can be called multiple time, e.g. to disable usage of hot data structures in certain scenarios
     // (see code:CMiniMd::DisableHotDataUsage).
     void InitHotData(MetaData::HotHeap hotHeap)
     {
@@ -361,17 +361,17 @@ protected:
 //*****************************************************************************
     virtual int IsValidOffset(UINT32 nOffset)
     {LIMITED_METHOD_CONTRACT;  return (nOffset == 0) || ((m_pSegData != m_zeros) && (nOffset < m_cbSegSize)); }
-    
+
 //*****************************************************************************
 // Get a pointer to an offset within the heap.  Inline for base segment,
 //  helper for extension segments.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetDataReadOnly(UINT32 nOffset, __inout MetaData::DataBlob *pData)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsReadOnly());
-        
+
         // If off the end of the heap, return the 'nul' item from the beginning.
         if (nOffset >= m_cbSegSize)
         {
@@ -395,38 +395,38 @@ protected:
 #endif //FEATURE_PREJIT
 #endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
 
-        
+
         pData->Init(m_pSegData + nOffset, m_cbSegSize - nOffset);
-        
+
         METADATATRACKER_ONLY(MetaDataTracker::NoteAccess((void *)pData->GetDataPointer()));
-        
+
         return S_OK;
     } // StgPoolReadOnly::GetDataReadOnly
-    
+
 //*****************************************************************************
 // Get a pointer to an offset within the heap.  Inline for base segment,
 //  helper for extension segments.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetData(UINT32 nOffset, __inout MetaData::DataBlob *pData)
     {
         WRAPPER_NO_CONTRACT;
         return GetDataReadOnly(nOffset, pData);
     } // StgPoolReadOnly::GetData
-    
+
 private:
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     // hot pool data
     MetaData::HotHeap m_HotHeap;
 #endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
-    
+
 };  // class StgPoolReadOnly
 
 //
 //
 // StgBlobPoolReadOnly
 //
-// 
+//
 //*****************************************************************************
 // This is the read only StgBlobPool class
 //*****************************************************************************
@@ -436,7 +436,7 @@ public:
 //*****************************************************************************
 // Return a pointer to a null terminated blob given an offset
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetBlob(
         UINT32              nOffset,    // Offset of blob in pool.
         MetaData::DataBlob *pData);
@@ -450,7 +450,7 @@ protected:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         MetaData::DataBlob data;
         return (StgBlobPoolReadOnly::GetBlob(nOffset, &data) == S_OK);
     }
@@ -493,7 +493,7 @@ protected:
     HRESULT Align(UINT32 nValue, UINT32 *pnAlignedValue) const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         *pnAlignedValue = (nValue + m_nVariableAlignmentMask) & ~m_nVariableAlignmentMask;
         if (*pnAlignedValue < nValue)
         {
@@ -501,12 +501,12 @@ protected:
         }
         return S_OK;
     }
-    
+
 public:
 //*****************************************************************************
 // Init the pool for use.  This is called for the create empty case.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT InitNew(                 // Return code.
         ULONG        cbSize=0,                // Estimated size.
         ULONG        cItems=0);                // Estimated item count.
@@ -514,7 +514,7 @@ public:
 //*****************************************************************************
 // Init the pool from existing data.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT InitOnMem(                // Return code.
         void        *pData,                    // Predefined data.
         ULONG        iSize,                    // Size of data.
@@ -523,7 +523,7 @@ public:
 //*****************************************************************************
 // Called when the pool must stop accessing memory passed to InitOnMem().
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT TakeOwnershipOfInitMem();
 
 //*****************************************************************************
@@ -534,13 +534,13 @@ public:
 //*****************************************************************************
 // Called to copy the pool to writable memory, reset the r/o bit.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT ConvertToRW();
 
 //*****************************************************************************
 // Turn hashing off or on.  Implemented as required in subclass.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT SetHash(int bHash);
 
 //*****************************************************************************
@@ -553,7 +553,7 @@ public:
 //*****************************************************************************
 // Add a segment to the chain of segments.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT AddSegment(                // S_OK or error.
         const void    *pData,                    // The data.
         ULONG        cbData,                    // Size of the data.
@@ -569,17 +569,17 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         _ASSERTE(pcbSaveSize != NULL);
         // Size is offset of last seg + size of last seg.
         UINT32 cbSize = m_pCurSeg->m_cbSegNext + m_cbCurSegOffset;
-        
+
         if (FAILED(Align(cbSize, pcbSaveSize)))
         {
             *pcbSaveSize = 0;
@@ -588,24 +588,24 @@ public:
         }
         return S_OK;
     }
-    
+
 //*****************************************************************************
 // Return the size in bytes of the edits contained in the persistent version of this pool.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GetEditSaveSize(
         UINT32 *pcbSaveSize) const  // Return save size of this pool.
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         _ASSERTE(pcbSaveSize != NULL);
         UINT32 cbSize = 0;
-        
+
         if (HaveEdits())
         {
             // Size is offset of last seg + size of last seg.
-            
+
             // An offset of zero in the pool will give us a zero length blob. The first
             // "real" user string is at offset 1. Wherever this delta gets applied, it will
             // already have this zero length blob. Let's make sure we don't sent it another one.
@@ -617,13 +617,13 @@ public:
             _ASSERTE(*(debug_data.GetDataPointer()) == 0);
 #endif //_DEBUG
             UINT32 nOffsetOfEdit = GetOffsetOfEdit();
-            
+
             if (nOffsetOfEdit == 0)
-                nOffsetOfEdit = 1;    
-            
+                nOffsetOfEdit = 1;
+
             cbSize = m_pCurSeg->m_cbSegNext + m_cbCurSegOffset - nOffsetOfEdit;
         }
-        
+
         if (FAILED(Align(cbSize, pcbSaveSize)))
         {
             *pcbSaveSize = 0;
@@ -632,12 +632,12 @@ public:
         }
         return S_OK;
     } // StgPool::GetEditSaveSize
-    
+
 //*****************************************************************************
 // The entire pool is written to the given stream. The stream is aligned
 // to a 4 byte boundary.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT PersistToStream(        // Return code.
         IStream        *pIStream)                 // The stream to write to.
         DAC_UNEXPECTED();
@@ -645,7 +645,7 @@ public:
 //*****************************************************************************
 // A portion of the pool is written to the stream.  Must not be optimized.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT PersistPartialToStream(    // Return code.
         IStream        *pIStream,                // The stream to write to.
         ULONG        iOffset);                // Starting byte.
@@ -689,7 +689,7 @@ public:
 // Get a pointer to an offset within the heap.  Inline for base segment,
 //  helper for extension segments.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetData(UINT32 nOffset, MetaData::DataBlob *pData)
     {
         WRAPPER_NO_CONTRACT;
@@ -703,43 +703,43 @@ public:
             return GetData_i(nOffset, pData);
         }
     } // StgPool::GetData
-    
+
     // Copies data from pSourcePool starting at index nStartSourceIndex.
-    __checkReturn 
+    __checkReturn
     HRESULT CopyPool(
-        UINT32         nStartSourceIndex, 
+        UINT32         nStartSourceIndex,
         const StgPool *pSourcePool);
-    
+
 //*****************************************************************************
 // Copies data from the pool into a buffer. It will correctly walk the different
 // segments for the copy
 //*****************************************************************************
 private:
-    __checkReturn 
+    __checkReturn
     HRESULT CopyData(
-        UINT32  nOffset, 
-        BYTE   *pBuffer, 
-        UINT32  cbBuffer, 
+        UINT32  nOffset,
+        BYTE   *pBuffer,
+        UINT32  cbBuffer,
         UINT32 *pcbWritten) const;
-    
+
 public:
 //*****************************************************************************
-// Helpers for dump utilities.    
+// Helpers for dump utilities.
 //*****************************************************************************
     UINT32 GetRawSize() const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         // Size is offset of last seg + size of last seg.
         return m_pCurSeg->m_cbSegNext + m_cbCurSegOffset;
     }
-    
+
     BOOL HaveEdits() const {LIMITED_METHOD_CONTRACT; return m_fValidOffsetOfEdit;}
     UINT32 GetOffsetOfEdit() const {LIMITED_METHOD_CONTRACT; return m_cbStartOffsetOfEdit;}
     void ResetOffsetOfEdit() {LIMITED_METHOD_CONTRACT; m_fValidOffsetOfEdit=FALSE;}
-    
+
 protected:
-    
+
 //*****************************************************************************
 // Check whether a given offset is valid in the pool.
 //*****************************************************************************
@@ -749,9 +749,9 @@ protected:
     // Following virtual because a) this header included outside the project, and
     //  non-virtual function call (in non-expanded inline function!!) generates
     //  an external def, which causes linkage errors.
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetData_i(UINT32 nOffset, MetaData::DataBlob *pData);
-    
+
     // Get pointer to next location to which to write.
     BYTE *GetNextLocation()
     {LIMITED_METHOD_CONTRACT;  return (m_pCurSeg->m_pSegData + m_pCurSeg->m_cbSegNext); }
@@ -780,7 +780,7 @@ protected:
         m_pCurSeg->m_cbSegNext += cb;
     }// SegAllocate
 
-       
+
 
     ULONG        m_ulGrowInc;                // How many bytes at a time.
     StgPoolSeg    *m_pCurSeg;                    // Current seg for append -- end of chain.
@@ -828,7 +828,7 @@ public:
 //*****************************************************************************
 // Create a new, empty string pool.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew(                         // Return code.
         ULONG        cbSize=0,                // Estimated size.
         ULONG        cItems=0);                // Estimated item count.
@@ -838,7 +838,7 @@ public:
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new strings.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(                        // Return code.
         void        *pData,                    // Predefined data.
         ULONG        iSize,                    // Size of data.
@@ -853,32 +853,32 @@ public:
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT SetHash(int bHash);
 
 //*****************************************************************************
 // The string will be added to the pool.  The offset of the string in the pool
 // is returned in *piOffset.  If the string is already in the pool, then the
 // offset will be to the existing copy of the string.
-// 
+//
 // The first version essentially adds a zero-terminated sequence of bytes
 //  to the pool.  MBCS pairs will not be converted to the appropriate UTF8
 //  sequence.  The second version converts from Unicode.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddString(
         LPCSTR  szString,       // The string to add to pool.
         UINT32 *pnOffset);      // Return offset of string here.
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT AddStringW(
         LPCWSTR szString,       // The string to add to pool.
         UINT32 *pnOffset);      // Return offset of string here.
-    
+
 //*****************************************************************************
 // Look for the string and return its offset if found.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindString(                        // S_OK, S_FALSE.
         LPCSTR        szString,                // The string to find in pool.
         ULONG        *piOffset)                // Return offset of string here.
@@ -910,7 +910,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetNextOffset() <= 1); 
+        return (GetNextOffset() <= 1);
     }
 
 //*****************************************************************************
@@ -918,19 +918,19 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         _ASSERTE(pcbSaveSize != NULL);
-        
+
         // Size is offset of last seg + size of last seg.
         S_UINT32 cbSize = S_UINT32(m_pCurSeg->m_cbSegNext + m_cbCurSegOffset);
-        
+
         cbSize.AlignUp(4);
-        
+
         if (cbSize.IsOverflow())
         {
             *pcbSaveSize = 0;
@@ -950,9 +950,9 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ULONG( strlen( reinterpret_cast< LPCSTR >( data ) ) + 1 ); // using strlen since the string is UTF8
     }
-    
+
 private:
-    __checkReturn 
+    __checkReturn
     HRESULT RehashStrings();
 
 private:
@@ -985,7 +985,7 @@ public:
 //*****************************************************************************
 // Init the pool for use.  This is called for the create empty case.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew(                         // Return code.
         ULONG        cbSize=0,                // Estimated size.
         ULONG        cItems=0);                // Estimated item count.
@@ -995,7 +995,7 @@ public:
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new Guids.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(                      // Return code.
         void        *pData,                    // Predefined data.
         ULONG        iSize,                    // Size of data.
@@ -1009,7 +1009,7 @@ public:
 //*****************************************************************************
 // Add a segment to the chain of segments.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT AddSegment(                // S_OK or error.
         const void    *pData,                    // The data.
         ULONG        cbData,                    // Size of the data.
@@ -1019,7 +1019,7 @@ public:
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT SetHash(int bHash);
 
 //*****************************************************************************
@@ -1027,11 +1027,11 @@ public:
 // is returned in *piIndex.  If the Guid is already in the pool, then the
 // index will be to the existing copy of the Guid.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddGuid(
         const GUID *pGuid,          // The Guid to add to pool.
         UINT32     *pnIndex);       // Return index of Guid here.
-    
+
 //*****************************************************************************
 // Get the size of the GUID obtained from the pool.
 // Needed for generic persisting of data blocks.
@@ -1055,15 +1055,15 @@ public:
 //*****************************************************************************
 // Indicate if heap is empty.  This has to be based on the size of the data
 // we are keeping.  If you open in r/o mode on memory, there is no hash
-// table.  
+// table.
 //*****************************************************************************
     virtual int IsEmpty()                    // true if empty.
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return (GetNextOffset() == 0);
     }
-    
+
 //*****************************************************************************
 // Is the index valid for the GUID?
 //*****************************************************************************
@@ -1081,26 +1081,26 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         _ASSERTE(pcbSaveSize != NULL);
-        
+
         // Size is offset of last seg + size of last seg.
         *pcbSaveSize = m_pCurSeg->m_cbSegNext + m_cbCurSegOffset;
-        
+
         // Should be aligned.
         _ASSERTE(*pcbSaveSize == ALIGN4BYTE(*pcbSaveSize));
         return S_OK;
     }
-    
+
 private:
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT RehashGuids();
 
 
@@ -1129,7 +1129,7 @@ class StgBlobPool : public StgPool
 
     using StgPool::InitNew;
     using StgPool::InitOnMem;
-    
+
 public:
     StgBlobPool(ULONG ulGrowInc=DFT_BLOB_HEAP_SIZE) :
         StgPool(ulGrowInc),
@@ -1139,7 +1139,7 @@ public:
 //*****************************************************************************
 // Init the pool for use.  This is called for the create empty case.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew(                         // Return code.
         ULONG        cbSize=0,                // Estimated size.
         ULONG        cItems=0,               // Estimated item count.
@@ -1150,7 +1150,7 @@ public:
 // If there is existing data and bCopyData is true, then the data is rehashed
 // to eliminate dupes in future adds.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(                      // Return code.
         void        *pData,                    // Predefined data.
         ULONG        iSize,                    // Size of data.
@@ -1166,30 +1166,30 @@ public:
 // is returned in *piOffset.  If the blob is already in the pool, then the
 // offset will be to the existing copy of the blob.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddBlob(
-        const MetaData::DataBlob *pData, 
+        const MetaData::DataBlob *pData,
         UINT32                   *pnOffset);
-    
+
 //*****************************************************************************
 // Return a pointer to a null terminated blob given an offset previously
 // handed out by Addblob or Findblob.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetBlob(
         UINT32              nOffset,    // Offset of blob in pool.
         MetaData::DataBlob *pData);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT GetBlobWithSizePrefix(
         UINT32              nOffset,    // Offset of blob in pool.
         MetaData::DataBlob *pData);
-    
+
 //*****************************************************************************
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT SetHash(int bHash);
 
 //*****************************************************************************
@@ -1199,7 +1199,7 @@ public:
     virtual ULONG GetSizeOfData( void const * data )
     {
         WRAPPER_NO_CONTRACT;
-        
+
         void const * blobdata = 0;
         ULONG blobsize = CPackedLen::GetLength( data, & blobdata ); // the size is encoded at the beginning of the block
         return blobsize + static_cast< ULONG >( reinterpret_cast< BYTE const * >( blobdata ) - reinterpret_cast< BYTE const * >( data ) );
@@ -1221,7 +1221,7 @@ public:
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
 
-        return (GetNextOffset() <= 1); 
+        return (GetNextOffset() <= 1);
     }
 
 //*****************************************************************************
@@ -1229,16 +1229,16 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         return StgPool::GetSaveSize(pcbSaveSize);
     }
-    
+
 protected:
 
 //*****************************************************************************
@@ -1248,13 +1248,13 @@ protected:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_FORBID_FAULT;
-        
+
         MetaData::DataBlob data;
         return (StgBlobPool::GetBlob(nOffset, &data) == S_OK);
     }
-    
+
 private:
-    __checkReturn 
+    __checkReturn
     HRESULT RehashBlobs();
 
     CBlobPoolHash m_Hash;                    // Hash table for lookups.
@@ -1304,19 +1304,19 @@ public:
 
     ULONG STDMETHODCALLTYPE Release();
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, PVOID *ppOut);
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Read(void *pv, ULONG cb, ULONG *pcbRead);
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Write(const void  *pv, ULONG cb, ULONG *pcbWritten);
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Seek(LARGE_INTEGER dlibMove,DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition);
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER libNewSize)
     {
         STATIC_CONTRACT_NOTHROW;
@@ -1325,14 +1325,14 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE CopyTo(
         IStream     *pstm,
         ULARGE_INTEGER cb,
         ULARGE_INTEGER *pcbRead,
         ULARGE_INTEGER *pcbWritten);
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Commit(
         DWORD       grfCommitFlags)
     {
@@ -1342,7 +1342,7 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Revert()
     {
         STATIC_CONTRACT_NOTHROW;
@@ -1351,7 +1351,7 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE LockRegion(
         ULARGE_INTEGER libOffset,
         ULARGE_INTEGER cb,
@@ -1363,7 +1363,7 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE UnlockRegion(
         ULARGE_INTEGER libOffset,
         ULARGE_INTEGER cb,
@@ -1375,7 +1375,7 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Stat(
         STATSTG     *pstatstg,
         DWORD       grfStatFlag)
@@ -1387,7 +1387,7 @@ public:
         return (S_OK);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE Clone(
         IStream     **ppstm)
     {
@@ -1397,15 +1397,15 @@ public:
         return (BadError(E_NOTIMPL));
     }
 
-    __checkReturn 
+    __checkReturn
     static HRESULT CreateStreamOnMemory(           // Return code.
                                  void        *pMem,                  // Memory to create stream on.
                                  ULONG       cbSize,                 // Size of data.
                                  IStream     **ppIStream,            // Return stream object here.
                                  BOOL        fDeleteMemoryOnRelease = FALSE
-                                 );            
+                                 );
 
-    __checkReturn 
+    __checkReturn
     static HRESULT CreateStreamOnMemoryCopy(
                                  void        *pMem,
                                  ULONG       cbSize,
@@ -1442,14 +1442,14 @@ public:
     //   increased memory usage.
     CGrowableStream(float multiplicativeGrowthRate = 2.0, DWORD additiveGrowthRate = 4096);
 
-#ifndef DACCESS_COMPILE  
+#ifndef DACCESS_COMPILE
     virtual ~CGrowableStream();
 #endif
 
     // Expose the total raw buffer.
     // This can be used by DAC to get the raw contents.
     // This becomes potentiallyinvalid on the next call on the class, because the underlying storage can be
-    // reallocated. 
+    // reallocated.
     MemoryRange GetRawBuffer() const
     {
         SUPPORTS_DAC;
@@ -1461,14 +1461,14 @@ private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
     PTR_BYTE  m_swBuffer;
 
-    // Total size of the buffer in bytes. 
+    // Total size of the buffer in bytes.
     DWORD   m_dwBufferSize;
 
     // Current index in the buffer. This can be moved around by Seek.
     DWORD   m_dwBufferIndex;
 
     // Logical length of the stream
-    DWORD   m_dwStreamLength; 
+    DWORD   m_dwStreamLength;
 
     // Reference count
     LONG    m_cRef;
@@ -1484,7 +1484,7 @@ private:
     // IStream methods
 public:
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     ULONG STDMETHODCALLTYPE AddRef() {
         LIMITED_METHOD_CONTRACT;
         return InterlockedIncrement(&m_cRef);
@@ -1493,7 +1493,7 @@ public:
 
     ULONG STDMETHODCALLTYPE Release();
 
-    __checkReturn 
+    __checkReturn
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, PVOID *ppOut);
 
     STDMETHOD(Read)(

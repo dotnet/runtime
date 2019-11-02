@@ -4,7 +4,7 @@
 // ============================================================
 //
 // CoreBindResult.cpp
-// 
+//
 
 //
 // Implements the CoreBindResult class
@@ -25,7 +25,7 @@ STDMETHODIMP CoreBindResult::QueryInterface(REFIID   riid,
     if (ppv == NULL)
     {
         hr = E_POINTER;
-    }    
+    }
     else
     {
         if ( IsEqualIID(riid, IID_IUnknown) )
@@ -52,7 +52,7 @@ STDMETHODIMP_(ULONG) CoreBindResult::Release()
 {
     ULONG ulRef = InterlockedDecrement(&m_cRef);
 
-    if (ulRef == 0) 
+    if (ulRef == 0)
     {
         delete this;
     }

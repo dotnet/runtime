@@ -7,13 +7,13 @@
 typedef struct
 {
     const char *  pszName;
-    
+
     OPCODE   Ref;   // reference codes
-    
+
     BYTE    Type;   // Inline0 etc.
 
     BYTE    Len;    // std mapping
-    BYTE    Std1;   
+    BYTE    Std1;
     BYTE    Std2;
 } opcodeinfo_t;
 

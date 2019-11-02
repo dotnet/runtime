@@ -46,7 +46,7 @@ struct AppDomainInfo
 
         m_iNameLengthInBytes = (int) (wcslen(m_szAppDomainName) + 1) * sizeof(WCHAR);
     }
-#endif    
+#endif
 };
 
 // Enforce the AppDomain IPC block binary layout doesn't change between versions.
@@ -151,13 +151,13 @@ struct AppDomainEnumerationIPCBlock
 {
     // !!! The binary format of this layout must remain the same across versions so that
     // !!! a V2.0 publisher can inspect a v1.0 app.
-    
+
     // lock for serialization while manipulating AppDomain list.
     RemoteHANDLE        m_hMutex;
 
     // Number of slots in AppDomainListElement array
     int                 m_iTotalSlots;
-    int                 m_iNumOfUsedSlots; 
+    int                 m_iNumOfUsedSlots;
     int                 m_iLastFreedSlot;
     int                 m_iSizeInBytes; // Size of AppDomainInfo in bytes
 
@@ -165,7 +165,7 @@ struct AppDomainEnumerationIPCBlock
     // This provides an alternative.
     int                 m_iProcessNameLengthInBytes;
     WCHAR              *m_szProcessName;
-    
+
     AppDomainInfo      *m_rgListOfAppDomains;
     BOOL                m_fLockInvalid;
 
@@ -181,11 +181,11 @@ struct AppDomainEnumerationIPCBlock
         {
             // Nobody should get stuck holding this lock.
             // If we timeout on the wait, then either:
-            // - it's a really bad race and somebody got preempted for a long time 
+            // - it's a really bad race and somebody got preempted for a long time
             // - perhaps somebody's doing a DOS attack and holding onto the mutex.
             m_fLockInvalid = TRUE;
         }
-        
+
 
         // The only time this can happen is if we're in shutdown and a thread
         // that held this lock is killed.  If this happens, assume that this
@@ -200,7 +200,7 @@ struct AppDomainEnumerationIPCBlock
         {
             Unlock();
         }
-            
+
         return (dwRes == WAIT_OBJECT_0 && !m_fLockInvalid);
     }
 
@@ -209,7 +209,7 @@ struct AppDomainEnumerationIPCBlock
      *************************************************************************/
     void Unlock()
     {
-        // Lock may or may not be valid at this point. Thus Release may fail, 
+        // Lock may or may not be valid at this point. Thus Release may fail,
         // but we'll just ignore that.
         ReleaseMutex(m_hMutex);
     }

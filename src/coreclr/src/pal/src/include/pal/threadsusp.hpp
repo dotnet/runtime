@@ -21,15 +21,15 @@ Abstract:
 #define _PAL_THREADSUSP_HPP
 
 // Need this ifdef since this header is included by .c files so they can use the diagnostic function.
-#ifdef __cplusplus 
+#ifdef __cplusplus
 
 // Note: do not include malloc.hpp from this header. The template InternalDelete
-// needs to know the layout of class CPalThread, which includes a member of type 
-// CThreadSuspensionInfo, which is defined later in this header, and it is not  
+// needs to know the layout of class CPalThread, which includes a member of type
+// CThreadSuspensionInfo, which is defined later in this header, and it is not
 // yet known at this point.
-// If any future change should bring this issue back, the circular dependency can 
-// be further broken by making the InternalDelete's CPalThread argument a 
-// templatized argument, so that type checking on it takes place only at 
+// If any future change should bring this issue back, the circular dependency can
+// be further broken by making the InternalDelete's CPalThread argument a
+// templatized argument, so that type checking on it takes place only at
 // instantiation time.
 #include "pal/threadinfo.hpp"
 #include "pal/thread.hpp"
@@ -132,22 +132,22 @@ namespace CorUnix
             BOOL m_fSemaphoresInitialized;
 #endif // USE_POSIX_SEMAPHORES
 
-            /* Most of the variables above are either accessed by a thread 
+            /* Most of the variables above are either accessed by a thread
             holding the appropriate suspension mutex(es) or are only
             accessed by their own threads (and thus don't require
-            synchronization). 
-            
+            synchronization).
+
             m_fPending, m_fSuspendedForShutdown,
-            m_fSuspendSignalSent, and m_fResumeSignalSent 
+            m_fSuspendSignalSent, and m_fResumeSignalSent
             may be set by a different thread than the owner and thus
             require synchronization.
 
-            m_fSelfsusp is set to TRUE only by its own thread but may be later 
-            accessed by other threads. 
+            m_fSelfsusp is set to TRUE only by its own thread but may be later
+            accessed by other threads.
 
-            m_lNumThreadsSuspendedByThisThread is accessed by its owning 
+            m_lNumThreadsSuspendedByThisThread is accessed by its owning
             thread and therefore does not require synchronization. */
-            
+
 #ifdef _DEBUG
             VOID
             IncrNumThreadsSuspendedByThisThread(
@@ -174,10 +174,10 @@ namespace CorUnix
             ReleaseSuspensionLocks(
                 CPalThread *pthrSuspender,
                 CPalThread *pthrTarget
-            );  
+            );
 
 #if USE_POSIX_SEMAPHORES
-            sem_t* 
+            sem_t*
             GetSuspendSemaphore(
                 void
                 )
@@ -185,7 +185,7 @@ namespace CorUnix
                 return &m_semSusp;
             };
 
-            sem_t* 
+            sem_t*
             GetResumeSemaphore(
                 void
                 )
@@ -211,7 +211,7 @@ namespace CorUnix
 #endif // USE_POSIX_SEMAPHORES
 
 #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-            LONG* 
+            LONG*
             GetSuspensionSpinlock(
                 void
                 )
@@ -234,7 +234,7 @@ namespace CorUnix
                 )
             {
                 m_fPending = fPending;
-            };	
+            };
 
             BOOL
             GetSuspPending(
@@ -242,7 +242,7 @@ namespace CorUnix
                 )
             {
                 return m_fPending;
-            };     
+            };
 
             void
             SetSelfSusp(
@@ -250,33 +250,33 @@ namespace CorUnix
                 )
             {
                 m_fSelfsusp = fSelfsusp;
-            }; 
-            
+            };
+
             BOOL
             GetSelfSusp(
                 void
                 )
             {
                 return m_fSelfsusp;
-            }; 
+            };
 
             void
             PostOnSuspendSemaphore();
 
             void
-            WaitOnSuspendSemaphore();     
+            WaitOnSuspendSemaphore();
 
             void
             PostOnResumeSemaphore();
 
             void
-            WaitOnResumeSemaphore();             
+            WaitOnResumeSemaphore();
 
-            static 
-            BOOL 
+            static
+            BOOL
             TryAcquireSuspensionLock(
                 CPalThread* pthrTarget
-            );    
+            );
 
             int GetBlockingPipe(
                 void
@@ -304,7 +304,7 @@ namespace CorUnix
 #endif
             {
                 InitializeSuspensionLock();
-            }; 
+            };
 
             virtual ~CThreadSuspensionInfo();
 
@@ -331,7 +331,7 @@ namespace CorUnix
             {
                 m_fSuspendedForShutdown = fSuspendedForShutdown;
             };
-            
+
             BOOL
             GetSuspendedForShutdown(
                 void

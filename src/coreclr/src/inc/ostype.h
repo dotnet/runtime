@@ -16,15 +16,15 @@
 //*****************************************************************************
 // Enum to track which version of the OS we are running
 // Note that NT5 (Win2k) is the minimum supported platform. Any code using
-// utilcode (which includes the CLR's execution engine) will fail to start 
+// utilcode (which includes the CLR's execution engine) will fail to start
 // on a pre-Win2k platform. This is enforced by InitRunningOnVersionStatus.
-// 
+//
 // Note: The value is used for data mining from links clicked by user in shim dialog - see code:FWLinkTemplateFromTextID
 //   Please do not modify existing values, adding new ones is fine.
 //*****************************************************************************
 typedef enum {
-    RUNNING_ON_STATUS_UNINITED = 0, 
-    RUNNING_ON_WIN7            = 1, 
+    RUNNING_ON_STATUS_UNINITED = 0,
+    RUNNING_ON_WIN7            = 1,
     RUNNING_ON_WIN8            = 2
 } RunningOnStatusEnum;
 
@@ -78,7 +78,7 @@ inline BOOL WinRTSupported()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    
+
 #ifdef CROSSGEN_COMPILE
     return TRUE;
 #endif

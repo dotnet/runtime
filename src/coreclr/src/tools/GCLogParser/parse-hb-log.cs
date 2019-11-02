@@ -5,31 +5,31 @@
 // -ia 1 means to include all timestamp instead of only timestamps where we
 // observed samples. This is usually what you want as it makes it really
 // obvious when a thread is not active enough.
-// 
+//
 // This prints out the following in the console:
 // Samples observed on each thread and thread mapping (from id to index)
 // and it tells you the BFR (Budget Fill Ratio) like this:
-// 
+//
 //Printing out proc [0,[28
 //Total 1074 GCs, avg 0ms, node 0: BFR %90.83
 //Printing out proc [28,[56
 //Total 1074 GCs, avg 0ms, node 1: BFR %89.43
 //
-// and generates 2 logs per numa node - 
+// and generates 2 logs per numa node -
 // pass-zero-pass1-nX-ia1-alloc.txt
 // pass-zero-pass1-nX-ia1-thread.txt
-// 
+//
 // thread tells you the thread index running on each proc at each timestamp.
 // 4240| 63₉ | 65₉ | 62₉ | 56₁₀| 87₁₀|109₁₀| 59₉ | 70₁₀| 78₉ | 64₉ | 71₁₀|107₁₀|
-// 
+//
 // 4240 is the 4240th ms since we started recording.
 // the numbers following are the thread indices and the subscript is the # of samples
 // observed during that ms. The tool can do a time unit that's larger than 1ms.
 //
-// alloc tells you which alloc heap the each proc, for the same timestamp 
+// alloc tells you which alloc heap the each proc, for the same timestamp
 // 4240| 56  | 57  | 58ⁱ | 59  | 60  | 61  | 62  | 63  | 64  | 65  | 66  | 67  |
 // 56 means heap 56. The subscript i means we did a SetIdealProcessor during this
-// ms. You may also see 
+// ms. You may also see
 // ᵖ meaning we went through the balancing logic due to the proc for the thread changed
 // from the home heap.
 // ᵐ meaning while we were going through balancing logic the proc switched.
@@ -132,9 +132,9 @@ namespace parse_hb_log
 
         static int timeUnitMS = 1;
         // We wanna compress the log by compressing the samples in the same unit of time.
-        // We get samples by procs, so on the same proc if we observe the same thread 
+        // We get samples by procs, so on the same proc if we observe the same thread
         // allocating on the same alloc heap in the same time unit we simply count the total
-        // samples. However we do want to remember if any of the p/m/i is set. 
+        // samples. However we do want to remember if any of the p/m/i is set.
         static string strLastTID = null;
         static string strTID = null;
         static string strLastThreadAllocHeap = null;
@@ -265,7 +265,7 @@ namespace parse_hb_log
                         else if (strAfterTID.StartsWith("[GCA#"))
                         {
                             // 270 is the time elapsed in ms since the last GC end.
-                            // 18280955362126/18280957621306 are the min/max timestamps observed 
+                            // 18280955362126/18280957621306 are the min/max timestamps observed
                             // on all procs for this period.
                             // [39652][GCA#1 270-18280955362126-18280957621306]
                             //Console.WriteLine(strAfterTID);
@@ -292,7 +292,7 @@ namespace parse_hb_log
                         }
                         else if (strAfterTID.StartsWith("TEMP"))
                         {
-                            // If I want to only log something temporarily I prefix it with TEMP so we know to just 
+                            // If I want to only log something temporarily I prefix it with TEMP so we know to just
                             // write it out as is.
                             swPassZero.WriteLine(strAfterTID);
                         }
@@ -310,7 +310,7 @@ namespace parse_hb_log
                             //[38328]12801000,90,33356,111|p
                             //[38328]12802000,90,33356,111
                             //
-                            // this will be converted to 
+                            // this will be converted to
                             //1279ms,2(2),80,101,m:1,p:1,i:0
                             //1280ms,3(2),90,111,m:0,p:1,i:0
                             //
@@ -378,11 +378,11 @@ namespace parse_hb_log
                                     strIdealProc);
                             }
                             //swPassZero.WriteLine("{0:0.00}ms,{1},{2},m:{3},p:{4},i:{5}",
-                            //    timestamp, 
+                            //    timestamp,
                             //    threadMapping[strTID],
-                            //    strAllocHeap, 
-                            //    (multiple_procs_p ? "T" : ""), 
-                            //    (!alloc_count_p ? "T" : ""), 
+                            //    strAllocHeap,
+                            //    (multiple_procs_p ? "T" : ""),
+                            //    (!alloc_count_p ? "T" : ""),
                             //    (set_ideal_p? "T" : ""));
 
                             if ((strTID == strLastTID) && (strLastThreadAllocHeap == strAllocHeap))
@@ -418,7 +418,7 @@ namespace parse_hb_log
                             {
                                 if (strLastTID != null)
                                 {
-                                    // If we detect the thread or alloc heap changed, we always want to 
+                                    // If we detect the thread or alloc heap changed, we always want to
                                     // log.
                                     if (fLogging)
                                     {
@@ -496,7 +496,7 @@ namespace parse_hb_log
         // Pass one. TODO: should separate this from pass zero.
         //=========================================================================
         static StreamWriter[] swPassOneFiles = null;
-        // It's difficult to print all of the procs on one line so we only print per node. 
+        // It's difficult to print all of the procs on one line so we only print per node.
         static int nodeIndexToPrint = -1;
         static bool fIncludeAllTime = false;
         static bool fPrintThreadInfoPerTimeUnit = false;
@@ -504,7 +504,7 @@ namespace parse_hb_log
         // This represents the samples for all the procs inbetween GCs so it doesn't grow very large.
         // Cleared every GC.
         static SampleInfo[][] samples;
-        // This is the min/max time for inbetween each GC. 
+        // This is the min/max time for inbetween each GC.
         static int startTimeMS = 0;
         static int endTimeMS = 0;
         static int currentProcIndex = -1;
@@ -552,7 +552,7 @@ namespace parse_hb_log
             for (int procIndex = procStart; procIndex < procEnd; procIndex++)
             {
                 currentGCAllocMB += AllocMB[procIndex];
-                //Console.WriteLine("P#{0,2} alloc {1,3}mb, total is now {2,3}mb", 
+                //Console.WriteLine("P#{0,2} alloc {1,3}mb, total is now {2,3}mb",
                 //    procIndex, AllocMB[procIndex],
                 //    currentGCAllocMB);
             }
@@ -657,14 +657,14 @@ namespace parse_hb_log
         // This info could be the thread index, or the alloc heap, along with
         // things like m/p/i or count of samples for that time period for that
         // thread and alloc heap.
-        // 
+        //
         // There could be multiple entries for the same time on a proc because
-        // we happen to observe multiple threads running during that time. 
-        // But we only store one piece of info. Here are the rules to decide 
+        // we happen to observe multiple threads running during that time.
+        // But we only store one piece of info. Here are the rules to decide
         // what we store -
         // We take the last one on the same time unless we see one with interesting
         // info (ie, one of m/p/i isn't 0); or one with higher sample count.
-        // 
+        //
         static void PrintProcActivityOnNode()
         {
             // TEMP..
@@ -821,12 +821,12 @@ namespace parse_hb_log
         static void PassOne(string strPassZeroLog)
         {
             // This generates 2 files - thread view and alloc heap view. This is just so you could
-            // compare them SxS. 
+            // compare them SxS.
             string strLogNameWithoutExtension = Path.GetFileNameWithoutExtension(strPassZeroLog);
             string strIncludeAll = (fIncludeAllTime ? "-ia1-" : "-ia0-");
             string strTI = ((strThreadIndices == null) ? "" : strThreadIndices);
             string strPassOneLog = strLogNameWithoutExtension + "-pass1-n" + nodeIndexToPrint + strIncludeAll + strTI;
-            
+
             if (strGCRange != null)
                 strPassOneLog += "-" + strGCRange + "-";
 
@@ -878,7 +878,7 @@ namespace parse_hb_log
                     }
                     else if (s.StartsWith("TEMP"))
                     {
-                        // If I want to only log something temporarily I prefix it with TEMP so we know to just 
+                        // If I want to only log something temporarily I prefix it with TEMP so we know to just
                         // write it out as is.
                         //PrintToAllPassOneFiles(s);
                     }
@@ -1067,7 +1067,7 @@ namespace parse_hb_log
                 }
                 else if (currentArg.Equals("-gr") || currentArg.Equals("-GCRange"))
                 {
-                    // This specifies a range of GCs, inclusive 
+                    // This specifies a range of GCs, inclusive
                     //10-20
                     //10-end
                     //start-10

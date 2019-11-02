@@ -106,7 +106,7 @@ The other thing to be aware of is that the calling convention for large vectors 
 
 ## Code Generation
 
-By design, the actual code generation is fairly straightforward, since the hardware intrinsics are intended to each map to a specific target instructions. Much of the implementation of the x86 intrinsics is table-driven. 
+By design, the actual code generation is fairly straightforward, since the hardware intrinsics are intended to each map to a specific target instructions. Much of the implementation of the x86 intrinsics is table-driven.
 
 ## Encoding
 

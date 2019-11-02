@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //
 // EEToProfInterfaceImpl.inl
-// 
+//
 
 //
-// Inline implementation of portions of the code that wraps calling into 
+// Inline implementation of portions of the code that wraps calling into
 // the profiler's implementation of ICorProfilerCallback*
 //
 
@@ -21,7 +21,7 @@
 
 // ----------------------------------------------------------------------------
 // EEToProfInterfaceImpl::IsCallback3Supported
-// 
+//
 // Description:
 //     Returns BOOL indicating whether the profiler implements
 //     ICorProfilerCallback3.
@@ -35,7 +35,7 @@ inline BOOL EEToProfInterfaceImpl::IsCallback3Supported()
 
 // ----------------------------------------------------------------------------
 // EEToProfInterfaceImpl::IsCallback4Supported
-// 
+//
 // Description:
 //     Returns BOOL indicating whether the profiler implements
 //     ICorProfilerCallback4.
@@ -214,7 +214,7 @@ inline UINT_PTR EEToProfInterfaceImpl::LookupClientIDFromCache(FunctionID functi
     _ASSERTE(functionID != NULL);
 
     SimpleReadLockHolder readLockHolder(m_pFunctionIDHashTableRWLock);
-    const FunctionIDAndClientID * entry = m_pFunctionIDHashTable->LookupPtr(functionID); 
+    const FunctionIDAndClientID * entry = m_pFunctionIDHashTable->LookupPtr(functionID);
 
     // entry can be NULL when OOM happens.
     if (entry != NULL)
@@ -246,15 +246,15 @@ inline BOOL EEToProfInterfaceImpl::RequiresGenericsContextForEnterLeave()
     }
     CONTRACTL_END;
 
-    return 
+    return
         CORProfilerPresent() &&
         ((g_profControlBlock.dwEventMask & COR_PRF_ENABLE_FRAME_INFO) != 0) &&
         (
-            (m_pEnter2            != NULL) || 
-            (m_pLeave2            != NULL) || 
+            (m_pEnter2            != NULL) ||
+            (m_pLeave2            != NULL) ||
             (m_pTailcall2         != NULL) ||
-            (m_pEnter3WithInfo    != NULL) || 
-            (m_pLeave3WithInfo    != NULL) || 
+            (m_pEnter3WithInfo    != NULL) ||
+            (m_pLeave3WithInfo    != NULL) ||
             (m_pTailcall3WithInfo != NULL)
         );
 }

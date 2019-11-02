@@ -73,7 +73,7 @@ static DWORD MAPConvertProtectToAccess( DWORD );
 static INT MAPFileMapToMmapFlags( DWORD );
 static DWORD MAPMmapProtToAccessFlags( int prot );
 #if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
-static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address, SIZE_T size, 
+static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address, SIZE_T size,
                                      SIZE_T offset, long init_ref_count);
 static LONG NativeMapHolderAddRef(NativeMapHolder * thisPMH);
 static LONG NativeMapHolderRelease(CPalThread *pThread, NativeMapHolder * thisPMH);
@@ -208,7 +208,7 @@ FileMappingCleanupRoutine(
         // If we created a temporary file to back this mapping we need
         // to unlink it now
         //
-        
+
         palError = pObjectToCleanup->GetImmutableData(
             reinterpret_cast<void**>(&pImmutableData)
             );
@@ -231,7 +231,7 @@ FileMappingCleanupRoutine(
         // We only need to close the object's descriptor if we're not
         // shutting down
         //
-        
+
         palError = pObjectToCleanup->GetProcessLocalData(
             pThread,
             WriteLock,
@@ -275,7 +275,7 @@ FileMappingInitializationRoutine(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    
+
     CFileMappingImmutableData *pImmutableData =
         reinterpret_cast<CFileMappingImmutableData *>(pvImmutableData);
     CFileMappingProcessLocalData *pProcessLocalData =
@@ -306,7 +306,7 @@ FileMappingInitializationRoutine(
     }
 #endif
 
-ExitFileMappingInitializationRoutine:    
+ExitFileMappingInitializationRoutine:
 
     return palError;
 }
@@ -337,7 +337,7 @@ CreateFileMappingA(
     PERF_ENTRY(CreateFileMappingA);
     ENTRY("CreateFileMappingA(hFile=%p, lpAttributes=%p, flProtect=%#x, "
           "dwMaxSizeH=%d, dwMaxSizeL=%d, lpName=%p (%s))\n",
-          hFile, lpFileMappingAttributes, flProtect, 
+          hFile, lpFileMappingAttributes, flProtect,
           dwMaximumSizeHigh, dwMaximumSizeLow,
           lpName?lpName:"NULL",
           lpName?lpName:"NULL");
@@ -400,11 +400,11 @@ CreateFileMappingW(
     HANDLE hFileMapping = NULL;
     CPalThread *pThread = NULL;
     PAL_ERROR palError = NO_ERROR;
-    
+
     PERF_ENTRY(CreateFileMappingW);
     ENTRY("CreateFileMappingW(hFile=%p, lpAttributes=%p, flProtect=%#x, "
           "dwMaxSizeH=%u, dwMaxSizeL=%u, lpName=%p (%S))\n",
-          hFile, lpFileMappingAttributes, flProtect, dwMaximumSizeHigh, 
+          hFile, lpFileMappingAttributes, flProtect, dwMaximumSizeHigh,
           dwMaximumSizeLow, lpName?lpName:W16_NULLSTRING, lpName?lpName:W16_NULLSTRING);
 
     pThread = InternalGetCurrentThread();
@@ -456,7 +456,7 @@ CorUnix::InternalCreateFileMapping(
     IPalObject *pFileObject = NULL;
     CFileProcessLocalData *pFileLocalData = NULL;
     IDataLock *pFileLocalDataLock = NULL;
-    
+
     struct stat UnixFileInformation;
     INT UnixFd = -1;
     BOOL bPALCreatedTempFile = FALSE;
@@ -479,13 +479,13 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
-    
+
     if (PAGE_READWRITE != flProtect
         && PAGE_READONLY != flProtect
         && PAGE_WRITECOPY != flProtect)
     {
         ASSERT( "invalid flProtect %#x, acceptable values are PAGE_READONLY "
-                "(%#x), PAGE_READWRITE (%#x) and PAGE_WRITECOPY (%#x).\n", 
+                "(%#x), PAGE_READWRITE (%#x) and PAGE_WRITECOPY (%#x).\n",
                 flProtect, PAGE_READONLY, PAGE_READWRITE, PAGE_WRITECOPY );
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
@@ -536,7 +536,7 @@ CorUnix::InternalCreateFileMapping(
         // avoid this restriction by always using a temp backing file for
         // anonymous mappings.
         //
-        
+
         /* Anonymous mapped files. */
         _ASSERTE(pImmutableData->lpFileName == NULL);
         pImmutableData->lpFileName = strdup("/dev/zero");
@@ -584,7 +584,7 @@ CorUnix::InternalCreateFileMapping(
 
             palError = pFileObject->GetProcessLocalData(
                 pThread,
-                ReadLock, 
+                ReadLock,
                 &pFileLocalDataLock,
                 reinterpret_cast<void**>(&pFileLocalData)
                 );
@@ -593,8 +593,8 @@ CorUnix::InternalCreateFileMapping(
             {
                 goto ExitInternalCreateFileMapping;
             }
-        
-            /* We need to check to ensure flProtect jives with 
+
+            /* We need to check to ensure flProtect jives with
                the permission on the file handle */
             if (!MAPIsRequestPermissible(flProtect, pFileLocalData))
             {
@@ -624,7 +624,7 @@ CorUnix::InternalCreateFileMapping(
             // want to consider adding a reference to the PAL's file lock
             // information, though...
             //
-            
+
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
@@ -654,14 +654,14 @@ CorUnix::InternalCreateFileMapping(
             {
                 pFileLocalDataLock->ReleaseLock(pThread, FALSE);
             }
-        } 
-        else 
+        }
+        else
         {
 #ifndef CORECLR
             TRACE( "INVALID_HANDLE_VALUE was the hFile, time to try to create a "
                    "temporary file" );
 
-            /* Create a temporary file on the filesystem in order to be 
+            /* Create a temporary file on the filesystem in order to be
                shared across processes. */
             palError = MAPCreateTempFile(pThread, &UnixFd, pImmutableData->lpFileName);
             if (NO_ERROR != palError)
@@ -676,7 +676,7 @@ CorUnix::InternalCreateFileMapping(
             goto ExitInternalCreateFileMapping;
 #endif // !CORECLR
         }
-    
+
         if (-1 == fstat(UnixFd, &UnixFileInformation))
         {
             ASSERT("fstat() failed for this reason %s.\n", strerror(errno));
@@ -684,7 +684,7 @@ CorUnix::InternalCreateFileMapping(
             goto ExitInternalCreateFileMapping;
         }
 
-        if ( 0 == UnixFileInformation.st_size && 
+        if ( 0 == UnixFileInformation.st_size &&
              0 == dwMaximumSizeHigh && 0 == dwMaximumSizeLow )
         {
             ERROR( "The file cannot be a zero length file.\n" );
@@ -692,8 +692,8 @@ CorUnix::InternalCreateFileMapping(
             goto ExitInternalCreateFileMapping;
         }
 
-        if ( INVALID_HANDLE_VALUE != hFile && 
-             dwMaximumSizeLow > (DWORD) UnixFileInformation.st_size && 
+        if ( INVALID_HANDLE_VALUE != hFile &&
+             dwMaximumSizeLow > (DWORD) UnixFileInformation.st_size &&
              ( PAGE_READONLY == flProtect || PAGE_WRITECOPY == flProtect ) )
         {
             /* In this situation, Windows returns an error, because the
@@ -702,7 +702,7 @@ CorUnix::InternalCreateFileMapping(
             palError = ERROR_NOT_ENOUGH_MEMORY;
             goto ExitInternalCreateFileMapping;
         }
-      
+
         if ( (DWORD) UnixFileInformation.st_size < dwMaximumSizeLow )
         {
             TRACE( "Growing the size of file on disk to match requested size.\n" );
@@ -717,14 +717,14 @@ CorUnix::InternalCreateFileMapping(
         }
     }
 
-    nFileSize = ( 0 == dwMaximumSizeLow && 0 == dwMaximumSizeHigh ) ? 
+    nFileSize = ( 0 == dwMaximumSizeLow && 0 == dwMaximumSizeHigh ) ?
         UnixFileInformation.st_size : dwMaximumSizeLow;
 
     pImmutableData->MaxSize = nFileSize;
     pImmutableData->flProtect = flProtect;
     pImmutableData->bPALCreatedTempFile = bPALCreatedTempFile;
     pImmutableData->dwDesiredAccessWhenOpened = MAPConvertProtectToAccess(flProtect);
-    
+
 
     //
     // The local data isn't grabbed / modified until here so that we don't
@@ -777,7 +777,7 @@ CorUnix::InternalCreateFileMapping(
     palError = g_pObjectManager->RegisterObject(
         pThread,
         pMapping,
-        &aotFileMapping, 
+        &aotFileMapping,
         phMapping,
         &pRegisteredMapping
         );
@@ -791,7 +791,7 @@ CorUnix::InternalCreateFileMapping(
     // object by the same name already existing) the cleanup will take place
     // when that routine releases the reference to pMapping.
     //
-    
+
     pMapping = NULL;
 
 ExitInternalCreateFileMapping:
@@ -892,7 +892,7 @@ OpenFileMappingW(
     HANDLE hFileMapping = NULL;
     PAL_ERROR palError = NO_ERROR;
     CPalThread *pThread = NULL;
-    
+
     PERF_ENTRY(OpenFileMappingW);
     ENTRY("OpenFileMappingW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S)\n",
           dwDesiredAccess, bInheritHandle, lpName?lpName:W16_NULLSTRING, lpName?lpName:W16_NULLSTRING);
@@ -937,14 +937,14 @@ Function:
                   Since currently the mappings are supported only at file
                   offset 0, MapViewOfFile will succeed if the new view
                   is equal or smaller of the existing one, and the address
-                  returned will be the same address of the existing 
+                  returned will be the same address of the existing
                   mapping.
-                  Since the underlying mapping is always the same, all 
+                  Since the underlying mapping is always the same, all
                   the shared views of the same file region will share the
-                  same protection, i.e. they will have the largest 
+                  same protection, i.e. they will have the largest
                   protection requested. If any mapping asked for a
-                  read-write access, all the read-only mappings of the 
-                  same region will silently get a read-write access to 
+                  read-write access, all the read-only mappings of the
+                  same region will silently get a read-write access to
                   it.
 
 See MSDN doc.
@@ -1032,7 +1032,7 @@ MapViewOfFileEx(
     else
     {
         // TODO: Figure out if we can support mapping at a specific address on Linux.
-        pThread->SetLastError(ERROR_INVALID_PARAMETER);       
+        pThread->SetLastError(ERROR_INVALID_PARAMETER);
     }
 
     LOGEXIT( "MapViewOfFileEx returning %p.\n", pvMappedBaseAddress );
@@ -1054,7 +1054,7 @@ UnmapViewOfFile(
 {
     PAL_ERROR palError;
     CPalThread *pThread;
-    
+
     PERF_ENTRY(UnmapViewOfFile);
     ENTRY("UnmapViewOfFile(lpBaseAddress=%p)\n", lpBaseAddress);
 
@@ -1066,7 +1066,7 @@ UnmapViewOfFile(
     {
         pThread->SetLastError(palError);
     }
-    
+
     LOGEXIT( "UnmapViewOfFile returning %s.\n", (NO_ERROR == palError) ? "TRUE" : "FALSE" );
     PERF_EXIT(UnmapViewOfFile);
     return (NO_ERROR == palError);
@@ -1144,7 +1144,7 @@ CorUnix::InternalMapViewOfFile(
         ERROR( "Unable to obtain object process local data");
         goto InternalMapViewOfFileExit;
     }
-    
+
     /* If dwNumberOfBytesToMap is 0, we need to map the entire file.
      * mmap doesn't do the same thing as Windows in that case, though,
      * so we use the file size instead. */
@@ -1211,7 +1211,7 @@ CorUnix::InternalMapViewOfFile(
 #if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
             if ((MAP_FAILED == pvBaseAddress) && (ENOMEM == errno))
             {
-                /* Search in list of MAPPED_MEMORY_INFO for a shared mapping 
+                /* Search in list of MAPPED_MEMORY_INFO for a shared mapping
                    with the same inode number
                 */
                 TRACE("Mmap() failed with errno=ENOMEM probably for multiple mapping "
@@ -1224,7 +1224,7 @@ CorUnix::InternalMapViewOfFile(
                     dwNumberOfBytesToMap,
                     0
                     );
-                
+
                 if (pReusedMapping)
                 {
                     int ret;
@@ -1241,10 +1241,10 @@ CorUnix::InternalMapViewOfFile(
                                    pReusedMapping->pNMHolder->size,
                                    prot | PROT_CHECK);
                     if (0 != ret)
-                    {               
-                        /* We need to raise the protection to the desired 
+                    {
+                        /* We need to raise the protection to the desired
                            one. That will give write access to any read-only
-                           mapping sharing this native mapping, but there is 
+                           mapping sharing this native mapping, but there is
                            no way around this problem on systems that do not
                            allow more than one mapping per file region, per
                            process */
@@ -1255,7 +1255,7 @@ CorUnix::InternalMapViewOfFile(
                                    prot);
                     }
 
-                    if (ret != 0) 
+                    if (ret != 0)
                     {
                         ERROR( "Failed setting protections on reused mapping\n");
 
@@ -1297,19 +1297,19 @@ CorUnix::InternalMapViewOfFile(
         // list. All other initialization took place in
         // FindSharedMappingReplacement
         //
-        
+
         pvBaseAddress = pReusedMapping->lpAddress;
         pReusedMapping->pFileMapping->AddReference();
         InsertTailList(&MappedViewList, &pReusedMapping->Link);
     }
-    else 
+    else
 #endif // ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
     {
         //
         // Allocate and fill out a new view structure, and add it to
         // the global list.
         //
-        
+
         PMAPPED_VIEW_LIST pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(*pNewView));
         if (NULL != pNewView)
         {
@@ -1324,10 +1324,10 @@ CorUnix::InternalMapViewOfFile(
 #if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
             pNewView->MappedFileDevNum = pProcessLocalData->MappedFileDevNum;
             pNewView->MappedFileInodeNum = pProcessLocalData->MappedFileInodeNum;
-            
+
             pNewView->pNMHolder = NewNativeMapHolder(
                 pThread,
-                pvBaseAddress, 
+                pvBaseAddress,
                 dwNumberOfBytesToMap,
                 0,
                 1
@@ -1356,7 +1356,7 @@ CorUnix::InternalMapViewOfFile(
             }
         }
     }
-    
+
     if (NO_ERROR == palError)
     {
         TRACE( "Added %p to the list.\n", pvBaseAddress );
@@ -1402,7 +1402,7 @@ CorUnix::InternalUnmapViewOfFile(
         palError = ERROR_INVALID_HANDLE;
         goto InternalUnmapViewOfFileExit;
     }
-    
+
 #if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
     NativeMapHolderRelease(pThread, pView->pNMHolder);
     pView->pNMHolder = NULL;
@@ -1423,7 +1423,7 @@ CorUnix::InternalUnmapViewOfFile(
     RemoveEntryList(&pView->Link);
     pMappingObject = pView->pFileMapping;
     free(pView);
-    
+
 InternalUnmapViewOfFileExit:
 
     InternalLeaveCriticalSection(pThread, &mapping_critsec);
@@ -1492,7 +1492,7 @@ Function :
     Callers to this function must hold mapping_critsec
 --*/
 static PMAPPED_VIEW_LIST MAPGetViewForAddress( LPCVOID lpAddress )
-{       
+{
     if ( NULL == lpAddress )
     {
         ERROR( "lpAddress cannot be NULL\n" );
@@ -1510,9 +1510,9 @@ static PMAPPED_VIEW_LIST MAPGetViewForAddress( LPCVOID lpAddress )
             return pView;
         }
     }
-            
+
     WARN( "No match found.\n" );
-    
+
     return NULL;
 }
 
@@ -1554,20 +1554,20 @@ static PAL_ERROR MAPDesiredAccessAllowed( DWORD flProtect,
                "view.\n" );
         return ERROR_INVALID_PARAMETER;
     }
-    
+
     /* Check to see we don't confict with the desired access we
     opened the mapping object with. */
     if ( ( dwUserDesiredAccess == FILE_MAP_READ ) &&
-        !( ( dwDesiredAccessWhenOpened == FILE_MAP_READ ) || 
-           ( dwDesiredAccessWhenOpened == FILE_MAP_ALL_ACCESS ) ) ) 
+        !( ( dwDesiredAccessWhenOpened == FILE_MAP_READ ) ||
+           ( dwDesiredAccessWhenOpened == FILE_MAP_ALL_ACCESS ) ) )
     {
         ERROR( "dwDesiredAccess conflict : read access requested, object not "
                "opened with read access.\n" );
         return ERROR_ACCESS_DENIED;
     }
     if ( ( dwUserDesiredAccess & FILE_MAP_WRITE ) &&
-        !( ( dwDesiredAccessWhenOpened == FILE_MAP_WRITE ) || 
-           ( dwDesiredAccessWhenOpened == FILE_MAP_ALL_ACCESS ) ) ) 
+        !( ( dwDesiredAccessWhenOpened == FILE_MAP_WRITE ) ||
+           ( dwDesiredAccessWhenOpened == FILE_MAP_ALL_ACCESS ) ) )
     {
         ERROR( "dwDesiredAccess conflict : write access requested, object not "
                "opened with write access.\n" );
@@ -1616,7 +1616,7 @@ Function :
     MAPConvertAccessToProtect
 
     Converts the FILE_MAP_READ type flags to PAGE_READONLY flags.
-    Currently, this function only deals with the access flags recognized as valid 
+    Currently, this function only deals with the access flags recognized as valid
     by MAPContainsInvalidFlags().
 
 --*/
@@ -1674,7 +1674,7 @@ static INT MAPFileMapToMmapFlags( DWORD flags )
     {
         TRACE( "FILE_MAP_COPY\n");
         return PROT_READ | PROT_WRITE;
-    } 
+    }
 
     ASSERT( "Unknown flag. This line should not have been executed.\n" );
     return -1;
@@ -1721,7 +1721,7 @@ Function :
     MAPGrowLocalFile
 
     Grows the file on disk to match the specified size.
-    
+
 --*/
 static PAL_ERROR MAPGrowLocalFile( INT UnixFD, UINT NewSize )
 {
@@ -1816,7 +1816,7 @@ Function :
     MAPContainsInvalidFlags
 
     Checks that only valid flags are in the parameter.
-    
+
 --*/
 static BOOL MAPContainsInvalidFlags( DWORD flags )
 {
@@ -1835,11 +1835,11 @@ static BOOL MAPContainsInvalidFlags( DWORD flags )
 }
 
 /*++
-Function : 
+Function :
     MAPProtectionToFileOpenFlags
-    
+
     Converts the PAGE_* flags to the O_* flags.
- 
+
     Returns the file open flags.
 --*/
 static INT MAPProtectionToFileOpenFlags( DWORD flProtect )
@@ -1860,23 +1860,23 @@ static INT MAPProtectionToFileOpenFlags( DWORD flProtect )
         ASSERT("unexpected flProtect value %#x\n", flProtect);
         retVal = 0;
         break;
-    }         
+    }
     return retVal;
 }
 
 /*++
 Function :
-    
+
     MAPIsRequestPermissible
-    
+
         DWORD flProtect     - The requested file mapping protection .
         file * pFileStruct  - The file structure containing all the information.
 
 --*/
 static BOOL MAPIsRequestPermissible( DWORD flProtect, CFileProcessLocalData * pFileLocalData )
 {
-    if ( ( (flProtect == PAGE_READONLY || flProtect == PAGE_WRITECOPY) && 
-           (pFileLocalData->open_flags_deviceaccessonly == TRUE || 
+    if ( ( (flProtect == PAGE_READONLY || flProtect == PAGE_WRITECOPY) &&
+           (pFileLocalData->open_flags_deviceaccessonly == TRUE ||
             pFileLocalData->open_flags & O_WRONLY) )
        )
     {
@@ -1890,7 +1890,7 @@ static BOOL MAPIsRequestPermissible( DWORD flProtect, CFileProcessLocalData * pF
     else if ( flProtect == PAGE_READWRITE && !(pFileLocalData->open_flags & O_RDWR) )
     {
         /*
-         * PAGE_READWRITE access to a file needs to be readable and writable 
+         * PAGE_READWRITE access to a file needs to be readable and writable
          */
         return FALSE;
     }
@@ -1907,7 +1907,7 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
 {
     BOOL fFound = FALSE;
     CPalThread * pThread = InternalGetCurrentThread();
-    
+
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
     for(LIST_ENTRY *pLink = MappedViewList.Flink;
@@ -1928,7 +1928,7 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
 #endif
 
         MappedSize = ALIGN_UP(real_map_sz, GetVirtualPageSize());
-        if ( real_map_addr <= lpAddress && 
+        if ( real_map_addr <= lpAddress &&
              (VOID *)((UINT_PTR)real_map_addr+MappedSize) > lpAddress )
         {
             if (lpBuffer)
@@ -1950,7 +1950,7 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
     }
 
     InternalLeaveCriticalSection(pThread, &mapping_critsec);
-    
+
     return fFound;
 }
 
@@ -1964,11 +1964,11 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
     CPalThread *pThread,
     dev_t deviceNum,
     ino_t inodeNum,
-    SIZE_T size, 
+    SIZE_T size,
     SIZE_T offset)
 {
     PMAPPED_VIEW_LIST pNewView = NULL;
-    
+
     if (size == 0)
     {
         ERROR("Mapping size cannot be NULL\n");
@@ -2011,7 +2011,7 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
 
             if (real_map_offs+real_map_sz >= offset+size)
             {
-                /* The new desired mapping is fully contained in the 
+                /* The new desired mapping is fully contained in the
                    one just found: we can reuse this one */
 
                 pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(MAPPED_VIEW_LIST));
@@ -2019,9 +2019,9 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
                 {
                     memcpy(pNewView, pView, sizeof(*pNewView));
                     NativeMapHolderAddRef(pNewView->pNMHolder);
-                    pNewView->lpAddress = (VOID*)((CHAR*)pNewView->pNMHolder->address + 
+                    pNewView->lpAddress = (VOID*)((CHAR*)pNewView->pNMHolder->address +
                         offset - pNewView->pNMHolder->offset);
-                    pNewView->NumberOfBytesToMap = size; 
+                    pNewView->NumberOfBytesToMap = size;
                 }
                 else
                 {
@@ -2037,20 +2037,20 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
     return pNewView;
 }
 
-static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address, SIZE_T size, 
+static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address, SIZE_T size,
                                      SIZE_T offset, long init_ref_count)
 {
     NativeMapHolder * pThisMapHolder;
-    
+
     if (init_ref_count < 0)
     {
         ASSERT("Negative initial reference count for new map holder\n");
         return NULL;
     }
-	
-    pThisMapHolder = 
+
+    pThisMapHolder =
         (NativeMapHolder *)InternalMalloc(sizeof(NativeMapHolder));
-        
+
     if (pThisMapHolder)
     {
         pThisMapHolder->ref_count = init_ref_count;
@@ -2058,7 +2058,7 @@ static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address,
         pThisMapHolder->size = size;
         pThisMapHolder->offset = offset;
     }
-    
+
     return pThisMapHolder;
 }
 
@@ -2080,7 +2080,7 @@ static LONG NativeMapHolderRelease(CPalThread *pThread, NativeMapHolder * thisNM
         }
         else
         {
-            TRACE( "Successfully unmapped %p (size=%lu)\n", 
+            TRACE( "Successfully unmapped %p (size=%lu)\n",
                    thisNMH->address, (unsigned long)thisNMH->size);
         }
         free (thisNMH);
@@ -2088,7 +2088,7 @@ static LONG NativeMapHolderRelease(CPalThread *pThread, NativeMapHolder * thisNM
     else if (ret < 0)
     {
         ASSERT( "Negative reference count for map holder %p"
-                " {address=%p, size=%lu}\n", thisNMH->address, 
+                " {address=%p, size=%lu}\n", thisNMH->address,
                 (unsigned long)thisNMH->size);
     }
 
@@ -2160,7 +2160,7 @@ MAPmmapAndRecord(
 #ifdef __APPLE__
     if ((prot & PROT_EXEC) != 0 && IsRunningOnMojaveHardenedRuntime())
     {
-        // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an 
+        // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an
         // anonymous mapping and read the file contents into it instead.
 
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,

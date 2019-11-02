@@ -20,7 +20,7 @@ namespace ReadyToRun.SuperIlc
 
         protected override string CompilerFileName => "clrjit.dll";
 
-        public JitRunner(BuildOptions options) 
+        public JitRunner(BuildOptions options)
             : base(options, new string[] { options.CoreRootDirectory.FullName }.Concat(options.ReferencePaths())) { }
 
         /// <summary>

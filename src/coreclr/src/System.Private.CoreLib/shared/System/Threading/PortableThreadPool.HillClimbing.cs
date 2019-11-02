@@ -60,7 +60,7 @@ namespace System.Threading
                 public int lastHistoryCount;
                 public double lastHistoryMean;
             }
-            
+
             private readonly int _wavePeriod;
             private readonly int _samplesToMeasure;
             private readonly double _targetThroughputRatio;
@@ -86,7 +86,7 @@ namespace System.Threading
             private double[] _samples;
             private double[] _threadCounts;
             private int _currentSampleMs;
-            
+
             private Random _randomIntervalGenerator = new Random();
 
             private LogEntry[] _log = new LogEntry[LogCapacity];
@@ -130,7 +130,7 @@ namespace System.Threading
 
                 //
                 // If someone changed the thread count without telling us, update our records accordingly.
-                // 
+                //
                 if (currentThreadCount != _lastThreadCount)
                     ForceChange(currentThreadCount, StateOrTransition.Initializing);
 
@@ -148,9 +148,9 @@ namespace System.Threading
 
                 //
                 // We need to make sure we're collecting reasonably accurate data.  Since we're just counting the end
-                // of each work item, we are goinng to be missing some data about what really happened during the 
-                // sample interval.  The count produced by each thread includes an initial work item that may have 
-                // started well before the start of the interval, and each thread may have been running some new 
+                // of each work item, we are goinng to be missing some data about what really happened during the
+                // sample interval.  The count produced by each thread includes an initial work item that may have
+                // started well before the start of the interval, and each thread may have been running some new
                 // work item for some time before the end of the interval, which did not yet get counted.  So
                 // our count is going to be off by +/- threadCount workitems.
                 //
@@ -163,7 +163,7 @@ namespace System.Threading
                 // We cannot rely on the frequency-domain analysis we'll be doing later to filter out this error, because
                 // of the way it accumulates over time.  If this sample is off by, say, 33% in the negative direction,
                 // then the next one likely will be too.  The one after that will include the sum of the completions
-                // we missed in the previous samples, and so will be 33% positive.  So every three samples we'll have 
+                // we missed in the previous samples, and so will be 33% positive.  So every three samples we'll have
                 // two "low" samples and one "high" sample.  This will appear as periodic variation right in the frequency
                 // range we're targeting, which will not be filtered by the frequency-domain translation.
                 //
@@ -207,9 +207,9 @@ namespace System.Threading
 
                 //
                 // How many samples will we use?  It must be at least the three wave periods we're looking for, and it must also be a whole
-                // multiple of the primary wave's period; otherwise the frequency we're looking for will fall between two  frequency bands 
+                // multiple of the primary wave's period; otherwise the frequency we're looking for will fall between two  frequency bands
                 // in the Fourier analysis, and we won't be able to measure it accurately.
-                // 
+                //
                 int sampleCount = ((int)Math.Min(_totalSamples - 1, _samplesToMeasure)) / _wavePeriod * _wavePeriod;
 
                 if (sampleCount > _wavePeriod)
@@ -309,7 +309,7 @@ namespace System.Threading
                 // Now apply non-linear gain, such that values around zero are attenuated, while higher values
                 // are enhanced.  This allows us to move quickly if we're far away from the target, but more slowly
                 // if we're getting close, giving us rapid ramp-up without wild oscillations around the target.
-                // 
+                //
                 double gain = _maxChangePerSecond * sampleDurationSeconds;
                 move = Math.Pow(Math.Abs(move), _gainExponent) * (move >= 0.0 ? 1 : -1) * gain;
                 move = Math.Min(move, _maxChangePerSample);
@@ -322,7 +322,7 @@ namespace System.Threading
 
                 //
                 // Apply the move to our control setting
-                // 
+                //
                 _currentControlSetting += move;
 
                 //
@@ -335,7 +335,7 @@ namespace System.Threading
 
                 //
                 // Make sure our control setting is within the ThreadPool's limits
-                // 
+                //
                 int maxThreads = ThreadPoolInstance._maxThreads;
                 int minThreads = ThreadPoolInstance._minThreads;
 
@@ -344,12 +344,12 @@ namespace System.Threading
 
                 //
                 // Calculate the new thread count (control setting + square wave)
-                // 
+                //
                 int newThreadCount = (int)(_currentControlSetting + newThreadWaveMagnitude * ((_totalSamples / (_wavePeriod / 2)) % 2));
 
                 //
                 // Make sure the new thread count doesn't exceed the ThreadPool's limits
-                // 
+                //
                 newThreadCount = Math.Min(maxThreads, newThreadCount);
                 newThreadCount = Math.Max(minThreads, newThreadCount);
 
@@ -363,7 +363,7 @@ namespace System.Threading
 
                 //
                 // If all of this caused an actual change in thread count, log that as well.
-                // 
+                //
                 if (newThreadCount != currentThreadCount)
                     ChangeThreadCount(newThreadCount, state);
 

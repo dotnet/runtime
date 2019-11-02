@@ -5,7 +5,7 @@
 
 // This file provides an explicit check of field layouts using some macro magic
 // in VerifyLayouts.h. The goal is that if any field changes offset or type changes
-// size then a build time assert should trigger. DO NOT change these definitions without 
+// size then a build time assert should trigger. DO NOT change these definitions without
 // reading the comments in VerifyLayouts.h and understanding what other code you need
 // to change at the same time.
 //
@@ -34,7 +34,7 @@
 // #endif //_SOME_DEFINE
 // }
 //
-// 
+//
 // and the layout validation is written as:
 //
 // BEGIN_TYPE(CDerived, sizeof(CFoo))                             // a) The first field starts at sizeof(CFoo) to account for base class data
@@ -45,7 +45,7 @@
 //                                                                // d) sizeof(<primitive_type>) is fine - they never change over time and we know how
 //                                                                //    to deal with platform pointer size differences
 // FIELD(CDerived, m_cRef, 4)
-// FIELD(CDerived, m_otherType, sizeof(void*)) 
+// FIELD(CDerived, m_otherType, sizeof(void*))
 // #ifdef _SOME_DEFINE_
 // ALIGN_FIELD(CDerived, m_struct, sizeof(BigStruct), 4)          // We need to use the ALIGN_FIELD macro because the alignment isn't the same as
 //                                                                // the field size. The alignment of a structure is typically the max alignment
@@ -116,10 +116,10 @@
 //     You could write
 //         FIELD(CMiniMdRW, m_cbSaveSize, 4)
 //         BITFIELD(CMiniMdRW, m_fIsReadOnly, offsetof(CMiniMdRW, m_cbSaveSize)+4, 4)
-//     
+//
 //     Don't include al the fields in the bitfield, just pick one as the canonical field name
 //
-//  
+//
 //
 //    HOW DO I DEBUG THIS STUFF WHEN THE BUILD DOESN'T WORK?
 //

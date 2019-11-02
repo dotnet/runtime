@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RSRegSetCommon.cpp
-// 
+//
 
 // Common cross-platform behavior of reg sets.
 // Platform specific stuff is in CordbRegisterSet.cpp located in
@@ -18,10 +18,10 @@
  * ------------------------------------------------------------------------- */
 
 
-CordbRegisterSet::CordbRegisterSet( 
-    DebuggerREGDISPLAY * pRegDisplay, 
+CordbRegisterSet::CordbRegisterSet(
+    DebuggerREGDISPLAY * pRegDisplay,
     CordbThread *        pThread,
-    bool fActive, 
+    bool fActive,
     bool fQuickUnwind,
     bool fTakeOwnershipOfDRD /*= false*/)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
@@ -36,12 +36,12 @@ CordbRegisterSet::CordbRegisterSet(
     m_fTakeOwnershipOfDRD = fTakeOwnershipOfDRD;
 
     // Add to our parent thread's neuter list.
-    
+
     HRESULT hr = S_OK;
     EX_TRY
     {
         pThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
@@ -54,7 +54,7 @@ void CordbRegisterSet::Neuter()
         delete m_rd;
     }
     m_rd = NULL;
-    
+
     CordbBase::Neuter();
 }
 
@@ -106,7 +106,7 @@ HRESULT CordbRegisterSet::QueryInterface(REFIID riid, void **ppInterface)
 //    contextSize - sizeof incoming context buffer  in bytes
 //    context - buffer to copy this regdisplay's OS CONTEXT structure into.
 //
-// Returns S_OK on success. 
+// Returns S_OK on success.
 //-----------------------------------------------------------------------------
 HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
 {
@@ -121,13 +121,13 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
         if( contextSize < sizeof( DT_CONTEXT ))
         {
             ThrowHR(E_INVALIDARG);
-        }        
+        }
 
         ValidateOrThrow(context);
 
         DT_CONTEXT *pInputContext = reinterpret_cast<DT_CONTEXT *> (context);
-        
-        // Just to be safe, zero out the buffer we got in while preserving the ContextFlags.  
+
+        // Just to be safe, zero out the buffer we got in while preserving the ContextFlags.
         // On X64 the ContextFlags field is not the first 4 bytes of the DT_CONTEXT.
         DWORD dwContextFlags = pInputContext->ContextFlags;
         ZeroMemory(context, contextSize);
@@ -166,18 +166,18 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
 
 //-----------------------------------------------------------------------------
 // Helpers to impl IRegSet2 on top of original IRegSet.
-// These are useful on platforms that don't need IRegSet2 (like x86 + amd64). 
+// These are useful on platforms that don't need IRegSet2 (like x86 + amd64).
 // See CorDebug.idl for details.
 //
 // Inputs:
 //   regCount - size of pAvailable buffer in bytes
-//   pAvailable - buffer to hold bitvector of available registers. 
+//   pAvailable - buffer to hold bitvector of available registers.
 //                On success, bit at position CorDebugRegister is 1 iff that
 //                register is available.
 // Returns S_OK on success.
 //-----------------------------------------------------------------------------
 HRESULT CordbRegisterSet::GetRegistersAvailableAdapter(
-    ULONG32 regCount, 
+    ULONG32 regCount,
     BYTE    pAvailable[])
 {
     // Defer to call on v1.0 interface
@@ -215,7 +215,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailableAdapter(
 
 //-----------------------------------------------------------------------------
 // Helpers to impl IRegSet2 on top of original IRegSet.
-// These are useful on platforms that don't need IRegSet2 (like x86 + amd64). 
+// These are useful on platforms that don't need IRegSet2 (like x86 + amd64).
 // See CorDebug.idl for details.
 //
 // Inputs:
@@ -229,7 +229,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailableAdapter(
 
 // mask input requrest registers, which get written to regCount buffer.
 HRESULT CordbRegisterSet::GetRegistersAdapter(
-    ULONG32 maskCount, BYTE mask[], 
+    ULONG32 maskCount, BYTE mask[],
     ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     // Convert input mask to orig mask.
@@ -242,7 +242,7 @@ HRESULT CordbRegisterSet::GetRegistersAdapter(
             maskOrig |= SETBITULONG64(iBit);
         }
     }
-    
-    return this->GetRegisters(maskOrig, 
+
+    return this->GetRegisters(maskOrig,
         regCount, regBuffer);
 }

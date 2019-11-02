@@ -52,7 +52,7 @@ typedef struct _DAC_SLOT_LOCATION
     int reg;
     int regOffset;
     bool targetPtr;
-    
+
     _DAC_SLOT_LOCATION(int _reg, int _regOffset, bool _targetPtr)
         : reg(_reg), regOffset(_regOffset), targetPtr(_targetPtr)
     {
@@ -256,12 +256,12 @@ virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
 #ifndef CROSSGEN_COMPILE
 /*
     For a non-static method, "this" pointer is passed in as argument 0.
-    However, if there is a "ldarga 0" or "starg 0" in the IL, 
+    However, if there is a "ldarga 0" or "starg 0" in the IL,
     JIT will create a copy of arg0 and redirect all "ldarg(a) 0" and "starg 0" to this copy.
     (See Compiler::lvaArg0Var for more details.)
-    
+
     The following method returns the original "this" argument, i.e. the one that is passed in,
-    if it is a non-static method AND the object is still alive. 
+    if it is a non-static method AND the object is still alive.
     Returns NULL in all other cases.
 */
 virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
@@ -426,7 +426,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
     Get the number of bytes used for stack parameters.
     This is currently only used on x86.
 */
-virtual 
+virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
 #ifndef CROSSGEN_COMPILE
@@ -559,11 +559,11 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 /*
     Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
 */
-static 
+static
 PTR_VOID GetExactGenericsToken(PREGDISPLAY     pContext,
                                EECodeInfo *    pCodeInfo);
 
-static 
+static
 PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
                                EECodeInfo *    pCodeInfo);
 
@@ -726,13 +726,13 @@ struct hdrInfo
 
     // Size of the epilogs in the method.
     // For methods which use CEE_JMP, some epilogs may end with a "ret" instruction
-    // and some may end with a "jmp". The epilogSize reported should be for the 
+    // and some may end with a "jmp". The epilogSize reported should be for the
     // epilog with the smallest size.
     unsigned int        epilogSize;
 
     unsigned char       epilogCnt;
     bool                epilogEnd;      // is the epilog at the end of the method
-    
+
     bool                ebpFrame;       // locals and arguments addressed relative to EBP
     bool                doubleAlign;    // is the stack double-aligned? locals addressed relative to ESP, and arguments relative to EBP
     bool                interruptible;  // intr. at all times (excluding prolog/epilog), not just call sites
@@ -765,7 +765,7 @@ struct hdrInfo
     unsigned int        revPInvokeOffset; // INVALID_REV_PINVOKE_OFFSET if there is no Reverse PInvoke frame
 
     enum { NOT_IN_PROLOG = -1, NOT_IN_EPILOG = -1 };
-    
+
     int                 prologOffs;     // NOT_IN_PROLOG if not in prolog
     int                 epilogOffs;     // NOT_IN_EPILOG if not in epilog. It is never 0
 

@@ -92,7 +92,7 @@ namespace R2RDump
                 {
                     writer.Write(" ");
                 }
-                writer.Write($"{entry.Offset:X2}"); 
+                writer.Write($"{entry.Offset:X2}");
             }
             writer.Write(")");
         }

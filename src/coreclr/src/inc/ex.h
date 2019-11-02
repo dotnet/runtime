@@ -29,7 +29,7 @@
 #endif
 
 
-//=========================================================================================== 
+//===========================================================================================
 // These abstractions hide the difference between legacy desktop CLR's (that don't support
 // side-by-side-inproc and rely on a fixed SEH code to identify managed exceptions) and
 // new CLR's that support side-by-side inproc.
@@ -39,7 +39,7 @@
 // the module handle of the owning CLR is stored in ExceptionRecord.ExceptionInformation[4].
 //
 // (Note: all existing SEH's use either only slot [0] or no slots at all. We are leaving
-//  slots [1] thru [3] open for future expansion.) 
+//  slots [1] thru [3] open for future expansion.)
 //===========================================================================================
 
 // Is this exception code one of the special CLR-specific SEH codes that participate in the
@@ -76,7 +76,7 @@ DWORD MarkAsThrownByUs(/*out*/ ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM
 // *and* whether it was tagged by the calling instance of the CLR.
 //
 // If this is a non-tagged-SEH-enabled build, it is blindly assumed to be tagged by the
-// calling instance of the CLR. 
+// calling instance of the CLR.
 BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode);
 
 
@@ -87,8 +87,8 @@ BOOL IsComPlusException(const EXCEPTION_RECORD *pcER);
 VOID RaiseComPlusException();
 
 
-//=========================================================================================== 
-//=========================================================================================== 
+//===========================================================================================
+//===========================================================================================
 
 
 //-------------------------------------------------------------------------------------------
@@ -254,7 +254,7 @@ class Exception
     // Preallocated exceptions:  If there is a preallocated instance of some
     //  subclass of Exception, override this function and return a correct
     //  value.  The default implementation returns constant FALSE
-    virtual BOOL IsPreallocatedException(); 
+    virtual BOOL IsPreallocatedException();
     BOOL IsPreallocatedOOMException();
 
     static void Delete(Exception* pvMemory);
@@ -264,16 +264,16 @@ protected:
     // This virtual method must be implemented by any non abstract Exception
     // derived class. It must allocate a NEW exception of the identical type and
     // copy all the relevant fields from the current exception to the new one.
-    // It is NOT responsible however for copying the inner exception. This 
+    // It is NOT responsible however for copying the inner exception. This
     // will be handled by the base Exception class.
-    virtual Exception *CloneHelper();   
+    virtual Exception *CloneHelper();
 
     // This virtual method must be implemented by Exception subclasses whose
-    // DomainBoundClone behavior is different than their normal clone behavior. 
+    // DomainBoundClone behavior is different than their normal clone behavior.
     // It must allocate a NEW exception of the identical type and
     // copy all the relevant fields from the current exception to the new one.
-    // It is NOT responsible however for copying the inner exception. This 
-    // will be handled by the base Exception class.    
+    // It is NOT responsible however for copying the inner exception. This
+    // will be handled by the base Exception class.
     virtual Exception *DomainBoundCloneHelper() { return CloneHelper(); }
 };
 
@@ -295,16 +295,16 @@ typedef ExceptionHolderTemplate<Exception> ExceptionHolder;
 // class ExceptionHolder
 //
 // This is a very lightweight holder class for use inside the EX_TRY family
-//  of macros.  It is based on the standard Holder classes, but has been 
+//  of macros.  It is based on the standard Holder classes, but has been
 //  highly specialized for this one function, so that extra code can be
 //  removed, and the resulting code can be simple enough for all of the
 //  non-exceptional-case code to be inlined.
 class ExceptionHolder
 {
 private:
-    Exception *m_value;   
+    Exception *m_value;
     BOOL      m_acquired;
-    
+
 public:
     FORCEINLINE ExceptionHolder(Exception *pException = NULL, BOOL take = TRUE)
       : m_value(pException)
@@ -321,7 +321,7 @@ public:
     }
 
     Exception* operator->() { return m_value; }
-    
+
     void operator=(Exception *p)
     {
         Release();
@@ -330,11 +330,11 @@ public:
     }
 
     BOOL IsNull() { return m_value == NULL; }
-    
-    operator Exception*() { return m_value; }    
-    
+
+    operator Exception*() { return m_value; }
+
     Exception* GetValue() { return m_value; }
-    
+
     void SuppressRelease() { m_acquired = FALSE; }
 
 private:
@@ -359,7 +359,7 @@ private:
 
 };
 
-#endif     
+#endif
 
 // ---------------------------------------------------------------------------
 // HRException class.  Implements exception API for exceptions generated from HRESULTs
@@ -385,18 +385,18 @@ class HRException : public Exception
     // Virtual overrides
     HRESULT GetHR();
 
-    BOOL IsSameInstanceType(Exception *pException) 
+    BOOL IsSameInstanceType(Exception *pException)
     {
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
         return pException->GetInstanceType() == GetType() && pException->GetHR() == m_hr;
     }
 
- protected:    
+ protected:
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new HRException(m_hr);
-    }    
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -418,12 +418,12 @@ class HRMsgException : public HRException
     // Virtual overrides
     void GetMessage(SString &s);
 
- protected:    
+ protected:
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new HRMsgException(m_hr, m_msg);
-    }    
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -447,12 +447,12 @@ class COMException : public HRException
     IErrorInfo *GetErrorInfo();
     void GetMessage(SString &result);
 
- protected:    
+ protected:
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new COMException(m_hr, m_pErrorInfo);
-    }    
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -476,9 +476,9 @@ class SEHException : public Exception
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     virtual BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || Exception::IsType(type);  }
 
-    BOOL IsSameInstanceType(Exception *pException) 
+    BOOL IsSameInstanceType(Exception *pException)
     {
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
         return pException->GetInstanceType() == GetType() && pException->GetHR() == GetHR();
     }
 
@@ -487,12 +487,12 @@ class SEHException : public Exception
     IErrorInfo *GetErrorInfo();
     void GetMessage(SString &result);
 
- protected:    
+ protected:
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new SEHException(&m_exception);
-    }    
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -520,38 +520,38 @@ class DelegatingException : public Exception
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     virtual BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || Exception::IsType(type);  }
 
-    BOOL IsSameInstanceType(Exception *pException) 
+    BOOL IsSameInstanceType(Exception *pException)
     {
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
         return pException->GetInstanceType() == GetType() && pException->GetHR() == GetHR();
     }
 
     // Virtual overrides
-    virtual BOOL IsDomainBound() {return Exception::IsDomainBound() ||(m_delegatedException!=NULL && m_delegatedException->IsDomainBound());} ;    
+    virtual BOOL IsDomainBound() {return Exception::IsDomainBound() ||(m_delegatedException!=NULL && m_delegatedException->IsDomainBound());} ;
     HRESULT GetHR();
     IErrorInfo *GetErrorInfo();
     void GetMessage(SString &result);
     virtual Exception *Clone();
 
- protected:    
+ protected:
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new DelegatingException();
-    }    
+    }
 };
 
 //------------------------------------------------------------------------------
 // class OutOfMemoryException
 //
 //   While there could be any number of instances of this class, there is one
-//    special instance, the pre-allocated OOM exception.  Storage for that 
+//    special instance, the pre-allocated OOM exception.  Storage for that
 //    instance is allocated in the image, so we can always obtain it, even
 //    in low memory situations.
 //   Note that, in fact, there is only one instance.
 //------------------------------------------------------------------------------
 class OutOfMemoryException : public Exception
-{  
+{
  private:
     static const int c_type = 0x4F4F4D20;   // 'OOM '
     BOOL    bIsPreallocated;
@@ -564,10 +564,10 @@ class OutOfMemoryException : public Exception
     static int GetType() {LIMITED_METHOD_CONTRACT;  return c_type; }
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || Exception::IsType(type);  }
-    
-    BOOL IsSameInstanceType(Exception *pException) 
+
+    BOOL IsSameInstanceType(Exception *pException)
     {
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
         return pException->GetInstanceType() == GetType();
     }
 
@@ -575,7 +575,7 @@ class OutOfMemoryException : public Exception
     void GetMessage(SString &result) { WRAPPER_NO_CONTRACT; result.SetASCII("Out Of Memory"); }
 
     virtual Exception *Clone();
-    
+
     virtual BOOL IsPreallocatedException() { return bIsPreallocated; }
 };
 
@@ -609,9 +609,9 @@ public:
 
 #ifdef ENABLE_CONTRACTS_IMPL
         // Restore the original OkayToThrow value since we're leaving the try block.
-       
+
         m_pClrDebugState->SetOkToThrow( m_oldOkayToThrowValue );
-#endif // ENABLE_CONTRACTS_IMPL        
+#endif // ENABLE_CONTRACTS_IMPL
     }
 
 protected:
@@ -621,7 +621,7 @@ protected:
 private:
     BOOL           m_oldOkayToThrowValue;
     ClrDebugState *m_pClrDebugState;
-#endif    
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -649,15 +649,15 @@ private:
 //   1. They catch all exceptions, both C++ and SEH exceptions.
 //   2. They catch only C++ exceptions.
 //
-// Which way they are defined depends on what sort of handling of SEH 
+// Which way they are defined depends on what sort of handling of SEH
 // exceptions, like AV's, you wish to have in your DLL. In general we
 // do not typically want to catch and swallow AV's.
 //
 // By default, the macros catch all exceptions. This is how they work when
 // compiled into the primary runtime DLL (clr.dll). This is reasonable for
 // the CLR becuase it needs to also catch managed exceptions, which are SEH
-// exceptions, and because that DLL also includes a vectored exception 
-// handler that will take down the process on any AV within clr.dll. 
+// exceptions, and because that DLL also includes a vectored exception
+// handler that will take down the process on any AV within clr.dll.
 //
 // But for uses of these macros outside of the CLR DLL there are other
 // possibilities. If a DLL only uses facilities in Utilcode that throw the
@@ -733,7 +733,7 @@ private:
 // 4) RethrowCorruptingExceptionsEx - same as (2) but rethrow of CE can be controlled via a condition.
 //
 // By default, if a CE is encountered when one of the above policies are applied, the runtime will
-// ensure that the CE propagates up the stack and not get swallowed unless the developer chooses to override the behaviour. 
+// ensure that the CE propagates up the stack and not get swallowed unless the developer chooses to override the behaviour.
 // This can be done by using the "Ex" versions above that take a conditional which evaluates to a BOOL. In such a case,
 // the CE will *only* be rethrown if the conditional evalutes to TRUE. For examples, refer to COMToCLRWorker or
 // DispatchInfo::InvokeMember implementations.
@@ -841,8 +841,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 // This macro will set the m_innerException into the newly created exception
 // The passed in _type has to be derived from CLRException. You cannot put OOM
 // as the inner exception. If we are throwing in OOM case, allocate more memory (this macro will clone)
-// does not make any sense. 
-// 
+// does not make any sense.
+//
 #define EX_THROW_WITH_INNER(_type, _args, _inner)                                       \
     {                                                                                   \
         FAULT_NOT_FATAL();                                                              \
@@ -893,7 +893,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                     DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
                     EX_TRY_HOLDER                                                       \
 
-                                                                                        
+
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
                     DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
                 }                                                                       \
@@ -967,11 +967,11 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 
 // Here we finally define the EX_CATCH* macros that will be used throughout the system.
-// These can catch C++ and SEH exceptions, or just C++ exceptions. 
+// These can catch C++ and SEH exceptions, or just C++ exceptions.
 // See code:NO_HOST_CPP_EH_ONLY for more details.
 //
 // Note: we make it illegal to use forms that are redundant with the basic EX_CATCH
-// version. I.e., in the C++ & SEH version, EX_CATCH_CPP_AND_SEH is the same as EX_CATCH. 
+// version. I.e., in the C++ & SEH version, EX_CATCH_CPP_AND_SEH is the same as EX_CATCH.
 // Likewise, in the C++ only version, EX_CATCH_CPP_ONLY is redundant with EX_CATCH.
 
 #ifndef NO_HOST_CPP_EH_ONLY
@@ -986,8 +986,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_CPP_ONLY       Dont_Use_EX_CATCH_CPP_ONLY
 #define EX_CATCH_CPP_AND_SEH    EX_CATCH_IMPL
 
-// Note: at this time we don't have a use case for EX_CATCH_EX, and we do not have 
-// the C++-only version of the implementation available. Thus we disallow its use at this time. 
+// Note: at this time we don't have a use case for EX_CATCH_EX, and we do not have
+// the C++-only version of the implementation available. Thus we disallow its use at this time.
 // If a real use case arises then we should go ahead and enable this.
 #define EX_CATCH_EX             Dont_Use_EX_CATCH_EX
 #endif
@@ -1002,7 +1002,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     }                                                                                   \
 
 
-// "terminalexceptionpolicy" must be one of "RethrowTerminalExceptions", 
+// "terminalexceptionpolicy" must be one of "RethrowTerminalExceptions",
 // "RethrowTransientExceptions", or "SwallowAllExceptions"
 
 #define EX_END_CATCH(terminalexceptionpolicy)                                           \
@@ -1068,7 +1068,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)
 
-    
+
 //===================================================================================
 // Macro for catching managed exception object.
 //
@@ -1090,7 +1090,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 
 #ifdef FEATURE_COMINTEROP
-    
+
 //===================================================================================
 // Macro for defining external entrypoints such as COM interop boundaries.
 // The boundary will catch all exceptions (including terminals) and convert
@@ -1276,10 +1276,10 @@ inline Exception::HandlerState::HandlerState()
 
 #if defined(STACK_GUARDS_DEBUG) && defined(ENABLE_CONTRACTS_IMPL)
     // If we have a debug state, use its setting for SO tolerance.  The default
-    // is SO-tolerant if we have no debug state.  Can't probe w/o debug state and 
+    // is SO-tolerant if we have no debug state.  Can't probe w/o debug state and
     // can't enter SO-interolant mode w/o probing.
     GetClrDebugState();
-#endif    
+#endif
 }
 
 inline void Exception::HandlerState::CleanupTry()
@@ -1396,7 +1396,7 @@ inline HRESULT IfFailThrow(HRESULT hr)
 inline HRESULT IfFailThrow(HRESULT hr, SString &msg)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (FAILED(hr))
     {
         ThrowHR(hr, msg);

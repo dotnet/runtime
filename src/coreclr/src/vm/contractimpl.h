@@ -13,7 +13,7 @@
 //
 // ============================================================================
 
-#ifndef CONTRACTIMPL_H_ 
+#ifndef CONTRACTIMPL_H_
 #define CONTRACTIMPL_H_
 
 #include "hash.h"
@@ -686,8 +686,8 @@ struct DispatchMapBuilderNode
 
     //------------------------------------------------------------------------
     void Init(
-        DispatchMapTypeID typeID, 
-        UINT32            slotNumber, 
+        DispatchMapTypeID typeID,
+        UINT32            slotNumber,
         MethodDesc *      pMDTarget)
     {
         WRAPPER_NO_CONTRACT;
@@ -748,9 +748,9 @@ public:
     // table index and chain delta can't be calculated until later on. That's
     // why we use an MD to get the information later.
     void InsertMDMapping(
-        DispatchMapTypeID typeID, 
-        UINT32            slotNumber, 
-        MethodDesc *      pMDTarget, 
+        DispatchMapTypeID typeID,
+        UINT32            slotNumber,
+        MethodDesc *      pMDTarget,
         BOOL              fIsMethodImpl);
 
     //------------------------------------------------------------------------
@@ -890,15 +890,15 @@ public:
     // instance of DispatchMap, as this constructor assumes that m_rgMap is
     // large enough to store cbMap bytes, which GetObjectSize ensures.
     DispatchMap(
-        BYTE * pMap, 
+        BYTE * pMap,
         UINT32 cbMap);
 
     //------------------------------------------------------------------------
     static void CreateEncodedMapping(
-        MethodTable *        pMT, 
-        DispatchMapBuilder * pMapBuilder, 
-        StackingAllocator *  pAllocator, 
-        BYTE **              ppbMap, 
+        MethodTable *        pMT,
+        DispatchMapBuilder * pMapBuilder,
+        StackingAllocator *  pAllocator,
+        BYTE **              ppbMap,
         UINT32 *             pcbMap);
 
     //------------------------------------------------------------------------
@@ -911,11 +911,11 @@ public:
     //------------------------------------------------------------------------
     UINT32 GetMapSize();
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifdef FEATURE_PREJIT 
+#ifdef FEATURE_PREJIT
     //------------------------------------------------------------------------
     void Save(DataImage *image);
 
@@ -998,7 +998,7 @@ public:
     };  // class Iterator
 };  // class DispatchMap
 
-#ifdef LOGGING 
+#ifdef LOGGING
 struct StubDispatchStats
 {
     // DispatchMap stats

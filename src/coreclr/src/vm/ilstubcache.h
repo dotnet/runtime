@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: ILStubCache.h
-// 
+//
 
 //
 
@@ -72,8 +72,8 @@ public:
         MethodDesc *pTargetMD,
         ILStubHashBlob* pParams,
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
-        Module* pSigModule, 
-        PCCOR_SIGNATURE pSig, 
+        Module* pSigModule,
+        PCCOR_SIGNATURE pSig,
         DWORD cbSig,
         AllocMemTracker* pamTracker,
         bool& bILStubCreator,
@@ -87,8 +87,8 @@ public:
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
-        Module* pSigModule, 
-        PCCOR_SIGNATURE pSig, 
+        Module* pSigModule,
+        PCCOR_SIGNATURE pSig,
         DWORD cbSig,
         SigTypeContext *pTypeContext,
         ILStubLinker* pStubLinker);
@@ -107,8 +107,8 @@ private:
         LoaderHeap* pCreationHeap,
         MethodTable* pMT,
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
-        Module* pSigModule, 
-        PCCOR_SIGNATURE pSig, 
+        Module* pSigModule,
+        PCCOR_SIGNATURE pSig,
         DWORD cbSig,
         SigTypeContext *pTypeContext,
         AllocMemTracker* pamTracker);
@@ -121,7 +121,7 @@ private:
     //*****************************************************************************
     virtual unsigned int Hash(             // The key value.
         void const*  pData);                // Raw data to hash.
-    
+
     //*****************************************************************************
     // Compare is used in the typical memcmp way, 0 is eqaulity, -1/1 indicate
     // direction of miscompare.  In this system everything is always equal or not.
@@ -129,7 +129,7 @@ private:
     virtual unsigned int Compare(          // 0, -1, or 1.
         void const*  pData,                 // Raw key data on lookup.
         BYTE*        pElement);             // The element to compare data against.
-    
+
     //*****************************************************************************
     // Return true if the element is free to be used.
     //*****************************************************************************
@@ -142,7 +142,7 @@ private:
     virtual void SetStatus(
         BYTE*         pElement,             // The element to set status for.
         ELEMENTSTATUS eStatus);             // New status.
-    
+
     //*****************************************************************************
     // Returns the internal key value for an element.
     //*****************************************************************************

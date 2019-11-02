@@ -6,37 +6,37 @@
 // ===========================================================================
 //
 
-// 
+//
 //
 // The CLR code base uses a hyperlink feature of the HyperAddin plugin for Visual Studio. If you don't see
-// 'HyperAddin' in your Visual Studio menu bar you don't have this support. To get it type 
-// 
+// 'HyperAddin' in your Visual Studio menu bar you don't have this support. To get it type
+//
 //     \\clrmain\tools\installCLRAddins
-//     
-//  After installing HyperAddin, your first run of VS should be as an administrator so HyperAddin can update 
+//
+//  After installing HyperAddin, your first run of VS should be as an administrator so HyperAddin can update
 //  some registry information.
-//     
+//
 //  At this point the code: prefixes become hyperlinks in Visual Studio and life is good. See
 //  http://mswikis/clr/dev/Pages/CLR%20Team%20Commenting.aspx for more information
-//  
+//
 //  There is a bug associated with Visual Studio where it does not recognise the hyperlink if there is a ::
 //  preceeding it on the same line. Since C++ uses :: as a namespace separator, this can often mean that the
 //  second hyperlink on a line does not work. To work around this it is better to use '.' instead of :: as
 //  the namespace separators in code: hyperlinks.
-// 
+//
 // #StartHere
 // #TableOfContents The .NET Runtime Table of contents
-// 
+//
 // This comment is mean to be a nexus that allows you to jump quickly to various interesting parts of the
 // runtime.
-// 
+//
 // You can refer to product studio bugs using urls like the following
 //     * http://bugcheck/bugs/DevDivBugs/2320.asp
 //     * http://bugcheck/bugs/VSWhidbey/601210.asp
-//     
+//
 //  Dev10 Bugs can be added with URLs like the following (for Dev10 bug 671409)
 //     * http://tkbgitvstfat01:8090/wi.aspx?id=671409
-// 
+//
 //*************************************************************************************************
 //
 // * Introduction to the runtime file:../../Documentation/botr/botr-faq.md
@@ -50,8 +50,8 @@
 //     * code:EEClass - represents the 'cold' part of a type (used during compilation, interop, ...)
 //     * code:MethodDesc - represents a Method
 //     * code:FieldDesc - represents a Field.
-//     * code:Object - represents a object on the GC heap allocated with code:Alloc 
-// 
+//     * code:Object - represents a object on the GC heap allocated with code:Alloc
+//
 // * ECMA specifications
 //     * Partition I Concepts
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20I%20Architecture.doc
@@ -59,36 +59,36 @@
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20II%20Metadata.doc
 //     * Partition III IL
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20III%20CIL.doc
-//  
+//
 //  * Serge Liden (worked on the CLR and owned ILASM / ILDASM for a long time wrote a good book on IL
 //     * Expert .NET 2.0 IL Assembler  http://www.amazon.com/Expert-NET-2-0-IL-Assembler/dp/1590596463
-// 
+//
 // * This is also a pretty nice overview of what the CLR is at
 //     http://msdn2.microsoft.com/en-us/netframework/aa497266.aspx
-// 
+//
 // * code:EEStartup - This routine must be called before any interesting runtime services are used. It is
 //     invoked as part of mscorwks's DllMain logic.
 // * code:#EEShutDown - Code called before we shut down the EE.
-//     
+//
 // * file:..\inc\corhdr.h#ManagedHeader - From a data structure point of view, this is the entry point into
 //     the runtime. This is how all other data in the EXE are found.
-//  
+//
 // * code:ICorJitCompiler#EEToJitInterface - This is the interface from the the EE to the Just in time (JIT)
 //     compiler. The interface to the JIT is relatively simple (compileMethod), however the EE provides a
 //     rich set of callbacks so the JIT can get all the information it needs. See also
 //     file:../../Documentation/botr/ryujit-overview.md for general information on the JIT.
-// 
+//
 // * code:VirtualCallStubManager - This is the main class that implements interface dispatch
-// 
+//
 // * Precode - Every method needs entry point for other code to call even if that native code does not
 //     actually exist yet. To support this methods can have code:Precode that is an entry point that exists
 //     and will call the JIT compiler if the code does not yet exist.
-//     
+//
 //  * NGEN - NGen stands for Native code GENeration and it is the runtime way of precompiling IL and IL
 //      Meta-data into native code and runtime data structures. At compilation time the most
 //      fundamental data structures is the code:ZapNode which represents something that needs to go into the
 //      NGEN image.
-//      
+//
 //   * What is cooperative / preemtive mode ? file:threads.h#CooperativeMode and
 //       file:threads.h#SuspendingTheRuntime and file:../../Documentation/botr/threading.md
 //   * Garbage collection - file:gc.cpp#Overview and file:../../Documentation/botr/garbage-collection.md
@@ -112,7 +112,7 @@
 
 // ----------------------------------------------------------------------------------------------------
 // Features in the runtime that have been given hyperlinks
-// 
+//
 // * code:Nullable#NullableFeature - the Nullable<T> type has special runtime semantics associated with
 //     boxing this describes this feature.
 
@@ -260,7 +260,7 @@ Volatile<BOOL> g_fEEStarted = FALSE;
 // Flag indicating if the EE was started up by COM.
 extern BOOL g_fEEComActivatedStartup;
 
-// flag indicating that EE was not started up by IJW, Hosted, COM or my managed exe. 
+// flag indicating that EE was not started up by IJW, Hosted, COM or my managed exe.
 extern BOOL g_fEEOtherStartup;
 
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
@@ -306,7 +306,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
     // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for mscorlib.dll. We are
     // far enough in startup that this is allowed, however we don't want to
     // re-start the startup code so we need to check to see if startup has
-    // been initiated or completed before we call EEStartup. 
+    // been initiated or completed before we call EEStartup.
     //
     // We do however want to make sure other threads block until the EE is started,
     // which we will do further down.
@@ -371,9 +371,9 @@ HRESULT EnsureEEStarted(COINITIEE flags)
         // We do not want to do this blocking if we are the thread currently performing EE startup.  So we check
         // that first.
         //
-        // Note that the call to IsHeld here is an "acquire" barrier, as is acquiring the lock.  And the release of 
-        // the lock by the other thread is a "release" barrier, due to the volatile semantics in the lock's 
-        // implementation.  This assures us that once we observe the lock having been released, we are guaranteed 
+        // Note that the call to IsHeld here is an "acquire" barrier, as is acquiring the lock.  And the release of
+        // the lock by the other thread is a "release" barrier, due to the volatile semantics in the lock's
+        // implementation.  This assures us that once we observe the lock having been released, we are guaranteed
         // to observe a fully-initialized EE.
         //
         // A note about thread affinity here: we're using the OS thread ID of the current thread without
@@ -411,7 +411,7 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     // debugging pipeline and it will get a control-c notifications via native debug events.
     // However, if we let the native debugging pipeline handle the event and send the notification
     // to the debugger, then we break pre-V4 behaviour because we intercept handlers registered
-    // in-process.  See Dev10 Bug 846455 for more information. 
+    // in-process.  See Dev10 Bug 846455 for more information.
     if (CORDebuggerAttached() &&
         (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT))
     {
@@ -703,7 +703,7 @@ void EEStartupHelper(COINITIEE fFlags)
         NotifyGdb::Initialize();
 #endif // FEATURE_GDBJIT
 
-#ifdef FEATURE_EVENT_TRACE        
+#ifdef FEATURE_EVENT_TRACE
         // Initialize event tracing early so we can trace CLR startup time events.
         InitializeEventTracing();
 
@@ -755,7 +755,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         if (g_pConfig != NULL)
         {
-            IfFailGoLog(g_pConfig->sync());        
+            IfFailGoLog(g_pConfig->sync());
         }
 
         // Fire the runtime information ETW event
@@ -777,7 +777,7 @@ void EEStartupHelper(COINITIEE fFlags)
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
         }
 #endif
-        
+
 #if USE_DISASSEMBLER
         if ((g_pConfig->GetGCStressLevel() & (EEConfig::GCSTRESS_INSTR_JIT | EEConfig::GCSTRESS_INSTR_NGEN)) != 0)
         {
@@ -882,7 +882,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL      
+#ifndef FEATURE_PAL
         if (!RegisterOutOfProcessWatsonCallbacks())
         {
             IfFailGo(E_FAIL);
@@ -1012,11 +1012,11 @@ void EEStartupHelper(COINITIEE fFlags)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
         // align up to GetOsPageSize(), with a maximum of 1 MB
         g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), 1024 * 1024);
-        // allocate the buffer. this is never touched while the process is running, so it doesn't 
+        // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
-        // buffer that will be set up and reported / updated in the Watson process (the 
+        // buffer that will be set up and reported / updated in the Watson process (the
         // DacStreamsManager class coordinates this)
-        g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL, 
+        g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1129,12 +1129,12 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains. 
+//     * Creates the default and shared, appdomains.
 //     * Loads mscorlib.dll and loads up the fundamental types (System.Object ...)
-// 
-// see code:EEStartup#TableOfContents for more on the runtime in general. 
-// see code:#EEShutdown for a analagous routine run during shutdown. 
-// 
+//
+// see code:EEStartup#TableOfContents for more on the runtime in general.
+// see code:#EEShutdown for a analagous routine run during shutdown.
+//
 HRESULT EEStartup(COINITIEE fFlags)
 {
     // Cannot use normal contracts here because of the PAL_TRY.
@@ -1194,10 +1194,10 @@ void InnerCoEEShutDownCOM()
     // Release all of the RCWs in all contexts in all caches.
     ReleaseRCWsInCaches(NULL);
 
-#ifdef FEATURE_APPX    
+#ifdef FEATURE_APPX
     // Cleanup cached factory pointer in SynchronizationContextNative
     SynchronizationContextNative::Cleanup();
-#endif    
+#endif
 }
 
 #endif // FEATURE_COMINTEROP
@@ -1206,7 +1206,7 @@ void InnerCoEEShutDownCOM()
 // %%Function: ForceEEShutdown()
 //
 // Description: Force the EE to shutdown now.
-// 
+//
 // Note: returns when sca is SCA_ReturnWhenShutdownComplete.
 // ---------------------------------------------------------------------------
 void ForceEEShutdown(ShutdownCompleteAction sca)
@@ -1231,7 +1231,7 @@ static bool WaitForEndOfShutdown_OneIteration()
     CONTRACT_VIOLATION(GCViolation);
 
     // If someone calls EEShutDown while holding OS loader lock, the thread we created for shutdown
-    // won't start running.  This is a deadlock we can not fix.  Instead, we timeout and continue the 
+    // won't start running.  This is a deadlock we can not fix.  Instead, we timeout and continue the
     // current thread.
     DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ProcessExit);
     timeout *= 2;
@@ -1455,12 +1455,12 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                     if (pThread != NULL)
                     {
                         pInfo = pThread->GetIBCInfo();
-                        if (pInfo == NULL) 
-                        { 
-                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation); 
-                            pInfo = new ThreadLocalIBCInfo(); 
-                            pThread->SetIBCInfo(pInfo); 
-                        } 
+                        if (pInfo == NULL)
+                        {
+                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation);
+                            pInfo = new ThreadLocalIBCInfo();
+                            pThread->SetIBCInfo(pInfo);
+                        }
                     }
 
                     // Acquire the Crst lock before creating the IBCLoggingDisabler object.
@@ -1468,7 +1468,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                     CrstHolder lock(IBCLogger::GetSync());
                     {
                         IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
-                        
+
                         CONTRACT_VIOLATION(GCViolation);
                         Module::WriteAllModuleProfileData(true);
                     }
@@ -1483,7 +1483,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // This will check a flag and do nothing if not enabled.
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
-        
+
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
         // profiler can make any last calls it needs to.  Do this only if we
@@ -1538,7 +1538,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 part2:
         // If process shutdown is in progress and Crst locks to be used in shutdown phase 2
         // are already in use, then skip phase 2. This will happen only when those locks
-        // are orphaned. In Vista, the penalty for attempting to enter such locks is 
+        // are orphaned. In Vista, the penalty for attempting to enter such locks is
         // instant process termination.
         if (g_fProcessDetach)
         {
@@ -1546,7 +1546,7 @@ part2:
             // and not easily reproed to validate a bug. A typical race scenario is when there are two threads,
             // T1 and T2, with T2 having taken a lock (e.g. SystemDomain lock), the OS terminates
             // T2 for some reason. Later, when we enter the shutdown thread, we would assert on such
-            // a lock leak, but there is not much we can do since the OS wont notify us prior to thread 
+            // a lock leak, but there is not much we can do since the OS wont notify us prior to thread
             // termination. And this is not even a user bug.
             //
             // Converting it to a STRESS LOG to reduce noise, yet keep things in radar if they need
@@ -1623,7 +1623,7 @@ part2:
                 // 1) As the last action during the shutdown so that any unexpected AVs
                 //    in the runtime during shutdown do result in FailFast in VEH.
                 //
-                // 2) Only when the runtime is processing DLL_PROCESS_DETACH. 
+                // 2) Only when the runtime is processing DLL_PROCESS_DETACH.
                 CLRRemoveVectoredHandlers();
 
 #if USE_DISASSEMBLER
@@ -1657,7 +1657,7 @@ part2:
                 ShutdownLogging();
 #endif
             }
-        }    
+        }
 
     lDone: ;
     }
@@ -1730,7 +1730,7 @@ BOOL IsThreadInSTA()
     else
     {
         // CoInitialize hasn't been called in the process yet so assume the current thread
-        // is MTA. 
+        // is MTA.
         fInSTA = FALSE;
     }
 
@@ -1739,7 +1739,7 @@ BOOL IsThreadInSTA()
 #endif
 
 // #EEShutDown
-// 
+//
 // Function: EEShutDown(BOOL fIsDllUnloading)
 //
 // Parameters:
@@ -1750,7 +1750,7 @@ BOOL IsThreadInSTA()
 //             full cleanup.
 //
 // Description:
-// 
+//
 //     All ee shutdown stuff should be done here. EEShutDown is generally called in one
 //     of two ways:
 //     * 1. From code:EEPolicy::HandleExitProcess (via HandleExitProcessHelper), with
@@ -1759,7 +1759,7 @@ BOOL IsThreadInSTA()
 //         EEShutDown is called this way.
 //     * 2. From CLR's DllMain (DLL_PROCESS_DETACH), with fIsDllUnloading == TRUE. When
 //         called this way, much cleanup code is unsafe to run, and is thus skipped.
-// 
+//
 // Actual shut down logic is factored out to EEShutDownHelper which may be called
 // directly by EEShutDown, or indirectly on another thread (see code:#STAShutDown).
 //
@@ -1770,10 +1770,10 @@ BOOL IsThreadInSTA()
 // NOTE 1: Actually, g_fProcessDetach is set to TRUE if fIsDllUnloading is TRUE. But
 // g_fProcessDetach doesn't appear to be explicitly set to FALSE. (Apparently
 // g_fProcessDetach is implicitly initialized to FALSE as clr.dll is loaded.)
-// 
+//
 // NOTE 2: EEDllMain(DLL_PROCESS_DETACH) already sets g_fProcessDetach to TRUE, so it
 // appears EEShutDownHelper doesn't have to.
-// 
+//
 void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 {
     CONTRACTL {
@@ -2084,8 +2084,8 @@ static void InitializeDebugger(void)
              STATIC_CONTRACT_GC_NOTRIGGER;
              STATIC_CONTRACT_MODE_ANY;
 
-            if (fNeedCleanup) 
-            { 
+            if (fNeedCleanup)
+            {
                 TerminateDebugger();
             }
         }
@@ -2114,7 +2114,7 @@ static void InitializeDebugger(void)
         hr = g_pDebugInterface->Startup(); // throw on error
         _ASSERTE(SUCCEEDED(hr));
 
-        // 
+        //
         // If the debug pack is not installed, Startup will return S_FALSE
         // and we should cleanup and proceed without debugging support.
         //
@@ -2185,7 +2185,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pCultureNames));
-    } 
+    }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
@@ -2263,11 +2263,11 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
                 hr = HRESULT_FROM_GetLastError();
             }
             sParentCulture.CloseBuffer();
-#else // !FEATURE_PAL            
+#else // !FEATURE_PAL
             sParentCulture = sCulture;
-#endif // !FEATURE_PAL            
+#endif // !FEATURE_PAL
         }
-        // (LPCWSTR) to restrict the size to null terminated size 
+        // (LPCWSTR) to restrict the size to null terminated size
         pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
         // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
         // Also, this is in the wrong order - put after the parent culture chain.
@@ -2288,7 +2288,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 // entrypoint returns an 'int' we take that.  Otherwise we take a latched
 // process exit code.  This can be modified by the app via System.SetExitCode().
 static INT32 LatchedExitCode;
-    
+
 void SetLatchedExitCode (INT32 code)
 {
     CONTRACTL
@@ -2412,7 +2412,7 @@ BOOL AreAnyViolationBitsOn()
 
 
 // This function is intentionally invoked inside a big CONTRACT_VIOLATION that turns on every violation
-// bit on the map. The dynamic contract at the beginning *should* turn off those violation bits. 
+// bit on the map. The dynamic contract at the beginning *should* turn off those violation bits.
 // The body of this function tests to see that it did exactly that. This is to prevent the VSWhidbey B#564831 fiasco
 // from ever recurring.
 void ContractRegressionCheckInner()
@@ -2432,14 +2432,14 @@ void ContractRegressionCheckInner()
 
     if (AreAnyViolationBitsOn())
     {
-        // If we got here, the contract above FAILED to turn off one or more violation bits. This is a 
+        // If we got here, the contract above FAILED to turn off one or more violation bits. This is a
         // huge diagnostics hole and must be fixed immediately.
         _ASSERTE(!("WARNING: mscorwks has detected an internal error that may indicate contracts are"
                    " being silently disabled across the runtime. Do not ignore this assert!"));
     }
 }
 
-// This function executes once per process to ensure our CONTRACT_VIOLATION() mechanism 
+// This function executes once per process to ensure our CONTRACT_VIOLATION() mechanism
 // is properly scope-limited by nested contracts.
 void ContractRegressionCheck()
 {
@@ -2450,11 +2450,11 @@ void ContractRegressionCheck()
         MODE_ANY;
     }
     CONTRACTL_END;
- 
+
     {
         // DO NOT "FIX" THIS CONTRACT_VIOLATION!!!
         // The existence of this CONTRACT_VIOLATION is not a bug. This is debug-only code specifically written
-        // to test the CONTRACT_VIOLATION mechanism itself. This is needed to prevent a regression of 
+        // to test the CONTRACT_VIOLATION mechanism itself. This is needed to prevent a regression of
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation

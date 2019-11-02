@@ -9,14 +9,14 @@
 #define _REQUEST_COMMON_H_
 
 // Indexes into an array of elements of type T, where the size of type
-// T is not (or may not be) known at compile-time. 
+// T is not (or may not be) known at compile-time.
 // Returns a DPTR to the requested element (the element at the given index).
 template<typename T>
 DPTR(T) TableIndex(DPTR(T) base, size_t index, size_t t_size)
 {
     TADDR base_addr = base.GetAddr();
     TADDR element_addr = DacTAddrOffset(base_addr, index, t_size);
-    return __DPtr<T>(element_addr); 
+    return __DPtr<T>(element_addr);
 }
 
 // Dereferences a DPTR(T*), yielding a DPTR(T).

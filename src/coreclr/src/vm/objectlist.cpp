@@ -32,11 +32,11 @@ ObjectList::AddToList( PVOID ptr )
         MODE_ANY;
         PRECONDITION(CheckPointer(ptr));
     } CONTRACTL_END;
-    
+
 
 	//  sanity check that the pointer low bit is not set
 	 _ASSERTE(  (((DWORD)(size_t)ptr & 0x1) == 0) && "Invalid pointer" );
-	
+
     DWORD retval = INVALID_COMPRESSEDSTACK_INDEX;
 
     CrstHolder ch( &listLock_ );
@@ -49,16 +49,16 @@ ObjectList::AddToList( PVOID ptr )
 
 	// grab the head of the list
 	retval = (this->freeIndexHead_ >> 1);
-	
+
 	DWORD nextFreeIndex = (DWORD)(size_t)this->allEntries_.Get( retval );
-	
+
 	// index in use,  pointer values have low bit as 0
 	_ASSERTE(  ((nextFreeIndex & 0x01) == 1) && "The free list points to an index that is in use" );
 	 // update the head of the list with the next free index stored in the array list
-	this->freeIndexHead_ = nextFreeIndex;		 
-	 
+	this->freeIndexHead_ = nextFreeIndex;
+
 	// store the pointer
-	this->allEntries_.Set( retval, ptr);       
+	this->allEntries_.Set( retval, ptr);
     }
     // Otherwise we place this new entry at that end of the list.
     else
@@ -82,10 +82,10 @@ ObjectList::RemoveFromList( PVOID ptr )
         MODE_ANY;
         PRECONDITION(CheckPointer(ptr));
     } CONTRACTL_END;
-    
+
 	//  sanity check that the pointer low bit is not set
 	 _ASSERTE(  (((DWORD)(size_t)ptr & 0x1) == 0) && "Invalid pointer" );
-	
+
     DWORD index = INVALID_COMPRESSEDSTACK_INDEX;
 
     CrstHolder ch( &listLock_ );
@@ -129,14 +129,14 @@ ObjectList::RemoveFromList( DWORD index, PVOID ptr )
 
 	//  sanity check that the pointer low bit is not set
 	 _ASSERTE(  (((DWORD)(size_t)ptr & 0x1) == 0) && "Invalid pointer" );
-	
+
     _ASSERTE( index < this->allEntries_.GetCount() );
     _ASSERTE( this->allEntries_.Get( index ) == ptr && "Index tracking failed for this object" );
 
      // add the index to the free list ( shift the freeIndex left and set the low bit)
 	this->allEntries_.Set( index, (PVOID)(size_t)(this->freeIndexHead_));
 	this-> freeIndexHead_ = ((index<<1) | 0x1);
-    
+
 }
 
 PVOID

@@ -18,9 +18,9 @@
 // Synchronization requirements depend on use.  There are several properties to take into account:
 //
 // - Lookups may be asynchronous with each other
-// - Lookups must be exclusive with Add operations 
+// - Lookups must be exclusive with Add operations
 //    (@todo: this can be remedied by delaying destruction of old tables during reallocation, e.g. during GC)
-// - Remove operations may be asynchronous with Lookup/Add, unless elements are also deallocated. (In which 
+// - Remove operations may be asynchronous with Lookup/Add, unless elements are also deallocated. (In which
 //    case full synchronization is required)
 
 // Common "gotchas":
@@ -36,22 +36,22 @@
 // The required traits are:
 //
 // element_t                                    Type of elements in the hash table.  These elements are stored
-//                                              by value in the hash table. Elements must look more or less 
-//                                              like primitives - they must support assignment relatively 
-//                                              efficiently.  There are 2 required sentinel values: 
-//                                              Null and Deleted (described below).  (Note that element_t is 
-//                                              very commonly a pointer type.)  
+//                                              by value in the hash table. Elements must look more or less
+//                                              like primitives - they must support assignment relatively
+//                                              efficiently.  There are 2 required sentinel values:
+//                                              Null and Deleted (described below).  (Note that element_t is
+//                                              very commonly a pointer type.)
 //
 //                                              The key must be derivable from the element; if your
 //                                              table's keys are independent of the stored values, element_t
 //                                              should be a key/value pair.
-//                                              
-// key_t                                        Type of the lookup key.  The key is used for identity 
-//                                              comparison between elements, and also as a key for lookup. 
-//                                              This is also used by value and should support 
+//
+// key_t                                        Type of the lookup key.  The key is used for identity
+//                                              comparison between elements, and also as a key for lookup.
+//                                              This is also used by value and should support
 //                                              efficient assignment.
 //
-// count_t                                      integral type for counts.  Typically inherited by default 
+// count_t                                      integral type for counts.  Typically inherited by default
 //                                              Traits (COUNT_T).
 //
 // static key_t GetKey(const element_t &e)      Get key from element.  Should be stable for a given e.
@@ -59,12 +59,12 @@
 // static count_t Hash(key_t k)                 Compute hash from a key.  For efficient operation, the hashes
 //                                              for a set of elements should have random uniform distribution.
 //
-// static const bool s_NoThrow                  TRUE if GetKey, Equals, and hash are NOTHROW functions.  
+// static const bool s_NoThrow                  TRUE if GetKey, Equals, and hash are NOTHROW functions.
 //                                              Affects the THROWS clauses of several SHash functions.
-//                                              (Note that the Null- and Deleted-related functions below 
+//                                              (Note that the Null- and Deleted-related functions below
 //                                              are not affected by this and must always be NOTHROW.)
 //
-// static element_t Null()                      Return the Null sentinal value.  May be inherited from 
+// static element_t Null()                      Return the Null sentinal value.  May be inherited from
 //                                              default traits if it can be assigned from 0.
 // static element_t Deleted()                   Return the Deleted sentinal value.  May be inherited from the
 //                                              default traits if it can be assigned from -1.
@@ -77,27 +77,27 @@
 //                                              s_DestructPerEntryCleanupAction must be set to true if implemented.
 //
 // s_growth_factor_numerator
-// s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).  
+// s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
 //                                              Typically inherited from default traits (3/2)
 //
-// s_density_factor_numerator                   
-// s_density_factor_denominator                 Maxium occupied density of table before growth 
+// s_density_factor_numerator
+// s_density_factor_denominator                 Maxium occupied density of table before growth
 //                                              occurs (num/denom).  Typically inherited (3/4).
 //
-// s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is 
+// s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is
 //                                              probably preferable to call Reallocate on initialization rather
 //                                              than override his from the default traits. (7)
 //
-// s_supports_remove                            Set to false for a slightly faster implementation that does not 
-//                                              support deletes. There is a downside to the s_supports_remove flag, 
-//                                              in that there may be more copies of the template instantiated through 
+// s_supports_remove                            Set to false for a slightly faster implementation that does not
+//                                              support deletes. There is a downside to the s_supports_remove flag,
+//                                              in that there may be more copies of the template instantiated through
 //                                              the system as different variants are used.
 //
 // s_DestructPerEntryCleanupAction              Set to true if OnDestructPerEntryCleanupAction has non-empty implementation.
 //
-// DefaultHashTraits provides defaults for seldomly customized values in traits classes. 
+// DefaultHashTraits provides defaults for seldomly customized values in traits classes.
 
-template < typename ELEMENT > 
+template < typename ELEMENT >
 class DefaultSHashTraits
 {
   public:
@@ -128,7 +128,7 @@ class DefaultSHashTraits
     static const bool s_NoThrow = true;
 
     // No defaults - must specify:
-    // 
+    //
     // typedef key_t;
     // static key_t GetKey(const element_t &i);
     // static BOOL Equals(key_t k1, key_t k2);
@@ -144,7 +144,7 @@ class SHash : public TRAITS
     friend class VerifyLayoutsMD;  // verifies class layout doesn't accidentally change
 
   public:
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef typename TRAITS::element_t element_t;
     typedef typename TRAITS::PTR_element_t PTR_element_t;
@@ -168,7 +168,7 @@ class SHash : public TRAITS
     ~SHash();
 
     // Lookup an element in the table by key.  Returns NULL if no element in the table
-    // has the given key.  Note that multiple entries for the same key may be stored - 
+    // has the given key.  Note that multiple entries for the same key may be stored -
     // this will return the first element added.  Use KeyIterator to find all elements
     // with a given key.
 
@@ -183,12 +183,12 @@ class SHash : public TRAITS
 
     void Add(const element_t &element);
 
-    // Add a new element to the hash table, if no element with the same key is already 
+    // Add a new element to the hash table, if no element with the same key is already
     // there. Otherwise, it will replace the existing element. This has the effect of
-    // updating an element rather than adding a duplicate. 
+    // updating an element rather than adding a duplicate.
     void AddOrReplace(const element_t & element);
 
-    // Remove the first element matching the key from the hash table.  
+    // Remove the first element matching the key from the hash table.
 
     void Remove(key_t key);
 
@@ -205,7 +205,7 @@ class SHash : public TRAITS
 
     void RemoveAll();
 
-    // Begin and End pointers for iteration over entire table. 
+    // Begin and End pointers for iteration over entire table.
 
     Iterator Begin() const;
     Iterator End() const;
@@ -217,7 +217,7 @@ class SHash : public TRAITS
 
     // Return the number of elements currently stored in the table
 
-    count_t GetCount() const; 
+    count_t GetCount() const;
 
     // Resizes a hash table for growth.  The new size is computed based
     // on the current population, growth factor, and maximum density factor.
@@ -225,7 +225,7 @@ class SHash : public TRAITS
     void Grow();
 
     // Reallocates a hash table to a specific size.  The size must be big enough
-    // to hold all elements in the table appropriately.  
+    // to hold all elements in the table appropriately.
     //
     // Note that the actual table size must always be a prime number; the number
     // passed in will be upward adjusted if necessary.
@@ -248,36 +248,36 @@ class SHash : public TRAITS
     // See if it is OK to grow the hash table by one element.  If not, reallocate
     // the hash table.
     BOOL CheckGrowth();
-    
-    // See if it is OK to grow the hash table by one element. If not, allocate new 
+
+    // See if it is OK to grow the hash table by one element. If not, allocate new
     // hash table and return it together with its size *pcNewSize (used by code:AddPhases).
     // Returns NULL if there already is space for one element.
     element_t * CheckGrowth_OnlyAllocateNewTable(count_t * pcNewSize);
-    
+
     // Allocates new resized hash table for growth. Does not update the hash table on the object.
     // The new size is computed based on the current population, growth factor, and maximum density factor.
     element_t * Grow_OnlyAllocateNewTable(count_t * pcNewSize);
-    
-    // Utility function to allocate new table (does not copy the values into it yet). Returns the size of new table in 
+
+    // Utility function to allocate new table (does not copy the values into it yet). Returns the size of new table in
     // *pcNewTableSize (finds next prime).
     // Phase 1 of code:Reallocate - it is split to support code:AddPhases.
     element_t * AllocateNewTable(count_t requestedSize, count_t * pcNewTableSize);
-    
-    // Utility function to replace old table with newly allocated table (as allocated by 
+
+    // Utility function to replace old table with newly allocated table (as allocated by
     // code:AllocateNewTable). Copies all 'old' values into the new table first.
     // Returns the old table. Caller is expected to delete it (via code:DeleteOldTable).
     // Phase 2 of code:Reallocate - it is split to support code:AddPhases.
     element_t * ReplaceTable(element_t * newTable, count_t newTableSize);
-    
+
     // Utility function to delete old table (as returned by code:ReplaceTable).
     // Phase 3 of code:Reallocate - it is split to support code:AddPhases.
     void DeleteOldTable(element_t * oldTable);
-    
+
     // Utility function that does not call code:CheckGrowth.
-    // Add an element to the hash table.  This will never replace an element; multiple 
+    // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.
     void Add_GrowthChecked(const element_t & element);
-    
+
     // Utility function to add a new element to the hash table.  Note that
     // it is perfectly fine for the element to be a duplicate - if so it
     // is added an additional time. Returns TRUE if a new empty spot was used;
@@ -286,10 +286,10 @@ class SHash : public TRAITS
 
     // Utility function to add a new element to the hash table, if no element with the same key
     // is already there. Otherwise, it will replace the existing element. This has the effect of
-    // updating an element rather than adding a duplicate. 
+    // updating an element rather than adding a duplicate.
     void AddOrReplace(element_t *table, count_t tableSize, const element_t &element);
- 
-    // Utility function to find the first element with the given key in 
+
+    // Utility function to find the first element with the given key in
     // the hash table.
 
     static const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key);
@@ -358,7 +358,7 @@ class SHash : public TRAITS
 
             if (m_index >= m_tableSize)
                 return;
-            
+
             for (;;)
             {
                 m_index++;
@@ -370,10 +370,10 @@ class SHash : public TRAITS
         }
 
         bool Equal(const Index &i) const
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
 
-            return i.m_index == m_index; 
+            return i.m_index == m_index;
         }
 
         CHECK DoCheck() const
@@ -393,7 +393,7 @@ class SHash : public TRAITS
         }
     };
 
-    // Index for iterating elements with a given key.  
+    // Index for iterating elements with a given key.
     //
     // Note that the m_index field
     // is artificially bumped to m_tableSize when the end of iteration is reached.
@@ -486,7 +486,7 @@ class SHash : public TRAITS
         }
     };
 
-    // Wrapper and holder for adding an element to the hash table. Useful for Add operations that have to happen 
+    // Wrapper and holder for adding an element to the hash table. Useful for Add operations that have to happen
     // under a rare lock that does not allow call out into host.
     // There are 3 phases:
     //    1. code:PreallocateForAdd ... Can allocate memory (calls into host).
@@ -519,35 +519,35 @@ class SHash : public TRAITS
     public:
         AddPhases();
         ~AddPhases();
-        
-        // Prepares object for one call to code:Add. Pre-allocates new table memory if needed, does not publish 
+
+        // Prepares object for one call to code:Add. Pre-allocates new table memory if needed, does not publish
         // the table yet (it is kept ready only in this holder for call to code:Add).
         // Calls out into host.
         void PreallocateForAdd(SHash * pHash);
-        
-        // Add an element to the hash table. This will never replace an element; multiple elements may be stored 
+
+        // Add an element to the hash table. This will never replace an element; multiple elements may be stored
         // with the same key.
         // Will use/publish pre-allocated memory from code:PreallocateForAdd.
         // Does not call out into host.
         // Only one Add* method can be called once per object! (Create a new object for each call)
         void Add(const element_t & element);
-        
+
         // Element will not be added to the hash table.
         // Will use/publish pre-allocated memory from code:PreallocateForAdd.
         // Does not call out into host.
         // Only one Add* method can be called once per object! (Create a new object for each call)
         void AddNothing_PublishPreallocatedTable();
-        
+
         // Deletes old table if it was replaced by call to code:Add or code:AddNothing_PublishPreallocatedTable.
         // Calls out into host.
         void DeleteOldTable();
-        
+
     private:
         SHash *     m_pHash;
         element_t * m_newTable;
         count_t     m_newTableSize;
         element_t * m_oldTable;
-        
+
     #ifdef _DEBUG
         PTR_element_t dbg_m_table;
         count_t       dbg_m_tableSize;
@@ -572,13 +572,13 @@ class SHash : public TRAITS
         LockT & lock,
         AddLockT & addLock,
         IUnknown * addRefObject = nullptr);
-        
+
   private:
-    
+
     // Test for prime number.
     static BOOL IsPrime(COUNT_T number);
 
-    // Find the next prime number >= the given value.  
+    // Find the next prime number >= the given value.
 
     static COUNT_T NextPrime(COUNT_T number);
 
@@ -606,7 +606,7 @@ template <typename PARENT>
 class NoRemoveSHashTraits : public PARENT
 {
 public:
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef typename PARENT::element_t element_t;
     typedef typename PARENT::count_t count_t;
@@ -619,12 +619,12 @@ public:
 // PtrHashTraits is a template to provides useful defaults for pointer hash tables
 // It relies on methods GetKey and Hash defined on ELEMENT
 
-template <typename ELEMENT, typename KEY> 
+template <typename ELEMENT, typename KEY>
 class PtrSHashTraits : public DefaultSHashTraits<ELEMENT *>
 {
   public:
 
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef DefaultSHashTraits<ELEMENT *> PARENT;
     typedef typename PARENT::element_t element_t;
@@ -632,18 +632,18 @@ class PtrSHashTraits : public DefaultSHashTraits<ELEMENT *>
 
     typedef KEY key_t;
 
-    static key_t GetKey(const element_t &e) 
-    { 
+    static key_t GetKey(const element_t &e)
+    {
         WRAPPER_NO_CONTRACT;
-        return e->GetKey(); 
+        return e->GetKey();
     }
-    static BOOL Equals(key_t k1, key_t k2) 
-    { 
+    static BOOL Equals(key_t k1, key_t k2)
+    {
         LIMITED_METHOD_CONTRACT;
-        return k1 == k2; 
+        return k1 == k2;
     }
     static count_t Hash(key_t k)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return ELEMENT::Hash(k);
     }
@@ -654,7 +654,7 @@ class PtrSHash : public SHash< PtrSHashTraits<ELEMENT, KEY> >
 {
 };
 
-template <typename ELEMENT, typename KEY> 
+template <typename ELEMENT, typename KEY>
 class PtrSHashWithCleanupTraits
     : public PtrSHashTraits<ELEMENT, KEY>
 {
@@ -695,7 +695,7 @@ private:
     {
         return HashStringA(str);
     }
-    
+
     static size_t _hash(WCHAR const *str)
     {
         return HashString(str);
@@ -740,7 +740,7 @@ private:
     {
         return HashiStringA(str);
     }
-    
+
     static size_t _hash(WCHAR const *str)
     {
         return HashiString(str);
@@ -769,37 +769,37 @@ public:
 };
 
 // StringSHashTraits is a traits class useful for string-keyed
-// pointer hash tables. 
+// pointer hash tables.
 
 template <typename ElementT, typename CharT, typename ComparerT = CaseSensitiveStringCompareHash<CharT> >
 class StringSHashTraits : public PtrSHashTraits<ElementT, CharT const *>
 {
 public:
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef PtrSHashTraits<ElementT, CharT const *> PARENT;
     typedef typename PARENT::element_t element_t;
     typedef typename PARENT::key_t key_t;
     typedef typename PARENT::count_t count_t;
 
-    static BOOL Equals(key_t k1, key_t k2) 
-    { 
+    static BOOL Equals(key_t k1, key_t k2)
+    {
         LIMITED_METHOD_CONTRACT;
 
         if (k1 == NULL && k2 == NULL)
             return TRUE;
         if (k1 == NULL || k2 == NULL)
             return FALSE;
-        return ComparerT::compare(k1, k2) == 0; 
+        return ComparerT::compare(k1, k2) == 0;
     }
-    static count_t Hash(key_t k) 
-    { 
+    static count_t Hash(key_t k)
+    {
         LIMITED_METHOD_CONTRACT;
 
         if (k == NULL)
             return 0;
         else
-            return (count_t)ComparerT::hash(k); 
+            return (count_t)ComparerT::hash(k);
     }
 };
 
@@ -825,7 +825,7 @@ public:
         {
             delete[] e->String;
         }
-        
+
         if (e->Object != NULL)
         {
             e->Object->Release();
@@ -849,7 +849,7 @@ class WStringSHash : public SHash< StringSHashTraits<ELEMENT, WCHAR> >
 {
 };
 
-template <typename ELEMENT> 
+template <typename ELEMENT>
 class SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString>
 {
   public:
@@ -860,13 +860,13 @@ class SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString>
 
     static const bool s_NoThrow = false;
 
-    static BOOL Equals(const key_t &k1, const key_t &k2) 
-    { 
+    static BOOL Equals(const key_t &k1, const key_t &k2)
+    {
         WRAPPER_NO_CONTRACT;
         return k1.Equals(k2);
     }
-    static count_t Hash(const key_t &k) 
-    { 
+    static count_t Hash(const key_t &k)
+    {
         WRAPPER_NO_CONTRACT;
         return k.Hash();
     }
@@ -881,7 +881,7 @@ template <typename ELEMENT>
 class SetSHashTraits : public DefaultSHashTraits<ELEMENT>
 {
 public:
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef typename DefaultSHashTraits<ELEMENT>::element_t element_t;
     typedef typename DefaultSHashTraits<ELEMENT>::count_t count_t;
@@ -917,20 +917,20 @@ public:
     }
 };
 
-template <typename ELEMENT> 
+template <typename ELEMENT>
 class PtrSetSHashTraits : public SetSHashTraits<ELEMENT>
 {
   public:
 
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef SetSHashTraits<ELEMENT> PARENT;
     typedef typename PARENT::element_t element_t;
     typedef typename PARENT::key_t key_t;
     typedef typename PARENT::count_t count_t;
 
-    static count_t Hash(key_t k) 
-    { 
+    static count_t Hash(key_t k)
+    {
         WRAPPER_NO_CONTRACT;
         return (count_t)(size_t)k >> 2;
     }
@@ -981,7 +981,7 @@ template <typename KEY, typename VALUE>
 class MapSHashTraits : public DefaultSHashTraits< KeyValuePair<KEY,VALUE> >
 {
 public:
-    // explicitly declare local typedefs for these traits types, otherwise 
+    // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
     typedef typename DefaultSHashTraits< KeyValuePair<KEY,VALUE> >::element_t element_t;
     typedef typename DefaultSHashTraits< KeyValuePair<KEY,VALUE> >::count_t count_t;

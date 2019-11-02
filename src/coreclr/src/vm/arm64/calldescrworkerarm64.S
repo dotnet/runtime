@@ -25,10 +25,10 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
     // of slots we must pad with another. This simplifies to "if the low bit of numStackSlots is set,
     // extend the stack another eight bytes".
     ldr     x0, [x19,#CallDescrData__pSrc]
-    add     x0, x0, x1, lsl #3           // pSrcEnd=pSrc+8*numStackSlots 
+    add     x0, x0, x1, lsl #3           // pSrcEnd=pSrc+8*numStackSlots
     ands    x2, x1, #1
     beq     LOCAL_LABEL(stackloop)
-    
+
     // This loop copies numStackSlots words
     // from [pSrcEnd-8,pSrcEnd-16,...] to [sp-8,sp-16,...]
 
@@ -45,7 +45,7 @@ LOCAL_LABEL(stackloop):
 LOCAL_LABEL(donestack):
 
     // If FP arguments are supplied in registers (x9 != NULL) then initialize all of them from the pointer
-    // given in x8. 
+    // given in x8.
     ldr     x9, [x19,#CallDescrData__pFloatArgumentRegisters]
     cbz     x9, LOCAL_LABEL(NoFloatingPoint)
     ldp     q0, q1, [x9]
@@ -129,7 +129,7 @@ LOCAL_LABEL(IntReturn):
 LOCAL_LABEL(ReturnDone):
 
 #ifdef _DEBUG
-    // trash the floating point registers to ensure that the HFA return values 
+    // trash the floating point registers to ensure that the HFA return values
     // won't survive by accident
     ldp     d0, d1, [sp]
     ldp     d2, d3, [sp, #16]

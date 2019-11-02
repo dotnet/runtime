@@ -7,19 +7,19 @@
 
 //
 // Helpers to fetch the first WinRT Type def from metadata import
-// 
+//
 // ======================================================================================
 
 #include "common.h"
 
 // --------------------------------------------------------------------------------------
 // Return the first public WinRT type's namespace and typename - the names have the lifetime of the MetaData scope.
-// 
-//static 
+//
+//static
 HRESULT GetFirstWinRTTypeDef(
-    IMDInternalImport * pMDInternalImport, 
+    IMDInternalImport * pMDInternalImport,
     LPCSTR *            pszNameSpace,       // Tight to the lifetime of pssFakeNameSpaceAllocationBuffer when the WinMD file is empty
-    LPCSTR *            pszTypeName, 
+    LPCSTR *            pszTypeName,
     LPCWSTR             wszAssemblyPath,    // Used for creating fake binding type name in case the WinMD file is empty
     SString *           pssFakeNameSpaceAllocationBuffer)   // Used as allocation buffer for fake namespace
 {
@@ -30,17 +30,17 @@ HRESULT GetFirstWinRTTypeDef(
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE((wszAssemblyPath == NULL) || (pssFakeNameSpaceAllocationBuffer != NULL));
-    
+
     static const char const_szWinRTPrefix[] = "<WinRT>";
-    
+
     HRESULT hr = S_OK;
     HENUMInternalHolder hEnum(pMDInternalImport);
     mdToken tk;
-    
+
     hEnum.EnumTypeDefInit();
-    
+
     while (pMDInternalImport->EnumNext(&hEnum, &tk))
     {
         DWORD dwAttr;
@@ -51,7 +51,7 @@ HRESULT GetFirstWinRTTypeDef(
             return hr;
         }
     }
-    
+
     // We didn't find any public Windows runtime types.  In the case of 1st party WinMDs, this means
     // it's not exporting anything so we really cannot bind to it.
     // For WinMDs built with WinMDExp, it's because the adapter has promoted the CLR implementation to
@@ -62,7 +62,7 @@ HRESULT GetFirstWinRTTypeDef(
     // versions too so it should early out in the first iteration in almost all cases.
     HENUMInternalHolder hEnum2(pMDInternalImport);
     hEnum2.EnumTypeDefInit();
-    
+
     while (pMDInternalImport->EnumNext(&hEnum2, &tk))
     {
         DWORD dwAttr;
@@ -72,13 +72,13 @@ HRESULT GetFirstWinRTTypeDef(
             // Look for a matching private windows runtime type
             mdToken tkPrivate;
             HENUMInternalHolder hSubEnum(pMDInternalImport);
-            
+
             LPCSTR szNameSpace = NULL;
             LPCSTR szName = NULL;
             IfFailRet(pMDInternalImport->GetNameOfTypeDef(tk, &szName, &szNameSpace));
-            
+
             hSubEnum.EnumTypeDefInit();
-            
+
             while (pMDInternalImport->EnumNext(&hSubEnum, &tkPrivate))
             {
                 DWORD dwSubAttr;
@@ -111,7 +111,7 @@ HRESULT GetFirstWinRTTypeDef(
         // We will use WinMD file name as namespace and use fake hardcoded type name
         SString ssAssemblyPath(wszAssemblyPath);
         SString ssAssemblyName;
-        SplitPath(ssAssemblyPath, 
+        SplitPath(ssAssemblyPath,
                   NULL,     // drive
                   NULL,     // dir
                   &ssAssemblyName,  // name
@@ -124,31 +124,31 @@ HRESULT GetFirstWinRTTypeDef(
             return S_OK;
         }
     }
-    
+
     return CLR_E_BIND_TYPE_NOT_FOUND;
 } // GetFirstWinRTTypeDef
 
 // --------------------------------------------------------------------------------------
-//static 
-HRESULT 
+//static
+HRESULT
 GetBindableWinRTName(
-    IMDInternalImport * pMDInternalImport, 
+    IMDInternalImport * pMDInternalImport,
     IAssemblyName *     pIAssemblyName)
 {
     STANDARD_VM_CONTRACT;
-    
+
     HRESULT hr = S_OK;
-    
+
     LPCSTR  szNameSpace;
     LPCSTR  szTypeName;
-    
+
     // Note: This function is used only by native binder which does not support empty WinMDs - see code:CEECompileInfo::LoadAssemblyByPath
     // Therefore we do not have to use file name to create fake type name
     IfFailRet(GetFirstWinRTTypeDef(pMDInternalImport, &szNameSpace, &szTypeName, NULL, NULL));
-    
+
     WCHAR wzAsmName[MAX_PATH_FNAME];
     DWORD dwSize = sizeof(wzAsmName);
-    
+
     IfFailRet(pIAssemblyName->GetProperty(ASM_NAME_NAME, wzAsmName, &dwSize));
 
     StackSString sNamespaceAndType(wzAsmName);

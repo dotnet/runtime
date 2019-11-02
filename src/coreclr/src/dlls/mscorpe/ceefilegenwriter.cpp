@@ -159,11 +159,11 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     if (pCeeFileGenFrom) {
         pCeeFileGenFrom->cloneInstance((CCeeGen*)pPrivateGenWriter);
     }
-   
+
     hr = pPrivateGenWriter->getSectionCreate(".text0", sdExecute, &corHeaderSection);
     IfFailGo(hr);
     preallocatedOffset = corHeaderSection->dataLen();
-    
+
 
     // set il RVA to be after the preallocated sections
     pPEWriter->setIlRva(preallocatedOffset);
@@ -390,24 +390,24 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
 
 #ifndef FEATURE_PAL
     HANDLE hThreadToken = NULL;
-    // Impersonation is only supported on Win2k and above. 
-    if (!OpenThreadToken(GetCurrentThread(), TOKEN_READ | TOKEN_IMPERSONATE, TRUE, &hThreadToken)) 
+    // Impersonation is only supported on Win2k and above.
+    if (!OpenThreadToken(GetCurrentThread(), TOKEN_READ | TOKEN_IMPERSONATE, TRUE, &hThreadToken))
     {
-        if (GetLastError() != ERROR_NO_TOKEN) 
+        if (GetLastError() != ERROR_NO_TOKEN)
         {
             _ASSERTE(!"Failed to get thread token!");
             return HRESULT_FROM_GetLastError();
         }
     }
-    
-    if (hThreadToken != NULL) 
+
+    if (hThreadToken != NULL)
     {
-        if (!RevertToSelf()) 
+        if (!RevertToSelf())
         {
             _ASSERTE(!"Failed to revert impersonation!");
             CloseHandle(hThreadToken);
             return HRESULT_FROM_GetLastError();
-        }                
+        }
     }
 #endif // !FEATURE_PAL
 
@@ -441,12 +441,12 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
 
 ErrExit:
 #ifndef FEATURE_PAL
-    if (hThreadToken != NULL) 
+    if (hThreadToken != NULL)
     {
         BOOL success = SetThreadToken(NULL, hThreadToken);
         CloseHandle(hThreadToken);
-    
-        if (!success) 
+
+        if (!success)
         {
             _ASSERTE(!"Failed to reimpersonate!");
             hr = HRESULT_FROM_GetLastError();
@@ -763,7 +763,7 @@ HRESULT CeeFileGenWriter::emitExeMain()
             {
                 ilt[j].u1.AddressOfData = VAL32((ULONG)(ibnOffset + iDataOffsetRO));
                 iat[j].u1.AddressOfData = VAL32((ULONG)(ibnOffset + iDataOffsetRO));
-    
+
                 iDataSectionRO.addSectReloc( (unsigned)(iDataOffsetRO + (char *)(&ilt[j].u1.AddressOfData) - iDataRO),
                                                 iDataSectionRO, srRelocAbsolute);
                 m_iDataSectionIAT->addSectReloc( (unsigned)(m_iDataOffsetIAT + (char *)(&iat[j].u1.AddressOfData) - m_iDataIAT),
@@ -798,7 +798,7 @@ HRESULT CeeFileGenWriter::emitExeMain()
         }
 
         // now fill in the import lookup table for each DLL
-        strcpy_s(iDataRO + m_iDataDlls[i].m_nameOffset, 
+        strcpy_s(iDataRO + m_iDataDlls[i].m_nameOffset,
                  iDataSizeRO - m_iDataDlls[i].m_nameOffset,
                  m_iDataDlls[i].m_name);
 
@@ -860,7 +860,7 @@ HRESULT CeeFileGenWriter::emitExeMain()
             entryPointOffset += diff;
         }
         _ASSERTE((getTextSection().dataLen() + (m_dllSwitch ? CorDllMainAMD64IATOffset : CorExeMainAMD64IATOffset)) % align == 0);
-        
+
         getPEWriter().setEntryPointTextOffset(entryPointOffset);
         if (m_dllSwitch)
         {
@@ -949,7 +949,7 @@ HRESULT GetClrSystemDirectory(SString& pbuffer)
 
     PathString pPath;
     DWORD dwPath;
-    
+
     _ASSERTE (g_hThisInst);
 
     dwPath = WszGetModuleFileName(g_hThisInst, pPath);
@@ -958,7 +958,7 @@ HRESULT GetClrSystemDirectory(SString& pbuffer)
         hr = HRESULT_FROM_GetLastErrorNA();
         return (hr);
     }
-    
+
     return CopySystemDirectory(pPath, pbuffer);
 }
 
@@ -1104,7 +1104,7 @@ HRESULT ConvertResource(const WCHAR * pszFilename, __in_ecount(cchTempFilename) 
     {   // Conversion succesful, so return filename.
         wcscpy_s(pszTempFilename, cchTempFilename, tempResObj);
     }
- 
+
     return S_OK;
 } // HRESULT ConvertResource()
 
@@ -1366,7 +1366,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             // Ensure this is a valid reloc
             {
                 S_SIZE_T cbRelocEnd = S_SIZE_T(VAL32(pReloc->VirtualAddress)) + S_SIZE_T(sizeof(DWORD));
-                if (cbRelocEnd.IsOverflow() || 
+                if (cbRelocEnd.IsOverflow() ||
                     cbRelocEnd.Value() > static_cast<SIZE_T>(VAL32(rsrc[0]->SizeOfRawData)))
                 {
                     pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
@@ -1739,19 +1739,19 @@ HRESULT CeeFileGenWriter::UpdateFixups()
           // reloc src contains target pointer
           pfixup->wType = IMAGE_REL_I386_DIR32NB;
           break;
-          
+
       case srRelocHighLow:
           // Emitted bytes: full address of target
           // reloc src contains target offset relative to target section
           pfixup->wType = IMAGE_REL_I386_DIR32;
           break;
-          
+
       case srRelocHighLowPtr:
           // Emitted bytes: full address of target
           // reloc src contains target pointer
           pfixup->wType = IMAGE_REL_I386_DIR32;
           break;
-          
+
       case srRelocRelative:
           // Emitted bytes: value of reloc tgt - (reloc source + sizeof(DWORD))
           // reloc src contains offset relative to target section, minus sizeof(DWORD)
@@ -1761,7 +1761,7 @@ HRESULT CeeFileGenWriter::UpdateFixups()
           pfixup->wType = IMAGE_REL_I386_REL32;
           pfixup->rvaTarget = *pdw + sizeof(DWORD);
           break;
-          
+
       case srRelocRelativePtr:
           // Emitted bytes: value of reloc tgt - (reloc source + sizeof(DWORD))
           // reloc src contains disp, disp = pTarget - (pSource + sizeof(DWORD))
@@ -1771,7 +1771,7 @@ HRESULT CeeFileGenWriter::UpdateFixups()
           pfixup->wType = IMAGE_REL_I386_REL32;
           pfixup->rvaTarget = (int) (INT_PTR) pdw + sizeof(DWORD) + (int) *pdw;
           break;
-          
+
       case srRelocMapToken:
           // Emitted bytes: contents of reloc source unchanged.
           // reloc src contains token value
@@ -1805,19 +1805,19 @@ HRESULT CeeFileGenWriter::UpdateFixups()
           // Emitted bytes: RVA, offset relative to image base
           pfixup->wType = IMAGE_REL_AMD64_ADDR32NB;
           break;
-          
+
       case srRelocAbsolutePtr:
           // Emitted bytes: RVA, offset relative to image base
           // reloc src contains target pointer
           pfixup->wType = IMAGE_REL_AMD64_ADDR32NB;
           break;
-          
+
       case srRelocDir64Ptr:
           // Emitted bytes: full address of target
           // reloc src contains target pointer
           pfixup->wType = IMAGE_REL_IA64_DIR64;
           break;
-          
+
       case srRelocMapToken:
           // Emitted bytes: contents of reloc source unchanged.
           // reloc src contains token value

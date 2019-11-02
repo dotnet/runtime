@@ -5,7 +5,7 @@
 // This file defines namespaces used by the runtime.
 //
 // Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to 
+// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -66,7 +66,7 @@
 
 #define g_MicrosoftNS       "Microsoft"
 
-#define g_Win32NS           g_MicrosoftNS ".Win32"         
+#define g_Win32NS           g_MicrosoftNS ".Win32"
 #define g_SafeHandlesNS  g_Win32NS ".SafeHandles"
 
 #define g_StubHelpersNS     g_SystemNS ".StubHelpers"
@@ -83,4 +83,4 @@
 
 #define g_ExceptionServicesNS         g_RuntimeNS ".ExceptionServices"
 
-#define g_LoaderNS         g_RuntimeNS ".Loader" 
+#define g_LoaderNS         g_RuntimeNS ".Loader"

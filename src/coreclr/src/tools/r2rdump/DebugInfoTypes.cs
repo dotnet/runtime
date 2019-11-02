@@ -88,7 +88,7 @@ namespace R2RDump
     struct VarLoc
     {
         public VarLocType VarLocType;
-        // What's stored in the Data# fields changes based on VarLocType and will be 
+        // What's stored in the Data# fields changes based on VarLocType and will be
         // interpreted accordingly when the variable location information is dumped.
         public int Data1;
         public int Data2;

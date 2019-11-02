@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ImportHelper.h
-// 
+//
 
 //
 // contains utility code to MD directory
@@ -27,7 +27,7 @@ public:
         DoNotCreateHash,    // Do not create hash if it does not exist (faster for isolated calls)
         CreateHash          // Create hash if it does not exist (faster for multiple calls)
     };
-    
+
 
     static HRESULT FindMethodSpecByMethodAndInstantiation(
         CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
@@ -36,7 +36,7 @@ public:
         ULONG       cbInstantiation,            // [IN] Size of instantiation.
         mdMethodSpec *pMethodSpec,              // [OUT] Put the MethodSpec token here.
         RID         rid = 0);              // [IN] Optional rid to be ignored.
-    
+
 
     static HRESULT FindGenericParamConstraintByOwnerAndConstraint(
         CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
@@ -54,7 +54,7 @@ public:
         mdGenericParam *pGenericParam,          // [OUT] Put the GenericParam token here.
         RID         rid = 0);                   // [IN] Optional rid to be ignored.
 
-    static HRESULT FindMethod(      
+    static HRESULT FindMethod(
         CMiniMdRW *     pMiniMd,                    // [IN] the minimd to lookup
         mdTypeDef       td,                         // [IN] parent.
         LPCUTF8         szName,                     // [IN] MethodDef name.
@@ -91,7 +91,7 @@ public:
         mdMemberRef *pmr,                   // [OUT] Put the MemberRef token found
         RID         rid = 0,                // [IN] Optional rid to be ignored.
         HashSearchOption fCreateHash = DoNotCreateHash); // [IN] Should we create hash first? (Optimize for multiple calls vs. single isolated call)
-    
+
     static HRESULT FindStandAloneSig(
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
         const COR_SIGNATURE *pbSig,         // [IN] Signature.
@@ -160,13 +160,13 @@ public:
         LPCUTF8     szName,                 // [IN] name of the property
         const COR_SIGNATURE *pbSig,         // [IN] Signature.
         ULONG       cbSig,                  // [IN] Size of signature.
-        mdProperty  *ppr);                  // [OUT] Property token 
+        mdProperty  *ppr);                  // [OUT] Property token
 
     static HRESULT FindEvent(
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
         mdToken     tkTypeDef,              // [IN] typedef token
         LPCUTF8     szName,                 // [IN] name of the event
-        mdProperty  *pev);                  // [OUT] Event token 
+        mdProperty  *pev);                  // [OUT] Event token
 
     static HRESULT FindCustomAttributeByToken(
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
@@ -174,7 +174,7 @@ public:
         mdToken     tkType,                 // [IN] type of the CustomAttribute
         const void  *pCustBlob,             // [IN] custom value blob
         ULONG       cbCustBlob,             // [IN] size of the blob.
-        mdCustomAttribute *pcv);            // [OUT] CustomAttribute token 
+        mdCustomAttribute *pcv);            // [OUT] CustomAttribute token
 
     static HRESULT GetCustomAttributeByName(// S_OK or error.
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
@@ -189,7 +189,7 @@ public:
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         mdCustomAttribute pca);             // [OUT] found CA token
 
-    static HRESULT MergeUpdateTokenInFieldSig(      
+    static HRESULT MergeUpdateTokenInFieldSig(
         CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
         CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
         IMetaModelCommon *pCommonAssemImport,   // [IN] Assembly scope where the signature is from.
@@ -303,7 +303,7 @@ public:
 
 private:
     /*
-    static bool ImportHelper::CompareCustomAttribute( // 
+    static bool ImportHelper::CompareCustomAttribute( //
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
@@ -343,7 +343,7 @@ private:
 
     // CreateAssemblyRefFromAssembly, CompareAssemblyRefToAssembly are in satellite libs because
     // they are only used in emit cases and need strong-name support in mscorwks.dll.
-    
+
     static HRESULT CreateAssemblyRefFromAssembly( // S_OK or error.
         CMiniMdRW   *pMiniMdAssemEmit,      // [IN] Emit assembly scope.
         CMiniMdRW   *pMiniMdModuleEmit,     // [IN] Emit module scope.

@@ -6,7 +6,7 @@
 
 //
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
-// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
+// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is
 // provided with information mapping that argument into registers and/or stack locations.
 //
 
@@ -101,7 +101,7 @@ struct ArgLocDesc
 };
 
 //
-// TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not 
+// TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not
 // all fields are used all the time, we use uniform form for simplicity.
 //
 struct TransitionBlock
@@ -158,7 +158,7 @@ struct TransitionBlock
         LIMITED_METHOD_CONTRACT;
         return offsetof(TransitionBlock, m_x8RetBuffReg);
     }
-    
+
     static int GetOffsetOfFirstGCRefMapSlot()
     {
         return GetOffsetOfRetBuffArgReg();
@@ -196,11 +196,11 @@ struct TransitionBlock
 
 #if defined(UNIX_AMD64_ABI)
         return offset >= (int)sizeof(TransitionBlock);
-#else        
+#else
         int ofsArgRegs = GetOffsetOfArgumentRegisters();
 
         return offset >= (int) (ofsArgRegs + ARGUMENTREGISTERS_SIZE);
-#endif        
+#endif
     }
 
     static BOOL IsArgumentRegisterOffset(int offset)
@@ -219,7 +219,7 @@ struct TransitionBlock
 
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE(offset != TransitionBlock::StructInRegsOffset);
-#endif        
+#endif
         return (offset - GetOffsetOfArgumentRegisters()) / TARGET_POINTER_SIZE;
     }
 
@@ -238,9 +238,9 @@ struct TransitionBlock
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI)
         return (offset != TransitionBlock::StructInRegsOffset) && (offset < 0);
-#else        
+#else
         return offset < 0;
-#endif        
+#endif
     }
 
     // Check if an argument has floating point register, that means that it is
@@ -254,7 +254,7 @@ struct TransitionBlock
         {
             return argLocDescForStructInRegs->m_cFloatReg > 0;
         }
-    #endif        
+    #endif
         return offset < 0;
     }
 
@@ -289,7 +289,7 @@ struct TransitionBlock
     // Special offset value to represent  struct passed in registers. Such a struct can span both
     // general purpose and floating point registers, so it can have two different offsets.
     static const int StructInRegsOffset = -2;
-#endif    
+#endif
 };
 
 //-----------------------------------------------------------------------
@@ -300,7 +300,7 @@ struct TransitionBlock
 // performance critical code.
 //
 // The ARGITERATOR_BASE argument of the template is provider of the parsed
-// method signature. Typically, the arg iterator works on top of MetaSig. 
+// method signature. Typically, the arg iterator works on top of MetaSig.
 // Reflection invoke uses alternative implementation to save signature parsing
 // time because of it has the parsed signature available.
 //-----------------------------------------------------------------------
@@ -358,7 +358,7 @@ public:
     }
 #endif
 
-    // Is there a hidden parameter for the return parameter? 
+    // Is there a hidden parameter for the return parameter?
     //
     BOOL HasRetBuffArg()
     {
@@ -414,7 +414,7 @@ public:
 
         _ASSERTE(!th.IsNull());
 
-        // This method only works for valuetypes. It includes true value types, 
+        // This method only works for valuetypes. It includes true value types,
         // primitives, enums and TypedReference.
         _ASSERTE(th.IsValueType());
 
@@ -443,7 +443,7 @@ public:
         // If the size is bigger than ENREGISTERED_PARAM_TYPE_MAXSIZE, or if the size is NOT a power of 2, then
         // the argument is passed by reference.
         return (size > ENREGISTERED_PARAMTYPE_MAXSIZE) || ((size & (size-1)) != 0);
-#endif        
+#endif
     }
 #endif // _TARGET_AMD64_
 
@@ -454,7 +454,7 @@ public:
 
 #ifdef _TARGET_AMD64_
 #ifdef UNIX_AMD64_ABI
-        PORTABILITY_ASSERT("ArgIteratorTemplate::IsVarArgPassedByRef");                
+        PORTABILITY_ASSERT("ArgIteratorTemplate::IsVarArgPassedByRef");
         return FALSE;
 #else // UNIX_AMD64_ABI
         return IsArgPassedByRef(size);
@@ -500,7 +500,7 @@ public:
     // Each time this is called, this returns a byte offset of the next
     // argument from the TransitionBlock* pointer.
     //
-    // Returns TransitionBlock::InvalidOffset once you've hit the end 
+    // Returns TransitionBlock::InvalidOffset once you've hit the end
     // of the list.
     //------------------------------------------------------------
     int GetNextOffset();
@@ -659,7 +659,7 @@ public:
 
         if (argOffset == TransitionBlock::StructInRegsOffset)
         {
-            // We always already have argLocDesc for structs passed in registers, we 
+            // We always already have argLocDesc for structs passed in registers, we
             // compute it in the GetNextOffset for those since it is always needed.
             _ASSERTE(false);
             return;
@@ -753,8 +753,8 @@ protected:
 
 #ifndef _TARGET_X86_
     void GetSimpleLoc(int offset, ArgLocDesc * pLoc)
-    { 
-        WRAPPER_NO_CONTRACT; 
+    {
+        WRAPPER_NO_CONTRACT;
 
 #ifdef CALLDESCR_RETBUFFARGREG
         // Codepaths where this could happen have been removed. If this occurs, something
@@ -937,7 +937,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         case IMAGE_CEE_CS_CALLCONV_C:
         case IMAGE_CEE_CS_CALLCONV_STDCALL:
             m_numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-            m_curOfs = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *); 
+            m_curOfs = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
             m_fUnmanagedCallConv = true;
             break;
 
@@ -1072,7 +1072,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_eeClass = eeClass;
-                
+
                 m_hasArgLocDescForStructInRegs = true;
 
                 m_idxGenReg += cGenRegs;
@@ -1106,7 +1106,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         return argOfs;
     }
 
-    m_fArgInRegisters = false;     
+    m_fArgInRegisters = false;
 
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * STACK_ELEM_SIZE;
 
@@ -1150,7 +1150,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Value type case: extract the alignment requirement, note that this has to handle 
+        // Value type case: extract the alignment requirement, note that this has to handle
         // the interop "native value types".
         fRequiresAlign64Bit = thValueType.RequiresAlign8();
 
@@ -1211,7 +1211,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         {
             if ((m_wFPRegs & wAllocMask) == 0)
             {
-                // We found one, mark the register or registers as used. 
+                // We found one, mark the register or registers as used.
                 m_wFPRegs |= wAllocMask;
 
                 // Indicate the registers used to the caller and return.
@@ -1247,7 +1247,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         if (fRequiresAlign64Bit)
         {
             // The argument requires 64-bit alignment. Align either the next general argument register if
-            // we have any left.  See step C.3 in the algorithm in the ABI spec.       
+            // we have any left.  See step C.3 in the algorithm in the ABI spec.
             m_idxGenReg = (int)ALIGN_UP(m_idxGenReg, 2);
         }
 
@@ -1278,7 +1278,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (fRequiresAlign64Bit)
     {
         // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
-        // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
+        // the next stack slot.  See step C.6 in the algorithm in the ABI spec.
         m_idxStack = (int)ALIGN_UP(m_idxStack, 2);
     }
 
@@ -1326,7 +1326,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_hasArgLocDescForStructInRegs = true;
             }
         }
-        else 
+        else
         {
             // Composite greater than 16bytes should be passed by reference
             if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
@@ -1385,7 +1385,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_idxStack += (m_idxGenReg + cArgSlots - 8);
 
                 // We used up the remaining reg slots.
-                m_idxGenReg = 8; 
+                m_idxGenReg = 8;
 
                 return argOfs;
             }
@@ -1478,7 +1478,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
                     if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
                     {
-                        flags |= (2 << RETURN_FP_SIZE_SHIFT);                    
+                        flags |= (2 << RETURN_FP_SIZE_SHIFT);
                     }
                 }
 
@@ -1568,7 +1568,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
      case IMAGE_CEE_CS_CALLCONV_C:
      case IMAGE_CEE_CS_CALLCONV_STDCALL:
            numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-           nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *); 
+           nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
            break;
 
      case IMAGE_CEE_CS_CALLCONV_THISCALL:
@@ -1580,8 +1580,8 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
 
     DWORD nArgs = this->NumFixedArgs();
     for (DWORD i = 0; i < nArgs; i++)
-    {        
-        TypeHandle thValueType;        
+    {
+        TypeHandle thValueType;
         CorElementType type = this->GetNextArgumentType(i, &thValueType);
 
         if (!IsArgumentInRegister(&numRegistersUsed, type))
@@ -1595,7 +1595,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
             {
 #ifdef _DEBUG
                 // We should not ever throw exception in the "FORBIDGC_LOADER_USE_ENABLED" mode.
-                // The contract violation is required to workaround bug in the static contract analyzer.                 
+                // The contract violation is required to workaround bug in the static contract analyzer.
                 _ASSERTE(!FORBIDGC_LOADER_USE_ENABLED());
                 CONTRACT_VIOLATION(ThrowsViolation);
 #endif
@@ -1611,7 +1611,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         if (numRegistersUsed < NUM_ARGUMENT_REGISTERS)
         {
             numRegistersUsed++;
-            paramTypeFlags = (numRegistersUsed == 1) ? 
+            paramTypeFlags = (numRegistersUsed == 1) ?
                 PARAM_TYPE_REGISTER_ECX : PARAM_TYPE_REGISTER_EDX;
         }
         else
@@ -1635,14 +1635,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
 #ifdef UNIX_AMD64_ABI
         if (m_fArgInRegisters)
         {
-            // Arguments passed in registers don't consume any stack 
+            // Arguments passed in registers don't consume any stack
             continue;
         }
 
         stackElemSize = StackElemSize(GetArgSize());
 #else // UNIX_AMD64_ABI
-        // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
-        // than a stack slot are passed by reference. 
+        // All stack arguments take just one stack slot on AMD64 because of arguments bigger
+        // than a stack slot are passed by reference.
         stackElemSize = STACK_ELEM_SIZE;
 #endif // UNIX_AMD64_ABI
 #else // _TARGET_AMD64_
@@ -1661,7 +1661,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
             {
 #ifdef _DEBUG
                 // We should not ever throw exception in the "FORBIDGC_LOADER_USE_ENABLED" mode.
-                // The contract violation is required to workaround bug in the static contract analyzer.                 
+                // The contract violation is required to workaround bug in the static contract analyzer.
                 _ASSERTE(!FORBIDGC_LOADER_USE_ENABLED());
                 CONTRACT_VIOLATION(ThrowsViolation);
 #endif
@@ -1669,7 +1669,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
             }
 #endif
             maxOffset = endOfs;
-        }        
+        }
     }
     // Clear the iterator started flag
     m_dwFlags &= ~ITERATION_STARTED;
@@ -1817,7 +1817,7 @@ inline BOOL IsRetBuffPassedAsFirstArg()
     return TRUE;
 #else
     return FALSE;
-#endif        
+#endif
 }
 
 #endif // __CALLING_CONVENTION_INCLUDED

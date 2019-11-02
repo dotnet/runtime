@@ -209,9 +209,9 @@ STDMETHODIMP CLRServicesImpl::ReleaseDisconnectedReferenceSources()
 //
 // Arguments
 //   pTarget        - The identity IUnknown* where a RCW points to (Grid, in this case)
-//                    Note that 
+//                    Note that
 //                    1) we can either create a new RCW or get back an old one from cache
-//                    2) This pTarget could be a regular WinRT object (such as WinRT collection) for data binding 
+//                    2) This pTarget could be a regular WinRT object (such as WinRT collection) for data binding
 //  ppNewReference  - The ICCW* for the proxy created
 //                    Jupiter will call ICCW to establish a jupiter reference
 //
@@ -229,7 +229,7 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
 
     HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {    
+    {
         //
         // QI for IUnknown to get the identity unknown
         //
@@ -252,15 +252,15 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
         //
         {
             GCX_COOP();
-            
+
             struct _gc {
                     OBJECTREF  TargetObj;
                     OBJECTREF  RetVal;
             } gc;
             ZeroMemory(&gc, sizeof(gc));
-            
+
             GCPROTECT_BEGIN(gc);
-            
+
             gc.TargetObj = marshaler.FindOrCreateObjectRef(&pTarget);
 
             //
@@ -269,7 +269,7 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
             MethodTable *pMT = gc.TargetObj->GetMethodTable();
 
             TypeHandle thArgs[2];
-            
+
             //
             // This RCW could be strongly typed - figure out T1/T2 using metadata
             //
@@ -280,21 +280,21 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
                 if (thArgs[0].IsNull() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__ILISTGENERIC)))
                 {
                     thArgs[0] = pItfMT->GetInstantiation()[0];
-            
+
                     // Are we done?
                     if (!thArgs[1].IsNull())
                         break;
                 }
-            
+
                 if (thArgs[1].IsNull() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IREADONLYLISTGENERIC)))
                 {
                     thArgs[1] = pItfMT->GetInstantiation()[0];
-            
+
                     // Are we done?
                     if (!thArgs[0].IsNull())
                         break;
                 }
-            }            
+            }
 
             if (thArgs[0].IsNull() || thArgs[1].IsNull())
             {
@@ -305,7 +305,7 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
                 {
                     RCWHolder pRCW(GET_THREAD());
                     pRCW.Init(gc.TargetObj);
-                
+
                     RCW::CachedInterfaceEntryIterator it = pRCW->IterateCachedInterfacePointers();
                     while (it.Next())
                     {
@@ -313,20 +313,20 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
 
                         // Unfortunately the iterator could return NULL entry
                         if (pItfMT == NULL) continue;
-                        
+
                         if (thArgs[0].IsNull() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__ILISTGENERIC)))
                         {
                             thArgs[0] = pItfMT->GetInstantiation()[0];
-                    
+
                             // Are we done?
                             if (!thArgs[1].IsNull())
                                 break;
                         }
-                    
+
                         if (thArgs[1].IsNull() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IREADONLYLISTGENERIC)))
                         {
                             thArgs[1] = pItfMT->GetInstantiation()[0];
-                    
+
                             // Are we done?
                             if (!thArgs[0].IsNull())
                                 break;
@@ -334,7 +334,7 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
                     }
                 }
             }
-            
+
             //
             // If not found, use object (IInspectable*) as the last resort
             //
@@ -342,24 +342,24 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
                 thArgs[0] = TypeHandle(g_pObjectClass);
             if (thArgs[1].IsNull())
                 thArgs[1] = TypeHandle(g_pObjectClass);
-                
+
             //
             // Instantiate ICustomPropertyProviderProxy<T1, T2>.CreateInstance
             //
             TypeHandle thCustomPropertyProviderProxy = TypeHandle(MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTYPROVIDERPROXY));
-            
+
             MethodTable *pthCustomPropertyProviderProxyExactMT = thCustomPropertyProviderProxy.Instantiate(Instantiation(thArgs, 2)).GetMethodTable();
-                        
+
             MethodDesc *pCreateInstanceMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 MscorlibBinder::GetMethod(METHOD__ICUSTOMPROPERTYPROVIDERPROXY__CREATE_INSTANCE),
                 pthCustomPropertyProviderProxyExactMT,
                 FALSE,
                 Instantiation(),
                 FALSE);
-            
+
             //
             // Call ICustomPropertyProviderProxy.CreateInstance
-            //        
+            //
             PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pCreateInstanceMD);
             DECLARE_ARGHOLDER_ARRAY(args, 1);
             args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
@@ -369,10 +369,10 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
             CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(&gc.RetVal);
             *ppNewReference = (ICCW *)ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_ICCW, /* pIntfMT = */ NULL);
             GCPROTECT_END();
-        }        
+        }
     }
     END_EXTERNAL_ENTRYPOINT;
-    return hr;        
+    return hr;
 }
 
 //
@@ -393,7 +393,7 @@ void RCWWalker::OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject)
     CONTRACTL_END;
 
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::OnJupiterRCWCreated (RCW = 0x%p) BEGINS -----\n", pRCW));
-    
+
     //
     // Retrieve IJupiterGCManager
     //
@@ -411,21 +411,21 @@ void RCWWalker::OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject)
 
             //
             // Perform all operation that could fail here
-            // 
+            //
             NewHolder<CLRServicesImpl> pCLRServicesImpl = new CLRServicesImpl();
             ReleaseHolder<ICLRServices> pCLRServices;
             IfFailThrow(pCLRServicesImpl->QueryInterface(IID_ICLRServices, (void **)&pCLRServices));
-            
+
             // Temporarily switch back to coop and disable GC to avoid racing with the very first RCW walk
             GCX_COOP();
             GCX_FORBID();
-            
+
             if (FastInterlockCompareExchangePointer((IJupiterGCManager **)&s_pGCManager, (IJupiterGCManager *)pGCManager, NULL) == NULL)
             {
                 //
                 // OK. It is time to do our RCWWalker initialization
                 // It's safe to do it here because we are in COOP and only one thread wins the race
-                //                                
+                //
                 LOG((LF_INTEROP, LL_INFO100, "\t[RCW Walker] Assigning RCWWalker::s_pIGCManager = 0x%p\n", (void *)pGCManager));
 
                 pGCManager.SuppressRelease();
@@ -465,14 +465,14 @@ void RCWWalker::AfterJupiterRCWCreated(RCW *pRCW)
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::AfterJupiterRCWCreated (RCW = 0x%p) BEGINS ----- \n", pRCW));
 
     IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
-          
+
     //
     // Notify Jupiter that we've created a new RCW for this Jupiter object
     // To avoid surprises, we should notify them before we fire the first AddRefFromTrackerSource
     //
     STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::ConnectFromTrackerSource (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
     pJupiterObject->ConnectFromTrackerSource();
-    
+
     //
     // Send out AddRefFromTrackerSource callbacks to notify Jupiter we've done AddRef for certain interfaces
     // We should do this *after* we made a AddRef because we should never
@@ -481,14 +481,14 @@ void RCWWalker::AfterJupiterRCWCreated(RCW *pRCW)
 
     // Send out AddRefFromTrackerSource for cached IUnknown
     RCWWalker::AfterInterfaceAddRef(pRCW);
-    
+
     if (!pRCW->IsURTAggregated())
-    {        
+    {
         // Send out AddRefFromTrackerSource for cached IJupiterObject
         RCWWalker::AfterInterfaceAddRef(pRCW);
     }
-    
-    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::AfterJupiterRCWCreated (RCW = 0x%p) ENDS   ----- \n", pRCW));    
+
+    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::AfterJupiterRCWCreated (RCW = 0x%p) ENDS   ----- \n", pRCW));
 }
 
 //
@@ -507,7 +507,7 @@ void RCWWalker::BeforeJupiterRCWDestroyed(RCW *pRCW)
     CONTRACTL_END;
 
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::BeforeJupiterRCWDestroyed (RCW = 0x%p) BEGINS ----- \n", pRCW));
-    
+
     IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
     _ASSERTE(pJupiterObject != NULL);
 
@@ -521,7 +521,7 @@ void RCWWalker::BeforeJupiterRCWDestroyed(RCW *pRCW)
     //
     STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IJupiterObject::DisconnectFromTrackerSource (IJupiterObject = 0x%p, RCW = 0x%p)\n", pJupiterObject, pRCW);
     pJupiterObject->DisconnectFromTrackerSource();
-    
+
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::BeforeJupiterRCWDestroyed (RCW = 0x%p) ENDS   ----- \n", pRCW));
 }
 
@@ -531,7 +531,7 @@ void RCWWalker::BeforeJupiterRCWDestroyed(RCW *pRCW)
 void RCWWalker::OnEEShutdown()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (s_pGCManager)
     {
         LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Releasing RCWWalker::s_pIGCManager 0x%p\n", s_pGCManager));
@@ -557,23 +557,23 @@ void RCWWalker::WalkRCWs()
     CONTRACTL_END;
 
     BOOL bWalkFailed = FALSE;
-    
+
     HRESULT hr = S_OK;
     EX_TRY
     {
         {
             AppDomain *pDomain = ::GetAppDomain(); // There is only actually 1 AppDomain in CoreCLR, so no iterator
-            
+
             RCWRefCache *pRCWRefCache = pDomain->GetRCWRefCache();
             _ASSERTE(pRCWRefCache != NULL);
 
             STRESS_LOG2(LF_INTEROP, LL_INFO100, "[RCW Walker] Walking all Jupiter RCWs in AppDomain 0x%p, RCWRefCache 0x%p\n", pDomain, pRCWRefCache);
-            
+
             //
             // Reset the cache
             //
             pRCWRefCache->ResetDependentHandles();
-                              
+
             //
             // Enumerate all Jupiter RCWs in that AppDomain
             //
@@ -587,21 +587,21 @@ void RCWWalker::WalkRCWs()
     }
     EX_CATCH
     {
-        hr = GET_EXCEPTION()->GetHR();                
+        hr = GET_EXCEPTION()->GetHR();
     }
     EX_END_CATCH(RethrowCorruptingExceptions)   // Make sure we crash on AV (instead of swallowing everything)
-        
+
     if (FAILED(hr))
     {
         // Remember the fact that we've failed and stop walking
         STRESS_LOG1(LF_INTEROP, LL_INFO100, "[RCW Walker] RCW walk failed, hr = 0x%p\n", hr);
         bWalkFailed = TRUE;
-        
+
         STRESS_LOG0(LF_INTEROP, LL_INFO100, "[RCW Walker] Turning on global pegging flag as fail-safe\n");
         VolatileStore(&s_bIsGlobalPeggingOn, TRUE);
     }
 
-    // 
+    //
     // Let Jupiter know RCW walk is done and they need to:
     // 1. Unpeg all CCWs if the CCW needs to be unpegged (when the CCW is only reachable by other jupiter RCWs)
     // 2. Peg all CCWs if the CCW needs to be pegged (when the above condition is not true)
@@ -614,8 +614,8 @@ void RCWWalker::WalkRCWs()
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::FindTrackerTargetsCompleted on 0x%p, bWalkFailed = %d\n", s_pGCManager, bWalkFailed));
     _ASSERTE(s_pGCManager);
     s_pGCManager->FindTrackerTargetsCompleted(bWalkFailed);
-        
-    STRESS_LOG0 (LF_INTEROP, LL_INFO100, "[RCW Walker] RCW Walk finished\n");    
+
+    STRESS_LOG0 (LF_INTEROP, LL_INFO100, "[RCW Walker] RCW Walk finished\n");
 }
 
 //
@@ -627,7 +627,7 @@ public :
     CFindDependentWrappersCallback(RCW *pRCW, RCWRefCache*pRCWRefCache)
         :m_pRCW(pRCW), m_pRCWRefCache(pRCWRefCache)
     {
-#ifdef _DEBUG    
+#ifdef _DEBUG
         m_hr = S_OK;
         m_dwCreatedRefs = 0;
 #endif // _DEBUG
@@ -645,7 +645,7 @@ public :
         // Lifetime maintained by stack - we don't care about ref counts
         return 1;
     }
-    
+
     STDMETHOD(QueryInterface)(REFIID riid, void **ppvObject)
     {
         if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IFindDependentWrappersCallback))
@@ -657,17 +657,17 @@ public :
         {
             *ppvObject = NULL;
             return E_NOINTERFACE;
-        }        
+        }
     }
 
-    
+
     STDMETHOD(FoundTrackerTarget)(ICCW *pUnk)
     {
-#ifdef _DEBUG    
+#ifdef _DEBUG
         _ASSERTE(SUCCEEDED(m_hr) && W("Should not receive FoundTrackerTarget again if failed"));
 #endif // _DEBUG
         _ASSERTE(pUnk != NULL);
-        
+
         ComCallWrapper *pCCW = MapIUnknownToWrapper(pUnk);
         _ASSERTE(pCCW != NULL);
 
@@ -678,14 +678,14 @@ public :
         //
         if (m_pRCW->GetSyncBlock() == pCCW->GetSyncBlock())
             return S_OK;
-        
+
         //
         // Jupiter might return CCWs with outstanding references that are either :
         // 1. Neutered - in this case it is unsafe to touch m_ppThis
         // 2. RefCounted handle NULLed out by GC
         //
         // Skip those to avoid crashes
-        // 
+        //
         if (pCCW->GetSimpleWrapper()->IsNeutered() ||
             pCCW->GetObjectRef() == NULL)
             return S_OK;
@@ -694,13 +694,13 @@ public :
         // Add a reference from pRCW -> pCCW so that GC knows about this reference
         //
         STRESS_LOG4(
-            LF_INTEROP, LL_INFO1000, 
-            "\t[RCW Walker] Adding reference: RCW 0x%p (Managed Object = 0x%p) -> CCW 0x%p (Managed Object = 0x%p)\n", 
+            LF_INTEROP, LL_INFO1000,
+            "\t[RCW Walker] Adding reference: RCW 0x%p (Managed Object = 0x%p) -> CCW 0x%p (Managed Object = 0x%p)\n",
             m_pRCW, OBJECTREFToObject(m_pRCW->GetExposedObject()), pCCW, OBJECTREFToObject(pCCW->GetObjectRef())
             );
-        
+
         HRESULT hr = m_pRCWRefCache->AddReferenceFromRCWToCCW(m_pRCW, pCCW);
-        
+
 #ifdef _DEBUG
         m_dwCreatedRefs++;
 #endif // _DEBUG
@@ -717,7 +717,7 @@ public :
 
         return S_OK;
     }
-    
+
 #ifdef _DEBUG
     HRESULT GetHRESULT()
     {
@@ -735,15 +735,15 @@ public :
 private :
     RCW         *m_pRCW;
     RCWRefCache *m_pRCWRefCache;
-    
-#ifdef _DEBUG    
+
+#ifdef _DEBUG
     HRESULT     m_hr;               // Holds the last failed HRESULT to make sure our contract with Jupiter is correctly honored
     DWORD       m_dwCreatedRefs;    // Total number of refs created from this RCW
 #endif // _DEBUG
 };
 
 //
-// Ask Jupiter all the CCWs referenced (through native code) by this RCW and build reference for RCW -> CCW 
+// Ask Jupiter all the CCWs referenced (through native code) by this RCW and build reference for RCW -> CCW
 // so that GC knows about this reference
 //
 HRESULT RCWWalker::WalkOneRCW(RCW *pRCW, RCWRefCache *pRCWRefCache)
@@ -761,17 +761,17 @@ HRESULT RCWWalker::WalkOneRCW(RCW *pRCW, RCWRefCache *pRCWRefCache)
     _ASSERTE(pRCW->IsJupiterObject());
 
     HRESULT hr = S_OK;
-    
+
     // Get IJupiterObject * from RCW - we can call IJupiterObject* from any thread and it won't be a proxy
     IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
     _ASSERTE(pJupiterObject);
-    
+
     _ASSERTE(pRCW->GetExposedObject() != NULL);
-    
+
     CFindDependentWrappersCallback callback(pRCW, pRCWRefCache);
 
     STRESS_LOG2 (LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Walking RCW 0x%p (Managed Object = 0x%p)\n", pRCW, OBJECTREFToObject(pRCW->GetExposedObject()));
-    
+
     LOG((LF_INTEROP, LL_INFO1000, "\t[RCW Walker] Calling IJupiterObject::FindTrackerTargets\n", pRCW));
     hr = pJupiterObject->FindTrackerTargets(&callback);
 
@@ -794,7 +794,7 @@ inline void SetupFailFastFilterAndCall(OnGCEventProc pGCEventProc)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_MODE_ANY;
-        
+
     //
     // Use RCWWalker_UnhandledExceptionFilter to fail fast and early in case any exception is thrown
     // See code:RCWWalker_UnhandledExceptionFilter for more details why we need this
@@ -808,7 +808,7 @@ inline void SetupFailFastFilterAndCall(OnGCEventProc pGCEventProc)
     {
         _ASSERT(!W("Should not get here"));
     }
-    PAL_ENDTRY_NAKED 
+    PAL_ENDTRY_NAKED
 }
 
 //
@@ -821,7 +821,7 @@ inline void SetupFailFastFilterAndCall(OnGCEventProc pGCEventProc)
 //    GCEnd   for Gen 0/1 foreground GC
 //    ....
 // GCEnd for Gen 2 background GC
-// 
+//
 // The nCondemnedGeneration >= 2 check takes care of this nesting problem
 //
 void RCWWalker::OnGCStarted(int nCondemnedGeneration)
@@ -852,7 +852,7 @@ void RCWWalker::OnGCStarted(int nCondemnedGeneration)
 
         LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] GC skipped: No Jupiter RCWs seen \n"));
     }
-    
+
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::OnGCStarted (nCondemnedGeneration = %d) ENDS   -----\n", nCondemnedGeneration));
 }
 
@@ -865,7 +865,7 @@ void RCWWalker::OnGCStarted(int nCondemnedGeneration)
 //    GCEnd   for Gen 0/1 foreground GC
 //    ....
 // GCEnd for Gen 2 background GC
-// 
+//
 // The nCondemnedGeneration >= 2 check takes care of this nesting problem
 //
 void RCWWalker::OnGCFinished(int nCondemnedGeneration)
@@ -880,7 +880,7 @@ void RCWWalker::OnGCFinished(int nCondemnedGeneration)
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] ----- RCWWalker::OnGCFinished(nCondemnedGeneration = %d) BEGINS ----- \n", nCondemnedGeneration));
 
     //
-    // Note that we need to check in both OnGCFinished and OnGCStarted 
+    // Note that we need to check in both OnGCFinished and OnGCStarted
     // As there could be multiple OnGCFinished with nCondemnedGeneration < 2 in the case of Gen 2 GC
     //
     // Also, if this is background GC, the NeedToWalkRCWs predicate may change from FALSE to TRUE while
@@ -913,12 +913,12 @@ void RCWWalker::OnGCStartedWorker()
     // those flags inside nCondemnedGeneration >= 2 check
     _ASSERTE(!s_bGCStarted);
     _ASSERTE(VolatileLoad(&s_bIsGlobalPeggingOn));
-    
+
     s_bGCStarted = TRUE;
-    
+
     _ASSERTE(s_pGCManager);
-    
-    // 
+
+    //
     // Let Jupiter know we are about to walk RCWs so that they can lock their reference cache
     // Note that Jupiter doesn't need to unpeg all CCWs at this point and they can do the pegging/unpegging in FindTrackerTargetsCompleted
     //
@@ -926,11 +926,11 @@ void RCWWalker::OnGCStartedWorker()
     //
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::ReferenceTrackingStarted on 0x%p\n", s_pGCManager));
     s_pGCManager->ReferenceTrackingStarted();
-    
+
     // From this point, jupiter decides whether a CCW should be pegged or not as global pegging flag is now off
     s_bIsGlobalPeggingOn = FALSE;
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Global pegging flag is off\n"));
-    
+
     //
     // OK. Time to walk all the Jupiter RCWs
     //
@@ -946,7 +946,7 @@ void RCWWalker::OnGCFinishedWorker()
     }
     CONTRACTL_END;
 
-    // 
+    //
     // Let Jupiter know RCW walk is done and they need to:
     // 1. Unpeg all CCWs if the CCW needs to be unpegged (when the CCW is only reachable by other jupiter RCWs)
     // 2. Peg all CCWs if the CCW needs to be pegged (when the above condition is not true)
@@ -959,10 +959,10 @@ void RCWWalker::OnGCFinishedWorker()
     _ASSERTE(s_pGCManager);
     LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Calling IGCManager::ReferenceTrackingCompleted on 0x%p\n", s_pGCManager));
     s_pGCManager->ReferenceTrackingCompleted();
-    
+
     s_bIsGlobalPeggingOn = TRUE;
-    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Global pegging flag is on\n"));    
-    
+    LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Global pegging flag is on\n"));
+
     s_bGCStarted = FALSE;
 
     STRESS_LOG0 (LF_INTEROP, LL_INFO100, "[RCW Walker] Gen 2 GC Finished\n");

@@ -9,7 +9,7 @@ bool g_diagnostics = false;
 //
 // The common create dump code
 //
-bool 
+bool
 CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo)
 {
     ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
@@ -65,7 +65,7 @@ exit:
 //
 // Entry point for SOS createdump command
 //
-bool 
+bool
 CreateDumpForSOS(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType, ICLRDataTarget* dataTarget)
 {
     ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, dataTarget, true);

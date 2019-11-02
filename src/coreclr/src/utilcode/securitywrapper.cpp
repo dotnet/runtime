@@ -5,7 +5,7 @@
 // File: SecurityWrapper.cpp
 //
 
-// 
+//
 // Wrapper around Win32 Security functions
 //
 //*****************************************************************************
@@ -36,8 +36,8 @@ Sid::Sid(PSID pSid)
 // Aesthetic wrapper for Sid equality
 //-----------------------------------------------------------------------------
 bool Sid::Equals(PSID a, PSID b)
-{ 
-    return EqualSid(a, b) != 0; 
+{
+    return EqualSid(a, b) != 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -82,7 +82,7 @@ enum SidType
 // ----------------------------------------------------------------------------
 // GetSidFromProcessWorker
 //
-// Description: 
+// Description:
 //    Internal helper.  Gets the SID for the given process and given sid type
 //
 // Arguments:
@@ -158,7 +158,7 @@ HRESULT GetSidFromProcessWorker(DWORD dwProcessId, SidType sidType, PSID *ppSid)
     }
 
     // Copy over the SID
-    pSidFromTokenInfo = 
+    pSidFromTokenInfo =
         (sidType == kOwnerSid) ?
             ((TOKEN_OWNER *) pvTokenInfo)->Owner :
             ((TOKEN_USER *) pvTokenInfo)->User.Sid;
@@ -179,7 +179,7 @@ HRESULT GetSidFromProcessWorker(DWORD dwProcessId, SidType sidType, PSID *ppSid)
 
     *ppSid = pSid;
     pSid = NULL;
-    
+
 exit:
     if (hToken != INVALID_HANDLE_VALUE)
     {
@@ -325,7 +325,7 @@ exit:
 // USER sid from the process token.  This seems a little inconsistent, but
 // remains this way for backward compatibility.  The second pair consistently
 // use the USER sid (never the OWNER).
-// 
+//
 // While the USER and OWNER sid are often the same, they are not always the
 // same.  For example, running a process on win2k3 server as a member of the
 // local admin group causes the USER sid to be the logged-on user, and the
@@ -337,19 +337,19 @@ exit:
 
 // ----------------------------------------------------------------------------
 // SidBuffer::InitFromProcessNoThrow
-// 
+//
 // Description:
 //    Initialize this SidBuffer instance with a Sid from the token of the specified
 //    process. Use the OWNER sid from the process token if possible; else use the term
 //    serv API to find the USER sid from the process token. This seems a little
 //    inconsistent, but remains this way for backward compatibility.
-//    
+//
 // Arguments:
 //    * pid - Process ID from which to grab the SID
 //
 // Return Value:
 //    HRESULT indicating success / failure
-//    
+//
 
 HRESULT SidBuffer::InitFromProcessNoThrow(DWORD pid)
 {
@@ -371,8 +371,8 @@ HRESULT SidBuffer::InitFromProcessNoThrow(DWORD pid)
     if (FAILED(hr))
     {
         return hr;
-    }    
-    
+    }
+
     _ASSERTE(m_pBuffer != NULL);
     return S_OK;
 }
@@ -391,23 +391,23 @@ void SidBuffer::InitFromProcess(DWORD pid)
     if (FAILED(hr))
     {
         ThrowHR(hr);
-    }    
+    }
 }
 
 // ----------------------------------------------------------------------------
 // SidBuffer::InitFromProcessAppContainerSidNoThrow
-// 
+//
 // Description:
 //    Initialize this SidBuffer instance with the TokenAppContainerSid from
 //    the process token
-//    
+//
 // Arguments:
 //    * pid - Process ID from which to grab the SID
 //
 // Return Value:
 //    HRESULT indicating success / failure
 //    S_FALSE indicates the process isn't in an AppContainer
-//   
+//
 HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
 {
     HRESULT hr = S_OK;
@@ -503,18 +503,18 @@ exit:
 
 // ----------------------------------------------------------------------------
 // SidBuffer::InitFromProcessUserNoThrow
-// 
+//
 // Description:
 //    Initialize this SidBuffer instance with a Sid from the token of the specified
 //    process. Use the USER sid from the process token if possible; else use the term
 //    serv API to find the USER sid from the process token.
-//    
+//
 // Arguments:
 //    * pid - Process ID from which to grab the SID
 //
 // Return Value:
 //    HRESULT indicating success / failure
-//    
+//
 
 HRESULT SidBuffer::InitFromProcessUserNoThrow(DWORD pid)
 {
@@ -536,8 +536,8 @@ HRESULT SidBuffer::InitFromProcessUserNoThrow(DWORD pid)
     if (FAILED(hr))
     {
         return hr;
-    }    
-    
+    }
+
     _ASSERTE(m_pBuffer != NULL);
     return S_OK;
 }
@@ -556,7 +556,7 @@ void SidBuffer::InitFromProcessUser(DWORD pid)
     if (FAILED(hr))
     {
         ThrowHR(hr);
-    }    
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -564,7 +564,7 @@ void SidBuffer::InitFromProcessUser(DWORD pid)
 //-----------------------------------------------------------------------------
 Dacl::Dacl(PACL pAcl)
 {
-    m_acl = pAcl;   
+    m_acl = pAcl;
 }
 
 //-----------------------------------------------------------------------------
@@ -586,7 +586,7 @@ ACE_HEADER * Dacl::GetAce(SIZE_T dwAceIndex)
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    
+
     ACE_HEADER * pAce = NULL;
     BOOL fOk = ::GetAce(m_acl, (DWORD) dwAceIndex, (LPVOID*) &pAce);
     _ASSERTE(fOk == (pAce != NULL));
@@ -632,7 +632,7 @@ Dacl Win32SecurityDescriptor::GetDacl()
     BOOL bPresent;
     BOOL bDaclDefaulted;
     PACL acl;
-    
+
     if (GetSecurityDescriptorDacl(m_pDesc, &bPresent, &acl, &bDaclDefaulted) == 0)
     {
         ThrowLastError();
@@ -703,22 +703,22 @@ HRESULT Win32SecurityDescriptor::InitFromHandleNoThrow(HANDLE h)
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    
+
     _ASSERTE(m_pDesc == NULL); //  only init once.
 
     DWORD       cbNeeded = 0;
 
     DWORD flags = OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
-    
+
     // Now get the creator's SID. First get the size of the array needed.
     BOOL fOk = GetKernelObjectSecurity(h, flags, NULL, 0, &cbNeeded);
     DWORD err = GetLastError();
 
-    // Caller should give us a handle for which this succeeds. First call will 
+    // Caller should give us a handle for which this succeeds. First call will
     // fail w/ InsufficientBuffer.
     CONSISTENCY_CHECK_MSGF(fOk || (err == ERROR_INSUFFICIENT_BUFFER), ("Failed to get KernelSecurity for object handle=%p.Err=%d\n", h, err));
-    
-    PSECURITY_DESCRIPTOR pSD = (PSECURITY_DESCRIPTOR) new(nothrow) BYTE[cbNeeded]; 
+
+    PSECURITY_DESCRIPTOR pSD = (PSECURITY_DESCRIPTOR) new(nothrow) BYTE[cbNeeded];
     if( pSD == NULL )
     {
         return E_OUTOFMEMORY;
@@ -731,7 +731,7 @@ HRESULT Win32SecurityDescriptor::InitFromHandleNoThrow(HANDLE h)
         delete [] ((BYTE*) pSD);
         return HRESULT_FROM_WIN32(err);
     }
-    
+
     m_pDesc = pSD;
     return S_OK;
 }
@@ -746,5 +746,5 @@ void Win32SecurityDescriptor::InitFromHandle(HANDLE h)
     if (FAILED(hr))
     {
         ThrowHR(hr);
-    }      
+    }
 }

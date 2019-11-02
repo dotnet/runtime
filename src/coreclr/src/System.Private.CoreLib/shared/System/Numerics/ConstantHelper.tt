@@ -54,7 +54,7 @@ namespace System.Numerics
         {
             return typeof(long);
         }
-        else 
+        else
         {
             return type;
         }

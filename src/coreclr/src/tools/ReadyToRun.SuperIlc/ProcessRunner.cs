@@ -106,7 +106,7 @@ public class ProcessRunner : IDisposable
     private CancellationTokenSource _cancellationTokenSource;
 
     private readonly DataReceivedEventHandler _outputHandler;
-    
+
     private readonly DataReceivedEventHandler _errorHandler;
 
     public ProcessRunner(ProcessInfo processInfo, int processIndex, int processCount, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
@@ -232,7 +232,7 @@ public class ProcessRunner : IDisposable
             {
                 _logWriter = null;
                 logWriter.Dispose();
-            }            
+            }
         }
     }
 

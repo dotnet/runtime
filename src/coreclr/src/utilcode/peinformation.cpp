@@ -20,9 +20,9 @@ HRESULT TranslatePEToArchitectureType(CorPEKind CLRPeKind, DWORD dwImageType, PE
 HRESULT TranslatePEToArchitectureType(CorPEKind CLRPeKind, DWORD dwImageType, DWORD dwAssemblyFlags, PEKIND * pPeKind)
 {
     HRESULT hr = S_OK;
-    
+
     _ASSERTE(pPeKind != NULL);
-    
+
     if (CLRPeKind == peNot)
     {   // Not a PE. Shouldn't ever get here.
         *pPeKind = peInvalid;
@@ -36,9 +36,9 @@ HRESULT TranslatePEToArchitectureType(CorPEKind CLRPeKind, DWORD dwImageType, DW
     }
     else
     {
-        if ((CLRPeKind & peILonly) && 
-            !(CLRPeKind & pe32Plus) && 
-            !(CLRPeKind & pe32BitRequired) && 
+        if ((CLRPeKind & peILonly) &&
+            !(CLRPeKind & pe32Plus) &&
+            !(CLRPeKind & pe32BitRequired) &&
             (dwImageType == IMAGE_FILE_MACHINE_I386))
         {
             // Processor-agnostic (MSIL)

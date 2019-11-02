@@ -60,7 +60,7 @@ bool IsWinRTWeakReferenceHandle(OBJECTHANDLE handle)
 OBJECTHANDLE SetWinRTWeakReferenceHandle(OBJECTHANDLE handle)
 {
     STATIC_CONTRACT_LEAF;
-    
+
     _ASSERTE(!IsWinRTWeakReferenceHandle(handle));
     return reinterpret_cast<OBJECTHANDLE>(reinterpret_cast<UINT_PTR>(handle) | 0x1);
 }
@@ -170,7 +170,7 @@ IWeakReference* GetWinRTWeakReference(OBJECTREF* pObject)
 //   * Have stored an IWeakReference* in the handle extra info when setting up the handle
 //     (see GetWinRTWeakReference)
 //   * The IWeakReference* must respond to a Resolve request for IID_IInspectable
-//   * 
+//   *
 NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, TypeHandle targetType, LPVOID __me)
 {
     CONTRACTL
@@ -265,7 +265,7 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
     {
         GetObjectRefFromComIP(&gc.rcw, pTargetIdentity);
     }
-    
+
     // If we were able to get an RCW, then we need to reacquire the spin lock and store the RCW in the handle.  Note that
     // it's possible that another thread has acquired the spin lock and set the target of the weak reference while we were
     // building the RCW.  In that case, we will defer to the hadle that the other thread set, and let the RCW die.
@@ -315,7 +315,7 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
 //************************************************************************
 
 //
-// Spinlock implemented by overloading the WeakReference::m_Handle field that protects against races between setting 
+// Spinlock implemented by overloading the WeakReference::m_Handle field that protects against races between setting
 // the target and finalization
 //
 
@@ -403,7 +403,7 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
         WEAKREFERENCEREF pThis;
         OBJECTREF pTarget;
     } gc;
-    
+
     gc.pThis = WEAKREFERENCEREF(pThisUNSAFE);
     gc.pTarget = OBJECTREF(pTargetUNSAFE);
 
@@ -429,7 +429,7 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
     else
 #endif // FEATURE_COMINTEROP
     {
-        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget, 
+        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget,
             trackResurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT);
     }
 
@@ -446,7 +446,7 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
         WEAKREFERENCEREF pThis;
         OBJECTREF pTarget;
     } gc;
-    
+
     gc.pThis = WEAKREFERENCEREF(pThisUNSAFE);
     gc.pTarget = OBJECTREF(pTargetUNSAFE);
 
@@ -472,7 +472,7 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
     else
 #endif // FEATURE_COMINTEROP
     {
-        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget, 
+        gc.pThis->m_Handle = GetAppDomain()->CreateTypedHandle(gc.pTarget,
             trackResurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT);
     }
 
@@ -513,7 +513,7 @@ void FinalizeWeakReference(Object * obj)
         _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT);
 #endif // FEATURE_COMINTEROP
 
-        handle = (handleType == HNDTYPE_WEAK_LONG) ? 
+        handle = (handleType == HNDTYPE_WEAK_LONG) ?
             SPECIAL_HANDLE_FINALIZED_LONG : SPECIAL_HANDLE_FINALIZED_SHORT;
     }
 
@@ -592,12 +592,12 @@ static FORCEINLINE OBJECTREF GetWeakReferenceTarget(WEAKREFERENCEREF pThis)
     if (rawHandle != SPECIAL_HANDLE_SPINLOCK)
     {
         //
-        // There is a theoretic chance that the speculative lock-free read may AV while reading the value 
-        // of freed handle if the handle table decides to release the memory that the handle lives in. 
-        // It is not exploitable security issue because of we will fail fast on the AV. It is denial of service only. 
+        // There is a theoretic chance that the speculative lock-free read may AV while reading the value
+        // of freed handle if the handle table decides to release the memory that the handle lives in.
+        // It is not exploitable security issue because of we will fail fast on the AV. It is denial of service only.
         // Non-malicious user code will never hit.
         //
-        // We had this theoretical bug in there since forever. Fixing it by always taking the lock would 
+        // We had this theoretical bug in there since forever. Fixing it by always taking the lock would
         // degrade the performance critical weak handle getter several times. The right fix may be
         // to ensure that handle table memory is released only if the runtime is suspended.
         //
@@ -715,7 +715,7 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
     FC_INNER_PROLOG_NO_ME_SETUP();
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, target, weakReference);
 
-#ifdef FEATURE_COMINTEROP    
+#ifdef FEATURE_COMINTEROP
     SafeComHolder<IWeakReference> pTargetWeakReference(GetWinRTWeakReference(&target));
 #endif // FEATURE_COMINTEROP
 
@@ -878,13 +878,13 @@ FCIMPL2(void, WeakReferenceOfTNative::SetTarget, WeakReferenceObject * pThisUNSA
                 storedObject = true;
             }
         }
-    
+
         // SetWeakReferenceTarget will reacquire the spinlock after setting up a helper method frame.  This allows
         // the frame setup to throw without worrying about leaking the spinlock, and allows the epilog to be cleanly
         // walked by the epilog decoder.
         ReleaseWeakHandleSpinLock(pThis, handle);
     }
-    
+
     // If we reset the handle directly, then early out before setting up a helper method frame
     if (storedObject)
     {

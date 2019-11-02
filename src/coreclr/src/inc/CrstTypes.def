@@ -157,7 +157,7 @@ Crst Contexts
 End
 
 Crst CSPCache
-    AcquiredBefore JumpStubCache 
+    AcquiredBefore JumpStubCache
 End
 
 Crst DeadlockDetection
@@ -165,14 +165,14 @@ End
 
 Crst DebuggerController
     // AcquiredBefore DebuggerHeapLock DebuggerJitInfo LoaderHeap
-    
-    // See bug: 581892. This has a conflict with CrstInstMethodHashTableRanking.     
+
+    // See bug: 581892. This has a conflict with CrstInstMethodHashTableRanking.
     // The controller logic will be moved to OOP in V3, and so this lock will no longer be necessary.
     // Fixing this in-proc would be difficult, and it would all be throwaway as we go oop.
     Unordered
 End
 
-// This is a leaf debugger lock. 
+// This is a leaf debugger lock.
 Crst DebuggerFavorLock
     AcquiredAfter DebuggerJitInfo DebuggerMutex
 End
@@ -185,32 +185,32 @@ End
 Crst DebuggerHeapLock
     AcquiredAfter DebuggerFavorLock DebuggerJitInfo DebuggerMutex
     // Disabled per bug 581892
-    // AcquiredAfter DebuggerController 
+    // AcquiredAfter DebuggerController
 End
 
 Crst DebuggerJitInfo
     AcquiredBefore DebuggerHeapLock
 End
 
-// This is the major debugger lock. 
+// This is the major debugger lock.
 // It's the largest of the debugger locks.
 Crst DebuggerMutex
-    AcquiredBefore AvailableParamTypes ConnectionNameTable 
+    AcquiredBefore AvailableParamTypes ConnectionNameTable
                    DynamicIL LoaderHeap ModuleLookupTable
 
     // Disabled per bug 581892
-    // AcquiredBefore DebuggerController 
+    // AcquiredBefore DebuggerController
     AcquiredBefore DebuggerHeapLock DebuggerJitInfo
 
 End
 
-// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety) 
+// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety)
 // and is released before taking any other lock except for CrstDataTest2
 Crst DataTest1
     AcquiredAfter DebuggerMutex
 End
 
-// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety) 
+// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety)
 // and is released before taking any other lockCrst DataTest2
 Crst DataTest2
     AcquiredAfter DataTest1
@@ -357,8 +357,8 @@ End
 
 Crst JumpStubCache
     AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
-    AcquiredAfter AppDomainCache ExecuteManLock 
-                  ILStubGen ThreadpoolTimerQueue ThreadpoolWaitThreads 
+    AcquiredAfter AppDomainCache ExecuteManLock
+                  ILStubGen ThreadpoolTimerQueue ThreadpoolWaitThreads
                   TPMethodTable TypeIDMap BaseDomain AssemblyLoader
 End
 
@@ -503,7 +503,7 @@ End
 // same type).
 Crst EtwTypeLogHash
     AcquiredAfter ThreadStore AllowedFiles Cer TPMethodTable
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController 
+    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
                DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
                ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
@@ -612,7 +612,7 @@ Crst ThreadStaticDataHashTable
 End
 
 Crst ThreadStore
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController 
+    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
                    ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
@@ -665,10 +665,10 @@ Crst MulticoreJitManager
 End
 
 Crst WinRTFactoryCache
-    AcquiredBefore HandleTable    
+    AcquiredBefore HandleTable
 End
 
-Crst SqmManager 
+Crst SqmManager
 End
 
 Crst StackSampler

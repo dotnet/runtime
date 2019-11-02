@@ -29,9 +29,9 @@ HRESULT SymbolInfo::AddDocument(DWORD id, ISymUnmanagedDocumentWriter* pDocument
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=S_OK;
     EX_TRY
@@ -50,9 +50,9 @@ HRESULT SymbolInfo::MapDocument(DWORD id, ISymUnmanagedDocumentWriter** pDocumen
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=E_FAIL;
     if(m_Documents.GetCount()>id)
@@ -70,9 +70,9 @@ HRESULT SymbolInfo::SetClassProps(mdToken cls, DWORD flags, LPCWSTR wszName, mdT
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=S_OK;
     EX_TRY
@@ -92,9 +92,9 @@ HRESULT SymbolInfo::AddSignature(SBuffer& sig, mdSignature token)
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=S_OK;
     EX_TRY
@@ -127,9 +127,9 @@ HRESULT SymbolInfo::AddScope(ULONG32 left, ULONG32 right)
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=S_OK;
     EX_TRY
@@ -150,9 +150,9 @@ HRESULT SymbolInfo::MapScope(ULONG32 left, ULONG32* pRight)
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     ScopeMap* props = m_Scopes.Lookup(left);
     if(props == NULL)
@@ -170,9 +170,9 @@ HRESULT SymbolInfo::SetMethodProps(mdToken method, mdToken cls, LPCWSTR wszName)
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     HRESULT hr=S_OK;
     EX_TRY
@@ -187,14 +187,14 @@ HRESULT SymbolInfo::SetMethodProps(mdToken method, mdToken cls, LPCWSTR wszName)
 }
 
 
-// IUnknown methods 
+// IUnknown methods
 STDMETHODIMP SymbolInfo::QueryInterface (REFIID riid, LPVOID * ppvObj)
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     if(ppvObj==NULL)
         return E_POINTER;
@@ -241,11 +241,11 @@ STDMETHODIMP SymbolInfo::GetTypeDefProps (             // S_OK or error.
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
         PRECONDITION(ptkExtends==NULL);
         PRECONDITION(CheckPointer(szTypeDef));
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     if (szTypeDef == NULL)
         return E_POINTER;
@@ -263,35 +263,35 @@ STDMETHODIMP SymbolInfo::GetTypeDefProps (             // S_OK or error.
     if (cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchTypeDef=(ULONG)cch;
-    
+
     if (cchTypeDef < cch)
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-        
+
     wcscpy_s(szTypeDef,cchTypeDef,classInfo->wszName);
 
     if(pdwTypeDefFlags)
         *pdwTypeDefFlags=classInfo->flags;
-    
-    
+
+
     return S_OK;
 }
 
-STDMETHODIMP SymbolInfo::GetMethodProps ( 
-    mdMethodDef mb,                     // The method for which to get props.   
-    mdTypeDef   *pClass,                // Put method's class here. 
+STDMETHODIMP SymbolInfo::GetMethodProps (
+    mdMethodDef mb,                     // The method for which to get props.
+    mdTypeDef   *pClass,                // Put method's class here.
   __out_ecount_part_opt(cchMethod, *pchMethod)
-    LPWSTR      szMethod,               // Put method's name here.  
-    ULONG       cchMethod,              // Size of szMethod buffer in wide chars.   
-    ULONG       *pchMethod,             // Put actual size here 
-    DWORD       *pdwAttr,               // Put flags here.  
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data   
-    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob  
-    ULONG       *pulCodeRVA,            // [OUT] codeRVA    
-    DWORD       *pdwImplFlags)    // [OUT] Impl. Flags    
+    LPWSTR      szMethod,               // Put method's name here.
+    ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
+    ULONG       *pchMethod,             // Put actual size here
+    DWORD       *pdwAttr,               // Put flags here.
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
+    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
+    ULONG       *pulCodeRVA,            // [OUT] codeRVA
+    DWORD       *pdwImplFlags)    // [OUT] Impl. Flags
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
         PRECONDITION(m_LastMethod.method==mb);
         PRECONDITION(pClass!=NULL);
         PRECONDITION(pchMethod!=NULL);
@@ -303,23 +303,23 @@ STDMETHODIMP SymbolInfo::GetMethodProps (
         PRECONDITION(pdwImplFlags == NULL);
         PRECONDITION(CheckPointer(szMethod));
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     if (szMethod == NULL)
         return E_POINTER;
 
-    
+
     *pClass=m_LastMethod.cls;
     SIZE_T cch=wcslen(m_LastMethod.wszName)+1;
     if(cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchMethod=(ULONG)cch;
-    
+
     if (cchMethod < cch)
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-        
+
     wcscpy_s(szMethod,cchMethod,m_LastMethod.wszName);
-    
+
     return S_OK;
 }
 
@@ -330,10 +330,10 @@ STDMETHODIMP SymbolInfo::GetNestedClassProps (         // S_OK or error.
 {
     CONTRACTL
     {
-        NOTHROW;    
+        NOTHROW;
         PRECONDITION(CheckPointer(ptdEnclosingClass));
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     if(ptdEnclosingClass == NULL)
         return E_POINTER;
@@ -344,17 +344,17 @@ STDMETHODIMP SymbolInfo::GetNestedClassProps (         // S_OK or error.
         return E_UNEXPECTED;
 
     *ptdEnclosingClass=classInfo->tkEnclosing;
-   
-    
+
+
     return S_OK;
 
 }
 
 
-STDMETHODIMP SymbolInfo::GetTokenFromSig (             // S_OK or error.   
-    PCCOR_SIGNATURE pvSig,              // [IN] Signature to define.    
-    ULONG       cbSig,                  // [IN] Size of signature data. 
-    mdSignature *pmsig)           // [OUT] returned signature token.  
+STDMETHODIMP SymbolInfo::GetTokenFromSig (             // S_OK or error.
+    PCCOR_SIGNATURE pvSig,              // [IN] Signature to define.
+    ULONG       cbSig,                  // [IN] Size of signature data.
+    mdSignature *pmsig)           // [OUT] returned signature token.
 {
     SBuffer sig;
     sig.SetImmutable(pvSig,cbSig);
@@ -362,7 +362,7 @@ STDMETHODIMP SymbolInfo::GetTokenFromSig (             // S_OK or error.
     _ASSERTE(sigProps);
     if(sigProps == NULL)
         return E_UNEXPECTED;
-    
+
     *pmsig=sigProps->tkSig;
     return S_OK;
 }
@@ -441,12 +441,12 @@ STDMETHODIMP SymbolInfo::GetModuleFromScope (          // S_OK.
 STDMETHODIMP SymbolInfo::GetInterfaceImplProps (       // S_OK or error.
     mdInterfaceImpl iiImpl,             // [IN] InterfaceImpl token.
     mdTypeDef   *pClass,                // [OUT] Put implementing class token here.
-    mdToken     *ptkIface)        // [OUT] Put implemented interface token here.  
+    mdToken     *ptkIface)        // [OUT] Put implemented interface token here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
-        
+
 STDMETHODIMP SymbolInfo::GetTypeRefProps (             // S_OK or error.
     mdTypeRef   tr,                     // [IN] TypeRef token.
     mdToken     *ptkResolutionScope,    // [OUT] Resolution scope, ModuleRef or AssemblyRef.
@@ -466,316 +466,316 @@ STDMETHODIMP SymbolInfo::ResolveTypeRef (mdTypeRef tr, REFIID riid, IUnknown **p
 }
 
 
-STDMETHODIMP SymbolInfo::EnumMembers (                 // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    mdToken     rMembers[],             // [OUT] Put MemberDefs here.   
-    ULONG       cMax,                   // [IN] Max MemberDefs to put.  
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMembers (                 // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    mdToken     rMembers[],             // [OUT] Put MemberDefs here.
+    ULONG       cMax,                   // [IN] Max MemberDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMembersWithName (         // S_OK, S_FALSE, or error.             
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.                
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    LPCWSTR     szName,                 // [IN] Limit results to those with this name.              
-    mdToken     rMembers[],             // [OUT] Put MemberDefs here.                   
-    ULONG       cMax,                   // [IN] Max MemberDefs to put.              
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMembersWithName (         // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    LPCWSTR     szName,                 // [IN] Limit results to those with this name.
+    mdToken     rMembers[],             // [OUT] Put MemberDefs here.
+    ULONG       cMax,                   // [IN] Max MemberDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMethods (                 // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    mdMethodDef rMethods[],             // [OUT] Put MethodDefs here.   
-    ULONG       cMax,                   // [IN] Max MethodDefs to put.  
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMethods (                 // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    mdMethodDef rMethods[],             // [OUT] Put MethodDefs here.
+    ULONG       cMax,                   // [IN] Max MethodDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMethodsWithName (         // S_OK, S_FALSE, or error.             
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.                
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    LPCWSTR     szName,                 // [IN] Limit results to those with this name.              
-    mdMethodDef rMethods[],             // [OU] Put MethodDefs here.    
-    ULONG       cMax,                   // [IN] Max MethodDefs to put.              
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMethodsWithName (         // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    LPCWSTR     szName,                 // [IN] Limit results to those with this name.
+    mdMethodDef rMethods[],             // [OU] Put MethodDefs here.
+    ULONG       cMax,                   // [IN] Max MethodDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumFields (                  // S_OK, S_FALSE, or error.  
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    mdFieldDef  rFields[],              // [OUT] Put FieldDefs here.    
-    ULONG       cMax,                   // [IN] Max FieldDefs to put.   
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumFields (                  // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    mdFieldDef  rFields[],              // [OUT] Put FieldDefs here.
+    ULONG       cMax,                   // [IN] Max FieldDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumFieldsWithName (          // S_OK, S_FALSE, or error.              
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.                
-    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.   
-    LPCWSTR     szName,                 // [IN] Limit results to those with this name.              
-    mdFieldDef  rFields[],              // [OUT] Put MemberDefs here.                   
-    ULONG       cMax,                   // [IN] Max MemberDefs to put.              
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumFieldsWithName (          // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   cl,                     // [IN] TypeDef to scope the enumeration.
+    LPCWSTR     szName,                 // [IN] Limit results to those with this name.
+    mdFieldDef  rFields[],              // [OUT] Put MemberDefs here.
+    ULONG       cMax,                   // [IN] Max MemberDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
 
-STDMETHODIMP SymbolInfo::EnumParams (                  // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
-    mdParamDef  rParams[],              // [OUT] Put ParamDefs here.    
-    ULONG       cMax,                   // [IN] Max ParamDefs to put.   
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumParams (                  // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
+    mdParamDef  rParams[],              // [OUT] Put ParamDefs here.
+    ULONG       cMax,                   // [IN] Max ParamDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMemberRefs (              // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdToken     tkParent,               // [IN] Parent token to scope the enumeration.  
-    mdMemberRef rMemberRefs[],          // [OUT] Put MemberRefs here.   
-    ULONG       cMax,                   // [IN] Max MemberRefs to put.  
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMemberRefs (              // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdToken     tkParent,               // [IN] Parent token to scope the enumeration.
+    mdMemberRef rMemberRefs[],          // [OUT] Put MemberRefs here.
+    ULONG       cMax,                   // [IN] Max MemberRefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMethodImpls (             // S_OK, S_FALSE, or error  
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.   
-    mdToken     rMethodBody[],          // [OUT] Put Method Body tokens here.   
+STDMETHODIMP SymbolInfo::EnumMethodImpls (             // S_OK, S_FALSE, or error
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
+    mdToken     rMethodBody[],          // [OUT] Put Method Body tokens here.
     mdToken     rMethodDecl[],          // [OUT] Put Method Declaration tokens here.
-    ULONG       cMax,                   // [IN] Max tokens to put.  
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+    ULONG       cMax,                   // [IN] Max tokens to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumPermissionSets (          // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdToken     tk,                     // [IN] if !NIL, token to scope the enumeration.    
-    DWORD       dwActions,              // [IN] if !0, return only these actions.   
-    mdPermission rPermission[],         // [OUT] Put Permissions here.  
-    ULONG       cMax,                   // [IN] Max Permissions to put. 
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumPermissionSets (          // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdToken     tk,                     // [IN] if !NIL, token to scope the enumeration.
+    DWORD       dwActions,              // [IN] if !0, return only these actions.
+    mdPermission rPermission[],         // [OUT] Put Permissions here.
+    ULONG       cMax,                   // [IN] Max Permissions to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::FindMember (  
-    mdTypeDef   td,                     // [IN] given typedef   
-    LPCWSTR     szName,                 // [IN] member name 
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    mdToken     *pmb)             // [OUT] matching memberdef 
+STDMETHODIMP SymbolInfo::FindMember (
+    mdTypeDef   td,                     // [IN] given typedef
+    LPCWSTR     szName,                 // [IN] member name
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    mdToken     *pmb)             // [OUT] matching memberdef
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::FindMethod (  
-    mdTypeDef   td,                     // [IN] given typedef   
-    LPCWSTR     szName,                 // [IN] member name 
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    mdMethodDef *pmb)             // [OUT] matching memberdef 
+STDMETHODIMP SymbolInfo::FindMethod (
+    mdTypeDef   td,                     // [IN] given typedef
+    LPCWSTR     szName,                 // [IN] member name
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    mdMethodDef *pmb)             // [OUT] matching memberdef
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::FindField (   
-    mdTypeDef   td,                     // [IN] given typedef   
-    LPCWSTR     szName,                 // [IN] member name 
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    mdFieldDef  *pmb)             // [OUT] matching memberdef 
+STDMETHODIMP SymbolInfo::FindField (
+    mdTypeDef   td,                     // [IN] given typedef
+    LPCWSTR     szName,                 // [IN] member name
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    mdFieldDef  *pmb)             // [OUT] matching memberdef
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::FindMemberRef (   
-    mdTypeRef   td,                     // [IN] given typeRef   
-    LPCWSTR     szName,                 // [IN] member name 
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    mdMemberRef *pmr)             // [OUT] matching memberref 
+STDMETHODIMP SymbolInfo::FindMemberRef (
+    mdTypeRef   td,                     // [IN] given typeRef
+    LPCWSTR     szName,                 // [IN] member name
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    mdMemberRef *pmr)             // [OUT] matching memberref
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
 
-STDMETHODIMP SymbolInfo::GetMemberRefProps (           // S_OK or error.   
-    mdMemberRef mr,                     // [IN] given memberref 
-    mdToken     *ptk,                   // [OUT] Put classref or classdef here. 
+STDMETHODIMP SymbolInfo::GetMemberRefProps (           // S_OK or error.
+    mdMemberRef mr,                     // [IN] given memberref
+    mdToken     *ptk,                   // [OUT] Put classref or classdef here.
   __out_ecount_part_opt(cchMember, *pchMember)
-    LPWSTR      szMember,               // [OUT] buffer to fill for member's name   
-    ULONG       cchMember,              // [IN] the count of char of szMember   
-    ULONG       *pchMember,             // [OUT] actual count of char in member name    
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value  
-    ULONG       *pbSig)           // [OUT] actual size of signature blob  
+    LPWSTR      szMember,               // [OUT] buffer to fill for member's name
+    ULONG       cchMember,              // [IN] the count of char of szMember
+    ULONG       *pchMember,             // [OUT] actual count of char in member name
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value
+    ULONG       *pbSig)           // [OUT] actual size of signature blob
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumProperties (              // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.   
-    mdProperty  rProperties[],          // [OUT] Put Properties here.   
-    ULONG       cMax,                   // [IN] Max properties to put.  
-    ULONG       *pcProperties)    // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumProperties (              // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
+    mdProperty  rProperties[],          // [OUT] Put Properties here.
+    ULONG       cMax,                   // [IN] Max properties to put.
+    ULONG       *pcProperties)    // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumEvents (                  // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.   
+STDMETHODIMP SymbolInfo::EnumEvents (                  // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdTypeDef   td,                     // [IN] TypeDef to scope the enumeration.
     mdEvent     rEvents[],              // [OUT] Put events here.
-    ULONG       cMax,                   // [IN] Max events to put.  
-    ULONG       *pcEvents)        // [OUT] Put # put here.    
+    ULONG       cMax,                   // [IN] Max events to put.
+    ULONG       *pcEvents)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetEventProps (               // S_OK, S_FALSE, or error. 
-    mdEvent     ev,                     // [IN] event token 
-    mdTypeDef   *pClass,                // [OUT] typedef containing the event declarion.    
-    LPCWSTR     szEvent,                // [OUT] Event name 
-    ULONG       cchEvent,               // [IN] the count of wchar of szEvent   
-    ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name 
-    DWORD       *pdwEventFlags,         // [OUT] Event flags.   
-    mdToken     *ptkEventType,          // [OUT] EventType class    
-    mdMethodDef *pmdAddOn,              // [OUT] AddOn method of the event  
-    mdMethodDef *pmdRemoveOn,           // [OUT] RemoveOn method of the event   
-    mdMethodDef *pmdFire,               // [OUT] Fire method of the event   
-    mdMethodDef rmdOtherMethod[],       // [OUT] other method of the event  
-    ULONG       cMax,                   // [IN] size of rmdOtherMethod  
-    ULONG       *pcOtherMethod)   // [OUT] total number of other method of this event 
+STDMETHODIMP SymbolInfo::GetEventProps (               // S_OK, S_FALSE, or error.
+    mdEvent     ev,                     // [IN] event token
+    mdTypeDef   *pClass,                // [OUT] typedef containing the event declarion.
+    LPCWSTR     szEvent,                // [OUT] Event name
+    ULONG       cchEvent,               // [IN] the count of wchar of szEvent
+    ULONG       *pchEvent,              // [OUT] actual count of wchar for event's name
+    DWORD       *pdwEventFlags,         // [OUT] Event flags.
+    mdToken     *ptkEventType,          // [OUT] EventType class
+    mdMethodDef *pmdAddOn,              // [OUT] AddOn method of the event
+    mdMethodDef *pmdRemoveOn,           // [OUT] RemoveOn method of the event
+    mdMethodDef *pmdFire,               // [OUT] Fire method of the event
+    mdMethodDef rmdOtherMethod[],       // [OUT] other method of the event
+    ULONG       cMax,                   // [IN] size of rmdOtherMethod
+    ULONG       *pcOtherMethod)   // [OUT] total number of other method of this event
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumMethodSemantics (         // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration. 
-    mdToken     rEventProp[],           // [OUT] Put Event/Property here.   
-    ULONG       cMax,                   // [IN] Max properties to put.  
-    ULONG       *pcEventProp)     // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumMethodSemantics (         // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
+    mdToken     rEventProp[],           // [OUT] Put Event/Property here.
+    ULONG       cMax,                   // [IN] Max properties to put.
+    ULONG       *pcEventProp)     // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetMethodSemantics (          // S_OK, S_FALSE, or error. 
-    mdMethodDef mb,                     // [IN] method token    
-    mdToken     tkEventProp,            // [IN] event/property token.   
-    DWORD       *pdwSemanticsFlags) // [OUT] the role flags for the method/propevent pair 
+STDMETHODIMP SymbolInfo::GetMethodSemantics (          // S_OK, S_FALSE, or error.
+    mdMethodDef mb,                     // [IN] method token
+    mdToken     tkEventProp,            // [IN] event/property token.
+    DWORD       *pdwSemanticsFlags) // [OUT] the role flags for the method/propevent pair
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetClassLayout ( 
-    mdTypeDef   td,                     // [IN] give typedef    
-    DWORD       *pdwPackSize,           // [OUT] 1, 2, 4, 8, or 16  
-    COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array 
-    ULONG       cMax,                   // [IN] size of the array   
-    ULONG       *pcFieldOffset,         // [OUT] needed array size  
-    ULONG       *pulClassSize)        // [OUT] the size of the class  
+STDMETHODIMP SymbolInfo::GetClassLayout (
+    mdTypeDef   td,                     // [IN] give typedef
+    DWORD       *pdwPackSize,           // [OUT] 1, 2, 4, 8, or 16
+    COR_FIELD_OFFSET rFieldOffset[],    // [OUT] field offset array
+    ULONG       cMax,                   // [IN] size of the array
+    ULONG       *pcFieldOffset,         // [OUT] needed array size
+    ULONG       *pulClassSize)        // [OUT] the size of the class
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetFieldMarshal (    
-    mdToken     tk,                     // [IN] given a field's memberdef   
-    PCCOR_SIGNATURE *ppvNativeType,     // [OUT] native type of this field  
-    ULONG       *pcbNativeType)   // [OUT] the count of bytes of *ppvNativeType   
+STDMETHODIMP SymbolInfo::GetFieldMarshal (
+    mdToken     tk,                     // [IN] given a field's memberdef
+    PCCOR_SIGNATURE *ppvNativeType,     // [OUT] native type of this field
+    ULONG       *pcbNativeType)   // [OUT] the count of bytes of *ppvNativeType
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetRVA (                      // S_OK or error.   
-    mdToken     tk,                     // Member for which to set offset   
-    ULONG       *pulCodeRVA,            // The offset   
-    DWORD       *pdwImplFlags)    // the implementation flags 
+STDMETHODIMP SymbolInfo::GetRVA (                      // S_OK or error.
+    mdToken     tk,                     // Member for which to set offset
+    ULONG       *pulCodeRVA,            // The offset
+    DWORD       *pdwImplFlags)    // the implementation flags
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetPermissionSetProps (  
-    mdPermission pm,                    // [IN] the permission token.   
-    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.   
-    void const  **ppvPermission,        // [OUT] permission blob.   
-    ULONG       *pcbPermission)   // [OUT] count of bytes of pvPermission.    
+STDMETHODIMP SymbolInfo::GetPermissionSetProps (
+    mdPermission pm,                    // [IN] the permission token.
+    DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
+    void const  **ppvPermission,        // [OUT] permission blob.
+    ULONG       *pcbPermission)   // [OUT] count of bytes of pvPermission.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetSigFromToken (             // S_OK or error.   
-    mdSignature mdSig,                  // [IN] Signature token.    
-    PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to token.   
-    ULONG       *pcbSig)          // [OUT] return size of signature.  
+STDMETHODIMP SymbolInfo::GetSigFromToken (             // S_OK or error.
+    mdSignature mdSig,                  // [IN] Signature token.
+    PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to token.
+    ULONG       *pcbSig)          // [OUT] return size of signature.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetModuleRefProps (           // S_OK or error.   
-    mdModuleRef mur,                    // [IN] moduleref token.    
+STDMETHODIMP SymbolInfo::GetModuleRefProps (           // S_OK or error.
+    mdModuleRef mur,                    // [IN] moduleref token.
   __out_ecount_part_opt(cchName, *pchName)
-    LPWSTR      szName,                 // [OUT] buffer to fill with the moduleref name.    
-    ULONG       cchName,                // [IN] size of szName in wide characters.  
-    ULONG       *pchName)         // [OUT] actual count of characters in the name.    
+    LPWSTR      szName,                 // [OUT] buffer to fill with the moduleref name.
+    ULONG       cchName,                // [IN] size of szName in wide characters.
+    ULONG       *pchName)         // [OUT] actual count of characters in the name.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumModuleRefs (              // S_OK or error.   
-    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.    
-    mdModuleRef rModuleRefs[],          // [OUT] put modulerefs here.   
-    ULONG       cmax,                   // [IN] max memberrefs to put.  
-    ULONG       *pcModuleRefs)    // [OUT] put # put here.    
+STDMETHODIMP SymbolInfo::EnumModuleRefs (              // S_OK or error.
+    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.
+    mdModuleRef rModuleRefs[],          // [OUT] put modulerefs here.
+    ULONG       cmax,                   // [IN] max memberrefs to put.
+    ULONG       *pcModuleRefs)    // [OUT] put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetTypeSpecFromToken (        // S_OK or error.   
-    mdTypeSpec typespec,                // [IN] TypeSpec token.    
-    PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to TypeSpec signature  
-    ULONG       *pcbSig)          // [OUT] return size of signature.  
+STDMETHODIMP SymbolInfo::GetTypeSpecFromToken (        // S_OK or error.
+    mdTypeSpec typespec,                // [IN] TypeSpec token.
+    PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to TypeSpec signature
+    ULONG       *pcbSig)          // [OUT] return size of signature.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -789,11 +789,11 @@ STDMETHODIMP SymbolInfo::GetNameFromToken (            // Not Recommended! May b
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::EnumUnresolvedMethods (       // S_OK, S_FALSE, or error. 
-    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.    
-    mdToken     rMethods[],             // [OUT] Put MemberDefs here.   
-    ULONG       cMax,                   // [IN] Max MemberDefs to put.  
-    ULONG       *pcTokens)        // [OUT] Put # put here.    
+STDMETHODIMP SymbolInfo::EnumUnresolvedMethods (       // S_OK, S_FALSE, or error.
+    HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
+    mdToken     rMethods[],             // [OUT] Put MemberDefs here.
+    ULONG       cMax,                   // [IN] Max MemberDefs to put.
+    ULONG       *pcTokens)        // [OUT] Put # put here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -824,9 +824,9 @@ STDMETHODIMP SymbolInfo::GetPinvokeMap (               // S_OK or error.
 }
 
 STDMETHODIMP SymbolInfo::EnumSignatures (              // S_OK or error.
-    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.    
-    mdSignature rSignatures[],          // [OUT] put signatures here.   
-    ULONG       cmax,                   // [IN] max signatures to put.  
+    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.
+    mdSignature rSignatures[],          // [OUT] put signatures here.
+    ULONG       cmax,                   // [IN] max signatures to put.
     ULONG       *pcSignatures)    // [OUT] put # put here.
 {
     _ASSERTE(!"NYI");
@@ -834,9 +834,9 @@ STDMETHODIMP SymbolInfo::EnumSignatures (              // S_OK or error.
 }
 
 STDMETHODIMP SymbolInfo::EnumTypeSpecs (               // S_OK or error.
-    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.    
-    mdTypeSpec  rTypeSpecs[],           // [OUT] put TypeSpecs here.   
-    ULONG       cmax,                   // [IN] max TypeSpecs to put.  
+    HCORENUM    *phEnum,                // [IN|OUT] pointer to the enum.
+    mdTypeSpec  rTypeSpecs[],           // [OUT] put TypeSpecs here.
+    ULONG       cmax,                   // [IN] max TypeSpecs to put.
     ULONG       *pcTypeSpecs)     // [OUT] put # put here.
 {
     _ASSERTE(!"NYI");
@@ -885,7 +885,7 @@ STDMETHODIMP SymbolInfo::GetCustomAttributeProps (     // S_OK or error.
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::FindTypeRef (   
+STDMETHODIMP SymbolInfo::FindTypeRef (
     mdToken     tkResolutionScope,      // [IN] ModuleRef, AssemblyRef or TypeRef.
     LPCWSTR     szName,                 // [IN] TypeRef Name.
     mdTypeRef   *ptr)             // [OUT] matching TypeRef.
@@ -894,61 +894,61 @@ STDMETHODIMP SymbolInfo::FindTypeRef (
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetMemberProps (  
-    mdToken     mb,                     // The member for which to get props.   
-    mdTypeDef   *pClass,                // Put member's class here. 
+STDMETHODIMP SymbolInfo::GetMemberProps (
+    mdToken     mb,                     // The member for which to get props.
+    mdTypeDef   *pClass,                // Put member's class here.
   __out_ecount_part_opt(cchMember, *pchMember)
-    LPWSTR      szMember,               // Put member's name here.  
-    ULONG       cchMember,              // Size of szMember buffer in wide chars.   
-    ULONG       *pchMember,             // Put actual size here 
-    DWORD       *pdwAttr,               // Put flags here.  
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data   
-    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob  
-    ULONG       *pulCodeRVA,            // [OUT] codeRVA    
-    DWORD       *pdwImplFlags,          // [OUT] Impl. Flags    
-    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*   
-    UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+    LPWSTR      szMember,               // Put member's name here.
+    ULONG       cchMember,              // Size of szMember buffer in wide chars.
+    ULONG       *pchMember,             // Put actual size here
+    DWORD       *pdwAttr,               // Put flags here.
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
+    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
+    ULONG       *pulCodeRVA,            // [OUT] codeRVA
+    DWORD       *pdwImplFlags,          // [OUT] Impl. Flags
+    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
+    UVCP_CONSTANT *ppValue,             // [OUT] constant value
     ULONG       *pcchValue)       // [OUT] size of constant string in chars, 0 for non-strings.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetFieldProps (  
-    mdFieldDef  mb,                     // The field for which to get props.    
-    mdTypeDef   *pClass,                // Put field's class here.  
+STDMETHODIMP SymbolInfo::GetFieldProps (
+    mdFieldDef  mb,                     // The field for which to get props.
+    mdTypeDef   *pClass,                // Put field's class here.
   __out_ecount_part_opt(cchField, *pchField)
-    LPWSTR      szField,                // Put field's name here.   
-    ULONG       cchField,               // Size of szField buffer in wide chars.    
-    ULONG       *pchField,              // Put actual size here 
-    DWORD       *pdwAttr,               // Put flags here.  
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data   
-    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob  
-    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*   
-    UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+    LPWSTR      szField,                // Put field's name here.
+    ULONG       cchField,               // Size of szField buffer in wide chars.
+    ULONG       *pchField,              // Put actual size here
+    DWORD       *pdwAttr,               // Put flags here.
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
+    ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
+    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
+    UVCP_CONSTANT *ppValue,             // [OUT] constant value
     ULONG       *pcchValue)       // [OUT] size of constant string in chars, 0 for non-strings.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetPropertyProps (            // S_OK, S_FALSE, or error. 
-    mdProperty  prop,                   // [IN] property token  
-    mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion. 
-    LPCWSTR     szProperty,             // [OUT] Property name  
-    ULONG       cchProperty,            // [IN] the count of wchar of szProperty    
-    ULONG       *pchProperty,           // [OUT] actual count of wchar for property name    
-    DWORD       *pdwPropFlags,          // [OUT] property flags.    
-    PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob 
-    ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig  
-    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*   
-    UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value 
+STDMETHODIMP SymbolInfo::GetPropertyProps (            // S_OK, S_FALSE, or error.
+    mdProperty  prop,                   // [IN] property token
+    mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion.
+    LPCWSTR     szProperty,             // [OUT] Property name
+    ULONG       cchProperty,            // [IN] the count of wchar of szProperty
+    ULONG       *pchProperty,           // [OUT] actual count of wchar for property name
+    DWORD       *pdwPropFlags,          // [OUT] property flags.
+    PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
+    ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig
+    DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
+    UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value
     ULONG       *pcchDefaultValue,      // [OUT] size of constant string in chars, 0 for non-strings.
-    mdMethodDef *pmdSetter,             // [OUT] setter method of the property  
-    mdMethodDef *pmdGetter,             // [OUT] getter method of the property  
-    mdMethodDef rmdOtherMethod[],       // [OUT] other method of the property   
-    ULONG       cMax,                   // [IN] size of rmdOtherMethod  
-    ULONG       *pcOtherMethod)   // [OUT] total number of other method of this property  
+    mdMethodDef *pmdSetter,             // [OUT] setter method of the property
+    mdMethodDef *pmdGetter,             // [OUT] getter method of the property
+    mdMethodDef rmdOtherMethod[],       // [OUT] other method of the property
+    ULONG       cMax,                   // [IN] size of rmdOtherMethod
+    ULONG       *pcOtherMethod)   // [OUT] total number of other method of this property
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -992,7 +992,7 @@ STDMETHODIMP_(BOOL)  SymbolInfo::IsValidToken (         // True or False.
 STDMETHODIMP SymbolInfo::GetNativeCallConvFromSig (    // S_OK or error.
     void const  *pvSig,                 // [IN] Pointer to signature.
     ULONG       cbSig,                  // [IN] Count of signature bytes.
-    ULONG       *pCallConv)       // [OUT] Put calling conv here (see CorPinvokemap).                                                                                        
+    ULONG       *pCallConv)       // [OUT] Put calling conv here (see CorPinvokemap).
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -1043,7 +1043,7 @@ STDMETHODIMP SymbolInfo::GetSaveSize (                 // S_OK or error.
 STDMETHODIMP SymbolInfo::DefineTypeDef (               // S_OK or error.
     LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
     DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-    mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+    mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
     mdToken     rtkImplements[],        // [IN] Implements interfaces
     mdTypeDef   *ptd)             // [OUT] Put TypeDef token here
 {
@@ -1054,7 +1054,7 @@ STDMETHODIMP SymbolInfo::DefineTypeDef (               // S_OK or error.
 STDMETHODIMP SymbolInfo::DefineNestedType (            // S_OK or error.
     LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
     DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-    mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+    mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
     mdToken     rtkImplements[],        // [IN] Implements interfaces
     mdTypeDef   tdEncloser,             // [IN] TypeDef token of the enclosing type.
     mdTypeDef   *ptd)             // [OUT] Put TypeDef token here
@@ -1070,22 +1070,22 @@ STDMETHODIMP SymbolInfo::SetHandler (                  // S_OK.
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineMethod (                // S_OK or error. 
-    mdTypeDef   td,                     // Parent TypeDef   
-    LPCWSTR     szName,                 // Name of member   
-    DWORD       dwMethodFlags,          // Member attributes    
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
+STDMETHODIMP SymbolInfo::DefineMethod (                // S_OK or error.
+    mdTypeDef   td,                     // Parent TypeDef
+    LPCWSTR     szName,                 // Name of member
+    DWORD       dwMethodFlags,          // Member attributes
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
-    ULONG       ulCodeRVA,  
-    DWORD       dwImplFlags,    
-    mdMethodDef *pmd)             // Put member token here     
+    ULONG       ulCodeRVA,
+    DWORD       dwImplFlags,
+    mdMethodDef *pmd)             // Put member token here
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineMethodImpl (            // S_OK or error.   
-    mdTypeDef   td,                     // [IN] The class implementing the method   
+STDMETHODIMP SymbolInfo::DefineMethodImpl (            // S_OK or error.
+    mdTypeDef   td,                     // [IN] The class implementing the method
     mdToken     tkBody,                 // [IN] Method body - MethodDef or MethodRef
     mdToken     tkDecl)           // [IN] Method declaration - MethodDef or MethodRef
 {
@@ -1093,21 +1093,21 @@ STDMETHODIMP SymbolInfo::DefineMethodImpl (            // S_OK or error.
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineTypeRefByName (         // S_OK or error.   
+STDMETHODIMP SymbolInfo::DefineTypeRefByName (         // S_OK or error.
     mdToken     tkResolutionScope,      // [IN] ModuleRef, AssemblyRef or TypeRef.
     LPCWSTR     szName,                 // [IN] Name of the TypeRef.
-    mdTypeRef   *ptr)             // [OUT] Put TypeRef token here.    
+    mdTypeRef   *ptr)             // [OUT] Put TypeRef token here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineImportType (            // S_OK or error.   
+STDMETHODIMP SymbolInfo::DefineImportType (            // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG       cbHashValue,            // [IN] Count of bytes.
-    IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.   
-    mdTypeDef   tdImport,               // [IN] The imported TypeDef.   
+    IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
+    mdTypeDef   tdImport,               // [IN] The imported TypeDef.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the TypeDef is imported.
     mdTypeRef   *ptr)             // [OUT] Put TypeRef token here.
 {
@@ -1115,51 +1115,51 @@ STDMETHODIMP SymbolInfo::DefineImportType (            // S_OK or error.
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineMemberRef (             // S_OK or error    
-    mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.    
-    LPCWSTR     szName,                 // [IN] member's name   
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    mdMemberRef *pmr)             // [OUT] memberref token    
+STDMETHODIMP SymbolInfo::DefineMemberRef (             // S_OK or error
+    mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
+    LPCWSTR     szName,                 // [IN] member's name
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    mdMemberRef *pmr)             // [OUT] memberref token
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineImportMember (          // S_OK or error.   
+STDMETHODIMP SymbolInfo::DefineImportMember (          // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG       cbHashValue,            // [IN] Count of bytes.
-    IMetaDataImport *pImport,           // [IN] Import scope, with member.  
-    mdToken     mbMember,               // [IN] Member in import scope.   
+    IMetaDataImport *pImport,           // [IN] Import scope, with member.
+    mdToken     mbMember,               // [IN] Member in import scope.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the Member is imported.
-    mdToken     tkParent,               // [IN] Classref or classdef in emit scope.    
-    mdMemberRef *pmr)             // [OUT] Put member ref here.   
+    mdToken     tkParent,               // [IN] Classref or classdef in emit scope.
+    mdMemberRef *pmr)             // [OUT] Put member ref here.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineEvent(    
-    mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined 
-    LPCWSTR     szEvent,                // [IN] Name of the event   
-    DWORD       dwEventFlags,           // [IN] CorEventAttr    
-    mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class 
-    mdMethodDef mdAddOn,                // [IN] required add method 
-    mdMethodDef mdRemoveOn,             // [IN] required remove method  
-    mdMethodDef mdFire,                 // [IN] optional fire method    
-    mdMethodDef rmdOtherMethods[],      // [IN] optional array of other methods associate with the event    
-    mdEvent     *pmdEvent)        // [OUT] output event token 
+STDMETHODIMP SymbolInfo::DefineEvent(
+    mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
+    LPCWSTR     szEvent,                // [IN] Name of the event
+    DWORD       dwEventFlags,           // [IN] CorEventAttr
+    mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
+    mdMethodDef mdAddOn,                // [IN] required add method
+    mdMethodDef mdRemoveOn,             // [IN] required remove method
+    mdMethodDef mdFire,                 // [IN] optional fire method
+    mdMethodDef rmdOtherMethods[],      // [IN] optional array of other methods associate with the event
+    mdEvent     *pmdEvent)        // [OUT] output event token
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetClassLayout(   
-    mdTypeDef   td,                     // [IN] typedef 
-    DWORD       dwPackSize,             // [IN] packing size specified as 1, 2, 4, 8, or 16 
-    COR_FIELD_OFFSET rFieldOffsets[],   // [IN] array of layout specification   
-    ULONG       ulClassSize)      // [IN] size of the class   
+STDMETHODIMP SymbolInfo::SetClassLayout(
+    mdTypeDef   td,                     // [IN] typedef
+    DWORD       dwPackSize,             // [IN] packing size specified as 1, 2, 4, 8, or 16
+    COR_FIELD_OFFSET rFieldOffsets[],   // [IN] array of layout specification
+    ULONG       ulClassSize)      // [IN] size of the class
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -1172,10 +1172,10 @@ STDMETHODIMP SymbolInfo::DeleteClassLayout(
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetFieldMarshal(    
-    mdToken     tk,                     // [IN] given a fieldDef or paramDef token  
-    PCCOR_SIGNATURE pvNativeType,       // [IN] native type specification   
-    ULONG       cbNativeType)     // [IN] count of bytes of pvNativeType  
+STDMETHODIMP SymbolInfo::SetFieldMarshal(
+    mdToken     tk,                     // [IN] given a fieldDef or paramDef token
+    PCCOR_SIGNATURE pvNativeType,       // [IN] native type specification
+    ULONG       cbNativeType)     // [IN] count of bytes of pvNativeType
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -1188,45 +1188,45 @@ STDMETHODIMP SymbolInfo::DeleteFieldMarshal(
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefinePermissionSet(    
-    mdToken     tk,                     // [IN] the object to be decorated. 
-    DWORD       dwAction,               // [IN] CorDeclSecurity.    
-    void const  *pvPermission,          // [IN] permission blob.    
-    ULONG       cbPermission,           // [IN] count of bytes of pvPermission. 
-    mdPermission *ppm)            // [OUT] returned permission token. 
+STDMETHODIMP SymbolInfo::DefinePermissionSet(
+    mdToken     tk,                     // [IN] the object to be decorated.
+    DWORD       dwAction,               // [IN] CorDeclSecurity.
+    void const  *pvPermission,          // [IN] permission blob.
+    ULONG       cbPermission,           // [IN] count of bytes of pvPermission.
+    mdPermission *ppm)            // [OUT] returned permission token.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetRVA (                      // S_OK or error.   
-    mdMethodDef md,                     // [IN] Method for which to set offset  
-    ULONG       ulRVA)            // [IN] The offset    
+STDMETHODIMP SymbolInfo::SetRVA (                      // S_OK or error.
+    mdMethodDef md,                     // [IN] Method for which to set offset
+    ULONG       ulRVA)            // [IN] The offset
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineModuleRef (             // S_OK or error.   
-    LPCWSTR     szName,                 // [IN] DLL name    
-    mdModuleRef *pmur)            // [OUT] returned   
+STDMETHODIMP SymbolInfo::DefineModuleRef (             // S_OK or error.
+    LPCWSTR     szName,                 // [IN] DLL name
+    mdModuleRef *pmur)            // [OUT] returned
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetParent (                   // S_OK or error.   
-    mdMemberRef mr,                     // [IN] Token for the ref to be fixed up.   
-    mdToken     tk)               // [IN] The ref parent. 
+STDMETHODIMP SymbolInfo::SetParent (                   // S_OK or error.
+    mdMemberRef mr,                     // [IN] Token for the ref to be fixed up.
+    mdToken     tk)               // [IN] The ref parent.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::GetTokenFromTypeSpec (        // S_OK or error.   
-    PCCOR_SIGNATURE pvSig,              // [IN] TypeSpec Signature to define.  
-    ULONG       cbSig,                  // [IN] Size of signature data. 
-    mdTypeSpec *ptypespec)        // [OUT] returned TypeSpec token.  
+STDMETHODIMP SymbolInfo::GetTokenFromTypeSpec (        // S_OK or error.
+    PCCOR_SIGNATURE pvSig,              // [IN] TypeSpec Signature to define.
+    ULONG       cbSig,                  // [IN] Size of signature data.
+    mdTypeSpec *ptypespec)        // [OUT] returned TypeSpec token.
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -1348,48 +1348,48 @@ STDMETHODIMP SymbolInfo::SetCustomAttributeValue (     // Return code.
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineField (                 // S_OK or error. 
-    mdTypeDef   td,                     // Parent TypeDef   
-    LPCWSTR     szName,                 // Name of member   
-    DWORD       dwFieldFlags,           // Member attributes    
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature 
-    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob    
-    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*    
-    void const  *pValue,                // [IN] constant value  
+STDMETHODIMP SymbolInfo::DefineField (                 // S_OK or error.
+    mdTypeDef   td,                     // Parent TypeDef
+    LPCWSTR     szName,                 // Name of member
+    DWORD       dwFieldFlags,           // Member attributes
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
+    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
+    void const  *pValue,                // [IN] constant value
     ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
-    mdFieldDef  *pmd)             // [OUT] Put member token here    
+    mdFieldDef  *pmd)             // [OUT] Put member token here
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::DefineProperty ( 
-    mdTypeDef   td,                     // [IN] the class/interface on which the property is being defined  
-    LPCWSTR     szProperty,             // [IN] Name of the property    
-    DWORD       dwPropFlags,            // [IN] CorPropertyAttr 
-    PCCOR_SIGNATURE pvSig,              // [IN] the required type signature 
-    ULONG       cbSig,                  // [IN] the size of the type signature blob 
-    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*    
-    void const  *pValue,                // [IN] constant value  
+STDMETHODIMP SymbolInfo::DefineProperty (
+    mdTypeDef   td,                     // [IN] the class/interface on which the property is being defined
+    LPCWSTR     szProperty,             // [IN] Name of the property
+    DWORD       dwPropFlags,            // [IN] CorPropertyAttr
+    PCCOR_SIGNATURE pvSig,              // [IN] the required type signature
+    ULONG       cbSig,                  // [IN] the size of the type signature blob
+    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
+    void const  *pValue,                // [IN] constant value
     ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
-    mdMethodDef mdSetter,               // [IN] optional setter of the property 
-    mdMethodDef mdGetter,               // [IN] optional getter of the property 
-    mdMethodDef rmdOtherMethods[],      // [IN] an optional array of other methods  
-    mdProperty  *pmdProp)         // [OUT] output property token  
+    mdMethodDef mdSetter,               // [IN] optional setter of the property
+    mdMethodDef mdGetter,               // [IN] optional getter of the property
+    mdMethodDef rmdOtherMethods[],      // [IN] an optional array of other methods
+    mdProperty  *pmdProp)         // [OUT] output property token
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
 STDMETHODIMP SymbolInfo::DefineParam (
-    mdMethodDef md,                     // [IN] Owning method   
-    ULONG       ulParamSeq,             // [IN] Which param 
-    LPCWSTR     szName,                 // [IN] Optional param name 
-    DWORD       dwParamFlags,           // [IN] Optional param flags    
-    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*    
+    mdMethodDef md,                     // [IN] Owning method
+    ULONG       ulParamSeq,             // [IN] Which param
+    LPCWSTR     szName,                 // [IN] Optional param name
+    DWORD       dwParamFlags,           // [IN] Optional param flags
+    DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
     void const  *pValue,                // [IN] constant value
     ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
-    mdParamDef  *ppd)             // [OUT] Put param token here   
+    mdParamDef  *ppd)             // [OUT] Put param token here
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
@@ -1421,7 +1421,7 @@ STDMETHODIMP SymbolInfo::SetPropertyProps (            // S_OK or error.
 }
 
 STDMETHODIMP SymbolInfo::SetParamProps (               // Return code.
-    mdParamDef  pd,                     // [IN] Param token.   
+    mdParamDef  pd,                     // [IN] Param token.
     LPCWSTR     szName,                 // [IN] Param name.
     DWORD       dwParamFlags,           // [IN] Param flags.
     DWORD       dwCPlusTypeFlag,        // [IN] Flag for value type. selected ELEMENT_TYPE_*.
@@ -1467,17 +1467,17 @@ STDMETHODIMP SymbolInfo::TranslateSigWithScope (
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetMethodImplFlags (          // [IN] S_OK or error.  
-    mdMethodDef md,                     // [IN] Method for which to set ImplFlags 
-    DWORD       dwImplFlags)  
+STDMETHODIMP SymbolInfo::SetMethodImplFlags (          // [IN] S_OK or error.
+    mdMethodDef md,                     // [IN] Method for which to set ImplFlags
+    DWORD       dwImplFlags)
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
 
-STDMETHODIMP SymbolInfo::SetFieldRVA (                 // [IN] S_OK or error.  
-    mdFieldDef  fd,                     // [IN] Field for which to set offset  
-    ULONG       ulRVA)            // [IN] The offset  
+STDMETHODIMP SymbolInfo::SetFieldRVA (                 // [IN] S_OK or error.
+    mdFieldDef  fd,                     // [IN] Field for which to set offset
+    ULONG       ulRVA)            // [IN] The offset
 {
     _ASSERTE(!"NYI");
     return E_NOTIMPL;

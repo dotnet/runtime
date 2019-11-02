@@ -125,7 +125,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 }
 
 // We use whatever ICU give us as the default locale except if it is en_US_POSIX. We'll map
-// this POSIX locale to Invariant instead. The reason is POSIX locale collation behavior 
+// this POSIX locale to Invariant instead. The reason is POSIX locale collation behavior
 // is not desirable at all because it doesn't support case insensitive string comparisons.
 const char* DetectDefaultLocaleName()
 {
@@ -139,41 +139,41 @@ const char* DetectDefaultLocaleName()
 }
 
 // GlobalizationNative_GetLocales gets all locale names and store it in the value buffer
-// in case of success, it returns the count of the characters stored in value buffer  
+// in case of success, it returns the count of the characters stored in value buffer
 // in case of failure, it returns negative number.
-// if the input value buffer is null, it returns the length needed to store the 
+// if the input value buffer is null, it returns the length needed to store the
 // locale names list.
-// if the value is not null, it fills the value with locale names separated by the length 
-// of each name. 
+// if the value is not null, it fills the value with locale names separated by the length
+// of each name.
 int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
 {
     int32_t totalLength = 0;
     int32_t index = 0;
     int32_t localeCount = uloc_countAvailable();
-    
+
     if (localeCount <=  0)
         return -1; // failed
-    
+
     for (int32_t i = 0; i < localeCount; i++)
     {
         const char *pLocaleName = uloc_getAvailable(i);
         if (pLocaleName[0] == 0) // unexpected empty name
             return -2;
-        
+
         int32_t localeNameLength = strlen(pLocaleName);
-        
+
         totalLength += localeNameLength + 1; // add 1 for the name length
-        
+
         if (value != NULL)
         {
             if (totalLength > valueLength)
                 return -3;
-            
+
             value[index++] = (UChar) localeNameLength;
-            
+
             for (int j=0; j<localeNameLength; j++)
             {
-                if (pLocaleName[j] == '_') // fix the locale name  
+                if (pLocaleName[j] == '_') // fix the locale name
                 {
                     value[index++] = (UChar) '-';
                 }
@@ -184,7 +184,7 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
             }
         }
     }
-    
+
     return totalLength;
 }
 

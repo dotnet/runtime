@@ -8,11 +8,11 @@
 //
 
 
-#ifndef _common_h_ 
+#ifndef _common_h_
 #define _common_h_
 
 #if defined(_MSC_VER) && defined(_X86_) && !defined(FPO_ON)
-#pragma optimize("y", on)       // Small critical routines, don't put in EBP frame 
+#pragma optimize("y", on)       // Small critical routines, don't put in EBP frame
 #define FPO_ON 1
 #define COMMON_TURNED_FPO_ON 1
 #endif
@@ -23,7 +23,7 @@
 #define DEBUG_REGDISPLAY
 #endif
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 
     // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4201)   // nameless struct/union
@@ -46,7 +46,7 @@
 
 #pragma warning(1:4189)   // local variable initialized but not used
 
-#ifndef DEBUG 
+#ifndef DEBUG
 #pragma warning(disable:4505)   // unreferenced local function has been removed
 //#pragma warning(disable:4702)   // unreachable code
 #pragma warning(disable:4313)   // 'format specifier' in format string conflicts with argument %d of type 'type'
@@ -83,7 +83,7 @@
 
 #include <olectl.h>
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 //non inline intrinsics are faster
 #pragma function(memcpy,memcmp,strcmp,strcpy,strlen,strcat)
 #endif // _MSC_VER
@@ -211,7 +211,7 @@ Thread * const CURRENT_THREAD = NULL;
 EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
 
-inline void RetailBreak()  
+inline void RetailBreak()
 {
 #ifdef _TARGET_X86_
     __asm int 3
@@ -222,7 +222,7 @@ inline void RetailBreak()
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 
-#ifndef memcpyUnsafe_f 
+#ifndef memcpyUnsafe_f
 #define memcpyUnsafe_f
 
 // use this when you want to memcpy something that contains GC refs
@@ -261,7 +261,7 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
             #else //FEATURE_PAL
                 return PAL_memcpy(dest, src, len);
             #endif //FEATURE_PAL
-            
+
         }
     extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
     #define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
@@ -269,14 +269,14 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
 #else // !_DEBUG && !DACCESS_COMPILE && !CROSSGEN_COMPILE
     FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
             WRAPPER_NO_CONTRACT;
-            
+
             return memcpy(dest, src, len);
         }
 #endif // !_DEBUG && !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 namespace Loader
 {
-    typedef enum 
+    typedef enum
     {
         Load, //should load
         DontLoad, //should not load
@@ -314,7 +314,7 @@ namespace Loader
 
 #include "spinlock.h"
 
-#ifdef FEATURE_COMINTEROP 
+#ifdef FEATURE_COMINTEROP
 #include "stdinterfaces.h"
 #endif
 
@@ -385,9 +385,9 @@ HINSTANCE GetModuleInst();
 #else
 //
 // The weak memory model forces us to raise memory barriers before writing object references into GC heap. This is required
-// for both security and to make most managed code written against strong memory model work. Under normal circumstances, this memory 
-// barrier is part of GC write barrier. However, there are a few places in the VM that set cards manually without going through 
-// regular GC write barrier. These places need to this macro. This macro is usually used before memcpy-like operation followed 
+// for both security and to make most managed code written against strong memory model work. Under normal circumstances, this memory
+// barrier is part of GC write barrier. However, there are a few places in the VM that set cards manually without going through
+// regular GC write barrier. These places need to this macro. This macro is usually used before memcpy-like operation followed
 // by SetCardsAfterBulkCopy.
 //
 #define GCHeapMemoryBarrier() MemoryBarrier()

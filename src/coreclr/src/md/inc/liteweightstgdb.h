@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // LiteWeightStgdb.h
-// 
+//
 
 //
 // This contains definition of class CLiteWeightStgDB. This is light weight
@@ -44,18 +44,18 @@ public:
     CLiteWeightStgdb() : m_pvMd(NULL), m_cbMd(0)
     {}
 
-    ~CLiteWeightStgdb() 
+    ~CLiteWeightStgdb()
     { Uninit(); }
 
     // open an in-memory metadata section for read.
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(
         ULONG cbData,
         LPCVOID pbData);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT InitHotPools(DataBuffer hotMetaData);
-    
+
     void Uninit();
 
 protected:
@@ -112,36 +112,36 @@ public:
     }
     ~CLiteWeightStgdbRW();
 
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew();
 
     // open an in-memory metadata section for read.
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(
         ULONG   cbData,
         LPCVOID pbData,
         int     bReadOnly);
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetSaveSize(
         CorSaveSize               fSize,
         UINT32                   *pcbSaveSize,
         MetaDataReorderingOptions reorderingOptions = NoReordering,
         CorProfileData           *pProfileData = NULL); // optional IBC profile data for working set optimization
 
-    __checkReturn 
+    __checkReturn
     HRESULT SaveToStream(
         IStream                  *pIStream,                 // Stream to which to write
         MetaDataReorderingOptions reorderingOptions = NoReordering,
         CorProfileData           *pProfileData = NULL);     // optional IBC profile data for working set optimization
 
-    __checkReturn 
+    __checkReturn
     HRESULT Save(
-        LPCWSTR     szFile, 
+        LPCWSTR     szFile,
         DWORD       dwSaveFlags);
 
     // Open a metadata section for read/write
-    __checkReturn 
+    __checkReturn
     HRESULT OpenForRead(
         LPCWSTR     szDatabase,             // Name of database.
         void        *pbData,                // Data to open on top of, 0 default.
@@ -156,7 +156,7 @@ public:
         DWORD       dwFlags);               // Flags for the open.
 #endif
 
-    __checkReturn 
+    __checkReturn
     HRESULT FindImageMetaData(
         PVOID pImage,                       // Pointer to head of a file
         DWORD dwFileLength,                 // length of a flat file
@@ -164,26 +164,26 @@ public:
         PVOID *ppMetaData,                  // [out] pointer to the metadata
         ULONG *pcbMetaData);                // [out] size of the metadata
 
-    __checkReturn 
+    __checkReturn
     HRESULT FindObjMetaData(
         PVOID pImage,                       // Pointer to an OBJ file
         DWORD dwFileLength,                 // Length of the file
         PVOID *ppMetaData,                  // [out] pointer to the metadata
         ULONG *pcbMetaData);                // [out] size of the metadata
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetPEKind(  					// S_OK or error.
         MAPPINGTYPE mtMapping,              // The type of mapping the image has
         DWORD* pdwPEKind,                   // [OUT] The kind of PE (0 - not a PE)
         DWORD* pdwMachine);                 // [OUT] Machine as defined in NT header
 
     // Low level data access; not useful for most clients.
-    __checkReturn 
+    __checkReturn
     HRESULT GetRawData(
         const void **ppvMd,                 // [OUT] put pointer to MD section here (aka, 'BSJB').
         ULONG   *pcbMd);                    // [OUT] put size of the stream here.
-    
-    __checkReturn 
+
+    __checkReturn
     STDMETHODIMP GetRawStreamInfo(          // Get info about the MD stream.
         ULONG   ix,                         // [IN] Stream ordinal desired.
         const char **ppchName,              // [OUT] put pointer to stream name here.
@@ -199,45 +199,45 @@ protected:
     DWORD       m_dwPEKind;                 // The kind of PE - 0: not a PE.
     DWORD       m_dwMachine;                // Machine as defined in NT header.
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetPoolSaveSize(
         LPCWSTR szHeap,                 // Name of the heap stream.
         int     iPool,                  // The pool whose size to get.
         UINT32 *pcbSaveSize);           // Add pool data to this value.
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT GetTablesSaveSize(
         CorSaveSize               fSave,
         UINT32                   *pcbSaveSize,
         MetaDataReorderingOptions reorderingOptions,
         CorProfileData           *pProfileData = NULL); // Add pool data to this value.
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT AddStreamToList(
         UINT32  cbSize,         // Size of the stream data.
         LPCWSTR szName);        // Name of the stream.
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT SaveToStorage(
-        TiggerStorage            *pStorage, 
-        MetaDataReorderingOptions reorderingOptions = NoReordering, 
+        TiggerStorage            *pStorage,
+        MetaDataReorderingOptions reorderingOptions = NoReordering,
         CorProfileData            *pProfileData = NULL);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT SavePool(LPCWSTR szName, TiggerStorage *pStorage, int iPool);
 
     STORAGESTREAMLST *m_pStreamList;
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT InitFileForRead(
         StgIO       *pStgIO,            // For file i/o.
         int         bReadOnly=true);    // If read-only.
-    
+
     // Set file name of this database (makes copy of the file name).
     __checkReturn HRESULT SetFileName(const WCHAR * wszFileName);
     // Returns TRUE if wszFileName has valid file name length.
     static BOOL IsValidFileNameLength(const WCHAR * wszFileName);
-    
+
     CLiteWeightStgdbRW *m_pNextStgdb;
 
 public:
@@ -249,7 +249,7 @@ private:
     DWORD    m_dwDatabaseLFT;   // Low bytes of the database file's last write time
     DWORD    m_dwDatabaseLFS;   // Low bytes of the database file's size
     StgIO *  m_pStgIO;          // For file i/o.
-    
+
 };  // class CLiteWeightStgdbRW
 
 #endif // __LiteWeightStgdb_h__

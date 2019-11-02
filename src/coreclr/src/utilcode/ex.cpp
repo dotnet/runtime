@@ -29,7 +29,7 @@ GVAL_IMPL_INIT(HRESULT, g_hrFatalError, S_OK);
 
 // Helper function to get an exception object from outside the exception.  In
 //  the CLR, it may be from the Thread object.  Non-CLR users have no thread object,
-//  and it will do nothing.                                                    
+//  and it will do nothing.
 void GetLastThrownObjectExceptionFromThread(void **ppvException);
 
 Exception *Exception::g_OOMException = NULL;
@@ -40,10 +40,10 @@ static BYTE g_OOMExceptionInstance[sizeof(OutOfMemoryException)];
 Exception * Exception::GetOOMException()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     if (!g_OOMException) {
         // Create a local copy on the stack and then copy it over to the static instance.
-        // This avoids race conditions caused by multiple initializations of vtable in the constructor       
+        // This avoids race conditions caused by multiple initializations of vtable in the constructor
 
         OutOfMemoryException local(TRUE);  // Construct a "preallocated" instance.
         memcpy((void*)&g_OOMExceptionInstance, (void*)&local, sizeof(OutOfMemoryException));
@@ -83,14 +83,14 @@ void Exception::Delete(Exception* pvMemory)
 void Exception::GetMessage(SString &result)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     return GenerateTopLevelHRExceptionMessage(GetHR(), result);
 }
 
 void HRMsgException::GetMessage(SString &result)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (m_msg.IsEmpty())
         HRException::GetMessage(result);
     else
@@ -105,7 +105,7 @@ Exception *Exception::Clone()
         THROWS;
     }
     CONTRACTL_END;
-    
+
     NewHolder<Exception> retExcep(CloneHelper());
     if (m_innerException)
     {
@@ -158,7 +158,7 @@ BOOL Exception::IsTerminal()
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = GetHR();
     return (COR_E_THREADABORTED == hr);
 }
@@ -174,7 +174,7 @@ BOOL Exception::IsTransient()
 BOOL Exception::IsTransient(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     return (hr == COR_E_THREADABORTED
             || hr == COR_E_THREADINTERRUPTED
             || hr == COR_E_THREADSTOP
@@ -189,7 +189,7 @@ BOOL Exception::IsTransient(HRESULT hr)
 
 //------------------------------------------------------------------------------
 // Functions to manage the preallocated exceptions.
-// Virtual 
+// Virtual
 BOOL Exception::IsPreallocatedException()
 {   // Most exceptions can't be preallocated.  If they can be, their class
     //  should provide a virtual override of this function.
@@ -496,52 +496,52 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
         CASE_HRESULT(RPC_E_CANTCALLOUT_ININPUTSYNCCALL)// 0x8001010DL
         CASE_HRESULT(RPC_E_WRONG_THREAD)//               0x8001010EL
         CASE_HRESULT(RPC_E_THREAD_NOT_INIT)//            0x8001010FL
-        CASE_HRESULT(RPC_E_UNEXPECTED)//                 0x8001FFFFL   
+        CASE_HRESULT(RPC_E_UNEXPECTED)//                 0x8001FFFFL
 
 // ******************
 // FACILITY_CTL
 // ******************
 
-        CASE_HRESULT(CTL_E_ILLEGALFUNCTIONCALL)       
-        CASE_HRESULT(CTL_E_OVERFLOW)                  
-        CASE_HRESULT(CTL_E_OUTOFMEMORY)               
-        CASE_HRESULT(CTL_E_DIVISIONBYZERO)            
-        CASE_HRESULT(CTL_E_OUTOFSTRINGSPACE)          
-        CASE_HRESULT(CTL_E_OUTOFSTACKSPACE)           
-        CASE_HRESULT(CTL_E_BADFILENAMEORNUMBER)       
-        CASE_HRESULT(CTL_E_FILENOTFOUND)              
-        CASE_HRESULT(CTL_E_BADFILEMODE)               
-        CASE_HRESULT(CTL_E_FILEALREADYOPEN)           
-        CASE_HRESULT(CTL_E_DEVICEIOERROR)             
-        CASE_HRESULT(CTL_E_FILEALREADYEXISTS)         
-        CASE_HRESULT(CTL_E_BADRECORDLENGTH)           
-        CASE_HRESULT(CTL_E_DISKFULL)                  
-        CASE_HRESULT(CTL_E_BADRECORDNUMBER)           
-        CASE_HRESULT(CTL_E_BADFILENAME)               
-        CASE_HRESULT(CTL_E_TOOMANYFILES)              
-        CASE_HRESULT(CTL_E_DEVICEUNAVAILABLE)         
-        CASE_HRESULT(CTL_E_PERMISSIONDENIED)          
-        CASE_HRESULT(CTL_E_DISKNOTREADY)              
-        CASE_HRESULT(CTL_E_PATHFILEACCESSERROR)       
-        CASE_HRESULT(CTL_E_PATHNOTFOUND)              
-        CASE_HRESULT(CTL_E_INVALIDPATTERNSTRING)      
-        CASE_HRESULT(CTL_E_INVALIDUSEOFNULL)          
-        CASE_HRESULT(CTL_E_INVALIDFILEFORMAT)         
-        CASE_HRESULT(CTL_E_INVALIDPROPERTYVALUE)      
-        CASE_HRESULT(CTL_E_INVALIDPROPERTYARRAYINDEX) 
-        CASE_HRESULT(CTL_E_SETNOTSUPPORTEDATRUNTIME)  
-        CASE_HRESULT(CTL_E_SETNOTSUPPORTED)           
-        CASE_HRESULT(CTL_E_NEEDPROPERTYARRAYINDEX)    
-        CASE_HRESULT(CTL_E_SETNOTPERMITTED)           
-        CASE_HRESULT(CTL_E_GETNOTSUPPORTEDATRUNTIME)  
-        CASE_HRESULT(CTL_E_GETNOTSUPPORTED)           
-        CASE_HRESULT(CTL_E_PROPERTYNOTFOUND)          
-        CASE_HRESULT(CTL_E_INVALIDCLIPBOARDFORMAT)    
-        CASE_HRESULT(CTL_E_INVALIDPICTURE)            
-        CASE_HRESULT(CTL_E_PRINTERERROR)              
-        CASE_HRESULT(CTL_E_CANTSAVEFILETOTEMP)        
-        CASE_HRESULT(CTL_E_SEARCHTEXTNOTFOUND)        
-        CASE_HRESULT(CTL_E_REPLACEMENTSTOOLONG)       
+        CASE_HRESULT(CTL_E_ILLEGALFUNCTIONCALL)
+        CASE_HRESULT(CTL_E_OVERFLOW)
+        CASE_HRESULT(CTL_E_OUTOFMEMORY)
+        CASE_HRESULT(CTL_E_DIVISIONBYZERO)
+        CASE_HRESULT(CTL_E_OUTOFSTRINGSPACE)
+        CASE_HRESULT(CTL_E_OUTOFSTACKSPACE)
+        CASE_HRESULT(CTL_E_BADFILENAMEORNUMBER)
+        CASE_HRESULT(CTL_E_FILENOTFOUND)
+        CASE_HRESULT(CTL_E_BADFILEMODE)
+        CASE_HRESULT(CTL_E_FILEALREADYOPEN)
+        CASE_HRESULT(CTL_E_DEVICEIOERROR)
+        CASE_HRESULT(CTL_E_FILEALREADYEXISTS)
+        CASE_HRESULT(CTL_E_BADRECORDLENGTH)
+        CASE_HRESULT(CTL_E_DISKFULL)
+        CASE_HRESULT(CTL_E_BADRECORDNUMBER)
+        CASE_HRESULT(CTL_E_BADFILENAME)
+        CASE_HRESULT(CTL_E_TOOMANYFILES)
+        CASE_HRESULT(CTL_E_DEVICEUNAVAILABLE)
+        CASE_HRESULT(CTL_E_PERMISSIONDENIED)
+        CASE_HRESULT(CTL_E_DISKNOTREADY)
+        CASE_HRESULT(CTL_E_PATHFILEACCESSERROR)
+        CASE_HRESULT(CTL_E_PATHNOTFOUND)
+        CASE_HRESULT(CTL_E_INVALIDPATTERNSTRING)
+        CASE_HRESULT(CTL_E_INVALIDUSEOFNULL)
+        CASE_HRESULT(CTL_E_INVALIDFILEFORMAT)
+        CASE_HRESULT(CTL_E_INVALIDPROPERTYVALUE)
+        CASE_HRESULT(CTL_E_INVALIDPROPERTYARRAYINDEX)
+        CASE_HRESULT(CTL_E_SETNOTSUPPORTEDATRUNTIME)
+        CASE_HRESULT(CTL_E_SETNOTSUPPORTED)
+        CASE_HRESULT(CTL_E_NEEDPROPERTYARRAYINDEX)
+        CASE_HRESULT(CTL_E_SETNOTPERMITTED)
+        CASE_HRESULT(CTL_E_GETNOTSUPPORTEDATRUNTIME)
+        CASE_HRESULT(CTL_E_GETNOTSUPPORTED)
+        CASE_HRESULT(CTL_E_PROPERTYNOTFOUND)
+        CASE_HRESULT(CTL_E_INVALIDCLIPBOARDFORMAT)
+        CASE_HRESULT(CTL_E_INVALIDPICTURE)
+        CASE_HRESULT(CTL_E_PRINTERERROR)
+        CASE_HRESULT(CTL_E_CANTSAVEFILETOTEMP)
+        CASE_HRESULT(CTL_E_SEARCHTEXTNOTFOUND)
+        CASE_HRESULT(CTL_E_REPLACEMENTSTOOLONG)
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG  // @todo: do we want to burn strings for this in a free build?
@@ -781,7 +781,7 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
 HRESULT HRException::GetHR()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_hr; 
+    return m_hr;
 }
 
 // ---------------------------------------------------------------------------
@@ -802,7 +802,7 @@ HRESULT SEHException::GetHR()
         return m_exception.ExceptionCode;
 }
 
-IErrorInfo *SEHException::GetErrorInfo() 
+IErrorInfo *SEHException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
     return NULL;
@@ -811,7 +811,7 @@ IErrorInfo *SEHException::GetErrorInfo()
 void SEHException::GetMessage(SString &string)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     if (IsComPlusException(&m_exception)) // EE exception
     {
         GenerateTopLevelHRExceptionMessage(GetHR(), string);
@@ -845,7 +845,7 @@ DelegatingException::DelegatingException()
 DelegatingException::~DelegatingException()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     // If there is a valid delegate pointer (inited and non-NULL), delete it.
     if (IsDelegateValid())
         Delete(m_delegatedException);
@@ -859,7 +859,7 @@ DelegatingException::~DelegatingException()
 Exception* DelegatingException::GetDelegate()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     // If we haven't gotten the exception pointer before..
     if (!IsDelegateSet())
     {
@@ -891,7 +891,7 @@ HRESULT DelegatingException::GetHR()
 IErrorInfo *DelegatingException::GetErrorInfo()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     // Retrieve any delegating exception.
     Exception *pDelegate = GetDelegate();
 
@@ -905,7 +905,7 @@ IErrorInfo *DelegatingException::GetErrorInfo()
 void DelegatingException::GetMessage(SString &result)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     // Retrieve any delegating exception.
     Exception *pDelegate = GetDelegate();
 
@@ -917,7 +917,7 @@ void DelegatingException::GetMessage(SString &result)
     }
     else
     {
-        // If we don't have a valid exception code, then give a generic message 
+        // If we don't have a valid exception code, then give a generic message
         //  that's a little nicer than "code 0x00000000".
         result.Printf("Unknown exception");
     }
@@ -928,10 +928,10 @@ Exception *DelegatingException::Clone()
 {
     WRAPPER_NO_CONTRACT;
 
-    // Clone the base exception, this will also take care of cloning the inner 
+    // Clone the base exception, this will also take care of cloning the inner
     // exception if there is one.
     NewHolder<DelegatingException> retExcep((DelegatingException*)Exception::Clone());
-        
+
     // If there is a valid delegating exception...
     if (IsDelegateValid())
     {   // ... clone it.
@@ -954,12 +954,12 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr)
     WRAPPER_NO_CONTRACT;
 
     STRESS_LOG1(LF_EH, LL_INFO100, "ThrowHR: HR = %x\n", hr);
-    
+
     if (hr == E_OUTOFMEMORY)
         ThrowOutOfMemory();
 
     // Catchers assume only failing hresults
-    _ASSERTE(FAILED(hr));   
+    _ASSERTE(FAILED(hr));
     if (hr == S_OK)
         hr = E_FAIL;
 
@@ -971,12 +971,12 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, SString const &msg)
     WRAPPER_NO_CONTRACT;
 
     STRESS_LOG1(LF_EH, LL_INFO100, "ThrowHR: HR = %x\n", hr);
-    
+
     if (hr == E_OUTOFMEMORY)
         ThrowOutOfMemory();
 
     // Catchers assume only failing hresults
-    _ASSERTE(FAILED(hr));   
+    _ASSERTE(FAILED(hr));
     if (hr == S_OK)
         hr = E_FAIL;
 
@@ -992,7 +992,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, UINT uText)
         ThrowOutOfMemory();
 
     // Catchers assume only failing hresults
-    _ASSERTE(FAILED(hr));   
+    _ASSERTE(FAILED(hr));
     if (hr == S_OK)
         hr = E_FAIL;
 
@@ -1035,7 +1035,7 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
 #ifndef DACCESS_COMPILE
 
     // Use volatile store to prevent compiler from optimizing the static variable away
@@ -1098,7 +1098,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
     inner = inner->DomainBoundClone();
 
     // It isn't useful to wrap OOMs and StackOverflows in other exceptions. Just throw them now.
-    // 
+    //
     if (inner->IsTransient())
     {
         PAL_CPP_THROW(Exception*, inner);
@@ -1146,7 +1146,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
 
-    
+
 
     SString strDescr;
     BOOL    fHaveDescr = FALSE;
@@ -1238,12 +1238,12 @@ void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo)
 DWORD GetCurrentExceptionCode()
 {
     WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC_HOST_ONLY; 
+    SUPPORTS_DAC_HOST_ONLY;
 
     return (DWORD)(size_t)ClrFlsGetValue(TlsIdx_EXCEPTION_CODE);
 }
 
-//=========================================================================================== 
+//===========================================================================================
 // These abstractions hide the difference between legacy desktop CLR's (that don't support
 // side-by-side-inproc and rely on a fixed SEH code to identify managed exceptions) and
 // new CLR's that support side-by-side inproc.
@@ -1253,7 +1253,7 @@ DWORD GetCurrentExceptionCode()
 // the module handle of the owning CLR is stored in ExceptionRecord.ExceptionInformation[4].
 //
 // (Note: all existing SEH's use either only slot [0] or no slots at all. We are leaving
-//  slots [1] thru [3] open for future expansion.) 
+//  slots [1] thru [3] open for future expansion.)
 //===========================================================================================
 
 // Is this exception code one of the special CLR-specific SEH codes that participate in the
@@ -1301,7 +1301,7 @@ static DWORD MarkAsThrownByUsWorker(UINT numArgs, /*out*/ ULONG_PTR exceptionArg
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = (ULONG_PTR) (GetCLRModule());
 #endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    
+
     return INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE;
 }
 
@@ -1327,7 +1327,7 @@ DWORD MarkAsThrownByUs(/*out*/ ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM
 // *and* whether it was tagged by the calling instance of the CLR.
 //
 // If this is a non-tagged-SEH-enabled build, it is blindly assumed to be tagged by the
-// calling instance of the CLR. 
+// calling instance of the CLR.
 BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1373,7 +1373,7 @@ VOID RaiseComPlusException()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT; 
+    STATIC_CONTRACT_FORBID_FAULT;
 
 
     ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
@@ -1381,5 +1381,5 @@ VOID RaiseComPlusException()
     RaiseException(EXCEPTION_COMPLUS, 0, numParams, exceptionArgs);
 }
 
-//=========================================================================================== 
-//=========================================================================================== 
+//===========================================================================================
+//===========================================================================================

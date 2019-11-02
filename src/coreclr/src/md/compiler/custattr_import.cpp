@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // CustAttr_Import.cpp
-// 
+//
 // Implementation for the meta data custom attribute import code (code:IMetaDataImport).
-// 
+//
 //*****************************************************************************
 #include "stdafx.h"
 #include "regmeta.h"
@@ -81,12 +81,12 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     VERIFY(WszWideCharToMultiByte(CP_UTF8,0, wzName,-1, szName,iLen, 0,0));
 
     hr = ImportHelper::GetCustomAttributeByName(pMiniMd, tkObj, szName, ppData, pcbData);
-     
+
 ErrExit:
-    
+
     STOP_MD_PERF(GetCustomAttributeByName);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 } // STDMETHODIMP RegMeta::GetCustomAttributeByName()
 
@@ -112,8 +112,8 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     HENUMInternal   *pEnum = *ppmdEnum;
     CustomAttributeRec  *pRec;
     ULONG           index;
-    
-    LOG((LOGMD, "RegMeta::EnumCustomAttributes(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", 
+
+    LOG((LOGMD, "RegMeta::EnumCustomAttributes(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes));
     START_MD_PERF();
     LOCKREAD();
@@ -144,9 +144,9 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                 else
                 {
                     // Dynamic enumerator for subsetted list.
-                
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );               
-                    
+
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
+
                     for (index = ridStart; index < ridEnd; index ++ )
                     {
                         IfFailGo(pMiniMd->GetCustomAttributeRecord(index, &pRec));
@@ -173,14 +173,14 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                     // Hash the data.
                     iHash = pMiniMd->HashCustomAttribute(tk);
 
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );               
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
 
                     // Go through every entry in the hash chain looking for ours.
                     for (p = pHashTable->FindFirst(iHash, pos);
                          p;
                          p = pHashTable->FindNext(pos))
                     {
-            
+
                         CustomAttributeRec *pCustomAttribute;
                         IfFailGo(pMiniMd->GetCustomAttributeRecord(RidFromToken(p->tok), &pCustomAttribute));
                         tkParentTmp = pMiniMd->getParentOfCustomAttribute(pCustomAttribute);
@@ -198,14 +198,14 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                 else
                 {
 
-                    // table is not sorted and hash is not built so we have to create dynmaic array 
+                    // table is not sorted and hash is not built so we have to create dynmaic array
                     // create the dynamic enumerator and loop through CA table linearly
                     //
                     ridStart = 1;
                     ridEnd = pMiniMd->getCountCustomAttributes() + 1;
-                
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );               
-                
+
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
+
                     for (index = ridStart; index < ridEnd; index ++ )
                     {
                         IfFailGo(pMiniMd->GetCustomAttributeRecord(index, &pRec));
@@ -220,24 +220,24 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;          
+        *ppmdEnum = pEnum;
     }
-    
+
     // fill the output token buffer
     hr = HENUMInternal::EnumWithCount(pEnum, cMax, rCustomAttributes, pcCustomAttributes);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-    
+
     STOP_MD_PERF(EnumCustomAttributes);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 } // STDMETHODIMP RegMeta::EnumCustomAttributes()
 
 
 //*****************************************************************************
-// Get information about a CustomAttribute.   
+// Get information about a CustomAttribute.
 //*****************************************************************************
 STDMETHODIMP RegMeta::GetCustomAttributeProps(
     mdCustomAttribute   cv,                 // The attribute token
@@ -274,9 +274,9 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
     }
 
 ErrExit:
-    
+
     STOP_MD_PERF(GetCustomAttributeProps);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 } // RegMeta::GetCustomAttributeProps

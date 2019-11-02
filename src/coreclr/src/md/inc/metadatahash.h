@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaDataHash.h -- Meta data hash data structures.
-// 
+//
 
 //
 // Used by Emitters and by E&C.
@@ -48,7 +48,7 @@ struct MEMBERDEFHASHENTRY
 
 //*****************************************************************************
 // This class is used to create transient indexes for meta data structures.
-// This class is generic; one must override it to provide hashing and 
+// This class is generic; one must override it to provide hashing and
 // accessor methods for your specific record type.  It can start out on top
 // of malloc with a small memory footprint, and as you get larger, it must
 // be capable of rehashing.
@@ -114,7 +114,7 @@ public:
 		    return (0);
 
 	    // Chain the new item to the front of the heap.
-	    p->iNext = m_rgBuckets[iBucket];        
+	    p->iNext = m_rgBuckets[iBucket];
         p->ulHash = iHash;
         m_cItems++;
         m_rgBuckets[iBucket] = m_Heap.ItemIndex(p);
@@ -139,7 +139,7 @@ public:
 	    if (!rgBuckets)
 		    return (OutOfMemory());
 	    memset(rgBuckets, ~0, sizeof(int) * iBuckets);
-        
+
         // loop through each of data and rehash them
         iCount = m_Heap.Count();
         for (index = 0; index < iCount; index++)
@@ -151,7 +151,7 @@ public:
             iBucket = p->ulHash % iBuckets;
 
 	        // Chain the item to the front of the new heap.
-	        p->iNext = rgBuckets[iBucket];        
+	        p->iNext = rgBuckets[iBucket];
             rgBuckets[iBucket] = index;
         }
 
@@ -179,7 +179,7 @@ public:
 		int			&POS)				// Current location.
     {
 	    Entry *p;
-	    
+
 	    if (POS == ~0)
 		    return (0);
 
@@ -196,11 +196,11 @@ private:
 };
 
 
-class CMetaDataHashBase : public CMetaDataHashTemplate<TOKENHASHENTRY> 
+class CMetaDataHashBase : public CMetaDataHashTemplate<TOKENHASHENTRY>
 {
 };
 
-class CMemberDefHash : public CMetaDataHashTemplate<MEMBERDEFHASHENTRY> 
+class CMemberDefHash : public CMetaDataHashTemplate<MEMBERDEFHASHENTRY>
 {
 };
 

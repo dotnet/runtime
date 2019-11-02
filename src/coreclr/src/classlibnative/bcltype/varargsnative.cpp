@@ -86,13 +86,13 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
 #if defined(_TARGET_X86_)
     //  STACK_GROWS_DOWN_ON_ARGS_WALK
 
-    //   <return address>  ;; lower memory                  
+    //   <return address>  ;; lower memory
     //   <varargs_cookie>         '\'
     //   <argN>                    '\'
-    //                              += sizeOfArgs     
+    //                              += sizeOfArgs
     //                             /
     //   <arg1>                   /
-    // * <this>            ;; if an instance method (note: <this> is usally passed in 
+    // * <this>            ;; if an instance method (note: <this> is usally passed in
     //                     ;; a register and wouldn't appear on the stack frame)
     //                     ;; higher memory
     //
@@ -107,7 +107,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     //   <this>	           ;; lower memory
     //   <varargs_cookie>  ;; if an instance method
     // * <arg1>
-    //                          
+    //
     //   <argN>            ;; higher memory
     //
     // When the stack grows up, ArgPtr always points to the start of the next
@@ -124,7 +124,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
 // argument.
 ////////////////////////////////////////////////////////////////////////////////
 void AdvanceArgPtr(VARARGS *data)
-{ 
+{
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -139,8 +139,8 @@ void AdvanceArgPtr(VARARGS *data)
             break;
 
         SigTypeContext      typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-        SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext); 
-        SIZE_T cbArg = StackElemSize(cbRaw); 
+        SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
+        SIZE_T cbArg = StackElemSize(cbRaw);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         if (ArgIterator::IsVarArgPassedByRef(cbRaw))
@@ -175,7 +175,7 @@ FCIMPL2(void, VarArgsNative::Init, VARARGS* _this, LPVOID cookie)
     if (cookie == 0)
         COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
 
-    VASigCookie* pCookie = *(VASigCookie**)(cookie); 
+    VASigCookie* pCookie = *(VASigCookie**)(cookie);
 
     if (pCookie->signature.IsEmpty())
     {
@@ -201,10 +201,10 @@ FCIMPLEND
 // argument to the call.
 ////////////////////////////////////////////////////////////////////////////////
 FCIMPL3(
-void, 
-VarArgsNative::Init2, 
-    VARARGS * _this, 
-    LPVOID    cookie, 
+void,
+VarArgsNative::Init2,
+    VARARGS * _this,
+    LPVOID    cookie,
     LPVOID    firstArg)
 {
     FCALL_CONTRACT;
@@ -226,10 +226,10 @@ VarArgsNative::Init2,
         // The expectation made by VarArgsNative is that:
 #ifdef STACK_GROWS_DOWN_ON_ARGS_WALK
         // data->ArgPtr points to the end of the next argument.
-        //    <varargs_cookie>         
+        //    <varargs_cookie>
         //    <argN>                   <-- data->ArgPtr after InitCommon
-        //                            
-        //    <argM 1st optional arg>  
+        //
+        //    <argM 1st optional arg>
         // *@ <arg2>                   <-- firstArg, data->ArgPtr leaving Init2()
         //    <arg1>
         //    <this>            ;; if an instance method
@@ -238,12 +238,12 @@ VarArgsNative::Init2,
 #else // STACK_GROWS_UP_ON_ARGS_WALK
         // data->ArgPtr points to the beginning of the next argument
         //    <this>            ;; if an instance method
-        //    <varargs_cookie>  
+        //    <varargs_cookie>
         //    <arg1>                     <-- data->ArgPtr after InitCommon
         // *  <arg2>                     <-- firstArg
         //  @ <argM - 1st optional arg>  <-- data->ArgPtr leaving Init2()
-        //                          
-        //    <argN>            
+        //
+        //    <argN>
         //                     ;; higher memory
 #endif // STACK_GROWS_**_ON_ARGS_WALK
         // where * indicates the place on the stack that firstArg points upon
@@ -284,7 +284,7 @@ VarArgsNative::Init2,
             bool atFirstArg = (data->ArgPtr == firstArg);
             data->ArgPtr += cbArg;
 #endif // STACK_GROWS_**_ON_ARGS_WALK
-           
+
             if (atFirstArg)
                 break;
         }
@@ -308,7 +308,7 @@ FCIMPL1(int, VarArgsNative::GetRemainingCount, VARARGS* _this)
     {
         // this argiterator was created by marshaling from an unmanaged va_list -
         // can't do this operation
-        COMPlusThrow(kNotSupportedException); 
+        COMPlusThrow(kNotSupportedException);
     }
     HELPER_METHOD_FRAME_END();
     return (_this->RemainingArgs);
@@ -453,10 +453,10 @@ FCIMPLEND
 // the next argument out of a varargs function call.  This does not check if
 // there are any args remaining (it assumes it has been checked).
 ////////////////////////////////////////////////////////////////////////////////
-void 
+void
 VarArgsNative::GetNextArgHelper(
-    VARARGS *    data, 
-    TypedByRef * value, 
+    VARARGS *    data,
+    TypedByRef * value,
     BOOL         fData)
 {
     CONTRACTL {
@@ -478,7 +478,7 @@ VarArgsNative::GetNextArgHelper(
 
     AdjustArgPtrForAlignment(data, cbArg);
 
-    // Get a pointer to the beginning of the argument. 
+    // Get a pointer to the beginning of the argument.
 #ifdef STACK_GROWS_DOWN_ON_ARGS_WALK
     data->ArgPtr -= cbArg;
 #endif

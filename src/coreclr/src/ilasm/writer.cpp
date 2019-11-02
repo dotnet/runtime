@@ -92,42 +92,42 @@ HRESULT Assembler::CreateTLSDirectory() {
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
         DWORD* callBackChain = (DWORD*) &tlsDir[1];
         *callBackChain = 0;
-    
+
             // Find out where the tls directory will end up
         ULONG tlsDirOffset;
         if(FAILED(hr=m_pCeeFileGen->GetSectionDataLen(tlsDirSec, &tlsDirOffset))) return(hr);
         tlsDirOffset -= (sizeofdir + sizeofptr);
-    
+
             // Set the start of the TLS data (offset 0 of hte TLS section)
         tlsDir->StartAddressOfRawData = 0;
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofStartAddressOfRawData, m_pTLSSection, srRelocHighLow))) return(hr);
-    
+
             // Set the end of the TLS data
         tlsDir->EndAddressOfRawData = VALPTR(tlsEnd);
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofEndAddressOfRawData, m_pTLSSection, srRelocHighLow))) return(hr);
-    
+
             // Allocate space for the OS to put the TLS index for this PE file (needs to be Read/Write?)
         DWORD* tlsIndex;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pGlobalDataSection, sizeof(DWORD), sizeof(DWORD), (void**) &tlsIndex))) return(hr);
         *tlsIndex = 0xCCCCCCCC;     // Does't really matter, the OS will fill it in
-    
+
             // Find out where tlsIndex index is
         ULONG tlsIndexOffset;
         if(FAILED(hr=m_pCeeFileGen->GetSectionDataLen(tlsDirSec, &tlsIndexOffset))) return(hr);
         tlsIndexOffset -= sizeof(DWORD);
-    
+
             // Set the address of the TLS index
         tlsDir->AddressOfIndex = VALPTR(tlsIndexOffset);
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfIndex, m_pGlobalDataSection, srRelocHighLow))) return(hr);
-    
+
             // Set addres of callbacks chain
         tlsDir->AddressOfCallBacks = VALPTR((DWORD)(DWORD_PTR)(PIMAGE_TLS_CALLBACK*)(size_t)(tlsDirOffset + sizeofdir));
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfCallBacks, tlsDirSec, srRelocHighLow))) return(hr);
-        
+
             // Set the other fields.
         tlsDir->SizeOfZeroFill = 0;
         tlsDir->Characteristics = 0;
-    
+
         hr=m_pCeeFileGen->SetDirectoryEntry (m_pCeeFile, tlsDirSec, IMAGE_DIRECTORY_ENTRY_TLS,
             sizeofdir, tlsDirOffset);
 
@@ -148,42 +148,42 @@ HRESULT Assembler::CreateTLSDirectory() {
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
         __int64* callBackChain = (__int64*) &tlsDir[1];
         *callBackChain = 0;
-    
+
             // Find out where the tls directory will end up
         ULONG tlsDirOffset;
         if(FAILED(hr=m_pCeeFileGen->GetSectionDataLen(tlsDirSec, &tlsDirOffset))) return(hr);
         tlsDirOffset -= (sizeofdir + sizeofptr);
-    
+
             // Set the start of the TLS data (offset 0 of hte TLS section)
         tlsDir->StartAddressOfRawData = 0;
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofStartAddressOfRawData, m_pTLSSection, srRelocHighLow))) return(hr);
-    
+
             // Set the end of the TLS data
         tlsDir->EndAddressOfRawData = VALPTR(tlsEnd);
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofEndAddressOfRawData, m_pTLSSection, srRelocHighLow))) return(hr);
-    
+
             // Allocate space for the OS to put the TLS index for this PE file (needs to be Read/Write?)
         DWORD* tlsIndex;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pGlobalDataSection, sizeof(DWORD), sizeof(DWORD), (void**) &tlsIndex))) return(hr);
         *tlsIndex = 0xCCCCCCCC;     // Does't really matter, the OS will fill it in
-    
+
             // Find out where tlsIndex index is
         ULONG tlsIndexOffset;
         if(FAILED(hr=m_pCeeFileGen->GetSectionDataLen(tlsDirSec, &tlsIndexOffset))) return(hr);
         tlsIndexOffset -= sizeof(DWORD);
-    
+
             // Set the address of the TLS index
         tlsDir->AddressOfIndex = VALPTR(tlsIndexOffset);
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfIndex, m_pGlobalDataSection, srRelocHighLow))) return(hr);
-    
+
             // Set address of callbacks chain
         tlsDir->AddressOfCallBacks = VALPTR((DWORD)(DWORD_PTR)(PIMAGE_TLS_CALLBACK*)(size_t)(tlsDirOffset + sizeofdir));
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfCallBacks, tlsDirSec, srRelocHighLow))) return(hr);
-        
+
             // Set the other fields.
         tlsDir->SizeOfZeroFill = 0;
         tlsDir->Characteristics = 0;
-    
+
         hr=m_pCeeFileGen->SetDirectoryEntry (m_pCeeFile, tlsDirSec, IMAGE_DIRECTORY_ENTRY_TLS,
             sizeofdir, tlsDirOffset);
     }
@@ -478,20 +478,20 @@ HRESULT Assembler::CreateExportDirectory()
     return S_OK;
 }
 
-static const BYTE ExportStubAMD64Template[] = 
+static const BYTE ExportStubAMD64Template[] =
 {
-	// Jump through VTFixup table 
+	// Jump through VTFixup table
 	0x48, 0xA1,				// rex.w rex.b mov rax,[following address]
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//address of VTFixup slot
     0xFF, 0xE0              // jmp [rax]
 };
-static const BYTE ExportStubX86Template[] = 
+static const BYTE ExportStubX86Template[] =
 {
-	// Jump through VTFixup table 
+	// Jump through VTFixup table
 	0xFF, 0x25,				// jmp [following address]
     0x00, 0x00, 0x00, 0x00  //address of VTFixup slot
 };
-static const WORD ExportStubARMTemplate[] = 
+static const WORD ExportStubARMTemplate[] =
 {
 	// Jump through VTFixup table
     0xf8df, 0xf000,         // ldr pc, [pc, #0]
@@ -541,7 +541,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
         if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, L, 1, (void **) &outBuff))) return 0;
         memset(outBuff,0,L);
     }
-    
+
     if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, EXPORT_STUB_SIZE, 1, (void **) &outBuff))) return 0;
     memcpy(outBuff,STUB_TEMPLATE,EXPORT_STUB_SIZE);
     pdwVTFSlotRVA = (DWORD*)(&outBuff[OFFSET_OF_ADDR]);
@@ -1440,7 +1440,7 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
         {
             PIMAGE_OPTIONAL_HEADER64 pOpt = (PIMAGE_OPTIONAL_HEADER64)(&pNT->OptionalHeader);
             if (m_stSizeOfStackReserve)
-                pOpt->SizeOfStackReserve = VAL64(m_stSizeOfStackReserve); 
+                pOpt->SizeOfStackReserve = VAL64(m_stSizeOfStackReserve);
             if (m_fAppContainer)
                 pOpt->DllCharacteristics |= IMAGE_DLLCHARACTERISTICS_APPCONTAINER;
             if (m_fHighEntropyVA)
@@ -1515,7 +1515,7 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
     if(bClock) bClock->cFilegenBegin = GetTickCount();
     // actually output the meta-data
     if (FAILED(hr=m_pCeeFileGen->EmitMetaDataAt(m_pCeeFile, m_pEmitter, m_pILSection, metaDataOffset, metaData, metaDataSize))) goto exit;
-    
+
     if((m_wMSVmajor < 0xFF)&&(m_wMSVminor < 0xFF))
     {
         STORAGESIGNATURE *pSSig = (STORAGESIGNATURE *)metaData;

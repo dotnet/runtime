@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 
-// 
+//
 // Buffer.cpp
 // ---------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #pragma inline_depth (20)
 #endif
 
-const DWORD g_garbageFillBuffer[GARBAGE_FILL_BUFFER_ITEMS] = 
+const DWORD g_garbageFillBuffer[GARBAGE_FILL_BUFFER_ITEMS] =
 {
         GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD,
         GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD, GARBAGE_FILL_DWORD,
@@ -42,7 +42,7 @@ void SBuffer::ReallocateBuffer(COUNT_T allocation, Preserve preserve)
         if (allocation > 0) THROWS; else NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
-    } 
+    }
     CONTRACT_END;
 
     BYTE *newBuffer = NULL;
@@ -75,14 +75,14 @@ void SBuffer::ReallocateBuffer(COUNT_T allocation, Preserve preserve)
 
 void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
 {
-    CONTRACT_VOID 
+    CONTRACT_VOID
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i, deleteSize));
         SUPPORTS_DAC_HOST_ONLY;
-    } 
+    }
     CONTRACT_END;
 
     COUNT_T startRange = (COUNT_T) (i.m_ptr - m_buffer);
@@ -107,7 +107,7 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
         DebugDestructBuffer(i.m_ptr, deleteSize);
 
         DebugMoveBuffer(m_buffer + endRange + delta,
-                        m_buffer + endRange, 
+                        m_buffer + endRange,
                         end - endRange);
 
         Resize(m_size+delta, PRESERVE);
@@ -125,8 +125,8 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
 
         DebugDestructBuffer(i.m_ptr, deleteSize);
 
-        DebugMoveBuffer(m_buffer + endRange + delta, 
-                        m_buffer + endRange, 
+        DebugMoveBuffer(m_buffer + endRange + delta,
+                        m_buffer + endRange,
                         end - endRange);
 
     }

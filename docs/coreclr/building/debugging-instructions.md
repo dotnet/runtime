@@ -3,7 +3,7 @@ Debugging CoreCLR
 
 These instructions will lead you through debugging CoreCLR.
 
-SOS has moved to the diagnostics repo. For more information on SOS, installation and how to use it click [here](https://github.com/dotnet/diagnostics#net-core-diagnostics-repo). 
+SOS has moved to the diagnostics repo. For more information on SOS, installation and how to use it click [here](https://github.com/dotnet/diagnostics#net-core-diagnostics-repo).
 
 Debugging CoreCLR on Windows
 ============================
@@ -96,4 +96,4 @@ Using Visual Studio
 - For managed debugging, there are some settings in Debug->Options, Debugging->General that might be useful:
   - Uncheck 'Just My Code'. This will allow you debug into the framework libraries.
   - Check 'Enable .NET Framework Source Stepping.' This will configure the debugger to download symbols and source automatically for runtime framework binaries. If you built the framework yourself this may be irrelevant because you already have all the source on your machine but it doesn't hurt.
-  - Check 'Suppress JIT optimzation on module load'. This tells the debugger to tell the .NET runtime JIT to generate debuggable code even for modules that may not have been compiled in a 'Debug' configuration by the C# compiler. This code is slower, but it provides much higher fidelity breakpoints, stepping, and local variable access. It is the same difference you see when debugging .NET apps in the 'Debug' project configuration vs. the 'Release' project configuration. 
+  - Check 'Suppress JIT optimzation on module load'. This tells the debugger to tell the .NET runtime JIT to generate debuggable code even for modules that may not have been compiled in a 'Debug' configuration by the C# compiler. This code is slower, but it provides much higher fidelity breakpoints, stepping, and local variable access. It is the same difference you see when debugging .NET apps in the 'Debug' project configuration vs. the 'Release' project configuration.

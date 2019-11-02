@@ -62,8 +62,8 @@ cpp_quote("EXTERN_GUID(IID_IEEMemoryManager, 0x17713b61, 0xb59f, 0x4e13, 0xba, 0
 // Using a different ID allows us to completely hide different CLR SKUs from each other. The recommendation is to keep
 // the ID contant between different versions of the same SKU and use mscordbi's logic to determine whether a given
 // version is compatible. This allows debuggers to give different errors for 'future version of the CLR I don't
-// support' vs. 'No CLR is loaded at all.' 
-// 
+// support' vs. 'No CLR is loaded at all.'
+//
 // This guid first appears in version 4.0 of CLR on x86 and amd64 - earlier versions had no resource
 // GUID CLR_ID_V4_DESKTOP :   uuid{267F3989-D786-4b9a-9AF6-D19E42D557EC}
 cpp_quote("EXTERN_GUID(CLR_ID_V4_DESKTOP, 0x267f3989, 0xd786, 0x4b9a, 0x9a, 0xf6, 0xd1, 0x9e, 0x42, 0xd5, 0x57, 0xec);")
@@ -107,12 +107,12 @@ typedef enum {
     CRST_HOST_BREAKABLE   = 0x20, // This lock is held while running managed code.  It can be terminated by a host.
     // CRST_UNUSED        = 0x40,
     CRST_TAKEN_DURING_SHUTDOWN = 0x80, // This lock is taken during the shutdown sequence in EEShutdown(helper)
-    CRST_GC_NOTRIGGER_WHEN_TAKEN = 0x100, 
+    CRST_GC_NOTRIGGER_WHEN_TAKEN = 0x100,
         // User of this lock cannot trigger GC, while it is locked.
         // Note that Enter on this lock can trigger GC if called from COOPERATIVE mode.
         // It is useful for locks which can be taken on GC or debugger threads.
     CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD = 0x200,
-        // Some rare locks should be taken only in ForbidSuspend region (i.e. profiler cannot walk the stack), 
+        // Some rare locks should be taken only in ForbidSuspend region (i.e. profiler cannot walk the stack),
         // this option will assert it in debug mode.
 } CrstFlags;
 

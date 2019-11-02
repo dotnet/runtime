@@ -46,9 +46,9 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 
 //------------------------------------------------------------------------------
 // This code was taken from the 'ouput.c' file located in Visual Studio 8 (i.e. 2005)
-// in the '\Microsoft Visual Studio 8\VC\crt\src' directory. It was moved into 
+// in the '\Microsoft Visual Studio 8\VC\crt\src' directory. It was moved into
 // this file to support only the '_output' function used by _vscprintf() in vsprintf.c
-// UNUSED / NON-RELEVANT PORTIONS OF THE CODE HAVE BEEN REMOVED - do not try and 
+// UNUSED / NON-RELEVANT PORTIONS OF THE CODE HAVE BEEN REMOVED - do not try and
 // use it to generate any other safecrt 'output' functions
 //
 // Noteable modifications
@@ -324,7 +324,7 @@ const char __lookuptable[] = {
 
 #else  /* FORMAT_VALIDATIONS */
 // SNIP -srs 7/3/07
-#error code has been removed 
+#error code has been removed
 #endif  /* FORMAT_VALIDATIONS */
 
 #define FIND_CHAR_CLASS(lookuptbl, c)      \
@@ -1057,7 +1057,7 @@ int __cdecl _output (
                 /* correct radix, setting text and textlen */
                 /* appropriately. */
 
-#if _INTEGRAL_MAX_BITS >= 64       
+#if _INTEGRAL_MAX_BITS >= 64
 //                unsigned __int64 number;    /* number to convert */
                 uint64_t number;      /* number to convert */
                 int digit;              /* ascii value of digit */
@@ -1069,7 +1069,7 @@ int __cdecl _output (
 #endif  /* _INTEGRAL_MAX_BITS >= 64        */
 
                 /* 1. read argument into l, sign extend as needed */
-#if _INTEGRAL_MAX_BITS >= 64       
+#if _INTEGRAL_MAX_BITS >= 64
                 if (flags & FL_I64)
                     l = get_int64_arg(&argptr);
                 else
@@ -1110,7 +1110,7 @@ int __cdecl _output (
                     number = l;
                 }
 
-#if _INTEGRAL_MAX_BITS >= 64       
+#if _INTEGRAL_MAX_BITS >= 64
                 if ( (flags & FL_I64) == 0 && (flags & FL_LONGLONG) == 0 ) {
                     /*
                      * Unless printing a full 64-bit value, insure values
@@ -1160,7 +1160,7 @@ int __cdecl _output (
                     *--sz = '0';
                     ++textlen;      /* add a zero */
                 }
-                
+
                 text.sz = sz;
             }
             break;

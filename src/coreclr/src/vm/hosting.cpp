@@ -57,9 +57,9 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
             static BYTE* ptr = (BYTE*)0x234560000;
             ptr += 0x123450000;
             // Wrap around
-            if (ptr < (BYTE *)BOT_MEMORY || ptr > (BYTE *)TOP_MEMORY) 
+            if (ptr < (BYTE *)BOT_MEMORY || ptr > (BYTE *)TOP_MEMORY)
             {
-                // Make sure to keep the alignment of the ptr so that we are not 
+                // Make sure to keep the alignment of the ptr so that we are not
                 // trying the same places over and over again
                 ptr = (BYTE*)BOT_MEMORY + (((SIZE_T)ptr) & 0xFFFFFFFF);
             }
@@ -102,7 +102,7 @@ BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
 #define VirtualFree(lpAddress, dwSize, dwFreeType) Dont_Use_VirtualFree(lpAddress, dwSize, dwFreeType)
 
 #undef VirtualQuery
-SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength) 
+SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
     CONTRACTL
     {
@@ -118,7 +118,7 @@ SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZ
 #define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
 #undef VirtualProtect
-BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect) 
+BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     CONTRACTL
     {
@@ -134,7 +134,7 @@ BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWOR
 #define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
 #undef GetProcessHeap
-HANDLE EEGetProcessHeap() 
+HANDLE EEGetProcessHeap()
 {
     // Note: this can be called a little early for real contracts, so we use static contracts instead.
     STATIC_CONTRACT_NOTHROW;
@@ -145,7 +145,7 @@ HANDLE EEGetProcessHeap()
 #define GetProcessHeap() Dont_Use_GetProcessHeap()
 
 #undef HeapCreate
-HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize) 
+HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 {
     CONTRACTL
     {
@@ -155,7 +155,7 @@ HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
     CONTRACTL_END;
 
 #ifndef FEATURE_PAL
-    
+
     {
         return ::HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
     }
@@ -166,7 +166,7 @@ HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 #define HeapCreate(flOptions, dwInitialSize, dwMaximumSize) Dont_Use_HeapCreate(flOptions, dwInitialSize, dwMaximumSize)
 
 #undef HeapDestroy
-BOOL EEHeapDestroy(HANDLE hHeap) 
+BOOL EEHeapDestroy(HANDLE hHeap)
 {
     CONTRACTL
     {
@@ -196,7 +196,7 @@ BOOL EEHeapDestroy(HANDLE hHeap)
 
 
 #undef HeapAlloc
-LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) 
+LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -396,7 +396,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
         MODE_ANY;
     }
     CONTRACTL_END;
-	
+
     return  __DangerousSwitchToThread(dwSleepMSec, dwSwitchCount, FALSE);
 }
 
@@ -431,11 +431,11 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
     // __SwitchToThread loops avoid context switches.  The latter is to ensure
     // that if many threads are spinning waiting for a lower-priority thread
     // to run that they will eventually all be asleep at the same time.
-    // 
-    // The specific values are derived from the NDP 2.0 SP1 fix: it waits for 
+    //
+    // The specific values are derived from the NDP 2.0 SP1 fix: it waits for
     // 8 million cycles of __SwitchToThread calls where each takes ~300-500,
     // which means we should wait in the neighborhood of 25000 calls.
-    // 
+    //
     // As of early 2011, ARM CPUs are much slower, so we need a lower threshold.
     // The following two values appear to yield roughly equivalent spin times
     // on their respective platforms.

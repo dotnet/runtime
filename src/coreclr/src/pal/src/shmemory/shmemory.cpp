@@ -26,7 +26,7 @@ Abstract:
 #if HAVE_YIELD_SYSCALL
 #include <sys/syscall.h>
 #endif  /* HAVE_YIELD_SYSCALL */
-        
+
 SET_DEFAULT_DEBUG_CHANNEL(SHMEM);
 
 /* Type definitions ***********************************************************/
@@ -61,14 +61,14 @@ memory. Rationale :
  spinlocks, but this would introduce more busy-wait.
 */
 static CRITICAL_SECTION shm_critsec;
-                        
+
 /* number of locks the process currently holds (SHMLock calls without matching
 SHMRelease). Because we take the critical section while inside a
 SHMLock/SHMRelease pair, this is actually the number of locks held by a single
 thread. */
 static Volatile<LONG> lock_count;
 
-/* thread ID of thread holding the SHM lock. used for debugging purposes : 
+/* thread ID of thread holding the SHM lock. used for debugging purposes :
    SHMGet/SetInfo will verify that the calling thread holds the lock */
 static Volatile<HANDLE> locking_thread;
 
@@ -126,7 +126,7 @@ void SHMCleanup(void)
 
     _ASSERT_MSG(shm_header.spinlock != my_pid,
             "SHMCleanup called while the current process still owns the lock "
-            "[owner thread=%u, current thread: %u]\n", 
+            "[owner thread=%u, current thread: %u]\n",
             locking_thread.Load(), THREADSilentGetCurrentThreadId());
 
     /* Now for the interprocess stuff. */
@@ -156,7 +156,7 @@ int SHMLock(void)
 
     _ASSERTE((0 == lock_count && 0 == locking_thread) ||
              (0 < lock_count && (HANDLE)pthread_self() == locking_thread));
-             
+
     if(lock_count == 0)
     {
         pid_t my_pid, tmp_pid;
@@ -164,12 +164,12 @@ int SHMLock(void)
 
         TRACE("First-level SHM lock : taking spinlock\n");
 
-        // Store the id of the current thread as the (only) one that is 
+        // Store the id of the current thread as the (only) one that is
         // trying to grab the spinlock from the current process
         locking_thread = (HANDLE)pthread_self();
 
         my_pid = gPID;
-        
+
         while(TRUE)
         {
             //
@@ -198,14 +198,14 @@ int SHMLock(void)
             }
             else
             {
-                /* another process is holding the lock... we want to yield and 
+                /* another process is holding the lock... we want to yield and
                    give the holder a chance to release the lock
-                   The function sched_yield() only yields to a thread in the 
-                   current process; this doesn't help us much, and doesn't help 
-                   at all if there's only 1 thread. There doesn't seem to be 
-                   any clean way to force a yield to another process, but the 
-                   FreeBSD syscall "yield" does the job. We alternate between 
-                   both methods to give other threads of this process a chance 
+                   The function sched_yield() only yields to a thread in the
+                   current process; this doesn't help us much, and doesn't help
+                   at all if there's only 1 thread. There doesn't seem to be
+                   any clean way to force a yield to another process, but the
+                   FreeBSD syscall "yield" does the job. We alternate between
+                   both methods to give other threads of this process a chance
                    to run while we wait.
                  */
 #if HAVE_YIELD_SYSCALL
@@ -217,8 +217,8 @@ int SHMLock(void)
                 }
                 else
                 {
-                    /* use the syscall first, since we know we'l need to yield 
-                       to another process eventually - the lock can't be held 
+                    /* use the syscall first, since we know we'l need to yield
+                       to another process eventually - the lock can't be held
                        by the current process, thanks to the critical section */
                     syscall(SYS_yield, 0);
                 }
@@ -233,7 +233,7 @@ int SHMLock(void)
             "\n(my_pid = %u) != (header->spinlock = %u)\n"
             "tmp_pid         = %u\n"
             "spincount       = %d\n"
-            "locking_thread  = %u\n", 
+            "locking_thread  = %u\n",
             (DWORD)my_pid, (DWORD)shm_header.spinlock,
             (DWORD)tmp_pid,
             (int)spincount,
@@ -334,7 +334,7 @@ SHMPTR SHMGetInfo(SHM_INFO_ID element)
         return 0;
     }
 
-    /* verify that this thread holds the SHM lock. No race condition: if the 
+    /* verify that this thread holds the SHM lock. No race condition: if the
        current thread is here, it can't be in SHMLock or SHMUnlock */
     if( (HANDLE)pthread_self() != locking_thread )
     {
@@ -371,8 +371,8 @@ BOOL SHMSetInfo(SHM_INFO_ID element, SHMPTR value)
         ASSERT("Invalid SHM info element %d\n", element);
         return FALSE;
     }
-    
-    /* verify that this thread holds the SHM lock. No race condition: if the 
+
+    /* verify that this thread holds the SHM lock. No race condition: if the
        current thread is here, it can't be in SHMLock or SHMUnlock */
     if( (HANDLE)pthread_self() != locking_thread )
     {

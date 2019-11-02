@@ -159,10 +159,10 @@ struct InterfaceInfo_t
 
     MethodTable* m_pMethodTable;        // Method table of the interface
     WORD         m_wFlags;
-    
+
 private:
     WORD         m_wStartSlot;          // starting slot of interface in vtable
-    
+
 public:
     WORD         GetInteropStartSlot()
     {
@@ -187,18 +187,18 @@ public:
 };
 
 //*******************************************************************************
-// MethodTableBuilder simply acts as a holder for the 
+// MethodTableBuilder simply acts as a holder for the
 // large algorithm that "compiles" a type into
-// a MethodTable/EEClass/DispatchMap/VTable etc. etc. 
-// 
-// The user of this class (the ClassLoader) currently builds the EEClass 
+// a MethodTable/EEClass/DispatchMap/VTable etc. etc.
+//
+// The user of this class (the ClassLoader) currently builds the EEClass
 // first, and does a couple of other things too, though all
 // that work should probably be folded into BuildMethodTableThrowing.
 //
 class MethodTableBuilder
 {
 public:
-    MethodTableBuilder(MethodTable * pMT, StackingAllocator *pStackingAllocator) 
+    MethodTableBuilder(MethodTable * pMT, StackingAllocator *pStackingAllocator)
     {
         LIMITED_METHOD_CONTRACT;
         m_pHalfBakedMT = pMT;
@@ -219,7 +219,7 @@ private:
     enum e_METHOD_IMPL
     {
         METHOD_IMPL_NOT,
-#ifndef STUB_DISPATCH_ALL 
+#ifndef STUB_DISPATCH_ALL
         METHOD_IMPL,
 #endif
         METHOD_IMPL_COUNT
@@ -247,7 +247,7 @@ private:
     // GetHalfBakedClass: The EEClass you get back from this function may not have all its fields filled in yet.
     // Thus you have to make sure that the relevant item which you are accessing has
     // been correctly initialized in the EEClass/MethodTable construction sequence
-    // at the point at which you access it.  
+    // at the point at which you access it.
     //
     // Gradually we will move the code to a model where the process of constructing an EEClass/MethodTable
     // is more obviously correct, e.g. by relying much less on reading information using GetHalfBakedClass
@@ -255,28 +255,28 @@ private:
     //
     // <NICE> Get rid of this.</NICE>
     EEClass *GetHalfBakedClass() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedClass; }
-    MethodTable *GetHalfBakedMethodTable() { WRAPPER_NO_CONTRACT; return m_pHalfBakedMT; } 
+    MethodTable *GetHalfBakedMethodTable() { WRAPPER_NO_CONTRACT; return m_pHalfBakedMT; }
 
     mdTypeDef GetCl()    { LIMITED_METHOD_CONTRACT; return bmtType->cl; }
     BOOL IsGlobalClass() { WRAPPER_NO_CONTRACT; return GetCl() == COR_GLOBAL_PARENT_TOKEN; }
-    BOOL IsEnum() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsEnum; } 
+    BOOL IsEnum() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsEnum; }
     DWORD GetAttrClass() { LIMITED_METHOD_CONTRACT; return bmtType->dwAttr; }
-    BOOL IsInterface() { WRAPPER_NO_CONTRACT; return IsTdInterface(GetAttrClass()); } 
-    BOOL IsValueClass() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsValueClass; } 
-    BOOL IsAbstract() { LIMITED_METHOD_CONTRACT; return IsTdAbstract(bmtType->dwAttr); } 
-    BOOL HasLayout() { LIMITED_METHOD_CONTRACT; return bmtProp->fHasLayout; } 
-    BOOL IsDelegate() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsDelegate; } 
-    Module *GetModule() { LIMITED_METHOD_CONTRACT; return bmtType->pModule; } 
-    Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); } 
-    ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); } 
-    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return GetModule()->GetMDImport(); } 
+    BOOL IsInterface() { WRAPPER_NO_CONTRACT; return IsTdInterface(GetAttrClass()); }
+    BOOL IsValueClass() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsValueClass; }
+    BOOL IsAbstract() { LIMITED_METHOD_CONTRACT; return IsTdAbstract(bmtType->dwAttr); }
+    BOOL HasLayout() { LIMITED_METHOD_CONTRACT; return bmtProp->fHasLayout; }
+    BOOL IsDelegate() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsDelegate; }
+    Module *GetModule() { LIMITED_METHOD_CONTRACT; return bmtType->pModule; }
+    Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); }
+    ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); }
+    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return GetModule()->GetMDImport(); }
 #ifdef _DEBUG
-    LPCUTF8 GetDebugClassName() { LIMITED_METHOD_CONTRACT; return bmtProp->szDebugClassName; } 
+    LPCUTF8 GetDebugClassName() { LIMITED_METHOD_CONTRACT; return bmtProp->szDebugClassName; }
 #endif // _DEBUG
-     BOOL IsComImport() { WRAPPER_NO_CONTRACT; return IsTdImport(GetAttrClass()); } 
-    BOOL IsComClassInterface() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsComClassInterface; } 
+     BOOL IsComImport() { WRAPPER_NO_CONTRACT; return IsTdImport(GetAttrClass()); }
+    BOOL IsComClassInterface() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsComClassInterface; }
 
-    // <NOTE> The following functions are used during MethodTable construction to setup information 
+    // <NOTE> The following functions are used during MethodTable construction to setup information
     // about the type being constructedm in particular information stored in the EEClass.
     // USE WITH CAUTION!!  TRY NOT TO ADD MORE OF THESE!! </NOTE>
     //
@@ -319,7 +319,7 @@ private:
 
         BOOL fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         BOOL fComEventItfType;                  // Set to true if the class is a special COM event interface.
- 
+
         BOOL fIsValueClass;
         BOOL fIsEnum;
         BOOL fIsComClassInterface;
@@ -402,8 +402,8 @@ private:
 
         // ppInterfaceSubstitutionChains[i][0] holds the primary substitution for each interface
         // ppInterfaceSubstitutionChains[i][0..depth[i] ] is the chain of substitutions for each interface
-        Substitution **ppInterfaceSubstitutionChains;        
-           
+        Substitution **ppInterfaceSubstitutionChains;
+
         DWORD *pdwOriginalStart;                // If an interface is moved this is the original starting location.
         WORD  wInterfaceMapSize;                // # members in interface map
         DWORD dwLargestInterfaceSize;           // # members in largest interface we implement
@@ -807,7 +807,7 @@ private:
         bmtParentInfo*,
         InteropMethodTableData**);
 }; // MethodTableBuilder
- 
+
 }; // Namespace ClassCompat
 
 #endif // FEATURE_COMINTEROP

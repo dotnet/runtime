@@ -62,7 +62,7 @@ NESTED_ENTRY DelayLoad_Helper\suffix, _TEXT, NoHandler
         jnz     LOCAL_LABEL(TailCallDelayLoad_Helper\suffix)
 
         // The result is stored in the argument area of the transition block
-        mov     rax, [rsp + __PWTB_TransitionBlock + OFFSETOF__TransitionBlock__m_argumentRegisters] 
+        mov     rax, [rsp + __PWTB_TransitionBlock + OFFSETOF__TransitionBlock__m_argumentRegisters]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 

@@ -13,7 +13,7 @@ The CoreCLR repo can be built from a regular, non-admin command prompt. The buil
 | x64   | &#x25CF;| &#x25D2;| &#x25D2; |
 | x86   | &#x25EF;| &#x25EF;| &#x25EF;|
 | ARM32 | &#x25EF; | &#x25EF;| &#x25EF; |
-|       | [Instructions](../building/windows-instructions.md) | [Instructions](../building/linux-instructions.md) | [Instructions](../building/osx-instructions.md) |  
+|       | [Instructions](../building/windows-instructions.md) | [Instructions](../building/linux-instructions.md) | [Instructions](../building/osx-instructions.md) |
 
 The CoreCLR build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreCLR Issues](https://github.com/dotnet/coreclr/issues) to find out about specific work items or report issues.
 

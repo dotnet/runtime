@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // Strong name APIs which are not exposed publicly but are used by CLR code
-// 
+//
 
 #include "common.h"
 #include "strongnameinternal.h"
@@ -99,12 +99,12 @@ bool StrongNameIsValidPublicKey(__in_ecount(cbBuffer) const BYTE *pbBuffer, DWOR
 //---------------------------------------------------------------------------------------
 //
 // Verify that a public key blob looks like a reasonable public key.
-// 
+//
 // Arguments:
-//   keyPublicKey - key blob to verify 
-// 
+//   keyPublicKey - key blob to verify
+//
 // Notes:
-//    This can be a very expensive operation, since it involves importing keys.  
+//    This can be a very expensive operation, since it involves importing keys.
 //
 
 bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
@@ -151,7 +151,7 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
 //---------------------------------------------------------------------------------------
 //
 // Determine the number of bytes that a public key blob occupies, including the key portion
-// 
+//
 // Arguments:
 //   keyPublicKey - key blob to calculate the size of
 //

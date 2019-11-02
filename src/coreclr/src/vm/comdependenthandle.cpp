@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: COMDependentHandle.cpp
 //
 
@@ -26,7 +26,7 @@ FCIMPL2(OBJECTHANDLE, DependentHandle::nInitialize, Object *_primary, Object *_s
     OBJECTHANDLE result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-    
+
     // Create the handle.
     result = GetAppDomain()->CreateDependentHandle(primary, secondary);
 
@@ -43,7 +43,7 @@ FCIMPL1(VOID, DependentHandle::nFree, OBJECTHANDLE handle)
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
-    
+
     HELPER_METHOD_FRAME_BEGIN_0();
 
     DestroyDependentHandle(handle);

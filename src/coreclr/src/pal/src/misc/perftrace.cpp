@@ -42,7 +42,7 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 
-#define PAL_PERF_MAX_LOGLINE     0x400  /* 1K */ 
+#define PAL_PERF_MAX_LOGLINE     0x400  /* 1K */
 #define PAL_PERF_MAX_INPUT       0x1000 /* 4k for single line of input file */
 #define PAL_PERF_MAX_FUNCTION_NAME 128 /* any one want a function name longer than 127 bytes? */
 #define PAL_PERF_PROFILE_BUFFER_SIZE 0x400000  /* 4M    */
@@ -52,7 +52,7 @@ typedef struct _pal_perf_api_info
 {
     ULONGLONG       entries;        /* number of PERF_ENTRY calls for an API function */
     ULONGLONG       counter;        /* number of PERF_EXIT calls for an API function */
-    ULONGLONG       min_duration;   /* Minimum duration in CPU clock ticks in an API function */ 
+    ULONGLONG       min_duration;   /* Minimum duration in CPU clock ticks in an API function */
     ULONGLONG       max_duration;   /* Maximum duration in CPU clock ticks in an API function */
     ULONGLONG       sum_duration;   /* Sum of duration*/
     double          sum_of_square_duration; /* Sum of square of durations */
@@ -62,18 +62,18 @@ typedef struct _pal_perf_api_info
 
 typedef struct _pal_perf_thread_info
 {
-    DWORD               threadId; 
+    DWORD               threadId;
     pal_perf_api_info * api_table;
     char *              pal_write_buf;
     DWORD               buf_offset;
     BOOL                profile_enabled;
-    ULONGLONG           start_ticks; 
-    ULONGLONG           total_duration; 
+    ULONGLONG           start_ticks;
+    ULONGLONG           total_duration;
 } pal_perf_thread_info;
 
 typedef struct _pal_thread_list_node
 {
-    pal_perf_thread_info * thread_info;  
+    pal_perf_thread_info * thread_info;
     struct _pal_thread_list_node * next;
 
 } pal_thread_list_node;
@@ -103,7 +103,7 @@ static BOOL PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path);
 static BOOL PERFReadSetting( );
 static void PERFLogFileName(PathCharString * destFileString, const char *fileName, const char *suffix, int max_length);
 static void PERFlushAllLogs();
-static int PERFWriteCounters(pal_perf_api_info * table); 
+static int PERFWriteCounters(pal_perf_api_info * table);
 static BOOL PERFFlushLog(pal_perf_thread_info * local_buffer, BOOL output_header);
 static void PERFUpdateApiInfo(pal_perf_api_info *api, ULONGLONG duration);
 static char * PERFIsValidPath( const char * path );
@@ -145,7 +145,7 @@ static BOOL wait_for_startup=FALSE;
    execution CPU ticks.*/
 static DWORD pal_perf_histogram_size = 0;
 
-/* The step size in CPU ticks of each category of the 
+/* The step size in CPU ticks of each category of the
    PAL API execution CPU ticks histogram.*/
 static DWORD pal_perf_histogram_step = 100;
 
@@ -239,10 +239,10 @@ PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path)
     ULONGLONG start_tick;
     struct timeval tv;
 
-    if (WideCharToMultiByte(CP_ACP, 0, command_line, -1, 
+    if (WideCharToMultiByte(CP_ACP, 0, command_line, -1,
                         program_info.command_line, PAL_PERF_MAX_LOGLINE-1, NULL, NULL) == 0)
         return FALSE;
-    if (WideCharToMultiByte(CP_ACP, 0, exe_path, -1, 
+    if (WideCharToMultiByte(CP_ACP, 0, exe_path, -1,
                         program_info.exe_path, PAL_PERF_MAX_LOGLINE-1, NULL, NULL) == 0)
         return FALSE;
 
@@ -318,8 +318,8 @@ PERFInitialize(LPWSTR command_line, LPWSTR exe_path)
     if (!PERFInitProgramInfo(command_line, exe_path))
         return FALSE;
 
-    pal_profile_on = FALSE;  // turn it off until we setup everything. 
-    // allocate the TLS index for  structures 
+    pal_profile_on = FALSE;  // turn it off until we setup everything.
+    // allocate the TLS index for  structures
     if( pthread_key_create(&PERF_tlsTableKey , NULL) != 0 )
        ret = FALSE;
 
@@ -327,7 +327,7 @@ PERFInitialize(LPWSTR command_line, LPWSTR exe_path)
     {
         pal_function_map = (char*)PAL_malloc(PAL_API_NUMBER);
         if(pal_function_map != NULL)
-        {  
+        {
             bRead = PERFReadSetting( );  // we don't quit even we failed to read the file.
             ret = TRUE;
         }
@@ -387,7 +387,7 @@ BOOL PERFAllocThreadInfo(  )
         goto PERFAllocThreadInfoExit;
     }
 
-    local_info = (pal_perf_thread_info *)PAL_malloc(sizeof(pal_perf_thread_info)); 
+    local_info = (pal_perf_thread_info *)PAL_malloc(sizeof(pal_perf_thread_info));
     if (local_info == NULL)
     {
         ret = FALSE;
@@ -439,7 +439,7 @@ BOOL PERFAllocThreadInfo(  )
 
     local_info->pal_write_buf=log_buf;
     local_info->buf_offset = 0;
-    local_info->profile_enabled = FALSE; 
+    local_info->profile_enabled = FALSE;
     local_info->total_duration = 0;
     local_info->start_ticks = 0;
     memset(log_buf, 0, PAL_PERF_PROFILE_BUFFER_SIZE);
@@ -515,9 +515,9 @@ PERFlushAllLogs( )
 {
     pal_thread_list_node * current, * node;
     pal_perf_api_info * table1, *table0;
-    int i; 
+    int i;
     node = process_pal_thread_list;
-    if(node == NULL || node->thread_info == NULL || node->thread_info->api_table == NULL )   // should not come here 
+    if(node == NULL || node->thread_info == NULL || node->thread_info->api_table == NULL )   // should not come here
     {
         return ;
     }
@@ -536,7 +536,7 @@ PERFlushAllLogs( )
             {
                 table1 = current->thread_info->api_table;
                 for(i=0;i<PAL_API_NUMBER;i++)
-                { 
+                {
                     DWORD j;
                     if (table1[i].counter == 0)
                     {
@@ -587,7 +587,7 @@ PERFLogFileName(PathCharString& destFileString, const char *fileName, const char
     const char *dir_path;
     CPalThread* pThread = InternalGetCurrentThread();
     dir_path = (profile_log_path == NULL) ? "." : profile_log_path;
-        
+
     destFileString.Append(dir_path, strlen(dir_path));
     destFileString.Append(PATH_SEPARATOR, strlen(PATH_SEPARATOR));
     if (fileName != NULL)
@@ -600,12 +600,12 @@ PERFLogFileName(PathCharString& destFileString, const char *fileName, const char
         char* process_id     = itoa(program_info.process_id, buffer, 10);
         destFileString.Append(process_id, strlen(process_id));
         destFileString.Append("_", 1);
-        
+
         char* current_thread = itoa(THREADSilentGetCurrentThreadId(),buffer, 10);
         destFileString.Append(current_thread, strlen( current_thread));
         destFileString.Append(suffix, strlen(suffix));
     }
-    
+
 }
 
 static
@@ -618,11 +618,11 @@ PERFWriteCounters( pal_perf_api_info * table )
     int i;
 
     off = table;
-    
+
     PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.log");
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
     if(hFile != NULL)
-    {   
+    {
         PERFPrintProgramHeaderInfo(hFile, TRUE);
         PERF_FILEFN(fprintf)(hFile,"#api_name\tapi_id\tperf_entries\tperf_exits\tsum_of_latency\tmin_latency\tmax_latency\tstd_dev_latency\tsum_of_square_latency\n");
         for(i=0;i<PAL_API_NUMBER;i++)
@@ -669,7 +669,7 @@ PERFWriteCounters( pal_perf_api_info * table )
             for (j = 0; j < pal_perf_histogram_size; j++)
             {
                 PERF_FILEFN(fprintf)(hFile, "\t%d", j*pal_perf_histogram_step);
-            }        
+            }
             PERF_FILEFN(fprintf)(hFile, "\n");
 
             for(i = 0; i < PAL_API_NUMBER; i++)
@@ -677,12 +677,12 @@ PERFWriteCounters( pal_perf_api_info * table )
                 if (off->counter > 0)
                 {
                     PERF_FILEFN(fprintf)(hFile,"%s\t%d", API_list[i], i);
-                    
+
                     for (j = 0; j < pal_perf_histogram_size; j++)
                     {
                         PERF_FILEFN(fprintf)(hFile, "\t%d", off->histograms[j]);
                     }
-                    
+
                     PERF_FILEFN(fprintf)(hFile, "\n");
                 }
 
@@ -700,10 +700,10 @@ PERFWriteCounters( pal_perf_api_info * table )
 }
 
 static
-BOOL 
+BOOL
 PERFReadSetting(  )
 {
-    // this function is not safe right now. 
+    // this function is not safe right now.
     //more code is required to deal with corrupted input file.
     BOOL ret;
     unsigned int index;
@@ -713,7 +713,7 @@ PERFReadSetting(  )
 
     char * file_name_buf;
     PathCharString file_name_bufPS;
-    char  * input_file_name; 
+    char  * input_file_name;
     char  * summary_flag_env;
     char  * nested_tracing_env;
     char  * calibrate_env;
@@ -730,57 +730,57 @@ PERFReadSetting(  )
     }
 
     /* do some env setting here */
-    summary_flag_env = MiscGetenv(PAL_SUMMARY_FLAG); 
-    if (summary_flag_env == NULL || strlen(summary_flag_env) == 0) 
+    summary_flag_env = MiscGetenv(PAL_SUMMARY_FLAG);
+    if (summary_flag_env == NULL || strlen(summary_flag_env) == 0)
     {
         summary_only = FALSE;
-    } 
+    }
     else
     {
-        summary_only = TRUE; 
+        summary_only = TRUE;
     }
-    nested_tracing_env = MiscGetenv(PAL_PERF_NESTED_TRACING); 
-    if (nested_tracing_env == NULL || strlen(nested_tracing_env) == 0) 
+    nested_tracing_env = MiscGetenv(PAL_PERF_NESTED_TRACING);
+    if (nested_tracing_env == NULL || strlen(nested_tracing_env) == 0)
     {
         nested_tracing = FALSE;
-    } 
+    }
     else
     {
-        nested_tracing = TRUE; 
+        nested_tracing = TRUE;
     }
 
-    calibrate_env = MiscGetenv(PAL_PERF_CALIBRATE); 
-    if (calibrate_env == NULL || strlen(calibrate_env) == 0) 
+    calibrate_env = MiscGetenv(PAL_PERF_CALIBRATE);
+    if (calibrate_env == NULL || strlen(calibrate_env) == 0)
     {
         calibrate = FALSE;
-    } 
+    }
     else
     {
-        calibrate = TRUE; 
+        calibrate = TRUE;
     }
 
-    report_only_called_apis_env = MiscGetenv(PAL_PERF_REPORT_ONLY_CALLED_APIS); 
-    if (report_only_called_apis_env == NULL || strlen(report_only_called_apis_env) == 0) 
+    report_only_called_apis_env = MiscGetenv(PAL_PERF_REPORT_ONLY_CALLED_APIS);
+    if (report_only_called_apis_env == NULL || strlen(report_only_called_apis_env) == 0)
     {
         report_only_called_apis = FALSE;
-    } 
+    }
     else
     {
-        report_only_called_apis = TRUE; 
+        report_only_called_apis = TRUE;
     }
 
-    wait_for_startup_env = MiscGetenv(PAL_PERF_WAIT_FOR_STARTUP); 
-    if (wait_for_startup_env == NULL || strlen(wait_for_startup_env) == 0) 
+    wait_for_startup_env = MiscGetenv(PAL_PERF_WAIT_FOR_STARTUP);
+    if (wait_for_startup_env == NULL || strlen(wait_for_startup_env) == 0)
     {
         wait_for_startup = FALSE;
-    } 
+    }
     else
     {
-        wait_for_startup = TRUE; 
+        wait_for_startup = TRUE;
     }
 
-    pal_perf_histogram_size_env = MiscGetenv(PAL_PERF_HISTOGRAM_SIZE); 
-    if (pal_perf_histogram_size_env != NULL && strlen(pal_perf_histogram_size_env) > 0) 
+    pal_perf_histogram_size_env = MiscGetenv(PAL_PERF_HISTOGRAM_SIZE);
+    if (pal_perf_histogram_size_env != NULL && strlen(pal_perf_histogram_size_env) > 0)
     {
         long value;
         char *endptr;
@@ -791,8 +791,8 @@ PERFReadSetting(  )
         }
     }
 
-    pal_perf_histogram_step_env = MiscGetenv(PAL_PERF_HISTOGRAM_STEP); 
-    if (pal_perf_histogram_step_env != NULL && strlen(pal_perf_histogram_step_env) > 0) 
+    pal_perf_histogram_step_env = MiscGetenv(PAL_PERF_HISTOGRAM_STEP);
+    if (pal_perf_histogram_step_env != NULL && strlen(pal_perf_histogram_step_env) > 0)
     {
         long value;
         char *endptr;
@@ -801,9 +801,9 @@ PERFReadSetting(  )
         {
             pal_perf_histogram_step = (DWORD) value;
         }
-    } 
+    }
 
-    traced_apis_file = PERFIsValidFile("", MiscGetenv(PAL_PERF_TRACEDAPIS_PATH)); 
+    traced_apis_file = PERFIsValidFile("", MiscGetenv(PAL_PERF_TRACEDAPIS_PATH));
     enabledapis_path = PERFIsValidFile("", MiscGetenv(PAL_PERF_ENABLED_APIS_PATH));
     profile_log_path = PERFIsValidPath(MiscGetenv(PAL_PERF_LOG_PATH));
     perf_default_path = PERFIsValidPath( MiscGetenv(PAL_DEFAULT_PATH));
@@ -817,7 +817,7 @@ PERFReadSetting(  )
     if( traced_apis_file == NULL)
     {
         if(perf_default_path==NULL)
-        { 
+        {
             ret=FALSE;
             input_file_name = NULL;
         }
@@ -854,7 +854,7 @@ PERFReadSetting(  )
     }
 
     if(input_file_name)
-    { 
+    {
         hFile = PAL_fopen(input_file_name, "r+");
         if ( hFile == NULL )
         {
@@ -939,7 +939,7 @@ PERFReadSetting(  )
 
     if(input_file_name == NULL)
     {
-        return ret; 
+        return ret;
     }
 
     hFile = PAL_fopen(input_file_name, "r+");
@@ -962,7 +962,7 @@ PERFReadSetting(  )
             {
                 // some code here to deal with incorrect index.
                 // use function name to cover it.
-                continue; 
+                continue;
             }
 
             if (strcpy_s(API_list[index], sizeof(API_list[index]), function_name) != SAFECRT_SUCCESS)
@@ -997,14 +997,14 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
 
     if(hFile)
-    {   
+    {
         if (output_header)
         {
             PERFPrintProgramHeaderInfo(hFile, FALSE);
         }
         if (local_info->buf_offset > 0)
         {
-            nWrittenBytes = PERF_FILEFN(fwrite)(local_info->pal_write_buf, local_info->buf_offset, 1, hFile);           
+            nWrittenBytes = PERF_FILEFN(fwrite)(local_info->pal_write_buf, local_info->buf_offset, 1, hFile);
             if (nWrittenBytes < 1)
             {
                 ERROR("fwrite() failed with errno == %d\n", errno);
@@ -1015,7 +1015,7 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
         PERF_FILEFN(fclose)(hFile);
         ret = TRUE;
     }
-    
+
     return ret;
 }
 
@@ -1034,11 +1034,11 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
 
     if(!pal_perf_enabled || pal_function_map==NULL || !pal_profile_on )  // haven't initialize, just quit.
         return;
- 
+
     if( pal_function_map[pal_api_id] )
     {
         local_info= (pal_perf_thread_info * )pthread_getspecific(PERF_tlsTableKey);
-  
+
         if (local_info==NULL  )
         {
             return;
@@ -1048,12 +1048,12 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
             return;
         }
         // turn on this flag before call any other functions
-        local_info->profile_enabled = FALSE; 
+        local_info->profile_enabled = FALSE;
         table = local_info->api_table;
         table[pal_api_id].entries++;
 
         if(!summary_only)
-        {            
+        {
             write_buf = (local_info->pal_write_buf);
             if(local_info->buf_offset >= PAL_PERF_BUFFER_FULL)
             {
@@ -1068,7 +1068,7 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
             local_info->buf_offset += bufused;
         }
         if(nested_tracing)
-            local_info->profile_enabled = TRUE; 
+            local_info->profile_enabled = TRUE;
         *pal_perf_start_tick = PERFGetTicks();
     }
     return;
@@ -1097,10 +1097,10 @@ PERFUpdateApiInfo(pal_perf_api_info *api, ULONGLONG duration)
         }
         api->histograms[iBucket]++;
     }
-    
+
 }
 
-void 
+void
 PERFLogFunctionExit(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
 {
 
@@ -1118,7 +1118,7 @@ PERFLogFunctionExit(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
     if (*pal_perf_start_tick != 0)
     {
         duration = PERFGetTicks() - *pal_perf_start_tick;
-    } 
+    }
     else
     {
         return; // pal_perf_start_tick == 0 indicates that we exited PERFLogFunctionEntry before getting the ticks.
@@ -1133,7 +1133,7 @@ PERFLogFunctionExit(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
         }
         PERFUpdateApiInfo(&local_info->api_table[pal_api_id], duration);
         *pal_perf_start_tick = 0;
-           
+
         if(summary_only)
         {
             local_info->profile_enabled = TRUE;
@@ -1151,7 +1151,7 @@ PERFLogFunctionExit(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
 
         bufused = snprintf(&buf[off], PAL_PERF_MAX_LOGLINE, "<---- %d %lu %06u exit. \n", pal_api_id, timev.tv_sec,  timev.tv_usec );
         local_info->buf_offset += bufused;
-        local_info->profile_enabled = TRUE;  
+        local_info->profile_enabled = TRUE;
     }
     return;
 }
@@ -1251,7 +1251,7 @@ PERFIsValidPath( const char * path )
     DIR * dir;
 
     if(( path==NULL) || (strlen(path)==0))
-       return NULL; 
+       return NULL;
 
     dir = opendir(path);
     if( dir!=NULL)
@@ -1263,20 +1263,20 @@ PERFIsValidPath( const char * path )
 }
 
 static
-char * 
+char *
 PERFIsValidFile( const char * path, const char * file)
 {
     FILE * hFile;
     char * temp;
     PathCharString tempPS;
 
-    if(file==NULL || strlen(file)==0) 
+    if(file==NULL || strlen(file)==0)
         return NULL;
 
 	if ( strcmp(path, "") )
     {
         int length = strlen(path) + strlen(PATH_SEPARATOR) + strlen(file);
-        temp = tempPS.OpenStringBuffer(length);   
+        temp = tempPS.OpenStringBuffer(length);
         if ((strcpy_s(temp, sizeof(temp), path) != SAFECRT_SUCCESS) ||
             (strcat_s(temp, sizeof(temp), PATH_SEPARATOR) != SAFECRT_SUCCESS) ||
             (strcat_s(temp, sizeof(temp), file) != SAFECRT_SUCCESS))

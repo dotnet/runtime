@@ -31,7 +31,7 @@ namespace BINDER_SPACE
         {
             SAFE_RELEASE(m_pAssemblyName);
         }
-    
+
         AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE)
         {
             AssemblyName *pAssemblyName = m_pAssemblyName;

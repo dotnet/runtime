@@ -42,7 +42,7 @@ Return value:
     FALSE otherwise
 
 --*/
-BOOL 
+BOOL
 SEHInitialize(CorUnix::CPalThread *pthrCurrent, DWORD flags);
 
 /*++
@@ -56,7 +56,7 @@ Parameters:
 
     (no return value)
 --*/
-VOID 
+VOID
 SEHCleanup();
 
 /*++
@@ -69,12 +69,12 @@ Parameters:
     PAL_SEHException* exception
 
 Return value:
-    Returns TRUE if the exception happened in managed code and the execution should 
+    Returns TRUE if the exception happened in managed code and the execution should
     continue (with possibly modified context).
     Returns FALSE if the exception happened in managed code and it was not handled.
     In case the exception was handled by calling a catch handler, it doesn't return at all.
 --*/
-BOOL 
+BOOL
 SEHProcessException(PAL_SEHException* exception);
 
 /*++
@@ -94,18 +94,18 @@ AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRe
 Function :
     SEHHandleControlEvent
 
-    handle Control-C and Control-Break events (call handler routines, 
+    handle Control-C and Control-Break events (call handler routines,
     notify debugger)
 
 Parameters :
     DWORD event : event that occurred
-    LPVOID eip  : instruction pointer when exception occurred                                 
+    LPVOID eip  : instruction pointer when exception occurred
 
 (no return value)
 
 Notes :
-    Handlers are called on a last-installed, first called basis, until a 
-    handler returns TRUE. If no handler returns TRUE (or no hanlder is 
+    Handlers are called on a last-installed, first called basis, until a
+    handler returns TRUE. If no handler returns TRUE (or no hanlder is
     installed), the default behavior is to call ExitProcess
 --*/
 void SEHHandleControlEvent(DWORD event, LPVOID eip);

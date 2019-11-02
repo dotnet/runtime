@@ -38,14 +38,14 @@ NESTED_END FuncEvalHijack, _TEXT
 extern ExceptionHijackWorker:proc
 extern ExceptionHijackPersonalityRoutine:proc
 
-; This is the general purpose hijacking stub. The DacDbi Hijack primitive will 
+; This is the general purpose hijacking stub. The DacDbi Hijack primitive will
 ; set up the stack and then set the IP here, and so this just makes the call.
 NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         ; the stack should be aligned at this point, since we do not call this
         ; function explicitly
-        ; 
+        ;
         ; There is a problem here.  The Orcas assembler doesn't like a 0-sized stack frame.
-        ; So we allocate 4 stack slots as the outgoing argument home and just copy the 
+        ; So we allocate 4 stack slots as the outgoing argument home and just copy the
         ; arguments set up by DacDbi into these stack slots.  We will take a perf hit,
         ; but this is not a perf critical code path anyway.
 
@@ -59,9 +59,9 @@ NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         END_PROLOGUE
 
         ; We used to do an "alloc_stack 0h" because the stack has been allocated for us
-        ; by the OOP hijacking routine.  Our arguments have also been pushed onto the 
-        ; stack for us.  However, the Orcas compilers don't like a 0-sized frame, so 
-        ; we need to allocate something here and then just copy the stack arguments to 
+        ; by the OOP hijacking routine.  Our arguments have also been pushed onto the
+        ; stack for us.  However, the Orcas compilers don't like a 0-sized frame, so
+        ; we need to allocate something here and then just copy the stack arguments to
         ; their new argument homes.
 
         ; In x86, ExceptionHijackWorker is marked STDCALL, so it finds
@@ -76,7 +76,7 @@ NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         mov     [rsp + 10h], rax
         mov     rax, [rsp + 38h]
         mov     [rsp + 18h], rax
-        
+
         ; DD Hijack primitive already set the stack. So just make the call now.
         call    ExceptionHijackWorker
 
