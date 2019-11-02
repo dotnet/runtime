@@ -24,12 +24,6 @@
 
     <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
     <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always"
-        Condition="Exists('$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll')" />
-    
-    <!-- There's a bug in VS that causes UCRTVersion env var to get set to a version that isn't actually installed on the machine. -->
-    <!-- Until that gets resolved, we need this workaround to grab the last "known" good version of ucrtbased.dll -->
-    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/10.0.17763.0/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always"
-        Condition="!Exists('$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll')" />
+    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>
