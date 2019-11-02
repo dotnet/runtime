@@ -1450,6 +1450,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
+        [ActiveIssue(42323)]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
