@@ -11,7 +11,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of the Queue class.
     /// </summary>
-    public abstract partial class Queue_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
+    public abstract class Queue_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
     {
         #region Queue<T> Helper Methods
 
@@ -275,5 +275,51 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Queue_Generic_TryDequeue_AllElements(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+            List<T> elements = queue.ToList();
+            foreach (T element in elements)
+            {
+                T result;
+                Assert.True(queue.TryDequeue(out result));
+                Assert.Equal(element, result);
+            }
+        }
+
+        [Fact]
+        public void Queue_Generic_TryDequeue_EmptyQueue_ReturnsFalse()
+        {
+            T result;
+            Assert.False(new Queue<T>().TryDequeue(out result));
+            Assert.Equal(default(T), result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Queue_Generic_TryPeek_AllElements(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+            List<T> elements = queue.ToList();
+            foreach (T element in elements)
+            {
+                T result;
+                Assert.True(queue.TryPeek(out result));
+                Assert.Equal(element, result);
+
+                queue.Dequeue();
+            }
+        }
+
+        [Fact]
+        public void Queue_Generic_TryPeek_EmptyQueue_ReturnsFalse()
+        {
+            T result;
+            Assert.False(new Queue<T>().TryPeek(out result));
+            Assert.Equal(default(T), result);
+        }
     }
 }

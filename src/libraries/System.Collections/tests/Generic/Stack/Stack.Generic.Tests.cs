@@ -11,7 +11,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of the Stack class.
     /// </summary>
-    public abstract partial class Stack_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
+    public abstract class Stack_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
     {
         #region Stack<T> Helper Methods
 
@@ -241,5 +241,51 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Stack_Generic_TryPop_AllElements(int count)
+        {
+            Stack<T> stack = GenericStackFactory(count);
+            List<T> elements = stack.ToList();
+            foreach (T element in elements)
+            {
+                T result;
+                Assert.True(stack.TryPop(out result));
+                Assert.Equal(element, result);
+            }
+        }
+
+        [Fact]
+        public void Stack_Generic_TryPop_EmptyStack_ReturnsFalse()
+        {
+            T result;
+            Assert.False(new Stack<T>().TryPop(out result));
+            Assert.Equal(default(T), result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Stack_Generic_TryPeek_AllElements(int count)
+        {
+            Stack<T> stack = GenericStackFactory(count);
+            List<T> elements = stack.ToList();
+            foreach (T element in elements)
+            {
+                T result;
+                Assert.True(stack.TryPeek(out result));
+                Assert.Equal(element, result);
+
+                stack.Pop();
+            }
+        }
+
+        [Fact]
+        public void Stack_Generic_TryPeek_EmptyStack_ReturnsFalse()
+        {
+            T result;
+            Assert.False(new Stack<T>().TryPeek(out result));
+            Assert.Equal(default(T), result);
+        }
     }
 }

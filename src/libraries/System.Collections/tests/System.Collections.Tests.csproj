@@ -68,6 +68,7 @@
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
+    <Compile Include="Generic\CollectionExtensionsTests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.ConcurrentAccessDetection.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
@@ -140,16 +142,6 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp.cs" />
-    <Compile Include="Generic\CollectionExtensionsTests.cs" />
-    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs" />
-    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.ConcurrentAccessDetection.netcoreapp.cs" />
-    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp.cs" />
-    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp.cs" />
-    <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.netcoreapp.cs" />
-    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs">
       <Link>Common\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs</Link>
     </Compile>
