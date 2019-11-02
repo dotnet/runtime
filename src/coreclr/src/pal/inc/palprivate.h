@@ -243,8 +243,7 @@ GetModuleFileNameA(
 PALIMPORT
 LPSTR
 PALAPI
-GetEnvironmentStringsA(
-               VOID);
+GetEnvironmentStringsA();
 
 PALIMPORT
 BOOL
