@@ -131,7 +131,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         private static HttpHeaders HPackDecode(Memory<byte> memory)
         {
             var header = new HttpRequestHeaders();
-            var hpackDecoder = new HPackDecoder(maxDynamicTableSize: 0, maxResponseHeadersLength: HttpHandlerDefaults.DefaultMaxResponseHeadersLength * 1024);
+            var hpackDecoder = new HPackDecoder(maxDynamicTableSize: 0, maxHeadersLength: HttpHandlerDefaults.DefaultMaxResponseHeadersLength * 1024);
 
             hpackDecoder.Decode(memory.Span, true, new HeaderHandler(header));
 

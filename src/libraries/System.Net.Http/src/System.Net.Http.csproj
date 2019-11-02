@@ -86,12 +86,6 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncodingException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StatusCodes.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
@@ -120,13 +114,6 @@
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup>
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpHeadersHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
@@ -175,6 +162,45 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsPal.cs">
       <Link>Common\System\Net\ContextFlagsPal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>

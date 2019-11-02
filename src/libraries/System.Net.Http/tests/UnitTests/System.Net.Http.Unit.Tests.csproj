@@ -320,45 +320,6 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\IHttpHeadersHandler.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\IHttpHeadersHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackEncodingException.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackEncodingException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\StatusCodes.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\StatusCodes.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs</Link>
     </Compile>
@@ -430,11 +391,19 @@
     <Compile Include="Headers\UriHeaderParserTest.cs" />
     <Compile Include="Headers\ViaHeaderValueTest.cs" />
     <Compile Include="Headers\WarningHeaderValueTest.cs" />
-    <Compile Include="HPack\DynamicTableTest.cs" />
-    <Compile Include="HPack\HPackDecoderTest.cs" />
-    <Compile Include="HPack\HPackIntegerTest.cs" />
     <Compile Include="HPack\HPackRoundtripTests.cs" />
-    <Compile Include="HPack\HuffmanDecodingTests.cs" />
+    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\DynamicTableTest.cs">
+      <Link>HPack\DynamicTableTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HPackDecoderTest.cs">
+      <Link>HPack\HPackDecoderTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HPackIntegerTest.cs">
+      <Link>HPack\HPackIntegerTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HuffmanDecodingTests.cs">
+      <Link>HPack\HuffmanDecodingTests.cs</Link>
+    </Compile>
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
@@ -486,6 +455,45 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
       <Link>WinHttpHandler\UnitTests\FakeInterop.cs</Link>
