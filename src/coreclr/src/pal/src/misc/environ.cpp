@@ -927,12 +927,7 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
     size_t nameLength = strlen(name);
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
     {
-        if (strlen(palEnvironment[i]) < nameLength)
-        {
-            continue;
-        }
-
-        if (memcmp(palEnvironment[i], name, nameLength) == 0)
+        if (strncmp(palEnvironment[i], name, nameLength) == 0)
         {
             char *equalsSignPosition = palEnvironment[i] + nameLength;
 
