@@ -178,24 +178,34 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref GetRawArrayGeometry(array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
+            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
+            int lowerBound = 0;
+
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
+            if (pMT->IsMultiDimensionalArray)
+            {
+                int rank = pMT->MultiDimensionalArrayRank;
+                lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
+                p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
+            }
 
             int offset = index - lowerBound;
 
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > numComponents)
+            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > (uint)array.Length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
+
+            uint elementSize = pMT->ComponentSize;
 
             ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * (nuint)elementSize);
             nuint byteLength = (uint)length * (nuint)elementSize;
 
-            if (containsGCPointers)
+            if (pMT->ContainsGCPointers)
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
             else
                 SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
-        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte GetRawArrayGeometry(Array array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
+            // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
+        }
 
         // The various Get values...
         public unsafe object? GetValue(params int[] indices)
@@ -342,20 +352,51 @@ namespace System
 
         public long LongLength => Unsafe.As<RawArrayData>(this).Length;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern int GetLength(int dimension);
-
-        public extern int Rank
+        public unsafe int Rank
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            get
+            {
+                int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
+                return (rank != 0) ? rank : 1;
+            }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern int GetUpperBound(int dimension);
+        public unsafe int GetLength(int dimension)
+        {
+            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
+            if (rank == 0 && dimension == 0)
+                return Length;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern int GetLowerBound(int dimension);
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), dimension);
+        }
+
+        public unsafe int GetUpperBound(int dimension)
+        {
+            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
+            if (rank == 0 && dimension == 0)
+                return Length - 1;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
+            return Unsafe.Add(ref bounds, dimension) + Unsafe.Add(ref bounds, rank + dimension) - 1;
+        }
+
+        public unsafe int GetLowerBound(int dimension)
+        {
+            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
+            if (rank == 0 && dimension == 0)
+                return 0;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);

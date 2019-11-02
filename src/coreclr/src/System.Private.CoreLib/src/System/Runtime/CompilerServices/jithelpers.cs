@@ -87,22 +87,6 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Helper class to assist with unsafe pinning of arbitrary objects.
-    // It's used by VM code.
-    internal class RawData
-    {
-        public byte Data;
-    }
-
-    internal class RawArrayData
-    {
-        public uint Length; // Array._numComponents padded to IntPtr
-#if BIT64
-        public uint Padding;
-#endif
-        public byte Data;
-    }
-
     internal static unsafe class JitHelpers
     {
         // The special dll name to be used for DllImport of QCalls

@@ -25,15 +25,9 @@ struct FCALLRuntimeFieldHandle
 class ArrayNative
 {
 public:
-    static FCDECL1(INT32, GetRank, ArrayBase* pArray);
-    static FCDECL2(INT32, GetLowerBound, ArrayBase* pArray, unsigned int dimension);
-    static FCDECL2(INT32, GetUpperBound, ArrayBase* pArray, unsigned int dimension);
-    static FCDECL2(INT32, GetLength, ArrayBase* pArray, unsigned int dimension);
     static FCDECL1(void, Initialize, ArrayBase* pArray);
 
     static FCDECL6(void, ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable);
-
-    static FCDECL5(void*, GetRawArrayGeometry, ArrayBase* pArray, UINT32* pNumComponents, UINT32* pElementSize, INT32* pLowerBound, CLR_BOOL* pContainsGCPointers);
 
     // This method will create a new array of type type, with zero lower
     // bounds and rank.
