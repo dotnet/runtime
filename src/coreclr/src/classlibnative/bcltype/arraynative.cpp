@@ -18,89 +18,6 @@
 
 #include "arraynative.inl"
 
-FCIMPL1(INT32, ArrayNative::GetRank, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array == NULL)
-        FCThrow(kNullReferenceException);
-
-    return array->GetRank();
-}
-FCIMPLEND
-
-
-FCIMPL2(INT32, ArrayNative::GetLowerBound, ArrayBase* array, unsigned int dimension)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array == NULL)
-        FCThrow(kNullReferenceException);
-    
-    if (dimension != 0)
-    {
-        // Check the dimension is within our rank
-        unsigned int rank = array->GetRank();
-    
-        if (dimension >= rank)
-            FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
-    }
-
-    return array->GetLowerBoundsPtr()[dimension];
-}
-FCIMPLEND
-
-
-// Get inclusive upper bound
-FCIMPL2(INT32, ArrayNative::GetUpperBound, ArrayBase* array, unsigned int dimension)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array == NULL)
-        FCThrow(kNullReferenceException);
-    
-    if (dimension != 0)
-    {
-        // Check the dimension is within our rank
-        unsigned int rank = array->GetRank();
-    
-        if (dimension >= rank)
-            FCThrowRes(kIndexOutOfRangeException, W("IndexOutOfRange_ArrayRankIndex"));
-    }
-
-    return array->GetBoundsPtr()[dimension] + array->GetLowerBoundsPtr()[dimension] - 1;
-}
-FCIMPLEND
-
-
-FCIMPL2(INT32, ArrayNative::GetLength, ArrayBase* array, unsigned int dimension)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(array);
-
-    if (array==NULL)
-        FCThrow(kNullReferenceException);
-    
-    if (dimension != 0)
-    {
-        // Check the dimension is within our rank
-        unsigned int rank = array->GetRank();
-        if (dimension >= rank)
-            FCThrow(kIndexOutOfRangeException);
-    }
-    
-    return array->GetBoundsPtr()[dimension];
-}
-FCIMPLEND
-
-
 // array is GC protected by caller
 void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
                            MethodTable* pArrayMT,
@@ -1009,25 +926,6 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-
-FCIMPL5(void*, ArrayNative::GetRawArrayGeometry, ArrayBase* pArray, UINT32* pNumComponents, UINT32* pElementSize, INT32* pLowerBound, CLR_BOOL* pContainsGCPointers)
-{
-   VALIDATEOBJECT(pArray);
-
-   _ASSERTE(pArray != NULL);
-
-    MethodTable *pMT = pArray->GetMethodTable();
-
-    *pNumComponents = pArray->GetNumComponents();
-    *pElementSize = pMT->RawGetComponentSize();
-    *pLowerBound = pArray->GetLowerBoundsPtr()[0];
-    *pContainsGCPointers = !!pMT->ContainsPointers();
-
-    return (BYTE*)pArray + ArrayBase::GetDataPtrOffset(pMT);
-}
-FCIMPLEND
-
 
 
 // Check we're allowed to create an array with the given element type.

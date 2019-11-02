@@ -143,6 +143,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object GetUninitializedObjectInternal(Type type);
+
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>()
@@ -171,23 +174,32 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawSzArrayData(this Array array) =>
             ref Unsafe.As<RawArrayData>(array).Data;
 
-        // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
-        // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
-        //                 ^               ^                                    ^ returned reference
-        //                 |               \-- ref Unsafe.As<RawData>(array).Data
-        //                 \-- array
-        // The BaseSize of an array includes all the fields before the array data,
-        // including the sync block and method table. The reference to RawData.Data
-        // points at the number of components, skipping over these two pointer-sized fields.
-        // So substrate those from BaseSize before adding to the RawData.Data reference.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref byte GetRawArrayData(this Array array) =>
-            ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)GetObjectMethodTablePointer(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            // See comment on RawArrayData for details
+            ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
 
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));
-            return GetObjectMethodTablePointer(array)->ComponentSize;
+            return GetMethodTable(array)->ComponentSize;
+        }
+
+        // Returns pointer to the multi-dimensional array bounds.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref int GetMultiDimensionalArrayBounds(Array array)
+        {
+            Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
+            // See comment on RawArrayData for details
+            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(array).Data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        {
+            int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
+            GC.KeepAlive(array); // Keep MethodTable alive
+            return rank;
         }
 
         // Returns true iff the object has a component size;
@@ -195,27 +207,22 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool ObjectHasComponentSize(object obj)
         {
-            // The Flags field of the method table class will have its high bit set if the
-            // method table has component size info stored somewhere. See member
-            // MethodTable:IsStringOrArray in src\vm\methodtable.h for full details.
-            return (int)GetObjectMethodTablePointer(obj)->Flags < 0;
-        }
-
-        // Subset of src\vm\methodtable.h
-        [StructLayout(LayoutKind.Explicit)]
-        private struct MethodTable
-        {
-            [FieldOffset(0)]
-            public ushort ComponentSize;
-            [FieldOffset(0)]
-            public uint Flags;
-            [FieldOffset(4)]
-            public uint BaseSize;
+            return GetMethodTable(obj)->HasComponentSize;
         }
 
         // Given an object reference, returns its MethodTable*.
+        //
+        // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
+        // to achieve this is by using GC.KeepAlive on the object that the MethodTable* was fetched from, e.g.:
+        //
+        // MethodTable* pMT = GetMethodTable(o);
+        //
+        // ... work with pMT ...
+        //
+        // GC.KeepAlive(o);
+        //
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe MethodTable* GetObjectMethodTablePointer(object obj)
+        internal static unsafe MethodTable* GetMethodTable(object obj)
         {
             Debug.Assert(obj != null);
 
@@ -232,8 +239,84 @@ namespace System.Runtime.CompilerServices
             // Ideally this would just be a single dereference:
             // mov tmp, qword ptr [rax] ; rax = obj ref, tmp = MethodTable* pointer
         }
+    }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object GetUninitializedObjectInternal(Type type);
+    // Helper class to assist with unsafe pinning of arbitrary objects.
+    // It's used by VM code.
+    internal class RawData
+    {
+        public byte Data;
+    }
+
+    // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
+    // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
+    //                 ^               ^                                    ^ returned reference
+    //                 |               \-- ref Unsafe.As<RawData>(array).Data
+    //                 \-- array
+    // The BaseSize of an array includes all the fields before the array data,
+    // including the sync block and method table. The reference to RawData.Data
+    // points at the number of components, skipping over these two pointer-sized fields.
+    internal class RawArrayData
+    {
+        public uint Length; // Array._numComponents padded to IntPtr
+#if BIT64
+        public uint Padding;
+#endif
+        public byte Data;
+    }
+
+    // Subset of src\vm\methodtable.h
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct MethodTable
+    {
+        [FieldOffset(0)]
+        public ushort ComponentSize;
+        [FieldOffset(0)]
+        private uint Flags;
+        [FieldOffset(4)]
+        public uint BaseSize;
+
+        // WFLAGS_HIGH_ENUM
+        private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_HasComponentSize = 0x80000000;
+
+        public bool HasComponentSize
+        {
+            get
+            {
+                return (Flags & enum_flag_HasComponentSize) != 0;
+            }
+        }
+
+        public bool ContainsGCPointers
+        {
+            get
+            {
+                return (Flags & enum_flag_ContainsPointers) != 0;
+            }
+        }
+
+        public bool IsMultiDimensionalArray
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(HasComponentSize);
+                // See comment on RawArrayData for details
+                return BaseSize > (uint)(3 * sizeof(IntPtr));
+            }
+        }
+
+        // Returns rank of multi-dimensional array rank, 0 for sz arrays
+        public int MultiDimensionalArrayRank
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(HasComponentSize);
+                // See comment on RawArrayData for details
+                return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
+            }
+        }
     }
 }
