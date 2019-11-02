@@ -534,4 +534,13 @@
   <data name="net_http_hpack_unexpected_end" xml:space="preserve">
     <value>End of headers reached with incomplete token.</value>
   </data>
+  <data name="net_http_hpack_encode_failure" xml:space="preserve">
+    <value>Failed to HPACK encode the headers.</value>
+  </data>
+  <data name="net_http_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP headers length exceeded the set limit of {0} bytes.</value>
+  </data>
+  <data name="net_http_invalid_header_name" xml:space="preserve">
+    <value>Received an invalid header name: '{0}'.</value>
+  </data>
 </root>

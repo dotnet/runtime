@@ -55,6 +55,7 @@ namespace System.Net.Http.HPack
         /// <summary>
         /// Decodes subsequent bytes of an integer.
         /// </summary>
+        /// <param name="b">The next byte.</param>
         /// <param name="result">
         /// If decoded successfully, contains the decoded integer.
         /// </param>
