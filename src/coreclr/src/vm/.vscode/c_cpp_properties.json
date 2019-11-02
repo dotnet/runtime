@@ -79,7 +79,6 @@
                 "FEATURE_USE_ASM_GC_WRITE_BARRIERS",
                 "FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP",
                 "FEATURE_UTF8STRING=1",
-                "FEATURE_VERSIONING_LOG",
                 "FEATURE_WIN32_REGISTRY",
                 "FEATURE_WINMD_RESILIENT",
                 "PLATFORM_WINDOWS=1",

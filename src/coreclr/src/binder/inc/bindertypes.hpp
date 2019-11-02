@@ -43,11 +43,6 @@ namespace BINDER_SPACE
     class BindResult;
     class FailureCache;
     class AssemblyBinder;
-
-#if defined(FEATURE_VERSIONING_LOG)
-    class BindingLog;
-    class CDebugLog;
-#endif // FEATURE_VERSIONING_LOG
 };
 
 #define IF_FAIL_GO(expr)                        \

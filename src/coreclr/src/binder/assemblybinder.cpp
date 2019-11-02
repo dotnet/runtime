@@ -20,17 +20,11 @@
 #include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
-#ifdef FEATURE_VERSIONING_LOG
-#include "bindinglog.hpp"
-#endif // FEATURE_VERSIONING_LOG
 #include "utils.hpp"
 #include "variables.hpp"
 #include "stringarraylist.h"
 
 #include "strongname.h"
-#ifdef FEATURE_VERSIONING_LOG
-#include "../dlls/mscorrc/fusres.h"
-#endif // FEATURE_VERSIONING_LOG
 
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
@@ -183,150 +177,6 @@ namespace BINDER_SPACE
             return hr;
         }
 
-
-#ifdef FEATURE_VERSIONING_LOG
-        //
-        // This function outputs the current binding result
-        // and flushes the bind log.
-        //
-        HRESULT LogBindResult(ApplicationContext *pApplicationContext,
-                              HRESULT             hrLog,
-                              BindResult         *pBindResult)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (!pBindingLog->CanLog())
-            {
-                // For non-logging, return the bind result
-                hr = hrLog;
-                goto Exit;
-            }
-
-            IF_FAIL_GO(pBindingLog->LogHR(hrLog));
-
-            if ((hrLog == S_OK) && pBindResult->HaveResult())
-            {
-                IF_FAIL_GO(pBindingLog->LogResult(pBindResult));
-            }
-
-            IF_FAIL_GO(pBindingLog->Flush());
-
-            // For failure-free logging, return the bind result
-            hr = hrLog;
-
-        Exit:
-            // SilverLight does not propagate binding log; therefore kill the information here.
-            pApplicationContext->ClearBindingLog();
-            return hr;
-        }
-
-        HRESULT LogAppDomainLocked(ApplicationContext *pApplicationContext,
-                                   DWORD               dwLockedReason,
-                                   AssemblyName       *pAssemblyName = NULL)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (pBindingLog->CanLog())
-            {
-                PathString info;
-                PathString format;
-
-                switch (dwLockedReason)
-                {
-                case APP_DOMAIN_LOCKED_UNLOCKED:
-                {
-                    IF_FAIL_GO(info.
-                               LoadResourceAndReturnHR(CCompRC::Debugging,
-                                                       ID_FUSLOG_BINDING_LOCKED_UNLOCKED));
-                }
-                break;
-                case APP_DOMAIN_LOCKED_CONTEXT:
-                {
-                    PathString displayName;
-
-                    _ASSERTE(pAssemblyName != NULL);
-
-                    IF_FAIL_GO(format.
-                               LoadResourceAndReturnHR(CCompRC::Debugging,
-                                                       ID_FUSLOG_BINDING_LOCKED_ASSEMBLY_EXE_CONTEXT));
-
-                    pAssemblyName->GetDisplayName(displayName,
-                                                  AssemblyName::INCLUDE_VERSION |
-                                                  AssemblyName::INCLUDE_ARCHITECTURE);
-
-                    info.Printf(format.GetUnicode(), displayName.GetUnicode());
-                }
-                break;
-                default:
-                    _ASSERTE(0);
-                    IF_FAIL_GO(E_INVALIDARG);
-                    break;
-                }
-
-                IF_FAIL_GO(pBindingLog->Log(info));
-            }
-
-        Exit:
-            return hr;
-        }
-
-        HRESULT LogAssemblyNameWhereRef(ApplicationContext *pApplicationContext,
-                                        Assembly           *pAssembly)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (pBindingLog->CanLog())
-            {
-                PathString info;
-
-                IF_FAIL_GO(info.
-                           LoadResourceAndReturnHR(CCompRC::Debugging, ID_FUSLOG_BINDING_LOG_WHERE_REF_NAME));
-                IF_FAIL_GO(pBindingLog->LogAssemblyName(info.GetUnicode(),
-                                                        pAssembly->GetAssemblyName()));
-            }
-            
-        Exit:
-            return hr;
-        }
-
-        HRESULT LogConfigurationError(ApplicationContext *pApplicationContext,
-                                      AssemblyName       *pCulturedManifestName,
-                                      AssemblyName       *pLocalPathAssemblyName)
-        {
-            HRESULT hr = S_OK;
-            BindingLog *pBindingLog = pApplicationContext->GetBindingLog();
-
-            if (pBindingLog->CanLog())
-            {
-                PathString tmp;
-                PathString culturedManifestDisplayName;
-                PathString localPathDisplayName;
-                PathString info;
-
-                IF_FAIL_GO(tmp.
-                           LoadResourceAndReturnHR(CCompRC::Debugging, ID_FUSLOG_BINDING_LOG_ERRONOUS_MANIFEST_ENTRY));
-
-                pCulturedManifestName->GetDisplayName(culturedManifestDisplayName,
-                                                      AssemblyName::INCLUDE_VERSION |
-                                                      AssemblyName::INCLUDE_ARCHITECTURE);
-                pLocalPathAssemblyName->GetDisplayName(localPathDisplayName,
-                                                       AssemblyName::INCLUDE_VERSION |
-                                                       AssemblyName::INCLUDE_ARCHITECTURE);
-                
-                info.Printf(tmp.GetUnicode(),
-                            culturedManifestDisplayName.GetUnicode(), 
-                            localPathDisplayName.GetUnicode());
-                IF_FAIL_GO(pBindingLog->Log(info.GetUnicode()));
-            }
-
-        Exit:
-            return hr;
-        }
-#endif // FEATURE_VERSIONING_LOG
-
 #ifndef CROSSGEN_COMPILE
         HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
                                     PEKIND                   PeKind,
@@ -462,14 +312,6 @@ namespace BINDER_SPACE
 
             if (szCodeBase == NULL)
             {
-#ifdef FEATURE_VERSIONING_LOG
-                // Log bind
-                IF_FAIL_GO(BindingLog::CreateInContext(pApplicationContext,
-                                                       pAssemblyName,
-                                                       pParentAssembly));
-#endif // FEATURE_VERSIONING_LOG
-
-
                 IF_FAIL_GO(BindByName(pApplicationContext,
                                       pAssemblyName,
                                       false, // skipFailureCaching
@@ -480,13 +322,6 @@ namespace BINDER_SPACE
             else
             {
                 PathString assemblyPath(szCodeBase);
-
-#ifdef FEATURE_VERSIONING_LOG
-                // Log bind
-                IF_FAIL_GO(BindingLog::CreateInContext(pApplicationContext,
-                                                       assemblyPath,
-                                                       pParentAssembly));
-#endif // FEATURE_VERSIONING_LOG
 
                 // Convert URL to full path and block HTTP downloads
                 IF_FAIL_GO(URLToFullPath(assemblyPath));
@@ -509,17 +344,11 @@ namespace BINDER_SPACE
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
 
-        Exit:
-#ifdef FEATURE_VERSIONING_LOG
-            hr = LogBindResult(pApplicationContext, hr, &bindResult);
-#else // FEATURE_VERSIONING_LOG
-            ;
-#endif // FEATURE_VERSIONING_LOG
-
 #ifndef CROSSGEN_COMPILE
         } // lock(pApplicationContext)
 #endif
 
+    Exit:
         if (bindResult.HaveResult())
         {
 
@@ -739,9 +568,6 @@ namespace BINDER_SPACE
                                // this TRUE.
                                fExplicitBindToNativeImage,
                                &pAssembly));
-#ifdef FEATURE_VERSIONING_LOG
-        IF_FAIL_GO(LogAssemblyNameWhereRef(pApplicationContext, pAssembly));
-#endif // FEATURE_VERSIONING_LOG
 
         AssemblyName *pAssemblyName;
         pAssemblyName = pAssembly->GetAssemblyName();
@@ -842,16 +668,6 @@ namespace BINDER_SPACE
         if (pContextEntry != NULL)
         {
             AssemblyName *pContextName = pContextEntry->GetAssemblyName();
-
-#ifdef FEATURE_VERSIONING_LOG
-            // First-time requests are considered unlocked, everything else is locked
-            DWORD dwLockedReason = (pContextEntry->GetIsFirstRequest() ?
-                                    APP_DOMAIN_LOCKED_UNLOCKED : APP_DOMAIN_LOCKED_CONTEXT);
-
-            IF_FAIL_GO(LogAppDomainLocked(pApplicationContext, dwLockedReason, pContextName));
-            pContextEntry->SetIsFirstRequest(FALSE);
-#endif // FEATURE_VERSIONING_LOG
-
             if (pAssemblyName->GetIsDefinition() &&
                 (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
             {
@@ -937,13 +753,6 @@ namespace BINDER_SPACE
                 GO_WITH_HRESULT(S_OK);
             }
 
-#ifdef FEATURE_VERSIONING_LOG
-            // Log the candidates we throw out for diagnostics
-            IF_FAIL_GO(LogConfigurationError(pApplicationContext,
-                                             pRequestedAssemblyName,
-                                             pBoundAssemblyName));
-#endif // FEATURE_VERSIONING_LOG
-            
             IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
         }
 
@@ -1163,13 +972,6 @@ namespace BINDER_SPACE
                                 GO_WITH_HRESULT(S_OK);
                             }
                         }
-
-#ifdef FEATURE_VERSIONING_LOG
-                        // Log the candidates we throw out for diagnostics
-                        IF_FAIL_GO(LogConfigurationError(pApplicationContext,
-                            pRequestedAssemblyName,
-                            pAssembly->GetAssemblyName()));
-#endif // FEATURE_VERSIONING_LOG
 
                         IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
 

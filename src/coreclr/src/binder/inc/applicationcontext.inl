@@ -89,17 +89,4 @@ CRITSEC_COOKIE ApplicationContext::GetCriticalSectionCookie()
     return m_contextCS;
 }
 
-#ifdef FEATURE_VERSIONING_LOG
-BindingLog *ApplicationContext::GetBindingLog()
-{
-    return &m_bindingLog;
-}
-
-void ApplicationContext::ClearBindingLog()
-{
-    m_bindingLog.SetDebugLog(NULL);
-}
-#endif // FEATURE_VERSIONING_LOG
-
-
 #endif

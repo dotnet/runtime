@@ -35,17 +35,6 @@
 #include "../binder/inc/applicationcontext.hpp"
 #ifndef DACCESS_COMPILE
 
-STDAPI BinderGetImagePath(PEImage *pPEImage,
-                          SString &imagePath)
-{
-    HRESULT hr = S_OK;
-
-    _ASSERTE(pPEImage != NULL);
-
-    imagePath.Set(pPEImage->GetPath());
-    return hr;
-}
-
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
 {
     HRESULT hr = S_OK;
@@ -69,21 +58,6 @@ STDAPI BinderReleasePEImage(PEImage *pPEImage)
 
     return hr;
 }
-
-STDAPI BinderGetDisplayName(PEAssembly *pAssembly,
-                            SString    &displayName)
-{
-    HRESULT hr = S_OK;
-
-    if (pAssembly != NULL)
-    {
-        pAssembly->GetDisplayName(displayName, ASM_DISPLAYF_FULL);
-    }
-
-    return hr;
-}
-
-
 
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
