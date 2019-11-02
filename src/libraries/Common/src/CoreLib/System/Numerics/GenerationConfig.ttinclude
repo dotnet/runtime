@@ -1,13 +1,13 @@
 ﻿<#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="System.Text" #>
-<#+ 
-    /*    This file includes static data used as compilation configuration for the rest of the code generation. 
+<#+
+    /*    This file includes static data used as compilation configuration for the rest of the code generation.
         It is shared here to ensure that all generated code compiles with the same constants and configurations.    */
 
     // The set of supported numeric types to compile
-    public static Type[] supportedTypes = new[] 
-    { 
+    public static Type[] supportedTypes = new[]
+    {
         typeof(byte), typeof(sbyte), typeof(ushort), typeof(short),
         typeof(uint), typeof(int), typeof(ulong), typeof(long),
         typeof(float), typeof(double)
