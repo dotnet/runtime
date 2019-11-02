@@ -158,17 +158,28 @@ namespace System.Text.Json.Tests
         [Fact]
         public void AssertDoesNotDeserializeInterface()
         {
-            const string json = @"{
-""Value"": ""A value"",
-""Thing"": {
-""Number"": 123
-}
-}";
-            NotSupportedException e = Assert.Throws<NotSupportedException>(() =>
+            const string validJson =
+                @"[{
+                    ""Value"": ""A value"",
+                    ""Thing"": {
+                        ""Number"": 123
+                    }
+                }]";
+            NotSupportedException nse = Assert.Throws<NotSupportedException>(() =>
             {
-                JsonSerializer.Deserialize<List<MyClass>>(json);
+                JsonSerializer.Deserialize<List<MyClass>>(validJson);
             });
-            Assert.Equal("Deserialization of interface types is not supported. Type 'System.Text.Json.Tests.IThing'", e.Message);
+            Assert.Equal("Deserialization of interface types is not supported. Type 'System.Text.Json.Tests.IThing'", nse.Message);
+
+            const string invalidJson =
+                @"{
+                    ""Value"": ""A value"",
+                    ""Thing"": {
+                        ""Number"": 123
+                    }
+                }";
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<MyClass>>(invalidJson));
         }
     }
 

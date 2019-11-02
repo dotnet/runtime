@@ -37,13 +37,10 @@ namespace System.Text.Json
 
                 state.Current.KeyName = reader.GetString();
             }
-            else if (state.Current.JsonClassInfo.ClassType == ClassType.Value)
-            {
-                // We should be in a converter, thus we must have bad JSON.
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo.RuntimePropertyType);
-            }
             else
             {
+                Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
+
                 state.Current.EndProperty();
 
                 ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
