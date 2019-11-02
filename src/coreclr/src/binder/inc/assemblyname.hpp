@@ -66,8 +66,6 @@ namespace BINDER_SPACE
 
         inline void SetHave(DWORD dwIdentityFlags);
 
-        inline BOOL HaveAssemblyVersion();
-
         BOOL IsMscorlib();
 
         ULONG Hash(/* in */ DWORD dwIncludeFlags);

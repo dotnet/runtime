@@ -43,7 +43,6 @@ namespace BINDER_SPACE
         inline void SetNoResult();
         inline BOOL HaveResult();
 
-        inline IUnknown *ExtractAssembly();
         inline void Reset();
 
     protected:

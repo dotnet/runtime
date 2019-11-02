@@ -40,9 +40,6 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
 STDAPI BinderHasNativeHeader(PEImage *pPEImage,
                              BOOL    *result);
  
-STDAPI BinderGetImagePath(PEImage *pPEImage,
-                          SString &imagePath);
-
 STDAPI BinderReleasePEImage(PEImage *pPEImage);
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage);
@@ -102,8 +99,7 @@ namespace BINDER_SPACE
 
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
         inline BOOL GetIsInGAC();
-        inline BOOL GetIsByteArray();
-        inline void SetIsByteArray(BOOL fIsByteArray);
+
         inline SString &GetPath();
 
         inline PEImage *GetPEImage(BOOL fAddRef = FALSE);

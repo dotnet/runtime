@@ -154,11 +154,6 @@ BOOL BindResult::HaveResult()
     return (GetAssemblyName() != NULL);
 }
 
-IUnknown *BindResult::ExtractAssembly()
-{
-    return m_pIUnknownAssembly.Extract();
-}
-
 void BindResult::Reset()
 {
     SAFE_RELEASE(m_pAssemblyName);

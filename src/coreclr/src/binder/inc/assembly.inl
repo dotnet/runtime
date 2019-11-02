@@ -100,23 +100,6 @@ void Assembly::SetIsInGAC(BOOL fIsInGAC)
     }
 }
 
-BOOL Assembly::GetIsByteArray()
-{
-    return ((m_dwAssemblyFlags & FLAG_IS_BYTE_ARRAY) != 0);
-}
-
-void Assembly::SetIsByteArray(BOOL fIsByteArray)
-{
-    if (fIsByteArray)
-    {
-        m_dwAssemblyFlags |= FLAG_IS_BYTE_ARRAY;
-    }
-    else
-    {
-        m_dwAssemblyFlags &= ~FLAG_IS_BYTE_ARRAY;
-    }
-}
-
 SString &Assembly::GetPath()
 {
     return m_assemblyPath;

@@ -9,9 +9,7 @@ set(BINDER_COMMON_SOURCES
     assemblybinder.cpp
     assemblyidentitycache.cpp
     assemblyname.cpp
-    bindinglog.cpp
     bindertracing.cpp
-    cdebuglog.cpp
     clrprivbindercoreclr.cpp
     coreclrbindercommon.cpp
     failurecache.cpp
@@ -38,18 +36,14 @@ set(BINDER_COMMON_HEADERS
     inc/assemblyversion.inl
     inc/bindertypes.hpp
     inc/bindertracing.h
-    inc/bindinglog.hpp
-    inc/bindinglog.inl
     inc/bindresult.hpp
     inc/bindresult.inl
-    inc/cdebuglog.hpp
     inc/clrprivbindercoreclr.h
     inc/coreclrbindercommon.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
     inc/fusionassemblyname.hpp
     inc/fusionhelpers.hpp
-    inc/list.hpp
     inc/loadcontext.hpp
     inc/loadcontext.inl
     inc/stringlexer.hpp

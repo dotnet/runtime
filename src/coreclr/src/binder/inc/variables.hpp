@@ -27,26 +27,12 @@ namespace BINDER_SPACE
 
         HRESULT Init();
 
-        // ApplicationContext string constants
-        SString AppBaseURL;
-        SString DynamicDirectory;
-        SString DynamicBaseDirectory;
-        SString AppName;
-        SString AppConfigFile;
-        SString AppDomainId;
-
         // AssemblyBinder string constants
         SString httpURLPrefix;
 
         // AssemblyName string constants
         SString cultureNeutral;
-        SString emptyString;
         SString mscorlib;
-
-#ifdef FEATURE_VERSIONING_LOG
-        BOOL fLoggingNeeded;
-        SString logPath;
-#endif // FEATURE_VERSIONING_LOG
     };
 
     extern Variables *g_BinderVariables;

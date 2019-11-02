@@ -439,7 +439,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 /// Loader
 ///
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_APIThreadStress, W("APIThreadStress"), "Used to test Loader for race conditions")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_ForceLog, W("ForceLog"), "Fusion flag to enforce assembly binding log. Heavily used and documented in MSDN and BLOGS.")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_WinMDPath, W("WinMDPath"), "Path for Windows WinMD files")
 
 ///
@@ -461,7 +460,6 @@ CONFIG_STRING_INFO_EX(INTERNAL_LogFile, W("LogFile"), "Specifies a file name for
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFileAppend, W("LogFileAppend"), "Specifies whether to append to or replace the CLR log file.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFlushFile, W("LogFlushFile"), "Specifies whether to flush the CLR log file on each write.")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_LogLevel, W("LogLevel"), "4=10 msgs, 9=1000000, 10=everything")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_LogPath, W("LogPath"), "?Fusion debug log path.")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToConsole, W("LogToConsole"), "Writes the CLR log to console.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToDebugger, W("LogToDebugger"), "Writes the CLR log to debugger (OutputDebugStringA).")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToFile, W("LogToFile"), "Writes the CLR log to a file.")

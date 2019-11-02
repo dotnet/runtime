@@ -18,9 +18,6 @@
 #include "bindertypes.hpp"
 #include "failurecache.hpp"
 #include "assemblyidentitycache.hpp"
-#ifdef FEATURE_VERSIONING_LOG
-#include "bindinglog.hpp"
-#endif // FEATURE_VERSIONING_LOG
 #include "stringarraylist.h"
 
 namespace BINDER_SPACE
@@ -146,11 +143,6 @@ namespace BINDER_SPACE
         inline LONG GetVersion();
         inline void IncrementVersion();
 
-#ifdef FEATURE_VERSIONING_LOG
-        inline BindingLog *GetBindingLog();
-        inline void ClearBindingLog();
-#endif // FEATURE_VERSIONING_LOG
-
     protected:
         LONG               m_cRef;
         Volatile<LONG>     m_cVersion;
@@ -159,9 +151,6 @@ namespace BINDER_SPACE
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
-#ifdef FEATURE_VERSIONING_LOG
-        BindingLog         m_bindingLog;
-#endif // FEATURE_VERSIONING_LOG
 
         AssemblyIdentityCache m_assemblyIdentityCache;
 
