@@ -319,6 +319,11 @@ build_Tests()
 
     if [ ${__SkipRestorePackages} != 1 ]; then
         build_MSBuild_projects "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
+
+        if [ $? -ne 0 ]; then
+            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: package restoration failed. Refer to the build log files for details (above)"
+            exit 1
+        fi
     fi
 
     if [ $__SkipNative != 1 ]; then
@@ -423,6 +428,7 @@ build_MSBuild_projects()
             buildArgs+=("${__CommonMSBuildArgs[@]}")
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
+            buildArgs+=("/p:__SkipPackageRestore=true");
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__ProjectRoot/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
