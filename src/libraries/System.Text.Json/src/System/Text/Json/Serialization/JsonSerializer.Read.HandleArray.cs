@@ -27,23 +27,16 @@ namespace System.Text.Json
             {
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
             }
-            else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
-            {
-                jsonPropertyInfo = state.Current.JsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, typeof(object), options);
-            }
 
-            // Verify that we have a valid enumerable.
-            Type arrayType = jsonPropertyInfo.RuntimePropertyType;
-            if (!typeof(IEnumerable).IsAssignableFrom(arrayType))
+            // Verify that we are processing a valid enumerable or dictionary.
+            if (((ClassType.Enumerable | ClassType.Dictionary) & jsonPropertyInfo.ClassType) == 0)
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(jsonPropertyInfo.RuntimePropertyType);
             }
-
-            Debug.Assert(state.Current.IsProcessingCollection());
 
             if (state.Current.CollectionPropertyInitialized)
             {
-                // A nested json array so push a new stack frame.
+                // An array nested in a dictionary or array, so push a new stack frame.
                 Type elementType = jsonPropertyInfo.ElementClassInfo.Type;
 
                 state.Push();
@@ -52,8 +45,16 @@ namespace System.Text.Json
 
             state.Current.CollectionPropertyInitialized = true;
 
-            // We should not be processing custom converters here (converters are of ClassType.Value).
-            Debug.Assert(state.Current.JsonClassInfo.ClassType != ClassType.Value);
+            // The current JsonPropertyInfo will be null if the current type is not one of
+            // ClassType.Value | ClassType.Enumerable | ClassType.Dictionary.
+            // We should not see ClassType.Value here because we handle it on a different code
+            // path invoked in the main read loop.
+            // Only ClassType.Enumerable is valid here since we just saw a StartArray token.
+            if (state.Current.JsonPropertyInfo == null ||
+                state.Current.JsonPropertyInfo.ClassType != ClassType.Enumerable)
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type);
+            }
 
             // Set or replace the existing enumerable value.
             object value = ReadStackFrame.CreateEnumerableValue(ref state);

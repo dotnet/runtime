@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Reflection;
 using System.Text.Encodings.Web;
 using Xunit;
 
@@ -320,17 +321,201 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, type));
         }
 
-        public class ClassWithArray
+        public static IEnumerable<string> InvalidJsonForIntValue()
         {
-            public int[] MyArray { get; set; }
+            yield return @"""1""" ;
+            yield return "[";
+            yield return "}";
+            yield return @"[""1""]";
+            yield return "[true]";
         }
 
-        public class ClassWithDictionary
+        public static IEnumerable<string> InvalidJsonForPoco()
         {
-            public Dictionary<string, int[]> MyDictionary { get; set; }
+            foreach (string value in InvalidJsonForIntValue())
+            {
+                yield return value;
+                yield return "[" + value + "]";
+                yield return "{" + value + "}";
+                yield return @"{""Id"":" + value + "}";
+            }
+        }
+
+        public class ClassWithInt
+        {
+            public int Obj { get; set; }
+        }
+
+        public class ClassWithIntList
+        {
+            public List<int> Obj { get; set; }
+        }
+
+        public class ClassWithIntArray
+        {
+            public int[] Obj { get; set; }
+        }
+
+        public class ClassWithPoco
+        {
+            public Poco Obj { get; set; }
+        }
+
+        public class ClassWithPocoArray
+        {
+            public Poco[] Obj { get; set; }
+        }
+
+        public class ClassWithDictionaryOfIntArray
+        {
+            public Dictionary<string, int[]> Obj { get; set; }
+        }
+
+        public class ClassWithDictionaryOfPoco
+        {
+            public Dictionary<string, Poco> Obj { get; set; }
+        }
+
+        public class ClassWithDictionaryOfPocoList
+        {
+            public Dictionary<string, List<Poco>> Obj { get; set; }
+        }
+
+        public static IEnumerable<Type> TypesForInvalidJsonForCollectionTests()
+        {
+            static Type MakeClosedCollectionType(Type openCollectionType, Type elementType)
+            {
+                if (openCollectionType == typeof(Dictionary<,>))
+                {
+                    return typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType);
+                }
+                else
+                {
+                    return openCollectionType.MakeGenericType(elementType);
+                }
+            }
+
+            Type[] elementTypes = new Type[]
+            {
+                typeof(int),
+                typeof(Poco),
+                typeof(ClassWithInt),
+                typeof(ClassWithIntList),
+                typeof(ClassWithPoco),
+                typeof(ClassWithPocoArray),
+                typeof(ClassWithDictionaryOfIntArray),
+                typeof(ClassWithDictionaryOfPoco),
+                typeof(ClassWithDictionaryOfPocoList),
+            };
+
+            Type[] collectionTypes = new Type[]
+            {
+                typeof(List<>),
+                typeof(Dictionary<,>),
+            };
+
+            foreach (Type type in elementTypes)
+            {
+                yield return type;
+            }
+
+            List<Type> innerTypes = new List<Type>(elementTypes);
+
+            // Create permutations of collections with 1 and 2 levels of nesting.
+            for (int i = 0; i < 2; i++)
+            {
+                foreach (Type collectionType in collectionTypes)
+                {
+                    List<Type> newInnerTypes = new List<Type>();
+
+                    foreach (Type elementType in innerTypes)
+                    {
+                        Type newCollectionType = MakeClosedCollectionType(collectionType, elementType);
+                        newInnerTypes.Add(newCollectionType);
+                        yield return newCollectionType;
+                    }
+
+                    innerTypes = newInnerTypes;
+                }
+            }
+        }
+
+        static IEnumerable<string> GetInvalidJsonStringsForType(Type type)
+        {
+            if (type == typeof(int))
+            {
+                foreach (string json in InvalidJsonForIntValue())
+                {
+                    yield return json;
+                }
+                yield break;
+            }
+
+            if (type == typeof(Poco))
+            {
+                foreach (string json in InvalidJsonForPoco())
+                {
+                    yield return json;
+                }
+                yield break;
+            }
+
+            Type elementType;
+
+            if (!typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                // Get type of "Obj" property.
+                elementType = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)[0].PropertyType;
+            }
+            else if (type.IsArray)
+            {
+                elementType = type.GetElementType();
+            }
+            else if (!type.IsGenericType)
+            {
+                Assert.True(false, "Expected generic type");
+                yield break;
+            }
+            else
+            {
+                Type genericTypeDef = type.GetGenericTypeDefinition();
+
+                if (genericTypeDef == typeof(List<>))
+                {
+                    elementType = type.GetGenericArguments()[0];
+                }
+                else if (genericTypeDef == typeof(Dictionary<,>))
+                {
+                    elementType = type.GetGenericArguments()[1];
+                }
+                else
+                {
+                    Assert.True(false, "Expected List or Dictionary type");
+                    yield break;
+                }
+            }
+
+            foreach (string invalidJson in GetInvalidJsonStringsForType(elementType))
+            {
+                yield return "[" + invalidJson + "]";
+                yield return "{" + invalidJson + "}";
+                yield return @"{""Obj"":" + invalidJson + "}";
+            }
+        }
+
+        public static IEnumerable<object[]> DataForInvalidJsonForTypeTests()
+        {
+            foreach (Type type in TypesForInvalidJsonForCollectionTests())
+            {
+                foreach (string invalidJson in GetInvalidJsonStringsForType(type))
+                {
+                    yield return new object[] { type, invalidJson };
+                }
+            }
         }
 
         [Theory]
+        [MemberData(nameof(DataForInvalidJsonForTypeTests))]
         [InlineData(typeof(int[]), @"""test""")]
         [InlineData(typeof(int[]), @"1")]
         [InlineData(typeof(int[]), @"false")]
@@ -353,18 +538,18 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [[]]}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [true]}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": ""test""}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": 1}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": false}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": {}}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": {""test"": 1}}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [""test""}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [""test""]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [true]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [{}]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [[]]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [{""test"": 1}]}")]
-        [InlineData(typeof(ClassWithArray), @"{""MyArray"": [[true]]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": ""test""}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": 1}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": false}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": {}}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": {""test"": 1}}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [""test""}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [""test""]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [true]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [{}]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [[]]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [{""test"": 1}]}")]
+        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [[true]]}")]
         [InlineData(typeof(Dictionary<string, string>), @"""test""")]
         [InlineData(typeof(Dictionary<string, string>), @"1")]
         [InlineData(typeof(Dictionary<string, string>), @"false")]
@@ -378,22 +563,33 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Dictionary<string, string>), @"[[]]")]
         [InlineData(typeof(Dictionary<string, string>), @"[{""test"": 1}]")]
         [InlineData(typeof(Dictionary<string, string>), @"[[true]]")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":""test""}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":1}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":false}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": 1}}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": {}}}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":{"""": {"""":""""}}}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[""test""}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[""test""]}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[true]}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[{}]}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[[]]}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[{""test"": 1}]}")]
-        [InlineData(typeof(ClassWithDictionary), @"{""MyDictionary"":[[true]]}")]
-        public static void InvalidJsonForTypeShouldFail(Type type, string json)
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":""test""}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":1}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":false}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": 1}}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {}}}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {"""":""""}}}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""]}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[true]}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{}]}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[]]}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{""test"": 1}]}")]
+        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[true]]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[{""Id"":3}]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[""test""]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[1]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[false]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[]}")]
+        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":1}")]
+        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":{""Id"":3}}")]
+        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":{}}")]
+        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":[[]]}")]
+        [InlineData(typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":[]}")]
+        [InlineData(typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":1}")]
+        public static void InvalidJsonForTypeShouldFail(Type type, string invalidJson)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(invalidJson, type));
         }
 
         [Fact]
@@ -1807,6 +2003,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, dictionary["One"].Id);
             Assert.Equal(2, dictionary["Two"].Id);
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+        }
+
+        public class ClassWithoutParameterlessCtor
+        {
+            public ClassWithoutParameterlessCtor(int num) { }
+        }
+
+        [Fact]
+        public static void DictionaryWith_ObjectWithNoParameterlessCtor_AsValue_Throws()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithoutParameterlessCtor>>(@"{""key"":{}}"));
         }
     }
 }

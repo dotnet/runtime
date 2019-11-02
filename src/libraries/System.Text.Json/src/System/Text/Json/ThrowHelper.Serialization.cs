@@ -247,15 +247,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_DeserializeMissingParameterlessConstructor(Type invalidType)
+        public static void ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(Type invalidType)
         {
-            throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_DeserializePolymorphicInterface(Type invalidType)
-        {
-            throw new NotSupportedException(SR.Format(SR.DeserializePolymorphicInterface, invalidType));
+            if (invalidType.IsInterface)
+            {
+                throw new NotSupportedException(SR.Format(SR.DeserializePolymorphicInterface, invalidType));
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
+            }
         }
     }
 }

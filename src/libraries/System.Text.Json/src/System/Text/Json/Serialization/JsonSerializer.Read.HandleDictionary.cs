@@ -22,36 +22,16 @@ namespace System.Text.Json
 
             Debug.Assert(jsonPropertyInfo != null);
 
-            // A nested object or dictionary so push new frame.
+            // A nested object or dictionary, so push new frame.
             if (state.Current.CollectionPropertyInitialized)
             {
                 state.Push();
                 state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
                 state.Current.InitializeJsonPropertyInfo();
-                state.Current.CollectionPropertyInitialized = true;
-
-                ClassType classType = state.Current.JsonClassInfo.ClassType;
-                if (classType == ClassType.Value)
-                {
-                    Type elementClassInfoType = jsonPropertyInfo.ElementClassInfo.Type;
-                    if (elementClassInfoType != typeof(object) && elementClassInfoType != typeof(JsonElement))
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type);
-                    }
-                }
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-                if (state.Current.IsProcessingEnumerable())
-                {
-                    if (classInfo.CreateObject == null)
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);
-                        return;
-                    }
-                    state.Current.ReturnValue = classInfo.CreateObject();
-                }
-                else if (state.Current.IsProcessingDictionary())
+                if (state.Current.IsProcessingDictionary())
                 {
                     object dictValue = ReadStackFrame.CreateDictionaryValue(ref state);
 
@@ -61,10 +41,21 @@ namespace System.Text.Json
                         state.Current.ReturnValue = dictValue;
                         state.Current.DetermineIfDictionaryCanBePopulated(state.Current.ReturnValue);
                     }
+
+                    state.Current.CollectionPropertyInitialized = true;
+                }
+                else if (state.Current.IsProcessingObject(ClassType.Object))
+                {
+                    if (classInfo.CreateObject == null)
+                    {
+                        ThrowHelper.ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(classInfo.Type);
+                    }
+
+                    state.Current.ReturnValue = classInfo.CreateObject();
                 }
                 else
                 {
-                    state.Current.ReturnValue = classInfo.CreateObject();
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);
                 }
 
                 return;
