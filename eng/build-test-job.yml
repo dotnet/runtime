@@ -83,10 +83,10 @@ jobs:
 
     # Build managed test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
+      - script: $(coreClrRepoRoot)/build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
         displayName: Build managed test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
+      - script: $(coreClrRepoRoot)\build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
         displayName: Build managed test components
 
 

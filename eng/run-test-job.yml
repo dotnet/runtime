@@ -152,10 +152,10 @@ jobs:
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./build-test.sh copynativeonly $(buildConfig) $(archType) $(priorityArg)
+        - script: $(coreClrRepoRoot)/build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
           displayName: Copy native test components to test output folder
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: build-test.cmd copynativeonly $(buildConfig) $(archType) $(priorityArg)
+        - script: $(coreClrRepoRoot)\build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
           displayName: Copy native test components to test output folder
 
 

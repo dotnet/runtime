@@ -55,8 +55,11 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
+    - name: coreClrRepoRoot
+      value: $(Build.SourcesDirectory)
+
     - name: binTestsPath
-      value: $(Build.SourcesDirectory)/bin/tests
+      value: $(coreClrRepoRoot)/bin/tests
 
     - name: testRootFolderPath
       value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
@@ -98,6 +101,8 @@ jobs:
         value: zip
       - name: tarCompression
         value: ''
+      - name: scriptExt
+        value: '.cmd'
 
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: archiveExtension
@@ -106,6 +111,8 @@ jobs:
         value: tar
       - name: tarCompression
         value: gz
+      - name: scriptExt
+        value: '.sh'
 
     - name: priorityArg
       value: ''

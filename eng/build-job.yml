@@ -126,18 +126,18 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRoot)/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRoot)\build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
         displayName: Build product
 
     # Build native test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+      - script: $(coreClrRepoRoot)/build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
         displayName: Build native test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd skipmanaged $(buildConfig) $(archType) $(priorityArg)
+      - script: $(coreClrRepoRoot)\build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(priorityArg)
         displayName: Build native test components
 
     # Sign on Windows
@@ -197,10 +197,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
+      - script: $(coreClrRepoRoot)/build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
         displayName: Build packages
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
+      - script: $(coreClrRepoRoot)\build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
         displayName: Build packages
 
     # Publish official build
