@@ -68,6 +68,7 @@
     <Compile Include="ConcurrentBagTests.cs" />
     <Compile Include="ConcurrentDictionary\ConcurrentDictionary.NonGeneric.Tests.cs" />
     <Compile Include="ConcurrentDictionary\ConcurrentDictionary.Generic.Tests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="ConcurrentDictionary\ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
@@ -82,13 +83,6 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="ConcurrentBagTests.netcoreapp.cs" />
-    <Compile Include="ConcurrentQueueTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
