@@ -3481,7 +3481,7 @@ main_loop:
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
 
 			if (!new_method->transformed) {
-				MONO_API_ERROR_INIT (error);
+				error_init_reuse (error);
 
 				frame->ip = ip;
 				mono_interp_transform_method (new_method, context, error);
@@ -3689,7 +3689,7 @@ common_vcall:
 
 		MINT_IN_CASE(MINT_JIT_CALL) {
 			InterpMethod *rmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
-			MONO_API_ERROR_INIT (error);
+			error_init_reuse (error);
 			frame->ip = ip;
 			sp = do_jit_call (sp, vt_sp, context, frame, rmethod, error);
 			if (!is_ok (error)) {
@@ -3709,7 +3709,7 @@ common_vcall:
 #ifdef ENABLE_EXPERIMENT_TIERED
 			InterpMethod *rmethod = (InterpMethod *) READ64 (ip + 1);
 
-			MONO_API_ERROR_INIT (error);
+			error_init_reuse (error);
 			frame->ip = ip;
 
 			sp = do_jit_call (sp, vt_sp, context, frame, rmethod, error);
@@ -6352,7 +6352,7 @@ common_vcall:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDFTN_DYNAMIC) {
-			MONO_API_ERROR_INIT (error);
+			error_init_reuse (error);
 			InterpMethod *m = mono_interp_get_imethod (mono_domain_get (), (MonoMethod*) sp [-1].data.p, error);
 			mono_error_assert_ok (error);
 			sp [-1].data.p = m;
@@ -6650,7 +6650,7 @@ common_vcall:
 		   del = (MonoDelegate*)sp->data.p;
 		   if (!del->interp_method) {
 			   /* Not created from interpreted code */
-			   MONO_API_ERROR_INIT (error);
+			   error_init_reuse (error);
 			   g_assert (del->method);
 			   del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
 			   mono_error_assert_ok (error);
@@ -6670,7 +6670,7 @@ common_vcall:
 				 * First time we are called. Set up the invoke wrapper. We might be able to do this
 				 * in ctor but we would need to handle AllocDelegateLike_internal separately
 				 */
-				MONO_API_ERROR_INIT (error);
+				error_init_reuse (error);
 				MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
 				del->interp_invoke_impl = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
 				mono_error_assert_ok (error);
