@@ -7,10 +7,9 @@ trigger:
   branches:
     include:
     - master
-    - release/3.*
   paths:
     exclude:
-    - Documentation/*
+    - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -18,15 +17,16 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
 
 pr:
   branches:
     include:
     - master
-    - release/3.*
   paths:
     exclude:
-    - Documentation/*
+    - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -34,6 +34,8 @@ pr:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
 
 resources:
   containers:
@@ -73,32 +75,32 @@ variables:
 
 stages:
   # Windows legs
-  - template: /eng/pipelines/windows.yml
+  - template: /eng/pipelines/libraries/windows.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Linux legs
-  - template: /eng/pipelines/linux.yml
+  - template: /eng/pipelines/libraries/linux.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # MacOS legs
-  - template: /eng/pipelines/macos.yml
+  - template: /eng/pipelines/libraries/macos.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
     # FreeBSD leg is only for official builds
-    # - template: /eng/pipelines/freebsd.yml
+    # - template: /eng/pipelines/libraries/freebsd.yml
     #   parameters:
     #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
     #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Publish and validation steps. Only run in official builds
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: /eng/pipelines/pre-publish.yml
+    - template: /eng/pipelines/libraries/pre-publish.yml
       parameters:
         dependsOn:
           - WindowsStage
