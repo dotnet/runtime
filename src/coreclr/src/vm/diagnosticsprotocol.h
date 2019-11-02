@@ -208,23 +208,6 @@ namespace DiagnosticsIpc
             return FlattenImpl<T>(payload);
         };
 
-        // Initialize an outgoing IpcMessage with a header and payload
-        template <typename T>
-        bool Initialize(IpcHeader header, T&& payload)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_TRIGGERS;
-                MODE_PREEMPTIVE;
-            }
-            CONTRACTL_END;
-
-            m_Header = header;
-
-            return FlattenImpl<T>(payload);
-        };
-
         // Initialize an outgoing IpcMessage for an error
         bool Initialize(HRESULT error)
         {
