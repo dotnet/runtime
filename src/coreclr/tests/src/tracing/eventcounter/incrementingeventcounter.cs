@@ -15,6 +15,7 @@ namespace BasicEventSourceTests
 {
     public partial class TestIncrementingEventCounter
     {
+        private static ManualResetEvent evnt = new ManualResetEvent(false);
 
         [EventSource(Name = "SimpleEventSource")]
         private sealed class SimpleEventSource : EventSource
@@ -37,17 +38,19 @@ namespace BasicEventSourceTests
             private readonly string _targetSourceName;
             private readonly EventLevel _level;
             private Dictionary<string, string> args;
-            
+            private int _iter;
+
             public int incrementSum;
             public string displayName;
             public string displayUnits;
             public string displayRateTimeScale;
             
-            public SimpleEventListener(string targetSourceName, EventLevel level)
+            public SimpleEventListener(string targetSourceName, EventLevel level, int iter)
             {
                 // Store the arguments
                 _targetSourceName = targetSourceName;
                 _level = level;
+                _iter = iter;
                 incrementSum = 0;
                 displayName = "";
                 displayUnits = "";
@@ -91,20 +94,25 @@ namespace BasicEventSourceTests
                             }
                         }
                     }
+                    if (incrementSum == _iter)
+                    {
+                        evnt.Set();
+                    }
                 }
             }
         }
 
         public static int Main(string[] args)
         {
+            int iter = 100;
+
             // Create an EventListener.
-            using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))
+            using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose, iter))
             {
                 string displayName = "Mock Counter";
                 string displayUnits = "Count";
 
                 SimpleEventSource eventSource = new SimpleEventSource(displayName, displayUnits);
-                int iter = 100;
 
                 // increment 100 times
                 for (int i = 0; i < iter; i++)
@@ -112,7 +120,7 @@ namespace BasicEventSourceTests
                     eventSource.IncrementCounter();    
                 }
 
-                Thread.Sleep(3000);
+                evnt.WaitOne(10000);
 
                 if (iter != myListener.incrementSum)
                 {
