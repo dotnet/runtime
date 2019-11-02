@@ -110,7 +110,7 @@
   <!-- Signing -->
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
-    <StrongNameKeyId>Open</StrongNameKeyId>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 
   <!--
